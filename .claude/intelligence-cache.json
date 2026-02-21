@@ -285,16 +285,15 @@
         "success_probability": 90,
         "recommended_template": "fast",
         "key_risks": [
-          "GitHub API rate limits when querying 30 issues and their associated PRs",
-          "Edge cases where completed issues have no associated PR at all"
+          "GitHub API rate limiting when fetching PR/issue data for 30 issues",
+          "Incomplete or missing PR links on completed issues may reduce diagnostic accuracy"
         ],
         "implementation_hints": [
-          "Use gh CLI to list issues with 'completed' label and cross-reference with merged PRs via gh pr list --search",
-          "Categorize blockers by checking PR status: failed checks, pending reviews, merge conflicts, or no PR found",
-          "Output structured report with counts per blocker type and exit 1 if unmerged ratio exceeds 30%"
+          "Use gh CLI to query closed issues and associated PRs in batch",
+          "Categorize blockers by inspecting PR status: failed checks, review requests, merge conflicts, branch staleness"
         ]
       },
-      "timestamp": 1771704665,
+      "timestamp": 1771714697,
       "ttl": 3600
     },
     "8a2523a893d12f6de5bd02b96629d0c3": {
@@ -425,6 +424,57 @@
         ]
       },
       "timestamp": 1771705839,
+      "ttl": 1800
+    },
+    "6eed7f74597c8e68d28ccd46cbb6d413": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771714703,
+      "ttl": 1800
+    },
+    "42a8bf0a775e10635f391737c089058c": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 2,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "none",
+        "confidence": 72
+      },
+      "timestamp": 1771714710,
+      "ttl": 3600
+    },
+    "0316c8fa079f5a3207e886110c9bafe6": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project type (node/nodejs), test runner (vitest), and package manager (npm) are directly relevant for planning a devops diagnostic tool in this codebase"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Bootstrap-detected nodejs project type confirms the runtime environment for the diagnostic tool implementation"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - no prior architectural decisions to inform the plan"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "Empty failures log - no prior failure patterns to avoid during implementation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Empty cross-repo learnings - no transferable patterns from other repos to apply"
+          }
+        ]
+      },
+      "timestamp": 1771714736,
       "ttl": 1800
     }
   }
