@@ -277,6 +277,77 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "13bb6303273b1d177fc01fc4018e3346": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "fast",
+        "key_risks": [
+          "Insufficient failed pipeline history (fewer than 50 runs) to produce statistically meaningful patterns",
+          "Pattern regex generation quality may produce overly broad or too-narrow signatures without tuning"
+        ],
+        "implementation_hints": [
+          "Mine ~/.shipwright/events.jsonl and .claude/pipeline-artifacts/error-log.jsonl for iteration-exhaustion failures; filter by exit reason",
+          "Use jq to group error messages by normalized signature (strip line numbers/hashes) and count occurrences for frequency ranking",
+          "Implement cycle detection by comparing consecutive error-summary.json snapshots within a single run for unchanged content",
+          "Output ~/.shipwright/fast-fail-patterns.json with fields: pattern_name, signature_regex, detection_threshold, frequency, last_seen"
+        ]
+      },
+      "timestamp": 1771710390,
+      "ttl": 3600
+    },
+    "e22b9b74cd3e81bab3a799c0e63557b7": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1771710396,
+      "ttl": 1800
+    },
+    "a7c259e42ff31afce5383fdf9b4d2067": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1771710402,
+      "ttl": 3600
+    },
+    "c61e3a9d8c227e22fd7ca3de09f4cb28": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant — the feature generates a pattern library from failed pipelines, and this file tracks failure patterns that would seed the library"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 80,
+            "summary": "Project conventions (test pattern, import style, test runner) are needed to generate correctly-structured pattern library entries"
+          },
+          {
+            "file": "patterns.json (bootstrap)",
+            "relevance": 65,
+            "summary": "Bootstrap project type detection confirms nodejs context for pattern library implementation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 55,
+            "summary": "Cross-repo learnings and common patterns are the target output of the feature — understanding current state informs design"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Architecture decisions may constrain implementation approach, though currently empty"
+          }
+        ]
+      },
+      "timestamp": 1771710416,
+      "ttl": 1800
     }
   }
 }
