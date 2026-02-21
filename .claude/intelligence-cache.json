@@ -277,6 +277,77 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "20e0502dae39b42faa19ba14473f1b27": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "fast",
+        "key_risks": [
+          "Pipeline events log may have inconsistent schema across versions",
+          "Small sample size of restart events could skew statistical recommendations"
+        ],
+        "implementation_hints": [
+          "Parse ~/.shipwright/events.jsonl filtering for runs with max_restarts > 0 and correlate with outcome fields",
+          "Group by failure_type (context_exhaustion, test_failure, etc.) and compute success_rate = successful_restarts / total_restarts per group",
+          "Output structured report with 'helpful' (success_rate >= 40%) vs 'wasteful' patterns and recommended max-restarts per failure type",
+          "Exit code 1 when overall restart success rate < 40% across all failure types"
+        ]
+      },
+      "timestamp": 1771707398,
+      "ttl": 3600
+    },
+    "123b1168ce51776e0ac0af2e836cd43c": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771707404,
+      "ttl": 1800
+    },
+    "dbd41656de24c41f02943ccba9ae4f44": {
+      "result": {
+        "estimated_cost_usd": 1.50,
+        "estimated_iterations": 2,
+        "estimated_tokens": 180000,
+        "likely_failure_stage": "test",
+        "confidence": 65
+      },
+      "timestamp": 1771707419,
+      "ttl": 3600
+    },
+    "178eea22c0cdf504b9fbba258603282f": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (test pattern, import style, package manager) directly inform how to implement and test the new analyzer feature"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for implementation planning"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Empty failures log is relevant — no prior failure patterns to avoid when designing the success pattern analyzer"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Empty decisions log means no prior architectural constraints to consider during plan stage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Empty baselines provide no optimization targets, but confirms no prior performance benchmarks exist for the loop restart feature"
+          }
+        ]
+      },
+      "timestamp": 1771707448,
+      "ttl": 1800
     }
   }
 }
