@@ -277,6 +277,155 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "7ab2404674b030b500926d868a8b5d86": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 90,
+        "recommended_template": "fast",
+        "key_risks": [
+          "GitHub API rate limits when querying 30 issues and their associated PRs",
+          "Edge cases where completed issues have no associated PR at all"
+        ],
+        "implementation_hints": [
+          "Use gh CLI to list issues with 'completed' label and cross-reference with merged PRs via gh pr list --search",
+          "Categorize blockers by checking PR status: failed checks, pending reviews, merge conflicts, or no PR found",
+          "Output structured report with counts per blocker type and exit 1 if unmerged ratio exceeds 30%"
+        ]
+      },
+      "timestamp": 1771704665,
+      "ttl": 3600
+    },
+    "8a2523a893d12f6de5bd02b96629d0c3": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771704670,
+      "ttl": 1800
+    },
+    "732c42a7c5885ffa086093b15da70931": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 2,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "none",
+        "confidence": 72
+      },
+      "timestamp": 1771704676,
+      "ttl": 3600
+    },
+    "9a71e7f44c861545558fee79c66a4d28": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (node, vitest, commonjs) directly inform how to structure the diagnostic tool's implementation and tests"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for the diagnostic tool"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty decisions log - no prior architectural decisions to conflict with or build upon"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Empty failures log - no known failure patterns to avoid during implementation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "No cross-repo learnings available to inform the diagnostic tool design"
+          }
+        ]
+      },
+      "timestamp": 1771704702,
+      "ttl": 1800
+    },
+    "bcbc61bccdb77e478025218400fb13c2": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (node/vitest/commonjs) are relevant for understanding the codebase structure when implementing the diagnostic tool"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 30,
+            "summary": "Empty failures log - relevant as baseline for the merge blocker diagnostic tool which tracks failures"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - may be populated during plan validation for this feature"
+          }
+        ]
+      },
+      "timestamp": 1771704887,
+      "ttl": 1800
+    },
+    "9be13937a7e4d1d0623969bb8394a551": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project conventions (test pattern, import style, source dir) directly inform architecture decisions for the new diagnostic tool"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Confirms nodejs project type detected at bootstrap, relevant for tool implementation approach"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty but would contain prior architectural decisions that could constrain or inform the diagnostic tool design"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Empty but failure patterns would be highly relevant to a merge blocker diagnostic tool"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty cross-repo learnings; could inform multi-repo diagnostic patterns if populated"
+          }
+        ]
+      },
+      "timestamp": 1771705831,
+      "ttl": 1800
+    },
+    "8ed5a28690d91b4745b249069bec67a4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (Node.js, CommonJS, test patterns) inform what anti-patterns to avoid in implementation"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - no prior architectural decisions recorded that could conflict with design approaches"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Empty failures log - no recorded failure patterns to cross-reference against rejected design approaches"
+          }
+        ]
+      },
+      "timestamp": 1771705839,
+      "ttl": 1800
     }
   }
 }
