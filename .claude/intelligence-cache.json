@@ -282,20 +282,20 @@
       "result": {
         "complexity": 4,
         "risk_level": "low",
-        "success_probability": 85,
+        "success_probability": 87,
         "recommended_template": "fast",
         "key_risks": [
-          "Pipeline events log may have inconsistent schema across versions",
-          "Small sample size of restart events could skew statistical recommendations"
+          "Insufficient historical event data to produce statistically meaningful restart success rates",
+          "Failure type tags (context_exhaustion, test_failure) may be inconsistently recorded across older pipeline runs"
         ],
         "implementation_hints": [
-          "Parse ~/.shipwright/events.jsonl filtering for runs with max_restarts > 0 and correlate with outcome fields",
-          "Group by failure_type (context_exhaustion, test_failure, etc.) and compute success_rate = successful_restarts / total_restarts per group",
-          "Output structured report with 'helpful' (success_rate >= 40%) vs 'wasteful' patterns and recommended max-restarts per failure type",
-          "Exit code 1 when overall restart success rate < 40% across all failure types"
+          "Parse ~/.shipwright/events.jsonl filtering for runs where max_restarts > 0; group by run_id to correlate restart_count with final outcome (success/failure)",
+          "Reuse failure-type tagging already present in sw-daemon.sh context_exhaustion detection path for consistent classification",
+          "Aggregate success_rate = successful_runs / total_runs per (failure_type, restart_count) bucket and flag buckets below 40% threshold for the exit-1 gate",
+          "Output recommendations as a structured table mapping failure_type → recommended_max_restarts based on the highest-success-rate bucket"
         ]
       },
-      "timestamp": 1771707398,
+      "timestamp": 1771713925,
       "ttl": 3600
     },
     "123b1168ce51776e0ac0af2e836cd43c": {
@@ -322,31 +322,128 @@
           {
             "file": "patterns.json",
             "relevance": 72,
-            "summary": "Project conventions (test pattern, import style, package manager) directly inform how to implement and test the new analyzer feature"
+            "summary": "Project conventions (node, vitest, commonjs) directly inform how to implement the analyzer and write tests for it"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for the feature"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 30,
+            "summary": "Empty failures list — no prior failures to inform the plan, but relevant to check for build loop restart patterns"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions list — no prior architectural decisions to constrain the plan"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines — no performance baselines yet, may be relevant if the analyzer tracks success rate metrics"
+          }
+        ]
+      },
+      "timestamp": 1771713964,
+      "ttl": 1800
+    },
+    "814cf9bab0a01c65538659a6fabdb4b4": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771713930,
+      "ttl": 1800
+    },
+    "4701c7e11ae25ce485cb51f49e3004ed": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1771713936,
+      "ttl": 3600
+    },
+    "ea018510eec2954ba5f93306f31e1900": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (node/vitest/npm) directly inform how to implement and test the Build Loop Session Restart Success Pattern Analyzer"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Empty failures log is relevant as baseline — no prior failures to avoid when implementing this feature"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty decisions log means no prior architectural decisions constrain the plan approach"
+          }
+        ]
+      },
+      "timestamp": 1771714233,
+      "ttl": 1800
+    },
+    "b9c90d68bfc1069d324cb9adca800b18": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project type (node/nodejs), test runner (vitest), and conventions directly inform architecture patterns for the analyzer"
           },
           {
             "file": "patterns.json",
             "relevance": 65,
-            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for implementation planning"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 40,
-            "summary": "Empty failures log is relevant — no prior failure patterns to avoid when designing the success pattern analyzer"
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for the build loop analyzer"
           },
           {
             "file": "decisions.json",
-            "relevance": 35,
-            "summary": "Empty decisions log means no prior architectural constraints to consider during plan stage"
+            "relevance": 30,
+            "summary": "Empty decisions log — no prior architectural decisions to build on or avoid repeating"
           },
           {
-            "file": "metrics.json",
-            "relevance": 20,
-            "summary": "Empty baselines provide no optimization targets, but confirms no prior performance benchmarks exist for the loop restart feature"
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Empty failures log — no known failure patterns to design around, but relevant as the analyzer targets failure patterns"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Empty cross-repo learnings — no transferable patterns available for design stage"
           }
         ]
       },
-      "timestamp": 1771707448,
+      "timestamp": 1771714288,
+      "ttl": 1800
+    },
+    "d89d1251dab3ac8fa103dcb3ac5d1604": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Project conventions (test_pattern, import_style, test_runner) inform what design patterns are valid for the analyzer implementation"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Most semantically relevant category for tracking rejected design approaches, though currently empty"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Confirms nodejs project type from bootstrap, relevant for understanding runtime constraints on the analyzer"
+          }
+        ]
+      },
+      "timestamp": 1771714299,
       "ttl": 1800
     }
   }
