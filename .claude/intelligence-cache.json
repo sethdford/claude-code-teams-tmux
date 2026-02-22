@@ -513,6 +513,157 @@
       },
       "timestamp": 1771762636,
       "ttl": 3600
+    },
+    "3f0b9a48245a5b125f77425458059b24": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Claude API cost extraction may vary by response format across versions",
+          "MTTR calculation requires reliable pipeline failure event tracking across runs"
+        ],
+        "implementation_hints": [
+          "Store telemetry as JSONL in ~/.shipwright/telemetry/ with one record per pipeline run",
+          "Hook into existing pipeline stage lifecycle (sw-pipeline.sh) for timestamps rather than adding new instrumentation points",
+          "Use jq for JSON parsing and cost extraction from API responses, with graceful fallback when fields are absent",
+          "Implement sw-telemetry.sh with a 'report' subcommand that reads and aggregates JSONL records",
+          "Reuse existing emit_event pattern for consistency with events.jsonl infrastructure"
+        ]
+      },
+      "timestamp": 1771789164,
+      "ttl": 3600
+    },
+    "de211a54870f8716b9670a3edde4bc5f": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771789170,
+      "ttl": 1800
+    },
+    "05ef19d214f7e31e0cffcdf4863903f8": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 180000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1771789176,
+      "ttl": 3600
+    },
+    "f9219ccffdb2777af0049aee3047d092": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json",
+            "relevance": 82,
+            "summary": "Directly relevant — empty baselines object is exactly what the telemetry collector needs to populate with missing metrics"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 61,
+            "summary": "Test failure 'output missing: agent-1' is likely a symptom of the missing telemetry/metrics this feature aims to fix"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 48,
+            "summary": "Project conventions (commonjs imports, vitest, test patterns) are needed to implement the collector correctly"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Confirms nodejs project type — useful baseline for scoping telemetry implementation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 12,
+            "summary": "Empty cross-repo learnings; low signal but confirms no prior telemetry patterns have been captured"
+          }
+        ]
+      },
+      "timestamp": 1771789193,
+      "ttl": 1800
+    },
+    "8bf0f34d38c7e1b1416210d5f0245342": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Contains a test-stage failure pattern about missing agent output, directly relevant to diagnosing why telemetry/metrics data is absent in the pipeline"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Tracks metric baselines for the repo — currently empty, confirming the gap that the telemetry collector is meant to fill"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Project conventions (node/vitest/commonjs) needed to correctly implement and test the telemetry collector in this codebase"
+          }
+        ]
+      },
+      "timestamp": 1771789391,
+      "ttl": 1800
+    },
+    "b6896273fc29e82144ba09c19c91ce1b": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (Node.js, commonjs, vitest) inform how telemetry collector code should be structured and tested"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Confirms nodejs project type detected at bootstrap — relevant for architecture decisions on collector implementation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Known test failure pattern (missing agent output) is directly related to missing metrics/telemetry — informs what gaps the collector should address"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Empty baselines object shows no metrics have been captured yet — confirms the collector needs to establish baseline metric collection"
+          },
+          {
+            "file": "global.json",
+            "relevance": 20,
+            "summary": "Empty cross-repo learnings — minimal signal but confirms no prior telemetry patterns have been captured globally"
+          }
+        ]
+      },
+      "timestamp": 1771789432,
+      "ttl": 1800
+    },
+    "41c353800b665310ee8ea1bea5633df4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Contains a test-stage failure pattern about missing output from agent-1, which may relate to telemetry/metrics collection gaps"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Project conventions (node/vitest/commonjs) inform how telemetry collector code and tests should be structured"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Empty baselines object is directly relevant as a starting point for what metrics are currently tracked (none)"
+          }
+        ]
+      },
+      "timestamp": 1771789441,
+      "ttl": 1800
     }
   }
 }
