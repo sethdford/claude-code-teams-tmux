@@ -35,9 +35,15 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "architect",
+          "optimizer"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Dashboard implementation is core build work; architect needed for cost data model design, optimizer for cost analysis and efficiency recommendations."
       },
-      "timestamp": 1771463847,
+      "timestamp": 1771745809,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -277,6 +283,190 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "27801442eafa2d92666d5eed62b6da3e": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 90,
+        "recommended_template": "fast",
+        "key_risks": [
+          "Existing cost data migration may be needed if schema changes are incompatible",
+          "Concurrent pipeline runs writing to the same JSON file could cause race conditions"
+        ],
+        "implementation_hints": [
+          "Extend sw-cost.sh to accept and store issue_number parameter when recording pipeline costs",
+          "Use atomic writes (tmp file + mv) for cost-per-issue.json to prevent corruption",
+          "Add 'per-issue' subcommand to the existing cost command dispatch block in sw-cost.sh",
+          "Compute median/p95 using sorted jq output; filter last 30 days with date arithmetic",
+          "Add new test suite sw-cost-per-issue-test.sh following existing sw-cost-test.sh patterns"
+        ]
+      },
+      "timestamp": 1771745460,
+      "ttl": 3600
+    },
+    "94827752b0d409ccddc575565909e486": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1771745465,
+      "ttl": 1800
+    },
+    "09d0096ca44a305c533b7763192c5623": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1771745470,
+      "ttl": 3600
+    },
+    "647f80c005cbc861568599e6b7a4262e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (Node.js, vitest, npm) directly inform how cost tracking code and tests should be structured"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for dashboard implementation"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty decisions log - no prior architectural decisions to build on or avoid repeating"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Empty failures log - no known failure patterns to avoid during implementation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Empty baselines - cost tracking feature will need to establish initial metric baselines"
+          }
+        ]
+      },
+      "timestamp": 1771745495,
+      "ttl": 1800
+    },
+    "eddf9621d6d2b3af384f780940ef6ea2": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (node, vitest, commonjs) inform how cost tracking code should be structured and tested"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 30,
+            "summary": "Empty failures log - no prior failure patterns to learn from for this feature"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - no prior architectural decisions recorded that could guide the dashboard implementation"
+          }
+        ]
+      },
+      "timestamp": 1771745649,
+      "ttl": 1800
+    },
+    "5ed6cd4bebb82b56b582afd46a787ab9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (node/vitest/commonjs/test patterns) directly inform architecture decisions for the dashboard implementation"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Confirms nodejs project type — relevant for selecting storage, API, and module patterns for the cost tracking system"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Baselines structure (currently empty) is directly adjacent to cost-per-issue metrics — establishes the schema anchor for the dashboard"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty but the decisions log is where architectural choices for cost tracking should be recorded during design stage"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Cross-repo learnings could surface reusable cost-tracking patterns, but currently empty — low signal"
+          }
+        ]
+      },
+      "timestamp": 1771745677,
+      "ttl": 1800
+    },
+    "465a49cd28564c5f8ac88744d79b9384": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (Node.js, CommonJS, vitest) inform what patterns to avoid when designing the cost tracking dashboard"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty decisions log means no prior rejected approaches recorded yet - relevant as baseline"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Empty failures log means no known anti-patterns captured yet for this feature area"
+          }
+        ]
+      },
+      "timestamp": 1771745684,
+      "ttl": 1800
+    },
+    "b81e463fe632e6fde3f1cba809616423": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (Node.js, vitest, commonjs) directly inform how to structure the cost tracking dashboard implementation"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for the build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Empty baselines relevant as cost-per-issue tracking will establish new metric baselines"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "No prior failures to avoid, but relevant as a reference for clean-slate build"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "No prior architectural decisions recorded that could guide dashboard design choices"
+          }
+        ]
+      },
+      "timestamp": 1771745799,
+      "ttl": 1800
     }
   }
 }
