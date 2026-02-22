@@ -277,6 +277,76 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "91965044c20ea2c45e6965e16c865cf5": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Language detection may be inaccurate for polyglot or monorepo projects",
+          "Changes to sw-init.sh and sw-prep.sh could disrupt existing onboarding flows if scoring logic produces poor recommendations"
+        ],
+        "implementation_hints": [
+          "Reuse existing detection patterns already present in sw-prep.sh and sw-doctor.sh rather than writing detection from scratch",
+          "Add the scoring logic as a standalone function in a shared lib so both sw-init.sh and sw-prep.sh can call it without duplication",
+          "Gate the recommendation behind --recommend flag on prep and make it a soft suggestion (not forced) in init to preserve backward compatibility"
+        ]
+      },
+      "timestamp": 1771742029,
+      "ttl": 3600
+    },
+    "8da849b40e92f084215f90d33148396c": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1771742034,
+      "ttl": 1800
+    },
+    "897b72c80f3473641dc56ce021a236ae": {
+      "result": {
+        "estimated_cost_usd": 2.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 125000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1771742040,
+      "ttl": 3600
+    },
+    "f0550030c11c3688d3491b70873ce0d4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure detection results (type, framework, test runner, package manager, language) — directly relevant to template auto-selection logic"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Bootstrap-detected project type (nodejs) — baseline for auto-selection feature"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty decisions log — relevant as a target for recording template selection decisions"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines — may be populated as template selection accuracy is measured"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty cross-repo learnings — could accumulate patterns once auto-selection runs across repos"
+          }
+        ]
+      },
+      "timestamp": 1771742065,
+      "ttl": 1800
     }
   }
 }
