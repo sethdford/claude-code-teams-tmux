@@ -277,6 +277,157 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "97099ab7062a1a809ed2d12c08d1bb31": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 88,
+        "recommended_template": "fast",
+        "key_risks": [
+          "Framework-specific test commands may need validation across different project structures",
+          "CLI flag --framework integration with existing init command may conflict with current init flow"
+        ],
+        "implementation_hints": [
+          "Use existing templates/pipelines/ JSON files as structural reference for new framework templates",
+          "Add frameworks/ subdirectory under templates/ and reuse load_template() pattern from sw-templates.sh",
+          "Implement shipwright templates frameworks as a subcommand in sw-templates.sh following the existing list/show pattern",
+          "Wire --framework flag into sw-init.sh after existing init steps — apply template files into .claude/ directory",
+          "Test suite should validate JSON structure of each template and that init --framework copies expected files"
+        ]
+      },
+      "timestamp": 1771743285,
+      "ttl": 3600
+    },
+    "dac55843e2d1192c99699970351ce925": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1771743291,
+      "ttl": 1800
+    },
+    "862f1f301c0c0e1d6b4443a49813a08b": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1771743297,
+      "ttl": 3600
+    },
+    "d852b875ef0e7d2017aa2fff29c45a27": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project type (node/nodejs), test runner (vitest), package manager (npm), and language (javascript) are directly relevant for planning framework quick-start templates"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Confirms nodejs project type detected at bootstrap, relevant for template scaffolding decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "No prior decisions recorded, but relevant to check for any architectural choices affecting template structure"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "No prior failures recorded, useful baseline to confirm no known pitfalls for this feature"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "No cross-repo learnings yet, low relevance but worth noting as baseline"
+          }
+        ]
+      },
+      "timestamp": 1771743308,
+      "ttl": 1800
+    },
+    "15fed958dac8141a2e2e38f1a5437606": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project type and conventions (Node.js, vitest, commonjs) are relevant context for creating framework quick-start templates"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Bootstrap-detected nodejs project type provides baseline context for template examples"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions log - no prior architectural decisions recorded that would affect template approach"
+          }
+        ]
+      },
+      "timestamp": 1771743630,
+      "ttl": 1800
+    },
+    "922781ad9decbd16d62edefded3d412e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (Node.js, CommonJS, vitest, npm) directly inform template architecture patterns and quick-start examples for this framework"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Bootstrap-detected nodejs project type confirms the tech stack for designing framework quick-start templates"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - no prior architectural decisions to build on, but relevant as a place to record new design choices"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Empty failures log - no known pitfalls to avoid in template design"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty cross-repo learnings - no reusable patterns captured yet that could inform template design"
+          }
+        ]
+      },
+      "timestamp": 1771743660,
+      "ttl": 1800
+    },
+    "38b0352c1b194a1ecb00964f9b765d23": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (Node.js, CommonJS, vitest) inform what template patterns are appropriate for this framework"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log - no prior rejected design approaches recorded, but relevant structure for anti-patterns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Empty failures log - no recorded anti-patterns yet, but the right place to check for rejected approaches"
+          }
+        ]
+      },
+      "timestamp": 1771743667,
+      "ttl": 1800
     }
   }
 }
