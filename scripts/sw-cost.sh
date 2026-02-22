@@ -49,6 +49,7 @@ format_duration() {
 COST_DIR="${HOME}/.shipwright"
 COST_FILE="${COST_DIR}/costs.json"
 BUDGET_FILE="${COST_DIR}/budget.json"
+PER_ISSUE_FILE="${COST_DIR}/cost-per-issue.json"
 
 # Source sw-db.sh for SQLite cost functions (if available)
 _COST_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -474,6 +475,284 @@ cost_show_efficiency() {
     fi
 }
 
+# ─── Cost Per Issue ────────────────────────────────────────────────────────
+
+_ensure_per_issue_file() {
+    mkdir -p "$COST_DIR"
+    [[ -f "$PER_ISSUE_FILE" ]] || echo '{"issues":{}}' > "$PER_ISSUE_FILE"
+}
+
+# cost_record_per_issue <issue> <cost_usd> <duration_s> <success> <template> <model>
+# Upserts per-issue cost data — aggregates runs, tracks totals and outcomes.
+cost_record_per_issue() {
+    local issue="${1:-}"
+    local cost_usd="${2:-0}"
+    local duration_s="${3:-0}"
+    local success="${4:-false}"
+    local template="${5:-standard}"
+    local model="${6:-sonnet}"
+
+    [[ -z "$issue" ]] && return 0
+
+    _ensure_per_issue_file
+
+    local tmp_file
+    tmp_file=$(mktemp "${TMPDIR:-/tmp}/sw-cost-per-issue.XXXXXX")
+
+    jq --arg issue "$issue" \
+       --arg cost "$cost_usd" \
+       --argjson dur "$duration_s" \
+       --arg success "$success" \
+       --arg tpl "$template" \
+       --arg model "$model" \
+       --arg ts "$(now_iso)" \
+       --argjson epoch "$(now_epoch)" \
+       '
+       .issues[$issue] = (
+           (.issues[$issue] // {
+               issue: $issue,
+               total_cost: 0,
+               total_runs: 0,
+               successful_runs: 0,
+               failed_runs: 0,
+               total_duration_s: 0,
+               costs: [],
+               durations: [],
+               first_seen: $ts,
+               templates: {},
+               models: {}
+           }) |
+           .total_cost = (.total_cost + ($cost | tonumber) | . * 10000 | round / 10000) |
+           .total_runs = (.total_runs + 1) |
+           .successful_runs = (if $success == "true" then .successful_runs + 1 else .successful_runs end) |
+           .failed_runs = (if $success != "true" then .failed_runs + 1 else .failed_runs end) |
+           .total_duration_s = (.total_duration_s + $dur) |
+           .costs = (.costs + [($cost | tonumber)] | .[-50:]) |
+           .durations = (.durations + [$dur] | .[-50:]) |
+           .last_seen = $ts |
+           .last_epoch = $epoch |
+           .templates[$tpl] = ((.templates[$tpl] // 0) + 1) |
+           .models[$model] = ((.models[$model] // 0) + 1)
+       )
+       ' "$PER_ISSUE_FILE" > "$tmp_file" && mv "$tmp_file" "$PER_ISSUE_FILE" || rm -f "$tmp_file"
+
+    emit_event "cost.per_issue_recorded" \
+        "issue=$issue" \
+        "cost_usd=$cost_usd" \
+        "duration_s=$duration_s" \
+        "success=$success"
+}
+
+# _compute_median <json_array_string>
+# Returns median of a JSON number array (via jq).
+_compute_median() {
+    local arr="$1"
+    echo "$arr" | jq '
+        sort |
+        if length == 0 then 0
+        elif length % 2 == 1 then .[length / 2 | floor]
+        else (.[length / 2 - 1] + .[length / 2]) / 2
+        end | . * 100 | round / 100
+    '
+}
+
+# _compute_p95 <json_array_string>
+# Returns p95 of a JSON number array.
+_compute_p95() {
+    local arr="$1"
+    echo "$arr" | jq '
+        sort |
+        if length == 0 then 0
+        else
+            (length * 0.95 | ceil) as $idx |
+            if $idx >= length then .[-1]
+            elif $idx < 1 then .[0]
+            else .[$idx - 1]
+            end
+        end | . * 100 | round / 100
+    '
+}
+
+# cost_show_per_issue [--json] [--top N] [--issue NUM]
+# Displays per-issue cost dashboard with stats.
+cost_show_per_issue() {
+    local json_output=false
+    local top_n=10
+    local filter_issue=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --json)   json_output=true; shift ;;
+            --top)    top_n="${2:-10}"; shift 2 ;;
+            --top=*)  top_n="${1#--top=}"; shift ;;
+            --issue)  filter_issue="${2:-}"; shift 2 ;;
+            --issue=*) filter_issue="${1#--issue=}"; shift ;;
+            *)        shift ;;
+        esac
+    done
+
+    _ensure_per_issue_file
+
+    local issue_count
+    issue_count=$(jq '.issues | length' "$PER_ISSUE_FILE" 2>/dev/null || echo "0")
+
+    if [[ "$issue_count" -eq 0 ]]; then
+        if [[ "$json_output" == "true" ]]; then
+            echo '{"issues":[],"summary":{"total_issues":0,"total_cost":0,"median_cost":0,"p95_cost":0}}'
+        else
+            warn "No per-issue cost data found."
+        fi
+        return 0
+    fi
+
+    # Single-issue detail view
+    if [[ -n "$filter_issue" ]]; then
+        local issue_data
+        issue_data=$(jq --arg i "$filter_issue" '.issues[$i] // null' "$PER_ISSUE_FILE" 2>/dev/null)
+        if [[ "$issue_data" == "null" || -z "$issue_data" ]]; then
+            if [[ "$json_output" == "true" ]]; then
+                echo '{"error":"issue not found"}'
+            else
+                warn "No cost data for issue #${filter_issue}"
+            fi
+            return 0
+        fi
+
+        local i_total_cost i_runs i_successes i_failures i_median i_p95 i_avg_dur
+        i_total_cost=$(echo "$issue_data" | jq '.total_cost')
+        i_runs=$(echo "$issue_data" | jq '.total_runs')
+        i_successes=$(echo "$issue_data" | jq '.successful_runs')
+        i_failures=$(echo "$issue_data" | jq '.failed_runs')
+        i_median=$(_compute_median "$(echo "$issue_data" | jq '.costs')")
+        i_p95=$(_compute_p95 "$(echo "$issue_data" | jq '.costs')")
+        i_avg_dur="0"
+        if [[ "$i_runs" -gt 0 ]]; then
+            i_avg_dur=$(echo "$issue_data" | jq '.total_duration_s / .total_runs | round')
+        fi
+
+        if [[ "$json_output" == "true" ]]; then
+            echo "$issue_data" | jq --argjson median "$i_median" --argjson p95 "$i_p95" --argjson avg_dur "$i_avg_dur" \
+                '. + {median_cost: $median, p95_cost: $p95, avg_duration_s: $avg_dur}'
+            return 0
+        fi
+
+        echo ""
+        echo -e "${PURPLE}${BOLD}━━━ Cost Detail: Issue #${filter_issue} ━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+        echo ""
+        echo -e "${BOLD}  COST SUMMARY${RESET}"
+        echo -e "    Total cost          ${CYAN}\$${i_total_cost}${RESET}"
+        echo -e "    Median cost         \$${i_median}"
+        echo -e "    P95 cost            \$${i_p95}"
+        echo -e "    Pipeline runs       ${i_runs} (${GREEN}${i_successes} pass${RESET}, ${RED}${i_failures} fail${RESET})"
+        echo -e "    Avg duration        $(format_duration "$i_avg_dur")"
+        echo ""
+
+        local tpl_data
+        tpl_data=$(echo "$issue_data" | jq '.templates | to_entries | sort_by(-.value)')
+        local tpl_count
+        tpl_count=$(echo "$tpl_data" | jq 'length')
+        if [[ "$tpl_count" -gt 0 ]]; then
+            echo -e "${BOLD}  TEMPLATES USED${RESET}"
+            echo "$tpl_data" | jq -r '.[] | "    \(.key)\t\(.value) run(s)"' | \
+                while IFS=$'\t' read -r tpl count; do
+                    printf "    %-16s %s\n" "$tpl" "$count"
+                done
+            echo ""
+        fi
+
+        local model_data
+        model_data=$(echo "$issue_data" | jq '.models | to_entries | sort_by(-.value)')
+        local model_count
+        model_count=$(echo "$model_data" | jq 'length')
+        if [[ "$model_count" -gt 0 ]]; then
+            echo -e "${BOLD}  MODELS USED${RESET}"
+            echo "$model_data" | jq -r '.[] | "    \(.key)\t\(.value) run(s)"' | \
+                while IFS=$'\t' read -r mdl count; do
+                    printf "    %-16s %s\n" "$mdl" "$count"
+                done
+            echo ""
+        fi
+
+        echo -e "    ${DIM}First seen: $(echo "$issue_data" | jq -r '.first_seen')${RESET}"
+        echo -e "    ${DIM}Last seen:  $(echo "$issue_data" | jq -r '.last_seen')${RESET}"
+        echo -e "${PURPLE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+        echo ""
+        return 0
+    fi
+
+    # Global summary stats
+    local all_costs all_issues_sorted
+    all_costs=$(jq '[.issues[].total_cost]' "$PER_ISSUE_FILE" 2>/dev/null || echo "[]")
+    all_issues_sorted=$(jq --argjson top "$top_n" '
+        [.issues | to_entries[] | .value] |
+        sort_by(-.total_cost) | .[:$top]
+    ' "$PER_ISSUE_FILE" 2>/dev/null || echo "[]")
+
+    local grand_total median_cost p95_cost
+    grand_total=$(echo "$all_costs" | jq 'add // 0 | . * 100 | round / 100')
+    median_cost=$(_compute_median "$all_costs")
+    p95_cost=$(_compute_p95 "$all_costs")
+
+    # Most expensive issue
+    local most_expensive_issue most_expensive_cost
+    most_expensive_issue=$(echo "$all_issues_sorted" | jq -r '.[0].issue // "N/A"')
+    most_expensive_cost=$(echo "$all_issues_sorted" | jq '.[0].total_cost // 0')
+
+    if [[ "$json_output" == "true" ]]; then
+        jq -n \
+            --argjson issues "$all_issues_sorted" \
+            --argjson total_issues "$issue_count" \
+            --argjson total_cost "$grand_total" \
+            --argjson median_cost "$median_cost" \
+            --argjson p95_cost "$p95_cost" \
+            --arg most_expensive_issue "$most_expensive_issue" \
+            --argjson most_expensive_cost "$most_expensive_cost" \
+            '{
+                issues: $issues,
+                summary: {
+                    total_issues: $total_issues,
+                    total_cost: $total_cost,
+                    median_cost_per_issue: $median_cost,
+                    p95_cost_per_issue: $p95_cost,
+                    most_expensive_issue: $most_expensive_issue,
+                    most_expensive_cost: $most_expensive_cost
+                }
+            }'
+        return 0
+    fi
+
+    # ── Dashboard Output ──
+    echo ""
+    echo -e "${PURPLE}${BOLD}━━━ Cost Per Issue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "  ${DIM}$(now_iso)${RESET}"
+    echo ""
+
+    echo -e "${BOLD}  SUMMARY${RESET}"
+    echo -e "    Issues tracked      ${CYAN}${issue_count}${RESET}"
+    echo -e "    Total cost          ${CYAN}\$${grand_total}${RESET}"
+    echo -e "    Median per issue    \$${median_cost}"
+    echo -e "    P95 per issue       \$${p95_cost}"
+    echo -e "    Most expensive      ${CYAN}#${most_expensive_issue}${RESET} (\$${most_expensive_cost})"
+    echo ""
+
+    echo -e "${BOLD}  TOP ${top_n} BY COST${RESET}"
+    printf "    %-8s %-12s %-6s %-8s %-10s\n" "Issue" "Cost" "Runs" "Success" "Median"
+    printf "    %-8s %-12s %-6s %-8s %-10s\n" "─────" "────" "────" "───────" "──────"
+
+    echo "$all_issues_sorted" | jq -r '.[] |
+        "\(.issue)\t\(.total_cost)\t\(.total_runs)\t\(.successful_runs)/\(.total_runs)\t\(.costs)"
+    ' | while IFS=$'\t' read -r issue cost runs success_ratio costs_arr; do
+        local row_median
+        row_median=$(_compute_median "$costs_arr")
+        printf "    #%-7s \$%-11s %-6s %-8s \$%-9s\n" "$issue" "$cost" "$runs" "$success_ratio" "$row_median"
+    done
+    echo ""
+
+    echo -e "  ${DIM}View detail: shipwright cost per-issue --issue <N>${RESET}"
+    echo -e "${PURPLE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo ""
+}
+
 # ─── Pricing Management ──────────────────────────────────────────────────────
 
 # cost_update_pricing [model] [input_per_m] [output_per_m]
@@ -874,6 +1153,12 @@ show_help() {
     echo -e "  ${CYAN}calculate${RESET} <in> <out> <model>                Calculate cost (no record)"
     echo -e "  ${CYAN}check-budget${RESET} [estimated_usd]                Check budget before starting"
     echo ""
+    echo -e "${BOLD}PER-ISSUE TRACKING${RESET}"
+    echo -e "  ${CYAN}per-issue${RESET}                      Show cost-per-issue dashboard"
+    echo -e "  ${CYAN}per-issue${RESET} --json               JSON output"
+    echo -e "  ${CYAN}per-issue${RESET} --issue <N>          Detail view for issue N"
+    echo -e "  ${CYAN}per-issue${RESET} --top 20             Show top 20 most expensive issues"
+    echo ""
     echo -e "${BOLD}EFFICIENCY${RESET}"
     echo -e "  ${CYAN}efficiency${RESET}                     Show cost/success efficiency metrics"
     echo -e "  ${CYAN}efficiency${RESET} --json              JSON output"
@@ -890,6 +1175,9 @@ show_help() {
     echo -e "  ${DIM}shipwright cost budget show${RESET}                       # Check current budget"
     echo -e "  ${DIM}shipwright cost efficiency${RESET}                        # Cost per successful pipeline"
     echo -e "  ${DIM}shipwright cost update-pricing opus 15.00 75.00${RESET}   # Update opus pricing"
+    echo -e "  ${DIM}shipwright cost per-issue${RESET}                         # Cost per issue dashboard"
+    echo -e "  ${DIM}shipwright cost per-issue --issue 42${RESET}              # Detail for issue #42"
+    echo -e "  ${DIM}shipwright cost per-issue --json${RESET}                  # JSON output"
     echo -e "  ${DIM}shipwright cost calculate 50000 10000 opus${RESET}        # Estimate cost"
 }
 
@@ -931,6 +1219,12 @@ case "$SUBCOMMAND" in
         ;;
     efficiency)
         cost_show_efficiency "$@"
+        ;;
+    per-issue)
+        cost_show_per_issue "$@"
+        ;;
+    record-per-issue)
+        cost_record_per_issue "$@"
         ;;
     update-pricing)
         cost_update_pricing "$@"

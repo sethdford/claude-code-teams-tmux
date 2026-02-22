@@ -2588,6 +2588,13 @@ pipeline_start() {
         cost_record "$TOTAL_INPUT_TOKENS" "$TOTAL_OUTPUT_TOKENS" "$model_key" "pipeline" "${ISSUE_NUMBER:-}" 2>/dev/null || true
     fi
 
+    # Record per-issue cost aggregation
+    if [[ -n "${ISSUE_NUMBER:-}" ]] && type cost_record_per_issue >/dev/null 2>&1; then
+        local _pi_success="false"
+        [[ "$exit_code" -eq 0 ]] && _pi_success="true"
+        cost_record_per_issue "${ISSUE_NUMBER}" "${total_cost}" "${total_dur_s:-0}" "$_pi_success" "${PIPELINE_NAME:-standard}" "$model_key" 2>/dev/null || true
+    fi
+
     # Record pipeline outcome for Thompson sampling / outcome-based learning
     if type db_record_outcome >/dev/null 2>&1; then
         local _outcome_success=0
