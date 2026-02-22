@@ -281,22 +281,21 @@
     "f143dd676694728fea6415209b16104e": {
       "result": {
         "complexity": 6,
-        "risk_level": "low",
-        "success_probability": 82,
+        "risk_level": "medium",
+        "success_probability": 78,
         "recommended_template": "standard",
         "key_risks": [
-          "Pattern matching quality depends on heuristics — poor similarity scoring may inject irrelevant context and degrade pipeline quality",
-          "Unbounded fleet-patterns.jsonl growth without pruning or size limits could impact performance over time"
+          "Pattern matching quality — false positives may inject irrelevant context and degrade pipeline decisions",
+          "Performance degradation on intake stage as fleet-patterns.jsonl grows unbounded without pruning"
         ],
         "implementation_hints": [
-          "Extend sw-memory.sh to add fleet_pattern_store/fleet_pattern_query functions writing to ~/.shipwright/fleet-patterns.jsonl",
-          "Add pattern extraction hook in sw-pipeline.sh after successful pipeline completion — capture issue keywords, error signatures, changed file types, and solution summary",
-          "Use jq for pattern similarity scoring in intake stage — match on issue type tags and error pattern substrings",
-          "Add 'fleet patterns list' subcommand to sw-fleet.sh dispatching to the new pattern library functions",
-          "Write sw-fleet-patterns-test.sh with mock fleet dirs and synthetic pattern entries to validate store/query/inject flow"
+          "Append patterns to ~/.shipwright/fleet-patterns.jsonl using atomic tmp+mv writes to avoid corruption under concurrent fleet workers",
+          "Similarity matching should use keyword/tag overlap on issue type and error pattern fields — avoid heavyweight semantic search to keep intake fast",
+          "Cap pattern injection to top-3 matches and make it non-blocking with a timeout so intake never stalls on pattern lookup",
+          "Reuse existing memory system helpers in sw-memory.sh rather than building a parallel storage layer"
         ]
       },
-      "timestamp": 1771736680,
+      "timestamp": 1771746281,
       "ttl": 3600
     },
     "cae1828cfba0da263c6f5b4c8c66be5b": {
@@ -322,32 +321,32 @@
         "results": [
           {
             "file": "global.json",
-            "relevance": 85,
-            "summary": "Directly relevant — contains cross_repo_learnings field which is the core data structure for the cross-repo pattern library feature being planned"
+            "relevance": 95,
+            "summary": "Directly contains 'cross_repo_learnings' and 'common_patterns' fields — the exact data structures this feature needs to populate and expose as a pattern library"
           },
           {
-            "file": "patterns.json (sethdford/shipwright)",
-            "relevance": 72,
-            "summary": "Detailed project conventions (test pattern, import style, package manager) needed to understand how patterns should be captured and stored in the library"
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Detailed per-repo pattern snapshot (conventions, test patterns, import style, framework) — primary source data for the cross-repo library"
           },
           {
-            "file": "patterns.json (bootstrap)",
+            "file": "patterns.json",
             "relevance": 60,
-            "summary": "Secondary pattern source showing project_type detection — relevant to understanding what fleet learning data looks like across repos"
+            "summary": "Bootstrap-detected project type patterns — secondary source data for fleet-wide pattern aggregation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 35,
+            "summary": "Baselines structure is empty but relevant as a companion data store for fleet learning metrics that may inform pattern confidence scores"
           },
           {
             "file": "decisions.json",
-            "relevance": 30,
-            "summary": "Empty but structurally relevant — architectural decisions made during planning should be recorded here for future pipeline stages"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 20,
-            "summary": "Empty but relevant as a baseline — cross-repo pattern library should aggregate failure patterns from fleet; currently no data to build from"
+            "relevance": 18,
+            "summary": "Empty decisions log; may need to record architectural decisions made during plan stage for this feature"
           }
         ]
       },
-      "timestamp": 1771736729,
+      "timestamp": 1771746313,
       "ttl": 1800
     },
     "49bbc6f6dc8f385c235d915bda303a38": {
@@ -428,6 +427,24 @@
       },
       "timestamp": 1771737005,
       "ttl": 1800
+    },
+    "6917951c52c3cd9e43e1ad0b75d8bd67": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1771746288,
+      "ttl": 1800
+    },
+    "f0ac459f84901ab738bf1ada0f81dfaf": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 180000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1771746294,
+      "ttl": 3600
     }
   }
 }
