@@ -277,6 +277,157 @@
       },
       "timestamp": 1771463517,
       "ttl": 3600
+    },
+    "f143dd676694728fea6415209b16104e": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Pattern matching quality depends on heuristics — poor similarity scoring may inject irrelevant context and degrade pipeline quality",
+          "Unbounded fleet-patterns.jsonl growth without pruning or size limits could impact performance over time"
+        ],
+        "implementation_hints": [
+          "Extend sw-memory.sh to add fleet_pattern_store/fleet_pattern_query functions writing to ~/.shipwright/fleet-patterns.jsonl",
+          "Add pattern extraction hook in sw-pipeline.sh after successful pipeline completion — capture issue keywords, error signatures, changed file types, and solution summary",
+          "Use jq for pattern similarity scoring in intake stage — match on issue type tags and error pattern substrings",
+          "Add 'fleet patterns list' subcommand to sw-fleet.sh dispatching to the new pattern library functions",
+          "Write sw-fleet-patterns-test.sh with mock fleet dirs and synthetic pattern entries to validate store/query/inject flow"
+        ]
+      },
+      "timestamp": 1771736680,
+      "ttl": 3600
+    },
+    "cae1828cfba0da263c6f5b4c8c66be5b": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1771736685,
+      "ttl": 1800
+    },
+    "258f5ee45623e0357b090b7265ee549f": {
+      "result": {
+        "estimated_cost_usd": 4.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 820000,
+        "likely_failure_stage": "test",
+        "confidence": 48
+      },
+      "timestamp": 1771736699,
+      "ttl": 3600
+    },
+    "49cbb02e1afa17ea62425d0141eb998c": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 85,
+            "summary": "Directly relevant — contains cross_repo_learnings field which is the core data structure for the cross-repo pattern library feature being planned"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 72,
+            "summary": "Detailed project conventions (test pattern, import style, package manager) needed to understand how patterns should be captured and stored in the library"
+          },
+          {
+            "file": "patterns.json (bootstrap)",
+            "relevance": 60,
+            "summary": "Secondary pattern source showing project_type detection — relevant to understanding what fleet learning data looks like across repos"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Empty but structurally relevant — architectural decisions made during planning should be recorded here for future pipeline stages"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "Empty but relevant as a baseline — cross-repo pattern library should aggregate failure patterns from fleet; currently no data to build from"
+          }
+        ]
+      },
+      "timestamp": 1771736729,
+      "ttl": 1800
+    },
+    "49bbc6f6dc8f385c235d915bda303a38": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 72,
+            "summary": "Cross-repo learnings field directly relates to cross-repo pattern library feature; currently empty, making it relevant as the target data structure for this issue"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Project conventions (test_runner, package_manager, language) inform what patterns the library would capture and validate against"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Empty failures log is relevant context — no prior failure patterns captured yet, which is the gap this feature aims to address"
+          }
+        ]
+      },
+      "timestamp": 1771736958,
+      "ttl": 1800
+    },
+    "348d53d8034b5c4a672a3bcd97cab49b": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 85,
+            "summary": "Directly contains cross_repo_learnings and common_patterns fields — the exact data structures needed for a cross-repo pattern library. Currently empty but is the primary store for fleet-level learning data."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Captures repo-level conventions (test_pattern, import_style, source_dir) and project metadata. This is the per-repo pattern data that would feed into the cross-repo library aggregation layer."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Bootstrap-detected project_type for nodejs. Minimal but represents a second data point for pattern normalization across repos — useful for schema design of the pattern library."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 30,
+            "summary": "Architecture decision log — currently empty but relevant for recording design choices made during the pattern library's design stage (e.g., storage format, aggregation strategy)."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Baselines store — currently empty. Could inform quality thresholds for pattern scoring/ranking in the library, but not directly relevant to architecture design at this stage."
+          }
+        ]
+      },
+      "timestamp": 1771736998,
+      "ttl": 1800
+    },
+    "c9ee873561cf0d87bd94ac59b82d7559": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 85,
+            "summary": "Directly relevant: tracks cross_repo_learnings and common_patterns, which are the core data structures for a cross-repo pattern library from fleet learning data"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Contains repo-level pattern conventions (test patterns, import style, project type) that would feed into a cross-repo pattern library"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions log could store rejected design approaches and anti-patterns once populated, but currently has no relevant data"
+          }
+        ]
+      },
+      "timestamp": 1771737005,
+      "ttl": 1800
     }
   }
 }
