@@ -321,31 +321,31 @@
           {
             "file": "patterns.json",
             "relevance": 85,
-            "summary": "Project structure detection results (type, framework, test runner, package manager, language) — directly relevant to template auto-selection logic"
+            "summary": "Contains detected project structure data (type, framework, language, test_runner, package_manager) — exactly the signals that template auto-selection would analyze to pick the right pipeline template"
           },
           {
             "file": "patterns.json",
             "relevance": 72,
-            "summary": "Bootstrap-detected project type (nodejs) — baseline for auto-selection feature"
+            "summary": "Bootstrap-sourced project_type detection record shows the existing detection mechanism and data shape used for project classification"
           },
           {
-            "file": "decisions.json",
-            "relevance": 30,
-            "summary": "Empty decisions log — relevant as a target for recording template selection decisions"
+            "file": "global.json",
+            "relevance": 25,
+            "summary": "Cross-repo learnings could inform which templates work best for which project types, but currently empty"
           },
           {
             "file": "metrics.json",
             "relevance": 15,
-            "summary": "Empty baselines — may be populated as template selection accuracy is measured"
+            "summary": "Baseline metrics could eventually correlate template choices with outcomes, but currently empty"
           },
           {
-            "file": "global.json",
+            "file": "decisions.json",
             "relevance": 10,
-            "summary": "Empty cross-repo learnings — could accumulate patterns once auto-selection runs across repos"
+            "summary": "Past architectural decisions about template selection logic would be highly relevant if populated, but currently empty"
           }
         ]
       },
-      "timestamp": 1771742065,
+      "timestamp": 1771744080,
       "ttl": 1800
     },
     "2511c044a7da8a63025c0a3c30bdb15a": {
