@@ -50,17 +50,27 @@ Historical context (lessons from previous pipelines):
 
 Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
-[design] Design completed for Stage Timeout and Iteration Limit Migration to pipeline-config.json — Resolution: "
-iteration: 1
+[design] Design completed for Stage Timeout and Iteration Limit Migration to pipeline-config.json — Resolution: 
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0
+
+## Failure Diagnosis (Iteration 3)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 1"
+iteration: 3
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
 model: haiku
 agents: 1
-started_at: 2026-02-23T06:50:27Z
-last_iteration_at: 2026-02-23T06:50:27Z
+started_at: 2026-02-23T07:08:32Z
+last_iteration_at: 2026-02-23T07:08:32Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -73,4 +83,7 @@ max_extensions: 3
 ## Log
 ### Iteration 1 (2026-02-23T06:50:27Z)
 {"type":"result","subtype":"success","is_error":false,"duration_ms":3701,"duration_api_ms":357540,"num_turns":1,"result"
+
+### Iteration 2 (2026-02-23T06:58:40Z)
+{"type":"result","subtype":"success","is_error":false,"duration_ms":365766,"duration_api_ms":415295,"num_turns":79,"resu
 
