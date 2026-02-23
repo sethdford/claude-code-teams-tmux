@@ -107,5 +107,124 @@
     "log_tail_lines": 100,
     "function_scan_limit": 0,
     "dependency_scan_limit": 0
+  },
+  "stages": {
+    "intake": {
+      "timeout_seconds": 300,
+      "max_iterations": 1,
+      "description": "Issue intake and initial triage"
+    },
+    "plan": {
+      "timeout_seconds": 1800,
+      "max_iterations": 1,
+      "description": "Planning and analysis stage"
+    },
+    "design": {
+      "timeout_seconds": 2400,
+      "max_iterations": 1,
+      "description": "Design and architecture stage"
+    },
+    "build": {
+      "timeout_seconds": 7200,
+      "max_iterations": 20,
+      "description": "Build and implementation (supports multi-iteration via loop)"
+    },
+    "test": {
+      "timeout_seconds": 1800,
+      "max_iterations": 1,
+      "description": "Test execution and validation"
+    },
+    "review": {
+      "timeout_seconds": 900,
+      "max_iterations": 1,
+      "description": "Code review and quality gates"
+    },
+    "compound_quality": {
+      "timeout_seconds": 3600,
+      "max_iterations": 1,
+      "description": "Compound quality checks (architecture, security, performance)"
+    },
+    "pr": {
+      "timeout_seconds": 900,
+      "max_iterations": 1,
+      "description": "Pull request creation and management"
+    },
+    "merge": {
+      "timeout_seconds": 600,
+      "max_iterations": 1,
+      "description": "Merge to target branch"
+    },
+    "deploy": {
+      "timeout_seconds": 1200,
+      "max_iterations": 1,
+      "description": "Deployment to environment"
+    },
+    "validate": {
+      "timeout_seconds": 900,
+      "max_iterations": 1,
+      "description": "Post-deployment validation"
+    },
+    "monitor": {
+      "timeout_seconds": 3600,
+      "max_iterations": 1,
+      "description": "Health monitoring and rollback readiness"
+    }
+  },
+  "build_loop": {
+    "circuit_breaker_threshold": 3,
+    "min_progress_lines": 5,
+    "auto_extend": true,
+    "extension_size": 5,
+    "description": "Build loop circuit breaker and auto-extension settings for continuous iteration"
+  },
+  "adaptive": {
+    "complexity_bands": {
+      "low": {
+        "min_iterations": 5,
+        "max_iterations": 10,
+        "description": "Low complexity issues: straightforward fixes, simple features"
+      },
+      "medium": {
+        "min_iterations": 10,
+        "max_iterations": 20,
+        "description": "Medium complexity issues: standard features, moderate refactoring"
+      },
+      "high": {
+        "min_iterations": 15,
+        "max_iterations": 30,
+        "description": "High complexity issues: major features, architectural changes"
+      }
+    }
+  },
+  "template_defaults": {
+    "fast": {
+      "max_iterations": 2,
+      "description": "Fast template: minimal stages, score ≥ 70, skip review"
+    },
+    "standard": {
+      "max_iterations": 5,
+      "description": "Standard template: medium complexity, full review gates"
+    },
+    "full": {
+      "max_iterations": 8,
+      "description": "Full template: complex changes, extra review cycles"
+    },
+    "hotfix": {
+      "max_iterations": 3,
+      "description": "Hotfix template: urgent fixes, minimal stages"
+    },
+    "enterprise": {
+      "max_iterations": 20,
+      "description": "Enterprise template: maximum safety, all gates enabled"
+    },
+    "autonomous": {
+      "max_iterations": 10,
+      "description": "Autonomous template: daemon-driven, all stages enabled"
+    }
+  },
+  "health": {
+    "stale_timeout_seconds": 1800,
+    "heartbeat_timeout_seconds": 120,
+    "description": "Agent health monitoring thresholds"
   }
 }
