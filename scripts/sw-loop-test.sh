@@ -241,8 +241,8 @@ fi
 echo ""
 echo -e "${DIM}  defaults${RESET}"
 
-# Check key defaults in source
-if grep -q 'MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"' "$SCRIPT_DIR/sw-loop.sh"; then
+# Check key defaults in source (now config-based with fallback)
+if grep -q 'MAX_ITERATIONS.*stages\.build\.max_iterations.*20' "$SCRIPT_DIR/sw-loop.sh"; then
     assert_pass "Default MAX_ITERATIONS is 20"
 else
     assert_fail "Default MAX_ITERATIONS is 20"

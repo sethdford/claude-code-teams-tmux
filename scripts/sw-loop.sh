@@ -54,7 +54,7 @@ fi
 # ─── Defaults ─────────────────────────────────────────────────────────────────
 GOAL=""
 ORIGINAL_GOAL=""  # Preserved across restarts — GOAL gets appended to
-MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"
+MAX_ITERATIONS="${SW_MAX_ITERATIONS:-$(_config_get_int "stages.build.max_iterations" 20 2>/dev/null || echo 20)}"
 TEST_CMD=""
 FAST_TEST_CMD=""
 FAST_TEST_INTERVAL=5
@@ -80,14 +80,18 @@ LOOP_OUTPUT_TOKENS=0
 LOOP_COST_MILLICENTS=0
 
 # ─── Flexible Iteration Defaults ────────────────────────────────────────────
-AUTO_EXTEND=true          # Auto-extend iterations when work is incomplete
-EXTENSION_SIZE=5          # Additional iterations per extension
-MAX_EXTENSIONS=3          # Max number of extensions (hard cap safety net)
+if _config_get_bool "build_loop.auto_extend" "true" 2>/dev/null; then
+    AUTO_EXTEND=true
+else
+    AUTO_EXTEND=false
+fi
+EXTENSION_SIZE=$(_config_get_int "build_loop.extension_size" 5 2>/dev/null || echo 5)
+MAX_EXTENSIONS=$(_config_get_int "build_loop.max_extensions" 3 2>/dev/null || echo 3)
 EXTENSION_COUNT=0         # Current number of extensions applied
 
 # ─── Circuit Breaker Defaults ──────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
-MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+CIRCUIT_BREAKER_THRESHOLD=$(_config_get_int "build_loop.circuit_breaker_threshold" 3 2>/dev/null || echo 3)
+MIN_PROGRESS_LINES=$(_config_get_int "build_loop.min_progress_lines" 5 2>/dev/null || echo 5)
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
