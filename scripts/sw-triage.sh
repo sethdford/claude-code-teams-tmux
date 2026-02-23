@@ -590,48 +590,56 @@ cmd_team() {
             agents=$(echo "$recruit_result" | jq -r '.agents // 2')
             template=$(echo "$recruit_result" | jq -r '.template // ""')
             max_iterations=$(echo "$recruit_result" | jq -r '.max_iterations // ""')
-            # If recruit didn't provide template/max_iterations, derive from agent count
+            # If recruit didn't provide template/max_iterations, derive from agent count (with config defaults)
             if [[ -z "$template" ]]; then
-                if [[ "$agents" -ge 4 ]]; then template="full"; max_iterations="${max_iterations:-15}";
-                elif [[ "$agents" -ge 3 ]]; then template="standard"; max_iterations="${max_iterations:-8}";
-                elif [[ "$agents" -le 1 ]]; then template="fast"; max_iterations="${max_iterations:-2}";
-                else template="standard"; max_iterations="${max_iterations:-5}"; fi
+                local fast_iters=$(_config_get_int "template_defaults.fast.max_iterations" 2 2>/dev/null || echo 2)
+                local std_iters=$(_config_get_int "template_defaults.standard.max_iterations" 5 2>/dev/null || echo 5)
+                local full_iters=$(_config_get_int "template_defaults.full.max_iterations" 8 2>/dev/null || echo 8)
+                if [[ "$agents" -ge 4 ]]; then template="full"; max_iterations="${max_iterations:-$full_iters}";
+                elif [[ "$agents" -ge 3 ]]; then template="standard"; max_iterations="${max_iterations:-$std_iters}";
+                elif [[ "$agents" -le 1 ]]; then template="fast"; max_iterations="${max_iterations:-$fast_iters}";
+                else template="standard"; max_iterations="${max_iterations:-$std_iters}"; fi
             fi
             recruit_source="recruit"
         fi
     fi
 
-    # ── Fallback: hardcoded complexity/risk mapping ──
+    # ── Fallback: hardcoded complexity/risk mapping with config overrides ──
     if [[ -z "$template" ]]; then
+        # Read template defaults from config (with fallback)
+        local fast_iters=$(_config_get_int "template_defaults.fast.max_iterations" 2 2>/dev/null || echo 2)
+        local std_iters=$(_config_get_int "template_defaults.standard.max_iterations" 5 2>/dev/null || echo 5)
+        local full_iters=$(_config_get_int "template_defaults.full.max_iterations" 8 2>/dev/null || echo 8)
+
         case "${complexity}-${risk}" in
             trivial-low|simple-low)
                 template="fast"
                 model="haiku"
-                max_iterations=2
+                max_iterations="$fast_iters"
                 agents=1
                 ;;
             simple-*|moderate-low)
                 template="standard"
                 model="sonnet"
-                max_iterations=5
+                max_iterations="$std_iters"
                 agents=2
                 ;;
             moderate-*|complex-low)
                 template="standard"
                 model="sonnet"
-                max_iterations=8
+                max_iterations="${max_iterations:-$full_iters}"
                 agents=3
                 ;;
             complex-*|epic-*)
                 template="full"
                 model="opus"
-                max_iterations=15
+                max_iterations="$full_iters"
                 agents=4
                 ;;
             *)
                 template="standard"
                 model="sonnet"
-                max_iterations=5
+                max_iterations="$std_iters"
                 agents=2
                 ;;
         esac
