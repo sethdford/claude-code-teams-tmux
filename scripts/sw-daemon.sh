@@ -399,8 +399,11 @@ load_config() {
     SLACK_WEBHOOK=$(jq -r '.notifications.slack_webhook // ""' "$config_file")
     if [[ "$SLACK_WEBHOOK" == "null" ]]; then SLACK_WEBHOOK=""; fi
 
-    # health monitoring
-    HEALTH_STALE_TIMEOUT=$(jq -r '.health.stale_timeout_s // 1800' "$config_file")
+    # health monitoring (read from config system with fallback to jq for backwards compat)
+    HEALTH_STALE_TIMEOUT=$(_config_get_int "health.stale_timeout_seconds" 0 2>/dev/null || echo 0)
+    if [[ "$HEALTH_STALE_TIMEOUT" -le 0 ]]; then
+        HEALTH_STALE_TIMEOUT=$(jq -r '.health.stale_timeout_s // 1800' "$config_file" 2>/dev/null || echo 1800)
+    fi
 
     # priority labels
     PRIORITY_LABELS=$(jq -r '.priority_labels // "urgent,p0,high,p1,normal,p2,low,p3"' "$config_file")
@@ -510,8 +513,11 @@ load_config() {
     WORKER_MEM_GB=$(jq -r '.worker_mem_gb // 4' "$config_file")
     EST_COST_PER_JOB=$(jq -r '.estimated_cost_per_job_usd // 5.0' "$config_file")
 
-    # heartbeat + checkpoint recovery (policy fallback when config silent)
-    HEALTH_HEARTBEAT_TIMEOUT=$(jq -r '.health.heartbeat_timeout_s // '"$(type policy_get >/dev/null 2>&1 && policy_get ".daemon.health_heartbeat_timeout" "120" || echo "120")"'' "$config_file")
+    # heartbeat + checkpoint recovery (read from config system with fallback)
+    HEALTH_HEARTBEAT_TIMEOUT=$(_config_get_int "health.heartbeat_timeout_seconds" 0 2>/dev/null || echo 0)
+    if [[ "$HEALTH_HEARTBEAT_TIMEOUT" -le 0 ]]; then
+        HEALTH_HEARTBEAT_TIMEOUT=$(jq -r '.health.heartbeat_timeout_s // '"$(type policy_get >/dev/null 2>&1 && policy_get ".daemon.health_heartbeat_timeout" "120" || echo "120")"'' "$config_file" 2>/dev/null || echo 120)
+    fi
     CHECKPOINT_ENABLED=$(jq -r '.health.checkpoint_enabled // true' "$config_file")
 
     # progress-based health monitoring (replaces static timeouts)
