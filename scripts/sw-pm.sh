@@ -223,10 +223,16 @@ recommend_team() {
                 recruit_cost=$(echo "$recruit_result" | jq -r '.estimated_cost // 0')
 
                 # Map recruit roles/model to PM output format
-                local max_iterations=5
                 local template="standard"
-                if [[ "$recruit_agents" -ge 4 ]]; then template="full"; max_iterations=8;
-                elif [[ "$recruit_agents" -le 1 ]]; then template="fast"; max_iterations=3;
+                local max_iterations
+                max_iterations=$(_config_get_int "template_defaults.standard.max_iterations" 5 2>/dev/null || echo 5)
+
+                if [[ "$recruit_agents" -ge 4 ]]; then
+                    template="full"
+                    max_iterations=$(_config_get_int "template_defaults.full.max_iterations" 8 2>/dev/null || echo 8)
+                elif [[ "$recruit_agents" -le 1 ]]; then
+                    template="fast"
+                    max_iterations=$(_config_get_int "template_defaults.fast.max_iterations" 2 2>/dev/null || echo 2)
                 fi
 
                 local team_rec
@@ -265,14 +271,14 @@ recommend_team() {
     local roles template model max_iterations estimated_agents
     local confidence risk_factors mitigations
 
-    # Determine base team and template
+    # Determine base team and template (read from config where available)
     if [[ "$complexity" -le 3 && "$file_scope" == "single_module" ]]; then
         # Simple bugfix
         roles="builder"
         template="fast"
         estimated_agents=1
         model="haiku"
-        max_iterations=3
+        max_iterations=$(_config_get_int "template_defaults.fast.max_iterations" 2 2>/dev/null || echo 2)
         confidence=85
         risk_factors="Low complexity, single module"
         mitigations="Standard code review"
@@ -282,7 +288,7 @@ recommend_team() {
         template="standard"
         estimated_agents=2
         model="sonnet"
-        max_iterations=5
+        max_iterations=$(_config_get_int "template_defaults.standard.max_iterations" 5 2>/dev/null || echo 5)
         confidence=80
         risk_factors="Moderate complexity across modules"
         mitigations="Build + test iteration cycles"
@@ -292,7 +298,7 @@ recommend_team() {
         template="standard"
         estimated_agents=3
         model="sonnet"
-        max_iterations=6
+        max_iterations=$(_config_get_int "template_defaults.standard.max_iterations" 5 2>/dev/null || echo 5)
         confidence=75
         risk_factors="Moderate-high complexity, coordination needed"
         mitigations="Parallel builders with test validation"
@@ -302,7 +308,7 @@ recommend_team() {
         template="full"
         estimated_agents=4
         model="opus"
-        max_iterations=8
+        max_iterations=$(_config_get_int "template_defaults.full.max_iterations" 8 2>/dev/null || echo 8)
         confidence=70
         risk_factors="High complexity, cross-system impact"
         mitigations="Full pipeline with review gates"
@@ -317,18 +323,20 @@ recommend_team() {
         mitigations="${mitigations}; security review before merge"
     fi
 
-    # Adjust for risk level
+    # Adjust for risk level (read risk adjustment multipliers from config if available)
     case "$risk" in
         critical)
             template="enterprise"
-            max_iterations=$((max_iterations + 4))
+            # Enterprise template should have higher iteration limit
+            max_iterations=$(_config_get_int "template_defaults.enterprise.max_iterations" 20 2>/dev/null || echo 20)
             confidence=$((confidence - 15))
             risk_factors="${risk_factors}; critical risk"
             mitigations="${mitigations}; emergency rollback plan"
             ;;
         high)
             template="full"
-            max_iterations=$((max_iterations + 2))
+            # For high risk, boost iterations by 2 (if not already full from enterprise)
+            [[ "$template" != "enterprise" ]] && max_iterations=$((max_iterations + 2))
             confidence=$((confidence - 5))
             ;;
     esac

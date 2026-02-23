@@ -1,1 +1,47 @@
-Invalid API key · Fix external API key
+Looking at the cumulative work from iteration 1:
+
+## Summary of Changes
+
+**Positive Progress:**
+- ✅ Extended `config/defaults.json` with comprehensive schema (120 lines) covering all 12 stages, build_loop settings, adaptive complexity bands, and template_defaults
+- ✅ Updated 4 of 10 scripts to read from config: sw-loop.sh, sw-daemon.sh, sw-triage.sh (with proper fallbacks)
+- ✅ Config schema appears correctly structured and follows the established pattern
+
+**Critical Issues:**
+
+1. **❌ Test Failures - BLOCKING**
+   - 3 tests failing in cleanup/heartbeat module:
+     - `dry-run detects stale heartbeat`
+     - `summary shows found count`
+     - `summary shows --force hint`
+   - These failures correlate with changes to `sw-daemon.sh` (14 lines modified to read health timeouts from config)
+   - The missing output strings ("Found", "--force") suggest regression in heartbeat detection or cleanup summary generation
+
+2. **❌ Incomplete Migration**
+   - Only 4 of 10 required scripts updated (40% done):
+     - Priority 1: 2/3 done (sw-pipeline.sh still hardcoded)
+     - Priority 2: 1/3 done (sw-recruit.sh, sw-pm.sh not started)
+     - Priority 3: 0/4 done (sw-adaptive.sh, sw-intelligence.sh, sw-self-optimize.sh, sw-architecture-enforcer.sh)
+
+3. **❌ Acceptance Criteria Not Met**
+   - Policy schema not updated (config/policy.schema.json)
+   - Doctor validation section not added (sw-doctor.sh)
+   - Test suite has regressions (not "all tests pass")
+
+4. **⚠️ Memory/Reporting Inconsistency**
+   - Memory marked tests as "PASS" but actual test output shows "FAILING (3 of 24 tests failed)"
+
+## Specific Code Issue
+
+The most likely culprit is `sw-daemon.sh` health timeout reads. If the config accessor functions are returning invalid values (e.g., `null`, `0`, or undefined fallback), this could break heartbeat timeout logic and cascade into cleanup failures.
+
+---
+
+**AUDIT_FAIL**
+
+**Issues to fix before proceeding:**
+1. Investigate and fix the 3 failing cleanup/heartbeat tests (likely in sw-daemon.sh health timeout accessor logic)
+2. Complete the remaining 6 scripts (Priority 1 & 2)
+3. Add doctor validation section
+4. Update policy.schema.json
+5. Verify all tests pass before marking iteration complete

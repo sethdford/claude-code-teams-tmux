@@ -1121,20 +1121,27 @@ Return JSON only."
         roles_json=$(printf '%s\n' "${recommended_team[@]}" | jq -R . | jq -s .)
 
         # Derive template and max_iterations from team size/composition (triage needs these)
+        # Read from config adaptive complexity bands
         local team_template="full"
-        local team_max_iterations=10
+        local team_max_iterations
         local team_size=${#recommended_team[@]}
+
         if [[ $team_size -le 2 ]]; then
             team_template="quick-fix"
-            team_max_iterations=5
+            team_max_iterations=$(_config_get_int "adaptive.complexity_bands.low.max_iterations" 10 2>/dev/null || echo 10)
         elif [[ $team_size -ge 5 ]]; then
             team_template="careful"
-            team_max_iterations=20
+            team_max_iterations=$(_config_get_int "adaptive.complexity_bands.high.max_iterations" 30 2>/dev/null || echo 30)
+        else
+            team_max_iterations=$(_config_get_int "adaptive.complexity_bands.medium.max_iterations" 20 2>/dev/null || echo 20)
         fi
-        # Security tasks get more iterations
+
+        # Security tasks get more iterations (at least high complexity)
         if printf '%s\n' "${recommended_team[@]}" | grep -q "security-auditor"; then
             team_template="careful"
-            [[ $team_max_iterations -lt 15 ]] && team_max_iterations=15
+            local high_iters
+            high_iters=$(_config_get_int "adaptive.complexity_bands.high.min_iterations" 15 2>/dev/null || echo 15)
+            [[ $team_max_iterations -lt $high_iters ]] && team_max_iterations=$high_iters
         fi
 
         jq -c -n \

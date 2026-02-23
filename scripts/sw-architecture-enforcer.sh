@@ -113,7 +113,9 @@ architecture_build_model() {
     }' | jq -r 'to_entries | map("\(.key): \(.value)") | join("\n\n")')
 
     local result
-    if ! result=$(_intelligence_call_claude "$prompt" "architecture_model_$(repo_hash)" 7200); then
+    local arch_timeout
+    arch_timeout=$(_config_get_int "intelligence.architecture_timeout" 7200 2>/dev/null || echo 7200)
+    if ! result=$(_intelligence_call_claude "$prompt" "architecture_model_$(repo_hash)" "$arch_timeout"); then
         warn "Claude call failed — returning empty model" >&2
         echo "{}"
         return 0

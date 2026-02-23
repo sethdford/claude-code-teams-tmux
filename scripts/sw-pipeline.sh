@@ -911,9 +911,21 @@ run_stage_with_retry() {
 
     local attempt=0
     local prev_error_class=""
+
+    # Read stage timeout from config (with fallback to inline default)
+    local stage_timeout
+    stage_timeout=$(_config_get_int "stages.${stage_id}.timeout_seconds" 0 2>/dev/null || echo 0)
+
     while true; do
-        if "stage_${stage_id}"; then
-            return 0
+        # Execute stage with timeout wrapper (if configured)
+        if [[ "$stage_timeout" -gt 0 ]]; then
+            if _timeout "$stage_timeout" "stage_${stage_id}"; then
+                return 0
+            fi
+        else
+            if "stage_${stage_id}"; then
+                return 0
+            fi
         fi
 
         # Capture error_class and error snippet for stage.failed / pipeline.completed events

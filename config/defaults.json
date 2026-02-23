@@ -70,12 +70,17 @@
   },
   "intelligence": {
     "cache_ttl": 3600,
-    "complexity_bands": { "low": 3, "medium": 6, "high": 10 },
+    "complexity_bands": {
+      "low": 3,
+      "medium": 6,
+      "high": 10
+    },
     "miss_rate_high": 30,
     "miss_rate_low": 5,
     "anomaly_threshold": 3.0,
     "ab_test_ratio": 0.2,
-    "claude_timeout": 60
+    "claude_timeout": 60,
+    "architecture_timeout": 7200
   },
   "quality": {
     "gate_score_threshold": 70,
@@ -94,9 +99,15 @@
     "ready_to_build": "ready-to-build",
     "hotfix": "hotfix",
     "claimed_prefix": "claimed:",
-    "incident": ["hotfix", "shipwright"],
+    "incident": [
+      "hotfix",
+      "shipwright"
+    ],
     "incident_labels": "hotfix,shipwright",
-    "harness_gap": ["harness-gap", "shipwright"],
+    "harness_gap": [
+      "harness-gap",
+      "shipwright"
+    ],
     "harness_gap_labels": "harness-gap,shipwright"
   },
   "limits": {

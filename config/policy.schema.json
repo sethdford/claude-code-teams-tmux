@@ -305,6 +305,105 @@
         }
       },
       "additionalProperties": false
+    },
+    "stages": {
+      "type": "object",
+      "description": "Stage-specific configuration: timeout_seconds and max_iterations for all 12 pipeline stages",
+      "properties": {
+        "intake": { "$ref": "#/definitions/stageConfig" },
+        "plan": { "$ref": "#/definitions/stageConfig" },
+        "design": { "$ref": "#/definitions/stageConfig" },
+        "build": { "$ref": "#/definitions/stageConfig" },
+        "test": { "$ref": "#/definitions/stageConfig" },
+        "review": { "$ref": "#/definitions/stageConfig" },
+        "compound_quality": { "$ref": "#/definitions/stageConfig" },
+        "pr": { "$ref": "#/definitions/stageConfig" },
+        "merge": { "$ref": "#/definitions/stageConfig" },
+        "deploy": { "$ref": "#/definitions/stageConfig" },
+        "validate": { "$ref": "#/definitions/stageConfig" },
+        "monitor": { "$ref": "#/definitions/stageConfig" }
+      },
+      "additionalProperties": false
+    },
+    "build_loop": {
+      "type": "object",
+      "description": "Build loop configuration for autonomous iteration",
+      "properties": {
+        "circuit_breaker_threshold": { "type": "integer", "minimum": 1 },
+        "min_progress_lines": { "type": "integer", "minimum": 1 },
+        "auto_extend": { "type": "boolean" },
+        "extension_size": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "adaptive": {
+      "type": "object",
+      "description": "Adaptive complexity bands for dynamic iteration tuning",
+      "properties": {
+        "complexity_bands": {
+          "type": "object",
+          "properties": {
+            "low": { "$ref": "#/definitions/complexityBand" },
+            "medium": { "$ref": "#/definitions/complexityBand" },
+            "high": { "$ref": "#/definitions/complexityBand" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "template_defaults": {
+      "type": "object",
+      "description": "Max iterations for pipeline templates",
+      "properties": {
+        "fast": { "$ref": "#/definitions/templateConfig" },
+        "standard": { "$ref": "#/definitions/templateConfig" },
+        "full": { "$ref": "#/definitions/templateConfig" },
+        "hotfix": { "$ref": "#/definitions/templateConfig" },
+        "enterprise": { "$ref": "#/definitions/templateConfig" },
+        "autonomous": { "$ref": "#/definitions/templateConfig" }
+      },
+      "additionalProperties": false
+    },
+    "health": {
+      "type": "object",
+      "description": "Agent health monitoring thresholds",
+      "properties": {
+        "stale_timeout_s": { "type": "integer", "minimum": 1 },
+        "heartbeat_timeout_s": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "stageConfig": {
+      "type": "object",
+      "description": "Stage configuration with timeout and iteration limits",
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "complexityBand": {
+      "type": "object",
+      "description": "Complexity band with min/max iterations",
+      "properties": {
+        "min_iterations": { "type": "integer", "minimum": 1 },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "templateConfig": {
+      "type": "object",
+      "description": "Template configuration with max iterations",
+      "properties": {
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

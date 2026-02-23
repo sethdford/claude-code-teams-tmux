@@ -1134,6 +1134,101 @@ echo ""
 doctor_check_intelligence
 
 # ═════════════════════════════════════════════════════════════════════════════
+# 15c. Configuration Schema (Stage Timeouts & Iteration Limits)
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${PURPLE}${BOLD}  CONFIGURATION SCHEMA${RESET}"
+echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+CONF_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONF_REPO_DIR="$(cd "$CONF_SCRIPT_DIR/.." && pwd)"
+DEFAULTS_FILE="$CONF_REPO_DIR/config/defaults.json"
+POLICY_SCHEMA_FILE="$CONF_REPO_DIR/config/policy.schema.json"
+
+# Check defaults.json exists and has stage configurations
+if [[ -f "$DEFAULTS_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    check_pass "defaults.json found"
+
+    # Validate all 12 stages are present with timeout_seconds and max_iterations
+    local missing_stages=()
+    for stage in intake plan design build test review compound_quality pr merge deploy validate monitor; do
+        if ! jq -e ".stages.\"$stage\".timeout_seconds" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            missing_stages+=("$stage(timeout)")
+        fi
+        if ! jq -e ".stages.\"$stage\".max_iterations" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            missing_stages+=("$stage(iterations)")
+        fi
+    done
+
+    if [[ ${#missing_stages[@]} -gt 0 ]]; then
+        check_warn "Stage config incomplete: missing ${missing_stages[*]}"
+    else
+        check_pass "All 12 stages have timeout_seconds and max_iterations"
+    fi
+
+    # Check build_loop configuration
+    if jq -e ".build_loop.circuit_breaker_threshold" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+        check_pass "build_loop config present"
+    else
+        check_warn "build_loop configuration incomplete"
+    fi
+
+    # Check adaptive complexity bands
+    local missing_bands=()
+    for band in low medium high; do
+        if ! jq -e ".adaptive.complexity_bands.\"$band\".min_iterations" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            missing_bands+=("$band")
+        fi
+    done
+
+    if [[ ${#missing_bands[@]} -gt 0 ]]; then
+        check_warn "adaptive.complexity_bands incomplete: missing ${missing_bands[*]}"
+    else
+        check_pass "adaptive complexity bands configured"
+    fi
+
+    # Check template_defaults configuration
+    local missing_templates=()
+    for template in fast standard full hotfix enterprise autonomous; do
+        if ! jq -e ".template_defaults.\"$template\".max_iterations" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            missing_templates+=("$template")
+        fi
+    done
+
+    if [[ ${#missing_templates[@]} -gt 0 ]]; then
+        check_warn "template_defaults incomplete: missing ${missing_templates[*]}"
+    else
+        check_pass "All template defaults configured"
+    fi
+
+    # Check health configuration
+    if jq -e ".health.stale_timeout_s" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+        check_pass "health timeouts configured"
+    else
+        check_warn "health.stale_timeout_s not configured"
+    fi
+else
+    check_warn "defaults.json not found at $DEFAULTS_FILE"
+fi
+
+# Validate policy.schema.json has stage definitions
+if [[ -f "$POLICY_SCHEMA_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    if jq -e ".properties.stages" "$POLICY_SCHEMA_FILE" >/dev/null 2>&1; then
+        check_pass "policy.schema.json has stage definitions"
+    else
+        check_warn "policy.schema.json missing stage property definitions"
+    fi
+
+    if jq -e ".definitions.stageConfig" "$POLICY_SCHEMA_FILE" >/dev/null 2>&1; then
+        check_pass "stageConfig schema definition found"
+    else
+        check_warn "stageConfig schema definition missing"
+    fi
+else
+    check_warn "policy.schema.json validation skipped"
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # 14. Platform health (AGI-level self-improvement)
 # ═════════════════════════════════════════════════════════════════════════════
 echo -e "${PURPLE}${BOLD}  PLATFORM HEALTH${RESET}"
