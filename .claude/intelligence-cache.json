@@ -513,6 +513,77 @@
       },
       "timestamp": 1771762636,
       "ttl": 3600
+    },
+    "bb1643a3e77876fd534c7544c29b90ae": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Pipeline completion time may exceed 5-minute target depending on Claude API latency and model response times",
+          "Cross-platform temp directory creation and cleanup edge cases (permissions, disk space, signal handling)"
+        ],
+        "implementation_hints": [
+          "Leverage existing --local mode and pipeline infrastructure; demo command is primarily an orchestration wrapper around sw-pipeline.sh with a pre-seeded temp repo",
+          "Use the fast pipeline template (intake→build→test→PR draft) with capped iterations to guarantee <5 min; embed a minimal sample repo with a simple reproducible bug (e.g., off-by-one in a JS/bash function)",
+          "Use trap EXIT/INT/TERM for reliable cleanup; --keep flag simply skips the trap cleanup and prints the temp dir path",
+          "Add a progress spinner or minimal dashboard output using existing sw-stream.sh/sw-pipeline-vitals.sh hooks so users see live activity"
+        ]
+      },
+      "timestamp": 1771810633,
+      "ttl": 3600
+    },
+    "1dd404703d5c8ae8d728a07a1e68a9a2": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1771810638,
+      "ttl": 1800
+    },
+    "6f0df80e1eae662e8456b1fe72571e34": {
+      "result": {
+        "estimated_cost_usd": 2.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 220000,
+        "likely_failure_stage": "none",
+        "confidence": 55
+      },
+      "timestamp": 1771810651,
+      "ttl": 3600
+    },
+    "65a5afb33e9d15f9cb99be0a66146815": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (node/npm/vitest/commonjs) directly inform how to structure the demo mode command, test it, and integrate it with existing tooling"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Known test failure patterns (heartbeat output, sed -e flag) may surface during build/test stages of this feature — worth avoiding proactively"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Confirms nodejs project type; less detailed than the other patterns.json but consistent signal for planning"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines provide no actionable signal for planning, but absence of prior metrics means demo mode has no performance baseline to regress against"
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings; no relevant prior art from other repos to inform the demo mode design"
+          }
+        ]
+      },
+      "timestamp": 1771810668,
+      "ttl": 1800
     }
   }
 }
