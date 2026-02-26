@@ -35,12 +35,12 @@ setup_env() {
         ln -sf "$(command -v jq)" "$TEMP_DIR/bin/jq"
     fi
 
-    # Mock git
-    cat > "$TEMP_DIR/bin/git" <<'MOCK'
+    # Mock git (use unquoted heredoc so $TEMP_DIR expands at write time)
+    cat > "$TEMP_DIR/bin/git" <<MOCK
 #!/usr/bin/env bash
-case "${1:-}" in
+case "\${1:-}" in
     rev-parse)
-        case "${2:-}" in
+        case "\${2:-}" in
             --show-toplevel) echo "$TEMP_DIR/repo" ;;
             *) echo "/tmp/mock-repo" ;;
         esac
@@ -51,8 +51,6 @@ esac
 exit 0
 MOCK
     chmod +x "$TEMP_DIR/bin/git"
-    # git mock needs TEMP_DIR — inject it
-    sed -i '' "s|\$TEMP_DIR|$TEMP_DIR|g" "$TEMP_DIR/bin/git"
 
     # Mock gh
     cat > "$TEMP_DIR/bin/gh" <<'MOCK'
