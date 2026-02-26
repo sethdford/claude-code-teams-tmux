@@ -719,6 +719,253 @@ else
     assert_fail "Loop progress tracking" "setup failed"
 fi
 
+# ─── Test: Efficiency scoring functions exist ────────────────────────────────
+echo ""
+echo -e "${DIM}  efficiency scoring${RESET}"
+
+if grep -q 'compute_iteration_efficiency()' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "compute_iteration_efficiency function defined"
+else
+    assert_fail "compute_iteration_efficiency function defined"
+fi
+
+if grep -q 'write_efficiency_history()' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "write_efficiency_history function defined"
+else
+    assert_fail "write_efficiency_history function defined"
+fi
+
+if grep -q 'check_efficiency_abort()' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "check_efficiency_abort function defined"
+else
+    assert_fail "check_efficiency_abort function defined"
+fi
+
+if grep -q '_check_efficiency_trend_warning()' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "_check_efficiency_trend_warning function defined"
+else
+    assert_fail "_check_efficiency_trend_warning function defined"
+fi
+
+# ─── Test: Efficiency state variables in write_state ──────────────────────
+if grep -q 'efficiency_score:' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "write_state persists efficiency_score"
+else
+    assert_fail "write_state persists efficiency_score"
+fi
+
+if grep -q 'consecutive_low_efficiency:' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "write_state persists consecutive_low_efficiency"
+else
+    assert_fail "write_state persists consecutive_low_efficiency"
+fi
+
+if grep -q 'prev_test_passed:' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "write_state persists prev_test_passed"
+else
+    assert_fail "write_state persists prev_test_passed"
+fi
+
+# ─── Test: Efficiency abort status in show_summary ────────────────────────
+if grep -q 'efficiency_abort' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "show_summary handles efficiency_abort status"
+else
+    assert_fail "show_summary handles efficiency_abort status"
+fi
+
+# ─── Test: compute_iteration_efficiency scoring logic ─────────────────────
+echo ""
+echo -e "${DIM}  efficiency scoring computation${RESET}"
+
+_eff_fn=$(sed -n '/^compute_iteration_efficiency()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+_eff_tmp=$(mktemp -d)
+mkdir -p "$_eff_tmp/logs"
+
+# Use real git to test progress scoring
+_eff_git=$(PATH=/usr/local/bin:/usr/bin:/bin command -v git 2>/dev/null)
+(cd "$_eff_tmp" && "$_eff_git" init -q && "$_eff_git" config user.email "t@t" && "$_eff_git" config user.name "T")
+echo "initial" > "$_eff_tmp/file.sh"
+(cd "$_eff_tmp" && "$_eff_git" add file.sh && "$_eff_git" commit -q -m "init")
+# Add 25 lines to trigger progress score of 60
+for i in $(seq 1 25); do echo "line $i" >> "$_eff_tmp/file.sh"; done
+(cd "$_eff_tmp" && "$_eff_git" add file.sh && "$_eff_git" commit -q -m "add lines")
+
+_eff_out=$(cd "$_eff_tmp" && bash -c "
+set -euo pipefail
+warn() { :; }
+info() { :; }
+error() { :; }
+emit_event() { :; }
+now_iso() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
+CYAN='' GREEN='' YELLOW='' RED='' DIM='' BOLD='' RESET=''
+PROJECT_ROOT='$_eff_tmp'
+LOG_DIR='$_eff_tmp/logs'
+ITERATION=5
+TEST_CMD='true'
+TEST_PASSED='true'
+PREV_TEST_PASSED='false'
+LOOP_COST_MILLICENTS=15000
+PREV_COST_MILLICENTS=5000
+CONSECUTIVE_LOW_EFFICIENCY=0
+EFFICIENCY_SCORE=0
+EFFICIENCY_PROGRESS=0
+EFFICIENCY_PRODUCTIVITY=0
+EFFICIENCY_COST=0
+$_eff_fn
+compute_iteration_efficiency
+echo \"SCORE=\$EFFICIENCY_SCORE\"
+echo \"PROGRESS=\$EFFICIENCY_PROGRESS\"
+echo \"PRODUCTIVITY=\$EFFICIENCY_PRODUCTIVITY\"
+echo \"COST=\$EFFICIENCY_COST\"
+" 2>/dev/null)
+rm -rf "$_eff_tmp"
+
+# fail→pass = productivity 100, 25 lines = progress 60, cost 10000mc within threshold = ~98
+_eff_score=$(echo "$_eff_out" | grep '^SCORE=' | head -1 | cut -d= -f2)
+_eff_progress=$(echo "$_eff_out" | grep '^PROGRESS=' | head -1 | cut -d= -f2)
+_eff_productivity=$(echo "$_eff_out" | grep '^PRODUCTIVITY=' | head -1 | cut -d= -f2)
+
+if [[ -n "$_eff_score" && "$_eff_score" -gt 0 ]]; then
+    assert_pass "compute_iteration_efficiency returns non-zero score ($_eff_score)"
+else
+    assert_fail "compute_iteration_efficiency returns non-zero score" "got: $_eff_score"
+fi
+
+assert_eq "Progress score for 25 lines = 60" "60" "${_eff_progress:-0}"
+assert_eq "Productivity score for fail→pass = 100" "100" "${_eff_productivity:-0}"
+
+# ─── Test: check_efficiency_abort grace period ────────────────────────────
+echo ""
+echo -e "${DIM}  efficiency abort logic${RESET}"
+
+_abort_fn=$(sed -n '/^check_efficiency_abort()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+
+# Test: iterations < 3 should NOT abort even with low score
+_abort_out=$(bash -c "
+set -euo pipefail
+error() { :; }
+emit_event() { :; }
+ITERATION=2
+EFFICIENCY_SCORE=10
+CONSECUTIVE_LOW_EFFICIENCY=5
+STATUS='running'
+$_abort_fn
+check_efficiency_abort
+echo \"rc=\$?\"
+echo \"STATUS=\$STATUS\"
+" 2>/dev/null)
+
+_abort_rc=$(echo "$_abort_out" | grep '^rc=' | cut -d= -f2)
+_abort_status=$(echo "$_abort_out" | grep '^STATUS=' | cut -d= -f2)
+assert_eq "Grace period: no abort before iteration 3" "0" "${_abort_rc:-1}"
+assert_eq "Grace period: status unchanged" "running" "${_abort_status:-}"
+
+# Test: 3 consecutive low scores at iteration >= 3 should abort
+_abort_out2=$(bash -c "
+set -uo pipefail
+error() { :; }
+emit_event() { :; }
+ITERATION=5
+EFFICIENCY_SCORE=20
+CONSECUTIVE_LOW_EFFICIENCY=2
+STATUS='running'
+$_abort_fn
+check_efficiency_abort && echo \"rc=0\" || echo \"rc=\$?\"
+echo \"STATUS=\$STATUS\"
+echo \"LOW=\$CONSECUTIVE_LOW_EFFICIENCY\"
+" 2>/dev/null)
+
+_abort_rc2=$(echo "$_abort_out2" | grep '^rc=' | cut -d= -f2)
+_abort_status2=$(echo "$_abort_out2" | grep '^STATUS=' | cut -d= -f2)
+assert_eq "Abort triggers after 3 consecutive low scores" "1" "${_abort_rc2:-0}"
+assert_eq "Status set to efficiency_abort" "efficiency_abort" "${_abort_status2:-}"
+
+# Test: score above threshold resets counter
+_abort_out3=$(bash -c "
+set -euo pipefail
+error() { :; }
+emit_event() { :; }
+ITERATION=5
+EFFICIENCY_SCORE=50
+CONSECUTIVE_LOW_EFFICIENCY=2
+STATUS='running'
+$_abort_fn
+check_efficiency_abort
+echo \"rc=\$?\"
+echo \"LOW=\$CONSECUTIVE_LOW_EFFICIENCY\"
+" 2>/dev/null)
+
+_abort_rc3=$(echo "$_abort_out3" | grep '^rc=' | cut -d= -f2)
+_abort_low3=$(echo "$_abort_out3" | grep '^LOW=' | cut -d= -f2)
+assert_eq "Score >= 30 resets consecutive counter" "0" "${_abort_rc3:-1}"
+assert_eq "Counter reset to 0" "0" "${_abort_low3:-999}"
+
+# ─── Test: write_efficiency_history appends JSONL ─────────────────────────
+echo ""
+echo -e "${DIM}  efficiency history${RESET}"
+
+_hist_fn=$(sed -n '/^write_efficiency_history()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+_hist_tmp=$(mktemp -d)
+mkdir -p "$_hist_tmp/logs"
+
+_hist_out=$(bash -c "
+set -euo pipefail
+emit_event() { :; }
+now_iso() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
+LOG_DIR='$_hist_tmp/logs'
+ITERATION=3
+EFFICIENCY_SCORE=72
+EFFICIENCY_PROGRESS=60
+EFFICIENCY_PRODUCTIVITY=100
+EFFICIENCY_COST=80
+CONSECUTIVE_LOW_EFFICIENCY=0
+STATUS='running'
+$_hist_fn
+write_efficiency_history
+write_efficiency_history
+cat '$_hist_tmp/logs/efficiency-history.jsonl'
+" 2>/dev/null)
+
+_hist_lines=$(echo "$_hist_out" | wc -l | tr -d ' ')
+if [[ "$_hist_lines" -ge 2 ]]; then
+    assert_pass "write_efficiency_history appends (${_hist_lines} lines)"
+else
+    assert_fail "write_efficiency_history appends" "expected >=2 lines, got $_hist_lines"
+fi
+
+if echo "$_hist_out" | head -1 | jq -e '.score == 72' >/dev/null 2>&1; then
+    assert_pass "Efficiency JSONL contains correct score"
+else
+    assert_fail "Efficiency JSONL contains correct score"
+fi
+rm -rf "$_hist_tmp"
+
+# ─── Test: Efficiency section in progress.md ──────────────────────────────
+echo ""
+echo -e "${DIM}  efficiency in progress.md${RESET}"
+
+if grep -q '## Efficiency' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "write_progress includes Efficiency section"
+else
+    assert_fail "write_progress includes Efficiency section"
+fi
+
+# ─── Test: Efficiency score in show_summary ───────────────────────────────
+if grep -q 'Efficiency:' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "show_summary displays Efficiency score"
+else
+    assert_fail "show_summary displays Efficiency score"
+fi
+
+# ─── Test: Efficiency called in run_single_agent_loop ─────────────────────
+if grep -q 'compute_iteration_efficiency' "$SCRIPT_DIR/sw-loop.sh" && \
+   grep -q 'check_efficiency_abort' "$SCRIPT_DIR/sw-loop.sh" && \
+   grep -q 'write_efficiency_history' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "run_single_agent_loop calls efficiency functions"
+else
+    assert_fail "run_single_agent_loop calls efficiency functions"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════

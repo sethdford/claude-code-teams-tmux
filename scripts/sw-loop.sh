@@ -656,6 +656,15 @@ TEST_PASSED=""
 TEST_OUTPUT=""
 LOG_ENTRIES=""
 
+# ─── Efficiency Scoring State ──────────────────────────────────────────────
+EFFICIENCY_SCORE=0
+EFFICIENCY_PROGRESS=0
+EFFICIENCY_PRODUCTIVITY=0
+EFFICIENCY_COST=0
+CONSECUTIVE_LOW_EFFICIENCY=0
+PREV_TEST_PASSED=""
+PREV_COST_MILLICENTS=0
+
 initialize_state() {
     ITERATION=0
     CONSECUTIVE_FAILURES=0
@@ -663,6 +672,12 @@ initialize_state() {
     START_EPOCH="$(now_epoch)"
     STATUS="running"
     LOG_ENTRIES=""
+
+    # Efficiency scoring state
+    EFFICIENCY_SCORE=0
+    CONSECUTIVE_LOW_EFFICIENCY=0
+    PREV_TEST_PASSED=""
+    PREV_COST_MILLICENTS=0
 
     # Record starting commit for cumulative diff in quality gates
     LOOP_START_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")"
@@ -711,6 +726,10 @@ resume_state() {
                 auto_extend:*)           AUTO_EXTEND="$(echo "${line#auto_extend:}" | tr -d ' ')" ;;
                 extension_count:*)       EXTENSION_COUNT="$(echo "${line#extension_count:}" | tr -d ' ')" ;;
                 max_extensions:*)        MAX_EXTENSIONS="$(echo "${line#max_extensions:}" | tr -d ' ')" ;;
+                efficiency_score:*)          EFFICIENCY_SCORE="$(echo "${line#efficiency_score:}" | tr -d ' ')" ;;
+                consecutive_low_efficiency:*) CONSECUTIVE_LOW_EFFICIENCY="$(echo "${line#consecutive_low_efficiency:}" | tr -d ' ')" ;;
+                prev_test_passed:*)          PREV_TEST_PASSED="$(echo "${line#prev_test_passed:}" | tr -d ' ')" ;;
+                prev_cost_millicents:*)      PREV_COST_MILLICENTS="$(echo "${line#prev_cost_millicents:}" | tr -d ' ')" ;;
             esac
         fi
     done < "$STATE_FILE"
@@ -791,6 +810,10 @@ write_state() {
         printf 'auto_extend: %s\n' "$AUTO_EXTEND"
         printf 'extension_count: %s\n' "$EXTENSION_COUNT"
         printf 'max_extensions: %s\n' "$MAX_EXTENSIONS"
+        printf 'efficiency_score: %s\n' "${EFFICIENCY_SCORE:-0}"
+        printf 'consecutive_low_efficiency: %s\n' "${CONSECUTIVE_LOW_EFFICIENCY:-0}"
+        printf 'prev_test_passed: %s\n' "${PREV_TEST_PASSED:-}"
+        printf 'prev_cost_millicents: %s\n' "${PREV_COST_MILLICENTS:-0}"
         printf -- '---\n\n'
         printf '## Log\n'
         printf '%s\n' "$LOG_ENTRIES"
@@ -822,6 +845,19 @@ write_progress() {
         printf -- '- Session restart: %s/%s\n' "${RESTART_COUNT:-0}" "${MAX_RESTARTS:-0}"
         printf -- '- Tests passing: %s\n' "${TEST_PASSED:-unknown}"
         printf -- '- Status: %s\n\n' "${STATUS:-running}"
+        if [[ "${EFFICIENCY_SCORE:-0}" -gt 0 || "$ITERATION" -gt 0 ]]; then
+            local _eff_trend="stable"
+            if [[ "${CONSECUTIVE_LOW_EFFICIENCY:-0}" -ge 3 ]]; then
+                _eff_trend="declining"
+            elif [[ "${CONSECUTIVE_LOW_EFFICIENCY:-0}" -ge 1 ]]; then
+                _eff_trend="warning"
+            fi
+            printf '## Efficiency\n\n'
+            printf -- '- Score: %s/100 (progress=%s productivity=%s cost=%s)\n' \
+                "${EFFICIENCY_SCORE:-0}" "${EFFICIENCY_PROGRESS:-0}" "${EFFICIENCY_PRODUCTIVITY:-0}" "${EFFICIENCY_COST:-0}"
+            printf -- '- Consecutive low: %s/3\n' "${CONSECUTIVE_LOW_EFFICIENCY:-0}"
+            printf -- '- Trend: %s\n\n' "$_eff_trend"
+        fi
         printf '## Recent Commits\n%s\n\n' "${recent_commits}"
         printf '## Changed Files\n%s\n\n' "${changed_files}"
         if [[ -n "$last_error" ]]; then
@@ -1050,6 +1086,216 @@ check_circuit_breaker() {
         return 1
     fi
     return 0
+}
+
+# ─── Iteration Efficiency Scoring ─────────────────────────────────────────────
+
+compute_iteration_efficiency() {
+    # Progress score (40%): net lines changed from git diff --stat HEAD~1
+    local lines_changed=0
+    if git -C "$PROJECT_ROOT" rev-parse HEAD~1 >/dev/null 2>&1; then
+        local diff_summary
+        diff_summary="$(git -C "$PROJECT_ROOT" diff --stat HEAD~1 \
+            -- . ':!.claude/loop-state.md' ':!.claude/pipeline-state.md' \
+            ':!**/progress.md' ':!**/error-summary.json' ':!**/*.json' ':!**/*.md' \
+            2>/dev/null | tail -1 || echo "")"
+        local ins del
+        ins="$(echo "$diff_summary" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)"
+        del="$(echo "$diff_summary" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)"
+        lines_changed=$(( ${ins:-0} + ${del:-0} ))
+    fi
+
+    local progress_score=0
+    if [[ "$lines_changed" -ge 100 ]]; then
+        progress_score=100
+    elif [[ "$lines_changed" -ge 50 ]]; then
+        progress_score=80
+    elif [[ "$lines_changed" -ge 20 ]]; then
+        progress_score=60
+    elif [[ "$lines_changed" -ge 5 ]]; then
+        progress_score=40
+    elif [[ "$lines_changed" -ge 1 ]]; then
+        progress_score=20
+    fi
+
+    # Productivity score (40%): test state transition
+    local productivity_score=50  # neutral default
+    if [[ -n "$TEST_CMD" ]]; then
+        local curr="${TEST_PASSED:-}"
+        local prev="${PREV_TEST_PASSED:-}"
+        if [[ -z "$prev" ]]; then
+            productivity_score=50  # first iteration / no prior data
+        elif [[ "$prev" == "false" && "$curr" == "true" ]]; then
+            productivity_score=100  # fail → pass (best outcome)
+        elif [[ "$prev" == "true" && "$curr" == "true" ]]; then
+            productivity_score=80   # maintained green
+        elif [[ "$prev" == "true" && "$curr" == "false" ]]; then
+            productivity_score=0    # regression
+        elif [[ "$prev" == "false" && "$curr" == "false" ]]; then
+            productivity_score=30   # still failing
+        fi
+    fi
+
+    # Cost-effectiveness score (20%): cost per iteration
+    local cost_score=100  # neutral default
+    if [[ -n "$TEST_CMD" && "${LOOP_COST_MILLICENTS:-0}" -gt 0 ]]; then
+        local iteration_cost=$(( ${LOOP_COST_MILLICENTS:-0} - ${PREV_COST_MILLICENTS:-0} ))
+        # Cap to avoid negative values from race conditions
+        [[ "$iteration_cost" -lt 0 ]] && iteration_cost=0
+        # Cap to avoid overflow: max $100 (10000000 millicents)
+        [[ "$iteration_cost" -gt 10000000 ]] && iteration_cost=10000000
+
+        local prev_tp="${PREV_TEST_PASSED:-}"
+        local curr_tp="${TEST_PASSED:-}"
+        if [[ "$prev_tp" == "false" && "$curr_tp" == "true" ]]; then
+            # Fix iteration: lenient threshold ($5 = 500000 millicents)
+            if [[ "$iteration_cost" -gt 0 ]]; then
+                cost_score=$(( 100 - (iteration_cost * 100 / 500000) ))
+            fi
+        else
+            # Non-fix iteration: tighter threshold ($2 = 200000 millicents)
+            if [[ "$iteration_cost" -gt 0 ]]; then
+                cost_score=$(( 100 - (iteration_cost * 100 / 200000) ))
+            fi
+        fi
+        [[ "$cost_score" -lt 0 ]] && cost_score=0
+        [[ "$cost_score" -gt 100 ]] && cost_score=100
+    fi
+
+    # Composite score: (progress * 40 + productivity * 40 + cost * 20) / 100
+    local composite=$(( (progress_score * 40 + productivity_score * 40 + cost_score * 20) / 100 ))
+
+    # Update globals
+    EFFICIENCY_SCORE="$composite"
+    EFFICIENCY_PROGRESS="$progress_score"
+    EFFICIENCY_PRODUCTIVITY="$productivity_score"
+    EFFICIENCY_COST="$cost_score"
+
+    # Write efficiency.json (atomic)
+    if command -v jq >/dev/null 2>&1; then
+        local _eff_trend="stable"
+        if [[ "${CONSECUTIVE_LOW_EFFICIENCY:-0}" -ge 3 ]]; then
+            _eff_trend="declining"
+        elif [[ "${CONSECUTIVE_LOW_EFFICIENCY:-0}" -ge 1 ]]; then
+            _eff_trend="warning"
+        fi
+        local _eff_status="continuing"
+        [[ "$composite" -lt 30 ]] && _eff_status="low"
+
+        local tmp_eff="${LOG_DIR}/efficiency.json.tmp.$$"
+        jq -n \
+            --argjson iteration "$ITERATION" \
+            --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --argjson score_composite "$composite" \
+            --argjson score_progress "$progress_score" \
+            --argjson score_productivity "$productivity_score" \
+            --argjson score_cost "$cost_score" \
+            --argjson lines_changed "$lines_changed" \
+            --arg test_transition "$(printf '%s_to_%s' "${PREV_TEST_PASSED:-none}" "${TEST_PASSED:-none}")" \
+            --argjson iteration_cost_millicents "$(( ${LOOP_COST_MILLICENTS:-0} - ${PREV_COST_MILLICENTS:-0} ))" \
+            --argjson consecutive_low "${CONSECUTIVE_LOW_EFFICIENCY:-0}" \
+            --arg status "$_eff_status" \
+            --arg trend "$_eff_trend" \
+            '{iteration: $iteration, timestamp: $timestamp, score_composite: $score_composite,
+              score_progress: $score_progress, score_productivity: $score_productivity,
+              score_cost: $score_cost, lines_changed: $lines_changed,
+              test_transition: $test_transition,
+              iteration_cost_millicents: $iteration_cost_millicents,
+              consecutive_low: $consecutive_low, status: $status, trend: $trend}' \
+            > "$tmp_eff" 2>/dev/null && mv "$tmp_eff" "$LOG_DIR/efficiency.json" 2>/dev/null || rm -f "$tmp_eff" 2>/dev/null
+    fi
+
+    # Update prev state for next iteration
+    PREV_TEST_PASSED="${TEST_PASSED:-}"
+    PREV_COST_MILLICENTS="${LOOP_COST_MILLICENTS:-0}"
+
+    echo -e "  ${CYAN}▸${RESET} Efficiency: ${composite}/100 (progress=${progress_score} productivity=${productivity_score} cost=${cost_score})"
+}
+
+write_efficiency_history() {
+    # Append to JSONL history
+    local history_file="$LOG_DIR/efficiency-history.jsonl"
+    if command -v jq >/dev/null 2>&1; then
+        jq -c -n \
+            --argjson iteration "$ITERATION" \
+            --argjson score "${EFFICIENCY_SCORE:-0}" \
+            --arg status "${STATUS:-running}" \
+            --arg ts "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            '{iteration: $iteration, score: $score, status: $status, ts: $ts}' \
+            >> "$history_file" 2>/dev/null || true
+    else
+        printf '{"iteration":%d,"score":%d,"status":"%s","ts":"%s"}\n' \
+            "$ITERATION" "${EFFICIENCY_SCORE:-0}" "${STATUS:-running}" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            >> "$history_file" 2>/dev/null || true
+    fi
+
+    # Emit event for dashboard/pipeline visibility
+    if type emit_event >/dev/null 2>&1; then
+        emit_event "loop.efficiency" \
+            "score=${EFFICIENCY_SCORE:-0}" \
+            "iteration=$ITERATION" \
+            "progress=${EFFICIENCY_PROGRESS:-0}" \
+            "productivity=${EFFICIENCY_PRODUCTIVITY:-0}" \
+            "cost=${EFFICIENCY_COST:-0}" \
+            "consecutive_low=${CONSECUTIVE_LOW_EFFICIENCY:-0}"
+    fi
+}
+
+check_efficiency_abort() {
+    # Grace period: don't abort during first 2 iterations (ramp-up)
+    if [[ "$ITERATION" -lt 3 ]]; then
+        return 0
+    fi
+
+    # Track consecutive low scores (threshold: 30)
+    if [[ "${EFFICIENCY_SCORE:-0}" -lt 30 ]]; then
+        CONSECUTIVE_LOW_EFFICIENCY=$(( ${CONSECUTIVE_LOW_EFFICIENCY:-0} + 1 ))
+    else
+        CONSECUTIVE_LOW_EFFICIENCY=0
+    fi
+
+    # Abort after 3 consecutive low-efficiency iterations
+    if [[ "${CONSECUTIVE_LOW_EFFICIENCY:-0}" -ge 3 ]]; then
+        error "Efficiency abort: 3 consecutive iterations scored below 30/100"
+        STATUS="efficiency_abort"
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "loop.efficiency_abort" \
+                "iteration=$ITERATION" \
+                "score=${EFFICIENCY_SCORE:-0}" \
+                "consecutive=${CONSECUTIVE_LOW_EFFICIENCY:-0}"
+        fi
+        return 1
+    fi
+    return 0
+}
+
+_check_efficiency_trend_warning() {
+    # Warn (but don't abort) when last 3 scores are all below 50
+    local history_file="$LOG_DIR/efficiency-history.jsonl"
+    [[ ! -f "$history_file" ]] && return 0
+
+    local line_count
+    line_count=$(wc -l < "$history_file" 2>/dev/null || echo 0)
+    line_count=$(( ${line_count:-0} + 0 ))  # ensure integer
+    [[ "$line_count" -lt 3 ]] && return 0
+
+    if command -v jq >/dev/null 2>&1; then
+        local last3
+        last3=$(tail -3 "$history_file" 2>/dev/null | jq -r '.score' 2>/dev/null || true)
+        local all_below=true
+        local s
+        while IFS= read -r s; do
+            s=$(( ${s:-0} + 0 ))  # ensure integer
+            if [[ "$s" -ge 50 ]]; then
+                all_below=false
+                break
+            fi
+        done <<< "$last3"
+
+        if $all_below; then
+            warn "Efficiency trend: last 3 iterations all scored below 50/100"
+        fi
+    fi
 }
 
 check_max_iterations() {
@@ -2534,13 +2780,14 @@ show_summary() {
 
     local status_display
     case "$STATUS" in
-        complete)         status_display="${GREEN}✓ Complete (LOOP_COMPLETE detected)${RESET}" ;;
-        circuit_breaker)  status_display="${RED}✗ Circuit breaker tripped${RESET}" ;;
-        max_iterations)   status_display="${YELLOW}⚠ Max iterations reached${RESET}" ;;
-        budget_exhausted) status_display="${RED}✗ Budget exhausted${RESET}" ;;
-        interrupted)      status_display="${YELLOW}⚠ Interrupted by user${RESET}" ;;
-        error)            status_display="${RED}✗ Error${RESET}" ;;
-        *)                status_display="${DIM}$STATUS${RESET}" ;;
+        complete)           status_display="${GREEN}✓ Complete (LOOP_COMPLETE detected)${RESET}" ;;
+        circuit_breaker)    status_display="${RED}✗ Circuit breaker tripped${RESET}" ;;
+        efficiency_abort)   status_display="${RED}✗ Efficiency abort (3 consecutive low scores)${RESET}" ;;
+        max_iterations)     status_display="${YELLOW}⚠ Max iterations reached${RESET}" ;;
+        budget_exhausted)   status_display="${RED}✗ Budget exhausted${RESET}" ;;
+        interrupted)        status_display="${YELLOW}⚠ Interrupted by user${RESET}" ;;
+        error)              status_display="${RED}✗ Error${RESET}" ;;
+        *)                  status_display="${DIM}$STATUS${RESET}" ;;
     esac
 
     local test_display
@@ -2569,6 +2816,9 @@ show_summary() {
     echo -e "  ${BOLD}Duration:${RESET}    $(format_duration "$duration")"
     echo -e "  ${BOLD}Commits:${RESET}     $TOTAL_COMMITS"
     echo -e "  ${BOLD}Tests:${RESET}       $test_display"
+    if [[ "${EFFICIENCY_SCORE:-0}" -gt 0 || "$ITERATION" -gt 0 ]]; then
+        echo -e "  ${BOLD}Efficiency:${RESET}  ${EFFICIENCY_SCORE:-0}/100"
+    fi
     if [[ "$LOOP_INPUT_TOKENS" -gt 0 || "$LOOP_OUTPUT_TOKENS" -gt 0 ]]; then
         echo -e "  ${BOLD}Tokens:${RESET}      in=${LOOP_INPUT_TOKENS} out=${LOOP_OUTPUT_TOKENS}"
     fi
@@ -3162,6 +3412,12 @@ ${GOAL}"
             CONSECUTIVE_FAILURES=$(( CONSECUTIVE_FAILURES + 1 ))
             echo -e "  ${YELLOW}⚠${RESET} Low progress (${CONSECUTIVE_FAILURES}/${CIRCUIT_BREAKER_THRESHOLD} before circuit breaker)"
         fi
+
+        # Efficiency scoring and early abort
+        compute_iteration_efficiency
+        write_efficiency_history
+        check_efficiency_abort || break
+        _check_efficiency_trend_warning
 
         # Extract summary and update state
         local summary
