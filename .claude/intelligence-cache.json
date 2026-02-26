@@ -529,17 +529,16 @@
         "success_probability": 88,
         "recommended_template": "fast",
         "key_risks": [
-          "Scripts reading from missing or malformed config may behave unexpectedly if fallback logic is incomplete",
-          "Multiple scripts need coordinated updates — missing one leaves hardcoded values behind and breaks the health scan goal"
+          "Missing hardcoded values in less-obvious script paths leading to incomplete migration",
+          "Fallback logic bugs causing silent failures when config is malformed rather than missing"
         ],
         "implementation_hints": [
-          "Create .claude/pipeline-config.json with stage_timeouts and iteration_limits sections before modifying scripts",
-          "Use a shared helper function to read config values with fallback defaults to avoid duplicating jq parsing logic across scripts",
-          "Update sw-doctor.sh schema validation to check required keys and validate timeout values are positive integers",
-          "Grep for hardcoded values (7200, 1800, max_iterations=15, max_restarts=3) across all scripts to find all instances before starting"
+          "Grep for numeric timeout patterns (7200, 1800, etc.) and iteration variables (max_iterations, max_restarts) across all scripts to build a complete inventory before touching any file",
+          "Use jq with a helper function for config reads so all scripts share identical fallback logic — define read_pipeline_config() in a shared lib rather than duplicating inline",
+          "Add doctor schema validation early so CI catches invalid config values before they silently fall back to defaults"
         ]
       },
-      "timestamp": 1771828637,
+      "timestamp": 1772088014,
       "ttl": 3600
     },
     "802a09b28033986782f2cb984ac21167": {
@@ -704,6 +703,24 @@
       },
       "timestamp": 1771828934,
       "ttl": 1800
+    },
+    "eb504ca678a1cac07869c20d5d5f6b7a": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1772088021,
+      "ttl": 1800
+    },
+    "adddbd1dc744055cba516d97ba7eaf7f": {
+      "result": {
+        "estimated_cost_usd": 2.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 180000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772088028,
+      "ttl": 3600
     }
   }
 }
