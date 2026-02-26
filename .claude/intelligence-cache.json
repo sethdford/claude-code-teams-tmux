@@ -513,6 +513,160 @@
       },
       "timestamp": 1771762636,
       "ttl": 3600
+    },
+    "20304bc6335957e6b98d63978ed635ba": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Pattern library regex may have false positives causing incorrect failure classification",
+          "Auto-fix actions (e.g., npm install) could introduce unintended side effects in production pipelines",
+          "Exponential backoff for transient failures may mask deeper systemic issues if misconfigured",
+          "30-day success rate measurement baseline requires careful before/after comparison to be meaningful"
+        ],
+        "implementation_hints": [
+          "Build the pattern library as a JSON/YAML config file for easy extension without code changes",
+          "Use three classification buckets: transient (retry), fixable (apply-then-retry), permanent (log-and-fail)",
+          "Implement auto-fix actions as a whitelist of safe commands (npm install, pip install, etc.) with sandboxing",
+          "Add structured logging of retry attempts and outcomes to feed the success rate measurement system",
+          "Start with the most common failure signatures from existing error-log.jsonl before generalizing",
+          "Integrate with sw-memory.sh to persist learned failure patterns across pipeline runs"
+        ]
+      },
+      "timestamp": 1772130929,
+      "ttl": 3600
+    },
+    "f4662f487424d63885ccd397b2b220f7": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1772130934,
+      "ttl": 1800
+    },
+    "a70ab5ba1d59f884eb80098ef174f7fa": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 180000,
+        "likely_failure_stage": "test",
+        "confidence": 58
+      },
+      "timestamp": 1772130940,
+      "ttl": 3600
+    },
+    "8a3f925fdcab45eafa5826e9664f4baa": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly relevant: contains real failure patterns with root causes, fixes, seen_count, and categories — exactly the data model the auto-retry intelligence system needs to learn from and act on"
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 65,
+            "summary": "Project conventions (test runner: vitest, commonjs imports, test pattern) are needed to plan how the retry system integrates with the build/test pipeline"
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 35,
+            "summary": "Confirms nodejs project type detected at bootstrap — minimal but useful as baseline context for planning language-specific retry strategies"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Empty baselines — relevant as a gap: the auto-retry system likely needs to populate these baselines to measure retry effectiveness over time"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Empty decisions log — marginally relevant as a place to record architectural decisions made during the plan stage for this feature"
+          }
+        ]
+      },
+      "timestamp": 1772130978,
+      "ttl": 1800
+    },
+    "005ddb26d4b7c764196a69201506db33": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Contains captured failure patterns from previous pipeline runs, directly relevant to building a failure pattern auto-retry intelligence system"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project conventions (node/vitest/commonjs) inform implementation constraints for the new feature"
+          },
+          {
+            "file": "global.json",
+            "relevance": 20,
+            "summary": "Cross-repo learnings structure is relevant as the new system may need to store/retrieve similar global patterns"
+          }
+        ]
+      },
+      "timestamp": 1772131095,
+      "ttl": 1800
+    },
+    "b07cd83528d3bb0a1f91b77769d44318": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions (Node.js, vitest, commonjs imports) inform how to structure the retry intelligence system's code and tests"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 68,
+            "summary": "Existing failure patterns (cleanup, hygiene scripts) provide concrete examples of the failure categories the auto-retry system needs to detect and handle"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Bootstrap-detected nodejs project type confirms runtime environment for architecture decisions"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Empty baselines indicate no prior performance data to inform retry thresholds or success rate targets"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty cross-repo learnings - no prior patterns to seed the intelligence system with"
+          }
+        ]
+      },
+      "timestamp": 1772131130,
+      "ttl": 1800
+    },
+    "36efb885b0c85f32d8518375c4c0df02": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Contains concrete failure patterns (test stage failures in sw-cleanup.sh and sw-hygiene.sh) that directly inform anti-patterns to avoid in the retry intelligence system — e.g., silent failures, missing output signals, and incorrect exit codes that a retry system must handle correctly."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Defines project conventions (node/vitest/npm/commonjs) that constrain valid design approaches — any rejected design must account for these runtime and test infrastructure constraints."
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Currently empty but is the canonical location for cross-repo learnings; relevant only as a reminder that no prior cross-repo anti-patterns have been captured yet for this feature area."
+          }
+        ]
+      },
+      "timestamp": 1772131145,
+      "ttl": 1800
     }
   }
 }
