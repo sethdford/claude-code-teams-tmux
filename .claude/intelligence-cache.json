@@ -513,6 +513,77 @@
       },
       "timestamp": 1771762636,
       "ttl": 3600
+    },
+    "f54821e87ef94abb7c7352c8fdf7e4d2": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "key_risks": [
+          "Pipeline execution logs may not contain sufficient token usage data for accurate scoring",
+          "Integration with sw-cost.sh requires compatible data formats and may surface edge cases"
+        ],
+        "implementation_hints": [
+          "Parse existing event logs (events.jsonl) and error-log.jsonl for prompt size and tool call patterns",
+          "Use a weighted scoring formula: penalize large tool output injections, redundant reads, and oversized prompts",
+          "Leverage sw-cost.sh's existing token tracking rather than reimplementing cost logic",
+          "Follow the existing test harness pattern (PASS/FAIL counters, mock binaries in temp dir) for the test suite"
+        ]
+      },
+      "timestamp": 1772302416,
+      "ttl": 3600
+    },
+    "c9a7d292bdd3a5302fd20a8a6318f31a": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1772302423,
+      "ttl": 1800
+    },
+    "abd570f6a5f27f4ff6d1183417f8ce99": {
+      "result": {
+        "estimated_cost_usd": 3.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 280000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1772302430,
+      "ttl": 3600
+    },
+    "36cb58d56f8d61c1b4fc5349bd7fb145": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project type (node/javascript/npm/vitest) is directly relevant for understanding what tools and patterns to use when building the analyzer feature"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Secondary project type confirmation (nodejs) with bootstrap detection timestamp"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Historical test failures in sw-cleanup.sh - low relevance to context window analyzer but shows test harness patterns and common failure modes to avoid"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Empty cross-repo learnings - minimal relevance but confirms no prior cross-repo patterns exist"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Empty baselines - confirms no performance baselines established yet, relevant if the analyzer will track metrics"
+          }
+        ]
+      },
+      "timestamp": 1772302460,
+      "ttl": 1800
     }
   }
 }
