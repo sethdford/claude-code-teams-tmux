@@ -513,6 +513,78 @@
       },
       "timestamp": 1771762636,
       "ttl": 3600
+    },
+    "322954d74759f51b633a74ef2e0e2312": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "fast",
+        "key_risks": [
+          "Setup validation logic may fail differently across environments (tmux versions, OS differences)",
+          "Synthetic pipeline run must not accidentally touch real GitHub issues or repos"
+        ],
+        "implementation_hints": [
+          "Create sw-tutorial.sh script with a 'start' subcommand that orchestrates a local-mode pipeline run on a synthetic goal",
+          "Reuse existing sw-doctor.sh validation checks for setup validation during the tutorial run",
+          "Write tutorial artifacts to .claude/tutorial-artifacts/ and ensure cleanup on re-run",
+          "Add inline stage explanations by hooking into pipeline stage transitions with TUTORIAL_MODE env var",
+          "Support --local flag by default to avoid requiring GitHub auth for first-run success"
+        ]
+      },
+      "timestamp": 1772242464,
+      "ttl": 3600
+    },
+    "86e45af2784b6885aa0e755fcd3c82ae": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1772242469,
+      "ttl": 1800
+    },
+    "eedb4fc811548c5e4ffddefd1295b44c": {
+      "result": {
+        "estimated_cost_usd": 2.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 125000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772242475,
+      "ttl": 3600
+    },
+    "a14bf28007384d08ea3aac481b4183c9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Detailed project metadata (node, vitest, npm, commonjs) is directly useful for planning the tutorial pipeline — knowing the tech stack informs which setup steps and validations to include."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Test failure patterns for sw-cleanup.sh (heartbeat detection, dry-run output) and sw-code-review-test.sh are relevant because a setup validation tutorial will exercise these same code paths and must handle these known failure modes."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Bootstrap-detected nodejs project type provides a redundant but corroborating signal for the project context used during planning."
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Empty cross-repo learnings — no actionable content for this feature, but confirms no conflicting global patterns exist."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines — no historical performance data available to inform planning estimates or success criteria for the tutorial pipeline."
+          }
+        ]
+      },
+      "timestamp": 1772242496,
+      "ttl": 1800
     }
   }
 }
