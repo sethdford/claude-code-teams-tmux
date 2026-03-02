@@ -261,6 +261,122 @@ estimate_pipeline_cost() {
     echo "{\"input_tokens\":${avg_input},\"output_tokens\":${avg_output}}"
 }
 
+write_cost_forecast() {
+    local forecast_json="$1"
+    mkdir -p "$ARTIFACTS_DIR"
+    echo "$forecast_json" | jq '.' > "$ARTIFACTS_DIR/cost-forecast.json"
+}
+
+forecast_pipeline_cost() {
+    local stages_json
+    stages_json=$(jq '[.stages[] | select(.enabled == true)]' "$PIPELINE_CONFIG" 2>/dev/null || echo "[]")
+
+    local stage_count
+    stage_count=$(echo "$stages_json" | jq 'length' 2>/dev/null || echo "0")
+
+    local est input_tokens output_tokens
+    est=$(estimate_pipeline_cost "$stages_json")
+    input_tokens=$(echo "$est" | jq -r '.input_tokens // 0')
+    output_tokens=$(echo "$est" | jq -r '.output_tokens // 0')
+
+    local complexity_score
+    complexity_score="${INTELLIGENCE_COMPLEXITY:-5}"
+    [[ ! "$complexity_score" =~ ^[0-9]+$ ]] && complexity_score=5
+
+    local model_plan model model_key input_rate output_rate
+    model_plan=$(jq -c '[.stages[] | select(.enabled==true) | {id: .id, model: (.config.model // .model // empty)}]' "$PIPELINE_CONFIG" 2>/dev/null || echo '[]')
+    model="${MODEL:-$(jq -r '.defaults.model // "sonnet"' "$PIPELINE_CONFIG" 2>/dev/null || echo sonnet)}"
+    model_key=$(echo "$model" | tr '[:upper:]' '[:lower:]')
+    input_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${model_key}.input // 3" 2>/dev/null || echo "3")
+    output_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${model_key}.output // 15" 2>/dev/null || echo "15")
+
+    local base_cost complexity_multiplier iteration_multiplier predicted_cost margin
+    base_cost=$(awk -v it="$input_tokens" -v ot="$output_tokens" -v ir="$input_rate" -v or="$output_rate" 'BEGIN{printf "%.4f", ((it/1000000)*ir)+((ot/1000000)*or)}')
+    complexity_multiplier=$(awk -v c="$complexity_score" 'BEGIN{printf "%.3f", 0.85 + (c/10)*0.5}')
+
+    local max_iter avg_iter
+    max_iter=$(echo "$stages_json" | jq '[.[] | .config.max_iterations // empty] | if length>0 then max else 10 end' 2>/dev/null || echo "10")
+    avg_iter=$(echo "$stages_json" | jq '[.[] | .config.max_iterations // empty] | if length>0 then (add/length) else 10 end' 2>/dev/null || echo "10")
+    iteration_multiplier=$(awk -v a="$avg_iter" 'BEGIN{printf "%.3f", 1 + ((a-10)/100)}')
+
+    predicted_cost=$(awk -v b="$base_cost" -v cm="$complexity_multiplier" -v im="$iteration_multiplier" 'BEGIN{printf "%.2f", b*cm*im}')
+
+    local historical_avg historical_samples
+    historical_avg=$(jq -s -r --arg cs "$complexity_score" '
+        map(select(.type=="pipeline.completed" and (.total_cost|tonumber?!=null)))
+        | map(select((.complexity|tonumber? // 5) >= (($cs|tonumber)-1) and (.complexity|tonumber? // 5) <= (($cs|tonumber)+1)))
+        | if length>0 then (map(.total_cost|tonumber) | add/length) else 0 end
+    ' "${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}" 2>/dev/null || echo "0")
+    historical_samples=$(jq -s -r --arg cs "$complexity_score" '
+        map(select(.type=="pipeline.completed" and (.total_cost|tonumber?!=null)))
+        | map(select((.complexity|tonumber? // 5) >= (($cs|tonumber)-1) and (.complexity|tonumber? // 5) <= (($cs|tonumber)+1)))
+        | length
+    ' "${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}" 2>/dev/null || echo "0")
+    if [[ "${historical_samples:-0}" -gt 0 ]]; then
+        predicted_cost=$(awk -v p="$predicted_cost" -v h="$historical_avg" 'BEGIN{printf "%.2f", (p*0.6)+(h*0.4)}')
+    fi
+
+    margin=$(awk -v p="$predicted_cost" 'BEGIN{m=p*0.27; if (m<0.50) m=0.50; printf "%.2f", m}')
+
+    local duration_minutes
+    duration_minutes=$(awk -v sc="$stage_count" -v c="$complexity_score" -v ai="$avg_iter" 'BEGIN{d=(sc*9)+(c*4)+(ai*1.5); if(d<10)d=10; printf "%.0f", d}')
+
+    jq -n \
+        --arg ts "$(now_iso)" \
+        --argjson complexity_score "$complexity_score" \
+        --argjson historical_samples "${historical_samples:-0}" \
+        --argjson historical_avg_usd "${historical_avg:-0}" \
+        --argjson threshold_usd "${COST_APPROVAL_THRESHOLD_USD:-10}" \
+        --argjson predicted_cost_usd "$predicted_cost" \
+        --argjson margin_usd "$margin" \
+        --argjson duration_minutes "$duration_minutes" \
+        --argjson max_iterations "$max_iter" \
+        --argjson stage_count "$stage_count" \
+        --argjson model_plan "$model_plan" \
+        '{
+            ts: $ts,
+            predicted_cost_usd: $predicted_cost_usd,
+            confidence_margin_usd: $margin_usd,
+            estimated_duration_minutes: $duration_minutes,
+            complexity_score: $complexity_score,
+            historical_similar_issue_cost_avg_usd: $historical_avg_usd,
+            historical_similar_issue_samples: $historical_samples,
+            pipeline_stage_count: $stage_count,
+            model_routing_plan: $model_plan,
+            max_iterations: $max_iterations,
+            approval_threshold_usd: $threshold_usd,
+            approval_required: ($predicted_cost_usd > $threshold_usd)
+        }'
+}
+
+require_cost_approval_if_needed() {
+    local forecast_json="$1"
+    local predicted margin duration threshold needs_approval
+    predicted=$(echo "$forecast_json" | jq -r '.predicted_cost_usd // 0')
+    margin=$(echo "$forecast_json" | jq -r '.confidence_margin_usd // 0')
+    duration=$(echo "$forecast_json" | jq -r '.estimated_duration_minutes // 0')
+    threshold=$(echo "$forecast_json" | jq -r '.approval_threshold_usd // 10')
+    needs_approval=$(echo "$forecast_json" | jq -r '.approval_required // false')
+
+    echo -e "  ${BOLD}Cost Forecast:${RESET} \$$predicted (±\$$margin), Duration: ${duration}min"
+
+    if [[ "$SKIP_COST_APPROVAL" == "true" || "$SKIP_GATES" == "true" || "$HEADLESS" == "true" || "$CI_MODE" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ "$needs_approval" == "true" ]]; then
+        echo -e "  ${YELLOW}Approval required:${RESET} forecast exceeds threshold (\$$threshold)"
+        local answer=""
+        read -rp "  Proceed with pipeline start? [y/N] " answer || true
+        if ! echo "$answer" | grep -qiE '^(y|yes)$'; then
+            warn "Pipeline start canceled by user (cost approval gate)"
+            emit_event "pipeline.cost_approval_blocked" "predicted_cost=${predicted}" "threshold=${threshold}" "issue=${ISSUE_NUMBER:-0}"
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # ─── Defaults ───────────────────────────────────────────────────────────────
 GOAL=""
 ISSUE_NUMBER=""
@@ -283,6 +399,8 @@ NO_GITHUB_LABEL=false
 CI_MODE=false
 DRY_RUN=false
 IGNORE_BUDGET=false
+SKIP_COST_APPROVAL=false
+COST_APPROVAL_THRESHOLD_USD=$(_config_get_int "pipeline.cost_approval_threshold_usd" 10 2>/dev/null || echo 10)
 COMPLETED_STAGES=""
 RESUME_FROM_CHECKPOINT=false
 MAX_ITERATIONS_OVERRIDE=""
@@ -355,6 +473,7 @@ show_help() {
     echo -e "  ${DIM}--no-github-label${RESET}         Don't modify issue labels"
     echo -e "  ${DIM}--ci${RESET}                      CI mode (skip gates, non-interactive)"
     echo -e "  ${DIM}--ignore-budget${RESET}           Skip budget enforcement checks"
+    echo -e "  ${DIM}--skip-cost-approval${RESET}    Skip pre-start cost approval gate"
     echo -e "  ${DIM}--worktree [=name]${RESET}         Run in isolated git worktree (parallel-safe)"
     echo -e "  ${DIM}--dry-run${RESET}                 Show what would happen without executing"
     echo -e "  ${DIM}--slack-webhook <url>${RESET}     Send notifications to Slack"
@@ -441,6 +560,7 @@ parse_args() {
             --no-github-label) NO_GITHUB_LABEL=true; shift ;;
             --ci)          CI_MODE=true; SKIP_GATES=true; shift ;;
             --ignore-budget) IGNORE_BUDGET=true; shift ;;
+            --skip-cost-approval) SKIP_COST_APPROVAL=true; shift ;;
             --max-iterations) MAX_ITERATIONS_OVERRIDE="$2"; shift 2 ;;
             --completed-stages) COMPLETED_STAGES="$2"; shift 2 ;;
             --resume) RESUME_FROM_CHECKPOINT=true; shift ;;
@@ -2478,6 +2598,15 @@ pipeline_start() {
             fi
         fi
     fi
+
+    # Forecast pipeline cost/duration and enforce optional approval gate
+    local forecast_json
+    forecast_json=$(forecast_pipeline_cost)
+    write_cost_forecast "$forecast_json"
+    PREDICTED_COST=$(echo "$forecast_json" | jq -r '.predicted_cost_usd // empty' 2>/dev/null || echo "")
+    export PREDICTED_COST
+    emit_event "pipeline.cost_forecast" "issue=${ISSUE_NUMBER:-0}" "predicted_cost=${PREDICTED_COST:-0}" "threshold=${COST_APPROVAL_THRESHOLD_USD:-10}"
+    require_cost_approval_if_needed "$forecast_json" || return 1
 
     # Start background heartbeat writer
     start_heartbeat
