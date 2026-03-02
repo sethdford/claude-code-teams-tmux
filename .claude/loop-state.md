@@ -71,16 +71,16 @@ Historical context (lessons from previous pipelines):
 Discoveries from other pipelines:
 [38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
 [design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: "
-iteration: 1
+iteration: 2
 max_iterations: 20
-status: running
+status: complete
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-03-02T12:31:04Z
-last_iteration_at: 2026-03-02T12:31:04Z
+started_at: 2026-03-02T12:45:22Z
+last_iteration_at: 2026-03-02T12:45:22Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
