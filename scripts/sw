@@ -605,6 +605,9 @@ main() {
         hello)
             exec "$SCRIPT_DIR/sw-hello.sh" "$@"
             ;;
+        ping)
+            exec "$SCRIPT_DIR/sw-ping.sh" "$@"
+            ;;
         *)
             error "Unknown command: ${cmd}"
             echo ""
