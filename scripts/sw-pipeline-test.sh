@@ -526,7 +526,16 @@ test_start_requires_goal_or_issue() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 4. Intake with inline --goal creates branch + artifacts
+# 4. Help includes cost approval bypass flag
+# ──────────────────────────────────────────────────────────────────────────────
+test_help_includes_skip_cost_approval() {
+    invoke_pipeline --help
+    assert_exit_code 0 "help should succeed" &&
+    assert_output_contains "skip-cost-approval" "help documents cost approval bypass"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. Intake with inline --goal creates branch + artifacts
 # ──────────────────────────────────────────────────────────────────────────────
 test_intake_inline() {
     # Use intake-only template so pipeline stops after intake
@@ -1814,6 +1823,7 @@ main() {
         "test_preflight_passes:Preflight passes with all mocks"
         "test_preflight_fails_missing_loop:Preflight fails when sw-loop.sh missing"
         "test_start_requires_goal_or_issue:Start requires --goal or --issue"
+        "test_help_includes_skip_cost_approval:CLI help includes --skip-cost-approval"
         "test_intake_inline:Intake with --goal creates branch + artifacts"
         "test_intake_issue:Intake with --issue fetches from GitHub"
         "test_plan_generates_artifacts:Plan generates plan.md, dod.md, tasks"
