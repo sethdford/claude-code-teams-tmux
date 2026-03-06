@@ -41,12 +41,12 @@
           "tester",
           "reviewer"
         ],
-        "confidence": 0.9,
-        "reasoning": "Modular decomposition requires architectural design to identify extraction boundaries and library interfaces; builder implements, tester validates regressions, reviewer ensures quality",
+        "confidence": 0.88,
+        "reasoning": "Modular decomposition is fundamentally an architectural task requiring system design decisions; builder executes the extraction, tester validates the new library, reviewer ensures quality.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772779090,
+      "timestamp": 1772783522,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -2170,31 +2170,28 @@
     },
     "302019532635d54e81872a6d09b7c19f": {
       "result": {
-        "complexity": 8,
-        "risk_level": "high",
-        "success_probability": 78,
-        "recommended_template": "full",
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "autonomous",
         "issue_type": "refactor",
         "key_risks": [
-          "Breaking critical pipeline stage execution during extraction",
-          "Integration issues between orchestration logic and extracted stage library",
-          "Unforeseen dependencies between stage functions causing runtime failures",
-          "Performance regression from indirect function calls and source dependencies",
-          "Test coverage gaps in newly extracted stage functions",
-          "Backwards compatibility if other scripts depend on internal pipeline functions"
+          "Breaking existing functionality during extraction despite test coverage",
+          "Missing or incomplete dependencies when separating orchestration from stage execution logic",
+          "Performance regression from changes to execution flow or variable scoping",
+          "Complex interdependencies making clean module boundary definition difficult",
+          "Test gaps not catching all stage behaviors and edge cases after extraction"
         ],
         "implementation_hints": [
-          "Map all existing stage execution functions and their dependencies before extraction",
-          "Create new lib/pipeline-stages.sh with stub functions, then gradually move implementation",
-          "Extract one stage at a time, validating with existing tests after each move",
-          "Add comprehensive unit tests for each extracted stage function covering edge cases",
-          "Verify orchestration correctly sources and calls extracted library functions",
-          "Run full test suite frequently throughout refactoring to catch regressions early",
-          "Use bash source tracing and grep to identify hidden function interdependencies",
-          "Document function signatures, parameters, environment assumptions in new library"
+          "Analyze and map all dependencies between orchestration and stage logic before extraction",
+          "Extract stages incrementally (one at a time) with test validation after each step",
+          "Pay careful attention to variable scope, context passing, and error handling consistency",
+          "Design stage function interface with future parallelization requirements in mind",
+          "Create detailed architecture diagram before implementation to clarify new module structure",
+          "Benchmark execution latency before and after refactoring to validate no performance regression"
         ]
       },
-      "timestamp": 1772778264,
+      "timestamp": 1772783148,
       "ttl": 3600
     },
     "155cf3677bf87119551a6b2eb6482c54": {
@@ -2342,78 +2339,78 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Detailed project conventions (vitest, src/, commonjs) directly applicable to plan validation for sw-pipeline.sh refactoring"
+            "relevance": 35,
+            "summary": "Project conventions (commonjs imports, vitest, npm, src/ directory) inform the modular library extraction structure and module patterns"
           },
           {
             "file": "failures.json",
-            "relevance": 25,
-            "summary": "Empty but conceptually relevant for capturing plan validation failure details that caused rejection"
+            "relevance": 15,
+            "summary": "Test failure pattern (dry-run validation, output detection) shows similar validation issues that could affect stage execution library tests"
           },
           {
-            "file": "decisions.json",
-            "relevance": 15,
-            "summary": "Currently empty, would be relevant for storing architectural decisions made during plan stage"
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Confirms nodejs project type, minimally relevant for understanding build/test context of extracted library"
           }
         ]
       },
-      "timestamp": 1772778809,
+      "timestamp": 1772783366,
       "ttl": 1800
     },
     "7367df558443bc97390f599129f09d03": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 35,
-            "summary": "Documents project conventions (source_dir, test_pattern, import_style) relevant for establishing modular patterns, though focused on Node.js conventions rather than bash script architecture"
+            "file": "patterns.json (first entry)",
+            "relevance": 30,
+            "summary": "Project setup metadata (Node/vitest/commonjs) could inform architectural choices for stage library interfaces, but doesn't address sw-pipeline.sh stage execution design"
           },
           {
-            "file": "patterns.json",
-            "relevance": 25,
-            "summary": "Establishes project type as nodejs with npm/vitest, providing basic context for the repository structure"
+            "file": "patterns.json (second entry)",
+            "relevance": 20,
+            "summary": "Project type detection (nodejs) provides minimal context, insufficient for stage execution library design patterns"
           },
           {
             "file": "failures.json",
-            "relevance": 5,
-            "summary": "Empty; no failure patterns captured yet to inform architecture decisions"
+            "relevance": 15,
+            "summary": "Documents sw-cleanup.sh test failure; shell scripting context is tangentially relevant to sw-pipeline.sh, but this specific failure doesn't inform stage execution library architecture"
           },
           {
             "file": "decisions.json",
-            "relevance": 3,
-            "summary": "Empty; no architectural decisions recorded yet"
+            "relevance": 5,
+            "summary": "Empty decisions array; no captured architectural decisions available"
           },
           {
-            "file": "global.json",
-            "relevance": 2,
-            "summary": "Empty cross-repo learnings; no patterns available to guide design"
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines; no performance or quality metrics to inform design choices"
           }
         ]
       },
-      "timestamp": 1772778839,
+      "timestamp": 1772783390,
       "ttl": 1800
     },
     "9b0c487a1294b82116071a8eef345d26": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 35,
-            "summary": "Contains project structure info (src/ dir, test patterns, import style) that could inform module organization decisions, but lacks design approach guidance"
+            "file": "failures.json",
+            "relevance": 28,
+            "summary": "Contains documented failure pattern from test execution. While not directly about design approaches, failure patterns inform what anti-patterns to avoid and help prevent similar mistakes in pipeline refactoring."
           },
           {
-            "file": "patterns.json",
-            "relevance": 15,
-            "summary": "Project type confirmation (nodejs) provides minimal context for architectural decisions on stage execution library"
+            "file": "patterns.json (first entry - conventions)",
+            "relevance": 18,
+            "summary": "Documents project conventions (src/, test pattern, import style) which inform structural decisions for the modular decomposition. Ensures new stage execution library follows established patterns."
           },
           {
-            "file": "global.json",
-            "relevance": 5,
-            "summary": "Empty cross-repo learnings array; no historical pattern data to inform rejected approaches"
+            "file": "patterns.json (second entry - project type)",
+            "relevance": 12,
+            "summary": "Confirms Node.js project type, which may influence API design choices and module structure for the stage execution library extraction."
           }
         ]
       },
-      "timestamp": 1772778851,
+      "timestamp": 1772783407,
       "ttl": 1800
     },
     "169e3f796c6e592b1539dae2f66d1414": {
@@ -2421,32 +2418,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Detailed conventions captured 2026-03-06: source_dir=src/, test_pattern=*.test.js, vitest runner, npm, commonjs imports - directly guides where to place extracted stage execution library and test structure"
+            "relevance": 78,
+            "summary": "Project structure details (src/, vitest, commonjs) directly inform how to organize extracted stage execution library and test patterns to match repo conventions"
           },
           {
             "file": "patterns.json",
-            "relevance": 35,
-            "summary": "Minimal entry from 2026-02-21: confirms Node.js type but superseded by more recent detailed patterns entry with full conventions"
+            "relevance": 52,
+            "summary": "Confirms nodejs project type and detection timestamp, establishing baseline project metadata for the decomposition task"
           },
           {
             "file": "failures.json",
-            "relevance": 30,
-            "summary": "Empty failures list - indicates clean slate for build stage; provides baseline for tracking any issues during library extraction"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 20,
-            "summary": "Empty - no architectural decisions recorded yet; relevant category for capturing modular decomposition design choices during this build"
+            "relevance": 28,
+            "summary": "Pre-existing test failure in sw-cleanup.sh may be relevant context if build stage needs to handle or avoid similar dry-run detection patterns"
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Empty baselines - would help track build performance impact of extracted library but no prior data available"
+            "relevance": 8,
+            "summary": "Empty baselines offer no actionable context for current build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No prior architectural decisions captured; build stage will establish new patterns"
           }
         ]
       },
-      "timestamp": 1772779068,
+      "timestamp": 1772783496,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -2455,26 +2452,26 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Critical for build stage: defines source directory (src/), test pattern (*.test.js), import style (commonjs), test runner (vitest), and package manager (npm). Essential for understanding project structure and conventions."
+            "summary": "Project structure and build configuration (node, vitest, npm, src/ directory) are essential for the build stage to compile and test code correctly"
           },
           {
             "file": "failures.json",
-            "relevance": 35,
-            "summary": "Could inform build decisions by highlighting previous failure patterns, but currently empty so limited immediate relevance."
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 25,
-            "summary": "Architectural decisions could be relevant for build-stage code changes, but currently empty and less directly applicable than project structure conventions."
+            "relevance": 60,
+            "summary": "Known test failure pattern in sw-cleanup.sh dry-run mode should be avoided when building similar functionality in the current stage"
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Performance baselines would be useful for optimization, but currently empty and less critical for active build execution."
+            "relevance": 5,
+            "summary": "Empty baseline metrics; not applicable to current build context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No prior decisions captured; empty array provides no guidance for build stage"
           }
         ]
       },
-      "timestamp": 1772779078,
+      "timestamp": 1772783508,
       "ttl": 1800
     },
     "9c3276d156ab2196f362eef4da130499": {
@@ -2503,6 +2500,132 @@
         }
       ],
       "timestamp": 1772782278,
+      "ttl": 1800
+    },
+    "4c8a963e9413745906649365a1e9f90d": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1772783160,
+      "ttl": 1800
+    },
+    "1f7db9ddf915f6108c9d9c7580a4762a": {
+      "result": {
+        "estimated_cost_usd": 2.45,
+        "estimated_iterations": 3,
+        "estimated_tokens": 320000,
+        "likely_failure_stage": "build",
+        "confidence": 72,
+        "breakdown": {
+          "cost_by_stage": {
+            "intake": 0.08,
+            "plan": 0.15,
+            "design": 0.35,
+            "build_loop": 1.42,
+            "test": 0.18,
+            "review": 0.18,
+            "compound_quality": 0.06,
+            "audit": 0.03
+          },
+          "token_allocation": {
+            "intake": 12000,
+            "plan": 35000,
+            "design": 48000,
+            "build_loop": 165000,
+            "test": 30000,
+            "review": 20000,
+            "compound_quality": 8000,
+            "audit": 2000
+          },
+          "failure_reasons": [
+            "Missing or incomplete dependencies during module extraction",
+            "Complex interdependencies causing integration failures",
+            "Test coverage gaps after refactoring critical stage execution"
+          ],
+          "cost_drivers": [
+            "Complexity 7 requiring multiple design iterations",
+            "3 build-test cycles due to 75% initial success rate",
+            "Incremental extraction strategy (one stage at a time)",
+            "Comprehensive testing and performance validation"
+          ]
+        }
+      },
+      "timestamp": 1772783177,
+      "ttl": 3600
+    },
+    "cbd0f0364f750f185ffc5bea58f7523f": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project conventions (source_dir, test_pattern, import_style, test_runner) directly inform architecture planning for library extraction and implementation approach"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Test failure patterns in related sw-*.sh scripts show testing conventions and failure modes relevant to testing the extracted library"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Basic project type detection (nodejs) provides minimal architectural context; largely redundant with more detailed first patterns.json entry"
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings; no actionable patterns or decisions captured for this context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No prior architectural decisions recorded; provides no constraints or precedents for library extraction planning"
+          }
+        ]
+      },
+      "timestamp": 1772783198,
+      "ttl": 1800
+    },
+    "67c1438bc810a603427266d9fee3c6b3": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772784815,
+      "ttl": 1800
+    },
+    "6f7745183555ed7090f6f743234786cd": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772785069,
+      "ttl": 1800
+    },
+    "9fe9c6be059898bb3638a75d229e750d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772785314,
       "ttl": 1800
     }
   }

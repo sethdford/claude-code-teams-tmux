@@ -1,6 +1,6 @@
 # pipeline-lifecycle.sh — Pipeline subcommands and lifecycle management
-# Source from sw-pipeline.sh (after pipeline-execution.sh and all other pipeline libs).
-# Depends on: run_pipeline (sw-pipeline.sh), run_stage_with_retry/self_healing_build_test (pipeline-execution),
+# Source from sw-pipeline.sh (after pipeline-orchestrator.sh and all other pipeline libs).
+# Depends on: run_pipeline (pipeline-orchestrator), run_stage_with_retry/self_healing_build_test (pipeline-execution),
 #   all state/github/detection modules.
 [[ -n "${_PIPELINE_LIFECYCLE_LOADED:-}" ]] && return 0
 _PIPELINE_LIFECYCLE_LOADED=1

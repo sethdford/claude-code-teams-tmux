@@ -458,16 +458,17 @@ test_checkpoint_files_modified() {
 # ──────────────────────────────────────────────────────────────────────────────
 test_pipeline_has_heartbeat() {
     local pipeline="$SCRIPT_DIR/sw-pipeline.sh"
+    local orchestrator="$SCRIPT_DIR/lib/pipeline-orchestrator.sh"
 
-    if ! grep -q "start_heartbeat()" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} start_heartbeat() not found in pipeline"
+    if ! grep -q "start_heartbeat()" "$pipeline" 2>/dev/null && ! grep -q "start_heartbeat()" "$orchestrator" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} start_heartbeat() not found in pipeline or orchestrator"
         return 1
     fi
-    if ! grep -q "stop_heartbeat()" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} stop_heartbeat() not found in pipeline"
+    if ! grep -q "stop_heartbeat()" "$pipeline" 2>/dev/null && ! grep -q "stop_heartbeat()" "$orchestrator" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} stop_heartbeat() not found in pipeline or orchestrator"
         return 1
     fi
-    if ! grep -q "stop_heartbeat" "$pipeline" 2>/dev/null; then
+    if ! grep -q "stop_heartbeat" "$pipeline" 2>/dev/null && ! grep -q "stop_heartbeat" "$orchestrator" 2>/dev/null; then
         echo -e "    ${RED}✗${RESET} stop_heartbeat not called in cleanup"
         return 1
     fi
@@ -496,13 +497,14 @@ test_loop_has_heartbeat_checkpoint() {
 # ──────────────────────────────────────────────────────────────────────────────
 test_pipeline_human_intervention() {
     local pipeline="$SCRIPT_DIR/sw-pipeline.sh"
+    local orchestrator="$SCRIPT_DIR/lib/pipeline-orchestrator.sh"
 
-    if ! grep -q "skip-stage.txt" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} skip-stage.txt check not found in pipeline"
+    if ! grep -q "skip-stage.txt" "$pipeline" 2>/dev/null && ! grep -q "skip-stage.txt" "$orchestrator" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} skip-stage.txt check not found in pipeline or orchestrator"
         return 1
     fi
-    if ! grep -q "human-message.txt" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} human-message.txt check not found in pipeline"
+    if ! grep -q "human-message.txt" "$pipeline" 2>/dev/null && ! grep -q "human-message.txt" "$orchestrator" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} human-message.txt check not found in pipeline or orchestrator"
         return 1
     fi
     return 0
