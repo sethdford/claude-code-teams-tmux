@@ -35,16 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "team": [
-          "docs-writer",
+        "primary_role": "builder",
+        "secondary_roles": [
           "architect",
+          "tester",
           "reviewer"
         ],
-        "reasoning": "Stale documentation in a 710-file codebase with complex shell/TypeScript architecture requires: (1) docs-writer to regenerate/update content, (2) architect to ensure accuracy against current design patterns and AUTO marker structure, (3) reviewer for completeness validation. Shipwright's documentation system uses code-sourced AUTO sections — architect ensures alignment. Tester not needed (examples tested separately). Security/DevOps/PM roles out of scope.",
-        "estimated_cost": 4.5,
-        "risk_level": "medium"
+        "confidence": 0.9,
+        "reasoning": "Feature implementation task requiring core development of auto-detection logic + recommendation engine; architect for design validation, tester for detection accuracy, reviewer for quality gates.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772432701,
+      "timestamp": 1772778844,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -2165,6 +2167,314 @@
       },
       "timestamp": 1772436242,
       "ttl": 3600
+    },
+    "5571d7da3a8f1dec752d9df10dc12796": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 77,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Detection accuracy degradation on unconventional or hybrid project structures",
+          "Confidence scoring miscalibration leading to suboptimal template recommendations",
+          "Configuration generation may not match actual project constraints and build requirements",
+          "Maintenance burden supporting 8+ language/framework combinations across dependency ecosystem changes",
+          "Integration complexity with existing prep/setup flows without breaking backward compatibility"
+        ],
+        "implementation_hints": [
+          "Implement language detection first with priority ordering (package.json → go.mod → requirements.txt → Cargo.toml → pom.xml)",
+          "Build modular detection functions for each project type with explicit test cases and decision trees",
+          "Use weighted scoring system for confidence levels with documented decision rules for each type",
+          "Create reference library of known dependencies and patterns (web frameworks, CLI tools, test frameworks) for each detected type",
+          "Validate detection against 20+ real open-source projects across each language/type combination before release",
+          "Add override/manual detection mechanism for edge cases and user feedback correction",
+          "Detect test commands simultaneously during analysis to populate daemon-config.json test_cmd field",
+          "Test on monorepos and workspaces (npm workspaces, Go modules, Python packages) to handle detection in subdirectories",
+          "Document detection rules and confidence thresholds clearly for transparency and maintainability",
+          "Add telemetry to track detection accuracy and confidence calibration across real-world usage"
+        ]
+      },
+      "timestamp": 1772778278,
+      "ttl": 3600
+    },
+    "a80a61c6b7d2dd6efc7a722bf724c130": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1772778288,
+      "ttl": 1800
+    },
+    "0ac8e5a8174b3334e165cf676a22be93": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 65000,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1772778297,
+      "ttl": 3600
+    },
+    "6923aa9f779c09261dff658e1d8c47f6": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "backend",
+          "testing",
+          "documentation"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Moderate complexity: requires multi-signal heuristic analysis, statistical confidence scoring, and generated config correctness. Well-defined acceptance criteria but needs rigorous validation across 8+ project types with real-world edge cases."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "data-pipeline"
+          ],
+          "build": [],
+          "review": [
+            "pr-quality",
+            "architecture-design"
+          ],
+          "compound_quality": [
+            "detection-accuracy-validation",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "detection-accuracy-validation"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Question which heuristics truly differentiate project types before implementation—what if a node CLI looks like a web app to naive pattern matching?",
+          "architecture-design": "Design a clear multi-signal detection algorithm and ADR so maintainers understand why certain package files or directory patterns matter.",
+          "testing-strategy": "Define validation plan covering all 8+ types, edge cases (monorepos, minimal projects, unusual structures), and confidence calibration testing.",
+          "api-design": "Define clean input/output for the detection function—what filesystem artifacts does it read, and what does it return (type, confidence, rationale)?",
+          "data-pipeline": "Apply multi-source signal fusion patterns: combine package.json heuristics, directory structure patterns, and dependency analysis into a single detection result.",
+          "pr-quality": "Make detection heuristics explicit in code so reviewers can verify the logic—confidence scores must have clear justification.",
+          "detection-accuracy-validation": "Validate detection accuracy against real sample repos, not synthetic tests; calibrate confidence scores so claimed accuracy matches actual accuracy.",
+          "validation-thoroughness": "Test actual user experience: generate daemon-config.json and agent recommendations for each type and verify they work end-to-end.",
+          "deploy-safety": "Verify detection doesn't break existing workflows—repos with manual type specs should continue working.",
+          "observability": "Track detection accuracy per project type in production to identify weak heuristics and catch accuracy drift over time."
+        },
+        "generated_skills": [
+          {
+            "name": "detection-accuracy-validation",
+            "reason": "No existing skill specifically addresses multi-class classification validation, confidence calibration testing, and example config generation verification for detection systems.",
+            "content": "## Detection Accuracy Validation\n\nWhen implementing multi-class project type detection, validation must span accuracy, confidence calibration, and generated configuration correctness.\n\n### Build a Real-World Test Corpus\n\nCreate 5–10 sample repositories for each of the 8+ project types (node web, node cli, go library, python web, rust cli, java library, etc.). Use actual open-source projects or realistic test fixtures, not synthetic examples. Each sample should have:\n- Real package files (package.json, go.mod, pyproject.toml, Cargo.toml, etc.)\n- Typical directory structures for that type\n- Representative dependencies (web frameworks, CLI libraries, etc.)\n\n### Multi-Class Classification Metrics\n\nFor each sample repository, record:\n1. **Detected type** — what the algorithm returns\n2. **Confidence score** — 0.0–1.0 returned by the algorithm\n3. **Ground truth type** — what the repo actually is (determined manually or by convention)\n4. **Per-type precision and recall** — e.g., \"go library detection: 90% precision, 85% recall\"\n5. **Overall accuracy** — percentage of detections that match ground truth\n\nTrack false positives and false negatives separately to identify systematic weaknesses (e.g., \"node CLIs misclassified as web apps 15% of the time\").\n\n### Confidence Score Calibration\n\nA detection system is well-calibrated if claimed confidence matches actual accuracy. For example, if 100 detections claim 85% confidence, approximately 85 should be correct.\n\n- Plot confidence bins (0.8–0.9, 0.9–1.0, etc.) vs. actual accuracy on the test corpus\n- If detected types claiming 90% confidence are only 70% accurate, the scoring function is overconfident—adjust heuristic weights\n- Document any known low-confidence edge cases (e.g., \"hybrid projects with multiple languages score 60–75% confidence\")\n\n### Config Generation Verification\n\nFor each detected type, verify the generated configurations are correct:\n1. **daemon-config.json** — test commands, parallelism settings, and templates should match the project type (e.g., rust projects should use cargo test, not npm test)\n2. **Recommended agents** — library projects might emphasize security; web services might emphasize scaling\n3. **Example output** — generate one complete, realistic example per project type for documentation\n4. **No breaking changes** — test that generated configs don't conflict with or break existing shipwright workflows\n\n### Edge Case & Regression Testing\n\nTest detection on challenging inputs:\n- **Monorepos** — multiple projects in one repo; detection should handle or explicitly decline\n- **Workspaces** — npm/yarn workspaces or cargo workspaces\n- **Minimal projects** — single file, no dependencies; heuristics must not crash\n- **Unusual structures** — non-standard directories, missing package files\n- **Multi-language projects** — detection should prioritize dominant language\n- **Repos with manual type specs** — ensure backward compatibility; don't override explicit user configuration\n\n### Production Observability\n\nOnce deployed, instrument detection to monitor real-world accuracy:\n- Log confidence scores and detected types alongside generation of daemon-config.json\n- Alert if per-type accuracy drops below a threshold (e.g., node detection below 85%)\n- Collect misclassifications and route them to a learning system for heuristic refinement\n- Periodically recalibrate confidence scores based on production data"
+          }
+        ],
+        "review_focus": [
+          "Detection accuracy across all 8+ project types validated on real sample repositories, not synthetic tests",
+          "Confidence score calibration—claimed confidence should match actual accuracy rates on test corpus",
+          "Daemon-config.json and agent recommendation generation correctness for each project type",
+          "Edge case handling: monorepos, minimal projects, workspaces, multi-language repos, unusual directory structures",
+          "Backward compatibility: existing manual type specifications are not overridden; existing workflows continue working",
+          "Documentation completeness: one example per project type showing detected type, confidence, and generated config"
+        ],
+        "risk_areas": [
+          "False negatives on uncommon project types or atypical directory structures leading to poor initial configuration",
+          "Overconfident scores misleading users into adopting incorrect pipeline templates or daemon configs",
+          "Generated configs may not generalize across all variations within a project type (e.g., monorepos vs. single-project)",
+          "Breaking existing workflows or repos that explicitly set project type; detection override behavior must be safe",
+          "Detection accuracy degrading in production due to unforeseen patterns in user repositories",
+          "Insufficient test coverage for edge cases causing failures during integration with prep/setup commands"
+        ]
+      },
+      "timestamp": 1772778356,
+      "ttl": 3600
+    },
+    "5876b852e40e47b95cb955d7f9fbe4e3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 95,
+            "summary": "Shows current project type detection structure with detected fields (type: 'node', test_runner: 'vitest', package_manager: 'npm') and conventions that directly inform the feature's detection model and template selection logic"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 50,
+            "summary": "Demonstrates prior project type detection approach (nodejs detection via bootstrap) showing historical detection methodology that informs feature design decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Would capture prior architectural decisions about detection algorithms and template recommendation strategies if populated; currently empty but structurally relevant"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Would contain prior detection or template recommendation failures; currently empty but would inform edge case handling in the plan"
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Generic cross-repo learning patterns; too broad for project-specific type detection planning"
+          }
+        ]
+      },
+      "timestamp": 1772778371,
+      "ttl": 1800
+    },
+    "60f839186085921ea39f73ad96443392": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Contains current project detection data (type: node, test_runner: vitest, package_manager: npm) with detected conventions. Directly reflects what the auto-detection feature produces and validates."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Shows prior project type detection (nodejs) from bootstrap phase on 2026-02-21. Demonstrates historical auto-detection behavior and how the feature evolved."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 28,
+            "summary": "Empty failures list. Would be relevant for understanding what validation errors occurred during plan stage, but contains no captured failure data to analyze."
+          }
+        ]
+      },
+      "timestamp": 1772778624,
+      "ttl": 1800
+    },
+    "1e3ff83b35d71708958a2cbaeffa5dcb": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Complete project detection schema with type, framework, test runner, package manager, and conventions—directly shows the data model for auto-detection and template matching"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Example of detected project_type (nodejs) with detection source and timestamp—demonstrates how detection results are structured for engine output"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 5,
+            "summary": "Empty failure log—no architectural insights captured yet"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log—no design decisions recorded"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty metrics baseline—no performance or accuracy benchmarks yet"
+          }
+        ]
+      },
+      "timestamp": 1772778662,
+      "ttl": 1800
+    },
+    "e1f3b6c19e4270456bb731c1e8ebec63": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Current project detection working patterns (node, vitest, npm, commonjs conventions, src/ directory). Directly informs what detection mechanisms succeed and what conventions are in place."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Bootstrap-time project_type detection (nodejs from 2026-02-21). Shows earlier detection approach that may have been superseded or represents a simpler/rejected design compared to current detailed pattern capture."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Empty decisions log. Could contain rejected design decisions if populated, but currently provides no information about anti-patterns or avoided approaches."
+          }
+        ]
+      },
+      "timestamp": 1772778676,
+      "ttl": 1800
+    },
+    "c7ff99a7efd5728006b0f6a6aebb8dab": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains current project type (node/javascript), test runner (vitest), source conventions (src/, *.test.js), and import style—directly applicable to build stage decisions and test execution"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Basic project type detection (nodejs) from earlier bootstrap, but minimal detail; superseded by more recent and detailed patterns entry"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 22,
+            "summary": "No recorded failures to learn from, but indicates this is a fresh build with no prior regressions to watch for"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Empty baselines; no prior performance metrics available for comparison during build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "No architectural decisions captured; minimal value for current build stage"
+          }
+        ]
+      },
+      "timestamp": 1772778823,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical project structure metadata (source_dir, test_runner: vitest, package_manager: npm, test_pattern) needed for build execution and test discovery"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Previous build/test failures would inform error handling and debugging during current build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Architectural decisions might affect build strategy and import/module patterns"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Baseline metrics for performance validation, though currently empty; less critical for build execution"
+          }
+        ]
+      },
+      "timestamp": 1772778833,
+      "ttl": 1800
     }
   }
 }
