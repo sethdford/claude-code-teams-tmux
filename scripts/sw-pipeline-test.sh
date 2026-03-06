@@ -1506,8 +1506,10 @@ ISSUE_NUMBER=""
 NO_GITHUB=true
 FEOF
 
-    # Extract the function from the real pipeline
+    # Extract the function from the real pipeline (or its lib files)
     sed -n '/^_pipeline_compact_goal()/,/^}/p' "$REAL_PIPELINE_SCRIPT" >> "$fns_script" 2>/dev/null
+    grep -q '_pipeline_compact_goal' "$fns_script" 2>/dev/null || \
+        sed -n '/^_pipeline_compact_goal()/,/^}/p' "$SCRIPT_DIR"/lib/pipeline-*.sh >> "$fns_script" 2>/dev/null
 
     # Create mock plan and design files
     local plan_file="$TEST_TEMP_DIR/plan.md"
@@ -1554,6 +1556,8 @@ NO_GITHUB=true
 FEOF
 
     sed -n '/^load_composed_pipeline()/,/^}/p' "$REAL_PIPELINE_SCRIPT" >> "$fns_script" 2>/dev/null
+    grep -q 'load_composed_pipeline' "$fns_script" 2>/dev/null || \
+        sed -n '/^load_composed_pipeline()/,/^}/p' "$SCRIPT_DIR"/lib/pipeline-*.sh >> "$fns_script" 2>/dev/null
 
     local result
     result=$(
