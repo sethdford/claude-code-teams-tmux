@@ -286,6 +286,22 @@ else
     info "Could not auto-detect language (no package.json, Cargo.toml, go.mod, pyproject.toml, or setup.py found)"
 fi
 
+# Project type detection (enrichment — failure doesn't affect setup)
+if [[ -f "$SCRIPT_DIR/lib/project-type-detection.sh" ]]; then
+    source "$SCRIPT_DIR/lib/project-type-detection.sh"
+    local_detection=$(detect_project_type "$(pwd)" 2>/dev/null) || local_detection=""
+    if [[ -n "$local_detection" ]]; then
+        local_ptype=$(echo "$local_detection" | jq -r '.project_type // "unknown"' 2>/dev/null) || local_ptype="unknown"
+        local_pconf=$(echo "$local_detection" | jq -r '.confidence // 0' 2>/dev/null) || local_pconf=0
+        local_rec=$(recommend_template "$local_detection" 2>/dev/null) || local_rec=""
+        local_template=$(echo "$local_rec" | jq -r '.template // "standard"' 2>/dev/null) || local_template="standard"
+        if [[ "$local_ptype" != "unknown" ]]; then
+            info "Project type: ${BOLD}${local_ptype}${RESET} (confidence: ${local_pconf}%)"
+            echo -e "    ${DIM}Recommended template: ${local_template}${RESET}"
+        fi
+    fi
+fi
+
 # Check for .claude directory
 if [[ -d ".claude" ]]; then
     info "Found existing .claude/ directory — will preserve and enhance"

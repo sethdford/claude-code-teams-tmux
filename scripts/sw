@@ -605,6 +605,9 @@ main() {
         hello)
             exec "$SCRIPT_DIR/sw-hello.sh" "$@"
             ;;
+        detect)
+            exec "$SCRIPT_DIR/sw-detect.sh" "$@"
+            ;;
         *)
             error "Unknown command: ${cmd}"
             echo ""

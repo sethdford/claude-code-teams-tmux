@@ -432,6 +432,23 @@ prep_detect_stack() {
     success "Stack: ${BOLD}${LANG_DETECTED:-unknown}${RESET}" \
         "${FRAMEWORK:+/ ${BOLD}${FRAMEWORK}${RESET}}" \
         "${PACKAGE_MANAGER:+(${DIM}${PACKAGE_MANAGER}${RESET})}"
+
+    # Project type detection (additive enrichment — failure doesn't block prep)
+    if [[ -f "$SCRIPT_DIR/lib/project-type-detection.sh" ]]; then
+        source "$SCRIPT_DIR/lib/project-type-detection.sh"
+        local detection_json
+        detection_json=$(detect_project_type "$root" 2>/dev/null) || detection_json=""
+        if [[ -n "$detection_json" ]]; then
+            local ptype pconf
+            ptype=$(echo "$detection_json" | jq -r '.project_type // "unknown"' 2>/dev/null) || ptype="unknown"
+            pconf=$(echo "$detection_json" | jq -r '.confidence // 0' 2>/dev/null) || pconf=0
+            if [[ "$ptype" != "unknown" ]]; then
+                info "Project type: ${BOLD}${ptype}${RESET} (confidence: ${pconf}%)"
+            fi
+            # Store for config generation
+            PROJECT_TYPE_JSON="$detection_json"
+        fi
+    fi
 }
 
 # ─── prep_scan_structure ────────────────────────────────────────────────────
