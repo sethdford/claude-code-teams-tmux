@@ -1153,6 +1153,27 @@ Patrol pre-filter findings to confirm: ${patrol_findings_summary}"
         patrol_meta_run
     fi
 
+    # ── Adaptive Timeout Patrol — auto-tune stage timeouts from P95 data ──
+    if [[ -f "$SCRIPT_DIR/sw-adaptive-timeout.sh" ]]; then
+        local _at_config="${DAEMON_CONFIG:-${REPO_DIR:-.}/.claude/daemon-config.json}"
+        local _at_enabled
+        _at_enabled=$(jq -r '.adaptive_timeouts.enabled // false' "$_at_config" 2>/dev/null || echo "false")
+        local _at_auto
+        _at_auto=$(jq -r '.adaptive_timeouts.auto_apply // false' "$_at_config" 2>/dev/null || echo "false")
+        if [[ "$_at_enabled" == "true" && "$_at_auto" == "true" ]]; then
+            daemon_log INFO "Patrol: running adaptive timeout analysis"
+            local _at_out
+            _at_out=$(bash "$SCRIPT_DIR/sw-adaptive-timeout.sh" apply --auto 2>&1 || true)
+            local _at_updated
+            _at_updated=$(echo "$_at_out" | grep -c "updated" || true)
+            if [[ "${_at_updated:-0}" -gt 0 ]]; then
+                daemon_log INFO "Patrol: adaptive timeouts updated ${_at_updated} stage(s)"
+                emit_event "patrol.adaptive_timeout" "stages_updated=${_at_updated}" 2>/dev/null || true
+                total_findings=$((total_findings + 1))
+            fi
+        fi
+    fi
+
     # ── Strategic Intelligence Patrol (requires CLAUDE_CODE_OAUTH_TOKEN) ──
     if [[ -f "$SCRIPT_DIR/sw-strategic.sh" ]] && [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
         # shellcheck source=sw-strategic.sh

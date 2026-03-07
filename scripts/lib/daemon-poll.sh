@@ -1196,6 +1196,16 @@ daemon_poll_loop() {
             daemon_cleanup_stale || daemon_log WARN "daemon_cleanup_stale failed — continuing"
         fi
 
+        # Adaptive timeout adjustment every 10 cycles
+        if [[ $((POLL_CYCLE_COUNT % 10)) -eq 0 ]]; then
+            if type should_adjust_timeouts >/dev/null 2>&1; then
+                if should_adjust_timeouts 2>/dev/null; then
+                    daemon_log INFO "Triggering adaptive timeout adjustment"
+                    trigger_timeout_adjustment 2>/dev/null || daemon_log WARN "timeout adjustment failed — continuing"
+                fi
+            fi
+        fi
+
         # Rotate event log every 10 cycles (~10 min with 60s interval)
         if [[ $((POLL_CYCLE_COUNT % 10)) -eq 0 ]]; then
             rotate_event_log || true

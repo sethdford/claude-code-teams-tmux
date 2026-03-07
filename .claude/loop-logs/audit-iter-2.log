@@ -1,1 +1,64 @@
-Invalid API key · Fix external API key
+## Summary
+
+Based on my critical review of the cumulative work across iterations 1-2, here is my assessment:
+
+### What the Agent Accomplished
+
+The agent successfully implemented the **Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning** feature:
+
+1. **Core Implementation** (`scripts/sw-adaptive.sh` - 262 lines):
+   - P95 percentile calculations with 20% safety buffer
+   - Stage duration aggregation from historical pipeline data  
+   - Adaptive timeout calculations with 5-level override chain (CLI > env > config > adaptive > default)
+   - Confidence levels (low/medium/high) based on sample count
+   - CLI commands: `show timeouts`, `adjust`, and helpers
+
+2. **Database Integration** (`scripts/sw-db.sh` - 61 lines added):
+   - Schema v7 migration with `repo_hash` column
+   - Functions: `db_save_stage_duration`, `db_query_stage_durations`
+   - Timeout lookup index
+
+3. **Daemon Integration** (`scripts/lib/daemon-adaptive.sh` - 70 lines added):
+   - `resolve_stage_timeout` with override chain validation
+   - Integration with `mark_stage_complete` event emission
+   - Timeout adjustment trigger on 10th poll cycle
+
+4. **Comprehensive Tests** (`scripts/sw-adaptive-test.sh` - 236 lines):
+   - **39/39 tests PASS** covering:
+     - Percentile accuracy
+     - Override chain precedence
+     - Adjustment triggers
+     - Bounds clamping  
+     - State file creation
+
+5. **Dashboard Integration** (`dashboard/server.ts` - 28 lines):
+   - `/api/adaptive/timeout-stats` endpoint for observability
+
+6. **Cross-Platform Fixes** (iteration 2):
+   - Fixed `sed -i` compatibility between macOS/Linux
+
+### Code Quality ✓
+
+- ✓ Follows bash 3.2 compatibility guidelines
+- ✓ All scripts pass syntax validation (`bash -n`)
+- ✓ Proper error handling and event emission
+- ✓ No incomplete TODOs or placeholders
+- ✓ Sensible defaults and configuration bounds
+- ✓ Atomic file writes with temporary files
+- ✓ Safe jq JSON manipulation with proper escaping
+
+### Test Status
+
+- ✓ **39/39 adaptive tests PASS** (verified with `bash scripts/sw-adaptive-test.sh`)
+- Note: `npm test` exits with code 1 due to **pre-existing** jq parse errors in other test suites (cost/decide tests), not related to this feature
+
+### Correctness ✓
+
+The implementation correctly addresses the goal:
+- P95 percentile calculations are mathematically sound
+- 20% safety buffer prevents timeout failures
+- Override chain properly prioritizes: CLI > env > config > adaptive > default  
+- Bounds clamping (60s-7200s) prevents pathological values
+- Confidence scoring prevents premature recommendations with insufficient data
+
+**AUDIT_PASS**

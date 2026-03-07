@@ -511,7 +511,8 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | File | Lines | Purpose |
 | --- | ---: | --- |
 | `scripts/sw-activity.sh` | 480 | Live agent activity stream |
-| `scripts/sw-adaptive.sh` | 941 | data-driven pipeline tuning |
+| `scripts/sw-adaptive-timeout.sh` | 484 | P95 Duration-Based Stage Timeout Engine |
+| `scripts/sw-adaptive.sh` | 1203 | data-driven pipeline tuning |
 | `scripts/sw-adversarial.sh` | 259 | Adversarial Agent Code Review |
 | `scripts/sw-architecture-enforcer.sh` | 319 | Living Architecture Model & Enforcer |
 | `scripts/sw-auth.sh` | 610 | GitHub OAuth Authentication |
@@ -526,7 +527,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-cost.sh` | 1013 | Token Usage & Cost Intelligence |
 | `scripts/sw-daemon.sh` | 1416 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
-| `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
+| `scripts/sw-db.sh` | 2073 | SQLite Persistence Layer |
 | `scripts/sw-decide.sh` | 691 | Shipwright Autonomous Decision Engine |
 | `scripts/sw-decompose.sh` | 529 | Intelligent Issue Decomposition |
 | `scripts/sw-deps.sh` | 533 | Automated Dependency Update Management |
@@ -609,7 +610,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-webhook.sh` | 621 | GitHub Webhook Receiver for Instant Issue Processing |
 | `scripts/sw-widgets.sh` | 528 | Embeddable Status Widgets |
 | `scripts/sw-worktree.sh` | 421 | Git worktree management for multi-agent isolation |
-| `scripts/sw` | 617 | CLI router — dispatches subcommands via exec |
+| `scripts/sw` | 620 | CLI router — dispatches subcommands via exec |
 <!-- /AUTO:core-scripts -->
 
 ### GitHub API Modules
@@ -650,7 +651,8 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | --- | ---: | --- |
 | `scripts/sw-activity-test.sh` | 219 | Validate live agent activity stream |
 | `scripts/sw-adapters-test.sh` | 197 | Structural/smoke tests for terminal & deploy |
-| `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
+| `scripts/sw-adaptive-test.sh` | 442 | Validate data-driven pipeline tuning |
+| `scripts/sw-adaptive-timeout-test.sh` | 534 | Validate P95 auto-tuning and apply |
 | `scripts/sw-adversarial-test.sh` | 258 | Validate adversarial agent code review |
 | `scripts/sw-agi-roadmap-test.sh` | 857 | Tests every feature we implemented |
 | `scripts/sw-architecture-enforcer-test.sh` | 301 | Validate architecture model |
@@ -663,7 +665,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-checkpoint-test.sh` | 341 | Validate checkpoint save/restore |
 | `scripts/sw-ci-test.sh` | 198 | GitHub Actions CI/CD orchestration tests |
 | `scripts/sw-cleanup-test.sh` | 168 | Clean up orphaned sessions & artifacts |
-| `scripts/sw-code-review-test.sh` | 173 | Clean code & architecture analysis tests |
+| `scripts/sw-code-review-test.sh` | 178 | Clean code & architecture analysis tests |
 | `scripts/sw-connect-test.sh` | 822 | Validate dashboard connection, heartbeat |
 | `scripts/sw-context-test.sh` | 219 | Context Engine for Pipeline Stages tests |
 | `scripts/sw-cost-test.sh` | 234 | Validate token usage & cost intelligence |
