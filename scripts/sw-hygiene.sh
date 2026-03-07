@@ -409,7 +409,7 @@ scan_platform_refactor() {
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
@@ -419,17 +419,18 @@ scan_platform_refactor() {
     rm -f "$findings_file" "$findings_file.raw" "$findings_raw"
 
     # Script sizes (lines) for hotspot detection
-    local sizes_file
+    local sizes_file sizes_raw
     sizes_file=$(mktemp)
+    sizes_raw=$(mktemp)
     find "$scripts_dir" -maxdepth 1 -name "*.sh" -type f 2>/dev/null | while read -r f; do
-        local lines
         lines=$(wc -l < "$f" 2>/dev/null || true)
         lines="${lines:-0}"
         printf '{"script":"%s","lines":%s}\n' "$(basename "$f")" "$lines"
-    done | jq -s 'sort_by(-.lines) | .[0:15]' 2>/dev/null > "$sizes_file"
+    done > "$sizes_raw"
+    jq -s 'sort_by(-.lines) | .[0:15]' "$sizes_raw" 2>/dev/null > "$sizes_file" || echo "[]" > "$sizes_file"
     local script_sizes
     script_sizes=$(cat "$sizes_file" 2>/dev/null || echo "[]")
-    rm -f "$sizes_file"
+    rm -f "$sizes_file" "$sizes_raw"
 
     local timestamp
     timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
