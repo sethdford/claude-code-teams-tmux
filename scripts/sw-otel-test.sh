@@ -131,7 +131,7 @@ cat > "$events_file" <<'EVENTS'
 EVENTS
 output=$(bash "$SCRIPT_DIR/sw-otel.sh" metrics json 2>&1) || true
 # Check that counters reflect events
-total=$(echo "$output" | jq -r '.metrics.pipelines_total.value')
+total=$(echo "$output" | jq -r '.metrics.pipelines_total.value' 2>/dev/null) || total=""
 assert_eq "metrics count total pipelines = 2" "2" "$total"
 
 # ─── Test 9: Unknown command ──────────────────────────────────────────────
