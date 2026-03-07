@@ -314,14 +314,20 @@ WARN: Unknown event type 'test.event' — update config/event-schema.json
 
 [2m  performance[0m
   [38;2;74;222;128m✓[0m P95 of 1..1000 returns ~950 (got 950)
-  [38;2;74;222;128m✓[0m P95 of 1000 values computed in <5s (12ms)
+  [38;2;74;222;128m✓[0m P95 of 1000 values computed in <5s (11ms)
 
 [2m  CLI router[0m
   [38;2;74;222;128m✓[0m CLI router has adaptive-timeout entry
 
+[2m  --auto flag & unified resolution[0m
+  [38;2;74;222;128m✓[0m apply --auto flag is accepted
+  [38;2;74;222;128m✓[0m resolve_stage_timeout reads adaptive_timeouts.stage_timeouts (build=750)
+  [38;2;74;222;128m✓[0m resolve_stage_timeout reads adaptive_timeouts.stage_timeouts (test=420)
+  [38;2;74;222;128m✓[0m Manual override (999) takes precedence over P95-tuned value (750)
+
 [2m  ──────────────────────────────────────────[0m
 
-  [38;2;74;222;128m[1mAll 60 tests passed[0m
+  [38;2;74;222;128m[1mAll 64 tests passed[0m
 
 
 
@@ -839,8 +845,8 @@ EXAMPLES
 [38;2;168;85;247m[1mStart/Stop Lifecycle[0m
   [38;2;0;212;255m▸[0m cmd_start creates PID file... ▸ Starting connect to http://localhost:8767
 ▸ Developer: test-developer @ test-machine
-✓ Connect started (PID 51169)
-  Logs: /tmp/sw-connect-test.NQrnAe/home/.shipwright/connect.log
+✓ Connect started (PID 427692)
+  Logs: /tmp/sw-connect-test.CzGKUU/home/.shipwright/connect.log
   Stop: shipwright connect stop
 [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m cmd_start rejects if already running...   Stop it first: shipwright connect stop
@@ -993,7 +999,7 @@ EXAMPLES
 [38;2;168;85;247m[1m╚═══════════════════════════════════════════════════════════════════╝[0m
 
 [2mSetting up test environment...[0m
-[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-daemon-test.hgZlmf[0m
+[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-daemon-test.7hAE4t[0m
 
   [38;2;0;212;255m▸[0m dora_grade deploy_freq Elite (>= 7)... [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m dora_grade deploy_freq High (>= 1)... [38;2;74;222;128m✓[0m
@@ -1103,7 +1109,7 @@ EXAMPLES
 
 [38;2;168;85;247m[1mDatabase Availability[0m
   [38;2;0;212;255m▸[0m db_available returns true when ready... [38;2;74;222;128m✓[0m
-  [38;2;0;212;255m▸[0m db_available returns false without sqlite3... /tmp/sw-db-test.y8ngaj/sw-db.sh: line 19: dirname: command not found
+  [38;2;0;212;255m▸[0m db_available returns false without sqlite3... /tmp/sw-db-test.wu0NyK/sw-db.sh: line 19: dirname: command not found
 [38;2;74;222;128m✓[0m
 
 [38;2;168;85;247m[1mEvent CRUD Operations[0m
@@ -1147,7 +1153,7 @@ EXAMPLES
 [38;2;74;222;128m[1m✓[0m Migrated to schema v7
 [38;2;0;212;255m[1m▸[0m Migrating schema v0 → v8...
 [38;2;74;222;128m[1m✓[0m Migrated to schema v8
-[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.y8ngaj/home/.shipwright/events.jsonl...
+[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.wu0NyK/home/.shipwright/events.jsonl...
 [38;2;74;222;128m[1m✓[0m Events: 2 imported, 0 skipped (duplicates)
 [38;2;0;212;255m[1m▸[0m Importing heartbeats...
 [38;2;74;222;128m[1m✓[0m Heartbeats: 0 imported
@@ -1160,9 +1166,9 @@ EXAMPLES
   Heartbeats:       0
 [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m migrate_json_data imports costs... [38;2;0;212;255m[1m▸[0m Database already at schema v8
-[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.y8ngaj/home/.shipwright/events.jsonl...
+[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.wu0NyK/home/.shipwright/events.jsonl...
 [38;2;74;222;128m[1m✓[0m Events: 2 imported, 0 skipped (duplicates)
-[38;2;0;212;255m[1m▸[0m Importing costs from /tmp/sw-db-test.y8ngaj/home/.shipwright/costs.json...
+[38;2;0;212;255m[1m▸[0m Importing costs from /tmp/sw-db-test.wu0NyK/home/.shipwright/costs.json...
 [38;2;74;222;128m[1m✓[0m Costs: 2 entries imported
 [38;2;0;212;255m[1m▸[0m Importing heartbeats...
 [38;2;74;222;128m[1m✓[0m Heartbeats: 0 imported
@@ -1175,11 +1181,11 @@ EXAMPLES
   Heartbeats:       0
 [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m migrate_json_data imports budget... [38;2;0;212;255m[1m▸[0m Database already at schema v8
-[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.y8ngaj/home/.shipwright/events.jsonl...
+[38;2;0;212;255m[1m▸[0m Importing events from /tmp/sw-db-test.wu0NyK/home/.shipwright/events.jsonl...
 [38;2;74;222;128m[1m✓[0m Events: 2 imported, 0 skipped (duplicates)
-[38;2;0;212;255m[1m▸[0m Importing costs from /tmp/sw-db-test.y8ngaj/home/.shipwright/costs.json...
+[38;2;0;212;255m[1m▸[0m Importing costs from /tmp/sw-db-test.wu0NyK/home/.shipwright/costs.json...
 [38;2;74;222;128m[1m✓[0m Costs: 2 entries imported
-[38;2;0;212;255m[1m▸[0m Importing budget from /tmp/sw-db-test.y8ngaj/home/.shipwright/budget.json...
+[38;2;0;212;255m[1m▸[0m Importing budget from /tmp/sw-db-test.wu0NyK/home/.shipwright/budget.json...
 [38;2;74;222;128m[1m✓[0m Budget: imported ($50.00, enabled=true)
 [38;2;0;212;255m[1m▸[0m Importing heartbeats...
 [38;2;74;222;128m[1m✓[0m Heartbeats: 0 imported
@@ -1196,12 +1202,12 @@ EXAMPLES
   [38;2;0;212;255m▸[0m db_health_check validates database... [38;2;74;222;128m✓[0m
 
 [38;2;168;85;247m[1mExport & Backup[0m
-  [38;2;0;212;255m▸[0m export_db creates JSON backup... [38;2;0;212;255m[1m▸[0m Exporting database to /tmp/sw-db-test.y8ngaj/home/.shipwright/test-backup.json...
-[38;2;74;222;128m[1m✓[0m Database exported to /tmp/sw-db-test.y8ngaj/home/.shipwright/test-backup.json
+  [38;2;0;212;255m▸[0m export_db creates JSON backup... [38;2;0;212;255m[1m▸[0m Exporting database to /tmp/sw-db-test.wu0NyK/home/.shipwright/test-backup.json...
+[38;2;74;222;128m[1m✓[0m Database exported to /tmp/sw-db-test.wu0NyK/home/.shipwright/test-backup.json
 [38;2;74;222;128m✓[0m
 
 [38;2;168;85;247m[1mData Cleanup[0m
-  [38;2;0;212;255m▸[0m cleanup_old_data removes old entries... [38;2;0;212;255m[1m▸[0m Cleaning records older than 30 days (before 2026-02-05T19:48:24Z)...
+  [38;2;0;212;255m▸[0m cleanup_old_data removes old entries... [38;2;0;212;255m[1m▸[0m Cleaning records older than 30 days (before 2026-02-05T23:03:44Z)...
 [38;2;74;222;128m[1m✓[0m Deleted: 0 events, 0 costs, 0 daemon jobs, 0 stages
 [38;2;74;222;128m✓[0m
 
@@ -2048,7 +2054,7 @@ jq: parse error: Unmatched '}' at line 1, column 111
 [38;2;168;85;247m[1m╚═══════════════════════════════════════════════════════════════════╝[0m
 
 [2mSetting up test environment...[0m
-[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-fix-test.YnVcfV[0m
+[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-fix-test.cHlHHw[0m
 
   [38;2;0;212;255m▸[0m Help output contains expected sections... [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m Help via --help flag... [38;2;74;222;128m✓[0m
@@ -2153,7 +2159,7 @@ jq: parse error: Unmatched '}' at line 1, column 111
 [38;2;168;85;247m[1m╚═══════════════════════════════════════════════════════════════════╝[0m
 
 [2mSetting up test environment...[0m
-[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-fleet-test.wSHfEK[0m
+[38;2;74;222;128m✓[0m Environment ready: [2m/tmp/sw-fleet-test.VFPApC[0m
 
   [38;2;0;212;255m▸[0m Help output contains expected sections... [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m Help via --help flag... [38;2;74;222;128m✓[0m
@@ -2475,7 +2481,7 @@ All 20 tests passed!
   [38;2;0;212;255m▸[0m Write heartbeat creates JSON file... [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m Check heartbeat reports alive... [38;2;74;222;128m[1m✓[0m Job test-job-alive alive (0s ago)
 [38;2;74;222;128m✓[0m
-  [38;2;0;212;255m▸[0m Check heartbeat reports stale... [38;2;250;204;21m[1m⚠[0m Job test-job-stale stale (195076136s ago, timeout: 120s)
+  [38;2;0;212;255m▸[0m Check heartbeat reports stale... [38;2;250;204;21m[1m⚠[0m Job test-job-stale stale (195087855s ago, timeout: 120s)
 [38;2;74;222;128m✓[0m
   [38;2;0;212;255m▸[0m Clear heartbeat removes file... [38;2;74;222;128m[1m✓[0m Cleared heartbeat for job: test-job-clear
 [38;2;74;222;128m✓[0m
