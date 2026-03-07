@@ -249,26 +249,41 @@ strategic_gather_context() {
         fi
     done
 
-    # 3. Pipeline performance (last 7 days)
+    # 3. Pipeline performance (last 7 days) — use analytics engine
     local completed=0
     local failed=0
     local success_rate="N/A"
     local common_failures=""
 
-    if [[ -f "$events_file" ]]; then
+    local analytics_json=""
+    if [[ -x "$script_dir/sw-pipeline-analytics.sh" ]]; then
+        analytics_json=$("$script_dir/sw-pipeline-analytics.sh" --json --period 7 2>/dev/null || echo "")
+    fi
+
+    if [[ -n "$analytics_json" ]] && echo "$analytics_json" | jq -e '.summary' >/dev/null 2>&1; then
+        completed=$(echo "$analytics_json" | jq -r '.summary.successful // 0')
+        failed=$(echo "$analytics_json" | jq -r '.summary.failed // 0')
+        local sr
+        sr=$(echo "$analytics_json" | jq -r '.summary.success_rate // 0')
+        if [[ "$sr" != "0" ]]; then
+            success_rate="${sr}%"
+        fi
+        common_failures=$(echo "$analytics_json" | jq -r '
+            if (.by_stage_failure | length) > 0 then
+                [.by_stage_failure[] | "\(.stage_name) (\(.failure_count)x)"] | join(", ")
+            else "none" end
+        ' 2>/dev/null || echo "none")
+    elif [[ -f "$events_file" ]]; then
         local now_e
         now_e=$(now_epoch)
         local seven_days_ago=$(( now_e - 604800 ))
-
         completed=$(jq -s "[.[] | select(.type == \"pipeline.completed\" and .result == \"success\" and (.ts_epoch // 0) >= $seven_days_ago)] | length" "$events_file" 2>/dev/null || echo "0")
         failed=$(jq -s "[.[] | select(.type == \"pipeline.completed\" and .result != \"success\" and (.ts_epoch // 0) >= $seven_days_ago)] | length" "$events_file" 2>/dev/null || echo "0")
-
         local total_pipelines=$(( completed + failed ))
         if [[ "$total_pipelines" -gt 0 ]]; then
             success_rate=$(( completed * 100 / total_pipelines ))
             success_rate="${success_rate}%"
         fi
-
         common_failures=$(jq -s "
             [.[] | select(.type == \"pipeline.completed\" and .result != \"success\" and (.ts_epoch // 0) >= $seven_days_ago)]
             | group_by(.failed_stage // \"unknown\")
@@ -346,21 +361,35 @@ strategic_build_prompt() {
         fi
     done
 
-    # Pipeline performance (last 7 days)
+    # Pipeline performance (last 7 days) — use analytics engine with JSONL fallback
     local completed=0 failed=0 success_rate="N/A" common_failures="none"
-    if [[ -f "$events_file" ]]; then
+    local analytics_json=""
+    if [[ -x "$script_dir/sw-pipeline-analytics.sh" ]]; then
+        analytics_json=$("$script_dir/sw-pipeline-analytics.sh" --json --period 7 2>/dev/null || echo "")
+    fi
+
+    if [[ -n "$analytics_json" ]] && echo "$analytics_json" | jq -e '.summary' >/dev/null 2>&1; then
+        completed=$(echo "$analytics_json" | jq -r '.summary.successful // 0')
+        failed=$(echo "$analytics_json" | jq -r '.summary.failed // 0')
+        local sr
+        sr=$(echo "$analytics_json" | jq -r '.summary.success_rate // 0')
+        [[ "$sr" != "0" ]] && success_rate="${sr}%"
+        common_failures=$(echo "$analytics_json" | jq -r '
+            if (.by_stage_failure | length) > 0 then
+                [.by_stage_failure[] | "\(.stage_name) (\(.failure_count)x)"] | join(", ")
+            else "none" end
+        ' 2>/dev/null || echo "none")
+        common_failures="${common_failures:-none}"
+    elif [[ -f "$events_file" ]]; then
         local now_e
         now_e=$(now_epoch)
         local seven_days_ago=$(( now_e - 604800 ))
-
         completed=$(jq -s "[.[] | select(.type == \"pipeline.completed\" and .result == \"success\" and (.ts_epoch // 0) >= $seven_days_ago)] | length" "$events_file" 2>/dev/null || echo "0")
         failed=$(jq -s "[.[] | select(.type == \"pipeline.completed\" and .result != \"success\" and (.ts_epoch // 0) >= $seven_days_ago)] | length" "$events_file" 2>/dev/null || echo "0")
-
         local total_pipelines=$(( completed + failed ))
         if [[ "$total_pipelines" -gt 0 ]]; then
             success_rate="$(( completed * 100 / total_pipelines ))%"
         fi
-
         common_failures=$(jq -s "
             [.[] | select(.type == \"pipeline.completed\" and .result != \"success\" and (.ts_epoch // 0) >= $seven_days_ago)]
             | group_by(.failed_stage // \"unknown\")
@@ -370,7 +399,6 @@ strategic_build_prompt() {
             | map(\"\(.stage) (\(.count)x)\")
             | join(\", \")
         " "$events_file" 2>/dev/null || echo "none")
-        # Empty string → "none"
         common_failures="${common_failures:-none}"
     fi
 

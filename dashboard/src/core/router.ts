@@ -20,6 +20,7 @@ const VALID_TABS: TabId[] = [
   "pipeline-theater",
   "agent-cockpit",
   "shipyard",
+  "analytics",
 ];
 
 let teamRefreshTimer: ReturnType<typeof setInterval> | null = null;

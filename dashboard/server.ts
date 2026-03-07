@@ -1487,6 +1487,128 @@ function getMetricsHistory(doraPeriodDays: number = 7): MetricsHistory {
   };
 }
 
+// ─── Pipeline Analytics ─────────────────────────────────────────────
+function getAnalytics(periodDays: number): Record<string, unknown> {
+  const conn = getDb();
+  const empty = {
+    period_days: periodDays,
+    generated_at: new Date().toISOString(),
+    summary: { total_runs: 0, successful: 0, failed: 0, success_rate: 0, avg_duration_secs: 0, total_cost_usd: 0 },
+    by_template: [],
+    by_stage_failure: [],
+    by_complexity: [],
+    by_hour: [],
+    trends: { periods: [] },
+    active_pipelines: [],
+  };
+  if (!conn) return empty;
+
+  const cutoff = new Date(Date.now() - periodDays * 86400_000).toISOString();
+
+  try {
+    // Summary
+    const summaryRow = conn.query(`
+      SELECT COUNT(*) as total_runs,
+        COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful,
+        COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END as success_rate,
+        COALESCE(ROUND(AVG(duration_secs), 0), 0) as avg_duration_secs
+      FROM pipeline_runs WHERE created_at >= ?
+    `).get(cutoff) as Record<string, number> | null;
+
+    const costRow = conn.query(`
+      SELECT COALESCE(ROUND(SUM(cost_usd), 2), 0) as total_cost
+      FROM cost_entries WHERE ts >= ?
+    `).get(cutoff) as Record<string, number> | null;
+
+    // By template
+    const byTemplate = conn.query(`
+      SELECT COALESCE(template, 'unknown') as template, COUNT(*) as total,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END as success_rate,
+        COALESCE(ROUND(AVG(duration_secs), 0), 0) as avg_duration_secs
+      FROM pipeline_runs WHERE created_at >= ?
+      GROUP BY COALESCE(template, 'unknown') ORDER BY total DESC LIMIT 20
+    `).all(cutoff) as Array<Record<string, unknown>>;
+
+    // Stage failures
+    const totalFailures = (conn.query(`
+      SELECT COUNT(*) as cnt FROM pipeline_stages WHERE status = 'failed' AND created_at >= ?
+    `).get(cutoff) as Record<string, number> | null)?.cnt || 0;
+
+    let byStageFailure: Array<Record<string, unknown>> = [];
+    if (totalFailures > 0) {
+      byStageFailure = conn.query(`
+        SELECT stage_name, COUNT(*) as failure_count,
+          ROUND(100.0 * COUNT(*) / ?, 1) as pct_of_failures
+        FROM pipeline_stages WHERE status = 'failed' AND created_at >= ?
+        GROUP BY stage_name ORDER BY failure_count DESC LIMIT 20
+      `).all(totalFailures, cutoff) as Array<Record<string, unknown>>;
+    }
+
+    // By complexity
+    const byComplexity = conn.query(`
+      SELECT COALESCE(complexity, 'unknown') as complexity, COUNT(*) as total,
+        SUM(success) as successful,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(success) / COUNT(*), 1) ELSE 0 END as success_rate
+      FROM pipeline_outcomes WHERE created_at >= ?
+      GROUP BY COALESCE(complexity, 'unknown') ORDER BY total DESC
+    `).all(cutoff) as Array<Record<string, unknown>>;
+
+    // By hour
+    const byHour = conn.query(`
+      SELECT CAST(strftime('%H', started_at) AS INTEGER) as hour, COUNT(*) as total,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END as success_rate
+      FROM pipeline_runs WHERE created_at >= ?
+      GROUP BY hour ORDER BY hour
+    `).all(cutoff) as Array<Record<string, unknown>>;
+
+    // Trends (7/30/90)
+    const trendPeriods = [7, 30, 90].map(window => {
+      const windowCutoff = new Date(Date.now() - window * 86400_000).toISOString();
+      const row = conn.query(`
+        SELECT COUNT(*) as total,
+          CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END as success_rate,
+          COALESCE(ROUND(AVG(duration_secs), 0), 0) as avg_duration_secs
+        FROM pipeline_runs WHERE created_at >= ?
+      `).get(windowCutoff) as Record<string, number> | null;
+      return { label: `${window}d`, total: row?.total || 0, success_rate: row?.success_rate || 0, avg_duration_secs: row?.avg_duration_secs || 0 };
+    });
+
+    // Active pipelines
+    const activePipelines = conn.query(`
+      SELECT job_id, COALESCE(issue_number, 0) as issue_number, COALESCE(goal, '') as goal,
+        COALESCE(template, 'unknown') as template, COALESCE(stage_name, '') as current_stage,
+        started_at, CAST((julianday('now') - julianday(started_at)) * 86400 AS INTEGER) as elapsed_secs
+      FROM pipeline_runs WHERE status IN ('pending', 'running', 'in_progress')
+      ORDER BY started_at DESC LIMIT 50
+    `).all() as Array<Record<string, unknown>>;
+
+    return {
+      period_days: periodDays,
+      generated_at: new Date().toISOString(),
+      summary: {
+        total_runs: summaryRow?.total_runs || 0,
+        successful: summaryRow?.successful || 0,
+        failed: summaryRow?.failed || 0,
+        success_rate: summaryRow?.success_rate || 0,
+        avg_duration_secs: summaryRow?.avg_duration_secs || 0,
+        total_cost_usd: costRow?.total_cost || 0,
+      },
+      by_template: byTemplate,
+      by_stage_failure: byStageFailure,
+      by_complexity: byComplexity,
+      by_hour: byHour,
+      trends: { periods: trendPeriods },
+      active_pipelines: activePipelines,
+    };
+  } catch {
+    return empty;
+  }
+}
+
 // ─── DORA Grades ────────────────────────────────────────────────────
 function calculateDoraGrades(
   events: DaemonEvent[],
@@ -2783,6 +2905,25 @@ const server = Bun.serve({
       return new Response(JSON.stringify(getMetricsHistory(doraPeriod)), {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
+    }
+
+    // REST: Pipeline analytics (success rates, attribution, trends)
+    if (pathname === "/api/analytics") {
+      const period = parseInt(url.searchParams.get("period") || "7");
+      const validPeriod = [7, 30, 90].includes(period) ? period : 7;
+      try {
+        return new Response(JSON.stringify(getAnalytics(validPeriod)), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ error: "Analytics computation failed" }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
     }
 
     // REST: plan markdown for a specific issue

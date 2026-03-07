@@ -1360,6 +1360,162 @@ query_runs() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Analytics Query Functions
+# ═══════════════════════════════════════════════════════════════════════════
+
+# db_analytics_summary(days) — Total/success/failed counts, avg duration, total cost
+db_analytics_summary() {
+    local days="${1:-7}"
+    if ! db_available; then echo '{}'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_object(
+        'total_runs', COALESCE(COUNT(*), 0),
+        'successful', COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0),
+        'failed', COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0),
+        'success_rate', CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END,
+        'avg_duration_secs', COALESCE(ROUND(AVG(duration_secs), 0), 0)
+    ) FROM pipeline_runs WHERE created_at >= '${cutoff}';" 2>/dev/null || echo '{}'
+}
+
+# db_analytics_by_template(days) — Grouped by template
+db_analytics_by_template() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_group_array(json_object(
+        'template', COALESCE(template, 'unknown'),
+        'total', cnt,
+        'successful', ok,
+        'failed', fail,
+        'success_rate', CASE WHEN cnt > 0 THEN ROUND(100.0 * ok / cnt, 1) ELSE 0 END,
+        'avg_duration_secs', COALESCE(avg_dur, 0)
+    )) FROM (
+        SELECT COALESCE(template, 'unknown') as template, COUNT(*) as cnt,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as ok,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as fail,
+            ROUND(AVG(duration_secs), 0) as avg_dur
+        FROM pipeline_runs WHERE created_at >= '${cutoff}'
+        GROUP BY COALESCE(template, 'unknown') ORDER BY cnt DESC LIMIT 20
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_by_stage_failure(days) — Which stages fail most
+db_analytics_by_stage_failure() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    local total_failures
+    total_failures=$(_db_query "SELECT COUNT(*) FROM pipeline_stages WHERE status = 'failed' AND created_at >= '${cutoff}';" 2>/dev/null || echo "0")
+    total_failures="${total_failures:-0}"
+    if [[ "$total_failures" -eq 0 ]]; then
+        echo '[]'
+        return 0
+    fi
+    _db_query "SELECT json_group_array(json_object(
+        'stage_name', stage_name,
+        'failure_count', fc,
+        'pct_of_failures', ROUND(100.0 * fc / ${total_failures}, 1),
+        'common_errors', COALESCE(errs, '[]')
+    )) FROM (
+        SELECT stage_name, COUNT(*) as fc,
+            (SELECT json_group_array(em) FROM (
+                SELECT DISTINCT error_message as em FROM pipeline_stages s2
+                WHERE s2.stage_name = pipeline_stages.stage_name AND s2.status = 'failed'
+                AND s2.error_message != '' AND s2.error_message IS NOT NULL
+                AND s2.created_at >= '${cutoff}' LIMIT 3
+            )) as errs
+        FROM pipeline_stages WHERE status = 'failed' AND created_at >= '${cutoff}'
+        GROUP BY stage_name ORDER BY fc DESC LIMIT 20
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_by_complexity(days) — Grouped by complexity from pipeline_outcomes
+db_analytics_by_complexity() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_group_array(json_object(
+        'complexity', COALESCE(complexity, 'unknown'),
+        'total', cnt,
+        'successful', ok,
+        'success_rate', CASE WHEN cnt > 0 THEN ROUND(100.0 * ok / cnt, 1) ELSE 0 END
+    )) FROM (
+        SELECT COALESCE(complexity, 'unknown') as complexity, COUNT(*) as cnt,
+            SUM(success) as ok
+        FROM pipeline_outcomes WHERE created_at >= '${cutoff}'
+        GROUP BY COALESCE(complexity, 'unknown') ORDER BY cnt DESC
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_by_hour(days) — Grouped by hour of day (UTC)
+db_analytics_by_hour() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_group_array(json_object(
+        'hour', hr,
+        'total', cnt,
+        'successful', ok,
+        'success_rate', CASE WHEN cnt > 0 THEN ROUND(100.0 * ok / cnt, 1) ELSE 0 END
+    )) FROM (
+        SELECT CAST(strftime('%H', started_at) AS INTEGER) as hr, COUNT(*) as cnt,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as ok
+        FROM pipeline_runs WHERE created_at >= '${cutoff}'
+        GROUP BY hr ORDER BY hr
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_trends() — 7/30/90 day windows
+db_analytics_trends() {
+    if ! db_available; then echo '[]'; return 0; fi
+    local result="["
+    local first=1
+    for window in 7 30 90; do
+        local cutoff
+        cutoff="$(date -u -d "${window} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${window}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+        local row
+        row=$(_db_query "SELECT json_object(
+            'label', '${window}d',
+            'total', COALESCE(COUNT(*), 0),
+            'success_rate', CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END,
+            'avg_duration_secs', COALESCE(ROUND(AVG(duration_secs), 0), 0)
+        ) FROM pipeline_runs WHERE created_at >= '${cutoff}';" 2>/dev/null || echo '{}')
+        [[ "$first" -eq 1 ]] && first=0 || result="${result},"
+        result="${result}${row}"
+    done
+    echo "${result}]"
+}
+
+# db_analytics_active() — Currently running pipelines
+db_analytics_active() {
+    if ! db_available; then echo '[]'; return 0; fi
+    _db_query "SELECT json_group_array(json_object(
+        'job_id', r.job_id,
+        'issue_number', COALESCE(r.issue_number, 0),
+        'goal', COALESCE(r.goal, ''),
+        'template', COALESCE(r.template, 'unknown'),
+        'current_stage', COALESCE(r.stage_name, ''),
+        'started_at', r.started_at,
+        'elapsed_secs', CAST((julianday('now') - julianday(r.started_at)) * 86400 AS INTEGER)
+    )) FROM pipeline_runs r WHERE r.status IN ('pending', 'running', 'in_progress')
+    ORDER BY r.started_at DESC LIMIT 50;" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_cost_total(days) — Total cost in period
+db_analytics_cost_total() {
+    local days="${1:-7}"
+    if ! db_available; then echo "0"; return 0; fi
+    local cutoff_epoch
+    cutoff_epoch="$(date -d "${days} days ago" +%s 2>/dev/null || date -v-${days}d +%s 2>/dev/null || echo "0")"
+    _db_query "SELECT COALESCE(ROUND(SUM(cost_usd), 2), 0) FROM cost_entries WHERE ts_epoch >= ${cutoff_epoch};" 2>/dev/null || echo "0"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Sync Functions (HTTP-based, vendor-neutral)
 # ═══════════════════════════════════════════════════════════════════════════
 

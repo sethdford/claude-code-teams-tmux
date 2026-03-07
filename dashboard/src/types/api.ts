@@ -339,7 +339,8 @@ export type TabId =
   | "fleet-map"
   | "pipeline-theater"
   | "agent-cockpit"
-  | "shipyard";
+  | "shipyard"
+  | "analytics";
 
 export interface View {
   init(): void;

@@ -211,7 +211,8 @@ route_observe() {
         activity)     exec "$SCRIPT_DIR/sw-activity.sh" "$@" ;;
         replay)       exec "$SCRIPT_DIR/sw-replay.sh" "$@" ;;
         status)       exec "$SCRIPT_DIR/sw-status.sh" "$@" ;;
-        help|*) echo "Usage: shipwright observe {vitals|dora|retro|stream|activity|replay|status}"; exit 1 ;;
+        analytics)    exec "$SCRIPT_DIR/sw-pipeline-analytics.sh" "$@" ;;
+        help|*) echo "Usage: shipwright observe {vitals|dora|retro|stream|activity|replay|status|analytics}"; exit 1 ;;
     esac
 }
 
@@ -443,6 +444,9 @@ main() {
             ;;
         architecture)
             exec "$SCRIPT_DIR/sw-architecture-enforcer.sh" "$@"
+            ;;
+        analytics)
+            exec "$SCRIPT_DIR/sw-pipeline-analytics.sh" "$@"
             ;;
         vitals)
             exec "$SCRIPT_DIR/sw-pipeline-vitals.sh" "$@"

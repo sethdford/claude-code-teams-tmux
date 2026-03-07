@@ -238,6 +238,12 @@ if [[ "$JSON_OUTPUT" == "true" ]]; then
             '{schema_version:$schema_version, wal_mode:$wal_mode, events:$events, runs:$runs, costs:$costs, size_bytes:$size_bytes}') || DATABASE_JSON="null"
     fi
 
+    # -- pipeline analytics summary --
+    ANALYTICS_JSON="null"
+    if [[ -x "$SCRIPT_DIR/sw-pipeline-analytics.sh" ]]; then
+        ANALYTICS_JSON=$("$SCRIPT_DIR/sw-pipeline-analytics.sh" --json --period 7 2>/dev/null | jq '{total_runs: .summary.total_runs, successful: .summary.successful, failed: .summary.failed, success_rate: .summary.success_rate, top_failing_stage: (if (.by_stage_failure | length) > 0 then .by_stage_failure[0].stage_name else null end), active_count: (.active_pipelines | length)}' 2>/dev/null) || ANALYTICS_JSON="null"
+    fi
+
     # -- assemble and output --
     jq -n \
         --arg version "$VERSION" \
@@ -251,6 +257,7 @@ if [[ "$JSON_OUTPUT" == "true" ]]; then
         --argjson remote_machines "$MACHINES_JSON" \
         --argjson connected_developers "$DEVELOPERS_JSON" \
         --argjson database "$DATABASE_JSON" \
+        --argjson analytics "$ANALYTICS_JSON" \
         '{
             version: $version,
             timestamp: $timestamp,
@@ -262,7 +269,8 @@ if [[ "$JSON_OUTPUT" == "true" ]]; then
             heartbeats: $heartbeats,
             remote_machines: $remote_machines,
             connected_developers: $connected_developers,
-            database: $database
+            database: $database,
+            analytics: $analytics
         }'
     exit 0
 fi
