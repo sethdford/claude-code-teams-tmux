@@ -1496,7 +1496,9 @@ function getAnalytics(periodDays: number): Record<string, unknown> {
     summary: { total_runs: 0, successful: 0, failed: 0, success_rate: 0, avg_duration_secs: 0, total_cost_usd: 0 },
     by_template: [],
     by_stage_failure: [],
+    by_stage_success: [],
     by_complexity: [],
+    by_repo_language: [],
     by_hour: [],
     trends: { periods: [] },
     active_pipelines: [],
@@ -1547,6 +1549,15 @@ function getAnalytics(periodDays: number): Record<string, unknown> {
       `).all(totalFailures, cutoff) as Array<Record<string, unknown>>;
     }
 
+    // By stage success
+    const byStageSuccess = conn.query(`
+      SELECT stage_name, COUNT(*) as reached,
+        SUM(CASE WHEN status IN ('complete','completed') THEN 1 ELSE 0 END) as passed,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(CASE WHEN status IN ('complete','completed') THEN 1 ELSE 0 END) / COUNT(*), 1) ELSE 0 END as success_rate
+      FROM pipeline_stages WHERE created_at >= ?
+      GROUP BY stage_name ORDER BY reached DESC
+    `).all(cutoff) as Array<Record<string, unknown>>;
+
     // By complexity
     const byComplexity = conn.query(`
       SELECT COALESCE(complexity, 'unknown') as complexity, COUNT(*) as total,
@@ -1554,6 +1565,15 @@ function getAnalytics(periodDays: number): Record<string, unknown> {
         CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(success) / COUNT(*), 1) ELSE 0 END as success_rate
       FROM pipeline_outcomes WHERE created_at >= ?
       GROUP BY COALESCE(complexity, 'unknown') ORDER BY total DESC
+    `).all(cutoff) as Array<Record<string, unknown>>;
+
+    // By repo language
+    const byRepoLanguage = conn.query(`
+      SELECT COALESCE(repo_language, 'unknown') as language, COUNT(*) as total,
+        SUM(success) as successful,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(success) / COUNT(*), 1) ELSE 0 END as success_rate
+      FROM pipeline_outcomes WHERE created_at >= ?
+      GROUP BY COALESCE(repo_language, 'unknown') ORDER BY total DESC
     `).all(cutoff) as Array<Record<string, unknown>>;
 
     // By hour
@@ -1599,7 +1619,9 @@ function getAnalytics(periodDays: number): Record<string, unknown> {
       },
       by_template: byTemplate,
       by_stage_failure: byStageFailure,
+      by_stage_success: byStageSuccess,
       by_complexity: byComplexity,
+      by_repo_language: byRepoLanguage,
       by_hour: byHour,
       trends: { periods: trendPeriods },
       active_pipelines: activePipelines,
