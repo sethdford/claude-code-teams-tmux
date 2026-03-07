@@ -489,6 +489,7 @@ daemon_reap_completed() {
         # Trigger learning after pipeline reap
         if type optimize_full_analysis &>/dev/null; then
             optimize_full_analysis &>/dev/null &
+            wait $! 2>/dev/null || true
         fi
 
         # Clean up progress tracking for this job

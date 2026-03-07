@@ -146,6 +146,7 @@ write_state() {
     } > "$tmp_state"
     if ! mv "$tmp_state" "$STATE_FILE" 2>/dev/null; then
         warn "Failed to write state file: $STATE_FILE"
+        rm -f "$tmp_state"
     fi
 }
 

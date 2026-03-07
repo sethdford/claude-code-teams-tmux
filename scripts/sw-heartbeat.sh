@@ -137,7 +137,7 @@ cmd_write() {
     ensure_dir
 
     local tmp_file
-    tmp_file="$(mktemp "${HEARTBEAT_DIR}/.tmp.XXXXXX")"
+    tmp_file="$(mktemp "${HEARTBEAT_DIR}/.tmp.XXXXXX")" || { error "mktemp failed for heartbeat"; return 1; }
 
     # Build JSON with jq for proper escaping
     jq -n \
@@ -161,7 +161,7 @@ cmd_write() {
         }' > "$tmp_file" || { rm -f "$tmp_file"; return 1; }
 
     # Atomic write
-    mv "$tmp_file" "${HEARTBEAT_DIR}/${job_id}.json"
+    mv "$tmp_file" "${HEARTBEAT_DIR}/${job_id}.json" || { rm -f "$tmp_file"; return 1; }
 
     # Dual-write to DB when available
     if type db_record_heartbeat >/dev/null 2>&1 && db_available 2>/dev/null; then

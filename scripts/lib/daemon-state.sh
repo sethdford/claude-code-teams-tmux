@@ -150,9 +150,9 @@ daemon_preflight_auth_check() {
             pause_json=$(jq -n --arg reason "gh_auth_failure" --arg ts "$(now_iso)" \
                 '{reason: $reason, timestamp: $ts}')
             local _tmp_pause
-            _tmp_pause=$(mktemp "${TMPDIR:-/tmp}/sw-pause.XXXXXX")
+            _tmp_pause=$(mktemp "${TMPDIR:-/tmp}/sw-pause.XXXXXX") || { daemon_log ERROR "mktemp failed for pause flag"; return 1; }
             echo "$pause_json" > "$_tmp_pause"
-            mv "$_tmp_pause" "$PAUSE_FLAG"
+            mv "$_tmp_pause" "$PAUSE_FLAG" || rm -f "$_tmp_pause"
             emit_event "daemon.auto_pause" "reason=gh_auth_failure"
             return 1
         fi
@@ -177,9 +177,9 @@ daemon_preflight_auth_check() {
         pause_json=$(jq -n --arg reason "claude_cli_missing" --arg ts "$(now_iso)" \
             '{reason: $reason, timestamp: $ts}')
         local _tmp_pause
-        _tmp_pause=$(mktemp "${TMPDIR:-/tmp}/sw-pause.XXXXXX")
+        _tmp_pause=$(mktemp "${TMPDIR:-/tmp}/sw-pause.XXXXXX") || { daemon_log ERROR "mktemp failed for pause flag"; return 1; }
         echo "$pause_json" > "$_tmp_pause"
-        mv "$_tmp_pause" "$PAUSE_FLAG"
+        mv "$_tmp_pause" "$PAUSE_FLAG" || rm -f "$_tmp_pause"
         emit_event "daemon.auto_pause" "reason=claude_cli_missing"
         return 1
     fi

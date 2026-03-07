@@ -950,13 +950,14 @@ function readEvents(): DaemonEvent[] {
   const dbEvents = dbQueryEvents(0, 10000);
   if (dbEvents.length > 0) return dbEvents;
 
-  // Fallback to JSONL
+  // Fallback to JSONL — only read last 1000 lines to avoid OOM on large files
   if (!existsSync(EVENTS_FILE)) return [];
   try {
     const content = readFileSync(EVENTS_FILE, "utf-8").trim();
     if (!content) return [];
-    return content
-      .split("\n")
+    const lines = content.split("\n");
+    const recent = lines.length > 1000 ? lines.slice(-1000) : lines;
+    return recent
       .filter((l) => l.trim())
       .map((l) => {
         try {
@@ -2217,6 +2218,12 @@ function ghCached<T>(key: string, fn: () => T): T {
   const now = Date.now();
   const cached = ghCache.get(key);
   if (cached && now - cached.ts < GH_CACHE_TTL_MS) return cached.data as T;
+  // Evict expired entries to prevent unbounded memory growth
+  if (ghCache.size > 50) {
+    for (const [k, v] of ghCache) {
+      if (now - v.ts > GH_CACHE_TTL_MS) ghCache.delete(k);
+    }
+  }
   const data = fn();
   ghCache.set(key, { data, ts: now });
   return data;
@@ -5924,6 +5931,13 @@ process.on("SIGINT", () => {
   clearInterval(staleClaimInterval);
   clearInterval(inviteCleanupInterval);
   if (eventsWatcher) eventsWatcher.close();
+  if (db) {
+    try {
+      db.close();
+    } catch {
+      /* ignore */
+    }
+  }
   for (const ws of wsClients) {
     try {
       ws.close(1001, "Server shutting down");

@@ -853,7 +853,7 @@ diagnose_failure() {
     fi
 
     # Check if we've seen this diagnosis before in this session
-    local diagnosis_file="${LOG_DIR:-/tmp}/diagnoses.txt"
+    local diagnosis_file="${LOG_DIR}/diagnoses.txt"
     local repeat_count=0
     if [[ -f "$diagnosis_file" ]]; then
         repeat_count=$(grep -c "^${diagnosis}$" "$diagnosis_file" 2>/dev/null || true)
@@ -2075,7 +2075,7 @@ run_single_agent_loop() {
     STUCKNESS_COUNT=0
     STUCKNESS_TRACKING_FILE="$LOG_DIR/stuckness-tracking.txt"
     : > "$STUCKNESS_TRACKING_FILE" 2>/dev/null || true
-    : > "${LOG_DIR:-/tmp}/strategy-attempts.txt" 2>/dev/null || true
+    : > "${LOG_DIR}/strategy-attempts.txt" 2>/dev/null || true
 
     show_banner
 
