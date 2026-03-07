@@ -553,31 +553,29 @@
     },
     "efc27fd08f5baa0fe3a75dc8b3b9f177": {
       "result": {
-        "complexity": 7,
+        "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 76,
+        "success_probability": 78,
         "recommended_template": "standard",
-        "issue_type": "infrastructure",
+        "issue_type": "performance",
         "key_risks": [
-          "Incorrect percentile calculations causing cascading timeout failures in production",
-          "Insufficient historical data during cold start (new stage types, < 30 days)",
-          "Storage overhead and query performance for rolling window aggregations",
-          "Manual timeout overrides conflicting with auto-tuning logic",
-          "Multi-repo/fleet scenarios with divergent stage duration distributions",
-          "Dashboard accuracy and real-time sync under high throughput"
+          "Percentile calculation errors leading to incorrect timeout values",
+          "Data persistence and rolling window management complexity",
+          "Insufficient historical data for new stage types causing calculation failures",
+          "Integration complexity with existing pipeline stage lifecycle",
+          "Edge case handling when adjusting timeouts with minimum thresholds and new stages"
         ],
         "implementation_hints": [
-          "Leverage existing SQLite persistence layer (sw-db.sh) for duration tracking",
-          "Implement cold start handling with conservative defaults and gradual adjustment",
-          "Add detailed logging of timeout adjustment reasoning for observability",
-          "Batch percentile calculations to reduce computation overhead",
-          "Validate proposed adjustments against historical P99 outliers before applying",
-          "Provide dry-run/preview mode showing proposed changes before auto-applying",
-          "Test with synthetic duration distributions covering fleet/repo divergence scenarios",
-          "Integrate with cost tracking to quantify savings from fast-fail improvements"
+          "Implement data collection first: record stage duration and outcome on every completion",
+          "Use SQLite (sw-db.sh already exists) for persistent rolling 30-day history storage",
+          "Create sw-adaptive-timeout.sh following established pattern of sw-adaptive.sh",
+          "Integrate with daemon patrol to trigger timeout adjustments every 7 days",
+          "Add adaptive_timeout config section to daemon-config.json with manual override support",
+          "Implement metrics tracking for timeouts_avoided and false_timeouts_prevented in dashboard",
+          "Test with synthetic historical data before enabling in production environments"
         ]
       },
-      "timestamp": 1772911673,
+      "timestamp": 1772916050,
       "ttl": 3600
     },
     "33189144d0eabe941f54fe5339f3c812": {
@@ -693,33 +691,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (first entry)",
             "relevance": 45,
-            "summary": "Project structure and conventions (Node.js, vitest, npm, src/ layout) provide baseline context for understanding where timeout configuration and metrics collection will integrate"
+            "summary": "Project structure (Node.js, vitest, CommonJS) essential for planning implementation of timeout engine logic and understanding where P95 calculations integrate with build system"
           },
           {
             "file": "failures.json",
-            "relevance": 28,
-            "summary": "Heartbeat staleness detection failure may relate to how the timeout engine monitors stage durations and process lifecycle; pattern detection logic could inform metrics collection"
+            "relevance": 22,
+            "summary": "Test failure patterns show heartbeat/timing detection issues; could inform timeout staleness detection and summary reporting similar to proposed P95 auto-tuning"
           },
           {
-            "file": "patterns.json",
-            "relevance": 12,
-            "summary": "Minimal project type detection (nodejs) is redundant with first patterns.json entry; low informational value for timeout engine planning"
+            "file": "patterns.json (second entry)",
+            "relevance": 15,
+            "summary": "Confirms Node.js project type from bootstrap; minimal additional detail compared to first patterns.json entry"
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object; no historical performance data available to inform P95 duration targets"
+            "relevance": 8,
+            "summary": "Baseline metrics structure exists but is empty; would be critical for P95 duration tracking and tuning decisions if populated"
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions array; no prior architectural choices recorded for timeout or performance tuning features"
+            "summary": "Architectural decisions array is empty; would be valuable for understanding prior timeout/performance design choices but contains no data"
           }
         ]
       },
-      "timestamp": 1772911759,
+      "timestamp": 1772916092,
       "ttl": 1800
     },
     "7d0688a3d4a868f930917fa62d0c8023": {
@@ -878,6 +876,24 @@
         "confidence": 74
       },
       "timestamp": 1772911693,
+      "ttl": 3600
+    },
+    "882a0129cab53bf84fd5a21b476c76b5": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1772916062,
+      "ttl": 1800
+    },
+    "b9cc00621a55c7066ab13e7aae638c22": {
+      "result": {
+        "estimated_cost_usd": 2.15,
+        "estimated_iterations": 4,
+        "estimated_tokens": 24000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1772916076,
       "ttl": 3600
     }
   }
