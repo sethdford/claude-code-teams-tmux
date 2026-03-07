@@ -35,18 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "builder",
         "secondary_roles": [
+          "architect",
           "optimizer",
-          "builder",
           "tester"
         ],
         "confidence": 0.88,
-        "reasoning": "Task requires designing a new timeout engine subsystem (architecture) with P95 metrics-based auto-tuning (optimization), implementation (builder), and validation (tester).",
+        "reasoning": "Adaptive timeout engine requires architectural design of P95 strategy, implementation of metrics collection and tuning algorithm, performance optimization of the engine itself, and comprehensive edge-case testing.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772900721,
+      "timestamp": 1772912231,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -553,33 +553,31 @@
     },
     "efc27fd08f5baa0fe3a75dc8b3b9f177": {
       "result": {
-        "complexity": 6,
+        "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 75,
+        "success_probability": 76,
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Incorrect percentile calculation causing miscalibrated timeouts that break existing pipelines",
-          "Data loss or corruption in 30-day rolling window management leading to invalid baselines",
-          "Pipeline regression where prior-successful runs timeout or vice versa due to new thresholds",
-          "Performance overhead from continuous duration tracking and percentile calculation on every stage",
-          "Integration complexity with existing pipeline template system, stage definitions, and daemon loop",
-          "Difficulty validating P95+20% is truly representative across diverse stage types and workload patterns"
+          "Incorrect percentile calculations causing cascading timeout failures in production",
+          "Insufficient historical data during cold start (new stage types, < 30 days)",
+          "Storage overhead and query performance for rolling window aggregations",
+          "Manual timeout overrides conflicting with auto-tuning logic",
+          "Multi-repo/fleet scenarios with divergent stage duration distributions",
+          "Dashboard accuracy and real-time sync under high throughput"
         ],
         "implementation_hints": [
-          "Leverage existing sw-db.sh SQLite persistence layer for duration tracking and percentile queries",
-          "Pre-calculate P50/P95/P99 in daemon loop and cache results to minimize per-pipeline calculation overhead",
-          "Start with 7-day rolling window for validation before production 30-day deployment to reduce data loss risk",
-          "Create comprehensive test suite with synthetic stage duration distributions covering normal, bimodal, and heavy-tail patterns",
-          "Extend pipeline.sh to emit stage_completed event with duration, outcome, and stage type after each stage completion",
-          "Implement gradual timeout adjustment using exponential moving average instead of sudden jumps to prevent regressions",
-          "Add daemon patrol check to detect timeout miscalibration anomalies and alert on P95 drift",
-          "Provide conservative tuning mode config option (P99 instead of P95) for risk-averse teams",
-          "Dashboard widget displaying timeout adjustment impact: current timeout vs actual P95/P99, history, and avoided_timeouts metric",
-          "Segment tracking by stage type (build, test, review, design) as distributions likely differ significantly"
+          "Leverage existing SQLite persistence layer (sw-db.sh) for duration tracking",
+          "Implement cold start handling with conservative defaults and gradual adjustment",
+          "Add detailed logging of timeout adjustment reasoning for observability",
+          "Batch percentile calculations to reduce computation overhead",
+          "Validate proposed adjustments against historical P99 outliers before applying",
+          "Provide dry-run/preview mode showing proposed changes before auto-applying",
+          "Test with synthetic duration distributions covering fleet/repo divergence scenarios",
+          "Integrate with cost tracking to quantify savings from fast-fail improvements"
         ]
       },
-      "timestamp": 1772899932,
+      "timestamp": 1772911673,
       "ttl": 3600
     },
     "33189144d0eabe941f54fe5339f3c812": {
@@ -603,39 +601,36 @@
     "56ca8684e016ef03feadc84c999d0c24": {
       "result": {
         "issue_type": "infrastructure",
-        "confidence": 0.90,
+        "confidence": 0.88,
         "secondary_domains": [
           "performance",
-          "reliability",
-          "cost-optimization"
+          "data-pipeline",
+          "observability"
         ],
         "complexity_assessment": {
           "score": 6,
-          "reasoning": "Requires statistical analysis design, rolling window implementation, integration with daemon/pipeline, and metrics tracking. Core logic is straightforward; complexity is in edge case handling, data retention, and backwards compatibility with manual timeout overrides."
+          "reasoning": "Moderate complexity: requires metrics collection, percentile calculations over 30-day windows, auto-tuning logic with guardrails, daemon integration, and dashboard updates. Statistical correctness and guardrail design are the critical challenges."
         },
         "skill_plan": {
           "plan": [
-            "data-pipeline",
-            "performance",
-            "brainstorming"
-          ],
-          "design": [
             "architecture-design",
             "data-pipeline"
           ],
+          "design": [
+            "api-design",
+            "data-pipeline",
+            "adaptive-parameter-tuning"
+          ],
           "build": [
             "performance",
-            "systematic-debugging"
+            "testing-strategy"
           ],
           "review": [
             "adversarial-quality",
-            "architecture-design",
             "two-stage-review"
           ],
           "compound_quality": [
-            "validation-thoroughness",
-            "observability",
-            "performance"
+            "validation-thoroughness"
           ],
           "pr": [
             "pr-quality"
@@ -644,7 +639,6 @@
             "deploy-safety"
           ],
           "validate": [
-            "validation-thoroughness",
             "observability"
           ],
           "monitor": [
@@ -652,48 +646,47 @@
           ]
         },
         "skill_rationale": {
-          "data-pipeline": "Design the schema for duration tracking, rolling 30-day window aggregation, P50/P95/P99 calculation, and stale data retention policy to support statistical analysis at scale.",
-          "performance": "Optimize percentile calculations to avoid becoming a bottleneck; evaluate cost-benefit of in-memory vs disk storage; analyze resource usage across millions of pipeline runs.",
-          "brainstorming": "Challenge the 20% buffer assumption, 7-day adjustment interval, 30-day window size, and P95 choice over P99/P90; explore failure modes and edge cases before implementation.",
-          "architecture-design": "Document the integration points with daemon-config.json, pipeline templates, and timeout logic; create an ADR for how percentile data flows through the system and how manual overrides coexist with auto-tuning.",
-          "systematic-debugging": "Use this before build to review auto-patrol cycle history and previous timeout attempts to avoid repeating mistakes.",
-          "adversarial-quality": "Think like a chaos engineer: what if percentile calculations are corrupted? What if timeout keeps oscillating during a fast loop? What if percentile data becomes stale during low-activity periods?",
-          "two-stage-review": "Pass 1: verify statistical correctness (percentile math, rolling window logic, data sufficiency checks). Pass 2: verify system integration (backwards compatibility, atomicity, monitoring hooks, daemon restart behavior).",
-          "validation-thoroughness": "Smoke tests prove it compiles; validate the actual user experience across diverse pipeline types (fast 5-min builds, slow 90-min builds, bursty workloads) to confirm timeouts improve reliability and cost.",
-          "observability": "Instrument timeout calculation, track adjustment frequency and magnitude, monitor actual_P95 vs configured_timeout drift, surface timeouts_avoided and false_timeouts_prevented metrics to prove ROI.",
-          "pr-quality": "Complex statistical logic needs clarity; help reviewer understand P95 calculation, rolling window edge cases, and integration with existing timeout override mechanism in under 5 minutes.",
-          "deploy-safety": "Auto-tuning system parameters is high-risk; require gradual rollout with feature flag, canary dashboard showing timeout changes before they take effect, and easy disable switch if metrics go wrong."
+          "architecture-design": "Must design how metrics collection hooks into existing pipeline/daemon/loop systems and define the durable state schema for 30-day rolling window without breaking current pipelines.",
+          "data-pipeline": "The core pattern is: collect stage durations → aggregate by type → calculate percentiles → recommend timeout adjustments → apply safely; this is a data pipeline with statistical aggregation.",
+          "api-design": "Need a clear schema for duration records (stage type, actual_duration, status) and auto-tune recommendations (current_timeout, recommended_timeout, confidence) to avoid integration conflicts.",
+          "adaptive-parameter-tuning": "This issue is fundamentally about adaptive parameter tuning (timeout = P95 * 1.2); requires guardrails to prevent oscillation, false timeouts, and config conflicts.",
+          "performance": "Percentile calculations (P50, P95, P99) on large datasets can be expensive; rolling window maintenance must be efficient to avoid slowing down the daemon.",
+          "testing-strategy": "Probabilistic timing behavior is hard to test; need deterministic test fixtures, Monte Carlo validation for percentile accuracy, and edge case coverage (small samples, all-equal values, no data).",
+          "adversarial-quality": "What if P95 calculation is wrong? What if rolling window gets corrupted on restart? What if auto-tuning pushes timeout dangerously low? What if config update conflicts with in-flight pipeline?",
+          "two-stage-review": "Statistical correctness + integration complexity warrant two-pass review: Pass 1 validates percentile algorithm and data durability; Pass 2 validates guardrails, config integration, and backwards compatibility.",
+          "validation-thoroughness": "Unit tests for percentile math are necessary but insufficient; need actual runtime validation that adjusted timeouts reduce false timeouts and fast-fail on real anomalies.",
+          "pr-quality": "Changes span daemon-config, pipeline state, dashboard, and multiple integrations; PR must clearly explain the timeout adjustment algorithm, guardrails, and how manual overrides are preserved.",
+          "deploy-safety": "Auto-tuning changes timeout behavior globally; rollout must include canary validation (test on one stage type first) and kill switch (manual override to disable auto-tuning instantly).",
+          "observability": "Post-deploy monitoring must track: false_timeouts_prevented, timeouts_avoided, P95 drift over time, and cost impact; long-term monitoring catches if P95 becomes unstable or timeouts diverge from reality."
         },
         "generated_skills": [
           {
             "name": "adaptive-parameter-tuning",
-            "reason": "Existing skills cover statistics (data-pipeline), monitoring (observability), and safety (deploy-safety) but lack specific guidance on safely auto-adjusting system parameters based on metrics. This issue introduces a new pattern: timeout = f(observed metrics) with rolling adjustments every 7 days, which needs dedicated rigor around oscillation safeguards, backwards compatibility, and testing the tuning mechanism itself.",
-            "content": "# Adaptive Parameter Tuning for Autonomous Systems\n\nAuto-tuning system parameters based on observed metrics is a high-leverage pattern but risky without guardrails. Apply these principles:\n\n## Core Pattern\n\n1. **Measurement Window**: Collect baseline metrics over 2-4 weeks before calculating targets. Start with conservative percentiles (P90) before moving to P95.\n2. **Adjustment Strategy**: Calculate target once per week, not continuously. Compare new target against current; only change if delta > threshold (e.g., ±15%) to avoid thrashing.\n3. **Bounds Checking**: Always enforce min/max thresholds. For timeouts: `timeout = clamp(P95 * 1.2, min_threshold, max_threshold)`. Never let auto-tuning violate safety invariants.\n4. **Backwards Compatibility**: Manual overrides (user-set timeouts) must always take precedence. Auto-tuning is opt-in per pipeline template; existing pipelines keep current timeouts until explicitly enabled.\n\n## Failure Modes & Safeguards\n\n| Failure Mode | Safeguard |\n|---|---|\n| Insufficient data (< 10 samples) | Use all available data; log warning; don't adjust yet |\n| Measurement drift (outliers skew percentile) | Use robust percentile (e.g., winsorize at ±3σ) or IQR clipping |\n| Oscillation (timeout keeps bouncing) | Require N consecutive agreeing measurements before change |\n| Metric corruption/gaps | Validate input data; skip adjustment window if > 20% data missing |\n| Cascading failures (auto-tuning masks root cause) | Alert if P95 increases > 2x in one week; trigger incident review |\n| Slow drift (timeouts creep up unnoticed) | Dashboard shows 30-day timeout trend; monitor for gradual increase |\n\n## Testing the Tuner\n\n- **Unit tests**: Percentile calculations correct at boundaries (0, 1, 10, 100 samples)\n- **Simulation**: Feed synthetic duration distributions (normal, bimodal, heavy-tailed); verify P95 is accurate\n- **Regression**: Run against 30 days of production duration data; compare calculated P95 against manually-verified ground truth\n- **Integration**: Deploy to canary pipelines first; monitor timeout changes before rolling to prod; require dashboard approval for large changes (> 20%)\n\n## Rollout Strategy\n\n1. **Feature flag**: `\"auto_adjust_timeouts\": false` by default; opt-in per daemon\n2. **Dry-run mode**: Calculate timeout but don't apply; log what would change; monitor alignment with manual review\n3. **Gradual enable**: Start on 10% of pipelines, then 50%, then 100% over 2-3 weeks\n4. **Easy disable**: Single config flag to shut off auto-tuning and fall back to current timeouts\n5. **Dashboard**: Show current timeout, recommended P95, trend over 30 days, adjustment history with reasons\n\n## Metrics & Validation\n\n- **timeouts_avoided**: Count of failures caught by P95-based timeout before they hit default (e.g., caught runaway at 45min instead of 60min default)\n- **false_timeouts_prevented**: Count of successes that would have timed out under old fixed timeout but succeeded under P95-based timeout\n- **adjustment_frequency**: How often timeout changes; alert if adjusting every day (sign of instability)\n- **cost_impact**: Total compute hours saved by faster fail-fast + total extra failures from new shorter timeouts; net must be positive\n\n## Edge Cases\n\n- **Initialization**: First 7 days with no history → use defaults + collect baseline. Don't adjust in first 30-day window.\n- **Low activity**: < 5 pipeline runs in 30 days → skip adjustment; keep current timeout\n- **Seasonal spikes**: Concurrent builds surge; P95 jumps. Require 2 consecutive adjustment windows before applying.\n- **Manual override during auto-tuning**: User sets custom timeout. Auto-tuning pauses for that pipeline until override is removed.\n"
+            "reason": "Issue explicitly mentions adaptive parameter tuning as high-leverage but risky; no existing skill provides guardrails for safe auto-tuning of system parameters like timeouts.",
+            "content": "## Adaptive Parameter Tuning with Safety Guardrails\n\nAuto-tuning system parameters (timeouts, thresholds, resource limits) based on observed metrics is high-leverage but risky without guardrails. This pattern prevents runaway feedback loops, false positives, and oscillation.\n\n### Core Pattern\n\n1. **Measure**: Collect observed behavior (stage durations, success rates, latencies)\n2. **Aggregate**: Calculate summary statistics (median, percentiles, trend) over a rolling window\n3. **Decide**: Compare to thresholds; recommend parameter changes with confidence bounds\n4. **Apply**: Update config safely with guardrails preventing dangerous states\n5. **Monitor**: Track whether the tuning actually improved the target metric\n\n### Essential Guardrails\n\n**Lower bounds**: Never tune a parameter below a safe minimum.\n```\ntimeout = max(P95 * 1.2, MINIMUM_TIMEOUT_SECONDS)\n```\n\n**Manual override precedence**: User-specified config always takes priority.\n```\nif (config.manual_timeout_set) use config.timeout\nelse use calculated_timeout\n```\n\n**Adjustment frequency limits**: Don't re-tune on every observation; wait for window of confidence.\n```\nif (time_since_last_adjustment < MIN_ADJUSTMENT_INTERVAL) skip\n```\n\n**Stability thresholds**: Only adjust if change is large enough to matter and stable enough to trust.\n```\nif (abs(recommended - current) < HYSTERESIS) skip\nif (confidence_score < MIN_CONFIDENCE) skip\n```\n\n**Rollback triggers**: If tuning causes anomalies, fall back to previous safe state.\n```\nif (error_rate > baseline * 2) revert_to_previous_timeout()\n```\n\n### Durable State\n\nStore tuning state persistently to survive restarts:\n- **Window data**: Duration records with timestamps (needed for percentile recalc)\n- **Adjustment history**: When, what, why each change was made (debugging)\n- **Confidence signals**: Sample count, variance, anomaly detection flags\n\nUse append-only log for durability:\n```\n2026-03-07T16:00:00Z event=duration stage=build duration_ms=45000 status=success\n2026-03-07T17:00:00Z event=adjustment stage=build old_timeout=60 new_timeout=54 p95=45 confidence=0.92\n```\n\n### Validation Before Apply\n\nNever apply a recommendation without checking:\n1. **Statistical validity**: Enough samples? Window size correct? Percentile stable?\n2. **Sanity bounds**: New value within safe range? Not a typo or NaN?\n3. **Continuity**: Not a wild jump that suggests data corruption?\n4. **Causality**: Is this change actually addressing the problem it's designed for?\n\n### Monitoring the Tuner Itself\n\nAuto-tuning can break in subtle ways. Track:\n- **Adjustment frequency**: Too often = oscillation; too rare = broken detector\n- **Accuracy**: Did the recommendation actually reduce false timeouts?\n- **Drift**: Is the recommended value drifting away from reality over time?\n- **Anomalies**: Detect when the metrics being tuned start behaving strangely (indicator of upstream problems)\n\n### Common Failure Modes\n\n| Failure | Cause | Prevention |\n|---------|-------|------------|\n| Oscillation | Adjustments too frequent, hysteresis too small | Require MIN_ADJUSTMENT_INTERVAL, use hysteresis bands |\n| Runaway tuning | No upper bound | Always set max(value, SAFE_MAXIMUM) |\n| Silent data loss | Rolling window not durable | Append-only log, validate on restart |\n| False confidence | Sample size too small | Check confidence_score >= threshold |\n| Config conflict | Manual override lost during auto-tune | Check and preserve manual_timeout_set flag |\n\n### Testing Strategy\n\nTest the tuner with:\n1. **Deterministic fixtures**: Mock metrics with known P95, verify timeout calculated correctly\n2. **Edge cases**: Single observation, all equal values, missing data, gaps in time window\n3. **Failure injection**: Corrupt the rolling window, kill process mid-adjustment, restore old config\n4. **Regression**: Verify tuning actually improves the target metric (fewer false timeouts, faster failures)"
           }
         ],
         "review_focus": [
-          "Percentile calculation correctness at boundaries (P95 of 10 samples vs 1M samples)",
-          "Rolling 30-day window implementation: how to handle data at edges, stale data cleanup, efficient aggregation",
-          "Backwards compatibility: manual timeout overrides always respected, existing pipelines unaffected until explicitly enabled",
-          "Atomicity of timeout updates: what happens if daemon crashes mid-calculation? Can timeouts get applied inconsistently?",
-          "Metrics accuracy: are timeouts_avoided and false_timeouts_prevented counted correctly? Can they be gamed?",
-          "Schema design for duration tracking: how to store millions of records efficiently, how to query P95 fast",
-          "Integration with daemon-config.json and pipeline templates: configuration precedence and override rules",
-          "Dashboard accuracy and update frequency: does recommended P95 match what will actually be applied?",
-          "Edge case handling: what if 0 samples in window? What if all builds timed out? What if durations are multi-modal?"
+          "Percentile calculation correctness: handle edge cases (small samples, equal values, sparse data); verify P95 is not a typo (should be ~95th percentile, not some other value)",
+          "Rolling window durability: 30-day window must survive daemon restarts, worktree cleanup, and concurrent access without data loss or corruption",
+          "Guardrails effectiveness: verify manual overrides are preserved, minimum thresholds prevent dangerous timeouts, adjustment frequency prevents oscillation, stability hysteresis prevents noise-driven tuning",
+          "Integration completeness: daemon-config.json schema, pipeline templates support, all stage types tracked, dashboard endpoints match the metrics being calculated",
+          "Backwards compatibility: existing fixed timeouts in config still work, auto-tuning is opt-in or default-disabled until validated, no breaking changes to pipeline state format",
+          "Config conflict handling: what happens if auto-tuning tries to update timeout while pipeline is running? What if manual override and auto-tuning disagree?",
+          "Accuracy of calculations: verify P50, P95, P99 match statistical definitions, no off-by-one errors in percentile indexing, time window boundaries correct"
         ],
         "risk_areas": [
-          "Percentile calculation bug could lead to systematically short timeouts (killing fast pipelines) or long timeouts (defeating cost optimization)",
-          "Rolling window edge case: at day 0, insufficient data → using insufficient data for tuning decision → bad baseline",
-          "Oscillation: if adjustment happens too frequently, timeouts could thrash, causing cascading failures",
-          "Integration race condition: timeout adjusted mid-pipeline execution → timeout changes while build is running → unpredictable behavior",
-          "Performance regression: percentile calculation across millions of runs becomes bottleneck if not optimized (in-memory aggregation vs disk queries)",
-          "Backwards compatibility breakage: existing pipelines with manually-set timeouts get overridden by auto-tuning → unintended timeout changes",
-          "Metrics misalignment: auto-tuning claims cost savings but actual savings not measurable or negative",
-          "Configuration drift: daemon-config.json timeout conflicts with auto-tuning recommendation → confusion about which value applies"
+          "Statistical instability: with few pipeline runs per stage type, P95 could be unreliable; need minimum sample size before recommendations apply",
+          "Timeout oscillation: if P95 keeps changing, timeouts bounce up/down; hysteresis and adjustment frequency limits critical",
+          "Data durability: rolling window must survive restarts and concurrent daemon instances without corruption or loss; append-only log preferred over mutable state",
+          "False negatives (timeouts too high): defeats purpose of catching real failures; verify adjustment mechanism actually tightens timeouts when data supports it",
+          "False positives (premature timeouts): aggressive auto-tuning could timeout jobs that would have succeeded; set confidence thresholds high, include buffer (P95 * 1.2)",
+          "Configuration conflicts: what if user manually sets timeout to 120s while auto-tuner recommends 60s? Must preserve manual intent and document precedence clearly",
+          "Dashboard staleness: percentile calculations in dashboard could lag actual behavior; validate that dashboard and tuner use same data source",
+          "Regression in reliability: auto-tuning should improve reliability metrics; if it doesn't, need rollback/disable mechanism that doesn't require code push"
         ]
       },
-      "timestamp": 1772900034,
+      "timestamp": 1772911746,
       "ttl": 3600
     },
     "861f5903393aee025afa6d04f454ec1a": {
@@ -701,32 +694,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 25,
-            "summary": "Project structure (Node.js, vitest, npm) provides context for implementation approach and testing strategy, but doesn't directly inform timeout tuning logic"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 15,
-            "summary": "Confirms Node.js project type; minimal value for timeout engine planning without performance baselines"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 8,
-            "summary": "Empty baseline object; would be highly relevant if populated with historical stage durations and P95 percentiles"
+            "relevance": 45,
+            "summary": "Project structure and conventions (Node.js, vitest, npm, src/ layout) provide baseline context for understanding where timeout configuration and metrics collection will integrate"
           },
           {
             "file": "failures.json",
-            "relevance": 5,
-            "summary": "Unrelated test failures (cleanup, sed command); provides no context for timeout auto-tuning strategy"
+            "relevance": 28,
+            "summary": "Heartbeat staleness detection failure may relate to how the timeout engine monitors stage durations and process lifecycle; pattern detection logic could inform metrics collection"
           },
           {
-            "file": "global.json",
-            "relevance": 2,
-            "summary": "Empty arrays; no cross-repo learnings or patterns available to inform timeout engine design"
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Minimal project type detection (nodejs) is redundant with first patterns.json entry; low informational value for timeout engine planning"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object; no historical performance data available to inform P95 duration targets"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; no prior architectural choices recorded for timeout or performance tuning features"
           }
         ]
       },
-      "timestamp": 1772900051,
+      "timestamp": 1772911759,
       "ttl": 1800
     },
     "7d0688a3d4a868f930917fa62d0c8023": {
@@ -734,22 +727,22 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Contains captured test failure patterns with root causes and fixes. Directly relevant because the context mentions 'rejected plan validation failures' — these entries show what test validation failures have been encountered in the codebase and their root causes."
+            "relevance": 85,
+            "summary": "Contains categorized test failures with root causes and fixes from recent pipeline runs. Directly relevant to understanding what validation failures occur during plan execution and how to address them."
           },
           {
-            "file": "patterns.json",
+            "file": "patterns.json (first entry)",
             "relevance": 40,
-            "summary": "Contains project structure (Node.js, vitest test runner, npm). Moderately relevant as understanding the test setup (vitest, commonjs imports) is important context for diagnosing plan validation failures."
+            "summary": "Documents project conventions (vitest test runner, CommonJS imports, npm package manager, src/ directory) needed to understand testing/validation framework for the timeout engine feature."
           },
           {
-            "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object. Minimal relevance — contains no actionable information about validation failures or pipeline tuning."
+            "file": "patterns.json (second entry)",
+            "relevance": 15,
+            "summary": "Confirms Node.js project type detected during bootstrap. Minimal context but establishes project language/runtime environment."
           }
         ]
       },
-      "timestamp": 1772900208,
+      "timestamp": 1772911875,
       "ttl": 1800
     },
     "ad5c4830dce9fba5655dfd373702d195": {
@@ -757,55 +750,55 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 65,
-            "summary": "Project structure, conventions (source_dir, test patterns, import style) needed to understand implementation location and patterns for the timeout engine architecture"
+            "relevance": 25,
+            "summary": "Project structure (Node.js, vitest, commonjs) provides baseline context for implementation patterns and conventions that inform architecture design"
           },
           {
-            "file": "metrics.json",
-            "relevance": 45,
-            "summary": "Baselines storage structure where P95 duration metrics would be persisted and retrieved for timeout auto-tuning calculations"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 35,
-            "summary": "Architectural decision history to understand previous design choices and avoid repeating patterns in timeout engine architecture"
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Confirms Node.js project type; minimal but relevant for understanding the technology stack of the adaptive timeout engine"
           },
           {
             "file": "failures.json",
-            "relevance": 12,
-            "summary": "Contains test failures but not directly related to timeout/performance architecture; limited relevance to adaptive P95 design patterns"
+            "relevance": 10,
+            "summary": "Shows recent test failures; unrelated to timeout design but provides context on test infrastructure and codebase stability state"
           },
           {
-            "file": "global.json",
+            "file": "metrics.json",
             "relevance": 5,
-            "summary": "Empty cross-repo learnings; no existing patterns captured to inform adaptive timeout engine design"
+            "summary": "Empty baselines object; would be highly relevant if populated with P95 duration measurements, but currently contains no data"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; would capture prior architectural choices relevant to timeout/tuning design, but currently unpopulated"
           }
         ]
       },
-      "timestamp": 1772900476,
+      "timestamp": 1772911930,
       "ttl": 1800
     },
     "3897af5172e7d49bdd2a645bef9efff4": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 12,
-            "summary": "Contains project conventions and test patterns (vitest, commonjs) that could contextualize how to structure tests for timeout engine design decisions, but doesn't directly address design anti-patterns"
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Contains project structure info (vitest, npm, commonjs) that would apply to any code changes, including timeout engine implementation, but lacks domain-specific anti-patterns"
           },
           {
             "file": "failures.json",
-            "relevance": 8,
-            "summary": "Contains captured test failures and root causes showing what implementation approaches have failed; provides indirect signal about robustness concerns, though failures are unrelated to timeout engine design"
+            "relevance": 5,
+            "summary": "Records test failures in unrelated modules (sw-cleanup.sh heartbeat detection), not relevant to timeout engine design or P95 metrics"
           },
           {
-            "file": "patterns.json (second entry)",
-            "relevance": 5,
-            "summary": "Basic project metadata (nodejs, detected at bootstrap); minimal utility for understanding design anti-patterns for timeout engine"
+            "file": "decisions.json",
+            "relevance": 0,
+            "summary": "Empty decisions log; no previously captured design decisions or rejected approaches available"
           }
         ]
       },
-      "timestamp": 1772900489,
+      "timestamp": 1772911939,
       "ttl": 1800
     },
     "845b751ee7f987558efbbace53f0a842": {
@@ -813,32 +806,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 78,
-            "summary": "Detailed project structure (vitest, npm, src/ layout, commonjs imports) essential for building and testing the timeout engine feature"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 42,
-            "summary": "Confirms Node.js project type; basic but less detailed than the first patterns entry"
+            "relevance": 85,
+            "summary": "Project structure (Node.js, vitest, npm), source directory layout, test patterns (*.test.js), and import conventions (commonjs) — essential setup information for implementing the timeout engine feature"
           },
           {
             "file": "failures.json",
-            "relevance": 25,
-            "summary": "Previous test failures in sw-cleanup.sh and sw-code-review-test.sh; useful context to avoid similar issues during build stage"
+            "relevance": 42,
+            "summary": "Test failure patterns from this codebase showing heartbeat detection and output formatting issues — useful precedents for avoiding similar bugs during build stage"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Confirms project type as nodejs with detection metadata — redundant with first patterns.json, minimal additional value"
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Empty baselines object, but potentially relevant for capturing P95 duration metrics that drive the timeout auto-tuning"
+            "relevance": 8,
+            "summary": "Empty baselines object; potentially relevant for recording P95 duration metrics, but currently contains no data"
           },
           {
             "file": "decisions.json",
-            "relevance": 8,
-            "summary": "Empty decisions array; could track design choices for timeout engine, but no prior context available"
+            "relevance": 5,
+            "summary": "Empty decisions array; could track architectural decisions for the timeout engine, but no existing entries"
           }
         ]
       },
-      "timestamp": 1772900694,
+      "timestamp": 1772912207,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -846,28 +839,46 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Critical build metadata: project is Node.js with npm/vitest, source in src/, tests match *.test.js. Essential for configuring build tooling and test execution."
+            "relevance": 92,
+            "summary": "Project configuration is essential for build stage: defines test runner (vitest), source directory layout, import style, and package manager (npm). Required to properly execute builds and understand project structure."
           },
           {
             "file": "failures.json",
-            "relevance": 75,
-            "summary": "Test stage failures in sw-cleanup.sh heartbeat detection. Contextualizes what can break during the test phase that follows build, though specific to cleanup logic rather than general build concerns."
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions log. No prior architectural or implementation decisions captured."
+            "relevance": 45,
+            "summary": "Test stage failures are relevant to build context as build output feeds into test stage. Contains patterns for detecting test failures and sw-cleanup.sh behavior, which can inform build iteration strategy."
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Empty baselines. No performance or build metric baselines available."
+            "summary": "Empty baselines dictionary provides no actionable data for build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array provides no historical context or architectural decisions relevant to build execution."
           }
         ]
       },
-      "timestamp": 1772902696,
+      "timestamp": 1772912217,
       "ttl": 1800
+    },
+    "30cd36785de97d3cc6ce2ebeab61cfb6": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1772911683,
+      "ttl": 1800
+    },
+    "03b050f2118a09669122550457dbd302": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 2,
+        "estimated_tokens": 24000,
+        "likely_failure_stage": "test",
+        "confidence": 74
+      },
+      "timestamp": 1772911693,
+      "ttl": 3600
     }
   }
 }

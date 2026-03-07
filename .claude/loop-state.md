@@ -2,30 +2,39 @@
 goal: "Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
 
 ## Plan Summary
-Based on my thorough codebase analysis, I'll provide the detailed implementation plan directly. Here's the comprehensive, concrete plan that addresses all validation feedback:
+Based on my analysis of the codebase, I'll now create a comprehensive implementation plan for the Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning.
+
+## Implementation Plan: Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
 
 ---
 
-# Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
+## Component Diagram
 
-## Executive Summary
-
-This plan builds on existing infrastructure in `sw-adaptive.sh` (percentile calculations) and `daemon-adaptive.sh` (timeout functions) to implement intelligent, data-driven stage timeouts based on P95 duration percentiles from a 30-day rolling window. Auto-adjusts every 7 days.
-
-## Task Decomposition (15 Concrete Tasks)
-
-### Phase 1: Schema & Data Collection (Tasks 1-3)
-
-**Task 1: Add `stage_durations` SQLite table**
-- **Input**: Current schema (sw-db.sh:134-200)
-- **Output**: New migration `scripts/lib/db-schema-7.sql`
-- **Schema**:
-  ```sql
-  CREATE TABLE IF NOT EXISTS stage_durations (
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Pipeline Execution                          │
+│  (sw-pipeline.sh → record_stage_end → hook to metrics)         │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+        ┌──────────────▼──────────────┐
+        │ Stage Duration Recorder      │ (stage-duration-metrics.sh)
+        │ • Record duration + status   │
+        │ • Capture repo_hash         │
+        │ • Write to SQLite           │
+        └──────────────┬──────────────┘
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-
+# Design: Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
+## Context
+## Decision
+### 1. Timeout Enforcement in Pipeline Execution
+### 2. Config Application Layer (new)
+### 3. Audit Trail (new tables)
+### 4. Configuration Schema
+### 5. Metrics Tracking
+### 6. Dashboard API
+### 7. Data Flow
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
@@ -33,28 +42,28 @@ Historical context (lessons from previous pipelines):
   "results": [
     {
       "file": "patterns.json",
-      "relevance": 78,
-      "summary": "Detailed project structure (vitest, npm, src/ layout, commonjs imports) essential for building and testing the timeout engine feature"
-    },
-    {
-      "file": "patterns.json",
-      "relevance": 42,
-      "summary": "Confirms Node.js project type; basic but less detailed than the first patterns entry"
+      "relevance": 85,
+      "summary": "Project structure (Node.js, vitest, npm), source directory layout, test patterns (*.test.js), and import conventions (commonjs) — essential setup information for implementing the timeout engine feature"
     },
     {
       "file": "failures.json",
-      "relevance": 25,
-      "summary": "Previous test failures in sw-cleanup.sh and sw-code-review-test.sh; useful context to avoid similar issues during build stage"
+      "relevance": 42,
+      "summary": "Test failure patterns from this codebase showing heartbeat detection and output formatting issues — useful precedents for avoiding similar bugs during build stage"
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 18,
+      "summary": "Confirms project type as nodejs with detection metadata — redundant with first patterns.json, minimal additional value"
     },
     {
       "file": "metrics.json",
-      "relevance": 12,
-      "summary": "Empty baselines object, but potentially relevant for capturing P95 duration metrics that drive the timeout auto-tuning"
+      "relevance": 8,
+      "summary": "Empty baselines object; potentially relevant for recording P95 duration metrics, but currently contains no data"
     },
     {
       "file": "decisions.json",
-      "relevance": 8,
-      "summary": "Empty decisions array; could track design choices for timeout engine, but no prior context available"
+      "relevance": 5,
+      "summary": "Empty decisions array; could track architectural decisions for the timeout engine, but no existing entries"
     }
   ]
 }
@@ -63,10 +72,41 @@ Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
 [design] Design completed for Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning — Resolution: 
 
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
+
+## Implementation Checklist
+- [ ] **Task 1**: Create database schema migration (stage_durations, timeout_recommendations, timeout_adjustments tables)
+- [ ] **Task 2**: Implement `db_save_stage_duration()` and related accessor functions in `sw-db.sh`
+- [ ] **Task 3**: Create `scripts/lib/stage-duration-metrics.sh` with recording functions
+- [ ] **Task 4**: Integrate `record_stage_duration()` hook in `pipeline-state.sh::mark_stage_complete()`
+- [ ] **Task 5**: Create `scripts/lib/timeout-recommendation-engine.sh` with stats calculations
+- [ ] **Task 6**: Implement percentile calculation and 30-day rolling window logic
+- [ ] **Task 7**: Create `scripts/sw-adaptive-timeout.sh` CLI with `analyze` subcommand
+- [ ] **Task 8**: Implement `apply` subcommand with config update and dry-run support
+- [ ] **Task 9**: Extend `daemon-config.json` with `adaptive_timeouts` configuration section
+- [ ] **Task 10**: Add daemon patrol hook for periodic timeout analysis
+- [ ] **Task 11**: Update pipeline templates with adaptive timeout fields
+- [ ] **Task 12**: Implement timeout avoidance metrics tracking functions
+- [ ] **Task 13**: Add timeout-related events for audit trail
+- [ ] **Task 14**: Add timeout recommendations API endpoint to dashboard server
+- [ ] **Task 15**: Add timeout metrics visualization to DORA dashboard
+- [ ] **Task 16**: Create comprehensive test suite `sw-adaptive-timeout-test.sh`
+- [ ] **Task 17**: Write documentation and add to CLAUDE.md AUTO:core-scripts
+- [ ] **Task 18**: Integration test: Run pipeline with metrics collection → analysis → apply cycle
+- [ ] **Task 19**: Performance test: Verify percentile calculations scale to 1000+ records
+- [ ] **Task 20**: Manual testing: Verify manual_timeout override is respected
+
+## Context
+- Pipeline: standard
+- Branch: feat/adaptive-stage-timeout-engine-with-p95-d-212
+- Issue: #212
+- Generated: 2026-03-07T19:31:03Z
+
 ## Skill Guidance (infrastructure issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **performance**: Optimize percentile calculations to avoid becoming a bottleneck; evaluate cost-benefit of in-memory vs disk storage; analyze resource usage across millions of pipeline runs.
-- **systematic-debugging**: Use this before build to review auto-patrol cycle history and previous timeout attempts to avoid repeating mistakes.
+- **performance**: Percentile calculations (P50, P95, P99) on large datasets can be expensive; rolling window maintenance must be efficient to avoid slowing down the daemon.
+- **testing-strategy**: Probabilistic timing behavior is hard to test; need deterministic test fixtures, Monte Carlo validation for percentile accuracy, and edge case coverage (small samples, all-equal values, no data).
 
 ## Performance Expertise
 
@@ -117,67 +157,64 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 
-## Systematic Debugging: Root Cause Analysis
+## Testing Strategy Expertise
 
-A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+Apply these testing patterns:
 
-### Phase 1: Evidence Collection
-- Read the error output from the previous attempt carefully
-- Identify the EXACT line/file where the failure occurred
-- Check if the error is a symptom or the root cause
-- Look for patterns: is this a known error type?
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
 
-### Phase 2: Hypothesis Formation
-- List 3 possible root causes for this failure
-- For each hypothesis, identify what evidence would confirm or deny it
-- Rank hypotheses by likelihood
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
 
-### Phase 3: Root Cause Verification
-- Test the most likely hypothesis first
-- Read the relevant source code — don't guess
-- Check if previous artifacts (plan.md, design.md) are correct or flawed
-- If the plan was correct but execution failed, focus on execution
-- If the plan was flawed, document what was wrong
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
 
-### Phase 4: Targeted Fix
-- Fix the ROOT CAUSE, not the symptom
-- If the previous approach was fundamentally wrong, choose a different approach
-- If it was a minor error, make the minimal fix
-- Document what went wrong and why the new approach is better
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
 
-IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
 
 ### Required Output (Mandatory)
 
 Your output MUST include these sections when this skill is active:
 
-1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
-2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
-3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
-4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
-
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-03-07T17:28:17Z
-last_iteration_at: 2026-03-07T17:28:17Z
+started_at: 2026-03-07T19:37:12Z
+last_iteration_at: 2026-03-07T19:37:12Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -188,9 +225,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-07T16:39:44Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":559128,"duration_api_ms":483791,"num_turns":65,"resu
-
-### Iteration 2 (2026-03-07T16:57:59Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":2221,"duration_api_ms":273596,"num_turns":1,"result"
 
