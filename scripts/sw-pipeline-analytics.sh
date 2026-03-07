@@ -69,11 +69,13 @@ EOF
 analytics_json() {
     local period="$1"
 
-    local summary by_template by_stage_failure by_complexity by_hour trends active cost_total
+    local summary by_template by_stage_failure by_stage_success by_complexity by_repo_language by_hour trends active cost_total
     summary=$(db_analytics_summary "$period")
     by_template=$(db_analytics_by_template "$period")
     by_stage_failure=$(db_analytics_by_stage_failure "$period")
+    by_stage_success=$(db_analytics_by_stage_success "$period")
     by_complexity=$(db_analytics_by_complexity "$period")
+    by_repo_language=$(db_analytics_by_repo_language "$period")
     by_hour=$(db_analytics_by_hour "$period")
     trends=$(db_analytics_trends)
     active=$(db_analytics_active)
@@ -88,7 +90,9 @@ analytics_json() {
         --argjson summary "$summary" \
         --argjson by_template "$by_template" \
         --argjson by_stage_failure "$by_stage_failure" \
+        --argjson by_stage_success "$by_stage_success" \
         --argjson by_complexity "$by_complexity" \
+        --argjson by_repo_language "$by_repo_language" \
         --argjson by_hour "$by_hour" \
         --argjson trends "$trends" \
         --argjson active "$active" \
@@ -99,7 +103,9 @@ analytics_json() {
             summary: ($summary + {total_cost_usd: $cost_total}),
             by_template: (if $by_template == null then [] else $by_template end),
             by_stage_failure: (if $by_stage_failure == null then [] else $by_stage_failure end),
+            by_stage_success: (if $by_stage_success == null then [] else $by_stage_success end),
             by_complexity: (if $by_complexity == null then [] else $by_complexity end),
+            by_repo_language: (if $by_repo_language == null then [] else $by_repo_language end),
             by_hour: (if $by_hour == null then [] else $by_hour end),
             trends: {periods: (if $trends == null then [] else $trends end)},
             active_pipelines: (if $active == null then [] else $active end)

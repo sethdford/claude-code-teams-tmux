@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -652,6 +652,20 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
     fi
+
+    # Migration from v6 → v7: Add attribution fields to pipeline_outcomes
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        sqlite3 "$DB_FILE" "
+ALTER TABLE pipeline_outcomes ADD COLUMN root_cause_stage TEXT;
+ALTER TABLE pipeline_outcomes ADD COLUMN root_cause_category TEXT;
+ALTER TABLE pipeline_outcomes ADD COLUMN repo_language TEXT;
+CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_root_cause_stage ON pipeline_outcomes(root_cause_stage);
+CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_repo_language ON pipeline_outcomes(repo_language);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
+    fi
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -994,16 +1008,20 @@ db_daemon_summary() {
 db_record_outcome() {
     local job_id="$1" issue="${2:-}" template="${3:-}" success="${4:-1}"
     local duration="${5:-0}" retries="${6:-0}" cost="${7:-0}" complexity="${8:-medium}"
+    local root_cause_stage="${9:-}" root_cause_category="${10:-}" repo_language="${11:-}"
 
     if ! db_available; then return 1; fi
 
     job_id="${job_id//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
     issue="${issue//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
     template="${template//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    root_cause_stage="${root_cause_stage//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    root_cause_category="${root_cause_category//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    repo_language="${repo_language//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
 
     _db_exec "INSERT OR REPLACE INTO pipeline_outcomes
-        (job_id, issue_number, template, success, duration_secs, retry_count, cost_usd, complexity, created_at)
-        VALUES ('$job_id', '$issue', '$template', $success, $duration, $retries, $cost, '$complexity', '$(now_iso)');"
+        (job_id, issue_number, template, success, duration_secs, retry_count, cost_usd, complexity, root_cause_stage, root_cause_category, repo_language, created_at)
+        VALUES ('$job_id', '$issue', '$template', $success, $duration, $retries, $cost, '$complexity', ${root_cause_stage:+\'$root_cause_stage\'}, ${root_cause_category:+\'$root_cause_category\'}, ${repo_language:+\'$repo_language\'}, '$(now_iso)');"
 }
 
 # db_record_cost <input_tokens> <output_tokens> <model> <cost_usd> <stage> [issue]
@@ -1448,6 +1466,44 @@ db_analytics_by_complexity() {
             SUM(success) as ok
         FROM pipeline_outcomes WHERE created_at >= '${cutoff}'
         GROUP BY COALESCE(complexity, 'unknown') ORDER BY cnt DESC
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_by_stage_success(days) — Success rate by pipeline stage
+db_analytics_by_stage_success() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_group_array(json_object(
+        'stage_name', stage_name,
+        'reached', cnt,
+        'passed', ok,
+        'success_rate', CASE WHEN cnt > 0 THEN ROUND(100.0 * ok / cnt, 1) ELSE 0 END
+    )) FROM (
+        SELECT stage_name, COUNT(*) as cnt,
+            SUM(CASE WHEN status IN ('complete','completed') THEN 1 ELSE 0 END) as ok
+        FROM pipeline_stages WHERE created_at >= '${cutoff}'
+        GROUP BY stage_name ORDER BY cnt DESC
+    );" 2>/dev/null || echo '[]'
+}
+
+# db_analytics_by_repo_language(days) — Success rate by repo language
+db_analytics_by_repo_language() {
+    local days="${1:-7}"
+    if ! db_available; then echo '[]'; return 0; fi
+    local cutoff
+    cutoff="$(date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    _db_query "SELECT json_group_array(json_object(
+        'language', COALESCE(repo_language, 'unknown'),
+        'total', cnt,
+        'successful', ok,
+        'success_rate', CASE WHEN cnt > 0 THEN ROUND(100.0 * ok / cnt, 1) ELSE 0 END
+    )) FROM (
+        SELECT COALESCE(repo_language, 'unknown') as repo_language, COUNT(*) as cnt,
+            SUM(success) as ok
+        FROM pipeline_outcomes WHERE created_at >= '${cutoff}'
+        GROUP BY COALESCE(repo_language, 'unknown') ORDER BY cnt DESC
     );" 2>/dev/null || echo '[]'
 }
 

@@ -1,385 +1,279 @@
 # Pipeline Execution Visibility Dashboard — Implementation Plan
 
-## Socratic Design Refinement
+## Socratic Design Analysis
 
 ### Requirements Clarity
+**Minimum viable change:** The analytics infrastructure already exists (`sw-pipeline-analytics.sh`, `sw-db.sh` analytics queries, `dashboard/server.ts` `/api/analytics`, `dashboard/src/views/analytics.ts`). The gap is enriching the data model to support the **metrics attribution framework** — root cause categorization, repo language tracking, stage-level success rates, error pattern aggregation, and std_dev on trends.
 
-**Minimum viable change**: A new `sw-pipeline-analytics.sh` script that queries the existing SQLite database (`pipeline_runs`, `pipeline_stages`, `pipeline_outcomes`, `events` tables) to compute success rate breakdowns and attribution analytics, with `--json` output for strategic agent consumption, plus a new dashboard API endpoint and frontend tab.
+**Implicit requirements:**
+- The strategic agent (`sw-strategic.sh:259`) already calls `sw-pipeline-analytics.sh --json --period 7` — the output must remain backward-compatible while adding new fields
+- `sw-status.sh:244` consumes analytics JSON — its jq filter must continue to work
 
-**Implicit requirements**:
-- Must work with zero data (empty state) — the strategic agent currently shows 0/0
-- Must query SQLite (primary) with JSONL fallback (backward compat)
-- JSON output must be stable for machine consumption by the strategic agent
-- Must integrate with the existing `observe` command group
+### Alternatives Considered
 
-**Acceptance criteria** (from issue):
-1. Dashboard shows current active pipelines with stage progress
-2. Success rate metrics broken down by: template, stage, repo language/type, issue complexity, time of day
-3. Failure attribution: which stage fails most, common error patterns
-4. JSON export consumable by strategic agent
-5. Historical trend graphs (7/30/90 day windows)
-6. Integration with `shipwright status` and `shipwright dashboard`
+**Approach A: Extend existing DB queries + analytics script (CHOSEN)**
+- Add new columns to `pipeline_outcomes` for `root_cause_stage`, `root_cause_category`, `repo_language`
+- Add new DB query functions for stage-level success rates and error patterns
+- Extend `analytics_json()` output with new sections
+- Extend dashboard `getAnalytics()` in server.ts
+- Extend frontend `analytics.ts` to render new sections
+- **Pros:** Minimal blast radius, builds on proven infrastructure, backward-compatible
+- **Cons:** Schema migration needed (v6 → v7)
 
-### Design Alternatives
+**Approach B: New separate metrics engine**
+- Create a new `sw-metrics-attribution.sh` with its own data model
+- **Pros:** Clean separation of concerns
+- **Cons:** Duplicates existing analytics infrastructure, new integration surface area, more files
 
-**Approach A — New standalone script + dashboard API endpoint**
-- Create `sw-pipeline-analytics.sh` with pure SQLite queries
-- Add `/api/analytics` endpoint to `dashboard/server.ts`
-- Add "Analytics" tab to dashboard frontend
-- Pros: Clean separation, testable in isolation, follows existing patterns
-- Cons: New file, but minimal blast radius
+**Decision:** Approach A. The existing analytics pipeline covers 70%+ of the acceptance criteria. Extending it is simpler and more maintainable.
 
-**Approach B — Extend existing `sw-pipeline-vitals.sh` and `sw-dora.sh`**
-- Add attribution analytics into vitals and DORA
-- Pros: Fewer files
-- Cons: Makes already large files bigger (vitals=1076 lines, dora=605 lines), mixes concerns (health scoring ≠ attribution analytics), harder to test
-
-**Approach C — Pure dashboard-only (TypeScript in server.ts)**
-- All analytics computed in the dashboard server
-- Pros: Single language, richer computation
-- Cons: No CLI access, strategic agent can't consume without dashboard running, breaks bash-first pattern
-
-**Decision: Approach A** — New script + API endpoint. Follows the established pattern (each command = one script), keeps blast radius minimal, provides both CLI and dashboard access.
-
-### Risk Assessment
-
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Empty database returns nulls/errors | Strategic agent crashes | Default all aggregations to 0, return empty arrays |
-| SQLite queries slow on large datasets | Dashboard lag | Use indexed columns, LIMIT clauses, pre-computed windows |
-| Schema changes break queries | Analytics fail | Query only existing tables/columns, no schema migrations needed |
-| Time-of-day breakdown may be misleading | Wrong optimization | Use UTC consistently, document timezone |
-
-### Dependency Analysis
-
-**Depends on (all existing)**:
-- `scripts/sw-db.sh` — SQLite query functions
-- `scripts/lib/helpers.sh` — colors, emit_event
-- `dashboard/server.ts` — REST API framework
-- `dashboard/public/index.html` — frontend tabs
-
-**Depended on by (new consumers)**:
-- `scripts/sw-strategic.sh` — will import analytics JSON
-- `scripts/sw-status.sh` — will show summary metrics
-- Dashboard frontend — new tab
-
-No circular dependency risks.
+### Risk Analysis
+1. **Schema migration breaks existing DB** — Mitigated: new columns are nullable, migration code in `sw-db.sh` follows established pattern (v5→v6 already exists as precedent)
+2. **JSON output changes break strategic agent** — Mitigated: only additive fields, no removals
+3. **Pipeline recording doesn't capture new fields** — Need to update `sw-pipeline.sh` at the exact points where `db_record_outcome()` and `emit_event "pipeline.completed"` are called
 
 ---
 
 ## User Stories
 
-**Primary**: As an operations engineer running Shipwright pipelines, I want to see success rate breakdowns by template, stage, and complexity so that I can identify which pipeline configurations need improvement.
+**Primary:** As a strategic intelligence agent, I want structured JSON metrics showing success rates by template/stage/language/complexity with root-cause attribution, so that I can generate actionable optimization recommendations instead of showing "0/0 pipelines."
 
-**Secondary**: As the strategic intelligence agent, I want machine-readable analytics JSON so that I can make data-driven optimization recommendations instead of showing 0/0 pipelines.
-
-**Tertiary**: As a team lead, I want to see failure attribution (which stage fails most, common error patterns) so that I can prioritize reliability improvements.
+**Secondary:** As an ops engineer, I want a terminal + web dashboard showing which stages fail most and why, so that I can prioritize reliability improvements.
 
 ### Acceptance Criteria (Given/When/Then)
 
-1. **Given** the database has pipeline run records, **When** I run `shipwright analytics`, **Then** I see success rate, failure attribution, and trend data in formatted terminal output.
-2. **Given** the database has pipeline run records, **When** I run `shipwright analytics --json`, **Then** I get a stable JSON structure with all breakdowns.
-3. **Given** the database is empty, **When** I run `shipwright analytics`, **Then** I see "No pipeline data found" with zero counts (no errors).
-4. **Given** the dashboard is running, **When** I visit the Analytics tab, **Then** I see success rates, failure stage distribution, and trend charts.
-5. **Given** pipeline data exists, **When** `sw-strategic.sh` calls `sw-pipeline-analytics.sh --json`, **Then** it receives actionable metrics.
+1. **Given** pipelines have run, **When** I run `shipwright analytics --json`, **Then** I see `by_stage_success_rate` with per-stage pass/reached/rate values
+2. **Given** pipelines have failed, **When** I run `shipwright analytics --json`, **Then** `by_stage_failure` includes `common_errors` array with top 3 error patterns per stage
+3. **Given** pipeline outcomes recorded with repo language, **When** I view analytics, **Then** I see `by_repo_language` breakdown with success rates
+4. **Given** a failed pipeline, **When** `db_record_outcome()` is called, **Then** `root_cause_stage` and `root_cause_category` are populated
+5. **Given** 7/30/90 day trend data, **When** I query trends, **Then** each period includes `std_dev` alongside `success_rate`
 
 ### Edge Cases
-
-1. **Empty state**: Zero pipeline runs → all metrics return 0, arrays empty, no division-by-zero
-2. **Overload state**: 10,000+ pipeline runs → queries use LIMIT, only return top-N breakdowns
-3. **Partial data**: Runs with null template/complexity → categorized as "unknown"
+1. **Empty state:** No pipeline data → all sections return empty arrays/zeroes (already handled)
+2. **Error state:** SQLite unavailable → falls back to empty JSON (already handled)
+3. **Overload state:** Thousands of pipeline runs → queries use LIMIT and cutoff dates (already handled)
 
 ---
 
-## Architecture Decision Record
+## What Already Exists
 
-### Component Diagram
+| Component | File | Status |
+|-----------|------|--------|
+| CLI analytics command | `scripts/sw-pipeline-analytics.sh` | Complete |
+| DB analytics queries | `scripts/sw-db.sh:1362-1507` | 6 query functions exist |
+| API endpoint | `dashboard/server.ts:2910` (`/api/analytics`) | Complete |
+| Frontend view | `dashboard/src/views/analytics.ts` | Complete |
+| Test suite | `scripts/sw-pipeline-analytics-test.sh` | 16 tests passing |
+| CLI router | `scripts/sw:448` | Registered |
+| Status integration | `scripts/sw-status.sh:241-273` | Complete |
+| Strategic agent | `scripts/sw-strategic.sh:259` | Consumes analytics JSON |
+| `pipeline_outcomes` table | `scripts/sw-db.sh:433` | Schema exists |
+| `pipeline_stages` table | `scripts/sw-db.sh:183` | Schema exists |
+| `pipeline_runs` table | `scripts/sw-db.sh:162` | Schema exists |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    CLI / Terminal                        │
-│  shipwright analytics [--json] [--period 7|30|90]       │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────┐
-│          sw-pipeline-analytics.sh  (NEW)                │
-│  ┌──────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐  │
-│  │ Summary  │ │ Breakdown │ │ Failure  │ │  Trends  │  │
-│  │ Metrics  │ │ by attr.  │ │ Attrib.  │ │ 7/30/90d │  │
-│  └────┬─────┘ └─────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│       └──────────────┴───────────┴─────────────┘        │
-│                       │  SQLite queries                  │
-└───────────────────────┼─────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────┐
-│              sw-db.sh  (EXISTING)                       │
-│  pipeline_runs │ pipeline_stages │ pipeline_outcomes     │
-│  events        │ cost_entries    │ memory_failures       │
-└─────────────────────────────────────────────────────────┘
+## What's Missing (Gaps vs Acceptance Criteria)
 
-┌─────────────────────────────────────────────────────────┐
-│          dashboard/server.ts  (EXTEND)                  │
-│  GET /api/analytics?period=7  → calls analytics queries │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────┐
-│       dashboard/public/index.html  (EXTEND)             │
-│  New "Analytics" tab with charts & tables                │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Interface Contracts
-
-```typescript
-// GET /api/analytics?period=7|30|90
-interface AnalyticsResponse {
-  period_days: number;
-  generated_at: string;  // ISO 8601
-  summary: {
-    total_runs: number;
-    successful: number;
-    failed: number;
-    success_rate: number;  // 0-100 float
-    avg_duration_secs: number;
-    total_cost_usd: number;
-  };
-  by_template: Array<{
-    template: string;
-    total: number;
-    successful: number;
-    failed: number;
-    success_rate: number;
-    avg_duration_secs: number;
-  }>;
-  by_stage_failure: Array<{
-    stage_name: string;
-    failure_count: number;
-    pct_of_failures: number;
-    common_errors: string[];  // top 3
-  }>;
-  by_complexity: Array<{
-    complexity: string;  // "low" | "medium" | "high" | "unknown"
-    total: number;
-    successful: number;
-    success_rate: number;
-  }>;
-  by_hour: Array<{
-    hour: number;  // 0-23 UTC
-    total: number;
-    successful: number;
-    success_rate: number;
-  }>;
-  trends: {
-    periods: Array<{
-      label: string;  // "7d" | "30d" | "90d"
-      total: number;
-      success_rate: number;
-      avg_duration_secs: number;
-    }>;
-  };
-  active_pipelines: Array<{
-    job_id: string;
-    issue_number: number;
-    goal: string;
-    template: string;
-    current_stage: string;
-    started_at: string;
-    elapsed_secs: number;
-    stages_completed: string[];
-  }>;
-}
-```
-
-```bash
-# sw-pipeline-analytics.sh CLI interface
-# Usage: shipwright analytics [--json] [--period DAYS] [--active]
-# Outputs: formatted terminal table (default) or JSON (--json)
-# Exit: 0 always (analytics is informational)
-```
-
-### Data Flow
-
-1. **CLI path**: User runs `shipwright analytics --json --period 30` → `sw-pipeline-analytics.sh` → SQLite queries via `sw-db.sh` → JSON to stdout
-2. **Dashboard path**: Browser → `GET /api/analytics?period=7` → `dashboard/server.ts` reads SQLite directly → JSON response → frontend renders charts
-3. **Strategic agent path**: `sw-strategic.sh` calls `sw-pipeline-analytics.sh --json` via command substitution → parses JSON for recommendations
-
-### Error Boundaries
-
-- `sw-pipeline-analytics.sh`: Catches all SQLite errors, returns zero-value defaults. Never exits non-zero.
-- `dashboard/server.ts /api/analytics`: Returns `{ error: "..." }` with 500 status on failure. Frontend shows "Analytics unavailable" message.
-- Frontend: Handles empty/null fields gracefully, shows "No data" states.
+| Gap | Where to Fix |
+|-----|-------------|
+| No `root_cause_stage` / `root_cause_category` in pipeline_outcomes | DB schema + `db_record_outcome()` + pipeline recording |
+| No `repo_language` tracking | DB schema + pipeline recording + new query function |
+| No stage-level success rate (pass/reached) | New DB query function |
+| No error pattern aggregation in analytics JSON | Extend `db_analytics_by_stage_failure()` |
+| No `std_dev` on trend success rates | Extend `db_analytics_trends()` |
+| Dashboard doesn't render error patterns or stage success rates | Extend `analytics.ts` + `server.ts` |
 
 ---
 
 ## Files to Modify
 
-### New Files
-1. **`scripts/sw-pipeline-analytics.sh`** — Core analytics engine (~400 lines)
-2. **`scripts/sw-pipeline-analytics-test.sh`** — Test suite (~300 lines)
+### Core Changes (Backend)
+1. **`scripts/sw-db.sh`** — Schema migration v6→v7 (add columns), new query functions, extend existing queries
+2. **`scripts/sw-pipeline.sh`** — Pass root_cause_stage, root_cause_category, repo_language to `db_record_outcome()`
+3. **`scripts/sw-pipeline-analytics.sh`** — Add new sections to JSON output and terminal dashboard
 
-### Modified Files
-3. **`scripts/sw`** — Add `analytics` command routing (2 lines)
-4. **`scripts/sw-db.sh`** — Add analytics query functions (~80 lines)
-5. **`dashboard/server.ts`** — Add `/api/analytics` endpoint (~60 lines)
-6. **`dashboard/public/index.html`** — Add Analytics tab UI (~100 lines)
-7. **`scripts/sw-status.sh`** — Add pipeline analytics summary to `--json` output (~15 lines)
-8. **`scripts/sw-strategic.sh`** — Consume analytics JSON instead of raw event counting (~20 lines)
-9. **`package.json`** — Add test suite to test command (~1 line)
+### Dashboard Changes
+4. **`dashboard/server.ts`** — Extend `getAnalytics()` with new query sections
+5. **`dashboard/src/views/analytics.ts`** — Render new data sections (stage success rates, error patterns, repo language)
+
+### Test Changes
+6. **`scripts/sw-pipeline-analytics-test.sh`** — Add tests for new analytics sections
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Add analytics query functions to `sw-db.sh`
+### Step 1: Schema Migration (sw-db.sh)
 
-Add these functions to `scripts/sw-db.sh`:
-- `db_analytics_summary(days)` — Total/success/failed counts, avg duration, total cost
-- `db_analytics_by_template(days)` — Grouped by template
-- `db_analytics_by_stage_failure(days)` — Which stages fail most, with error patterns
-- `db_analytics_by_complexity(days)` — Grouped by complexity from `pipeline_outcomes`
-- `db_analytics_by_hour(days)` — Grouped by hour of day
-- `db_analytics_trends()` — 7/30/90 day windows
-- `db_analytics_active()` — Currently running pipelines
+Add 3 columns to `pipeline_outcomes`:
+```sql
+ALTER TABLE pipeline_outcomes ADD COLUMN root_cause_stage TEXT;
+ALTER TABLE pipeline_outcomes ADD COLUMN root_cause_category TEXT;
+ALTER TABLE pipeline_outcomes ADD COLUMN repo_language TEXT;
+```
 
-All queries use existing indexed columns. Join `pipeline_runs` with `pipeline_stages` and `pipeline_outcomes`.
+Add to `migrate_schema()` as v6→v7 migration block (following existing pattern at line ~600). Bump `SCHEMA_VERSION=7`.
 
-### Step 2: Create `sw-pipeline-analytics.sh`
+Update `db_record_outcome()` to accept and store the 3 new fields (positions 9, 10, 11).
 
-Core script with:
-- Standard boilerplate (VERSION, set -euo pipefail, source helpers)
-- `analytics_summary()` — Calls db functions, formats output
-- `analytics_json()` — Calls db functions, assembles JSON via jq
-- `analytics_dashboard()` — Colored terminal output with boxed tables
-- `main()` — Parse `--json`, `--period`, `--active` flags
-- Handle empty state gracefully
+### Step 2: New DB Query Functions (sw-db.sh)
 
-### Step 3: Register in CLI router
+Add `db_analytics_by_stage_success(days)`:
+```sql
+SELECT stage_name, COUNT(*) as reached,
+  SUM(CASE WHEN status IN ('complete','completed') THEN 1 ELSE 0 END) as passed,
+  ROUND(100.0 * SUM(CASE WHEN status IN ('complete','completed') THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate
+FROM pipeline_stages WHERE created_at >= cutoff
+GROUP BY stage_name ORDER BY reached DESC
+```
 
-Add to `scripts/sw`:
-- Add `analytics` to `route_observe()` group
-- Add `analytics` as direct command in `main()` case statement
+Add `db_analytics_by_repo_language(days)`:
+```sql
+SELECT COALESCE(repo_language, 'unknown') as language, COUNT(*) as total,
+  SUM(success) as successful,
+  ROUND(100.0 * SUM(success) / COUNT(*), 1) as success_rate
+FROM pipeline_outcomes WHERE created_at >= cutoff
+GROUP BY repo_language ORDER BY total DESC
+```
 
-### Step 4: Add `/api/analytics` endpoint to dashboard server
+Extend `db_analytics_by_stage_failure(days)` to include `common_errors` from `pipeline_stages.error_message` (top 3 distinct errors per stage).
 
-Add to `dashboard/server.ts`:
-- New route `GET /api/analytics?period=7`
-- Read from SQLite directly (same db the server already uses)
-- Return `AnalyticsResponse` JSON
+Extend `db_analytics_trends()` to include `std_dev` on success rates per window.
 
-### Step 5: Add Analytics tab to dashboard frontend
+### Step 3: Record Attribution in Pipeline (sw-pipeline.sh)
 
-Add to `dashboard/public/index.html`:
-- New tab button in navigation
-- Analytics panel with: summary cards, template breakdown table, stage failure chart, hourly distribution, trend sparklines
-- Fetch from `/api/analytics` on tab activation
-- Auto-refresh every 30 seconds when tab is active
+At pipeline completion (~line 2794), pass additional fields to `db_record_outcome()`:
+- `root_cause_stage`: `${CURRENT_STAGE_ID:-}` (already tracked for failures)
+- `root_cause_category`: derive from `${LAST_STAGE_ERROR_CLASS:-unknown}` (already exists)
+- `repo_language`: detect via `_detect_repo_language()` helper
 
-### Step 6: Integrate with `sw-status.sh`
+Add `_detect_repo_language()` that checks: `package.json` → js/ts, `go.mod` → go, `Cargo.toml` → rust, `requirements.txt`/`pyproject.toml` → python, fallback → unknown.
 
-Add analytics summary (total runs, success rate, top failing stage) to the `--json` output under an `analytics` key.
+### Step 4: Extend Analytics JSON (sw-pipeline-analytics.sh)
 
-### Step 7: Update `sw-strategic.sh` to consume analytics
+Add to `analytics_json()`:
+- `by_stage_success_rate` section
+- `by_repo_language` section
+- Enhanced `by_stage_failure` with `common_errors` per stage
 
-Replace the manual event counting in the strategic agent with a call to `sw-pipeline-analytics.sh --json`, parsing the structured output.
+Add to `analytics_dashboard()`:
+- Stage success rate table in terminal output
+- Repo language breakdown table
 
-### Step 8: Create test suite
+### Step 5: Extend Dashboard Server (dashboard/server.ts)
 
-Create `scripts/sw-pipeline-analytics-test.sh`:
-- Test empty database (zero data)
-- Test with seeded pipeline_runs/stages/outcomes
-- Test JSON output structure
-- Test period filtering (7/30/90 days)
-- Test template/stage/complexity breakdowns
-- Test active pipeline listing
-- Register in `package.json` test command
+Extend `getAnalytics()` function (~line 1491) with:
+- Stage success rate query
+- Repo language query
+- Error pattern aggregation in stage failure query
+- Std_dev in trend calculations
+
+### Step 6: Extend Dashboard Frontend (dashboard/src/views/analytics.ts)
+
+Add rendering for:
+- **Stage Success Rate table:** stage name, reached count, passed count, rate with color coding
+- **Repo Language table:** language, total, passed, rate
+- **Error Patterns:** under each failure stage row, show top 3 error messages
+- Update `AnalyticsData` interface with new fields
+
+### Step 7: Tests (sw-pipeline-analytics-test.sh)
+
+Seed `pipeline_outcomes` with `repo_language`, `root_cause_stage`, `root_cause_category` columns. Add tests:
+- `by_stage_success_rate` has entries and correct structure
+- `by_repo_language` has entries
+- `by_stage_failure` entries include `common_errors`
+- `trends.periods` entries include `std_dev`
 
 ---
 
 ## Task Checklist
 
-- [ ] Task 1: Add analytics query functions to `sw-db.sh` (db_analytics_summary, db_analytics_by_template, db_analytics_by_stage_failure, db_analytics_by_complexity, db_analytics_by_hour, db_analytics_trends, db_analytics_active)
-- [ ] Task 2: Create `scripts/sw-pipeline-analytics.sh` with terminal and JSON output modes
-- [ ] Task 3: Register `analytics` command in CLI router (`scripts/sw`)
-- [ ] Task 4: Add `/api/analytics` endpoint to `dashboard/server.ts`
-- [ ] Task 5: Add Analytics tab UI to `dashboard/public/index.html`
-- [ ] Task 6: Integrate analytics summary into `sw-status.sh --json` output
-- [ ] Task 7: Update `sw-strategic.sh` to consume analytics JSON
-- [ ] Task 8: Create `scripts/sw-pipeline-analytics-test.sh` test suite
-- [ ] Task 9: Register test suite in `package.json`
-- [ ] Task 10: Run full test suite and fix any regressions
+- [ ] Task 1: Add schema migration v6→v7 in `sw-db.sh` — 3 new nullable columns on `pipeline_outcomes`
+- [ ] Task 2: Update `db_record_outcome()` in `sw-db.sh` to accept `root_cause_stage`, `root_cause_category`, `repo_language`
+- [ ] Task 3: Add `db_analytics_by_stage_success()` query function in `sw-db.sh`
+- [ ] Task 4: Add `db_analytics_by_repo_language()` query function in `sw-db.sh`
+- [ ] Task 5: Extend `db_analytics_by_stage_failure()` to include `common_errors` in `sw-db.sh`
+- [ ] Task 6: Extend `db_analytics_trends()` to include `std_dev` in `sw-db.sh`
+- [ ] Task 7: Add `_detect_repo_language()` helper and pass attribution data to `db_record_outcome()` in `sw-pipeline.sh`
+- [ ] Task 8: Extend `analytics_json()` and `analytics_dashboard()` in `sw-pipeline-analytics.sh` with new sections
+- [ ] Task 9: Extend `getAnalytics()` in `dashboard/server.ts` with new query sections
+- [ ] Task 10: Extend `analyticsView` in `dashboard/src/views/analytics.ts` to render new data
+- [ ] Task 11: Add tests for new analytics sections in `sw-pipeline-analytics-test.sh`
+- [ ] Task 12: Run full test suite and fix any failures
 
 ---
 
 ## Testing Approach
 
-### Test Pyramid Breakdown
-
-- **Unit tests** (12 tests): All in `sw-pipeline-analytics-test.sh`
-  - Empty database returns zero values (2 tests)
-  - Seeded data returns correct breakdowns (4 tests: template, stage, complexity, hour)
-  - JSON output validates with jq (2 tests)
-  - Period filtering works (2 tests)
-  - Active pipeline listing (1 test)
-  - Edge cases: null template/complexity (1 test)
-
-- **Integration tests** (3 tests): Within same test file
-  - CLI `--json` flag produces valid JSON
-  - CLI `--period 30` changes window
-  - `--active` flag shows running pipelines only
-
-- **E2E tests** (1 test): Dashboard API endpoint returns valid analytics JSON (covered by existing `sw-dashboard-e2e-test.sh` or manual verification)
+### Test Pyramid
+- **Unit tests (8):** DB query functions return correct JSON for seeded data (stage success rates, repo language, error patterns, std_dev, extended outcome recording)
+- **Integration tests (4):** Analytics JSON output includes all new sections, terminal dashboard renders new tables, period filtering works with new fields, backward compatibility maintained
+- **E2E (1):** Run `sw-pipeline-analytics-test.sh` end-to-end with seeded DB containing all new field values
 
 ### Coverage Targets
-- DB query functions: 100% (all 7 functions tested)
-- JSON output schema: 100% (all top-level keys validated)
-- Empty state handling: 100% (explicit test)
+- All new DB query functions tested with seeded data
+- JSON schema validation for all new output fields
+- Empty database returns graceful defaults (empty arrays, zero values)
+- Backward compatibility: existing JSON consumers (strategic agent, status --json) continue to work
 
-### Critical Paths to Test
-- **Happy path**: Seed 10 pipeline runs with mixed success/failure, verify all breakdowns compute correctly
-- **Error case 1**: Database file doesn't exist → graceful fallback to zeros
-- **Error case 2**: Pipeline run with NULL template → categorized as "unknown"
-- **Edge case 1**: All runs successful → failure attribution returns empty array
-- **Edge case 2**: Single run → all breakdowns have exactly 1 entry
+### Critical Test Cases
+- **Happy path:** Seeded DB with mix of success/failure across templates, stages, languages → all analytics sections populated with correct values
+- **Error case 1:** SQLite unavailable → returns empty defaults
+- **Error case 2:** All new columns NULL (pre-migration data) → graceful fallback to 'unknown'
+- **Edge case 1:** Single pipeline run → all analytics sections work (no division by zero)
+- **Edge case 2:** All pipelines same template → by_template has 1 entry, std_dev = 0
 
 ---
 
 ## Definition of Done
 
-- [ ] `shipwright analytics` shows formatted terminal output with success rates and failure attribution
-- [ ] `shipwright analytics --json` returns valid JSON matching `AnalyticsResponse` schema
-- [ ] `shipwright analytics --period 30` and `--period 90` work correctly
-- [ ] Empty database produces clean output with zero values (no errors)
-- [ ] Dashboard `/api/analytics` endpoint returns correct JSON
-- [ ] Dashboard has Analytics tab with summary, breakdowns, and trends
-- [ ] `shipwright status --json` includes analytics summary
-- [ ] `sw-strategic.sh` consumes analytics instead of raw event counting
-- [ ] All tests pass: `bash scripts/sw-pipeline-analytics-test.sh`
-- [ ] No regressions: `npm test` passes
-- [ ] Command registered and appears in `shipwright help --all`
+- [ ] `shipwright analytics --json` returns JSON with all required sections: `summary`, `by_template`, `by_stage_failure` (with `common_errors`), `by_stage_success_rate`, `by_complexity`, `by_repo_language`, `by_hour`, `trends` (with `std_dev`), `active_pipelines`
+- [ ] `shipwright analytics` terminal dashboard renders all new sections
+- [ ] `db_record_outcome()` records `root_cause_stage`, `root_cause_category`, `repo_language`
+- [ ] Pipeline completion in `sw-pipeline.sh` passes attribution data to outcome recording
+- [ ] Dashboard web UI (`/api/analytics`) returns enriched JSON
+- [ ] Dashboard frontend renders stage success rates, repo language breakdown, error patterns
+- [ ] `sw-pipeline-analytics-test.sh` passes with tests covering all new functionality
+- [ ] Full test suite (`npm test`) passes
+- [ ] Strategic agent consumption path tested (backward compatible JSON)
 
 ---
 
+## Task Decomposition with Dependencies
+
+1. **Task 1** (schema migration) — no dependencies, must be first
+2. **Task 2** (update db_record_outcome) — depends on Task 1
+3. **Tasks 3-6** (new DB queries) — depend on Task 1, can be parallelized
+4. **Task 7** (pipeline recording) — depends on Task 2
+5. **Task 8** (analytics script) — depends on Tasks 3-6
+6. **Task 9** (dashboard server) — depends on Tasks 3-6
+7. **Task 10** (dashboard frontend) — depends on Task 9
+8. **Tasks 11-12** (tests) — depend on Tasks 8-10
+
+Critical path: 1 → 2 → 3/4/5/6 → 7/8/9 → 10 → 11 → 12
+
 ## Endpoint Specification
 
-### `GET /api/analytics`
+### `GET /api/analytics?period=7`
+- **Request:** Query param `period` (7, 30, or 90)
+- **Response (200):** JSON matching `AnalyticsData` interface (see `dashboard/src/views/analytics.ts`)
+- **New fields added:**
+  - `by_stage_success_rate`: `[{stage_name, reached, passed, success_rate}]`
+  - `by_repo_language`: `[{language, total, successful, success_rate}]`
+  - `by_stage_failure[].common_errors`: `[string]` (top 3 per stage)
+  - `trends.periods[].std_dev`: `number`
+- **Error (500):** `{"error": "Analytics computation failed"}`
 
-- **Method**: GET
-- **Path**: `/api/analytics`
-- **Query params**: `period` (integer, default 7, valid: 7|30|90)
-- **Auth**: Required (same as other `/api/*` routes)
-- **Success**: 200 OK, body: `AnalyticsResponse` JSON
-- **Error**: 500 Internal Server Error, body: `{ "error": "Analytics computation failed" }`
-- **Rate limiting**: Same as other API endpoints (no additional limits needed — internal tool)
+### `shipwright analytics --json --period N`
+- Same JSON structure as `/api/analytics`
+- Consumed by `sw-strategic.sh` and `sw-status.sh --json`
 
 ### Error Codes
+- Exit 0: Success (both terminal and JSON modes)
+- Exit 1: Unknown CLI option
+- No network errors possible (local SQLite queries only)
 
-| Status | Code | When |
-|--------|------|------|
-| 200 | — | Success (even with zero data) |
-| 400 | `invalid_period` | Period not in 7, 30, 90 |
-| 401 | `unauthorized` | Missing/invalid auth |
-| 500 | `analytics_error` | SQLite query failure |
+### Rate Limiting
+- Not applicable (local CLI + dashboard endpoints behind auth)
 
 ### Versioning
-
-No API versioning needed — this is a new endpoint consumed internally. The JSON schema is documented in this ADR. If breaking changes are needed in the future, add `/v2/analytics`.
+- Additive-only changes, no breaking API version bump needed

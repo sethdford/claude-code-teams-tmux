@@ -38,15 +38,15 @@
         "primary_role": "architect",
         "secondary_roles": [
           "builder",
-          "optimizer",
-          "devops"
+          "devops",
+          "tester"
         ],
-        "confidence": 0.80,
-        "reasoning": "Dashboard + analytics requires system design (metrics model, data architecture), then implementation (builder), performance analysis (optimizer), and pipeline integration (devops)",
+        "confidence": 0.85,
+        "reasoning": "Dashboard architecture and metrics attribution framework require system design decisions; builder implements the UI/backend, DevOps provides pipeline insights, tester validates analytics accuracy.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772914938,
+      "timestamp": 1772919600,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -553,33 +553,29 @@
     },
     "f47c8c791624ae0369235ba3d8b0c737": {
       "result": {
-        "complexity": 6,
+        "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "full",
-        "issue_type": "infrastructure",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "frontend",
         "key_risks": [
-          "Data visibility gap: strategic agent showing 0/0 despite active pipelines suggests query or collection issue",
-          "Aggregation accuracy across multiple dimensions (template, stage, repo type, complexity, time of day)",
-          "Real-time dashboard performance when querying 90-day historical window",
-          "JSON schema alignment with strategic agent consumption and recommendation generation",
-          "State consistency under concurrent pipeline updates from fleet workers",
-          "Integration complexity with existing sw-status, sw-dashboard, sw-dora, and sw-pipeline-vitals systems"
+          "Data aggregation performance with large event volumes",
+          "Real-time update latency synchronization",
+          "Multi-dimensional aggregation complexity across 5+ breakdown axes",
+          "Historical data availability gaps for 90-day trends",
+          "Integration complexity with existing dashboard and status infrastructure"
         ],
         "implementation_hints": [
-          "Debug existing data flow first: trace why strategic agent sees 0/0 pipelines when infrastructure is active (check event-bus, db schema, queries)",
-          "Extend sw-db.sh schema to index pipeline metrics by template/stage/repo_type/complexity/timestamp for efficient dimensional breakdowns",
-          "Use event-bus capture (emit_event calls) to ensure all pipeline lifecycle events feed the metrics store",
-          "Compose JSON output from existing sw-dora.sh and sw-pipeline-vitals.sh outputs, adding breakdown filters rather than rewriting",
-          "Implement materialized aggregation tables for 7/30/90-day trends to avoid expensive queries on live dashboard",
-          "Define JSON schema for strategic agent first (structure output for recommendation scoring, not just display)",
-          "Test data accuracy with sw-db-test.sh patterns: verify counts match actual pipeline records",
-          "Integrate with memory system to correlate failures with patterns (sw-memory.sh) for failure attribution",
-          "Add dimensional filter UI to dashboard (template/stage/repo_type selectors) with URL params for bookmarkable views",
-          "Stage 2: Implement time-of-day breakdown by parsing timestamp distribution in event log"
+          "Leverage events.jsonl and pipeline-state.md as data sources",
+          "Implement time-bucketing (1h/1d) for efficient aggregation",
+          "Build JSON schema first for strategic agent consumption before UI",
+          "Start with 7-day window, extend to 30/90 incrementally",
+          "Cache aggregation results to avoid recalculation on refresh",
+          "Use event streaming for real-time pipeline updates",
+          "Add failure pattern detection by grouping error signatures"
         ]
       },
-      "timestamp": 1772914305,
+      "timestamp": 1772918853,
       "ttl": 3600
     },
     "0540f450e647e7243de52827d8136cbb": {
@@ -603,40 +599,45 @@
     "6aaf40722c4daf030d87e4874544b8a7": {
       "result": {
         "issue_type": "frontend",
-        "confidence": 0.88,
+        "confidence": 0.85,
         "secondary_domains": [
+          "infrastructure",
           "backend",
-          "analytics",
           "api",
+          "database",
           "observability"
         ],
         "complexity_assessment": {
           "score": 6,
-          "reasoning": "Requires architecting a metrics pipeline to aggregate execution data across multiple dimensions (template, stage, repo type, complexity), designing a real-time dashboard UI with trend analysis, and ensuring attribution logic is accurate. Integration with existing shipwright status/dashboard adds coordination complexity."
+          "reasoning": "Multi-dimensional metrics aggregation with real-time dashboard, historical trend analysis, and JSON API export. Requires careful design of failure attribution logic and efficient querying of time-series data, but scope is well-defined by acceptance criteria."
         },
         "skill_plan": {
           "plan": [
             "product-thinking",
+            "data-pipeline",
             "brainstorming",
-            "architecture-design"
+            "metrics-attribution-framework"
           ],
           "design": [
-            "frontend-design",
+            "architecture-design",
             "api-design",
+            "frontend-design",
             "data-pipeline"
           ],
           "build": [
-            "data-pipeline",
+            "performance",
+            "testing-strategy",
             "observability"
           ],
           "review": [
+            "pr-quality",
             "architecture-design",
-            "pr-quality"
+            "validation-thoroughness"
           ],
           "compound_quality": [
             "adversarial-quality",
-            "validation-thoroughness",
-            "metrics-reliability-and-attribution"
+            "two-stage-review",
+            "observability"
           ],
           "pr": [
             "pr-quality"
@@ -646,53 +647,55 @@
             "observability"
           ],
           "validate": [
-            "observability",
-            "validation-thoroughness"
+            "validation-thoroughness",
+            "observability"
           ],
           "monitor": [
-            "observability",
-            "metrics-reliability-and-attribution"
+            "observability"
           ]
         },
         "skill_rationale": {
-          "product-thinking": "Strategic agent depends on this dashboard to make optimization decisions; understanding what ops teams and automation systems need from the metrics ensures the dashboard actually unblocks P0 work rather than just adding complexity.",
-          "brainstorming": "Critical to clarify data sources before building: where is pipeline execution data currently stored (events.jsonl? database? heartbeats?), what's the SLA on freshness, which breakdowns are most valuable vs expensive to compute.",
-          "architecture-design": "This dashboard will become foundational infrastructure for pipeline observability; need an ADR documenting the metrics schema, data model, and query patterns so future agents can extend or fix it consistently.",
-          "frontend-design": "Real-time dashboard with multiple aggregation views (7/30/90 day trends, stage distributions, complexity breakdowns) requires careful UI/UX to avoid overwhelming users; patterns for responsive design, live updates, and drill-down exploration.",
-          "api-design": "JSON export for strategic agent consumption must have a clear, unambiguous schema; need disciplined API contracts so the agent can reliably parse recommendations data and downstream systems can integrate.",
-          "data-pipeline": "Core work: transform raw pipeline execution events into aggregated metrics with correct dimensional breakdown; critical to get the ETL logic right so counts are accurate across template/stage/repo-type/complexity dimensions.",
-          "observability": "Instrumenting both the metrics pipeline itself (latency, data freshness, query performance) and validating that dashboard metrics actually reflect what's happening in real pipelines.",
-          "adversarial-quality": "Dashboard metrics can be gamed or misleading if not carefully designed: what if a pipeline fails so early it's not recorded? What if different templates count failures differently? Adversarial review catches these inconsistencies before they mislead the strategic agent.",
-          "validation-thoroughness": "Smoke test (dashboard loads) is insufficient; need to validate that success rates, failure attribution, and trend calculations match hand-verified counts from actual pipeline event logs.",
-          "metrics-reliability-and-attribution": "This generated skill is essential because the issue specifically asks for 'failure attribution' and accurate metrics across multiple dimensions; requires careful thinking about what counts as a failure, avoiding survivorship bias, and ensuring consistent definitions.",
-          "pr-quality": "Large feature addition with new endpoints, data models, and frontend components; PR must clearly explain the metrics schema, query patterns, and validation approach so reviewers can spot accuracy or performance issues.",
-          "deploy-safety": "New analytics endpoints are low-risk for core functionality but can mislead if metrics are stale; need careful rollout with data validation."
+          "product-thinking": "Understanding who consumes this dashboard (strategic agent, ops engineers) and what decisions they make with it shapes what metrics to expose and how to prioritize dimensions.",
+          "data-pipeline": "Metrics collection, aggregation, and schema design across distributed pipeline executions is the foundation—gets called in both plan and design to scope data infrastructure.",
+          "brainstorming": "Challenge assumptions upfront on what counts as 'failure' (stage-level? pipeline-level? with retries?), how to weight metrics by complexity, and whether to include aborted/cancelled runs.",
+          "metrics-attribution-framework": "The critical missing piece: distinguishing between pipeline failure (flaky test) vs. stage failure (timeout) vs. infrastructure failure vs. user abort requires explicit framework to ensure strategic agent gets actionable root causes.",
+          "architecture-design": "Metrics flow from execution → collection → aggregation → dashboard needs a clean architecture doc explaining real-time vs. batch tradeoffs, query patterns, and integration points with existing dashboard.",
+          "api-design": "JSON export for strategic agent consumption is a first-class interface; needs clean schema (metrics by template/stage/repo/complexity/hour) that scales and is easy to consume programmatically.",
+          "frontend-design": "Real-time dashboard with drill-down from high-level success rates to specific failures, time-series graphs, and filtering by dimensions requires thoughtful UX to avoid cognitive overload.",
+          "performance": "Querying 7/30/90 day trends across multiple dimensions and rendering real-time updates can be slow; need index strategy and possibly materialized views or pre-aggregation.",
+          "testing-strategy": "Metrics calculations (especially trend analysis, success rate by dimension) have many edge cases (empty periods, partial failures, timezone handling); need unit tests for calculations plus integration tests validating end-to-end metric accuracy.",
+          "observability": "Post-deploy, need monitoring to validate that dashboard metrics match reality—e.g., if a stage's success rate jumps, did pipelines actually improve or did calculation change?",
+          "pr-quality": "Large PR touching dashboard, data layer, and API; needs careful structure so reviewers can reason about metric accuracy, performance, and integration.",
+          "adversarial-quality": "Metrics systems are prone to subtle errors—off-by-one in bucketing, timezone bugs, missing edge cases (aborted runs, retries, stages that auto-pass). Adversarial review should stress-test calculations.",
+          "two-stage-review": "P0 priority + metrics that inform strategic decisions warrant thorough review; first pass covers architecture and calculations, second pass validates against real pipeline data.",
+          "deploy-safety": "New metrics infrastructure should roll out carefully with validation against existing metrics (if any) and monitoring before full promotion.",
+          "validation-thoroughness": "Not just 'dashboard loads'—validate actual success rate calculations against pipeline data, verify trend graphs are correct, test JSON export against strategic agent schema expectations."
         },
         "generated_skills": [
           {
-            "name": "metrics-reliability-and-attribution",
-            "reason": "The issue explicitly requires 'failure attribution: which stage fails most often, common error patterns' and breakdown by six dimensions (template, stage, repo type, complexity, time of day, historical windows). Existing skills do not cover how to define metrics accurately, avoid common statistical pitfalls, validate correctness, or handle edge cases in failure counting. This gap directly threatens the dashboard's credibility with the strategic agent.",
-            "content": "## Metrics Reliability & Attribution\n\n### Define Failure Consistently\n- **What counts as a failure?** Choose one: (1) pipeline exits non-zero, (2) any stage fails (abort on first failure), (3) final intended stage didn't complete. Document the choice and apply it uniformly.\n- **Partial executions**: Pipelines killed mid-run should be counted separately; don't let them inflate the denominator in success rate calculations.\n- **Stage-level failures**: When attributing \"stage X failed most often,\" count only pipelines that reached stage X, not all pipelines ever run.\n\n### Avoid Common Pitfalls\n- **Survivorship bias**: Only counting completed pipelines hides failures that killed the run early. Track separately: completed vs killed-early.\n- **Simpson's Paradox**: Success rate by template might improve overall but decline within each template when weighted by volume. Break out the volume alongside the rate.\n- **Changing denominator**: If the definition of \"complexity\" changes midway through 90-day window, metrics become incomparable. Lock definitions at metric creation time.\n- **Correlation ≠ causation**: \"Most failures happen at stage X\" doesn't mean stage X caused them; may indicate X is the first stage to detect problems introduced earlier.\n\n### Validate Accuracy\n- **Hash-check raw events**: For any aggregation window, compute the metric two ways (fast aggregation vs slow scan of raw events) and verify they match (allow <1% variance for real-time data).\n- **Spot-check dimensions**: Pick 2-3 specific combinations (e.g., \"Go + standard template + 9am + week of Mar 3\") and manually verify the dashboard count equals the raw event count.\n- **Monitor drift**: If metrics diverge between two calculation methods, log and alert; stale cache or calculation bug is likely.\n\n### Attribution Best Practices\n- Track **failure stage** (where the pipeline stopped), **detection stage** (where we first noticed), and **root cause attribution** (if available) separately.\n- For \"common error patterns,\" extract top error messages per stage+template and surface those separately from failure counts.\n- When recommending optimizations to the strategic agent, always include confidence (high: >1000 samples, medium: 100-1000, low: <100) to avoid acting on noise.\n\n### JSON Export Contract\n- Include metadata: calculation time, data freshness, sample size per dimension, confidence level.\n- Use ISO 8601 for timestamps, ISO 639-1 for language codes, consistent enum values for template/stage names.\n- Provide both raw counts and rates; strategic agent needs to reason about statistical significance."
+            "name": "metrics-attribution-framework",
+            "reason": "The issue explicitly surfaces failure attribution as a core requirement but doesn't define what counts as 'success' or 'failure' across various scenarios (user abort, timeout, flaky test, infra failure, stage-level vs. pipeline-level). No existing skill covers the framework for consistent, actionable failure classification.",
+            "content": "## Metrics Attribution Framework\n\nDefine what constitutes pipeline success and failure—and crucially, which stage caused a failure—in a way that enables strategic reasoning. This framework prevents metrics from being misleading or unmeasurable.\n\n### Definition Decisions\n\n**Pipeline-level success**: All stages completed with exit code 0. Consider:\n- Should retries reset the \"success\" flag? (Usually yes—final outcome matters.)\n- User abort vs. timeout vs. code failure—all pipeline failures, but different root causes.\n- Partial completion (stage 5 of 12) should be *incomplete*, not *failed*.\n\n**Stage-level success**: Stage ran and exited 0. Capture separately:\n- Stage started but timed out → timeout failure, not code failure.\n- Stage not reached (aborted upstream) → *skipped*, not *failed*.\n- Stage passed but downstream used stale cache → propagate to dependent stages.\n\n**Failure attribution**: Map each failure to a single stage and root cause category:\n- `code_failure`: Exit non-zero, test assertion failed, build failed.\n- `timeout`: Exceeded stage timeout (separate from test timeout).\n- `infrastructure`: External service unavailable, disk full, OOM.\n- `abort`: User cancelled mid-pipeline.\n- `skipped`: Never ran because upstream failed.\n- `flaky`: Passed on retry (for success rate, count as eventual success).\n\n### Metrics Schema\n\nFor each pipeline execution, emit:\n```json\n{\n  \"pipeline_id\": \"abc123\",\n  \"status\": \"success|failure|incomplete\",\n  \"root_cause_stage\": \"design|build|test|review\",  // First failed stage, null if success\n  \"root_cause_category\": \"code_failure|timeout|infrastructure|abort\",\n  \"template\": \"standard|fast|full\",\n  \"repo_type\": \"go|python|typescript|...\",\n  \"complexity\": \"low|medium|high\",\n  \"duration_seconds\": 245,\n  \"timestamp\": \"2026-03-07T10:00:00Z\",\n  \"stages_completed\": 5,\n  \"stages_total\": 12\n}\n```\n\n### Success Rate Calculations\n\n**By template**: `(success count) / (success + failure)` per template type. Exclude incomplete.\n\n**By stage**: For each stage, `(stage passed) / (stage reached)`. A stage \"reached\" if any upstream stage completed.\n\n**By repo language**: Group pipelines by primary language (inferred from `.gitattributes` or file extensions), calculate success rate per language.\n\n**By complexity**: Group by issue complexity label or estimated from description length, file change count. Calculate success rate per tier.\n\n**By time of day**: Bucket timestamps by hour (UTC), calculate success rate per hour. Useful for detecting cascade failures during peak load.\n\n**Trend windows**: For 7/30/90 day windows, calculate success rate as a rolling average to smooth noise. Alongside success rate, emit `std_dev` so outliers are visible.\n\n### Handling Edge Cases\n\n- **Incomplete pipelines**: Don't include in success rate calculation. Track separately as `in_progress` or `abandoned` for alerting.\n- **Retried pipelines**: Count only the final attempt. If pipeline failed, then user re-triggered and succeeded, mark as success (human judgment overrides).\n- **Multi-stage aborts**: First `abort` signal terminates the pipeline. All downstream stages are `skipped`.\n- **Cascading timeouts**: If stage A times out and stage B also times out (because A never finished), attribute failure to A only.\n\n### Consumption\n\n**Strategic Agent**: Receives JSON with success rates by dimension. Agent queries: \"Which template has lowest success rate this week?\" → Design experiment to improve it.\n\n**Dashboard**: Visualize success rate as a gauge per template/stage/language, with drill-down to individual failed pipelines and their root causes.\n\n**Alerts**: If success rate for a template drops >10% vs. last week, alert ops (possible regression or environment issue)."
           }
         ],
         "review_focus": [
-          "Metrics definitions: Are failures, success rates, and stage attribution counted consistently across all pipeline types? Spot-check one dimension against raw event logs.",
-          "Data freshness and latency: What's the SLA for 'current active pipelines' view? Can users see stale state that misleads decision-making?",
-          "JSON schema stability: Is the strategic agent export contract unambiguous and versioned? Will breaking changes require agent retraining?",
-          "Query performance: Can the dashboard aggregate 90-day data across 100+ pipelines in <2s? What's the indexing strategy?",
-          "Edge case handling: How are incomplete pipelines, killed runs, and retries counted? Do counts match raw event tallies within 1%?",
-          "Integration with shipwright status/dashboard: Does the new code coordinate data models cleanly, or do they diverge over time?"
+          "Failure attribution logic: Verify that each pipeline execution is classified into exactly one root cause category and stage, with clear rules for edge cases (timeouts, aborts, cascades).",
+          "Metrics accuracy: Validate that success rate calculations for each dimension match reality—spot-check against raw pipeline data for a few 1-day windows.",
+          "Time-series correctness: Confirm 7/30/90 day trend calculations handle timezone boundaries, partial windows, and rolling averages without off-by-one errors.",
+          "Real-time performance: Dashboard queries for 90-day trends with multiple filters should complete in <1s; validate index strategy and query plans.",
+          "JSON schema stability: Ensure strategic agent can parse all metrics exports without breaking; version the schema and document breaking changes.",
+          "Integration points: Verify dashboard integrates with existing `shipwright status` and `shipwright dashboard` without duplicate metric collection or race conditions."
         ],
         "risk_areas": [
-          "Metrics accuracy: Wrong failure attribution or survivorship bias will mislead the strategic agent and ops teams; needs independent validation mechanism.",
-          "Dimension explosion: Breaking down by 6+ dimensions creates combinatorial complexity; risk of slow queries, memory bloat, or incomplete coverage.",
-          "Real-time staleness: Dashboard shows 'current active pipelines' but with what latency? Could show contradictory state (pipeline marked active but already failed).",
-          "Integration complexity: Coordinating data models with existing shipwright status and dashboard requires careful API design; schema divergence will cause bugs over time.",
-          "Data consistency: If raw event collection changes (new fields, format), metrics pipeline must handle backward compatibility gracefully.",
-          "Performance at scale: Querying 90-day window for all repos + all dimensions on every dashboard load will cause slowdown; needs caching strategy."
+          "Subtle metric calculation bugs (timezone handling, off-by-one in bucketing, missing edge cases) that make dashboard appear authoritative but give wrong guidance to strategic agent.",
+          "Performance degradation as historical data accumulates—queries over 90 days with multiple dimensions could become slow without proper indexing/materialization.",
+          "Data inconsistency if pipeline execution events are lost or replayed—need idempotent metric updates and clear deduplication rules.",
+          "Misclassification of failure root causes leading strategic agent to optimize wrong bottleneck (e.g., blaming code when issue is infra timeout).",
+          "Real-time dashboard update lag causing stale metrics to look current—need clear timestamp display and heartbeat validation.",
+          "Integration complexity with existing Shipwright dashboard code—risk of duplicating metric collection or creating maintenance burden."
         ]
       },
-      "timestamp": 1772914388,
+      "timestamp": 1772918936,
       "ttl": 3600
     },
     "548b27188f95a9cbc34353931784ea6a": {
@@ -700,55 +703,55 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 92,
-            "summary": "Provides essential project structure (nodejs, vitest, npm), source conventions (src/ directory, commonjs imports), and test patterns needed to plan dashboard feature placement and testing strategy"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 38,
-            "summary": "Confirms project is nodejs but less detailed than comprehensive patterns entry; minimal actionable information for feature planning"
+            "relevance": 90,
+            "summary": "Contains project structure (Node/vitest), testing patterns (*.test.js), and conventions (commonjs imports) essential for planning feature architecture and testing strategy"
           },
           {
             "file": "failures.json",
-            "relevance": 18,
-            "summary": "Contains test failures related to sw-cleanup.sh heartbeat detection; tangentially relevant if dashboard needs to integrate with cleanup/heartbeat monitoring but otherwise unrelated to visibility feature"
+            "relevance": 45,
+            "summary": "Historical test failures in sw-cleanup.sh and sed commands provide insights into common pitfalls and shell scripting patterns to avoid during implementation"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Confirms project type as nodejs with minimal additional detail; redundant with the more detailed patterns.json entry"
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions log; no prior architectural decisions to inform dashboard design"
+            "summary": "Empty decisions array provides no architectural context or prior feature planning patterns"
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Empty baselines object; no prior performance metrics to guide dashboard optimization planning"
+            "summary": "Empty baselines object contains no performance or quality baseline data relevant to dashboard feature planning"
           }
         ]
       },
-      "timestamp": 1772914404,
+      "timestamp": 1772918953,
       "ttl": 1800
     },
     "bd0f2e6759cb4f516378d04d49a64fc9": {
       "result": {
         "results": [
           {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Documents observed test failures and root causes in the codebase. Relevant for understanding what kinds of validation failures occur in pipeline/dashboard-related code and patterns of test breakage."
+          },
+          {
             "file": "patterns.json",
             "relevance": 45,
-            "summary": "Contains project conventions (vitest, npm, src/ directory, commonjs imports) essential for implementing any dashboard feature in this codebase"
+            "summary": "Captures project conventions (Node.js, vitest, npm, CommonJS). Provides baseline tech stack context needed to understand implementation constraints for the dashboard feature."
           },
           {
-            "file": "patterns.json",
+            "file": "decisions.json",
             "relevance": 20,
-            "summary": "Identifies project as Node.js type, relevant for understanding runtime environment for dashboard implementation"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 12,
-            "summary": "Contains pipeline/heartbeat monitoring patterns from sw-cleanup.sh; tangentially related to pipeline execution visibility but not specific to dashboard attribution analytics"
+            "summary": "Empty but structurally relevant—this is where previous architectural decisions about the visibility dashboard feature would be recorded if any had been made."
           }
         ]
       },
-      "timestamp": 1772914640,
+      "timestamp": 1772919418,
       "ttl": 1800
     },
     "81c7b1ef9f62dd0b285f11f19d210ea2": {
@@ -756,88 +759,88 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 75,
-            "summary": "Project tech stack (Node.js, JavaScript, vitest, npm) directly informs dashboard implementation architecture and technology choices"
+            "relevance": 92,
+            "summary": "Project tech stack (Node.js, vitest, npm, JavaScript, commonjs). Critical for designing dashboard architecture and ensuring compatibility with existing codebase structure."
           },
           {
-            "file": "decisions.json",
-            "relevance": 60,
-            "summary": "Empty but high relevance category: architectural decisions about dashboards, visibility patterns, and analytics would be crucial for design stage"
-          },
-          {
-            "file": "global.json",
-            "relevance": 50,
-            "summary": "Empty but relevant: cross-repo learnings about dashboard patterns and visibility implementations would inform design decisions"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 40,
-            "summary": "Empty but relevant: baselines for dashboard performance, latency, and success rate metrics would guide architecture"
+            "file": "patterns.json",
+            "relevance": 48,
+            "summary": "Confirms Node.js project type. Less detailed than first entry, but validates technology choice for the dashboard."
           },
           {
             "file": "failures.json",
-            "relevance": 10,
-            "summary": "Low relevance: contains test failures for sw-cleanup.sh heartbeat detection, unrelated to pipeline visibility dashboard design"
+            "relevance": 22,
+            "summary": "Test failures in sw-cleanup.sh and template handling. Marginally relevant only if dashboard integrates with Shipwright heartbeat/cleanup infrastructure."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No relevant architecture patterns or metrics data captured."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 3,
+            "summary": "Empty decisions array. No prior architectural decisions recorded that would inform dashboard design."
           }
         ]
       },
-      "timestamp": 1772914684,
+      "timestamp": 1772919452,
       "ttl": 1800
     },
     "7fe1ed2fd1fe319bfdd501d0f110f657": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 45,
-            "summary": "Contains actual project stack (Node/JavaScript, vitest, npm) and code conventions that would inform dashboard implementation technology choices and patterns"
-          },
-          {
             "file": "failures.json",
             "relevance": 28,
-            "summary": "Documents heartbeat staleness detection and summary output issues in sw-cleanup.sh; relates to pipeline visibility/monitoring and failure attribution patterns relevant to dashboard design"
+            "summary": "Contains concrete failure patterns and root causes from recent pipeline runs. While focused on cleanup/template issues rather than dashboard design, demonstrates how to identify anti-patterns and failure signatures that could inform visibility feature design decisions."
           },
           {
-            "file": "patterns.json (second entry)",
-            "relevance": 15,
-            "summary": "Confirms Node.js project type; minimal information beyond project detection metadata with no specific relevance to dashboard design approaches"
+            "file": "patterns.json (first)",
+            "relevance": 18,
+            "summary": "Documents project conventions including test patterns and import style. Relevant for understanding implementation constraints and architectural patterns that should be followed when building the dashboard feature."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Currently empty but represents the file structure where rejected design approaches and architectural decisions should be captured. Low relevance since no dashboard-specific decisions are documented yet."
           }
         ]
       },
-      "timestamp": 1772914697,
+      "timestamp": 1772919464,
       "ttl": 1800
     },
     "941e25b2d5b74e8827481a7a2d6b21e8": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 80,
-            "summary": "Node.js/JavaScript project with vitest, npm, src/ directory structure—directly applicable to building the dashboard within this repo's conventions"
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project configuration is critical for build stage: Node.js/JavaScript stack, vitest test runner, npm package manager, commonjs imports, src/ source structure. Directly informs build tooling, test execution, and dependency management."
           },
           {
-            "file": "patterns.json (second entry)",
-            "relevance": 45,
-            "summary": "Confirms Node.js project type; lower detail than first entry but redundant confirmation of tech stack"
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Redundant confirmation that project is Node.js type. Less detailed than first patterns.json but validates bootstrap detection. Minimal additional value for build stage execution."
           },
           {
             "file": "failures.json",
-            "relevance": 20,
-            "summary": "Contains test failures in sw-cleanup.sh unrelated to dashboard; low relevance to dashboard build stage"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object; no actionable insights for build stage"
+            "relevance": 30,
+            "summary": "Contains two known test failures in Shipwright codebase (sw-cleanup.sh and template errors). While not specific to dashboard feature, understanding existing test failures helps contextualize build stage risks and test suite behavior."
           },
           {
             "file": "global.json",
             "relevance": 5,
-            "summary": "Empty common patterns and cross-repo learnings; no relevant data"
+            "summary": "Empty cross-repo learnings and common patterns. No actionable content for current build stage context."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No historical metrics available to inform build stage optimization or performance targets."
           }
         ]
       },
-      "timestamp": 1772914913,
+      "timestamp": 1772919580,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -845,28 +848,46 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Essential build metadata: specifies test runner (vitest), package manager (npm), test pattern (*.test.js), source directory (src/), and import style (commonjs). Directly informs how to build, test, and structure the project during the build stage."
+            "relevance": 85,
+            "summary": "Project structure critical for build: Node.js with npm, vitest test runner, commonjs imports, source in src/. Essential for understanding build requirements and commands."
           },
           {
             "file": "failures.json",
-            "relevance": 85,
-            "summary": "Recent test stage failures in sw-cleanup.sh with root causes and fixes documented. Directly relevant as build stage runs tests; these patterns help anticipate and prevent recurring test failures during current build execution."
+            "relevance": 45,
+            "summary": "Test stage failures in sw-cleanup.sh and sed commands. Relevant if build stage depends on tests passing, but failures are test-specific, not build-stage issues."
           },
           {
             "file": "metrics.json",
-            "relevance": 10,
-            "summary": "Empty baselines object; contains no actionable performance or test data. Low relevance without populated metrics."
+            "relevance": 5,
+            "summary": "Empty baselines object. Not relevant to build stage context."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions array; no architectural or strategy decisions recorded. Not relevant to current build stage execution."
+            "summary": "Empty decisions array. Not relevant to build stage context."
           }
         ]
       },
-      "timestamp": 1772914925,
+      "timestamp": 1772919589,
       "ttl": 1800
+    },
+    "1ca81a700d20ba21e17af3921d0d940d": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1772918862,
+      "ttl": 1800
+    },
+    "562b8d651b110bc0fc8118adbdecf880": {
+      "result": {
+        "estimated_cost_usd": 4.80,
+        "estimated_iterations": 3,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 64
+      },
+      "timestamp": 1772918875,
+      "ttl": 3600
     }
   }
 }

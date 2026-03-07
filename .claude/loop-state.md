@@ -2,68 +2,51 @@
 goal: "Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics
 
 ## Plan Summary
-Implementation plan created at `.claude/plan.md`. Here's the summary:
+All three research agents have completed. The third agent's findings confirm the plan — the memory system tracks `fix_effectiveness_rate` and failure patterns, the self-optimize system records outcomes in `outcomes.jsonl`, and the intelligence cache stores complexity predictions. All of these feed into the analytics pipeline.
 
-## Plan Overview
-
-**Approach**: New `sw-pipeline-analytics.sh` script + dashboard API endpoint + frontend tab (Approach A — clean separation, follows existing patterns, minimal blast radius).
-
-**Root cause**: The strategic agent shows 0/0 because there's no analytics layer between raw SQLite data and consumers. The data exists in `pipeline_runs`, `pipeline_stages`, and `pipeline_outcomes` tables — it just isn't being queried and aggregated.
-
-## 10 Tasks
-
-| # | Task | Files | Blocks |
-|---|------|-------|--------|
-| 1 | Add 7 analytics query functions to `sw-db.sh` | `sw-db.sh` | Tasks 2, 4 |
-| 2 | Create `sw-pipeline-analytics.sh` (terminal + JSON output) | new file | Task 3 |
-| 3 | Register `analytics` command in CLI router | `sw` | — |
-| 4 | Add `GET /api/analytics` endpoint | `server.ts` | Task 5 |
-| 5 | Add Analytics tab to dashboard frontend | `index.html` | — |
-| 6 | Integrate analytics summary into `sw-status.sh --json` | `sw-status.sh` | — |
-| 7 | Update `sw-strategic.sh` to consume analytics JSON | `sw-strategic.sh` | — |
-| 8 | Create test suite `sw-pipeline-analytics-test.sh` | new file | — |
+The plan at `.claude/plan.md` is complete and ready for the build stage. The key insight from the research: **this is an extension project, not a greenfield build** — 70%+ of the analytics infrastructure exists. The remaining work is enriching the data model with attribution fields and surfacing them through the existing rendering pipeline.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics
+# Architecture Decision Record: Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics
 ## Context
 ## Decision
-### Data Flow
-### Query Functions (added to `sw-db.sh`)
-### CLI Script (`sw-pipeline-analytics.sh`)
-### Dashboard API Endpoint
-### Dashboard Frontend Tab
-### Error Handling
-### Integration Points
+### Layer 1: Data Ingestion (Event Sourcing)
+### Layer 2: Analytics (Aggregation Engine)
+### Layer 3: Presentation (API + WebSocket)
+## Alternatives Considered
+## Implementation Plan
+### Files to Create
+### Files to Modify
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json (first entry)",
-      "relevance": 80,
-      "summary": "Node.js/JavaScript project with vitest, npm, src/ directory structure—directly applicable to building the dashboard within this repo's conventions"
+      "file": "patterns.json",
+      "relevance": 95,
+      "summary": "Project configuration is critical for build stage: Node.js/JavaScript stack, vitest test runner, npm package manager, commonjs imports, src/ source structure. Directly informs build tooling, test execution, and dependency management."
     },
     {
-      "file": "patterns.json (second entry)",
-      "relevance": 45,
-      "summary": "Confirms Node.js project type; lower detail than first entry but redundant confirmation of tech stack"
+      "file": "patterns.json",
+      "relevance": 55,
+      "summary": "Redundant confirmation that project is Node.js type. Less detailed than first patterns.json but validates bootstrap detection. Minimal additional value for build stage execution."
     },
     {
       "file": "failures.json",
-      "relevance": 20,
-      "summary": "Contains test failures in sw-cleanup.sh unrelated to dashboard; low relevance to dashboard build stage"
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Empty baselines object; no actionable insights for build stage"
+      "relevance": 30,
+      "summary": "Contains two known test failures in Shipwright codebase (sw-cleanup.sh and template errors). While not specific to dashboard feature, understanding existing test failures helps contextualize build stage risks and test suite behavior."
     },
     {
       "file": "global.json",
       "relevance": 5,
-      "summary": "Empty common patterns and cross-repo learnings; no relevant data"
+      "summary": "Empty cross-repo learnings and common patterns. No actionable content for current build stage context."
+    },
+    {
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baselines object. No historical metrics available to inform build stage optimization or performance targets."
     }
   ]
 }
@@ -74,51 +57,104 @@ Discoveries from other pipelines:
 
 ## Skill Guidance (frontend issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **data-pipeline**: Core work: transform raw pipeline execution events into aggregated metrics with correct dimensional breakdown; critical to get the ETL logic right so counts are accurate across template/stage/repo-type/complexity dimensions.
-- **observability**: Instrumenting both the metrics pipeline itself (latency, data freshness, query performance) and validating that dashboard metrics actually reflect what's happening in real pipelines.
+- **performance**: Querying 7/30/90 day trends across multiple dimensions and rendering real-time updates can be slow; need index strategy and possibly materialized views or pre-aggregation.
+- **testing-strategy**: Metrics calculations (especially trend analysis, success rate by dimension) have many edge cases (empty periods, partial failures, timezone handling); need unit tests for calculations plus integration tests validating end-to-end metric accuracy.
+- **observability**: Post-deploy, need monitoring to validate that dashboard metrics match reality—e.g., if a stage's success rate jumps, did pipelines actually improve or did calculation change?
 
-## Data Pipeline Expertise
+## Performance Expertise
 
-Apply these data engineering patterns:
+Apply these optimization patterns:
 
-### Schema Design
-- Define schemas explicitly — never rely on implicit structure
-- Use migrations for all schema changes (never manual ALTER TABLE)
-- Add indexes for frequently queried columns
-- Consider denormalization for read-heavy paths
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
 
-### Data Integrity
-- Use transactions for multi-step operations
-- Implement idempotency keys for operations that could be retried
-- Validate data at ingestion — reject bad data early
-- Use constraints (NOT NULL, UNIQUE, FOREIGN KEY) in the database layer
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
 
-### Query Patterns
-- Avoid N+1 queries — use JOINs or batch loading
-- Use EXPLAIN to verify query plans for complex queries
-- Paginate large result sets — never SELECT * without LIMIT
-- Use parameterized queries — never string concatenation for SQL
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
 
-### Migration Safety
-- Migrations must be reversible (include rollback steps)
-- Test migrations on a copy of production data
-- Add new columns as nullable, then backfill, then add NOT NULL
-- Never drop columns in the same deploy as code changes
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
 
-### Backpressure & Resilience
-- Implement circuit breakers for external data sources
-- Use dead letter queues for failed processing
-- Set timeouts on all external calls
-- Monitor queue depths and processing latency
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
 
 ### Required Output (Mandatory)
 
 Your output MUST include these sections when this skill is active:
 
-1. **Schema Changes**: Full migration SQL with both forward and rollback scripts, plus data backfill strategy if required
-2. **Data Flow Diagram**: Text diagram showing data ingestion → processing → output with failure points marked
-3. **Idempotency Strategy**: How the system handles duplicate requests (idempotency keys, deduplication, side-effect safety)
-4. **Rollback Plan**: Step-by-step process to revert schema changes and restore data consistency
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+[... skills truncated: 8015→8000 chars ...]
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
 
@@ -201,27 +237,17 @@ Your output MUST include these sections when this skill is active:
 4. **Auto-Rollback Decision Criteria**: Conditions that trigger automatic rollback (health check failures, error rate threshold, critical dependency unreachable, memory exhaustion)
 
 If any section is not applicable, explicitly state why it's skipped.
-
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-03-07T21:13:20Z
-last_iteration_at: 2026-03-07T21:13:20Z
+started_at: 2026-03-07T21:40:01Z
+last_iteration_at: 2026-03-07T21:40:01Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -232,9 +258,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-07T20:38:44Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":5029,"duration_api_ms":804256,"num_turns":1,"result"
-
-### Iteration 2 (2026-03-07T20:43:17Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":224326,"duration_api_ms":189015,"num_turns":36,"resu
 
