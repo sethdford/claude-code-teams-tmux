@@ -2165,6 +2165,182 @@
       },
       "timestamp": 1772436242,
       "ttl": 3600
+    },
+    "f3fd8b5d9e4472ea0b5e00c9a30e7e4e": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "backend",
+        "key_risks": [
+          "Threshold calibration: too strict creates issue spam, too loose defeats purpose",
+          "Metric collection accuracy: ensuring hardcoded/TODO/FIXME counts via grep patterns",
+          "False positive trend detection: noise in 7/30 day delta calculations",
+          "Integration coupling: four separate systems (API, frontend, scheduler, GitHub)",
+          "Auto-issue deduplication: prevent duplicate GitHub issues on successive runs",
+          "Performance impact: codebase scanning on daily cadence in large repos"
+        ],
+        "implementation_hints": [
+          "Start metric collection with grep patterns for hardcoded constants, TODO/FIXME/HACK comments",
+          "Use existing dashboard server (Bun) to add /platform-health endpoint alongside existing routes",
+          "Store metrics in .shipwright/platform-health.json with timestamp array for trend calculation",
+          "Implement dry-run mode first: collect metrics and compute thresholds without creating issues",
+          "Add manual threshold configuration in daemon-config.json; allow override per metric",
+          "Build GitHub auto-issue deduplication: check for open issues with label:platform before creating",
+          "Feed metrics to sw-strategic.sh via memory system, not direct context injection",
+          "Chart library: use existing dashboard frontend deps (Chart.js or similar)",
+          "Schedule via launchd (macOS) and cron (Linux) only when daemon is active",
+          "Add metrics to eventbus for cross-pipeline consumption by intelligence layer"
+        ]
+      },
+      "timestamp": 1772844083,
+      "ttl": 3600
+    },
+    "0aa7660326c2362fd4b3b561c455519e": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1772844095,
+      "ttl": 1800
+    },
+    "c98267aa7b558c3d2084bf12e4064b25": {
+      "result": {
+        "estimated_cost_usd": 5.75,
+        "estimated_iterations": 3,
+        "estimated_tokens": 175000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772844110,
+      "ttl": 3600
+    },
+    "0efc42c489b6d4b17c0e58290473b8c2": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.87,
+        "secondary_domains": [
+          "frontend",
+          "infrastructure",
+          "data-pipeline"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Multiple subsystems (metrics collection, API, dashboard, scheduled jobs, GitHub integration) but each component is moderately complex. Main challenge is ensuring metric accuracy and preventing performance regressions during collection."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "data-pipeline",
+            "product-thinking"
+          ],
+          "design": [
+            "api-design",
+            "frontend-design"
+          ],
+          "build": [
+            "performance",
+            "metrics-instrumentation"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Metrics collection architecture must balance accuracy, performance, and extensibility; an ADR will guide future metric additions and prevent ad-hoc scanning patterns.",
+          "data-pipeline": "Platform health is fundamentally a metrics pipeline (collect → aggregate → trend → alert); framing as ETL clarifies data flow and idempotency requirements.",
+          "product-thinking": "Dashboard users need actionable metrics; understanding which technical-debt indicators drive decisions prevents collecting vanity metrics and focuses on high-impact thresholds.",
+          "api-design": "The `/platform-health` endpoint must handle real-time queries, trend calculations, and historical data efficiently; API schema directly impacts frontend consumer complexity.",
+          "frontend-design": "Charts (debt trend, script distribution, heatmap) require careful interaction design to avoid overwhelming operators with false signals; component hierarchy affects reusability.",
+          "performance": "Codebase scanning (TODOs, hardcoded counts) runs daily; must not block CI/deployment or consume unbounded resources during collection.",
+          "metrics-instrumentation": "Collecting metrics from disparate sources (grep for TODOs, script size from git, hardcoded values) requires robust instrumentation; accuracy directly impacts auto-issue quality and prevents bot spam.",
+          "pr-quality": "Auto-issue generator uses hardcoded thresholds (e.g., >3000 lines); PR must clearly document threshold tuning strategy, fallback behavior if collection fails, and sample generated issues.",
+          "adversarial-quality": "Failure modes: metrics drift over time, auto-generator creates duplicate issues, scheduled job hangs, GitHub API quota exceeded; adversarial review prevents silent metric data corruption.",
+          "security-audit": "Auto-issue generator holds GitHub token and creates issues on behalf of platform; token storage, rate limiting, and preventing malicious threshold manipulation must be audited.",
+          "testing-strategy": "Metrics accuracy must be validated with unit tests (TODOs parsed correctly), integration tests (end-to-end collection → dashboard), and property tests (trends monotonic, no data loss).",
+          "validation-thoroughness": "Dashboard displays metrics; validation must verify charts render correctly, metrics match ground truth (e.g., actual script sizes), and auto-generated issues have correct labels/recommendations.",
+          "deploy-safety": "Scheduled job introduces new failure mode (job hangs, GitHub API fails); rollout should use feature flags, gradual threshold tightening, and dry-run mode before auto-issue creation.",
+          "observability": "Auto-issue generator quality depends on real-world accuracy; post-deploy monitoring must track issue false-positive rate, collection latency, and threshold tuning feedback loop."
+        },
+        "generated_skills": [
+          {
+            "name": "metrics-instrumentation",
+            "reason": "Existing skills cover architecture and data pipelines in general, but this issue requires a specific instrumentation pattern: collecting technical-debt signals (TODOs, hardcoded values, script sizes) from source code without performance impact or false positives. No existing skill addresses the mechanics of robust codebase scanning, deduplication, and trend calculation.",
+            "content": "# Metrics Instrumentation for Platform Health\n\n## Goal\nInstrument the platform to collect technical-debt signals (TODOs, hardcoded constants, script sizes, fallback uses) without performance impact or false positives.\n\n## Instrumentation Principles\n\n### 1. Reliable Collection\n- **Deduplicate by content hash**: Count unique TODOs, not repeated greps; prevents false inflation\n- **Parse syntax correctly**: Use AST parsing or robust regex (don't count TODOs in strings, comments, or disabled code)\n- **Handle encoding edge cases**: UTF-8 BOM, mixed line endings, large files\n- **Atomic snapshots**: Collect all metrics in one pass to avoid inconsistent deltas\n\n### 2. Performance Constraints\n- **Cap scan time**: Full collection should complete in <30 seconds (suitable for scheduled job or CI)\n- **Stream large files**: Don't load entire 5MB scripts into memory; process line-by-line\n- **Cache intermediate results**: Store previous scan results; only re-scan files modified since last scan\n- **Avoid nested loops**: O(n) file scanning + O(m) TODO parsing; avoid O(n*m) cross-file analysis\n\n### 3. Data Accuracy Validation\n- **Spot-check samples**: Randomly verify 10 collected metrics match reality (e.g., pick a script, manually count TODOs, compare to collected count)\n- **Trend monotonicity**: Flag if debt_count decreases without corresponding PR (signal collection error)\n- **Ground-truth registry**: Maintain hardcoded-values list in code to validate collection (e.g., `// METRIC: hardcoded=42` comments)\n- **Test with synthetic data**: Unit tests create files with N TODOs, verify collector finds all N\n\n### 4. Threshold Tuning\n- **Start conservative**: Set thresholds 20% above current max (e.g., current_max=2800 → threshold=3000) to establish baseline\n- **Gradual tightening**: Decrease threshold 5-10% per month as platform improves\n- **Per-script exceptions**: Allow exemptions for generated or vendored code (add METRIC-SKIP marker)\n- **Feedback loop**: Track false-positive issues; if >20% issues closed as \"not actionable,\" adjust threshold\n\n### 5. Multi-Source Aggregation\n- **TODO/FIXME/HACK**: `grep -r 'TODO\\|FIXME\\|HACK'` with filtering for comments only\n- **Hardcoded values**: Scan for string/number literals outside of loops (regex pattern: `= (\".*\"|\\d+)`); categorize by type\n- **Fallback usage**: Count function calls like `fallback()`, `default_to()`, `|| fallback` patterns\n- **Script sizes**: `wc -l` on all `.sh` files; track top 10 by size\n- **Test coverage gaps**: Parse test output (vitest/jest) to extract coverage percentages\n\n### 6. Trend Calculation\n- **Rolling window**: Store daily snapshots for 7 days (recent) and 30 days (trend); calculate deltas\n- **Smoothing**: Use exponential moving average (EMA) to filter noise; prevents false alerts on single-day spikes\n- **Direction detection**: Flag if 7-day delta > +5 (increasing debt) or > -3 (decreasing, good)\n- **Anomaly threshold**: Alert if today's count is >3σ from 30-day mean (signal collection or code change)\n\n## Implementation Checklist\n\n- [ ] Metrics collector runs in isolated subprocess (no impact if it hangs)\n- [ ] Results stored in versioned JSON; schema includes collection_time, git_commit, metrics, errors\n- [ ] Dry-run mode: collect metrics but don't store; useful for threshold validation\n- [ ] Error summary: if scan fails, log specific error (file not readable, grep timeout) for debugging\n- [ ] Integration test: fixture with synthetic code, verify metrics match expectations\n- [ ] Performance test: verify scan completes in <30s on real codebase\n- [ ] Validation: Compare collected metrics to manual spot-checks; must match 100%\n"
+          }
+        ],
+        "review_focus": [
+          "Metrics collection performance: Does daily scan complete in <30 seconds? Is there any GC pressure or memory bloat?",
+          "Auto-issue generation spam prevention: Do thresholds prevent duplicate issues? Is there rate-limiting and idempotency?",
+          "Data accuracy: Do collected metrics (TODOs, hardcoded counts, script sizes) match ground truth? Any false positives?",
+          "GitHub integration reliability: Does auto-generator handle GitHub API errors gracefully? What if token expires?",
+          "Dashboard query performance: Can the endpoint serve historical trend data (7/30 day deltas) without N+1 queries?",
+          "Threshold tuning strategy: Are thresholds documented and justified? Can they be adjusted without code changes?"
+        ],
+        "risk_areas": [
+          "Metrics collection becomes slow or CPU-bound, blocking CI or deployments",
+          "Auto-issue generator creates spam (duplicate issues, false positives); GitHub API quota exhausted",
+          "Metric accuracy degrades over time due to false positives (e.g., TODOs in vendored code, strings, or disabled branches)",
+          "Scheduled job fails silently; dashboard shows stale data without alerting operators",
+          "Thresholds tuned incorrectly; too strict → noisy issues, too loose → platform debt ignored",
+          "Trend calculation flawed; short-term noise misinterpreted as actionable trend (e.g., single-day spike triggers alert)",
+          "Dashboard frontend performance regresses when rendering large datasets (1000+ data points in charts)"
+        ]
+      },
+      "timestamp": 1772844181,
+      "ttl": 3600
+    },
+    "90d24f8f26782bc1bb84eb1a94ff40bc": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first)",
+            "relevance": 85,
+            "summary": "Project structure, test framework (vitest), conventions (src/, *.test.js, commonjs) essential for planning implementation details of dashboard and auto-issue components"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Documents recent test failures and infrastructure issues from sw-cleanup, sw-daemon, sw-hygiene; these failure patterns inform what health metrics and anomalies the dashboard should track, and what conditions trigger auto-issue generation"
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 35,
+            "summary": "Confirms nodejs project type detected in bootstrap; minimal additional detail beyond first patterns.json entry"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Empty baseline data structure; relevant only if populated with historical metrics that would define health dashboard thresholds and trends"
+          },
+          {
+            "file": "global.json",
+            "relevance": 2,
+            "summary": "Empty common patterns and cross-repo learnings; not currently relevant to feature planning"
+          }
+        ]
+      },
+      "timestamp": 1772844203,
+      "ttl": 1800
     }
   }
 }
