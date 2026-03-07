@@ -1792,7 +1792,7 @@ DIM='\033[2m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-cd "$WORK_DIR"
+cd "$WORK_DIR" || { echo "ERROR: Cannot cd to WORK_DIR: $WORK_DIR" >&2; exit 1; }
 ITERATION=0
 CONSECUTIVE_FAILURES=0
 

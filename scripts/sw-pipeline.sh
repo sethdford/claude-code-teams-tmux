@@ -913,7 +913,7 @@ Reply with ONLY the classification word, nothing else." --model haiku < /dev/nul
         local class_dir="${HOME}/.shipwright/optimization"
         mkdir -p "$class_dir" 2>/dev/null || true
         local tmp_class
-        tmp_class="$(mktemp)"
+        tmp_class="$(mktemp)" || { warn "mktemp failed"; return 1; }
         # shellcheck disable=SC2064  # intentional expansion at definition time
         trap "rm -f '$tmp_class'" RETURN
         if [[ -f "$class_history" ]]; then
@@ -1447,7 +1447,7 @@ run_pipeline() {
                 emit_event "stage.skipped" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "reason=human_skip"
                 # Remove this stage from the skip file
                 local tmp_skip
-                tmp_skip="$(mktemp)"
+                tmp_skip="$(mktemp)" || { warn "mktemp failed"; continue; }
                 # shellcheck disable=SC2064  # intentional expansion at definition time
                 trap "rm -f '$tmp_skip'" RETURN
                 grep -vx "$id" "$ARTIFACTS_DIR/skip-stage.txt" > "$tmp_skip" 2>/dev/null || true
@@ -1838,7 +1838,7 @@ pipeline_post_completion_cleanup() {
     if [[ -f "$STATE_FILE" ]]; then
         # Reset status to idle (preserves the file for reference but unblocks new runs)
         local tmp_state
-        tmp_state=$(mktemp)
+        tmp_state=$(mktemp) || { warn "mktemp failed for state reset"; return 1; }
         # shellcheck disable=SC2064  # intentional expansion at definition time
         trap "rm -f '$tmp_state'" RETURN
         sed 's/^status: .*/status: idle/' "$STATE_FILE" > "$tmp_state" 2>/dev/null || true

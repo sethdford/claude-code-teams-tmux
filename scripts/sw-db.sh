@@ -1624,7 +1624,7 @@ export_db() {
     costs_json=$(_db_query "SELECT json_group_array(json_object('model', model, 'stage', stage, 'cost_usd', cost_usd, 'ts', ts)) FROM (SELECT * FROM cost_entries ORDER BY ts_epoch DESC LIMIT 1000);" || echo "[]")
 
     local tmp_file
-    tmp_file=$(mktemp "${output_file}.tmp.XXXXXX")
+    tmp_file=$(mktemp "${output_file}.tmp.XXXXXX") || { error "mktemp failed for db export"; return 1; }
     jq -n \
         --arg exported_at "$(now_iso)" \
         --argjson events "$events_json" \
