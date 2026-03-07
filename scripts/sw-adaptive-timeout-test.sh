@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Adaptive Stage Timeout Engine Test Suite                                ║
+# ║  Adaptive Stage Timeout Engine — Validate P95 auto-tuning and apply      ║
 # ║  Tests P95 duration-based auto-tuning, recommendations, and apply logic  ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
