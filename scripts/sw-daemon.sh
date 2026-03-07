@@ -233,13 +233,13 @@ WORKER_MEM_GB=4
 EST_COST_PER_JOB=5.0
 FLEET_MAX_PARALLEL=""
 
-# Patrol defaults (overridden by daemon-config.json or env)
-PATROL_INTERVAL="${PATROL_INTERVAL:-3600}"
-PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-5}"
+# Patrol defaults (overridden by daemon-config.json, hardcoded-values.json, or env)
+PATROL_INTERVAL="${PATROL_INTERVAL:-$(_config_get_int "daemon.patrol_interval" 3600 2>/dev/null || echo 3600)}"
+PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-$(_config_get_int "daemon.patrol_max_issues" 5 2>/dev/null || echo 5)}"
 PATROL_LABEL="${PATROL_LABEL:-auto-patrol}"
 PATROL_DRY_RUN=false
 PATROL_AUTO_WATCH=false
-PATROL_FAILURES_THRESHOLD=3
+PATROL_FAILURES_THRESHOLD=$(_config_get_int "daemon.patrol_failures_threshold" 3 2>/dev/null || echo 3)
 PATROL_DORA_ENABLED=true
 PATROL_UNTESTED_ENABLED=true
 PATROL_RETRY_ENABLED=true

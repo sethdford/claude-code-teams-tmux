@@ -93,13 +93,13 @@ LOOP_COST_MILLICENTS=0
 
 # ─── Flexible Iteration Defaults ────────────────────────────────────────────
 AUTO_EXTEND=true          # Auto-extend iterations when work is incomplete
-EXTENSION_SIZE=5          # Additional iterations per extension
-MAX_EXTENSIONS=3          # Max number of extensions (hard cap safety net)
+EXTENSION_SIZE=$(_config_get_int "loop.extension_size" 5)          # Additional iterations per extension
+MAX_EXTENSIONS=$(_config_get_int "loop.max_extensions" 3)          # Max number of extensions (hard cap safety net)
 EXTENSION_COUNT=0         # Current number of extensions applied
 
 # ─── Circuit Breaker Defaults ──────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
-MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+CIRCUIT_BREAKER_THRESHOLD=$(_config_get_int "loop.circuit_breaker_threshold" 3)       # Consecutive low-progress iterations before stopping
+MIN_PROGRESS_LINES=$(_config_get_int "loop.min_progress_lines" 5)              # Minimum insertions to count as progress
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
