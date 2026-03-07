@@ -30,6 +30,9 @@ setup_env() {
     cp "$SCRIPT_DIR/sw-heartbeat.sh" "$TEST_TEMP_DIR/scripts/"
     cp "$SCRIPT_DIR/sw-checkpoint.sh" "$TEST_TEMP_DIR/scripts/"
 
+    # Copy lib/ directory for bootstrap.sh and dependencies
+    cp -r "$SCRIPT_DIR/lib" "$TEST_TEMP_DIR/scripts/"
+
     # Mock git for checkpoint tests
     mkdir -p "$TEST_TEMP_DIR/bin"
     cat > "$TEST_TEMP_DIR/bin/git" <<'EOF'

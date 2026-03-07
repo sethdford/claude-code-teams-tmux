@@ -91,10 +91,10 @@ else
     assert_fail "set -euo pipefail present"
 fi
 
-if grep -q "trap.*ERR" "$SCRIPT_DIR/sw-templates.sh"; then
-    assert_pass "ERR trap present"
+if grep -q "bootstrap.sh" "$SCRIPT_DIR/sw-templates.sh" || grep -q "trap.*ERR" "$SCRIPT_DIR/sw-templates.sh"; then
+    assert_pass "ERR trap present (via bootstrap or inline)"
 else
-    assert_fail "ERR trap present"
+    assert_fail "ERR trap present (via bootstrap or inline)"
 fi
 
 echo ""

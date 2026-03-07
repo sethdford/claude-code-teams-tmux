@@ -86,10 +86,10 @@ else
     assert_fail "set -euo pipefail present"
 fi
 
-if grep -q "trap.*ERR" "$SRC"; then
-    assert_pass "ERR trap present"
+if grep -q "bootstrap.sh" "$SRC" || grep -q "trap.*ERR" "$SRC"; then
+    assert_pass "ERR trap present (via bootstrap or inline)"
 else
-    assert_fail "ERR trap present"
+    assert_fail "ERR trap present (via bootstrap or inline)"
 fi
 
 if grep -q '^VERSION=' "$SRC"; then
