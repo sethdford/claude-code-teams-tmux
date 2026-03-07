@@ -19,6 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # DB layer for dual-read (SQLite + JSONL fallback)
 # shellcheck source=sw-db.sh
 [[ -f "$SCRIPT_DIR/sw-db.sh" ]] && source "$SCRIPT_DIR/sw-db.sh"
+# Config loader for centralized policy management
+# shellcheck source=lib/config.sh
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -42,17 +46,17 @@ EVENTS_FILE="${HOME}/.shipwright/events.jsonl"
 MODELS_FILE="${HOME}/.shipwright/adaptive-models.json"
 REPO_DIR="${PWD}"
 
-# ─── Default Thresholds ─────────────────────────────────────────────────────
-MIN_CONFIDENCE_SAMPLES=10
-MED_CONFIDENCE_SAMPLES=50
-MIN_TIMEOUT=60
-MAX_TIMEOUT=7200
-MIN_ITERATIONS=2
-MAX_ITERATIONS=50
-MIN_POLL_INTERVAL=10
-MAX_POLL_INTERVAL=300
-MIN_COVERAGE=0
-MAX_COVERAGE=100
+# ─── Default Thresholds (from config, with hardcoded fallbacks) ──────────────
+MIN_CONFIDENCE_SAMPLES=$(_config_get_int "adaptive.min_confidence_samples" 10)
+MED_CONFIDENCE_SAMPLES=$(_config_get_int "adaptive.med_confidence_samples" 50)
+MIN_TIMEOUT=$(_config_get_int "adaptive.min_timeout" 60)
+MAX_TIMEOUT=$(_config_get_int "adaptive.max_timeout" 7200)
+MIN_ITERATIONS=$(_config_get_int "adaptive.min_iterations" 2)
+MAX_ITERATIONS=$(_config_get_int "adaptive.max_iterations" 50)
+MIN_POLL_INTERVAL=$(_config_get_int "adaptive.min_poll_interval" 10)
+MAX_POLL_INTERVAL=$(_config_get_int "adaptive.max_poll_interval" 300)
+MIN_COVERAGE=$(_config_get_int "adaptive.min_coverage" 0)
+MAX_COVERAGE=$(_config_get_int "adaptive.max_coverage" 100)
 
 # ─── JSON Helper: Percentile ────────────────────────────────────────────────
 # Compute P-th percentile of sorted numeric array (bash + jq)

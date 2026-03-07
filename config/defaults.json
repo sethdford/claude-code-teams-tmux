@@ -18,7 +18,10 @@
     "health_check_interval": 60,
     "stale_job_timeout_hours": 2,
     "branch_pattern": "shipwright/issue-{issue}",
-    "worktree_dir": ".worktrees"
+    "worktree_dir": ".worktrees",
+    "patrol_interval": 3600,
+    "patrol_max_issues": 5,
+    "patrol_failures_threshold": 3
   },
   "pipeline": {
     "max_iterations": 20,
@@ -53,7 +56,11 @@
     "context_trim_memory_chars": 20000,
     "context_trim_git_entries": 10,
     "context_trim_hotspot_files": 5,
-    "context_trim_test_lines": 50
+    "context_trim_test_lines": 50,
+    "extension_size": 5,
+    "max_extensions": 3,
+    "circuit_breaker_threshold": 3,
+    "min_progress_lines": 5
   },
   "dashboard": {
     "port": 8767,
@@ -106,6 +113,18 @@
     "pass_rate_threshold": 5.0,
     "bundle_growth_legacy_pct": 20,
     "perf_regression_legacy_pct": 30
+  },
+  "adaptive": {
+    "min_confidence_samples": 10,
+    "med_confidence_samples": 50,
+    "min_timeout": 60,
+    "max_timeout": 7200,
+    "min_iterations": 2,
+    "max_iterations": 50,
+    "min_poll_interval": 10,
+    "max_poll_interval": 300,
+    "min_coverage": 0,
+    "max_coverage": 100
   },
   "cleanup": {
     "artifact_age_days": 7,
