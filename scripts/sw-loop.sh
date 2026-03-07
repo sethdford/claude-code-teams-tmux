@@ -36,6 +36,7 @@ fi
 # Source loop sub-modules for modular iteration management
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
+[[ -f "$SCRIPT_DIR/lib/loop-burst.sh" ]] && source "$SCRIPT_DIR/lib/loop-burst.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
 # Error actionability scoring and enhancement for better error context
@@ -100,6 +101,11 @@ EXTENSION_COUNT=0         # Current number of extensions applied
 # ─── Circuit Breaker Defaults ──────────────────────────────────────────────
 CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
 MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+
+# ─── Burst Mode Defaults ────────────────────────────────────────────────────
+BURST_ACTIVE=false
+BURST_ORIGINAL_MODEL=""
+BURST_PREVIOUS_TEST=""
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
@@ -2055,6 +2061,9 @@ run_single_agent_loop() {
         [[ -n "$SAVED_CLAUDE_MODEL" ]] && export CLAUDE_MODEL="$SAVED_CLAUDE_MODEL"
         [[ -n "$SAVED_ANTHROPIC_API_KEY" ]] && export ANTHROPIC_API_KEY="$SAVED_ANTHROPIC_API_KEY"
 
+        # Check if previous burst iteration needs revert
+        type burst_check_revert >/dev/null 2>&1 && burst_check_revert
+
         # Pre-checks (before incrementing — ITERATION tracks completed count)
         check_circuit_breaker || break
         check_max_iterations || break
@@ -2066,6 +2075,9 @@ run_single_agent_loop() {
             show_summary
             return 1
         }
+
+        # Evaluate burst mode opportunity
+        type burst_evaluate >/dev/null 2>&1 && burst_evaluate
         ITERATION=$(( ITERATION + 1 ))
 
         # Emit iteration start event for pipeline visibility
@@ -2075,7 +2087,8 @@ run_single_agent_loop() {
                 "max=$MAX_ITERATIONS" \
                 "job_id=${PIPELINE_JOB_ID:-loop-$$}" \
                 "agent=${AGENT_NUM:-1}" \
-                "test_passed=${TEST_PASSED:-unknown}"
+                "test_passed=${TEST_PASSED:-unknown}" \
+                "burst_active=${BURST_ACTIVE:-false}"
         fi
 
         # Root-cause diagnosis and memory-based fix on retry after test failure
@@ -2193,6 +2206,9 @@ ${GOAL}"
             fi
         fi
 
+        # Track previous test state for burst mode trend detection
+        BURST_PREVIOUS_TEST="${TEST_PASSED:-}"
+
         # Track fix outcome for memory effectiveness
         if [[ -n "${_applied_fix_pattern:-}" ]]; then
             if type memory_record_fix_outcome >/dev/null 2>&1; then
@@ -2308,6 +2324,7 @@ $summary
                 "job_id=${PIPELINE_JOB_ID:-loop-$$}" \
                 "agent=${AGENT_NUM:-1}" \
                 "test_passed=${TEST_PASSED:-unknown}" \
+                "burst_active=${BURST_ACTIVE:-false}" \
                 "commits=$TOTAL_COMMITS" \
                 "status=${STATUS:-running}"
         fi

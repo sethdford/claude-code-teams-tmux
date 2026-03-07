@@ -780,6 +780,297 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# BURST MODE TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${DIM}  burst mode — scoring, evaluation, revert, logging${RESET}"
+
+# Source burst module for direct function testing
+source "$SCRIPT_DIR/lib/loop-burst.sh" 2>/dev/null || true
+
+# ─── Test: burst module loads with guard ─────────────────────────────────
+if type burst_compute_progress_score >/dev/null 2>&1; then
+    assert_pass "burst_compute_progress_score function available"
+else
+    assert_fail "burst_compute_progress_score function available"
+fi
+
+if type burst_evaluate >/dev/null 2>&1; then
+    assert_pass "burst_evaluate function available"
+else
+    assert_fail "burst_evaluate function available"
+fi
+
+if type burst_check_revert >/dev/null 2>&1; then
+    assert_pass "burst_check_revert function available"
+else
+    assert_fail "burst_check_revert function available"
+fi
+
+if type burst_log_decision >/dev/null 2>&1; then
+    assert_pass "burst_log_decision function available"
+else
+    assert_fail "burst_log_decision function available"
+fi
+
+# ─── Test: progress score — all positive signals ────────────────────────
+TEST_PASSED="true"
+BURST_PREVIOUS_TEST="false"
+TOTAL_COMMITS=5
+CONSECUTIVE_FAILURES=0
+VELOCITY_HISTORY="20,30,25"
+# Mock compute_velocity_avg if not already loaded
+if ! type compute_velocity_avg >/dev/null 2>&1; then
+    compute_velocity_avg() { echo "25"; }
+fi
+score=$(burst_compute_progress_score)
+if [[ "$score" -gt 70 ]]; then
+    assert_pass "Progress score > 70 when all signals positive (got $score)"
+else
+    assert_fail "Progress score > 70 when all signals positive (got $score)"
+fi
+
+# ─── Test: progress score — no test passing ─────────────────────────────
+TEST_PASSED="false"
+BURST_PREVIOUS_TEST=""
+TOTAL_COMMITS=0
+CONSECUTIVE_FAILURES=2
+compute_velocity_avg() { echo "2"; }
+score=$(burst_compute_progress_score)
+if [[ "$score" -le 70 ]]; then
+    assert_pass "Progress score <= 70 when signals negative (got $score)"
+else
+    assert_fail "Progress score <= 70 when signals negative (got $score)"
+fi
+
+# ─── Test: progress score — tests pass but low velocity ─────────────────
+TEST_PASSED="true"
+BURST_PREVIOUS_TEST="true"
+TOTAL_COMMITS=1
+CONSECUTIVE_FAILURES=0
+compute_velocity_avg() { echo "3"; }
+score=$(burst_compute_progress_score)
+if [[ "$score" -eq 55 ]]; then
+    assert_pass "Progress score = 55 with tests pass + commits + no failures but low velocity (got $score)"
+else
+    assert_fail "Progress score = 55 with tests pass + commits + no failures but low velocity" "got $score"
+fi
+
+# ─── Test: burst evaluate triggers when all gates pass ──────────────────
+TEST_PASSED="true"
+BURST_PREVIOUS_TEST="false"
+TOTAL_COMMITS=5
+CONSECUTIVE_FAILURES=0
+compute_velocity_avg() { echo "25"; }
+ITERATION=18
+MAX_ITERATIONS=20
+LOOP_COST_MILLICENTS=500000
+MODEL="sonnet"
+SAVED_CLAUDE_MODEL="claude-sonnet-4-6"
+# Use temp dir as SCRIPT_DIR so sw-cost.sh is not found (budget gate passes)
+_saved_script_dir="$SCRIPT_DIR"
+SCRIPT_DIR="$TEST_TEMP_DIR/bin"
+BURST_ACTIVE=false
+BURST_ORIGINAL_MODEL=""
+burst_evaluate
+if [[ "$BURST_ACTIVE" == "true" ]]; then
+    assert_pass "Burst activates when all gates pass"
+else
+    assert_fail "Burst activates when all gates pass (BURST_ACTIVE=$BURST_ACTIVE)"
+fi
+
+if [[ "$BURST_ORIGINAL_MODEL" == "sonnet" ]]; then
+    assert_pass "Burst saves original model"
+else
+    assert_fail "Burst saves original model" "got: $BURST_ORIGINAL_MODEL"
+fi
+
+if [[ "$MODEL" == "opus" ]]; then
+    assert_pass "Burst upgrades MODEL to opus"
+else
+    assert_fail "Burst upgrades MODEL to opus" "got: $MODEL"
+fi
+
+# Reset for next tests
+MODEL="sonnet"
+BURST_ACTIVE=false
+BURST_ORIGINAL_MODEL=""
+
+# ─── Test: burst does not trigger — low score ──────────────────────────
+TEST_PASSED="false"
+BURST_PREVIOUS_TEST=""
+TOTAL_COMMITS=0
+CONSECUTIVE_FAILURES=2
+compute_velocity_avg() { echo "2"; }
+ITERATION=18
+MAX_ITERATIONS=20
+burst_evaluate
+if [[ "$BURST_ACTIVE" == "false" ]]; then
+    assert_pass "Burst does not activate on low score"
+else
+    assert_fail "Burst does not activate on low score"
+fi
+
+# ─── Test: burst does not trigger — too many iterations remaining ───────
+TEST_PASSED="true"
+BURST_PREVIOUS_TEST="false"
+TOTAL_COMMITS=5
+CONSECUTIVE_FAILURES=0
+compute_velocity_avg() { echo "25"; }
+ITERATION=5
+MAX_ITERATIONS=20
+MODEL="sonnet"
+burst_evaluate
+if [[ "$BURST_ACTIVE" == "false" ]]; then
+    assert_pass "Burst does not activate when iterations remaining >= 3"
+else
+    assert_fail "Burst does not activate when iterations remaining >= 3"
+fi
+
+# ─── Test: burst does not trigger — already on opus ─────────────────────
+TEST_PASSED="true"
+BURST_PREVIOUS_TEST="false"
+TOTAL_COMMITS=5
+CONSECUTIVE_FAILURES=0
+compute_velocity_avg() { echo "25"; }
+ITERATION=18
+MAX_ITERATIONS=20
+MODEL="opus"
+BURST_ACTIVE=false
+burst_evaluate
+if [[ "$BURST_ACTIVE" == "false" ]]; then
+    assert_pass "Burst is no-op when already on opus"
+else
+    assert_fail "Burst is no-op when already on opus"
+fi
+
+# Restore SCRIPT_DIR for remaining tests
+SCRIPT_DIR="$_saved_script_dir"
+
+# ─── Test: burst revert on failure ──────────────────────────────────────
+BURST_ACTIVE=true
+BURST_ORIGINAL_MODEL="sonnet"
+MODEL="opus"
+TEST_PASSED="false"
+SAVED_CLAUDE_MODEL="claude-sonnet-4-6"
+burst_check_revert
+if [[ "$MODEL" == "sonnet" ]]; then
+    assert_pass "Burst reverts model on test failure"
+else
+    assert_fail "Burst reverts model on test failure" "got: $MODEL"
+fi
+if [[ "$BURST_ACTIVE" == "false" ]]; then
+    assert_pass "Burst flag reset after revert"
+else
+    assert_fail "Burst flag reset after revert"
+fi
+
+# ─── Test: burst revert on success ──────────────────────────────────────
+BURST_ACTIVE=true
+BURST_ORIGINAL_MODEL="sonnet"
+MODEL="opus"
+TEST_PASSED="true"
+SAVED_CLAUDE_MODEL="claude-sonnet-4-6"
+burst_check_revert
+if [[ "$MODEL" == "sonnet" ]]; then
+    assert_pass "Burst reverts model on success (one-shot)"
+else
+    assert_fail "Burst reverts model on success (one-shot)" "got: $MODEL"
+fi
+if [[ "$BURST_ACTIVE" == "false" ]]; then
+    assert_pass "Burst flag reset after success"
+else
+    assert_fail "Burst flag reset after success"
+fi
+
+# ─── Test: burst check revert is no-op when not active ──────────────────
+BURST_ACTIVE=false
+BURST_ORIGINAL_MODEL=""
+MODEL="sonnet"
+burst_check_revert
+if [[ "$MODEL" == "sonnet" ]]; then
+    assert_pass "Burst revert is no-op when not active"
+else
+    assert_fail "Burst revert is no-op when not active" "got: $MODEL"
+fi
+
+# ─── Test: burst log decision writes valid JSON ─────────────────────────
+local_costs_dir="$TEST_TEMP_DIR/home/.shipwright"
+mkdir -p "$local_costs_dir"
+ITERATION=18
+MAX_ITERATIONS=20
+# Clean any prior costs.json for isolated log test
+rm -f "$local_costs_dir/costs.json" 2>/dev/null
+burst_log_decision "activate" "sonnet" "opus" "85" "all gates passed"
+costs_file="$local_costs_dir/costs.json"
+if [[ -f "$costs_file" ]]; then
+    if jq -e '.burst_decisions | length > 0' "$costs_file" >/dev/null 2>&1; then
+        assert_pass "burst_log_decision writes valid JSON with burst_decisions array"
+    else
+        assert_fail "burst_log_decision writes valid JSON with burst_decisions array"
+    fi
+    if jq -e '.burst_decisions[0].type == "activate"' "$costs_file" >/dev/null 2>&1; then
+        assert_pass "burst_log_decision records correct type field"
+    else
+        assert_fail "burst_log_decision records correct type field"
+    fi
+    if jq -e '.burst_decisions[0].progress_score == 85' "$costs_file" >/dev/null 2>&1; then
+        assert_pass "burst_log_decision records progress_score as number"
+    else
+        assert_fail "burst_log_decision records progress_score as number"
+    fi
+else
+    assert_fail "burst_log_decision writes costs.json file"
+fi
+
+# ─── Test: burst integration in sw-loop.sh ──────────────────────────────
+echo ""
+echo -e "${DIM}  burst mode — integration checks${RESET}"
+
+if grep -q 'loop-burst.sh' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "sw-loop.sh sources loop-burst.sh"
+else
+    assert_fail "sw-loop.sh sources loop-burst.sh"
+fi
+
+if grep -q 'burst_check_revert' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "sw-loop.sh calls burst_check_revert"
+else
+    assert_fail "sw-loop.sh calls burst_check_revert"
+fi
+
+if grep -q 'burst_evaluate' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "sw-loop.sh calls burst_evaluate"
+else
+    assert_fail "sw-loop.sh calls burst_evaluate"
+fi
+
+if grep -q 'BURST_PREVIOUS_TEST' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "sw-loop.sh tracks BURST_PREVIOUS_TEST"
+else
+    assert_fail "sw-loop.sh tracks BURST_PREVIOUS_TEST"
+fi
+
+if grep -q 'burst_active' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "sw-loop.sh includes burst_active in iteration event"
+else
+    assert_fail "sw-loop.sh includes burst_active in iteration event"
+fi
+
+# ─── Test: tmux burst widget ───────────────────────────────────────────
+if grep -q 'burst_widget' "$SCRIPT_DIR/sw-tmux-status.sh"; then
+    assert_pass "sw-tmux-status.sh has burst_widget function"
+else
+    assert_fail "sw-tmux-status.sh has burst_widget function"
+fi
+
+if grep -q 'burst)' "$SCRIPT_DIR/sw-tmux-status.sh"; then
+    assert_pass "sw-tmux-status.sh dispatches burst subcommand"
+else
+    assert_fail "sw-tmux-status.sh dispatches burst subcommand"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

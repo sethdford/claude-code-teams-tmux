@@ -135,15 +135,44 @@ agent_widget() {
     fi
 }
 
+# ─── Burst mode widget ───────────────────────────────────────────────────
+# Checks recent events for burst activation (within last 5 minutes)
+burst_widget() {
+    local events_file="${HOME}/.shipwright/events.jsonl"
+    [[ -f "$events_file" ]] || return 0
+
+    local now
+    now="$(date +%s)"
+    local cutoff=$(( now - 300 ))
+
+    # Check last 50 events for a recent burst activation
+    local burst_line
+    burst_line=$(tail -50 "$events_file" 2>/dev/null | grep '"loop.burst_activate"' | tail -1 || true)
+    [[ -n "$burst_line" ]] || return 0
+
+    # Check timestamp is within 5 minutes
+    local burst_ts
+    burst_ts=$(echo "$burst_line" | grep -oE '"ts":"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+    [[ -n "$burst_ts" ]] || return 0
+
+    local burst_epoch
+    burst_epoch=$(date -d "$burst_ts" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$burst_ts" +%s 2>/dev/null || echo 0)
+    if [[ "$burst_epoch" -ge "$cutoff" ]] 2>/dev/null; then
+        echo "#[fg=#1e1e32,bg=#fbbf24,bold] ⚡BURST #[fg=#fbbf24,bg=#1a1a2e]"
+    fi
+}
+
 # ─── Dispatch ─────────────────────────────────────────────────────────────
 case "${1:-pipeline}" in
     pipeline) pipeline_widget ;;
     agents)   agent_widget ;;
+    burst)    burst_widget ;;
     all)
-        # Combine both widgets
+        # Combine all widgets
         p="$(pipeline_widget)"
         a="$(agent_widget)"
-        echo "${a}${p}"
+        b="$(burst_widget)"
+        echo "${b}${a}${p}"
         ;;
     *)
         echo ""
