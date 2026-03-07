@@ -5509,6 +5509,189 @@ const server = Bun.serve({
       }
     }
 
+    // GET /api/platform-health — Platform health metrics, trends, alerts
+    if (pathname === "/api/platform-health" && req.method === "GET") {
+      try {
+        const healthDir = `${process.env.HOME}/.shipwright/platform-health`;
+        const emptySnapshot = {
+          ts: new Date().toISOString(),
+          hardcoded_count: 0,
+          fallback_count: 0,
+          todo_count: 0,
+          fixme_count: 0,
+          hack_count: 0,
+          total_debt: 0,
+          top_scripts: [],
+          scripts_over_threshold: 0,
+          threshold_lines: 2000,
+        };
+        const emptyTrends = {
+          delta_7d: {
+            hardcoded: 0,
+            fallback: 0,
+            debt: 0,
+            scripts_over_threshold: 0,
+          },
+          delta_30d: {
+            hardcoded: 0,
+            fallback: 0,
+            debt: 0,
+            scripts_over_threshold: 0,
+          },
+        };
+
+        if (!existsSync(healthDir)) {
+          return new Response(
+            JSON.stringify({
+              snapshot: emptySnapshot,
+              trends: emptyTrends,
+              alerts: [],
+              history: [],
+            }),
+            {
+              headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+            },
+          );
+        }
+
+        // Read all snapshot files
+        const files = readdirSync(healthDir)
+          .filter((f: string) => f.endsWith(".json") && !f.startsWith("tmp"))
+          .sort()
+          .reverse();
+
+        if (files.length === 0) {
+          return new Response(
+            JSON.stringify({
+              snapshot: emptySnapshot,
+              trends: emptyTrends,
+              alerts: [],
+              history: [],
+            }),
+            {
+              headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+            },
+          );
+        }
+
+        // Latest snapshot
+        const latestFile = `${healthDir}/${files[0]}`;
+        const snapshot = JSON.parse(readFileSync(latestFile, "utf-8"));
+
+        // Build history
+        const daysParam = new URL(req.url).searchParams.get("days") || "30";
+        const maxDays = Math.min(parseInt(daysParam, 10) || 30, 90);
+        const history = files
+          .slice(0, maxDays)
+          .map((f: string) => {
+            try {
+              const data = JSON.parse(
+                readFileSync(`${healthDir}/${f}`, "utf-8"),
+              );
+              return {
+                date: f.replace(".json", ""),
+                total_debt: data.total_debt || 0,
+              };
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        // Compute trends from history
+        const findSnapshot = (daysAgo: number) => {
+          const d = new Date();
+          d.setDate(d.getDate() - daysAgo);
+          const target = d.toISOString().slice(0, 10);
+          const targetFile = `${healthDir}/${target}.json`;
+          if (existsSync(targetFile)) {
+            try {
+              return JSON.parse(readFileSync(targetFile, "utf-8"));
+            } catch {
+              return null;
+            }
+          }
+          return null;
+        };
+
+        const computeDelta = (old: any) => {
+          if (!old)
+            return {
+              hardcoded: 0,
+              fallback: 0,
+              debt: 0,
+              scripts_over_threshold: 0,
+            };
+          return {
+            hardcoded:
+              (snapshot.hardcoded_count || 0) - (old.hardcoded_count || 0),
+            fallback:
+              (snapshot.fallback_count || 0) - (old.fallback_count || 0),
+            debt: (snapshot.total_debt || 0) - (old.total_debt || 0),
+            scripts_over_threshold:
+              (snapshot.scripts_over_threshold || 0) -
+              (old.scripts_over_threshold || 0),
+          };
+        };
+
+        const trends = {
+          delta_7d: computeDelta(findSnapshot(7)),
+          delta_30d: computeDelta(findSnapshot(30)),
+        };
+
+        // Compute alerts
+        const alerts: any[] = [];
+        if ((snapshot.hardcoded_count || 0) > 50) {
+          alerts.push({
+            type: "hardcoded_high",
+            severity: "warning",
+            message: "Hardcoded value count exceeds threshold",
+            threshold: 50,
+            current: snapshot.hardcoded_count,
+          });
+        }
+        for (const s of snapshot.top_scripts || []) {
+          if (s.lines > 3000) {
+            alerts.push({
+              type: "script_too_large",
+              severity: "warning",
+              message: "Script exceeds size threshold",
+              script: s.name,
+              lines: s.lines,
+              threshold: 3000,
+              current: s.lines,
+            });
+          }
+        }
+        if (trends.delta_7d.debt > 5) {
+          alerts.push({
+            type: "debt_trending_up",
+            severity: "critical",
+            message: "Technical debt trending up over 7 days",
+            threshold: 5,
+            current: trends.delta_7d.debt,
+          });
+        }
+
+        return new Response(
+          JSON.stringify({ snapshot, trends, alerts, history }),
+          {
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      } catch (err) {
+        return new Response(
+          JSON.stringify({
+            error: { code: "HEALTH_READ_ERROR", message: String(err) },
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+    }
+
     // POST /api/claim — Label-based claim coordination
     if (pathname === "/api/claim" && req.method === "POST") {
       try {
