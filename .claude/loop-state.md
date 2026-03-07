@@ -249,17 +249,22 @@ When daemon sees `stall_detected`:
 - Highlight error signature patterns
 - Display stall detection threshold (e.g., "3 of 3 iterations, 0 file changes")
 - Show previous stalls from memory system
-"
-iteration: 0
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-03-07T00:54:41Z
-last_iteration_at: 2026-03-07T00:54:41Z
+started_at: 2026-03-07T01:38:35Z
+last_iteration_at: 2026-03-07T01:38:35Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -270,4 +275,6 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-03-07T01:08:32Z)
+{"type":"result","subtype":"success","is_error":false,"duration_ms":606374,"duration_api_ms":499599,"num_turns":72,"resu
 
