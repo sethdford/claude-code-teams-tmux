@@ -504,6 +504,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/auth/") ||
     pathname === "/api/health" ||
     pathname === "/api/ws-status" ||
+    pathname === "/api/intelligence/stream" ||
     pathname.startsWith("/api/join/") ||
     pathname.startsWith("/api/connect/") ||
     pathname === "/api/team" ||
@@ -2592,6 +2593,92 @@ const server = Bun.serve({
       };
       return new Response(JSON.stringify(health), {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+
+    // GET /api/intelligence/stream — SSE endpoint for real-time intelligence events
+    if (pathname === "/api/intelligence/stream" && req.method === "GET") {
+      const pipelineId = url.searchParams.get("pipeline_id") || "";
+      let lastSeenId = lastBroadcastEventId;
+      let closed = false;
+
+      const stream = new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder();
+          const sendEvent = (data: string) => {
+            try {
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            } catch {
+              closed = true;
+            }
+          };
+
+          // Send initial comment
+          controller.enqueue(
+            encoder.encode(": intelligence stream connected\n\n"),
+          );
+
+          const interval = setInterval(() => {
+            if (closed) {
+              clearInterval(interval);
+              try {
+                controller.close();
+              } catch {
+                /* already closed */
+              }
+              return;
+            }
+            try {
+              const newEvents = dbQueryEventsByIdGreaterThan(lastSeenId, 50);
+              const filtered = newEvents.filter((e: DaemonEvent) => {
+                const t = (e.type as string) || "";
+                if (
+                  !t.startsWith("intelligence.") &&
+                  !t.startsWith("prediction.") &&
+                  !t.startsWith("discovery.")
+                )
+                  return false;
+                if (pipelineId) {
+                  const payload = JSON.stringify(e);
+                  if (!payload.includes(pipelineId)) return false;
+                }
+                return true;
+              });
+              for (const evt of filtered) {
+                sendEvent(JSON.stringify(evt));
+              }
+              if (newEvents.length > 0) {
+                const lid = (newEvents[newEvents.length - 1]?.id as number) | 0;
+                if (lid > 0) lastSeenId = lid;
+              }
+            } catch {
+              /* non-fatal */
+            }
+          }, 2000);
+
+          // Keepalive every 15s
+          const keepalive = setInterval(() => {
+            if (closed) {
+              clearInterval(keepalive);
+              return;
+            }
+            try {
+              controller.enqueue(encoder.encode(": keepalive\n\n"));
+            } catch {
+              closed = true;
+              clearInterval(keepalive);
+            }
+          }, 15000);
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          ...CORS_HEADERS,
+        },
       });
     }
 

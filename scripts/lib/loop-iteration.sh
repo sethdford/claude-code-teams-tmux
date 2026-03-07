@@ -143,6 +143,31 @@ Fix these specific errors. Each line above is one distinct error from the test o
         fi
     fi
 
+    # Real-time intelligence event streaming
+    local intel_stream_section=""
+    if type poll_intelligence_events >/dev/null 2>&1; then
+        local _intel_state_file="${ARTIFACTS_DIR:-/tmp}/intelligence-stream-state.json"
+        local _last_seen_id=0
+        [[ -f "$_intel_state_file" ]] && _last_seen_id=$(jq -r '.last_seen_id // 0' "$_intel_state_file" 2>/dev/null || echo 0)
+
+        local _intel_events
+        _intel_events=$(poll_intelligence_events "${SHIPWRIGHT_PIPELINE_ID:-$$}" "$_last_seen_id" 2>/dev/null || echo "")
+
+        if [[ -n "$_intel_events" && "$_intel_events" != "[]" ]]; then
+            local _intel_context
+            _intel_context=$(format_intelligence_context "$_intel_events" 2>/dev/null || echo "")
+            if [[ -n "$_intel_context" ]]; then
+                intel_stream_section="## Real-Time Intelligence Signals
+
+${_intel_context}"
+            fi
+            # Update last seen ID
+            local _new_last_id
+            _new_last_id=$(echo "$_intel_events" | jq -r '.[-1].id // .[-1].ts_epoch // 0' 2>/dev/null || echo 0)
+            save_stream_state "${SHIPWRIGHT_PIPELINE_ID:-$$}" "$_new_last_id" 2>/dev/null || true
+        fi
+    fi
+
     # DORA baselines for context
     local dora_section=""
     if type memory_get_dora_baseline >/dev/null 2>&1; then
@@ -349,6 +374,8 @@ $memory_section
 }
 ${discovery_section:+## Cross-Pipeline Learnings
 $discovery_section
+}
+${intel_stream_section:+$intel_stream_section
 }
 ${dora_section:+$dora_section
 }

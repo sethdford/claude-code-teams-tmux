@@ -14,6 +14,11 @@ if [[ -f "${SCRIPT_DIR}/lib/compound-audit.sh" ]]; then
     source "${SCRIPT_DIR}/lib/compound-audit.sh"
 fi
 
+# Source intelligence stream library (fail-open)
+if [[ -f "${SCRIPT_DIR}/lib/intelligence-stream.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/intelligence-stream.sh"
+fi
+
 pipeline_should_skip_stage() {
     local stage_id="$1"
     local reason=""

@@ -316,6 +316,92 @@ cmd_clean() {
     fi
 }
 
+# ─── Stream command (filtered intelligence events) ───────────────────────
+cmd_stream() {
+    local filter="${1:-intelligence}"
+    local pipeline_id="${2:-}"
+    local format="${3:-json}"
+
+    ensure_eventbus_dir
+
+    info "Streaming ${filter} events (pipeline: ${pipeline_id:-(all)})..."
+    echo ""
+
+    local last_id=0
+    local poll_interval=2
+
+    while true; do
+        if db_available 2>/dev/null; then
+            local query="SELECT * FROM events WHERE id > ${last_id} AND (type LIKE 'intelligence.%' OR type LIKE 'prediction.%' OR type LIKE 'discovery.%')"
+            if [[ -n "$pipeline_id" ]]; then
+                query="${query} AND payload LIKE '%${pipeline_id}%'"
+            fi
+            query="${query} ORDER BY id ASC LIMIT 20;"
+            local events
+            events=$(sqlite3 -json "$DB_FILE" "$query" 2>/dev/null || echo "[]")
+            if [[ "$events" != "[]" && -n "$events" ]]; then
+                while IFS= read -r event; do
+                    [[ -z "$event" ]] && continue
+                    if [[ "$format" == "text" ]]; then
+                        local etype ets
+                        etype=$(echo "$event" | jq -r '.type // ""')
+                        ets=$(echo "$event" | jq -r '.ts // ""')
+                        echo "[$ets] $etype"
+                    else
+                        echo "$event"
+                    fi
+                    local eid
+                    eid=$(echo "$event" | jq -r '.id // 0')
+                    [[ "${eid:-0}" -gt 0 ]] && last_id="$eid"
+                done < <(echo "$events" | jq -c '.[]' 2>/dev/null)
+            fi
+        elif [[ -f "$EVENTS_FILE" ]]; then
+            # Fallback: grep JSONL for matching events
+            while IFS= read -r line; do
+                [[ -z "$line" ]] && continue
+                local etype
+                etype=$(echo "$line" | jq -r '.type // ""' 2>/dev/null) || continue
+                case "$etype" in
+                    intelligence.*|prediction.*|discovery.*)
+                        if [[ -z "$pipeline_id" ]] || echo "$line" | grep -qF "$pipeline_id"; then
+                            if [[ "$format" == "text" ]]; then
+                                local ets
+                                ets=$(echo "$line" | jq -r '.ts // ""' 2>/dev/null)
+                                echo "[$ets] $etype"
+                            else
+                                echo "$line"
+                            fi
+                        fi
+                        ;;
+                esac
+            done < "$EVENTS_FILE"
+            # JSONL fallback: just tail for new events
+            tail -n 0 -f "$EVENTS_FILE" 2>/dev/null | while IFS= read -r line; do
+                local etype
+                etype=$(echo "$line" | jq -r '.type // ""' 2>/dev/null) || continue
+                case "$etype" in
+                    intelligence.*|prediction.*|discovery.*)
+                        if [[ -z "$pipeline_id" ]] || echo "$line" | grep -qF "$pipeline_id"; then
+                            if [[ "$format" == "text" ]]; then
+                                local ets
+                                ets=$(echo "$line" | jq -r '.ts // ""' 2>/dev/null)
+                                echo "[$ets] $etype"
+                            else
+                                echo "$line"
+                            fi
+                        fi
+                        ;;
+                esac
+            done
+            return
+        else
+            warn "No event bus found"
+            return 1
+        fi
+        sleep "$poll_interval"
+    done
+}
+
 # ─── Help command ──────────────────────────────────────────────────────────
 cmd_help() {
     echo ""
@@ -350,6 +436,12 @@ cmd_help() {
     echo -e "  ${CYAN}status${RESET}"
     echo -e "    Show event bus statistics and event counts by type"
     echo -e "    ${DIM}shipwright eventbus status${RESET}"
+    echo ""
+    echo -e "  ${CYAN}stream${RESET} [filter] [pipeline_id] [format]"
+    echo -e "    Stream filtered intelligence events in real-time"
+    echo -e "    ${DIM}shipwright eventbus stream${RESET}                        # All intelligence events"
+    echo -e "    ${DIM}shipwright eventbus stream intelligence issue-42${RESET}  # Pipeline-filtered"
+    echo -e "    ${DIM}shipwright eventbus stream intelligence \"\" text${RESET}   # Human-readable"
     echo ""
     echo -e "  ${CYAN}clean${RESET} [ttl_days]"
     echo -e "    Remove events older than TTL (default: 7 days)"
@@ -393,6 +485,10 @@ main() {
         status)
             shift
             cmd_status "$@"
+            ;;
+        stream)
+            shift
+            cmd_stream "$@"
             ;;
         clean)
             shift

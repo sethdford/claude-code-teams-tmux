@@ -45,6 +45,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/pipeline-quality-checks.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-quality-checks.sh"
 # shellcheck source=lib/pipeline-intelligence.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-intelligence.sh"
+# shellcheck source=lib/intelligence-stream.sh
+[[ -f "$SCRIPT_DIR/lib/intelligence-stream.sh" ]] && source "$SCRIPT_DIR/lib/intelligence-stream.sh"
 # shellcheck source=lib/pipeline-stages.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-stages.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-stages.sh"
 # Audit trail for compliance-grade pipeline traceability
@@ -1118,6 +1120,7 @@ self_healing_build_test() {
             max_cycles="$estimated"
             emit_event "intelligence.adaptive_iterations" \
                 "issue=${ISSUE_NUMBER:-0}" \
+                "pipeline_id=${SHIPWRIGHT_PIPELINE_ID:-}" \
                 "estimated=$estimated" \
                 "original=$BUILD_TEST_RETRIES"
         fi
@@ -1596,6 +1599,7 @@ run_pipeline() {
                 export CLAUDE_MODEL="$recommended_model"
                 emit_event "intelligence.model_ucb1" \
                     "issue=${ISSUE_NUMBER:-0}" \
+                    "pipeline_id=${SHIPWRIGHT_PIPELINE_ID:-}" \
                     "stage=$id" \
                     "model=$recommended_model"
             else
@@ -1638,6 +1642,7 @@ run_pipeline() {
 
                 emit_event "intelligence.model_ab" \
                     "issue=${ISSUE_NUMBER:-0}" \
+                    "pipeline_id=${SHIPWRIGHT_PIPELINE_ID:-}" \
                     "stage=$id" \
                     "recommended=$recommended_model" \
                     "applied=$CLAUDE_MODEL" \
@@ -2664,6 +2669,7 @@ pipeline_start() {
     # Complexity prediction vs actual iterations
     emit_event "prediction.validated" \
         "issue=${ISSUE_NUMBER:-0}" \
+        "pipeline_id=${SHIPWRIGHT_PIPELINE_ID:-}" \
         "predicted_complexity=${INTELLIGENCE_COMPLEXITY:-0}" \
         "actual_iterations=$SELF_HEAL_COUNT" \
         "success=$pipeline_success"

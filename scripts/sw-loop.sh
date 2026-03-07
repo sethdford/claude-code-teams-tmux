@@ -33,6 +33,9 @@ if [[ -f "$SCRIPT_DIR/sw-db.sh" ]]; then
 fi
 # Cross-pipeline discovery (learnings from other pipeline runs)
 [[ -f "$SCRIPT_DIR/sw-discovery.sh" ]] && source "$SCRIPT_DIR/sw-discovery.sh" 2>/dev/null || true
+# Real-time intelligence event streaming
+# shellcheck source=lib/intelligence-stream.sh
+[[ -f "$SCRIPT_DIR/lib/intelligence-stream.sh" ]] && source "$SCRIPT_DIR/lib/intelligence-stream.sh" 2>/dev/null || true
 # Source loop sub-modules for modular iteration management
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
