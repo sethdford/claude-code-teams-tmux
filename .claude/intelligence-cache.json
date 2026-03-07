@@ -541,6 +541,259 @@
       },
       "timestamp": 1772897205,
       "ttl": 1800
+    },
+    "1a6b1cea048e4bb9d3a7b51b81c6bdec": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 70,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Token counting accuracy without API feedback - approximations may be imprecise",
+          "Context loss during summarization - aggressive compression may strip critical context needed for build continuation",
+          "Integration complexity - must work correctly with async build loop and session restart fallback",
+          "Model-specific token budgets - haiku/sonnet/opus have different context windows; logic must be configurable",
+          "Testing difficulty - hard to reproduce real token budget scenarios without actual Claude calls",
+          "Metric reliability - ensuring 'context exhaustion failures prevented' is accurately measured and attributed"
+        ],
+        "implementation_hints": [
+          "Start with heuristic token estimation (prompt size + recent outputs) rather than trying exact counting",
+          "Use conservative 70% threshold to preserve buffer before actual exhaustion",
+          "Preserve goal statement, iteration count, and recent git commits in compressed progress.md; discard intermediate outputs",
+          "Emit compression events to metrics system with before/after context sizes and trigger time",
+          "Gracefully fallback to session restart if summarization fails; don't block the loop",
+          "Make token budget configurable per model in daemon-config.json to handle haiku/sonnet/opus differences",
+          "Add comprehensive debug logging at 65%, 70%, and 75% to track compression triggers and quality",
+          "Validate build success rate before/after compression is deployed to detect quality regressions"
+        ]
+      },
+      "timestamp": 1772919481,
+      "ttl": 3600
+    },
+    "319cb451634a9577fc68d24dd1847cb7": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1772919503,
+      "ttl": 1800
+    },
+    "ee55a73604808dfa2c69d9cb0dca1212": {
+      "result": {
+        "estimated_cost_usd": 0.48,
+        "estimated_iterations": 3,
+        "estimated_tokens": 145000,
+        "likely_failure_stage": "test",
+        "confidence": 68,
+        "breakdown": {
+          "intake": {
+            "cost_usd": 0.02,
+            "tokens": 8000
+          },
+          "plan": {
+            "cost_usd": 0.06,
+            "tokens": 18000
+          },
+          "design": {
+            "cost_usd": 0.08,
+            "tokens": 24000
+          },
+          "build": {
+            "cost_usd": 0.18,
+            "tokens": 54000
+          },
+          "test": {
+            "cost_usd": 0.10,
+            "tokens": 30000
+          },
+          "review": {
+            "cost_usd": 0.04,
+            "tokens": 11000
+          }
+        },
+        "risk_factors": {
+          "token_counting_accuracy": "high",
+          "context_compression_validation": "high",
+          "session_restart_integration": "medium",
+          "test_reproducibility": "high"
+        },
+        "notes": "Infrastructure changes involving async loop + session restart fallback increase iteration count. Token counting without API feedback requires heuristic validation. Recommend fast-test mode (subset → full on iterations 1, 5, 8) to reduce validation cycles."
+      },
+      "timestamp": 1772919513,
+      "ttl": 3600
+    },
+    "dcda570c054b23faca897cd076747bf9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project structure (Node.js, vitest, npm, src/ directory) is essential for planning feature implementation and understanding test patterns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 52,
+            "summary": "Test failure patterns and diagnostic fixes provide insights into testing conventions and error detection logic relevant to monitoring features"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Minimal project type confirmation (nodejs) overlaps with first patterns.json but provides less detail"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object provides no actual metrics data; would be relevant if populated with context window usage history"
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Empty arrays with no captured patterns or cross-repo learnings; no actionable information for planning"
+          }
+        ]
+      },
+      "timestamp": 1772919526,
+      "ttl": 1800
+    },
+    "abc1d1c1f0ac9ab9492636bb8bb6728c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Contains project setup details (vitest, npm, commonjs, src/ directory). May be useful for understanding test infrastructure if auto-summarization needs to integrate with test output parsing."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 10,
+            "summary": "Recent test failures (seen 2026-03-07) related to output formatting and detection logic. Could inform error handling for the context window monitor if similar dry-run/summary output patterns are needed."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings. Not directly relevant but present as a reference structure if future learnings about context monitoring should be captured."
+          }
+        ]
+      },
+      "timestamp": 1772919677,
+      "ttl": 1800
+    },
+    "9ff841b875b18e8554646bf690a8c3fa": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Project structure, test patterns, and import conventions provide foundational context for architectural decisions, though not specific to budget monitoring systems"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 18,
+            "summary": "Cleanup and heartbeat staleness detection logic relates tangentially to resource management and state cleanup patterns that could inform context window budgeting"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 8,
+            "summary": "Node.js project type detection provides basic project metadata but lacks architectural depth relevant to the budget monitor design"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baseline metrics—no captured learnings available"
+          },
+          {
+            "file": "global.json",
+            "relevance": 2,
+            "summary": "Empty cross-repo learnings and patterns—no transferable insights captured"
+          }
+        ]
+      },
+      "timestamp": 1772919949,
+      "ttl": 1800
+    },
+    "7aa75fffc1807aaa4858bd76217f0ae5": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Contains observed test failures in monitoring/cleanup subsystems (sw-cleanup.sh). While not design anti-patterns, these failures hint at real implementation challenges with state tracking and summary output generation—tangentially relevant to proactive auto-summarization concerns."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 12,
+            "summary": "Project conventions metadata (vitest, commonjs, src/ structure). Minimal relevance—provides codebase structural context but does not address design anti-patterns or context window budget strategies."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 8,
+            "summary": "Project type detection marker (nodejs). Negligible relevance—only a bootstrap timestamp with no substantive information about design approaches or budget monitoring strategies."
+          }
+        ]
+      },
+      "timestamp": 1772919960,
+      "ttl": 1800
+    },
+    "00b077858c0aacc3c29493f41094962f": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Establishes project stack (Node.js, vitest, npm, commonjs conventions) essential for build stage execution and test running"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 38,
+            "summary": "Documents sw-cleanup.sh heartbeat detection and sed command failures; relevant to avoid regressions in build loop iteration"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Empty baselines object, but conceptually relevant to context window budget monitoring feature (lacks data)"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 8,
+            "summary": "Duplicate project_type detection from bootstrap; redundant with first patterns.json entry"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; no captured architectural or implementation decisions yet"
+          }
+        ]
+      },
+      "timestamp": 1772920154,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 98,
+            "summary": "Project structure essentials: Node.js/JavaScript, vitest test runner, npm package manager, source in src/, test pattern *.test.js. Critical for build stage to know where code goes and how to execute tests."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Recent test failures (sw-cleanup.sh dry-run, sed template path issue) with root causes and fixes. Helps build stage avoid regression and understand failure patterns to prevent."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. No actionable data for build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No architectural or implementation decisions recorded."
+          }
+        ]
+      },
+      "timestamp": 1772920163,
+      "ttl": 1800
     }
   }
 }
