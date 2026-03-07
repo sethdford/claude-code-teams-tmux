@@ -190,6 +190,76 @@ record_pipeline_duration() {
     ' "$durations_file" > "$tmp_dur" 2>/dev/null && mv "$tmp_dur" "$durations_file"
 }
 
+# Resolve stage timeout with 5-level override chain
+# Priority: CLI > env var > config > adaptive > default
+resolve_stage_timeout() {
+    local stage="${1:-build}"
+
+    # 1. CLI override (set by --timeout N)
+    if [[ -n "${STAGE_TIMEOUT_OVERRIDE:-}" ]] && [[ "${STAGE_TIMEOUT_OVERRIDE}" =~ ^[0-9]+$ ]]; then
+        echo "$STAGE_TIMEOUT_OVERRIDE"
+        return
+    fi
+
+    # 2. Environment variable: SW_<STAGE>_TIMEOUT
+    local env_var
+    env_var="SW_$(echo "$stage" | tr '[:lower:]' '[:upper:]' | tr '-' '_')_TIMEOUT"
+    local env_val="${!env_var:-}"
+    if [[ -n "$env_val" ]] && [[ "$env_val" =~ ^[0-9]+$ ]]; then
+        echo "$env_val"
+        return
+    fi
+
+    # 3. Config override: daemon-config.json .adaptive.stage_overrides.<stage>.timeout_s
+    if [[ -f "${DAEMON_CONFIG:-$HOME/.shipwright/../.claude/daemon-config.json}" ]]; then
+        local config_file="${DAEMON_CONFIG:-}"
+        [[ -z "$config_file" ]] && config_file=".claude/daemon-config.json"
+        if [[ -f "$config_file" ]]; then
+            local config_val
+            config_val=$(jq -r --arg s "$stage" '.adaptive.stage_overrides[$s].timeout_s // empty' "$config_file" 2>/dev/null || true)
+            if [[ -n "$config_val" ]] && [[ "$config_val" =~ ^[0-9]+$ ]]; then
+                echo "$config_val"
+                return
+            fi
+        fi
+    fi
+
+    # 4. Adaptive calculation (P95-based)
+    if [[ "${ADAPTIVE_THRESHOLDS_ENABLED:-false}" == "true" ]]; then
+        # Try pre-computed stage-durations.json first (O(1) lookup)
+        local durations_file="$HOME/.shipwright/optimization/stage-durations.json"
+        if [[ -f "$durations_file" ]]; then
+            local adaptive_val
+            adaptive_val=$(jq -r --arg s "$stage" '.stages[$s].timeout_s // 0' "$durations_file" 2>/dev/null || echo "0")
+            if [[ "$adaptive_val" =~ ^[0-9]+$ ]] && [[ "$adaptive_val" -gt 0 ]]; then
+                echo "$adaptive_val"
+                return
+            fi
+        fi
+
+        # Fall back to live calculation
+        if type calculate_adaptive_timeout >/dev/null 2>&1; then
+            local calc_val
+            calc_val=$(calculate_adaptive_timeout "$stage" "" 2>/dev/null || true)
+            if [[ -n "$calc_val" ]] && [[ "$calc_val" =~ ^[0-9]+$ ]] && [[ "$calc_val" -gt 0 ]]; then
+                echo "$calc_val"
+                return
+            fi
+        fi
+    fi
+
+    # 5. Per-stage hardcoded default
+    case "$stage" in
+        intake|pr|merge)                echo 300 ;;
+        plan|design)                    echo 600 ;;
+        build)                          echo 1800 ;;
+        test)                           echo 900 ;;
+        review|compound_quality)        echo 600 ;;
+        deploy|validate|monitor)        echo 600 ;;
+        *)                              echo 1800 ;;
+    esac
+}
+
 # ─── Progress-Based Health Monitoring ─────────────────────────────────────────
 # Instead of killing jobs after a static timeout, we check for forward progress.
 # Progress signals: stage transitions, iteration advances, git diff growth, new files.

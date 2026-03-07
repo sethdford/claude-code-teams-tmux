@@ -434,6 +434,251 @@ get_coverage_min() {
     echo "$result"
 }
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Adaptive Stage Timeout Engine — P95 Duration-Based Auto-Tuning
+# ═══════════════════════════════════════════════════════════════════════════
+
+STAGE_DURATIONS_FILE="${HOME}/.shipwright/optimization/stage-durations.json"
+ADAPTIVE_STATE_FILE="${HOME}/.shipwright/adaptive-state.json"
+TIMEOUT_TUNING_FILE="${HOME}/.shipwright/timeout-tuning-state.json"
+TIMEOUT_ADJUST_INTERVAL=604800  # 7 days in seconds
+TIMEOUT_BUFFER_MULTIPLIER="1.2"
+ALL_STAGES="intake plan design build test review compound_quality pr merge deploy validate monitor"
+
+# Aggregate stage durations from SQLite (or JSONL fallback)
+# Returns JSON: {p50, p95, p99, mean, stddev, samples, confidence, last_updated}
+aggregate_stage_durations() {
+    local stage="${1:-build}"
+    local repo_hash="${2:-}"
+    local window_days="${3:-30}"
+
+    local durations="[]"
+
+    # Try SQLite first
+    if type db_query_stage_durations >/dev/null 2>&1; then
+        durations=$(db_query_stage_durations "$stage" "$repo_hash" "$window_days" 2>/dev/null || echo "[]")
+    fi
+
+    # JSONL fallback if SQLite returned empty
+    if [[ "$durations" == "[]" ]] && [[ -f "${EVENTS_FILE:-}" ]]; then
+        local cutoff_epoch
+        cutoff_epoch=$(( $(date +%s) - (window_days * 86400) ))
+        durations=$(jq -s "
+            map(select(.type == \"stage.completed\" and .stage == \"${stage}\" and
+                (.ts_epoch // 0 | tonumber) > ${cutoff_epoch}) | .duration_s // empty) |
+            map(select(. > 0 and (. | type) == \"number\")) | sort
+        " "$EVENTS_FILE" 2>/dev/null || echo "[]")
+    fi
+
+    local samples
+    samples=$(echo "$durations" | jq 'length' 2>/dev/null || echo "0")
+    [[ "$samples" =~ ^[0-9]+$ ]] || samples=0
+
+    if [[ "$samples" -eq 0 ]]; then
+        jq -nc '{p50: 0, p95: 0, p99: 0, mean: 0, stddev: 0, samples: 0, confidence: "low", last_updated: "never"}'
+        return
+    fi
+
+    local p50 p95 p99 m sd conf
+    p50=$(percentile "$durations" 50 2>/dev/null || echo "0")
+    p95=$(percentile "$durations" 95 2>/dev/null || echo "0")
+    p99=$(percentile "$durations" 99 2>/dev/null || echo "0")
+    m=$(mean "$durations" 2>/dev/null || echo "0")
+    sd=$(stddev "$durations" 2>/dev/null || echo "0")
+    conf=$(confidence_level "$samples")
+
+    jq -nc --argjson p50 "${p50:-0}" --argjson p95 "${p95:-0}" --argjson p99 "${p99:-0}" \
+        --argjson mean "${m:-0}" --argjson stddev "${sd:-0}" --argjson samples "$samples" \
+        --arg conf "$conf" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{p50: $p50, p95: $p95, p99: $p99, mean: $mean, stddev: $stddev, samples: $samples, confidence: $conf, last_updated: $ts}'
+}
+
+# Calculate adaptive timeout for a stage: max(P95 * buffer, MIN_TIMEOUT), clamped
+calculate_adaptive_timeout() {
+    local stage="${1:-build}"
+    local repo_hash="${2:-}"
+    local buffer="${3:-$TIMEOUT_BUFFER_MULTIPLIER}"
+
+    # Get per-stage default
+    local default_timeout
+    default_timeout=$(_stage_default_timeout "$stage")
+
+    local agg
+    agg=$(aggregate_stage_durations "$stage" "$repo_hash" 2>/dev/null || echo '{}')
+
+    local samples conf p95
+    samples=$(echo "$agg" | jq -r '.samples // 0' 2>/dev/null || echo "0")
+    conf=$(echo "$agg" | jq -r '.confidence // "low"' 2>/dev/null || echo "low")
+    p95=$(echo "$agg" | jq -r '.p95 // 0' 2>/dev/null || echo "0")
+
+    # Low confidence: return default
+    if [[ "$conf" == "low" ]] || [[ "$samples" -lt "$MIN_CONFIDENCE_SAMPLES" ]]; then
+        echo "$default_timeout"
+        return
+    fi
+
+    # Calculate: P95 * buffer
+    local timeout
+    if command -v bc >/dev/null 2>&1; then
+        timeout=$(echo "$p95 * $buffer" | bc 2>/dev/null | cut -d. -f1)
+    else
+        # Integer fallback: p95 + p95/5 (approximates * 1.2)
+        local p95_int="${p95%%.*}"
+        timeout=$(( p95_int + p95_int / 5 ))
+    fi
+
+    [[ "$timeout" =~ ^[0-9]+$ ]] || timeout="$default_timeout"
+    [[ "$timeout" -lt "$MIN_TIMEOUT" ]] && timeout="$MIN_TIMEOUT"
+    [[ "$timeout" -gt "$MAX_TIMEOUT" ]] && timeout="$MAX_TIMEOUT"
+
+    echo "$timeout"
+}
+
+# Per-stage default timeouts
+_stage_default_timeout() {
+    local stage="$1"
+    case "$stage" in
+        intake|pr|merge)                echo 300 ;;
+        plan|design)                    echo 600 ;;
+        build)                          echo 1800 ;;
+        test)                           echo 900 ;;
+        review|compound_quality)        echo 600 ;;
+        deploy|validate|monitor)        echo 600 ;;
+        *)                              echo 1800 ;;
+    esac
+}
+
+# Check if timeout adjustment is due (every 7 days)
+should_adjust_timeouts() {
+    if [[ "${ADAPTIVE_THRESHOLDS_ENABLED:-false}" != "true" ]]; then
+        return 1
+    fi
+
+    if [[ ! -f "$ADAPTIVE_STATE_FILE" ]]; then
+        return 0  # Never adjusted — trigger
+    fi
+
+    local last_epoch
+    last_epoch=$(jq -r '.last_adjustment_epoch // 0' "$ADAPTIVE_STATE_FILE" 2>/dev/null || echo "0")
+    [[ "$last_epoch" =~ ^[0-9]+$ ]] || return 0
+
+    local now_epoch
+    now_epoch=$(date +%s)
+    local elapsed=$(( now_epoch - last_epoch ))
+
+    if [[ "$elapsed" -ge "$TIMEOUT_ADJUST_INTERVAL" ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Recalculate all stage P95 values and write state files
+trigger_timeout_adjustment() {
+    if [[ "${ADAPTIVE_THRESHOLDS_ENABLED:-false}" != "true" ]]; then
+        return
+    fi
+
+    mkdir -p "$HOME/.shipwright/optimization"
+
+    local stages_json="{}"
+    local tuning_stages="{}"
+    local stage
+
+    for stage in $ALL_STAGES; do
+        local agg
+        agg=$(aggregate_stage_durations "$stage" "" 30 2>/dev/null || echo '{}')
+
+        local p50 p95 p99 samples conf timeout_s
+        p50=$(echo "$agg" | jq -r '.p50 // 0')
+        p95=$(echo "$agg" | jq -r '.p95 // 0')
+        p99=$(echo "$agg" | jq -r '.p99 // 0')
+        samples=$(echo "$agg" | jq -r '.samples // 0')
+        conf=$(echo "$agg" | jq -r '.confidence // "low"')
+        timeout_s=$(calculate_adaptive_timeout "$stage" "" 2>/dev/null || _stage_default_timeout "$stage")
+
+        stages_json=$(echo "$stages_json" | jq --arg s "$stage" \
+            --argjson p50 "${p50:-0}" --argjson p95 "${p95:-0}" --argjson p99 "${p99:-0}" \
+            --argjson samples "${samples:-0}" --arg conf "$conf" --argjson timeout "$timeout_s" \
+            '.[$s] = {p50_duration_s: $p50, p90_duration_s: $p95, p95_duration_s: $p95, p99_duration_s: $p99, timeout_s: $timeout, samples: $samples, confidence: $conf}')
+
+        tuning_stages=$(echo "$tuning_stages" | jq --arg s "$stage" \
+            --argjson p95 "${p95:-0}" --argjson timeout "$timeout_s" --argjson samples "${samples:-0}" --arg conf "$conf" \
+            '.[$s] = {p95: $p95, timeout_s: $timeout, samples: $samples, confidence: $conf}')
+
+        # Anomaly detection: emit event if P99 + 2*stddev is exceeded
+        local sd
+        sd=$(echo "$agg" | jq -r '.stddev // 0')
+        if [[ "$samples" -gt 0 ]] && command -v bc >/dev/null 2>&1; then
+            local anomaly_threshold
+            anomaly_threshold=$(echo "$p99 + 2 * $sd" | bc 2>/dev/null | cut -d. -f1 || true)
+            [[ -n "$anomaly_threshold" && "$anomaly_threshold" =~ ^[0-9]+$ ]] && \
+                emit_event "adaptation.timeout_adjusted" "stage=$stage" "p95=$p95" "timeout_s=$timeout_s" "samples=$samples" "anomaly_threshold=$anomaly_threshold" 2>/dev/null || true
+        fi
+    done
+
+    # Write stage-durations.json (atomic)
+    local tmp_dur="${STAGE_DURATIONS_FILE}.tmp.$$"
+    jq -nc --argjson stages "$stages_json" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{stages: $stages, last_updated: $ts}' > "$tmp_dur" && mv "$tmp_dur" "$STAGE_DURATIONS_FILE"
+
+    # Write timeout-tuning-state.json (atomic)
+    local now_epoch
+    now_epoch=$(date +%s)
+    local next_epoch=$(( now_epoch + TIMEOUT_ADJUST_INTERVAL ))
+    local tmp_tuning="${TIMEOUT_TUNING_FILE}.tmp.$$"
+    jq -nc --argjson stages "$tuning_stages" --argjson last "$now_epoch" --argjson next "$next_epoch" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{last_adjustment: $ts, last_adjustment_epoch: $last, next_adjustment_epoch: $next, stages: $stages}' \
+        > "$tmp_tuning" && mv "$tmp_tuning" "$TIMEOUT_TUNING_FILE"
+
+    # Write adaptive-state.json (atomic)
+    local tmp_state="${ADAPTIVE_STATE_FILE}.tmp.$$"
+    jq -nc --argjson epoch "$now_epoch" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{last_adjustment_epoch: $epoch, last_adjustment: $ts}' > "$tmp_state" && mv "$tmp_state" "$ADAPTIVE_STATE_FILE"
+
+    info "Timeout adjustment complete — updated $(echo "$ALL_STAGES" | wc -w | tr -d ' ') stages"
+}
+
+# Show timeouts subcommand
+cmd_show_timeouts() {
+    local repo_hash="${1:-}"
+
+    printf "\n"
+    printf "  %-20s  %8s  %8s  %8s  %8s  %s\n" "Stage" "Timeout" "P95" "Samples" "Confid." "Source"
+    printf "  %-20s  %8s  %8s  %8s  %8s  %s\n" "────────────────────" "────────" "────────" "────────" "────────" "────────"
+
+    local stage
+    for stage in $ALL_STAGES; do
+        local agg timeout_s source
+        agg=$(aggregate_stage_durations "$stage" "$repo_hash" 30 2>/dev/null || echo '{}')
+
+        local p95 samples conf
+        p95=$(echo "$agg" | jq -r '.p95 // 0')
+        samples=$(echo "$agg" | jq -r '.samples // 0')
+        conf=$(echo "$agg" | jq -r '.confidence // "low"')
+
+        if [[ "$conf" != "low" ]] && [[ "$samples" -ge "$MIN_CONFIDENCE_SAMPLES" ]]; then
+            timeout_s=$(calculate_adaptive_timeout "$stage" "$repo_hash" 2>/dev/null || _stage_default_timeout "$stage")
+            source="adaptive"
+        else
+            timeout_s=$(_stage_default_timeout "$stage")
+            source="default"
+        fi
+
+        printf "  %-20s  %7ss  %7ss  %8s  %8s  %s\n" "$stage" "$timeout_s" "${p95%%.*}" "$samples" "$conf" "$source"
+    done
+
+    # Show last adjustment time
+    if [[ -f "$ADAPTIVE_STATE_FILE" ]]; then
+        local last_adj
+        last_adj=$(jq -r '.last_adjustment // "never"' "$ADAPTIVE_STATE_FILE" 2>/dev/null || echo "never")
+        printf "\n  Last adjustment: %s\n" "$last_adj"
+    else
+        printf "\n  Last adjustment: never\n"
+    fi
+    printf "\n"
+}
+
 # ─── Main: get subcommand ───────────────────────────────────────────────────
 cmd_get() {
     local metric="${1:-}"
@@ -858,6 +1103,12 @@ ${BOLD}SUBCOMMANDS${RESET}
   ${CYAN}recommend${RESET} --issue N [--repo REPO]
     Full JSON recommendation for an issue (template, model, team_size, etc.)
 
+  ${CYAN}show${RESET} timeouts [--repo-hash HASH]
+    Display adaptive timeout table for all stages
+
+  ${CYAN}adjust${RESET}
+    Force recalculation of all stage timeout P95 values
+
   ${CYAN}reset${RESET} [--metric METRIC]
     Clear learned data (all, or specific metric)
 
@@ -918,6 +1169,17 @@ main() {
             ;;
         recommend)
             cmd_recommend "$@"
+            ;;
+        show)
+            local show_sub="${1:-}"
+            shift 2>/dev/null || true
+            case "$show_sub" in
+                timeouts) cmd_show_timeouts "$@" ;;
+                *) error "Usage: sw adaptive show timeouts [--repo-hash HASH]"; return 1 ;;
+            esac
+            ;;
+        adjust)
+            ADAPTIVE_THRESHOLDS_ENABLED=true trigger_timeout_adjustment
             ;;
         reset)
             cmd_reset "$@"

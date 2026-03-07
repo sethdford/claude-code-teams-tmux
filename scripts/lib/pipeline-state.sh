@@ -192,6 +192,16 @@ mark_stage_complete() {
         local _stage_secs
         _stage_secs=$(get_stage_timing_seconds "$stage_id")
         record_stage "${SHIPWRIGHT_PIPELINE_ID:-}" "$stage_id" "complete" "${_stage_secs:-0}" "" 2>/dev/null || true
+
+        # Also record with repo_hash for adaptive timeout engine (v7 schema)
+        if type db_save_stage_duration >/dev/null 2>&1; then
+            local _repo_hash
+            _repo_hash=$(echo "${REPO_DIR:-$(pwd)}" | cksum | cut -d' ' -f1)
+            db_save_stage_duration "${SHIPWRIGHT_PIPELINE_ID:-}" "$stage_id" "${_stage_secs:-0}" "complete" "$_repo_hash" 2>/dev/null || true
+        fi
+
+        # Emit stage duration event for adaptive learning
+        emit_event "stage.duration_recorded" "stage=$stage_id" "duration_s=${_stage_secs:-0}" "result=complete" 2>/dev/null || true
     fi
 
     # Record skill outcome for learning system

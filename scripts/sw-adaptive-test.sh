@@ -200,6 +200,242 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ADAPTIVE TIMEOUT ENGINE TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${DIM}  Adaptive Timeout Engine${RESET}"
+
+# ─── Test 11: _stage_default_timeout returns known defaults ──────────────────
+default_build=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+_stage_default_timeout "build"
+' 2>/dev/null)
+if [[ "$default_build" == "1800" ]]; then
+    assert_pass "_stage_default_timeout returns 1800 for build"
+else
+    assert_fail "_stage_default_timeout returns 1800 for build" "got: $default_build"
+fi
+
+default_test=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+_stage_default_timeout "test"
+' 2>/dev/null)
+if [[ "$default_test" == "900" ]]; then
+    assert_pass "_stage_default_timeout returns 900 for test"
+else
+    assert_fail "_stage_default_timeout returns 900 for test" "got: $default_test"
+fi
+
+# ─── Test 12: aggregate_stage_durations with no data ─────────────────────────
+agg_empty=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+aggregate_stage_durations "build" "" 30
+' 2>/dev/null)
+agg_samples=$(echo "$agg_empty" | jq '.samples' 2>/dev/null || echo "err")
+if [[ "$agg_samples" == "0" ]]; then
+    assert_pass "aggregate_stage_durations returns 0 samples when no data"
+else
+    assert_fail "aggregate_stage_durations returns 0 samples" "got: $agg_samples"
+fi
+agg_conf=$(echo "$agg_empty" | jq -r '.confidence' 2>/dev/null || echo "err")
+if [[ "$agg_conf" == "low" ]]; then
+    assert_pass "aggregate_stage_durations returns low confidence with no data"
+else
+    assert_fail "aggregate_stage_durations returns low confidence" "got: $agg_conf"
+fi
+
+# ─── Test 13: calculate_adaptive_timeout returns default with low confidence ──
+calc_default=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+calculate_adaptive_timeout "build" "" "1.2"
+' 2>/dev/null)
+if [[ "$calc_default" == "1800" ]]; then
+    assert_pass "calculate_adaptive_timeout returns default with no data"
+else
+    assert_fail "calculate_adaptive_timeout returns default" "got: $calc_default"
+fi
+
+# ─── Test 14: aggregate_stage_durations with JSONL event data ────────────────
+# Add 15 stage.completed events for build stage (above MIN_CONFIDENCE_SAMPLES=10)
+echo ""
+echo -e "${DIM}  Adaptive timeout with event data${RESET}"
+for i in $(seq 1 15); do
+    echo "{\"ts\":\"2026-03-0${i}T12:00:00Z\",\"ts_epoch\":$(date +%s),\"type\":\"stage.completed\",\"stage\":\"build\",\"duration_s\":$((60 + i * 10))}"
+done >> "$TEST_TEMP_DIR/home/.shipwright/events.jsonl"
+
+agg_data=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+aggregate_stage_durations "build" "" 30
+' 2>/dev/null)
+agg_data_samples=$(echo "$agg_data" | jq '.samples' 2>/dev/null || echo "0")
+if [[ "$agg_data_samples" -ge 10 ]]; then
+    assert_pass "aggregate_stage_durations finds events ($agg_data_samples samples)"
+else
+    assert_fail "aggregate_stage_durations finds events" "got: $agg_data_samples samples"
+fi
+
+agg_data_p95=$(echo "$agg_data" | jq '.p95' 2>/dev/null || echo "0")
+if [[ -n "$agg_data_p95" ]] && [[ "$agg_data_p95" != "0" ]] && [[ "$agg_data_p95" != "null" ]]; then
+    assert_pass "aggregate_stage_durations computes non-zero P95 ($agg_data_p95)"
+else
+    assert_fail "aggregate_stage_durations computes non-zero P95" "got: $agg_data_p95"
+fi
+
+# ─── Test 15: calculate_adaptive_timeout with sufficient data ────────────────
+calc_adaptive=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+calculate_adaptive_timeout "build" "" "1.2"
+' 2>/dev/null)
+if [[ "$calc_adaptive" =~ ^[0-9]+$ ]] && [[ "$calc_adaptive" -ge 60 ]] && [[ "$calc_adaptive" -le 7200 ]]; then
+    assert_pass "calculate_adaptive_timeout returns bounded value ($calc_adaptive)"
+else
+    assert_fail "calculate_adaptive_timeout returns bounded value" "got: $calc_adaptive"
+fi
+
+# ─── Test 16: should_adjust_timeouts returns 0 when never adjusted ───────────
+echo ""
+echo -e "${DIM}  Timeout adjustment trigger${RESET}"
+adj_rc=0
+ADAPTIVE_THRESHOLDS_ENABLED=true \
+    HOME="$TEST_TEMP_DIR/home" \
+    bash -c 'source "'"$SCRIPT_DIR"'/sw-adaptive.sh" 2>/dev/null; should_adjust_timeouts' 2>/dev/null || adj_rc=$?
+if [[ "$adj_rc" -eq 0 ]]; then
+    assert_pass "should_adjust_timeouts returns 0 when never adjusted"
+else
+    assert_fail "should_adjust_timeouts returns 0 when never adjusted" "rc=$adj_rc"
+fi
+
+# ─── Test 17: should_adjust_timeouts returns 1 when recently adjusted ────────
+echo '{"last_adjustment_epoch":'"$(date +%s)"'}' > "$TEST_TEMP_DIR/home/.shipwright/adaptive-state.json"
+adj_rc2=0
+ADAPTIVE_THRESHOLDS_ENABLED=true \
+    HOME="$TEST_TEMP_DIR/home" \
+    bash -c 'source "'"$SCRIPT_DIR"'/sw-adaptive.sh" 2>/dev/null; should_adjust_timeouts' 2>/dev/null || adj_rc2=$?
+if [[ "$adj_rc2" -eq 1 ]]; then
+    assert_pass "should_adjust_timeouts returns 1 when recently adjusted"
+else
+    assert_fail "should_adjust_timeouts returns 1 when recently adjusted" "rc=$adj_rc2"
+fi
+
+# ─── Test 18: trigger_timeout_adjustment writes state files ──────────────────
+ADAPTIVE_THRESHOLDS_ENABLED=true \
+    HOME="$TEST_TEMP_DIR/home" \
+    bash -c 'source "'"$SCRIPT_DIR"'/sw-adaptive.sh" 2>/dev/null; trigger_timeout_adjustment' 2>/dev/null || true
+if [[ -f "$TEST_TEMP_DIR/home/.shipwright/optimization/stage-durations.json" ]]; then
+    assert_pass "trigger_timeout_adjustment creates stage-durations.json"
+else
+    assert_fail "trigger_timeout_adjustment creates stage-durations.json"
+fi
+if [[ -f "$TEST_TEMP_DIR/home/.shipwright/timeout-tuning-state.json" ]]; then
+    assert_pass "trigger_timeout_adjustment creates timeout-tuning-state.json"
+else
+    assert_fail "trigger_timeout_adjustment creates timeout-tuning-state.json"
+fi
+
+# Validate stage-durations.json has stages key
+dur_stages=$(jq -r '.stages | keys | length' "$TEST_TEMP_DIR/home/.shipwright/optimization/stage-durations.json" 2>/dev/null || echo "0")
+if [[ "$dur_stages" -gt 0 ]]; then
+    assert_pass "stage-durations.json contains stage entries ($dur_stages stages)"
+else
+    assert_fail "stage-durations.json contains stage entries" "got: $dur_stages"
+fi
+
+# ─── Test 19: show timeouts subcommand ───────────────────────────────────────
+echo ""
+echo -e "${DIM}  show timeouts subcommand${RESET}"
+show_out=$(bash "$SCRIPT_DIR/sw-adaptive.sh" show timeouts 2>&1) || true
+if [[ "$show_out" == *"Stage"* ]] && [[ "$show_out" == *"Timeout"* ]] && [[ "$show_out" == *"build"* ]]; then
+    assert_pass "show timeouts displays formatted table"
+else
+    assert_fail "show timeouts displays formatted table" "out: ${show_out:0:100}"
+fi
+
+# ─── Test 20: resolve_stage_timeout override chain ───────────────────────────
+echo ""
+echo -e "${DIM}  resolve_stage_timeout override chain${RESET}"
+
+# Test env var override (level 2)
+env_timeout=$(cd "$SCRIPT_DIR" && HOME="$TEST_TEMP_DIR/home" SW_BUILD_TIMEOUT=999 bash -c '
+SCRIPT_DIR="'"$SCRIPT_DIR"'"
+source "$SCRIPT_DIR/lib/daemon-adaptive.sh" 2>/dev/null || true
+# Source the function if available
+if type resolve_stage_timeout >/dev/null 2>&1; then
+    resolve_stage_timeout "build"
+else
+    echo "fn_missing"
+fi
+' 2>/dev/null)
+if [[ "$env_timeout" == "999" ]]; then
+    assert_pass "resolve_stage_timeout honors SW_BUILD_TIMEOUT env var"
+elif [[ "$env_timeout" == "fn_missing" ]]; then
+    assert_fail "resolve_stage_timeout honors env var" "function not found"
+else
+    assert_fail "resolve_stage_timeout honors env var" "got: $env_timeout"
+fi
+
+# Test CLI override (level 1)
+cli_timeout=$(cd "$SCRIPT_DIR" && HOME="$TEST_TEMP_DIR/home" STAGE_TIMEOUT_OVERRIDE=500 SW_BUILD_TIMEOUT=999 bash -c '
+SCRIPT_DIR="'"$SCRIPT_DIR"'"
+source "$SCRIPT_DIR/lib/daemon-adaptive.sh" 2>/dev/null || true
+if type resolve_stage_timeout >/dev/null 2>&1; then
+    resolve_stage_timeout "build"
+else
+    echo "fn_missing"
+fi
+' 2>/dev/null)
+if [[ "$cli_timeout" == "500" ]]; then
+    assert_pass "resolve_stage_timeout CLI override beats env var"
+else
+    assert_fail "resolve_stage_timeout CLI override beats env var" "got: $cli_timeout"
+fi
+
+# Test default fallback (level 5)
+default_timeout=$(cd "$SCRIPT_DIR" && HOME="$TEST_TEMP_DIR/home" ADAPTIVE_THRESHOLDS_ENABLED=false bash -c '
+SCRIPT_DIR="'"$SCRIPT_DIR"'"
+source "$SCRIPT_DIR/lib/daemon-adaptive.sh" 2>/dev/null || true
+if type resolve_stage_timeout >/dev/null 2>&1; then
+    resolve_stage_timeout "build"
+else
+    echo "fn_missing"
+fi
+' 2>/dev/null)
+if [[ "$default_timeout" == "1800" ]]; then
+    assert_pass "resolve_stage_timeout falls back to default (1800)"
+else
+    assert_fail "resolve_stage_timeout falls back to default" "got: $default_timeout"
+fi
+
+# ─── Test 21: bounds clamping (MIN_TIMEOUT / MAX_TIMEOUT) ───────────────────
+echo ""
+echo -e "${DIM}  Bounds clamping${RESET}"
+clamp_result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/sw-adaptive.sh" 2>/dev/null
+# Test that calculate_adaptive_timeout returns within bounds
+result=$(calculate_adaptive_timeout "intake" "" "1.2")
+if [[ "$result" -ge 60 ]] && [[ "$result" -le 7200 ]]; then
+    echo "bounded"
+else
+    echo "out_of_bounds:$result"
+fi
+' 2>/dev/null)
+if [[ "$clamp_result" == "bounded" ]]; then
+    assert_pass "calculate_adaptive_timeout respects MIN/MAX bounds"
+else
+    assert_fail "calculate_adaptive_timeout respects bounds" "got: $clamp_result"
+fi
+
+# ─── Test 22: adjust subcommand forces recalculation ─────────────────────────
+echo ""
+echo -e "${DIM}  adjust subcommand${RESET}"
+adjust_out=$(bash "$SCRIPT_DIR/sw-adaptive.sh" adjust 2>&1) || true
+if [[ -f "$TEST_TEMP_DIR/home/.shipwright/optimization/stage-durations.json" ]]; then
+    assert_pass "adjust subcommand creates stage-durations.json"
+else
+    assert_fail "adjust subcommand creates stage-durations.json"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

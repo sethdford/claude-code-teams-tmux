@@ -3966,6 +3966,34 @@ const server = Bun.serve({
       });
     }
 
+    // REST: Adaptive timeout stats
+    if (pathname === "/api/adaptive/timeout-stats") {
+      const tuningFile = `${HOME}/.shipwright/timeout-tuning-state.json`;
+      const durationsFile = `${HOME}/.shipwright/optimization/stage-durations.json`;
+      try {
+        let data: Record<string, unknown> = { stages: [], error: null };
+        if (existsSync(tuningFile)) {
+          const raw = readFileSync(tuningFile, "utf-8");
+          data = JSON.parse(raw);
+        } else if (existsSync(durationsFile)) {
+          const raw = readFileSync(durationsFile, "utf-8");
+          data = JSON.parse(raw);
+        } else {
+          data = { stages: {}, error: "no data yet" };
+        }
+        return new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      } catch {
+        return new Response(
+          JSON.stringify({ stages: {}, error: "failed to read timeout data" }),
+          {
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          }
+        );
+      }
+    }
+
     // REST: Bottleneck analysis
     if (pathname === "/api/metrics/bottlenecks") {
       const events = readEvents();

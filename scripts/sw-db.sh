@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -651,6 +651,20 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
+    fi
+
+    # Migration from v6 → v7: add repo_hash to pipeline_stages, timeout lookup index
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        # ALTER TABLE ADD COLUMN is idempotent in practice (fails silently if exists)
+        sqlite3 "$DB_FILE" "ALTER TABLE pipeline_stages ADD COLUMN repo_hash TEXT DEFAULT '';" 2>/dev/null || true
+        sqlite3 "$DB_FILE" "
+CREATE INDEX IF NOT EXISTS idx_pipeline_stages_timeout_lookup
+    ON pipeline_stages(stage_name, created_at DESC)
+    WHERE duration_secs > 0;
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
     fi
 }
 
@@ -1341,6 +1355,51 @@ record_stage() {
     error_msg="${error_msg//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
 
     _db_exec "INSERT INTO pipeline_stages (job_id, stage_name, status, started_at, completed_at, duration_secs, error_message, created_at) VALUES ('${job_id}', '${stage_name}', '${status}', '${ts}', '${ts}', ${duration_secs}, '${error_msg}', '${ts}');" || return 1
+}
+
+# Save stage duration with repo_hash (v7 schema)
+db_save_stage_duration() {
+    local job_id="$1"
+    local stage_name="$2"
+    local duration_s="${3:-0}"
+    local result="${4:-complete}"
+    local repo_hash="${5:-}"
+
+    if ! check_sqlite3; then return 1; fi
+
+    local ts
+    ts="$(now_iso)"
+
+    _db_exec "INSERT INTO pipeline_stages (job_id, stage_name, status, started_at, completed_at, duration_secs, repo_hash, created_at) VALUES ('${job_id}', '${stage_name}', '${result}', '${ts}', '${ts}', ${duration_s}, '${repo_hash}', '${ts}');" || return 1
+}
+
+# Query stage durations within a rolling window (sorted ascending)
+# Returns JSON array of integers: [30, 45, 60, 120, ...]
+db_query_stage_durations() {
+    local stage_name="$1"
+    local repo_hash="${2:-}"
+    local window_days="${3:-30}"
+
+    if ! check_sqlite3; then
+        echo "[]"
+        return
+    fi
+
+    local cutoff_clause="created_at > datetime('now', '-${window_days} days')"
+    local repo_clause=""
+    if [[ -n "$repo_hash" ]]; then
+        repo_clause="AND repo_hash = '${repo_hash}'"
+    fi
+
+    local result
+    result=$(_db_query "SELECT '[' || COALESCE(GROUP_CONCAT(duration_secs), '') || ']' FROM pipeline_stages WHERE stage_name = '${stage_name}' AND duration_secs > 0 AND ${cutoff_clause} ${repo_clause} ORDER BY duration_secs ASC;" 2>/dev/null) || result="[]"
+
+    # Validate it's valid JSON
+    if echo "$result" | jq '.' >/dev/null 2>&1; then
+        echo "$result"
+    else
+        echo "[]"
+    fi
 }
 
 query_runs() {
