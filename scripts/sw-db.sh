@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=7
+SCHEMA_VERSION=8
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -479,6 +479,33 @@ CREATE TABLE IF NOT EXISTS reasoning_traces (
     FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
+
+-- Timeout recommendations (P95-based adaptive timeouts)
+CREATE TABLE IF NOT EXISTS timeout_recommendations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    stage_type TEXT NOT NULL,
+    p50 REAL DEFAULT 0,
+    p95 REAL DEFAULT 0,
+    p99 REAL DEFAULT 0,
+    sample_count INTEGER DEFAULT 0,
+    recommended_timeout INTEGER DEFAULT 0,
+    last_calculated_at TEXT NOT NULL DEFAULT '',
+    UNIQUE(repo_hash, stage_type)
+);
+CREATE INDEX IF NOT EXISTS idx_timeout_rec_repo_stage ON timeout_recommendations(repo_hash, stage_type);
+
+-- Timeout adjustment audit trail
+CREATE TABLE IF NOT EXISTS timeout_adjustments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    stage_type TEXT NOT NULL,
+    old_timeout INTEGER NOT NULL,
+    new_timeout INTEGER NOT NULL,
+    reason TEXT DEFAULT '',
+    applied_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_timeout_adj_repo ON timeout_adjustments(repo_hash, applied_at DESC);
 SCHEMA
 }
 
@@ -665,6 +692,39 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_stages_timeout_lookup
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v7"
+    fi
+
+    # Migration from v7 → v8: timeout_recommendations + timeout_adjustments tables
+    if [[ "$current_version" -lt 8 ]]; then
+        info "Migrating schema v${current_version} → v8..."
+        sqlite3 "$DB_FILE" "
+CREATE TABLE IF NOT EXISTS timeout_recommendations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    stage_type TEXT NOT NULL,
+    p50 REAL DEFAULT 0,
+    p95 REAL DEFAULT 0,
+    p99 REAL DEFAULT 0,
+    sample_count INTEGER DEFAULT 0,
+    recommended_timeout INTEGER DEFAULT 0,
+    last_calculated_at TEXT NOT NULL,
+    UNIQUE(repo_hash, stage_type)
+);
+CREATE INDEX IF NOT EXISTS idx_timeout_rec_repo_stage ON timeout_recommendations(repo_hash, stage_type);
+
+CREATE TABLE IF NOT EXISTS timeout_adjustments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    stage_type TEXT NOT NULL,
+    old_timeout INTEGER NOT NULL,
+    new_timeout INTEGER NOT NULL,
+    reason TEXT DEFAULT '',
+    applied_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_timeout_adj_repo ON timeout_adjustments(repo_hash, applied_at DESC);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (8, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v8"
     fi
 }
 
@@ -1400,6 +1460,21 @@ db_query_stage_durations() {
     else
         echo "[]"
     fi
+}
+
+# Save a timeout adjustment record (v8 schema)
+db_save_timeout_adjustment() {
+    local repo_hash="${1:-}"
+    local stage_type="${2:?stage_type required}"
+    local old_timeout="${3:-0}"
+    local new_timeout="${4:-0}"
+    local reason="${5:-auto}"
+
+    if ! check_sqlite3; then return 1; fi
+
+    local ts
+    ts="$(now_iso)"
+    _db_exec "INSERT INTO timeout_adjustments (repo_hash, stage_type, old_timeout, new_timeout, reason, applied_at) VALUES ('${repo_hash}', '${stage_type}', ${old_timeout}, ${new_timeout}, '${reason}', '${ts}');" || return 1
 }
 
 query_runs() {
