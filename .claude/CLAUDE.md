@@ -212,6 +212,32 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 | `cost-aware` | all stages                                 | all auto, budget checks           | Budget-limited delivery  |
 | `deployed`   | all + deploy + validate + monitor          | approve: deploy                   | Full deploy + monitoring |
 
+## CLI Flags
+
+All `claude` CLI invocations in the pipeline support these flags:
+
+| Flag                   | Default          | Purpose                                                                              |
+| ---------------------- | ---------------- | ------------------------------------------------------------------------------------ |
+| `--effort-level`       | auto (per stage) | Reasoning depth: `low` (intake, PR), `medium` (build, test), `high` (design, review) |
+| `--fallback-model`     | `sonnet`         | Auto-fallback on rate limits — prevents pipeline failures                            |
+| `--json-schema <file>` | —                | Structured output matching a schema (audit, quality gates)                           |
+
+### Effort Level Routing
+
+| Stage                                  | Default Effort | Rationale                   |
+| -------------------------------------- | -------------- | --------------------------- |
+| intake, pr, merge                      | low            | Mechanical/formatting tasks |
+| build, test, deploy, validate, monitor | medium         | Standard development work   |
+| plan, design, review, compound_quality | high           | Complex reasoning required  |
+
+Override globally via CLI: `--effort high` or via `daemon-config.json`:
+
+```json
+{ "effort_level": "high", "fallback_model": "sonnet" }
+```
+
+Environment variables: `SW_EFFORT_LEVEL`, `SW_FALLBACK_MODEL`.
+
 ## Autonomous Agents in v2.0.0
 
 **Wave 1 (Organizational Agents):**
@@ -794,6 +820,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 - Check run IDs: `.claude/pipeline-artifacts/check-run-ids.json`
 - Deployment tracking: `.claude/pipeline-artifacts/deployment.json`
 - Error log: `.claude/pipeline-artifacts/error-log.jsonl`
+- Schemas: `schemas/*.json` (iteration-result, audit-result, quality-gate, stage-handoff)
 <!-- /AUTO:runtime-state -->
 
 ## GitHub Integration
@@ -881,6 +908,30 @@ Repo-level hooks in `.claude/hooks/` fire on lifecycle events. Registered in `.c
 | `post-tool-use.sh`   | After Bash tool failures         | Captures error signatures to `error-log.jsonl`               |
 | `session-started.sh` | On session start                 | Shows pipeline state, recent failures, active issues, budget |
 
+### Hook Types
+
+| Type    | How It Works                              | Use Case                               |
+| ------- | ----------------------------------------- | -------------------------------------- |
+| Command | Runs a shell command, stdin receives JSON | File validation, logging, blocking     |
+| HTTP    | POSTs JSON to a URL                       | Dashboard updates, Slack notifications |
+| Prompt  | LLM evaluates a yes/no question (Haiku)   | "Did tests pass?", "Is PR ready?"      |
+| Agent   | Multi-turn LLM with tool access           | Verify codebase state, run smoke tests |
+
+### Lifecycle Hooks
+
+| Event                | Matcher   | Script                     | Purpose                                        |
+| -------------------- | --------- | -------------------------- | ---------------------------------------------- |
+| `WorktreeCreate`     | —         | `worktree-create.sh`       | Copy daemon config into new worktrees          |
+| `WorktreeRemove`     | —         | `worktree-remove.sh`       | Clean up heartbeat files for removed worktrees |
+| `InstructionsLoaded` | `compact` | `instructions-reloaded.sh` | Track post-compaction rule reloads             |
+| `ConfigChange`       | —         | `config-change.sh`         | Signal daemon to hot-reload config             |
+
+### Safety Hooks
+
+- `PreToolUse` blocks `git push --no-verify` (exit code 2)
+- `PostToolUse` auto-formats edited files with Prettier
+- `PostToolUse` captures Bash errors to `error-log.jsonl`
+
 ## Documentation Keeper
 
 Auto-sync documentation from source code using HTML comment markers (`AUTO:section-id` pairs). For autonomous multi-agent documentation work, use `shipwright doc-fleet` (5 specialized agents: audit, refactor, enhance).
@@ -931,6 +982,33 @@ For any API calls using web search, use the dynamic filtering variant:
 - Add beta header: `"anthropic-beta: code-execution-web-tools-2026-02-09"`
 - Claude writes post-processing code to filter search results before they enter context
 - 24% fewer input tokens, 11% accuracy improvement on search benchmarks
+
+## MCP Configuration
+
+### Environment Variables
+
+| Variable                | Default | Purpose                                                     |
+| ----------------------- | ------- | ----------------------------------------------------------- |
+| `ENABLE_TOOL_SEARCH`    | `auto`  | Dynamic tool loading when definitions exceed 10% of context |
+| `MAX_MCP_OUTPUT_TOKENS` | `50000` | Limit MCP tool output to prevent context flooding           |
+
+### Managed MCP
+
+Generate with `shipwright prep`:
+
+```json
+{
+  "allowedMcpServers": ["*"],
+  "deniedMcpServers": [],
+  "note": "Configure MCP server access policies for pipeline agents"
+}
+```
+
+Useful for fleet/daemon mode to restrict agent MCP access.
+
+### File Suggestion
+
+Custom `@` autocomplete via `scripts/shipwright-file-suggest.sh` surfaces Shipwright-specific files: pipeline state, daemon config, agent definitions, schemas, and recent loop logs.
 
 ## Development Guidelines
 
