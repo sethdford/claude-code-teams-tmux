@@ -203,6 +203,8 @@ ISSUE_LIMIT=$(_config_get_int "daemon.issue_limit" 100 2>/dev/null || echo 100)
 PIPELINE_TEMPLATE="autonomous"
 SKIP_GATES=true
 MODEL="opus"
+EFFORT_LEVEL=""
+FALLBACK_MODEL="sonnet"
 BASE_BRANCH="main"
 ON_SUCCESS_REMOVE_LABEL="shipwright"
 ON_SUCCESS_ADD_LABEL="pipeline/complete"
@@ -385,6 +387,8 @@ load_config() {
     PIPELINE_TEMPLATE=$(jq -r '.pipeline_template // "autonomous"' "$config_file")
     SKIP_GATES=$(jq -r '.skip_gates // true' "$config_file")
     MODEL=$(jq -r '.model // "opus"' "$config_file")
+    EFFORT_LEVEL=$(jq -r '.effort_level // ""' "$config_file")
+    FALLBACK_MODEL=$(jq -r '.fallback_model // "sonnet"' "$config_file")
     BASE_BRANCH=$(jq -r '.base_branch // "main"' "$config_file")
 
     # on_success settings

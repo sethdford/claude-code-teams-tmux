@@ -44,6 +44,8 @@ REPOS=()
 REPOS_FROM=""
 TEMPLATE="fast"
 MODEL=""
+EFFORT_LEVEL=""
+FALLBACK_MODEL=""
 MAX_PARALLEL=3
 DRY_RUN=false
 BRANCH_PREFIX="fix/"
@@ -61,6 +63,8 @@ show_help() {
     echo -e "  ${DIM}--repos-from file${RESET}         Read repo paths from file (one per line)"
     echo -e "  ${DIM}--pipeline template${RESET}       Pipeline template (default: fast)"
     echo -e "  ${DIM}--model model${RESET}             Model to use (default: auto)"
+    echo -e "  ${DIM}--effort level${RESET}              Effort level: low, medium, high"
+    echo -e "  ${DIM}--fallback-model model${RESET}      Fallback model on rate limits (default: sonnet)"
     echo -e "  ${DIM}--max-parallel N${RESET}          Max concurrent pipelines (default: 3)"
     echo -e "  ${DIM}--branch-prefix prefix${RESET}    Branch name prefix (default: \"fix/\")"
     echo -e "  ${DIM}--dry-run${RESET}                 Show what would happen without executing"
@@ -93,6 +97,14 @@ parse_args() {
                 ;;
             --model)
                 MODEL="$2"
+                shift 2
+                ;;
+            --effort)
+                EFFORT_LEVEL="$2"
+                shift 2
+                ;;
+            --fallback-model)
+                FALLBACK_MODEL="$2"
                 shift 2
                 ;;
             --max-parallel)
@@ -244,6 +256,8 @@ fix_start() {
     echo -e "  ${BOLD}Branch:${RESET}     $branch_name"
     echo -e "  ${BOLD}Parallel:${RESET}   $MAX_PARALLEL"
     [[ -n "$MODEL" ]] && echo -e "  ${BOLD}Model:${RESET}      $MODEL"
+    [[ -n "$EFFORT_LEVEL" ]] && echo -e "  ${BOLD}Effort:${RESET}     $EFFORT_LEVEL"
+    [[ -n "$FALLBACK_MODEL" ]] && echo -e "  ${BOLD}Fallback:${RESET}   $FALLBACK_MODEL"
     echo ""
 
     # ─── Dry Run ────────────────────────────────────────────────────────────
@@ -338,6 +352,8 @@ fix_start() {
             # Build pipeline command
             local cmd=("$SCRIPT_DIR/sw-pipeline.sh" start --goal "$GOAL" --pipeline "$TEMPLATE" --skip-gates)
             [[ -n "$MODEL" ]] && cmd+=(--model "$MODEL")
+            [[ -n "$EFFORT_LEVEL" ]] && cmd+=(--effort "$EFFORT_LEVEL")
+            [[ -n "$FALLBACK_MODEL" ]] && cmd+=(--fallback-model "$FALLBACK_MODEL")
 
             # Run pipeline
             "${cmd[@]}"

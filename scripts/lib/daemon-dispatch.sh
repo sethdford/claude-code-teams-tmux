@@ -12,6 +12,8 @@ LOG_DIR="${LOG_DIR:-${DAEMON_DIR}/logs}"
 WORKTREE_DIR="${WORKTREE_DIR:-${REPO_DIR}/.claude/worktrees}"
 BASE_BRANCH="${BASE_BRANCH:-main}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
+EFFORT_LEVEL="${EFFORT_LEVEL:-}"
+FALLBACK_MODEL="${FALLBACK_MODEL:-sonnet}"
 NO_GITHUB="${NO_GITHUB:-false}"
 
 # ─── Org-Wide Repo Management ─────────────────────────────────────────────
@@ -224,6 +226,12 @@ daemon_spawn_pipeline() {
     fi
     if [[ -n "$MODEL" ]]; then
         pipeline_args+=("--model" "$MODEL")
+    fi
+    if [[ -n "$EFFORT_LEVEL" ]]; then
+        pipeline_args+=("--effort" "$EFFORT_LEVEL")
+    fi
+    if [[ -n "$FALLBACK_MODEL" ]]; then
+        pipeline_args+=("--fallback-model" "$FALLBACK_MODEL")
     fi
     if [[ "$NO_GITHUB" == "true" ]]; then
         pipeline_args+=("--no-github")
