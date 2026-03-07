@@ -524,7 +524,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-connect.sh` | 624 | Sync local state to team dashboard |
 | `scripts/sw-context.sh` | 600 | Context Engine for Pipeline Stages |
 | `scripts/sw-cost.sh` | 1013 | Token Usage & Cost Intelligence |
-| `scripts/sw-daemon.sh` | 1415 | Autonomous GitHub Issue Watcher |
+| `scripts/sw-daemon.sh` | 1416 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
 | `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
 | `scripts/sw-decide.sh` | 691 | Shipwright Autonomous Decision Engine |
@@ -535,7 +535,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-doc-fleet.sh` | 815 | Documentation Fleet Orchestrator |
 | `scripts/sw-docs-agent.sh` | 525 | Auto-sync README, wiki, API docs |
 | `scripts/sw-docs.sh` | 626 | Documentation Keeper |
-| `scripts/sw-doctor.sh` | 1327 | Validate Shipwright setup |
+| `scripts/sw-doctor.sh` | 1326 | Validate Shipwright setup |
 | `scripts/sw-dora.sh` | 605 | DORA Metrics Dashboard with Engineering Intelligence |
 | `scripts/sw-durable.sh` | 708 | Durable Workflow Engine |
 | `scripts/sw-e2e-orchestrator.sh` | 535 | Test suite registry & execution |
