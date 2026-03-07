@@ -408,8 +408,9 @@ scan_platform_refactor() {
     grep -rnE "hardcoded|Hardcoded|Fallback:|fallback:|TODO|FIXME|HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null > "$findings_raw" || true
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        local f="${line%%:*}"
+        local rest="${line#*:}"
+        local ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
