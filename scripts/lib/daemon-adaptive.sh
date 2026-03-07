@@ -224,6 +224,20 @@ resolve_stage_timeout() {
         fi
     fi
 
+    # 3.5. P95-tuned adaptive timeout from adaptive_timeouts.stage_timeouts
+    #      (written by sw-adaptive-timeout apply / apply_timeout_recommendations)
+    if [[ -f "${DAEMON_CONFIG:-}" ]] || [[ -f ".claude/daemon-config.json" ]]; then
+        local p95_config="${DAEMON_CONFIG:-.claude/daemon-config.json}"
+        if [[ -f "$p95_config" ]]; then
+            local p95_val
+            p95_val=$(jq -r --arg s "$stage" '.adaptive_timeouts.stage_timeouts[$s] // empty' "$p95_config" 2>/dev/null || true)
+            if [[ -n "$p95_val" ]] && [[ "$p95_val" =~ ^[0-9]+$ ]] && [[ "$p95_val" -gt 0 ]]; then
+                echo "$p95_val"
+                return
+            fi
+        fi
+    fi
+
     # 4. Adaptive calculation (P95-based)
     if [[ "${ADAPTIVE_THRESHOLDS_ENABLED:-false}" == "true" ]]; then
         # Try pre-computed stage-durations.json first (O(1) lookup)

@@ -528,6 +528,76 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# AUTO FLAG & UNIFIED RESOLUTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${DIM}  --auto flag & unified resolution${RESET}"
+
+# ─── Test 38: apply --auto flag is accepted ──────────────────────────────────
+auto_out=$("$SCRIPT_DIR/sw-adaptive-timeout.sh" apply --auto --repo-hash test123 --dry-run 2>&1) || true
+if echo "$auto_out" | grep -qiE 'unknown|invalid|unrecognized'; then
+    assert_fail "apply --auto flag is accepted"
+else
+    assert_pass "apply --auto flag is accepted"
+fi
+
+# ─── Test 39: resolve_stage_timeout reads adaptive_timeouts.stage_timeouts ───
+source "$SCRIPT_DIR/lib/daemon-adaptive.sh" 2>/dev/null || true
+local_test_config=$(mktemp "${TMPDIR:-/tmp}/sw-timeout-test-config.XXXXXX")
+cat > "$local_test_config" <<'TESTJSON'
+{
+  "adaptive_timeouts": {
+    "stage_timeouts": {
+      "build": 750,
+      "test": 420
+    }
+  }
+}
+TESTJSON
+# Temporarily override DAEMON_CONFIG to point at test config
+OLD_DAEMON_CONFIG="${DAEMON_CONFIG:-}"
+OLD_STAGE_TIMEOUT_OVERRIDE="${STAGE_TIMEOUT_OVERRIDE:-}"
+export DAEMON_CONFIG="$local_test_config"
+unset STAGE_TIMEOUT_OVERRIDE 2>/dev/null || true
+# Clear env vars that would take precedence
+unset SW_BUILD_TIMEOUT 2>/dev/null || true
+if type resolve_stage_timeout >/dev/null 2>&1; then
+    resolved_val=$(resolve_stage_timeout "build" 2>/dev/null || echo "")
+    if [[ "$resolved_val" == "750" ]]; then
+        assert_pass "resolve_stage_timeout reads adaptive_timeouts.stage_timeouts (build=750)"
+    else
+        assert_fail "resolve_stage_timeout reads adaptive_timeouts.stage_timeouts" "expected 750, got '$resolved_val'"
+    fi
+    resolved_test=$(resolve_stage_timeout "test" 2>/dev/null || echo "")
+    if [[ "$resolved_test" == "420" ]]; then
+        assert_pass "resolve_stage_timeout reads adaptive_timeouts.stage_timeouts (test=420)"
+    else
+        assert_fail "resolve_stage_timeout reads adaptive_timeouts.stage_timeouts" "expected 420, got '$resolved_test'"
+    fi
+else
+    assert_fail "resolve_stage_timeout function not available"
+    assert_fail "resolve_stage_timeout function not available (test)"
+fi
+
+# ─── Test 40: Manual override takes precedence over P95-tuned values ─────────
+export STAGE_TIMEOUT_OVERRIDE="999"
+if type resolve_stage_timeout >/dev/null 2>&1; then
+    override_val=$(resolve_stage_timeout "build" 2>/dev/null || echo "")
+    if [[ "$override_val" == "999" ]]; then
+        assert_pass "Manual override (999) takes precedence over P95-tuned value (750)"
+    else
+        assert_fail "Manual override takes precedence" "expected 999, got '$override_val'"
+    fi
+else
+    assert_fail "resolve_stage_timeout function not available for override test"
+fi
+# Restore
+export DAEMON_CONFIG="${OLD_DAEMON_CONFIG}"
+[[ -n "${OLD_STAGE_TIMEOUT_OVERRIDE}" ]] && export STAGE_TIMEOUT_OVERRIDE="${OLD_STAGE_TIMEOUT_OVERRIDE}" || unset STAGE_TIMEOUT_OVERRIDE 2>/dev/null || true
+rm -f "$local_test_config"
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

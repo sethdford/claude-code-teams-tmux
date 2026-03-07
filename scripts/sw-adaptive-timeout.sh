@@ -167,6 +167,7 @@ cmd_apply() {
             --repo-hash) repo_hash="$2"; shift 2 ;;
             --dry-run) dry_run=true; shift ;;
             --json) local json_output=true; shift ;;
+            --auto) shift ;;
             *) shift ;;
         esac
     done

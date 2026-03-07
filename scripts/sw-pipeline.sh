@@ -99,6 +99,10 @@ fi
 # shellcheck source=sw-db.sh
 # for db_save_checkpoint/db_load_checkpoint (durable workflows)
 [[ -f "$SCRIPT_DIR/sw-db.sh" ]] && source "$SCRIPT_DIR/sw-db.sh"
+# shellcheck source=lib/stage-duration-metrics.sh
+[[ -f "$SCRIPT_DIR/lib/stage-duration-metrics.sh" ]] && source "$SCRIPT_DIR/lib/stage-duration-metrics.sh"
+# shellcheck source=lib/daemon-adaptive.sh
+[[ -f "$SCRIPT_DIR/lib/daemon-adaptive.sh" ]] && source "$SCRIPT_DIR/lib/daemon-adaptive.sh"
 # Ensure DB schema exists so emit_event → db_add_event can write rows (CREATE IF NOT EXISTS is idempotent)
 if type init_schema >/dev/null 2>&1 && type check_sqlite3 >/dev/null 2>&1 && check_sqlite3 2>/dev/null; then
     init_schema 2>/dev/null || true
@@ -940,10 +944,83 @@ run_stage_with_retry() {
     max_retries=$(jq -r --arg id "$stage_id" '(.stages[] | select(.id == $id) | .config.retries) // 0' "$PIPELINE_CONFIG" 2>/dev/null) || true
     [[ -z "$max_retries" || "$max_retries" == "null" ]] && max_retries=0
 
+    # Resolve timeout (opt-in: SW_ENFORCE_STAGE_TIMEOUTS=true or adaptive_timeouts.enabled in config)
+    local stage_timeout=0
+    local enforce_timeouts="${SW_ENFORCE_STAGE_TIMEOUTS:-false}"
+    if [[ "$enforce_timeouts" != "true" ]] && [[ -f "${DAEMON_CONFIG:-.claude/daemon-config.json}" ]]; then
+        enforce_timeouts=$(jq -r '.adaptive_timeouts.enabled // false' "${DAEMON_CONFIG:-.claude/daemon-config.json}" 2>/dev/null || echo "false")
+    fi
+    if [[ "$enforce_timeouts" == "true" ]] && type resolve_stage_timeout >/dev/null 2>&1; then
+        stage_timeout=$(resolve_stage_timeout "$stage_id" 2>/dev/null || echo "0")
+        [[ "$stage_timeout" =~ ^[0-9]+$ ]] || stage_timeout=0
+    fi
+
     local attempt=0
     local prev_error_class=""
     while true; do
-        if "stage_${stage_id}"; then
+        local stage_rc=0
+        if [[ "$stage_timeout" -gt 0 ]]; then
+            # Run stage in background with timeout enforcement
+            local stage_start_epoch
+            stage_start_epoch=$(date +%s)
+            "stage_${stage_id}" &
+            local stage_pid=$!
+            local elapsed=0
+            local timed_out=false
+            while kill -0 "$stage_pid" 2>/dev/null; do
+                sleep 1
+                elapsed=$(( $(date +%s) - stage_start_epoch ))
+                if [[ "$elapsed" -ge "$stage_timeout" ]]; then
+                    timed_out=true
+                    warn "Stage '$stage_id' exceeded timeout (${stage_timeout}s) — sending SIGTERM"
+                    kill -TERM "$stage_pid" 2>/dev/null || true
+                    # Grace period before SIGKILL
+                    local grace=0
+                    while kill -0 "$stage_pid" 2>/dev/null && [[ "$grace" -lt 5 ]]; do
+                        sleep 1
+                        grace=$((grace + 1))
+                    done
+                    if kill -0 "$stage_pid" 2>/dev/null; then
+                        kill -KILL "$stage_pid" 2>/dev/null || true
+                    fi
+                    wait "$stage_pid" 2>/dev/null || true
+                    break
+                fi
+            done
+            if [[ "$timed_out" == "true" ]]; then
+                # Record timeout event for P95 feedback
+                if type record_timeout_event >/dev/null 2>&1; then
+                    local repo_hash
+                    repo_hash=$(echo "${REPO_DIR:-$(pwd)}" | cksum | cut -d' ' -f1)
+                    record_timeout_event "$stage_id" "$repo_hash" "$stage_timeout" "$elapsed" 2>/dev/null || true
+                fi
+                emit_event "stage.timeout" \
+                    "issue=${ISSUE_NUMBER:-0}" \
+                    "stage=$stage_id" \
+                    "timeout_s=$stage_timeout" \
+                    "elapsed_s=$elapsed" 2>/dev/null || true
+                stage_rc=124
+            else
+                wait "$stage_pid" 2>/dev/null
+                stage_rc=$?
+                # Record successful duration for metrics
+                if [[ "$stage_rc" -eq 0 ]] && type record_stage_duration >/dev/null 2>&1; then
+                    elapsed=$(( $(date +%s) - stage_start_epoch ))
+                    local repo_hash
+                    repo_hash=$(echo "${REPO_DIR:-$(pwd)}" | cksum | cut -d' ' -f1)
+                    record_stage_duration "$stage_id" "$elapsed" "success" "$repo_hash" 2>/dev/null || true
+                fi
+            fi
+        else
+            # No timeout — run stage directly (existing behavior)
+            if "stage_${stage_id}"; then
+                stage_rc=0
+            else
+                stage_rc=$?
+            fi
+        fi
+
+        if [[ "$stage_rc" -eq 0 ]]; then
             return 0
         fi
 
