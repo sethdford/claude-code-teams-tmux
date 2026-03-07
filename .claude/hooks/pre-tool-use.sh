@@ -9,6 +9,13 @@ input=$(cat)
 tool_name=$(echo "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 file_path=$(echo "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 new_string=$(echo "$input" | jq -r '.tool_input.new_string // empty' 2>/dev/null)
+tool_input=$(echo "$input" | jq -r '.tool_input // empty' 2>/dev/null)
+
+# Security check: Block git push --no-verify (bypasses pre-commit hooks)
+if echo "$tool_input" | grep -qE 'git\s+push.*--no-verify'; then
+    echo '{"message":"Blocked: git push --no-verify bypasses safety checks. Remove --no-verify flag."}'
+    exit 2
+fi
 
 # Security check: Detect secrets being written to non-secret files
 if [[ "$tool_name" == "Edit" || "$tool_name" == "Write" ]]; then

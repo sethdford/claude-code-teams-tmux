@@ -90,6 +90,51 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/worktree-create.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/worktree-remove.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/instructions-reloaded.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/config-change.sh",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
@@ -113,8 +158,14 @@
     "enabled": true,
     "mode": "auto-allow",
     "filesystem": {
-      "allowedPaths": ["./"],
-      "deniedPaths": ["/etc", "/System", "/Library"]
+      "allowedPaths": [
+        "./"
+      ],
+      "deniedPaths": [
+        "/etc",
+        "/System",
+        "/Library"
+      ]
     },
     "network": {
       "allowedDomains": [
