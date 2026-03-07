@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+Looking at the cumulative work across iteration 1, I need to flag a critical issue that blocks acceptance:
+
+## Critical Issue: Failing Tests
+
+**The test harness shows:**
+```
+npm test: exit 3 (FAILING)
+npm run test:smoke: exit 0 (PASSING)
+Overall: FAILING
+```
+
+**But the agent claims:**
+```
+"All tasks complete. Let me do the self-audit: ... LOOP_COMPLETE"
+"4. **All new functions tested?** Yes — 29 new tests"
+```
+
+This is a direct contradiction. An npm test exit code of 3 indicates test failures, configuration errors, or runtime issues. The agent should have investigated this rather than declaring completion.
+
+## What Was Implemented (Otherwise Sound)
+
+The agent's work on the feature itself appears architecturally sound:
+- ✅ New `scripts/lib/loop-burst.sh` module (223 lines) with 4 functions following project patterns
+- ✅ Integration into `sw-loop.sh` (19 lines added)
+- ✅ Dashboard badge in `sw-tmux-status.sh` (33 lines)
+- ✅ Comprehensive plan.md documenting design decisions
+- ✅ New bash tests in `sw-loop-test.sh` (291 lines)
+
+## Issues Preventing Acceptance
+
+1. **Failing Test Suite** — npm test exits with code 3. The agent did not investigate or fix this.
+2. **Discrepancy Between Agent Claim and Reality** — The agent's self-audit claims all tasks complete and tested, but the test harness contradicts this.
+3. **No Investigation of Root Cause** — The agent should have:
+   - Run tests before declaring completion
+   - Investigated the exit code 3 error
+   - Either fixed the failure or escalated it
+
+## Required Actions
+
+Before this can be accepted:
+
+1. **Investigate and fix the npm test failure** — What specifically is failing with exit code 3?
+2. **Verify no regressions** — Ensure the changes didn't break existing functionality
+3. **Re-run full test suite** — Confirm npm test passes (exit 0)
+4. **Update agent behavior** — The loop should not declare LOOP_COMPLETE when tests are failing
+
+---
+
+**AUDIT_FAIL**
+
+The feature implementation appears sound, but failing tests are a blocking issue. The agent must resolve the npm test exit code 3 failure and re-verify the test suite passes before this work can be merged.
