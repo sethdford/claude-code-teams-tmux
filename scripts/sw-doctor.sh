@@ -274,7 +274,7 @@ _perm_issues=0
 for config_file in "$HOME/.claude/settings.json" "$HOME/.shipwright/daemon-config.json" "$(pwd)/.claude/daemon-config.json"; do
     if [[ -f "$config_file" ]]; then
         # Get file permissions
-        local _perms
+        _perms=""
         if command -v stat >/dev/null 2>&1; then
             # GNU stat: stat -c %a, BSD stat: stat -f %OLp
             if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -1188,6 +1188,86 @@ fi
 else
     check_warn "sqlite3 not installed — DB features disabled"
     echo -e "    ${DIM}Install: brew install sqlite (macOS) or apt install sqlite3 (Linux)${RESET}"
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 15a. Claude Code Feature Configuration
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${PURPLE}${BOLD}  CLAUDE CODE FEATURES${RESET}"
+echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+_SETTINGS_FILE="$(pwd)/.claude/settings.json"
+if [[ ! -f "$_SETTINGS_FILE" ]]; then
+    _SCRIPT_DIR_CLAUDE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _REPO_ROOT_CLAUDE="$(cd "$_SCRIPT_DIR_CLAUDE/.." 2>/dev/null && pwd)"
+    [[ -f "$_REPO_ROOT_CLAUDE/.claude/settings.json" ]] && _SETTINGS_FILE="$_REPO_ROOT_CLAUDE/.claude/settings.json"
+fi
+
+if [[ -f "$_SETTINGS_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    # Check effort level
+    _effort_val=$(jq -r '.env.CLAUDE_CODE_EFFORT_LEVEL // empty' "$_SETTINGS_FILE" 2>/dev/null || echo "")
+    if [[ -n "$_effort_val" ]]; then
+        case "$_effort_val" in
+            low|medium|high) check_pass "Effort level configured: ${_effort_val}" ;;
+            *) check_fail "Invalid effort level in settings.json: ${_effort_val} (must be low/medium/high)" ;;
+        esac
+    else
+        check_warn "CLAUDE_CODE_EFFORT_LEVEL not configured"
+    fi
+
+    # Check ENABLE_TOOL_SEARCH
+    _tool_search=$(jq -r '.env.ENABLE_TOOL_SEARCH // empty' "$_SETTINGS_FILE" 2>/dev/null || echo "")
+    if [[ -n "$_tool_search" ]]; then
+        check_pass "MCP Tool Search: ${_tool_search}"
+    else
+        check_warn "ENABLE_TOOL_SEARCH not set (recommend: auto)"
+    fi
+
+    # Check MAX_MCP_OUTPUT_TOKENS
+    _mcp_tokens=$(jq -r '.env.MAX_MCP_OUTPUT_TOKENS // empty' "$_SETTINGS_FILE" 2>/dev/null || echo "")
+    if [[ -n "$_mcp_tokens" ]]; then
+        check_pass "MCP output limit: ${_mcp_tokens} tokens"
+    else
+        check_warn "MAX_MCP_OUTPUT_TOKENS not set (recommend: 50000)"
+    fi
+
+    # Check managed-mcp.json
+    if [[ -f "$_SETTINGS_FILE" ]]; then
+        _settings_dir=$(dirname "$_SETTINGS_FILE")
+        if [[ -f "$_settings_dir/managed-mcp.json" ]]; then
+            if jq empty "$_settings_dir/managed-mcp.json" 2>/dev/null; then
+                check_pass "managed-mcp.json present and valid"
+            else
+                check_fail "managed-mcp.json has invalid JSON"
+            fi
+        fi
+    fi
+
+    # Check schemas directory
+    if [[ -d "$(pwd)/schemas" ]]; then
+        _schema_count=$(find "$(pwd)/schemas" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+        check_pass "Schemas directory: ${_schema_count} schema(s) found"
+    elif [[ -d "$(pwd)/../schemas" ]]; then
+        _schema_count=$(find "$(pwd)/../schemas" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+        check_pass "Schemas directory: ${_schema_count} schema(s) found"
+    fi
+
+    # Check lifecycle hooks registered
+    _hook_count=0
+    for _hook_name in WorktreeCreate WorktreeRemove InstructionsLoaded ConfigChange; do
+        if jq -e ".hooks.${_hook_name}" "$_SETTINGS_FILE" >/dev/null 2>&1; then
+            _hook_count=$((_hook_count + 1))
+        fi
+    done
+    if [[ "$_hook_count" -eq 4 ]]; then
+        check_pass "Lifecycle hooks: all 4 registered"
+    elif [[ "$_hook_count" -gt 0 ]]; then
+        check_warn "Lifecycle hooks: ${_hook_count}/4 registered"
+    fi
+else
+    check_warn "Claude Code configuration not found or jq unavailable"
+    echo -e "    ${DIM}Run: shipwright prep${RESET}"
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
