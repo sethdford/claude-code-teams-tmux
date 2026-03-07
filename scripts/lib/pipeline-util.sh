@@ -15,6 +15,13 @@ STATE_FILE="${STATE_FILE:-$STATE_DIR/pipeline-state.md}"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-$STATE_DIR/pipeline-artifacts}"
 EVENTS_FILE="${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}"
 
+# Variables referenced by util functions (set by sw-pipeline.sh, defaults here for safety)
+HEARTBEAT_PID="${HEARTBEAT_PID:-}"
+PIPELINE_STATUS="${PIPELINE_STATUS:-}"
+STASHED_CHANGES="${STASHED_CHANGES:-false}"
+SLACK_WEBHOOK="${SLACK_WEBHOOK:-}"
+CURRENT_STAGE_ID="${CURRENT_STAGE_ID:-}"
+
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }

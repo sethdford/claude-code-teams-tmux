@@ -14,6 +14,17 @@ STATE_DIR="${STATE_DIR:-$PROJECT_ROOT/.claude}"
 STATE_FILE="${STATE_FILE:-$STATE_DIR/pipeline-state.md}"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-$STATE_DIR/pipeline-artifacts}"
 
+# Variables that pipeline_start references (set by sw-pipeline.sh, defaults here for safety)
+COST_MODEL_RATES="${COST_MODEL_RATES:-'{\"opus\":{\"input\":15,\"output\":75},\"sonnet\":{\"input\":3,\"output\":15},\"haiku\":{\"input\":0.25,\"output\":1.25}}'}"
+SELF_HEAL_COUNT="${SELF_HEAL_COUNT:-0}"
+TOTAL_INPUT_TOKENS="${TOTAL_INPUT_TOKENS:-0}"
+TOTAL_OUTPUT_TOKENS="${TOTAL_OUTPUT_TOKENS:-0}"
+STASHED_CHANGES="${STASHED_CHANGES:-false}"
+PIPELINE_START_EPOCH="${PIPELINE_START_EPOCH:-}"
+PIPELINE_STATUS="${PIPELINE_STATUS:-}"
+PIPELINE_STAGES_PASSED="${PIPELINE_STAGES_PASSED:-}"
+PIPELINE_SLOWEST_STAGE="${PIPELINE_SLOWEST_STAGE:-}"
+
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }

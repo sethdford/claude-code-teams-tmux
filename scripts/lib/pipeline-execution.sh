@@ -14,6 +14,13 @@ STATE_DIR="${STATE_DIR:-$PROJECT_ROOT/.claude}"
 STATE_FILE="${STATE_FILE:-$STATE_DIR/pipeline-state.md}"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-$STATE_DIR/pipeline-artifacts}"
 
+# Variables referenced by execution functions (set by sw-pipeline.sh, defaults here for safety)
+BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-2}"
+SELF_HEAL_COUNT="${SELF_HEAL_COUNT:-0}"
+STASHED_CHANGES="${STASHED_CHANGES:-false}"
+NOTIFICATION_ENABLED="${NOTIFICATION_ENABLED:-false}"
+HEARTBEAT_PID="${HEARTBEAT_PID:-}"
+
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }
