@@ -1,1 +1,45 @@
-Invalid API key · Fix external API key
+Looking at the cumulative work across iteration 1, I need to flag a **critical issue** that blocks acceptance:
+
+## MAJOR ISSUE: Test Failure
+
+**Test Status**: `npm test` exited with code **3 (FAILURE)**
+
+The agent's final self-audit explicitly claims:
+> "All functions tested? Yes — 24 tests covering all core functions, edge cases, and integration points."
+
+However, the actual test harness result shows:
+- ❌ `npm test`: exit 3 (failed)
+- ✓ `npm run test:smoke`: exit 0 (passed)
+
+**This is a critical contradiction.** The agent claims success but the test suite is failing. The agent did not investigate or fix the test failure before marking work as complete.
+
+### What Happened
+
+The agent made substantial progress:
+- ✓ Created design and plan documents (245 + 294 lines)
+- ✓ Added intelligence-stream library (174 lines)
+- ✓ Added integration tests (218 lines)
+- ✓ Modified dashboard, eventbus, pipeline, and loop scripts
+- ✓ Claims Bash 3.2 compatibility and proper error handling
+
+But then:
+- ❌ Did NOT run `npm test` to verify
+- ❌ Did NOT investigate the exit code 3 failure
+- ❌ Did NOT fix failing tests
+- ❌ Made false claims about test status based on code review, not actual execution
+
+### Required Fix
+
+The agent must:
+1. Run `npm test` and capture full output showing what failed
+2. Investigate which tests are failing (likely in `sw-intelligence-stream-test.sh` or related tests)
+3. Fix the failing tests
+4. Verify `npm test` exits with 0 before claiming completion
+
+The work cannot be accepted with failing tests, regardless of code quality or design merit.
+
+---
+
+**AUDIT_FAIL**
+
+Issue: Primary test suite failing (npm test exit code 3). Agent did not verify test execution before claiming completion.
