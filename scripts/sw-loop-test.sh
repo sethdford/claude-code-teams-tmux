@@ -217,6 +217,20 @@ else
     assert_fail "build_claude_flags includes --output-format json"
 fi
 
+echo -e "${DIM}  effort level flag${RESET}"
+if grep -q 'effort-level' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
+    assert_pass "build_claude_flags supports --effort-level"
+else
+    assert_fail "build_claude_flags supports --effort-level"
+fi
+
+echo -e "${DIM}  fallback model flag${RESET}"
+if grep -q 'fallback-model' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
+    assert_pass "build_claude_flags supports --fallback-model"
+else
+    assert_fail "build_claude_flags supports --fallback-model"
+fi
+
 # ─── Test 12: Token accumulation parses JSON ────────────────────────────────
 if grep -q 'jq.*usage.input_tokens' "$SCRIPT_DIR/sw-loop.sh"; then
     assert_pass "accumulate_loop_tokens parses JSON usage"
@@ -383,6 +397,20 @@ if grep -qF -- '--test-cmd' "$SCRIPT_DIR/sw-loop.sh" && grep -qF -- '--resume' "
     assert_pass "Help text defines --test-cmd and --resume flags"
 else
     assert_fail "Help text defines --test-cmd and --resume flags"
+fi
+
+echo -e "${DIM}  help mentions --effort${RESET}"
+if grep -qF -- '--effort' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Help text defines --effort flag"
+else
+    assert_fail "Help text defines --effort flag"
+fi
+
+echo -e "${DIM}  help mentions --fallback-model${RESET}"
+if grep -qF -- '--fallback-model' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Help text defines --fallback-model flag"
+else
+    assert_fail "Help text defines --fallback-model flag"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

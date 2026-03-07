@@ -116,6 +116,10 @@ ADDITIONAL_TEST_CMDS=()   # Array of extra test commands (from --additional-test
 # ─── Context Budget ──────────────────────────────────────────────────────────
 CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-200000}"  # Max prompt chars before trimming
 
+# ─── Claude CLI Flags ─────────────────────────────────────────────────────────
+EFFORT_LEVEL="${SW_EFFORT_LEVEL:-}"
+FALLBACK_MODEL="${SW_FALLBACK_MODEL:-sonnet}"
+
 # ─── Parse Arguments ──────────────────────────────────────────────────────────
 show_help() {
     echo -e "${CYAN}${BOLD}shipwright${RESET} ${DIM}v${VERSION}${RESET} — ${BOLD}Continuous Loop${RESET}"
@@ -132,6 +136,8 @@ show_help() {
     echo -e "  ${CYAN}--fast-test-interval${RESET} N       Run full tests every N iterations (default: 5)"
     echo -e "  ${CYAN}--additional-test-cmds${RESET} \"cmd\" Extra test command (repeatable)"
     echo -e "  ${CYAN}--model${RESET} MODEL             Claude model to use (default: opus)"
+    echo -e "  ${CYAN}--effort${RESET} low|medium|high   Effort level for Claude reasoning (default: auto per stage)"
+    echo -e "  ${CYAN}--fallback-model${RESET} MODEL      Fallback model on rate limits (default: sonnet)"
     echo -e "  ${CYAN}--agents${RESET} N                Number of parallel agents (default: 1)"
     echo -e "  ${CYAN}--roles${RESET} \"r1,r2,...\"        Role per agent: builder,reviewer,tester,optimizer,docs,security"
     echo -e "  ${CYAN}--worktree${RESET}                Use git worktrees for isolation (auto if agents > 1)"
@@ -205,6 +211,18 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --model=*) MODEL="${1#--model=}"; shift ;;
+        --effort)
+            EFFORT_LEVEL="${2:-}"
+            [[ -z "$EFFORT_LEVEL" ]] && { error "Missing value for --effort"; exit 1; }
+            shift 2
+            ;;
+        --effort=*) EFFORT_LEVEL="${1#--effort=}"; shift ;;
+        --fallback-model)
+            FALLBACK_MODEL="${2:-}"
+            [[ -z "$FALLBACK_MODEL" ]] && { error "Missing value for --fallback-model"; exit 1; }
+            shift 2
+            ;;
+        --fallback-model=*) FALLBACK_MODEL="${1#--fallback-model=}"; shift ;;
         --agents)
             AGENTS="${2:-}"
             [[ -z "$AGENTS" ]] && { error "Missing value for --agents"; exit 1; }
@@ -332,6 +350,12 @@ if ! [[ "$FAST_TEST_INTERVAL" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "$MAX_RESTARTS" =~ ^[0-9]+$ ]]; then
     error "--max-restarts must be a non-negative integer (got: $MAX_RESTARTS)"
+    exit 1
+fi
+
+# Validate effort level
+if [[ -n "$EFFORT_LEVEL" ]] && [[ "$EFFORT_LEVEL" != "low" && "$EFFORT_LEVEL" != "medium" && "$EFFORT_LEVEL" != "high" ]]; then
+    error "--effort must be low, medium, or high (got: $EFFORT_LEVEL)"
     exit 1
 fi
 

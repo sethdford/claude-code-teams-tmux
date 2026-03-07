@@ -453,6 +453,14 @@ build_claude_flags() {
         flags+=("--max-turns" "$MAX_TURNS")
     fi
 
+    if [[ -n "${EFFORT_LEVEL:-}" ]]; then
+        flags+=("--effort-level" "$EFFORT_LEVEL")
+    fi
+
+    if [[ -n "${FALLBACK_MODEL:-}" ]]; then
+        flags+=("--fallback-model" "$FALLBACK_MODEL")
+    fi
+
     echo "${flags[*]}"
 }
 
