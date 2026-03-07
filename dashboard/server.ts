@@ -504,6 +504,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/auth/") ||
     pathname === "/api/health" ||
     pathname === "/api/ws-status" ||
+    pathname === "/api/production-health" ||
     pathname.startsWith("/api/join/") ||
     pathname.startsWith("/api/connect/") ||
     pathname === "/api/team" ||
@@ -2604,6 +2605,70 @@ const server = Bun.serve({
           websocket: {
             active_connections: clients,
             server_running: true,
+          },
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        },
+      );
+    }
+
+    // GET /api/production-health — Post-merge health and regression status
+    if (pathname === "/api/production-health" && req.method === "GET") {
+      const healthFile = `${Bun.env.HOME}/.shipwright/post-merge-health.jsonl`;
+      const merges: any[] = [];
+      let stable = 0,
+        degraded = 0,
+        regression = 0;
+
+      try {
+        const file = Bun.file(healthFile);
+        if (await file.exists()) {
+          const text = await file.text();
+          const lines = text.split("\n").filter((l) => l.trim());
+          const seen = new Set();
+
+          for (const line of lines) {
+            try {
+              const record = JSON.parse(line);
+              const pr = record.pr_number;
+
+              // Deduplicate by PR (keep latest)
+              if (!seen.has(pr)) {
+                seen.add(pr);
+                merges.push({
+                  pr: pr,
+                  status: record.status,
+                  merged_at: record.merged_at,
+                  signals: record.signals || [],
+                });
+
+                // Count by status
+                if (record.status === "stable") stable++;
+                else if (record.status === "degraded") degraded++;
+                else if (record.status === "regression") regression++;
+              }
+            } catch {
+              // Skip malformed lines
+            }
+          }
+
+          // Sort by PR number descending (newest first)
+          merges.sort((a, b) => b.pr - a.pr);
+        }
+      } catch {
+        // File doesn't exist or can't be read — return empty response
+      }
+
+      return new Response(
+        JSON.stringify({
+          merges: merges,
+          summary: {
+            total: merges.length,
+            stable: stable,
+            degraded: degraded,
+            regression: regression,
           },
           timestamp: new Date().toISOString(),
         }),

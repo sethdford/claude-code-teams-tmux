@@ -1324,6 +1324,13 @@ intelligence_file_risk_score() {
         [[ "${author_count:-0}" -gt 5 ]] && risk_score=$((risk_score + 10))
     fi
 
+    # Factor 4: Production regression history
+    local prod_adjustment=0
+    if type intelligence_production_risk_adjustment >/dev/null 2>&1; then
+        prod_adjustment=$(intelligence_production_risk_adjustment "$file_path" 2>/dev/null || echo "0")
+        risk_score=$((risk_score + prod_adjustment))
+    fi
+
     # Cap at 100
     [[ "$risk_score" -gt 100 ]] && risk_score=100
     echo "$risk_score"
@@ -1343,6 +1350,32 @@ intelligence_contributor_expertise() {
     else
         echo "[]"
     fi
+}
+
+# intelligence_production_risk_adjustment <file_patterns>
+# Reads post-merge regression data and returns risk score adjustment (0–30 points)
+# for files with history of production regressions
+intelligence_production_risk_adjustment() {
+    local file_patterns="${1:-}"
+    local adjustment=0
+
+    [[ -z "$file_patterns" ]] && { echo "$adjustment"; return 0; }
+
+    # Check if post-merge health file exists
+    local post_merge_health="${HOME}/.shipwright/post-merge-health.jsonl"
+    [[ ! -f "$post_merge_health" ]] && { echo "$adjustment"; return 0; }
+
+    # Count regressions in post-merge health data
+    local regression_count=0
+    regression_count=$(jq 'select(.status == "regression") | .signals | length' "$post_merge_health" 2>/dev/null | awk '{sum += $1} END {print sum+0}' || echo "0")
+
+    # Boost risk if there's a history of production regressions
+    if [[ "${regression_count:-0}" -gt 0 ]]; then
+        adjustment=$((5 + (regression_count > 5 ? 25 : regression_count * 5)))
+        [[ $adjustment -gt 30 ]] && adjustment=30
+    fi
+
+    echo "$adjustment"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════

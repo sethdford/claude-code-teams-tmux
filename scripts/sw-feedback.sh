@@ -450,6 +450,9 @@ main() {
         report)
             cmd_report "$@"
             ;;
+        monitor)
+            exec "$SCRIPT_DIR/sw-post-merge-monitor.sh" "$@"
+            ;;
         help|-h|--help)
             show_help
             ;;

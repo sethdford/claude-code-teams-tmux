@@ -1,101 +1,203 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Post-Merge Production Feedback Integration and Regression Learning
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
 
----
 
-## Summary
-
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
-
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
-
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+All three background research agents have completed. The plan at `.claude/plan.md` is finalized with comprehensive understanding of all integration points across memory, intelligence, feedback, webhook, event bus, dashboard, and pipeline systems. Ready for the build stage.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Architecture Decision Record: Post-Merge Production Feedback Integration and Regression Learning
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+## Alternatives Considered
+### Alternative A: Extend `sw-webhook.sh` to Handle Post-Merge Events
+### Alternative B: New `sw-post-merge-monitor.sh` + Thin Integration Points (CHOSEN)
+### Alternative C: Extend `sw-feedback.sh` with `monitor` Subcommand
+## Implementation Plan
+### Files to Create
+### Files to Modify
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
+      "file": "failures.json",
       "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "summary": "Documents known test failures (sw-cleanup.sh output, sw-daemon.sh classify_failure, sw-hygiene.sh exit code) with fixes. Critical for build stage to avoid reintroducing same bugs and guide test debugging."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json",
+      "relevance": 92,
+      "summary": "Project structure and conventions (vitest test runner, npm, source_dir=src/, test_pattern=*.test.js, commonjs imports). Essential for running build and test stages correctly."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json",
+      "relevance": 15,
+      "summary": "Generic project_type detection (nodejs, bootstrap source). Redundant with detailed patterns.json entry; minimal actionable value for build stage."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baseline metrics. No prior performance data to guide optimization or detect regressions in build stage."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 5,
+      "summary": "Empty decisions log. No prior architectural or implementation decisions captured to inform build decisions."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Post-Merge Production Feedback Integration and Regression Learning — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (backend/infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **observability**: Monitor the feedback system itself post-deployment: webhook processing lag, memory/intelligence update latency, regression detection accuracy, false positive trends.
+- **testing-strategy**: Complex distributed flow requires both unit tests (webhook parsing, event creation) and integration tests per AC (merge → CI failure → regression event → memory updated).
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Observability: Watch the Deploy Like a Hawk
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+Post-deploy monitoring catches what tests miss. Real traffic reveals real problems.
+
+### What to Monitor (by Priority)
+
+**P0 — Immediate (first 5 minutes):**
+- Error rate: any increase over baseline?
+- Health check: still returning 200?
+- Latency: p50/p95/p99 within normal range?
+- Memory/CPU: any sudden spikes?
+
+**P1 — Short-term (5-30 minutes):**
+- Business metrics: are users completing key flows?
+- Queue depths: are background jobs processing normally?
+- Connection pools: any exhaustion or leak patterns?
+- Disk usage: any unexpected growth?
+
+**P2 — Medium-term (1-24 hours):**
+- Memory trends: gradual leak over time?
+- Error rate trends: slowly increasing?
+- User-reported issues: any new support tickets?
+- Performance degradation under sustained load?
+
+### Anomaly Detection Patterns
+- **Spike detection**: >2x baseline error rate in any 1-minute window
+- **Trend detection**: steadily increasing error rate over 5-minute window
+- **Absence detection**: expected periodic events stop occurring
+- **Latency shift**: p95 latency increases >50% from baseline
+
+### Log Analysis
+- Search for new ERROR/FATAL/PANIC entries not present before deploy
+- Check for stack traces — they indicate unhandled exceptions
+- Look for retry storms — repeated failed attempts at the same operation
+- Monitor for resource exhaustion messages (OOM, connection refused, disk full)
+
+### Auto-Rollback Triggers
+Automatically rollback if ANY of these occur:
+- Health check fails 3 consecutive times
+- Error rate exceeds threshold for 2+ minutes
+- Critical service dependency becomes unreachable
+- Memory usage exceeds 90% of limit
+
+### Monitoring by Issue Type
+
+**Frontend changes:**
+- JavaScript error rates in browser (if client-side monitoring exists)
+- Asset load failures (404s on new bundles)
+- Core Web Vitals regression (LCP, FID, CLS)
+
+**API changes:**
+- Response status code distribution (2xx vs 4xx vs 5xx)
+- Request throughput — drops indicate client-side breakage
+- Authentication failures — spikes indicate auth regression
+
+**Database changes:**
+- Query latency per endpoint
+- Connection pool utilization
+- Slow query log entries
+- Replication lag (if applicable)
+
+### Incident Escalation
+If monitoring detects issues:
+1. Execute rollback (if auto-rollback enabled)
+2. Create incident issue with monitoring data
+3. Attach relevant logs and metrics
+4. Tag the original issue with `incident` label
+5. Do NOT silence alerts — let them fire
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Monitoring Checklist**: P0/P1/P2 metrics to watch (error rate, latency, memory, health checks) with specific thresholds
+2. **Anomaly Detection Triggers**: Explicit conditions that trigger alerts (spike detection >2x, trend detection over 5min, absence detection, latency shift >50%)
+3. **Log Analysis**: Search strategy for new ERROR/FATAL entries, stack traces, retry storms, resource exhaustion patterns
+4. **Auto-Rollback Decision Criteria**: Conditions that trigger automatic rollback (health check failures, error rate threshold, critical dependency unreachable, memory exhaustion)
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-07T00:49:48Z
+last_iteration_at: 2026-03-07T00:49:48Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -106,14 +208,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 

@@ -35,16 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "team": [
-          "docs-writer",
-          "architect",
-          "reviewer"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "incident-responder"
         ],
-        "reasoning": "Stale documentation in a 710-file codebase with complex shell/TypeScript architecture requires: (1) docs-writer to regenerate/update content, (2) architect to ensure accuracy against current design patterns and AUTO marker structure, (3) reviewer for completeness validation. Shipwright's documentation system uses code-sourced AUTO sections — architect ensures alignment. Tester not needed (examples tested separately). Security/DevOps/PM roles out of scope.",
-        "estimated_cost": 4.5,
-        "risk_level": "medium"
+        "confidence": 0.85,
+        "reasoning": "Requires designing a production feedback integration system with regression detection and learning capabilities; builder implements, tester handles regression patterns, incident-responder analyzes root causes.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772432701,
+      "timestamp": 1772844588,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -2165,6 +2167,329 @@
       },
       "timestamp": 1772436242,
       "ttl": 3600
+    },
+    "f256e43722378548a67e0af41af2712c": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 70,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Webhook reliability - missing production events could create blind spots",
+          "Memory system data corruption - noisy or false regression signals degrade future decisions",
+          "Intelligence accuracy degradation - false positive regressions skew risk scoring",
+          "Integration complexity across webhook/feedback/memory/intelligence systems",
+          "Performance impact from monitoring all merged PRs and post-merge CI runs",
+          "Time synchronization between merge and CI failure detection"
+        ],
+        "implementation_hints": [
+          "Start with webhook subscription and feedback event creation before memory/intelligence integration",
+          "Implement confidence scoring for regression detection before injecting into memory system",
+          "Add comprehensive logging/observability for debugging regression pattern detection",
+          "Use time-window filtering (e.g., regressions within 24h of merge) to reduce noise",
+          "Implement idempotency keys to prevent duplicate feedback events",
+          "Add feature flags to disable feedback loop if signal quality degrades",
+          "Test with realistic CI failures, deployment rollbacks, and issue linking scenarios",
+          "Design for incremental enablement - start with simple CI failure correlation",
+          "Consider memory event batching to avoid overwhelming the system",
+          "Add dashboard health metrics for feedback loop latency and event throughput"
+        ]
+      },
+      "timestamp": 1772844052,
+      "ttl": 3600
+    },
+    "676dd27f57674b270c2acff5b6774b24": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1772844068,
+      "ttl": 1800
+    },
+    "561db5ba3ae83b4c6e82cc791adf537a": {
+      "result": {
+        "estimated_cost_usd": 2.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 95000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772844077,
+      "ttl": 3600
+    },
+    "667eb19a6019d906370bc0f3c2a4a7e7": {
+      "result": {
+        "issue_type": "backend/infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "data-pipeline",
+          "observability",
+          "learning-systems"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Multi-system integration (webhooks, events, memory, intelligence, dashboard) with distributed system concerns (eventual consistency, false positives). Risk: bad feedback could corrupt intelligence decisions."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "data-pipeline",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "data-pipeline",
+            "observability"
+          ],
+          "build": [
+            "observability",
+            "testing-strategy"
+          ],
+          "review": [
+            "architecture-design",
+            "pr-quality",
+            "data-pipeline"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "security-audit",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge core assumptions before building: What distinguishes genuine regressions from noise? How do we prevent feedback loops from amplifying bad decisions? Can the memory system handle eventual consistency?",
+          "data-pipeline": "Post-merge feedback is a data pipeline from production signals → event schema → memory ingestion → intelligence queries; need careful schema design, partitioning strategy, and data retention policy.",
+          "architecture-design": "Critical to design clean integration points between webhook listener, event emitter, memory system, and intelligence engine—avoiding tight coupling and data race conditions.",
+          "api-design": "Feedback event schema must be extensible, versioned, and carry enough context (PR number, error details, commit SHA) for intelligence to correlate and learn correctly.",
+          "observability": "Monitor the feedback system itself post-deployment: webhook processing lag, memory/intelligence update latency, regression detection accuracy, false positive trends.",
+          "testing-strategy": "Complex distributed flow requires both unit tests (webhook parsing, event creation) and integration tests per AC (merge → CI failure → regression event → memory updated).",
+          "adversarial-quality": "Attack this: duplicate webhooks, out-of-order events, memory system overloaded, intelligence unable to process feedback, deployment failures in feedback system itself.",
+          "security-audit": "Validate webhook signature verification, prevent event injection, ensure memory system access controls prevent unauthorized feedback pollution.",
+          "validation-thoroughness": "Integration test per AC is baseline; also validate degraded modes (memory unavailable, intelligence timeout) and false positive rate of regression detection.",
+          "pr-quality": "Cross-system integration is hard to understand in 5 minutes; PR must clearly explain data flow, event schemas, and memory/intelligence integration points.",
+          "documentation": "Document the feedback loop, event schema, troubleshooting guide, and how to investigate regressions detected by this system.",
+          "deploy-safety": "This is a learning system that influences intelligence decisions; deploy with canary metrics (false positive rate, decision quality) and rollback strategy if feedback corrupts intelligence."
+        },
+        "generated_skills": [
+          {
+            "name": "feedback-loop-safety",
+            "reason": "No existing skill covers the specific concern of designing a production feedback → learning → decision cycle safely, with guards against circular amplification and false causality.",
+            "content": "## Feedback Loop Safety in Learning Systems\n\nPost-merge feedback creates a learning loop: production signal → feedback event → memory tag → intelligence adjustment → future decision impact. This cycle can amplify mistakes if feedback is noisy or causality is misattributed.\n\n### Key Principles\n\n**1. Feedback Fidelity**\n- Not every CI failure on main = regression caused by this PR\n- Use commit history to correlate: was this commit in the failing run? Is the failure new to this commit range?\n- Consider time-of-day patterns, test flakiness baseline, environment differences\n- Tag confidence: `high` (clear causality), `medium` (probable), `low` (speculative)\n\n**2. Memory Tagging Constraints**\n- Never mark an issue pattern as \"risky\" based on a single feedback event\n- Require minimum threshold: 2-3 correlated regressions in similar patterns before boosting scrutiny\n- Include decay: old tags become stale (>30 days without recurrence)\n- Always log the decision trail: which feedback events triggered this memory tag?\n\n**3. Intelligence Adjustments with Cardinality**\n- Intelligence can *boost* iteration count or *flag for review*, but should NOT auto-reject or auto-merge based on regression history\n- Require human validation before using regression data to reduce approval gates\n- Monitor: do issues marked \"risky\" actually have more issues post-merge? Measure precision of the signal\n\n**4. Feedback System Failure Modes**\n- Webhook delivery can be delayed/duplicated → use idempotency keys and deduplication\n- Memory system can be temporarily unavailable → queue feedback events durably, don't lose signals\n- Intelligence engine can be slow → feedback updates must not block webhook processing\n- Feedback loop can go silent if event creation fails → monitor feedback event creation rate as a health metric\n\n**5. Dashboard Trust**\n- Production Health panel shows \"regression\" status, but make the confidence level visible\n- Distinguish between \"feedback pending\" (data is stale) and \"confirmed regression\" (multiple signals agree)\n- Allow manual override: developers can dispute a regression tag and provide context\n- Audit trail: show which feedback events contributed to each regression status\n\n### Implementation Checklist\n\n- [ ] Feedback event schema includes `confidence` field (high/medium/low)\n- [ ] Memory tagging logic checks minimum threshold before updating tags\n- [ ] Intelligence adjustments are auditable; log the feedback → decision chain\n- [ ] Feedback event processing is decoupled from webhook response (async processing)\n- [ ] Webhook deduplication via idempotency keys (commit SHA + event type)\n- [ ] Memory system can handle eventual consistency (don't require synchronous update)\n- [ ] Dashboard shows confidence levels and allows manual dispute\n- [ ] Health metrics: feedback event creation rate, memory update latency, intelligence query performance\n\n### Testing\n\n- Test scenario: merge → CI fails → feedback created → memory tagged\n- Edge case: webhook delivered twice (same commit, same failure) → deduped, not double-tagged\n- Edge case: feedback event lost → retried on next webhook delivery without corruption\n- Edge case: memory unavailable → feedback queued locally, processed when memory recovers\n"
+          }
+        ],
+        "review_focus": [
+          "Event schema design: fields required for intelligence correlation, versioning strategy",
+          "Webhook validation and deduplication: prevent false regressions from duplicate webhooks",
+          "Causality logic: correctly attributing CI failures to specific commits/PRs, confidence scoring",
+          "Memory update atomicity: ensuring consistency when feedback event triggers tag creation",
+          "Intelligence integration: how risk scores use feedback data without circular amplification",
+          "Dashboard data freshness: is Production Health panel showing current state or stale data?",
+          "Threshold logic: minimum correlated signals before marking pattern as 'risky'",
+          "Failure mode handling: what happens if webhook listener, memory, or intelligence is unavailable?",
+          "Integration test coverage: all happy paths plus degraded scenarios (missing data, delays)",
+          "Observability: sufficient instrumentation for production debugging and trust validation"
+        ],
+        "risk_areas": [
+          "Circular feedback amplification: bad feedback could corrupt intelligence and cascade into worse decisions",
+          "False positive regressions: not all CI failures are causally related to the merged PR; misattribution harms memory",
+          "Data consistency race: memory tag update may race with intelligence read, leading to stale/incorrect risk scores",
+          "Webhook delivery gaps: missed or duplicate webhooks could cause missed regressions or ghost regressions",
+          "Eventual consistency complexity: memory system may be eventually consistent; intelligence must handle stale tags gracefully",
+          "Threshold gaming: if memory tags too aggressively, future similar issues get false boost in scrutiny",
+          "Dashboard trust erosion: if Production Health shows regressions that don't actually exist, team stops trusting the signal"
+        ]
+      },
+      "timestamp": 1772844131,
+      "ttl": 3600
+    },
+    "8c7b2ad3986dc2034e0c8b1ae4c79131": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Captures regression patterns and test failures (sw-cleanup, sw-daemon, sw-hygiene) directly relevant to regression learning goal and failure categorization"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 88,
+            "summary": "Project metadata (vitest, npm, commonjs) needed for planning implementation details and understanding test/build structure"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 35,
+            "summary": "Minimal project type confirmation (nodejs) - redundant with more detailed first entry"
+          },
+          {
+            "file": "global.json",
+            "relevance": 28,
+            "summary": "Cross-repo learning patterns would inform regression analysis and multi-repo feedback integration, though currently empty"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 22,
+            "summary": "Baseline metrics needed for production feedback comparison and regression detection, though baselines not yet populated"
+          }
+        ]
+      },
+      "timestamp": 1772844150,
+      "ttl": 1800
+    },
+    "1d6f604b90b894063f91d16da75e251d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured test failures and root causes (sw-cleanup.sh output format, sw-daemon.sh classify_failure wiring, sw-hygiene.sh exit codes) that likely contributed to plan validation rejection. Essential for understanding blockers."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 72,
+            "summary": "Project structure metadata (src/, *.test.js, vitest, npm, commonjs) provides codebase context needed for plan architecture decisions."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 35,
+            "summary": "Basic project type detection (nodejs). Minimal detail compared to other patterns entry; less useful for planning."
+          }
+        ]
+      },
+      "timestamp": 1772844400,
+      "ttl": 1800
+    },
+    "d75065375a3d4424f651224140e6402f": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Contains architectural insights about daemon failure classification (classify_failure wiring), heartbeat detection, and regression tracking patterns. The failure about classify_failure not being called in daemon_on_failure is directly relevant to regression learning design."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 42,
+            "summary": "Documents project conventions (vitest test runner, CommonJS imports, src/ directory, *.test.js pattern). Essential for designing test strategy and code organization for the feedback integration feature."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Confirms Node.js project type detected during bootstrap. Low relevance as it's redundant with the detailed patterns.json entry and lacks specifics."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decision log. Relevant as a location to record architectural decisions made during this design stage, but contains no current guidance."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 7,
+            "summary": "Empty baselines object. Could track regression metrics and feedback loop performance, but no current data to inform design."
+          }
+        ]
+      },
+      "timestamp": 1772844441,
+      "ttl": 1800
+    },
+    "a5304b61279a7b7bf1bc9fec329ff5f3": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Historical test failures from sw-cleanup, sw-daemon, and sw-hygiene show implementation anti-patterns and root causes that inform what design approaches to reject"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Project conventions (src/ directory, test patterns, commonjs imports) provide essential context for understanding codebase structure during design phase"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 10,
+            "summary": "Basic Node.js project type detection provides minimal environmental context already visible in pipeline status"
+          }
+        ]
+      },
+      "timestamp": 1772844458,
+      "ttl": 1800
+    },
+    "a1a8107645efa41bc13bdf8449f5b864": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents known test failures (sw-cleanup.sh output, sw-daemon.sh classify_failure, sw-hygiene.sh exit code) with fixes. Critical for build stage to avoid reintroducing same bugs and guide test debugging."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Project structure and conventions (vitest test runner, npm, source_dir=src/, test_pattern=*.test.js, commonjs imports). Essential for running build and test stages correctly."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Generic project_type detection (nodejs, bootstrap source). Redundant with detailed patterns.json entry; minimal actionable value for build stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline metrics. No prior performance data to guide optimization or detect regressions in build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log. No prior architectural or implementation decisions captured to inform build decisions."
+          }
+        ]
+      },
+      "timestamp": 1772844562,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Essential project structure context: Node.js, vitest test runner, npm package manager, commonjs imports, src/ directory. Directly informs build commands and tooling decisions during this stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "4 test failures from previous runs: sw-cleanup.sh output format (5x), sw-daemon.sh classify_failure integration, sw-hygiene.sh exit code. These are likely to recur in build loop; helps prioritize fixes and avoid repeating mistakes."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Baselines object is empty; no performance metrics or baseline data captured yet to guide optimization decisions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Decisions array is empty; no prior architectural or implementation decisions recorded to inform current work."
+          }
+        ]
+      },
+      "timestamp": 1772844574,
+      "ttl": 1800
     }
   }
 }

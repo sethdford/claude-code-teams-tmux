@@ -528,6 +528,9 @@ main() {
         feedback)
             exec "$SCRIPT_DIR/sw-feedback.sh" "$@"
             ;;
+        post-merge-monitor|post-merge)
+            exec "$SCRIPT_DIR/sw-post-merge-monitor.sh" "$@"
+            ;;
         eventbus)
             exec "$SCRIPT_DIR/sw-eventbus.sh" "$@"
             ;;

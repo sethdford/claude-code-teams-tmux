@@ -363,6 +363,8 @@ memory_capture_pipeline() {
 memory_capture_failure() {
     local stage="${1:-unknown}"
     local error_output="${2:-}"
+    local source="${3:-pipeline}"
+    local tags="${4:-}"
 
     ensure_memory_dir
     local mem_dir
@@ -412,11 +414,15 @@ memory_capture_failure() {
             jq --arg stage "$stage" \
                --arg pattern "$pattern" \
                --arg ts "$(now_iso)" \
+               --arg source "$source" \
+               --arg tags "$tags" \
                '.failures += [{
                    stage: $stage,
                    pattern: $pattern,
                    root_cause: "",
                    fix: "",
+                   source: $source,
+                   tags: (if $tags == "" then [] else ($tags | fromjson) end),
                    seen_count: 1,
                    last_seen: $ts
                }] | .failures = (.failures | .[-100:])' \
@@ -433,7 +439,7 @@ memory_capture_failure() {
 
     memory_store_for_embedding "failure" "$pattern" "$(repo_hash)" 2>/dev/null || true
 
-    emit_event "memory.failure" "stage=${stage}" "pattern=${pattern:0:80}"
+    emit_event "memory.failure" "stage=${stage}" "pattern=${pattern:0:80}" "source=${source}"
 }
 
 # memory_record_fix_outcome <failure_hash_or_pattern> <fix_applied:bool> <fix_resolved:bool>
@@ -508,6 +514,49 @@ memory_track_fix() {
     local success="${2:-false}"
     [[ -z "$error_sig" ]] && return 0
     memory_record_fix_outcome "$error_sig" "true" "$success" 2>/dev/null || true
+}
+
+# memory_tag_failure_as_risky <pattern> <tags_json>
+# Mark a failure entry with production regression tag (for post-merge monitoring)
+memory_tag_failure_as_risky() {
+    local pattern="${1:-}"
+    local tags_json="${2:-[\"production_regression\"]}"
+
+    [[ -z "$pattern" ]] && return 1
+
+    ensure_memory_dir
+    local mem_dir
+    mem_dir="$(repo_memory_dir)"
+    local failures_file="$mem_dir/failures.json"
+
+    [[ ! -f "$failures_file" ]] && return 1
+
+    # Find matching failure by pattern substring
+    local match_idx
+    match_idx=$(jq --arg pat "$pattern" \
+        '[.failures[]] | to_entries | map(select(.value.pattern | contains($pat))) | .[0].key // -1' \
+        "$failures_file" 2>/dev/null || echo "-1")
+
+    if [[ "$match_idx" == "-1" || "$match_idx" == "null" ]]; then
+        return 1
+    fi
+
+    (
+        if command -v flock >/dev/null 2>&1; then
+            flock -w 10 200 2>/dev/null || { warn "Memory lock timeout"; return 1; }
+        fi
+        local tmp_file
+        tmp_file=$(mktemp "${failures_file}.tmp.XXXXXX")
+    # shellcheck disable=SC2064
+        trap "rm -f '$tmp_file'" EXIT
+
+        jq --argjson idx "$match_idx" \
+           --argjson tags "$tags_json" \
+           '.failures[$idx].tags = ((.failures[$idx].tags // []) + $tags | unique)' \
+           "$failures_file" > "$tmp_file" && mv "$tmp_file" "$failures_file" || rm -f "$tmp_file"
+    ) 200>"${failures_file}.lock"
+
+    emit_event "memory.tag_failure" "pattern=${pattern:0:60}" "tags=$(echo "$tags_json" | jq -r 'join(",")')"
 }
 
 # memory_query_fix_for_error <error_pattern>
