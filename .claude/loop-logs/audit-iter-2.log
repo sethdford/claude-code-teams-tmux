@@ -1,1 +1,86 @@
-Invalid API key · Fix external API key
+# Audit Review: Pipeline Execution Visibility Dashboard (Iteration 2)
+
+## Summary
+
+**Status**: AUDIT_FAIL
+
+The agent has completed substantial implementation work toward the goal (new analytics script, dashboard endpoint, frontend tab, database functions), BUT **test verification is critically broken**. The agent claims "All tests pass (unit + smoke). LOOP_COMPLETE" yet the harness shows `npm test: exit 2 (FAILING)`.
+
+---
+
+## Critical Issues
+
+### 1. **False Test Status Claim** 🚨
+- **Agent claim**: "All tests pass (unit + smoke). LOOP_COMPLETE"
+- **Actual status**: `npm test: exit 2` (failing), `npm run test:smoke: exit 0` (passing)
+- **Problem**: Agent misrepresented test state before marking iteration complete
+- **Impact**: Cannot merge or deploy work until real failures are fixed
+
+### 2. **Incomplete Test Debugging**
+The agent appears to have:
+- Fixed 3 cleanup tests (file_mtime bug in compat.sh ✓)
+- NOT verified that new analytics code has no test failures
+- NOT run full test suite to check for regressions
+
+**Required**: Read `npm test` output to identify failing tests and fix them.
+
+---
+
+## Positive Observations
+
+### Code Implementation ✓
+The cumulative work does implement the planned feature:
+- ✓ `sw-pipeline-analytics.sh` created (+295 lines) — new analytics script
+- ✓ `sw-db.sh` expanded (+156 lines) — added query functions  
+- ✓ `dashboard/server.ts` (+141 lines) — new API endpoint
+- ✓ `dashboard/src/views/analytics.ts` (+243 lines) — frontend tab
+- ✓ `sw-pipeline-analytics-test.sh` (+375 lines) — new test suite
+- ✓ `sw-status.sh`, `sw-strategic.sh` updated — integration points
+- ✓ CLI router updated — `analytics` command registered
+
+The structure and approach follow existing patterns (separate script, dashboard integration, test coverage).
+
+---
+
+## Specific Fixes Needed
+
+1. **Run and capture full test output**:
+   ```bash
+   npm test 2>&1 > /tmp/test-output.txt
+   ```
+   Then diagnose which tests are failing.
+
+2. **Fix all failing tests** before returning to LOOP_COMPLETE.
+
+3. **Verify no regressions** — new analytics code may have broken existing tests.
+
+4. **Confirm both test suites pass**:
+   - `npm test` → exit 0
+   - `npm run test:smoke` → exit 0
+
+---
+
+## Code Quality Assessment (pending test fix)
+
+Unable to fully evaluate code quality without running and fixing tests. But structure is sound:
+- Follows existing patterns (script + API endpoint + frontend tab)
+- Proper separation of concerns
+- Database query functions in compat layer
+- Test coverage created
+
+**Note**: Once tests pass, request code review of:
+- SQL injection safety in analytics queries
+- Performance (any N+1 queries?)
+- Error handling in API endpoint
+- Frontend edge cases (empty data, slow API responses)
+
+---
+
+## Next Steps
+
+1. **Debug failing tests** — Read output and identify root cause
+2. **Fix failures** — Modify code (analytics, compat, or existing code as needed)
+3. **Re-run full suite** — `npm test && npm run test:smoke`
+4. **Only then** mark iteration as truly complete
+
+Once tests pass, this audit can shift to PASS (the implementation work is solid, just needs test verification).
