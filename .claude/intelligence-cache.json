@@ -35,16 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "team": [
-          "docs-writer",
-          "architect",
-          "reviewer"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "devops"
         ],
-        "reasoning": "Stale documentation in a 710-file codebase with complex shell/TypeScript architecture requires: (1) docs-writer to regenerate/update content, (2) architect to ensure accuracy against current design patterns and AUTO marker structure, (3) reviewer for completeness validation. Shipwright's documentation system uses code-sourced AUTO sections — architect ensures alignment. Tester not needed (examples tested separately). Security/DevOps/PM roles out of scope.",
-        "estimated_cost": 4.5,
-        "risk_level": "medium"
+        "confidence": 0.85,
+        "reasoning": "Designing stall/deadlock detection requires architectural analysis of the pipeline system; builder implements the feature; tester validates edge cases; devops monitors pipeline health.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772432701,
+      "timestamp": 1772844880,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -2165,6 +2167,348 @@
       },
       "timestamp": 1772436242,
       "ttl": 3600
+    },
+    "e616dc0414a0bdae737f94c36759fd4f": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "False positives - aborting legitimate long-running builds that require many iterations",
+          "Threshold tuning - optimal values (3+ zero-change iterations, 5+ repeated errors) may vary significantly by project type",
+          "Integration fragility - daemon retry logic must avoid creating re-stuck loops that repeat the same stall",
+          "Error pattern detection - matching 'identical error signatures' is brittle with log formatting variations",
+          "State tracking complexity - accurately tracking progress metrics across iterations requires careful state management"
+        ],
+        "implementation_hints": [
+          "Start with git diff detection (most reliable metric) before attempting error log pattern matching",
+          "Make stall thresholds (3+, 5+) configurable in daemon-config.json to avoid one-size-fits-all limits",
+          "Implement iteration warmup period (skip stall checks until iteration N) to allow legitimate initial churn",
+          "Add verbose progress metric logging before auto-abort to help diagnose false positive cases",
+          "Hook stall detection into sw-loop.sh iteration completion callbacks for tight integration",
+          "Weight progress indicators differently: file changes >> test pass deltas > error repetition counts",
+          "Generate actionable abort diagnostics (what was stuck, attempted fixes, recovery suggestions) for memory injection",
+          "Leverage memory system to learn stall patterns from previous pipelines and refine detection thresholds",
+          "Add dashboard widget showing stall detection health, recent abort events, and threshold effectiveness",
+          "Validate threshold tuning against real codebase build loops before enabling in production daemon"
+        ]
+      },
+      "timestamp": 1772844124,
+      "ttl": 3600
+    },
+    "1411052af8e052d585fe6e73e98e6dad": {
+      "result": {
+        "estimated_iterations": 14
+      },
+      "timestamp": 1772844137,
+      "ttl": 1800
+    },
+    "287b3f3391dda6d8c7b5f7f2a87935e1": {
+      "result": {
+        "estimated_cost_usd": 2.15,
+        "estimated_iterations": 4,
+        "estimated_tokens": 156000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1772844149,
+      "ttl": 3600
+    },
+    "c3eabc34744d19594a267de62d4df49e": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "backend",
+          "reliability",
+          "operations"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires state machine logic for progress tracking, pattern detection algorithms, integration with daemon/loop/memory systems, and dashboard updates. High correctness sensitivity—wrong detection aborts valid pipelines."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "api-design"
+          ],
+          "build": [
+            "systematic-debugging",
+            "performance",
+            "pipeline-stall-detection"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge detection heuristics—what counts as 'stuck'? Are file deltas reliable? Could legitimate long-think iterations trigger false positives?",
+          "architecture-design": "Deadlock detector must integrate cleanly with daemon, loop, memory, and dashboard; ADR will document the state machine and integration points.",
+          "data-pipeline": "Progress tracking (file changes → error signatures → stall signals) is a data pipeline; apply patterns for reliable metric extraction and aggregation.",
+          "api-design": "Define clean interfaces: how does detector signal abort to daemon? How does it pass diagnostics to memory system? Avoid coupling.",
+          "systematic-debugging": "Issue explicitly mentions prior failure; avoid blind retry—investigate what prior attempt missed (false positives? missed patterns?).",
+          "performance": "Stall detection runs every iteration; if overhead is high, it paradoxically causes real stalls; design must be lightweight.",
+          "pipeline-stall-detection": "Specialized patterns for file change tracking, error signature hashing, and safe abort procedures specific to this use case.",
+          "adversarial-quality": "What breaks the detector? Can errors be crafted to look identical but aren't? Can iterations be engineered to avoid file changes? What if detector itself deadlocks?",
+          "two-stage-review": "Pass 1: Is detection logic sound (heuristics, edge cases)? Pass 2: Does integration with daemon/loop/memory work correctly?",
+          "pr-quality": "Stall detection changes are subtle; PR must clearly show state tracking and how file/error deltas are computed.",
+          "testing-strategy": "Deadlock detection is hard to test; need unit tests for heuristics, integration tests with actual loop, and chaos tests that intentionally jam pipelines.",
+          "validation-thoroughness": "Unit tests aren't enough; spin up real pipelines, intentionally create stalls, verify detector catches them without false positives.",
+          "deploy-safety": "Controlled rollout with false-positive metrics; don't enable auto-abort until confidence is high; monitor abort rates.",
+          "observability": "Post-deploy: Are we catching real stalls? False positive rate? Time-to-detection? Iterate on heuristics based on production data."
+        },
+        "generated_skills": [
+          {
+            "name": "pipeline-stall-detection",
+            "reason": "Existing skills don't cover the specific patterns for reliable stall detection (file delta tracking, error signature hashing, safe abort integration). This issue requires concrete guidance on progress indicator design and deadlock heuristics.",
+            "content": "## Pipeline Stall Detection Patterns\n\n### What Makes a Build Stuck\n\nDistinguish between:\n- **Slow but healthy**: Making progress (file changes, new errors explored, test count improving)\n- **Stuck deadlock**: Repeating the same state with no forward motion\n\n### Progress Indicators\n\n#### 1. File Change Delta\n```\ntrack: set of files modified in iteration N\nstall_signal: if file_delta[i] == {} for 3+ consecutive iterations\nrisk: generated files, cache directories — must filter\n```\n\n#### 2. Error Signature Hashing\n```\nhash_error(msg):\n  - strip timestamps, line numbers, dynamic values\n  - compare error_hash[i] across iterations\ndeadlock_signal: if error_hash[i] == error_hash[i-1] == error_hash[i-2] for 5+ iterations\nrisk: similar but different errors (e.g., \"timeout at line 42\" vs \"timeout at line 50\")\n```\n\n#### 3. Test Result Delta\n```\ntrack: pass_count, fail_count, error_set per iteration\nstall_signal: if pass_count[i] == pass_count[i-1] AND fail_set[i] == fail_set[i-1] for N iterations\n```\n\n### Safe Abort Procedure\n\n1. **Preserve state**: Don't discard progress.md or recent commits\n2. **Capture diagnostics**: What iteration? What errors? What file changes were attempted?\n3. **Save to memory**: Append to memory system with stall pattern and context\n4. **Signal daemon**: Mark job with `stall_detected` reason (not a code error)\n5. **Suggest recovery**: Output actionable next steps (manual intervention? test isolation?)\n\n### Integration with Daemon Retry\n\nWhen daemon sees `stall_detected`:\n- Increment `max_restarts` for retry (fresh session may unstick)\n- Inject memory context into next attempt\n- Log stall pattern for aggregate analysis\n- If stalls persist across restarts → escalate to human\n\n### False Positive Prevention\n\n- **Whitelist safe iterations**: Some tests legitimately produce no file changes (e.g., type checking)\n- **Time-based grace period**: Don't abort in first 2 iterations (setup/analysis phase)\n- **Error uniqueness**: Count *unique* errors, not raw count\n- **Diff accuracy**: Use `git diff --name-only` to avoid counting generated files\n\n### Dashboard Representation\n\n- Show iteration timeline with file change bars\n- Highlight error signature patterns\n- Display stall detection threshold (e.g., \"3 of 3 iterations, 0 file changes\")\n- Show previous stalls from memory system"
+          }
+        ],
+        "review_focus": [
+          "Deadlock heuristics accuracy: Do 3-iteration/zero-change and 5-iteration/same-error rules actually catch real stalls without false positives?",
+          "File change tracking correctness: Does git diff properly exclude generated files, symlinks, and cache? Will different filesystems behave identically?",
+          "Error signature hashing robustness: Are dynamic values (timestamps, line numbers, PIDs) properly stripped? Can similar errors be distinguished?",
+          "Daemon integration: Does abort signal properly reach daemon? Are diagnostics saved before exit? Does retry logic actually use the stall_detected context?",
+          "Memory system integration: Are stall patterns appended correctly? Will future runs access these patterns? Is format parseable?",
+          "Dashboard updates: Do UI widgets show stall detection status? Are statistics (false positives, catches, patterns) visible?"
+        ],
+        "risk_areas": [
+          "False positives: Aborting healthy long-think iterations or legitimate slow builds causes user frustration and wasted CI slots.",
+          "Detection lag: Waiting 5 iterations before aborting a deadlock wastes compute; each iteration is expensive.",
+          "Metric accuracy: File change detection can fail on symlinks, submodules, or unusual git configs; error hashing can miss semantic duplicates.",
+          "Performance regression: Running detector on every iteration could add overhead that paradoxically causes real stalls.",
+          "Integration failure: If daemon doesn't receive abort signal or memory system doesn't persist stall patterns, prevention mechanism breaks.",
+          "Retry loop: If stall_detected isn't properly flagged, daemon might restart the same stuck pipeline infinitely."
+        ]
+      },
+      "timestamp": 1772844205,
+      "ttl": 3600
+    },
+    "377fe43553064072cfb43fac1ebf04cd": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project structure, test runner (vitest), and conventions needed to plan implementation architecture"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 38,
+            "summary": "Failure classification and daemon retry logic patterns are relevant to understanding pipeline health monitoring context"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Basic Node.js project type metadata, somewhat redundant with first patterns.json entry"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baselines, no historical metrics to inform planning decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "No prior architectural decisions recorded; decisions array is empty"
+          }
+        ]
+      },
+      "timestamp": 1772844222,
+      "ttl": 1800
+    },
+    "a4f1b7e0877298781942587afcd58b3e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains documented test failure patterns with root causes and fixes from recent runs. Directly relevant to understanding why plan validation might have failed—previous test failures may indicate recurring validation issues."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 78,
+            "summary": "Project conventions (test_pattern: *.test.js, import_style: commonjs, source_dir: src/, test_runner: vitest) are essential context for understanding how validation tests are structured and where they run."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 35,
+            "summary": "Basic project type detection (nodejs). Minimal specificity compared to full conventions entry; only confirms project language, not validation/testing structure."
+          }
+        ]
+      },
+      "timestamp": 1772844635,
+      "ttl": 1800
+    },
+    "7b0fe8972b9af98a2e2376f6518943d3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project structure conventions (src/, commonjs, vitest, npm) directly inform architecture design decisions for module organization, testing patterns, and import/require style"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Basic project type detection (nodejs) provides high-level context for technology stack and runtime environment"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Daemon failure patterns (classify_failure integration, sw-daemon.sh issues) inform understanding of pipeline reliability concerns relevant to stall/deadlock detection"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baseline data, not actionable for current design phase"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "No prior architectural decisions recorded, not applicable to current design"
+          }
+        ]
+      },
+      "timestamp": 1772844663,
+      "ttl": 1800
+    },
+    "d79275c1180620f0566ef5272e4b4b81": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Contains daemon failure patterns and classification logic. Mentions retry logic wiring and heartbeat detection issues—tangentially relevant to understanding daemon behavior that stall/deadlock detection must interact with, but not directly about design anti-patterns."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Basic project metadata (Node.js, vitest, CommonJS conventions). Provides baseline project context but does not address design approaches or anti-patterns specific to stall/deadlock detection."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No recorded architectural or design decisions to inform rejected approaches."
+          }
+        ]
+      },
+      "timestamp": 1772844677,
+      "ttl": 1800
+    },
+    "b52c35b67379d44049d5e85d0cbd8028": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions (vitest, npm, src/ structure, *.test.js pattern) directly needed for build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Test failures from sw-daemon.sh (classify_failure not wired into retry logic) and sw-cleanup.sh are relevant to pipeline stall detection feature"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Minimal project_type detection metadata, largely redundant with more detailed first patterns.json entry"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object provides no actionable data for build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No recorded decisions available"
+          }
+        ]
+      },
+      "timestamp": 1772844857,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project structure (Node.js, vitest, src/ directory, commonjs imports) essential for build stage execution and test running"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Contains 4 test failures from previous runs: sw-cleanup.sh output format issues (seen 5x), classify_failure wiring in daemon, and sw-hygiene.sh exit code problem—these patterns inform debugging if current build encounters similar failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object; no historical metrics to guide build stage optimization or performance tuning"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array; no past architectural or implementation decisions to reference during build"
+          }
+        ]
+      },
+      "timestamp": 1772844867,
+      "ttl": 1800
+    },
+    "8003bed64fb4f28b3bb2d749b6e88dfa": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772845337,
+      "ttl": 1800
+    },
+    "4083f51760eb3353175314b1da97b24e": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772845432,
+      "ttl": 1800
     }
   }
 }
