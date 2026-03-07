@@ -489,8 +489,9 @@ load_config() {
     PRIORITY_STRATEGY=$(jq -r '.intelligence.priority_strategy // "quick-wins-first"' "$config_file")
 
     # Auto-resolve "auto" for prediction, optimization, adaptive (same pattern as intelligence/composer)
+    local _flag_val=""
     for _flag_var in OPTIMIZATION_ENABLED PREDICTION_ENABLED ADAPTIVE_THRESHOLDS_ENABLED; do
-        eval "local _flag_val=\"\${${_flag_var}}\""
+        eval "_flag_val=\"\${${_flag_var}}\""
         if [[ "$_flag_val" == "auto" ]]; then
             if command -v claude &>/dev/null; then
                 eval "${_flag_var}=true"

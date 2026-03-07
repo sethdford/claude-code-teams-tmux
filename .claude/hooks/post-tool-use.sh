@@ -19,8 +19,9 @@ if [[ "$tool_name" == "Bash" ]] && [[ "${exit_code:-0}" != "0" ]]; then
     # Classify error type
     error_type="unknown"
     case "$error_snippet" in
-        *"test"*|*"FAIL"*|*"assert"*|*"expect"*)        error_type="test" ;;
-        *"syntax"*|*"unexpected"*|*"parse error"*)       error_type="syntax" ;;
+        *"syntax"*|*"parse error"*)                       error_type="syntax" ;;
+        *"unexpected token"*|*"unexpected end"*)          error_type="syntax" ;;
+        *"test"*|*"FAIL"*|*"assert"*|*"expect"*)         error_type="test" ;;
         *"not found"*|*"No such"*|*"ENOENT"*)            error_type="missing" ;;
         *"permission"*|*"denied"*|*"EACCES"*)            error_type="permission" ;;
         *"timeout"*|*"timed out"*|*"ETIMEDOUT"*)         error_type="timeout" ;;

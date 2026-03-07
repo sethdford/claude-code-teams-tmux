@@ -22,29 +22,21 @@ if [[ "$tool_name" == "Edit" || "$tool_name" == "Write" ]]; then
     # Sensitive files that should not be added to version control
     if [[ ! "$file_path" =~ (\.env|\.secret|secret|credential|key|token|private) ]]; then
         # Check for common secret patterns
-        local secret_patterns=(
-            "sk-ant-" "ANTHROPIC_API_KEY" "GITHUB_TOKEN" "OPENAI_API_KEY"
-            "AWS_SECRET" "DATABASE_URL" "PRIVATE_KEY" "api_key"
-            "BEGIN RSA PRIVATE KEY" "BEGIN PRIVATE KEY"
-        )
+        secret_patterns="sk-ant-|ANTHROPIC_API_KEY|GITHUB_TOKEN|OPENAI_API_KEY|AWS_SECRET|DATABASE_URL|PRIVATE_KEY|api_key|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY"
 
-        for pattern in "${secret_patterns[@]}"; do
-            if echo "$new_string" | grep -q "$pattern"; then
-                cat << "SECURITY_WARNING"
+        if echo "$new_string" | grep -qE "$secret_patterns"; then
+            cat << "SECURITY_WARNING"
 ⚠️  SECURITY WARNING: Secret pattern detected in non-secret file
 
-The content being written to this file contains a potential secret:
-- Pattern: [detected secret pattern]
-- File: [file being written]
+The content being written to this file contains a potential secret.
+File: $file_path
 
 Sensitive data should NEVER be committed to version control.
 
 If this is intentional (e.g., example code), please review carefully.
 SECURITY_WARNING
-                # Return non-zero to block the operation
-                exit 2
-            fi
-        done
+            exit 2
+        fi
     fi
 fi
 

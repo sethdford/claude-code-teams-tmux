@@ -352,17 +352,16 @@ fi
 # Hook security validation — check for untrusted repo-level hooks
 # Warn if repo-level .claude/hooks/ contains unexpected commands
 if [[ -d "$(pwd)/.claude/hooks" ]]; then
-    local _repo_hook_dir="$(pwd)/.claude/hooks"
-    local _trusted_hooks_dir="${HOME}/.claude/hooks"
-    local _untrusted_hook_count=0
+    _repo_hook_dir="$(pwd)/.claude/hooks"
+    _trusted_hooks_dir="${HOME}/.claude/hooks"
+    _untrusted_hook_count=0
 
     # Check if CLAUDE_CODE_VERIFY_HOOKS is enabled for extra caution
     if [[ -n "${CLAUDE_CODE_VERIFY_HOOKS:-}" ]]; then
         for repo_hook in "$_repo_hook_dir"/*.sh; do
             [[ -f "$repo_hook" ]] || continue
-            local _hook_name
             _hook_name="$(basename "$repo_hook")"
-            local _trusted_hook="$_trusted_hooks_dir/$_hook_name"
+            _trusted_hook="$_trusted_hooks_dir/$_hook_name"
 
             # If a trusted version exists, compare checksums
             if [[ -f "$_trusted_hook" ]]; then
