@@ -955,6 +955,24 @@ prep_generate_settings() {
     success "Generated .claude/settings.json"
 }
 
+# ─── prep_generate_managed_mcp ────────────────────────────────────────────────
+
+prep_generate_managed_mcp() {
+    local filepath="$PROJECT_ROOT/.claude/managed-mcp.json"
+    if ! should_write "$filepath"; then return; fi
+
+    info "Generating .claude/managed-mcp.json..."
+
+    jq -n '{
+        "allowedMcpServers": ["*"],
+        "deniedMcpServers": [],
+        "note": "Configure MCP server access policies for pipeline agents"
+    }' > "$filepath"
+
+    track_file "$filepath"
+    success "Generated .claude/managed-mcp.json"
+}
+
 # ─── prep_generate_hooks ────────────────────────────────────────────────────
 
 prep_generate_hooks() {
@@ -1635,6 +1653,7 @@ main() {
     # Generation
     prep_generate_claude_md
     prep_generate_settings
+    prep_generate_managed_mcp
     prep_generate_hooks
     prep_generate_agents
     prep_generate_architecture
