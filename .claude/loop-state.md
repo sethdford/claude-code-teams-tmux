@@ -1,119 +1,228 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Systematic Hardcoded Policy Discovery and Migration to Config
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+All 3 background agents completed. The final agent confirmed 48 hardcoded values found, 22 already configurable, 26 migration candidates — closely matching the issue's reported "44 hardcoded values, 62 fallback blocks."
 
----
+The agent also identified the best top-5 migration targets, which I'll update in the plan:
 
-## Summary
+1. **`sw-loop.sh:96-97`** — `EXTENSION_SIZE=5`, `MAX_EXTENSIONS=3` (loop flexibility, adaptive-tunable)
+2. **`sw-loop.sh:101-102`** — `CIRCUIT_BREAKER_THRESHOLD=3`, `MIN_PROGRESS_LINES=5` (loop exit conditions)
+3. **`sw-daemon.sh:237-246`** — `PATROL_INTERVAL=3600`, `PATROL_MAX_ISSUES=5`, `PATROL_FAILURES_THRESHOLD=3` (patrol tuning)
+4. **`sw-adaptive.sh:46-55`** — `MIN_TIMEOUT=60`, `MAX_TIMEOUT=7200`, etc. (adaptive bounds)
+5. **`sw-pipeline.sh:162`** — `max_lines=10000` (plan artifact rejection threshold)
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
-
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
-
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+The plan at `.claude/plan.md` is complete and ready for the build stage. All research is done — the plan covers architecture, task decomposition, risk analysis, testing approach, and definition of done.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Architecture Decision Record: Systematic Hardcoded Policy Discovery and Migration to Config
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Layer 1: Schema & Persistence (config/policy.json)
+### Layer 2: Query Interface (lib/config-loader.sh)
+# In any script that needs a policy value:
+# Get a policy value (returns config value, or fallback, or hardcoded default)
+# Get with validation (returns value if within bounds, otherwise error)
+# Check if policy exists and report confidence
+### Layer 3: Adaptive Integration
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json",
+      "relevance": 90,
+      "summary": "Contains project structure conventions (source_dir: src/, test_pattern: *.test.js, test_runner: vitest, import_style: commonjs) critical for locating hardcoded policies and understanding codebase layout during discovery"
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "failures.json",
+      "relevance": 45,
+      "summary": "Documents recent test failures in sw-cleanup.sh, sw-daemon.sh, and sw-hygiene.sh that may block build or indicate codebase state issues; some failures may be relevant context for understanding what needs fixing"
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (second)",
+      "relevance": 25,
+      "summary": "Identifies project as nodejs type with bootstrap detection timestamp; basic metadata with limited actionable value for policy discovery work"
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 15,
+      "summary": "Contains empty baselines object; currently provides no useful metrics or benchmarks for guiding policy discovery implementation"
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "global.json",
+      "relevance": 10,
+      "summary": "Both common_patterns and cross_repo_learnings arrays are empty; no cross-repo context available to inform policy discovery approach"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Systematic Hardcoded Policy Discovery and Migration to Config — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (refactor issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **performance**: Regex-based discovery across 100+ large scripts must complete in seconds; scanning shouldn't block pipeline execution. Optimize patterns and consider parallel scanning.
+- **testing-strategy**: Discovery engine accuracy is critical: high false positives (migrate wrong values) break production; false negatives (miss values) defeat the purpose. Need comprehensive unit + integration tests.
+- **hardcoded-value-discovery**: Specialized skill for identifying magic numbers, timeouts, retry limits, thresholds in bash with high precision; ranking by safety and impact for prioritized migration.
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Performance Expertise
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+Apply these optimization patterns:
+
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
+
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
+
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
+
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
+
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Hardcoded Value Discovery for Bash Scripts
+
+Systematically identify and classify hardcoded values in bash scripts to enable data-driven configuration.
+
+### Discovery Patterns
+
+**Numeric Values in Common Contexts:**
+- Timeouts: `sleep 30`, `timeout 60`, `TIMEOUT=120` → migrate to config.timeouts
+- Retry/Loop Limits: `for ((i=0; i<5; i++))`, `MAX_RETRIES=3` → config.limits
+- Thresholds: `if [[ $count -gt 100 ]]`, `THRESHOLD=500` → config.thresholds
+- Delays/Intervals: `--interval 5`, `POLL_SECONDS=10` → config.intervals
+
+**Fallback Patterns:**
+- `${VAR:-default}` → classify as conditional fallback (low priority)
+- `|| echo "fallback"` → classify as error fallback (medium priority)
+- `cmd || true` → classify as error suppression (assess risk)
+- `if [[ -z $VAR ]]; then ... fi` → classify as missing-value fallback
+
+### Confidence Scoring
+
+Rank migrations 1-5 (highest ROI first):
+- **Score 5 (Migrate First)**: High-variance values that adaptive tuner can optimize (timeouts, poll intervals, retry counts). Low risk of correctness impact.
+- **Score 4**: Well-scoped values with clear semantics. Easy to validate migrated behavior matches hardcoded baseline.
+- **Score 3**: Values that affect performance but not correctness. Medium risk; need good monitoring.
+- **Score 2**: Values with ambiguous semantics or used in multiple contexts. Risky; consider per-context overrides.
+- **Score 1**: Security-critical values or values with subtle interactions. Migrate only with extensive testing.
+
+### Implementation Checklist
+
+- [ ] Build regex library for each pattern (timeouts, retry limits, thresholds, intervals)
+- [ ] For each match: extract value + 2 lines of context (to understand purpose)
+- [ ] Classify by type + context
+- [ ] Assign confidence score based on safety profile
+- [ ] Group by semantic domain (auth timeouts vs. polling intervals)
+- [ ] Generate config schema stub
+- [ ] Flag values with multiple conflicting definitions (same variable set to different values)
+- [ ] Flag values in critical paths (retry logic, deployment steps)
+- [ ] Output discovery report: [filename:line] [value] [type] [context] [score]
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-07T00:50:37Z
+last_iteration_at: 2026-03-07T00:50:37Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 

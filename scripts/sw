@@ -540,6 +540,9 @@ main() {
         otel)
             exec "$SCRIPT_DIR/sw-otel.sh" "$@"
             ;;
+        policy-discovery|policy)
+            exec "$SCRIPT_DIR/sw-policy-discovery.sh" "$@"
+            ;;
         triage)
             exec "$SCRIPT_DIR/sw-triage.sh" "$@"
             ;;
