@@ -945,9 +945,9 @@ function broadcastNewEvents(): void {
 }
 
 // ─── Data Collection ─────────────────────────────────────────────────
-function readEvents(): DaemonEvent[] {
+function readEvents(limit = 200): DaemonEvent[] {
   // Try SQLite first (faster for large event logs)
-  const dbEvents = dbQueryEvents(0, 10000);
+  const dbEvents = dbQueryEvents(0, limit);
   if (dbEvents.length > 0) return dbEvents;
 
   // Fallback to JSONL — only read last 1000 lines to avoid OOM on large files

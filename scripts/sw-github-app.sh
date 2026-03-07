@@ -193,11 +193,18 @@ _cache_token() {
     # shellcheck disable=SC2064
     trap "rm -f '$tmp_tokens'" RETURN
 
+    local new_entry
+    new_entry=$(jq -n \
+        --argjson installation_id "$installation_id" \
+        --arg token "$token" \
+        --arg expires_at "$expires_at" \
+        '{installation_id: $installation_id, token: $token, expires_at: $expires_at}')
+
     if [[ -f "$TOKENS_FILE" ]]; then
-        jq ".tokens += [{\"installation_id\":$installation_id,\"token\":\"$token\",\"expires_at\":\"$expires_at\"}]" \
+        jq --argjson entry "$new_entry" '.tokens += [$entry]' \
             "$TOKENS_FILE" > "$tmp_tokens"
     else
-        jq -n ".tokens = [{\"installation_id\":$installation_id,\"token\":\"$token\",\"expires_at\":\"$expires_at\"}]" \
+        jq -n --argjson entry "$new_entry" '.tokens = [$entry]' \
             > "$tmp_tokens"
     fi
 

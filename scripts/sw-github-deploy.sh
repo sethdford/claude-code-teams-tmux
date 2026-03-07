@@ -96,7 +96,7 @@ gh_deploy_create() {
     if [[ "$result" -ne 0 ]]; then
         warn "Failed to create deployment for ref '${ref}' to '${environment}' (API returned ${result})" >&2
         echo ""
-        return 0
+        return 1
     fi
 
     local deploy_id

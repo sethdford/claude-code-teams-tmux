@@ -83,7 +83,7 @@ emit_event() {
             json_fields="${json_fields},\"${key}\":\"${val}\""
         fi
     done
-    mkdir -p "${HOME}/.shipwright"
+    mkdir -p "${HOME}/.shipwright" 2>/dev/null || { echo "WARN: emit_event cannot create ~/.shipwright" >&2; return 1; }
     local _event_line="{\"ts\":\"$(now_iso)\",\"ts_epoch\":$(now_epoch),\"type\":\"${event_type}\"${json_fields}}"
     # Use flock to prevent concurrent write corruption
     local _lock_file="${EVENTS_FILE}.lock"

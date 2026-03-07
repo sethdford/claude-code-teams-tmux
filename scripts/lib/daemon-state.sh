@@ -545,10 +545,11 @@ dequeue_next() {
 
 is_priority_issue() {
     local labels_csv="$1"
-    local IFS=','
-    local lane_labels
-    read -ra lane_labels <<< "$PRIORITY_LANE_LABELS"
-    for lane_label in "${lane_labels[@]}"; do
+    # Bash 3.2 compatible: iterate over comma-separated labels directly
+    local _old_ifs="$IFS"
+    IFS=','
+    for lane_label in $PRIORITY_LANE_LABELS; do
+        IFS="$_old_ifs"
         # Trim whitespace
         lane_label="${lane_label## }"
         lane_label="${lane_label%% }"
@@ -556,6 +557,7 @@ is_priority_issue() {
             return 0
         fi
     done
+    IFS="$_old_ifs"
     return 1
 }
 

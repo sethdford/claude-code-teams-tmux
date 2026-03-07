@@ -76,8 +76,9 @@ function loadMoreActivity(): void {
     .then((result) => {
       const existing = store.get("activityEvents");
       const newEvents = result.events || [];
+      const merged = [...existing, ...newEvents];
       store.update({
-        activityEvents: [...existing, ...newEvents],
+        activityEvents: merged.length > 500 ? merged.slice(-500) : merged,
         activityHasMore: result.hasMore || false,
         activityOffset: existing.length + newEvents.length,
       });

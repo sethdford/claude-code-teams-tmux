@@ -152,10 +152,10 @@ cost_record() {
     # Always write to JSON (dual-write period)
     (
         if command -v flock >/dev/null 2>&1; then
-            flock -w 10 200 2>/dev/null || { warn "Cost lock timeout"; }
+            flock -w 10 200 2>/dev/null || { warn "Cost lock timeout — proceeding without lock"; }
         fi
         local tmp_file
-        tmp_file=$(mktemp "${COST_FILE}.tmp.XXXXXX")
+        tmp_file=$(mktemp "${COST_FILE}.tmp.XXXXXX") || { error "mktemp failed for cost record"; exit 1; }
         if ! jq --argjson input "$input_tokens" \
            --argjson output "$output_tokens" \
            --arg model "$model" \

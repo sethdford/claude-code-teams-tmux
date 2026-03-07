@@ -143,7 +143,7 @@ gh_checks_create_run() {
     if [[ "$result" -ne 0 ]]; then
         warn "Failed to create check run '${name}' (API returned ${result})" >&2
         echo ""
-        return 0
+        return 1
     fi
 
     local run_id
