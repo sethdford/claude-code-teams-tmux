@@ -48,8 +48,19 @@ classify_failure() {
         echo "invalid_issue"
         return
     fi
-    # Context exhaustion — check progress file
+    # Stall deadlock — check for stall-diagnostics.json
     local issue_worktree_path="${WORKTREE_DIR:-${REPO_DIR}/.worktrees}/daemon-issue-${issue_num}"
+    local stall_diag="${issue_worktree_path}/.claude/loop-logs/stall-diagnostics.json"
+    if [[ -f "$stall_diag" ]]; then
+        echo "stall_deadlock"
+        return
+    fi
+    # Also check log for stall_abort status
+    if echo "$tail_content" | grep -qiE 'stall_abort|Pipeline stall detected.*auto-aborting|stall\.abort'; then
+        echo "stall_deadlock"
+        return
+    fi
+    # Context exhaustion — check progress file
     local progress_file="${issue_worktree_path}/.claude/loop-logs/progress.md"
     if [[ -f "$progress_file" ]]; then
         local cf_iter
@@ -82,6 +93,7 @@ get_max_retries_for_class() {
         auth_error|invalid_issue) echo 0 ;;
         api_error)                echo "${MAX_RETRIES_API_ERROR:-4}" ;;
         context_exhaustion)       echo "${MAX_RETRIES_CONTEXT_EXHAUSTION:-2}" ;;
+        stall_deadlock)          echo "${MAX_RETRIES_STALL:-1}" ;;
         build_failure)           echo "${MAX_RETRIES_BUILD:-2}" ;;
         *)                       echo "${MAX_RETRIES:-2}" ;;
     esac
@@ -266,6 +278,18 @@ daemon_on_failure() {
                         retry_model="opus"
                         extra_args+=("--max-iterations" "30" "--compound-cycles" "5")
                         daemon_log INFO "Escalation: template=full, compound_cycles=5"
+                    fi
+
+                    # Stall deadlock: boost restarts + force different approach
+                    if [[ "$failure_class" == "stall_deadlock" ]]; then
+                        local boosted_restarts=$(( ${MAX_RESTARTS_CFG:-3} + 2 ))
+                        if [[ "$boosted_restarts" -gt 5 ]]; then
+                            boosted_restarts=5
+                        fi
+                        extra_args+=("--max-restarts" "$boosted_restarts")
+                        retry_model="opus"
+                        retry_template="full"
+                        daemon_log INFO "Stall deadlock retry: template=full, restarts=$boosted_restarts (different strategy)"
                     fi
 
                     # Increase restarts on context exhaustion

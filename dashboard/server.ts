@@ -274,6 +274,12 @@ interface FleetState {
   cost: CostInfo;
   dora: DoraGrades;
   team?: TeamState;
+  stallStats?: {
+    totalStalls: number;
+    totalAborts: number;
+    currentStallScore: number;
+    lastStallReason: string;
+  };
 }
 
 interface HealthResponse {
@@ -1195,6 +1201,32 @@ function getFleetState(): FleetState {
   // Add team data if any developers are connected
   if (developerRegistry.size > 0) {
     state.team = getTeamState();
+  }
+
+  // Add stall statistics from events
+  {
+    let totalStalls = 0;
+    let totalAborts = 0;
+    let currentStallScore = 0;
+    let lastStallReason = "";
+    for (const e of events) {
+      if (e.type === "stall.detect") {
+        totalStalls++;
+        currentStallScore = Number(e.score) || 0;
+      }
+      if (e.type === "stall.abort") {
+        totalAborts++;
+        lastStallReason = (e.stall_type as string) || "unknown";
+      }
+    }
+    if (totalStalls > 0 || totalAborts > 0) {
+      state.stallStats = {
+        totalStalls,
+        totalAborts,
+        currentStallScore,
+        lastStallReason,
+      };
+    }
   }
 
   return state;

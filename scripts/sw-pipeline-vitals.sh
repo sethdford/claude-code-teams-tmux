@@ -43,10 +43,11 @@ BUDGET_FILE="${COST_DIR}/budget.json"
 OPTIMIZATION_DIR="${HOME}/.shipwright/optimization"
 
 # Signal weights for health score (configurable via env vars)
-WEIGHT_MOMENTUM="${VITALS_WEIGHT_MOMENTUM:-35}"
-WEIGHT_CONVERGENCE="${VITALS_WEIGHT_CONVERGENCE:-30}"
+WEIGHT_MOMENTUM="${VITALS_WEIGHT_MOMENTUM:-30}"
+WEIGHT_CONVERGENCE="${VITALS_WEIGHT_CONVERGENCE:-25}"
 WEIGHT_BUDGET="${VITALS_WEIGHT_BUDGET:-20}"
-WEIGHT_ERROR_MATURITY="${VITALS_WEIGHT_ERROR_MATURITY:-15}"
+WEIGHT_ERROR_MATURITY="${VITALS_WEIGHT_ERROR_MATURITY:-10}"
+WEIGHT_STALL_RISK="${VITALS_WEIGHT_STALL_RISK:-15}"
 
 # ─── Helper: safe numeric extraction ────────────────────────────────────────
 _safe_num() {
@@ -400,9 +401,64 @@ pipeline_emit_progress_snapshot() {
         "no_progress=$no_progress_count"
 }
 
+# ─── Stall Risk Score ──────────────────────────────────────────────────────
+# Reads stuckness tracking file to assess iteration-level stall risk.
+# Returns inverted score: 100 = healthy (no stall), 0 = severe stall.
+_compute_stall_risk() {
+    local artifacts_dir="${1:-}"
+    local current_iteration="${2:-0}"
+
+    # Find stuckness tracking file
+    local tracking_file=""
+    local loop_logs_dir="${artifacts_dir%pipeline-artifacts*}loop-logs"
+    if [[ -d "$loop_logs_dir" ]]; then
+        tracking_file="$loop_logs_dir/stuckness-tracking.txt"
+    fi
+
+    # No tracking data — assume healthy
+    if [[ ! -f "$tracking_file" ]] || [[ ! -s "$tracking_file" ]]; then
+        echo "100"
+        return
+    fi
+
+    # Use stall_compute_score if available (from pipeline-stall-detection.sh)
+    if type stall_compute_score >/dev/null 2>&1; then
+        local error_log="${artifacts_dir}/error-log.jsonl"
+        local raw_score
+        raw_score=$(stall_compute_score "$tracking_file" "$error_log" "$current_iteration" "${MAX_ITERATIONS:-20}" 2>/dev/null) || raw_score=0
+        if ! [[ "$raw_score" =~ ^[0-9]+$ ]]; then
+            raw_score=0
+        fi
+        # Invert: stall_compute_score gives 0=healthy, 100=stuck
+        # Vitals want 0=bad, 100=healthy
+        echo $(( 100 - raw_score ))
+        return
+    fi
+
+    # Fallback: simple heuristic from tracking file
+    local line_count
+    line_count=$(wc -l < "$tracking_file" 2>/dev/null || echo "0")
+    line_count=$(echo "$line_count" | tr -d ' ')
+    if [[ "$line_count" -lt 3 ]]; then
+        echo "100"
+        return
+    fi
+
+    local last_three_diffs
+    last_three_diffs=$(tail -3 "$tracking_file" 2>/dev/null | cut -d'|' -f1 || true)
+    local unique_diffs
+    unique_diffs=$(echo "$last_three_diffs" | sort -u | grep -v '^$' | wc -l | tr -d ' ')
+    if [[ "$unique_diffs" -le 1 ]]; then
+        echo "30"
+        return
+    fi
+
+    echo "80"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════
 # pipeline_compute_vitals
-# Main entry: computes composite health score from 4 weighted signals
+# Main entry: computes composite health score from 5 weighted signals
 # Args: [pipeline_state_file] [artifacts_dir] [issue_number]
 # Output: JSON to stdout
 # ═══════════════════════════════════════════════════════════════════════════
@@ -446,14 +502,15 @@ pipeline_compute_vitals() {
     [[ -z "$current_diff" ]] && current_diff=0
 
     # ── Compute individual signals ──
-    local momentum convergence budget_score error_maturity
+    local momentum convergence budget_score error_maturity stall_risk
     momentum=$(_compute_momentum "${progress_file}" "$current_stage" "$current_iteration" "$current_diff")
     convergence=$(_compute_convergence "$error_log" "$progress_file")
     budget_score=$(_compute_budget)
     error_maturity=$(_compute_error_maturity "$error_log")
+    stall_risk=$(_compute_stall_risk "$artifacts_dir" "$current_iteration")
 
     # ── Weighted composite score ──
-    local health_score=$(( (momentum * WEIGHT_MOMENTUM + convergence * WEIGHT_CONVERGENCE + budget_score * WEIGHT_BUDGET + error_maturity * WEIGHT_ERROR_MATURITY) / 100 ))
+    local health_score=$(( (momentum * WEIGHT_MOMENTUM + convergence * WEIGHT_CONVERGENCE + budget_score * WEIGHT_BUDGET + error_maturity * WEIGHT_ERROR_MATURITY + stall_risk * WEIGHT_STALL_RISK) / 100 ))
     [[ "$health_score" -lt 0 ]] && health_score=0
     [[ "$health_score" -gt 100 ]] && health_score=100
 
@@ -526,6 +583,7 @@ pipeline_compute_vitals() {
         --argjson convergence "$convergence" \
         --argjson budget_score "$budget_score" \
         --argjson error_maturity "$error_maturity" \
+        --argjson stall_risk "$stall_risk" \
         --arg current_stage "$current_stage" \
         --argjson current_iteration "$current_iteration" \
         --arg elapsed "$elapsed" \
@@ -544,7 +602,8 @@ pipeline_compute_vitals() {
                 momentum: $momentum,
                 convergence: $convergence,
                 budget: $budget_score,
-                error_maturity: $error_maturity
+                error_maturity: $error_maturity,
+                stall_risk: $stall_risk
             },
             pipeline: {
                 stage: $current_stage,

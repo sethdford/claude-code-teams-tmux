@@ -36,6 +36,7 @@ fi
 # Source loop sub-modules for modular iteration management
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
+[[ -f "$SCRIPT_DIR/lib/pipeline-stall-detection.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-stall-detection.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
 # Error actionability scoring and enhancement for better error context
@@ -2334,6 +2335,23 @@ HUMAN FEEDBACK (received after iteration $ITERATION): $human_msg"
             fi
         fi
 
+        # Stall detection: check if pipeline is deadlocked and should abort
+        if type stall_check_and_abort >/dev/null 2>&1; then
+            local _stall_tracking="${STUCKNESS_TRACKING_FILE:-$LOG_DIR/stuckness-tracking.txt}"
+            local _stall_errlog="${ARTIFACTS_DIR:-$PROJECT_ROOT/.claude/pipeline-artifacts}/error-log.jsonl"
+            if stall_check_and_abort "$_stall_tracking" "$_stall_errlog" "$LOG_DIR" \
+                "$ITERATION" "$MAX_ITERATIONS" "${TEST_PASSED:-false}" "${QUALITY_GATE_PASSED:-false}"; then
+                STATUS="stall_abort"
+                write_state
+                write_progress
+                error "Pipeline stall detected — auto-aborting (score >= 70, tests not passing)"
+                if [[ -f "$LOG_DIR/stall-diagnostics.json" ]]; then
+                    echo -e "  ${DIM}Diagnostics: $(jq -r '.stall_type // "unknown"' "$LOG_DIR/stall-diagnostics.json" 2>/dev/null)${RESET}"
+                fi
+                break
+            fi
+        fi
+
         # Stuckness-triggered restart: if detected 3+ times, break to allow session restart
         if [[ "${STUCKNESS_COUNT:-0}" -ge 3 ]]; then
             STATUS="stuck_restart"
@@ -2359,9 +2377,13 @@ run_loop_with_restarts() {
         local loop_exit=0
         run_single_agent_loop || loop_exit=$?
 
-        # If completed successfully or no restarts configured, exit
+        # If completed successfully or stall-aborted, exit immediately
         if [[ "$STATUS" == "complete" ]]; then
             return 0
+        fi
+        if [[ "$STATUS" == "stall_abort" ]]; then
+            warn "Pipeline stall abort — not restarting (deadlock detected)"
+            return 1
         fi
         if [[ "$MAX_RESTARTS" -le 0 ]]; then
             return "$loop_exit"
