@@ -1,101 +1,217 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Implementation plan created at `.claude/plan.md`. Here's the summary:
 
----
+## Plan Overview
 
-## Summary
+**Approach**: New `sw-pipeline-analytics.sh` script + dashboard API endpoint + frontend tab (Approach A — clean separation, follows existing patterns, minimal blast radius).
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Root cause**: The strategic agent shows 0/0 because there's no analytics layer between raw SQLite data and consumers. The data exists in `pipeline_runs`, `pipeline_stages`, and `pipeline_outcomes` tables — it just isn't being queried and aggregated.
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+## 10 Tasks
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+| # | Task | Files | Blocks |
+|---|------|-------|--------|
+| 1 | Add 7 analytics query functions to `sw-db.sh` | `sw-db.sh` | Tasks 2, 4 |
+| 2 | Create `sw-pipeline-analytics.sh` (terminal + JSON output) | new file | Task 3 |
+| 3 | Register `analytics` command in CLI router | `sw` | — |
+| 4 | Add `GET /api/analytics` endpoint | `server.ts` | Task 5 |
+| 5 | Add Analytics tab to dashboard frontend | `index.html` | — |
+| 6 | Integrate analytics summary into `sw-status.sh --json` | `sw-status.sh` | — |
+| 7 | Update `sw-strategic.sh` to consume analytics JSON | `sw-strategic.sh` | — |
+| 8 | Create test suite `sw-pipeline-analytics-test.sh` | new file | — |
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Data Flow
+### Query Functions (added to `sw-db.sh`)
+### CLI Script (`sw-pipeline-analytics.sh`)
+### Dashboard API Endpoint
+### Dashboard Frontend Tab
+### Error Handling
+### Integration Points
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json (first entry)",
+      "relevance": 80,
+      "summary": "Node.js/JavaScript project with vitest, npm, src/ directory structure—directly applicable to building the dashboard within this repo's conventions"
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (second entry)",
+      "relevance": 45,
+      "summary": "Confirms Node.js project type; lower detail than first entry but redundant confirmation of tech stack"
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "failures.json",
+      "relevance": 20,
+      "summary": "Contains test failures in sw-cleanup.sh unrelated to dashboard; low relevance to dashboard build stage"
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baselines object; no actionable insights for build stage"
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "global.json",
+      "relevance": 5,
+      "summary": "Empty common patterns and cross-repo learnings; no relevant data"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Pipeline Execution Visibility Dashboard with Success Rate Attribution Analytics — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (frontend issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **data-pipeline**: Core work: transform raw pipeline execution events into aggregated metrics with correct dimensional breakdown; critical to get the ETL logic right so counts are accurate across template/stage/repo-type/complexity dimensions.
+- **observability**: Instrumenting both the metrics pipeline itself (latency, data freshness, query performance) and validating that dashboard metrics actually reflect what's happening in real pipelines.
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Data Pipeline Expertise
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+Apply these data engineering patterns:
+
+### Schema Design
+- Define schemas explicitly — never rely on implicit structure
+- Use migrations for all schema changes (never manual ALTER TABLE)
+- Add indexes for frequently queried columns
+- Consider denormalization for read-heavy paths
+
+### Data Integrity
+- Use transactions for multi-step operations
+- Implement idempotency keys for operations that could be retried
+- Validate data at ingestion — reject bad data early
+- Use constraints (NOT NULL, UNIQUE, FOREIGN KEY) in the database layer
+
+### Query Patterns
+- Avoid N+1 queries — use JOINs or batch loading
+- Use EXPLAIN to verify query plans for complex queries
+- Paginate large result sets — never SELECT * without LIMIT
+- Use parameterized queries — never string concatenation for SQL
+
+### Migration Safety
+- Migrations must be reversible (include rollback steps)
+- Test migrations on a copy of production data
+- Add new columns as nullable, then backfill, then add NOT NULL
+- Never drop columns in the same deploy as code changes
+
+### Backpressure & Resilience
+- Implement circuit breakers for external data sources
+- Use dead letter queues for failed processing
+- Set timeouts on all external calls
+- Monitor queue depths and processing latency
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Schema Changes**: Full migration SQL with both forward and rollback scripts, plus data backfill strategy if required
+2. **Data Flow Diagram**: Text diagram showing data ingestion → processing → output with failure points marked
+3. **Idempotency Strategy**: How the system handles duplicate requests (idempotency keys, deduplication, side-effect safety)
+4. **Rollback Plan**: Step-by-step process to revert schema changes and restore data consistency
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Observability: Watch the Deploy Like a Hawk
+
+Post-deploy monitoring catches what tests miss. Real traffic reveals real problems.
+
+### What to Monitor (by Priority)
+
+**P0 — Immediate (first 5 minutes):**
+- Error rate: any increase over baseline?
+- Health check: still returning 200?
+- Latency: p50/p95/p99 within normal range?
+- Memory/CPU: any sudden spikes?
+
+**P1 — Short-term (5-30 minutes):**
+- Business metrics: are users completing key flows?
+- Queue depths: are background jobs processing normally?
+- Connection pools: any exhaustion or leak patterns?
+- Disk usage: any unexpected growth?
+
+**P2 — Medium-term (1-24 hours):**
+- Memory trends: gradual leak over time?
+- Error rate trends: slowly increasing?
+- User-reported issues: any new support tickets?
+- Performance degradation under sustained load?
+
+### Anomaly Detection Patterns
+- **Spike detection**: >2x baseline error rate in any 1-minute window
+- **Trend detection**: steadily increasing error rate over 5-minute window
+- **Absence detection**: expected periodic events stop occurring
+- **Latency shift**: p95 latency increases >50% from baseline
+
+### Log Analysis
+- Search for new ERROR/FATAL/PANIC entries not present before deploy
+- Check for stack traces — they indicate unhandled exceptions
+- Look for retry storms — repeated failed attempts at the same operation
+- Monitor for resource exhaustion messages (OOM, connection refused, disk full)
+
+### Auto-Rollback Triggers
+Automatically rollback if ANY of these occur:
+- Health check fails 3 consecutive times
+- Error rate exceeds threshold for 2+ minutes
+- Critical service dependency becomes unreachable
+- Memory usage exceeds 90% of limit
+
+### Monitoring by Issue Type
+
+**Frontend changes:**
+- JavaScript error rates in browser (if client-side monitoring exists)
+- Asset load failures (404s on new bundles)
+- Core Web Vitals regression (LCP, FID, CLS)
+
+**API changes:**
+- Response status code distribution (2xx vs 4xx vs 5xx)
+- Request throughput — drops indicate client-side breakage
+- Authentication failures — spikes indicate auth regression
+
+**Database changes:**
+- Query latency per endpoint
+- Connection pool utilization
+- Slow query log entries
+- Replication lag (if applicable)
+
+### Incident Escalation
+If monitoring detects issues:
+1. Execute rollback (if auto-rollback enabled)
+2. Create incident issue with monitoring data
+3. Attach relevant logs and metrics
+4. Tag the original issue with `incident` label
+5. Do NOT silence alerts — let them fire
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Monitoring Checklist**: P0/P1/P2 metrics to watch (error rate, latency, memory, health checks) with specific thresholds
+2. **Anomaly Detection Triggers**: Explicit conditions that trigger alerts (spike detection >2x, trend detection over 5min, absence detection, latency shift >50%)
+3. **Log Analysis**: Search strategy for new ERROR/FATAL entries, stack traces, retry storms, resource exhaustion patterns
+4. **Auto-Rollback Decision Criteria**: Conditions that trigger automatic rollback (health check failures, error rate threshold, critical dependency unreachable, memory exhaustion)
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-07T20:22:19Z
+last_iteration_at: 2026-03-07T20:22:19Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -106,14 +222,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
