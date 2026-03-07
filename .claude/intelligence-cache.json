@@ -846,27 +846,27 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Defines project structure (node/vitest/npm), test patterns, and conventions essential for running build and test stages. Directly applicable to executing builds."
+            "relevance": 95,
+            "summary": "Critical build metadata: project is Node.js with npm/vitest, source in src/, tests match *.test.js. Essential for configuring build tooling and test execution."
           },
           {
             "file": "failures.json",
             "relevance": 75,
-            "summary": "Documents previous test failures (sw-cleanup.sh, sw-code-review-test.sh) with root causes and fixes. Helps avoid regression and speeds up build debugging."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Contains baselines structure but is empty. Could be relevant if populated with build performance metrics for comparison."
+            "summary": "Test stage failures in sw-cleanup.sh heartbeat detection. Contextualizes what can break during the test phase that follows build, though specific to cleanup logic rather than general build concerns."
           },
           {
             "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Empty decisions log. Could be relevant if it tracked build configuration choices or tool selections."
+            "relevance": 5,
+            "summary": "Empty decisions log. No prior architectural or implementation decisions captured."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines. No performance or build metric baselines available."
           }
         ]
       },
-      "timestamp": 1772900705,
+      "timestamp": 1772902696,
       "ttl": 1800
     }
   }
