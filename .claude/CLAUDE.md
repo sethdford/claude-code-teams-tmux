@@ -618,7 +618,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 
 | File | Lines | Purpose |
 | --- | ---: | --- |
-| `scripts/sw-github-app.sh` | 585 | GitHub App Management & Webhook Receiver |
+| `scripts/sw-github-app.sh` | 592 | GitHub App Management & Webhook Receiver |
 | `scripts/sw-github-checks.sh` | 501 | Native GitHub Checks API Integration |
 | `scripts/sw-github-deploy.sh` | 513 | Native GitHub Deployments API Integration |
 | `scripts/sw-github-graphql.sh` | 965 | GitHub GraphQL API Client |
