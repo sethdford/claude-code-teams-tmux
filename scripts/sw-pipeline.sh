@@ -296,6 +296,8 @@ ORIGINAL_REPO_DIR=""
 REPO_OVERRIDE=""
 _cleanup_done=""
 PIPELINE_EXIT_CODE=1  # assume failure until run_pipeline succeeds
+EFFORT_LEVEL_OVERRIDE="${SW_EFFORT_LEVEL:-}"
+PIPELINE_FALLBACK_MODEL="${SW_FALLBACK_MODEL:-sonnet}"
 
 # GitHub metadata (populated during intake)
 ISSUE_LABELS=""
@@ -459,6 +461,16 @@ parse_args() {
 
             --fast-test-cmd) FAST_TEST_CMD_OVERRIDE="$2"; shift 2 ;;
             --tdd)         TDD_ENABLED=true; shift ;;
+            --effort)
+                EFFORT_LEVEL_OVERRIDE="${2:-}"
+                [[ -z "$EFFORT_LEVEL_OVERRIDE" ]] && { error "Missing value for --effort"; exit 1; }
+                shift 2 ;;
+            --effort=*) EFFORT_LEVEL_OVERRIDE="${1#--effort=}"; shift ;;
+            --fallback-model)
+                PIPELINE_FALLBACK_MODEL="${2:-}"
+                [[ -z "$PIPELINE_FALLBACK_MODEL" ]] && { error "Missing value for --fallback-model"; exit 1; }
+                shift 2 ;;
+            --fallback-model=*) PIPELINE_FALLBACK_MODEL="${1#--fallback-model=}"; shift ;;
             --help|-h)     show_help; exit 0 ;;
             *)
                 if [[ -z "$PIPELINE_NAME_ARG" ]]; then
@@ -471,6 +483,9 @@ parse_args() {
 
 PIPELINE_NAME_ARG=""
 parse_args "$@"
+
+# Export effort and fallback variables so subprocesses can access them
+export EFFORT_LEVEL_OVERRIDE PIPELINE_FALLBACK_MODEL
 
 # ─── Non-Interactive Detection ──────────────────────────────────────────────
 # When stdin is not a terminal (background, pipe, nohup, tmux send-keys),

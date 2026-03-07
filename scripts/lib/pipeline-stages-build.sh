@@ -3,6 +3,43 @@
 [[ -n "${_PIPELINE_STAGES_BUILD_LOADED:-}" ]] && return 0
 _PIPELINE_STAGES_BUILD_LOADED=1
 
+# Map pipeline stage to effort level (when no explicit --effort override)
+_stage_effort_level() {
+    local stage="$1"
+    case "$stage" in
+        intake)              echo "low" ;;
+        plan|design)         echo "high" ;;
+        build)               echo "medium" ;;
+        test)                echo "medium" ;;
+        review|compound_quality) echo "high" ;;
+        pr|merge)            echo "low" ;;
+        deploy|validate|monitor) echo "medium" ;;
+        *)                   echo "medium" ;;
+    esac
+}
+
+# Build common claude flags for pipeline stages
+_pipeline_claude_flags() {
+    local stage="$1"
+    local model="$2"
+    local flags=("--model" "$model")
+
+    # Effort level: explicit override > per-stage default
+    local effort="${EFFORT_LEVEL_OVERRIDE:-$(_stage_effort_level "$stage")}"
+    flags+=("--effort-level" "$effort")
+
+    # Fallback model
+    if [[ -n "${FALLBACK_MODEL_OVERRIDE:-}" ]]; then
+        flags+=("--fallback-model" "$FALLBACK_MODEL_OVERRIDE")
+    elif [[ -n "${PIPELINE_FALLBACK_MODEL:-}" ]]; then
+        flags+=("--fallback-model" "$PIPELINE_FALLBACK_MODEL")
+    else
+        flags+=("--fallback-model" "sonnet")
+    fi
+
+    echo "${flags[*]}"
+}
+
 stage_test_first() {
     CURRENT_STAGE_ID="test_first"
     info "Generating tests from requirements (TDD mode)"
@@ -349,6 +386,11 @@ ${_skill_prompts}
     [[ -n "${MAX_RESTARTS_OVERRIDE:-}" ]] && loop_args+=(--max-restarts "$MAX_RESTARTS_OVERRIDE")
     # Fast test mode
     [[ -n "${FAST_TEST_CMD_OVERRIDE:-}" ]] && loop_args+=(--fast-test-cmd "$FAST_TEST_CMD_OVERRIDE")
+
+    # Effort level and fallback model
+    [[ -n "${EFFORT_LEVEL_OVERRIDE:-}" ]] && loop_args+=(--effort "$EFFORT_LEVEL_OVERRIDE")
+    [[ -n "${FALLBACK_MODEL_OVERRIDE:-}" ]] && loop_args+=(--fallback-model "$FALLBACK_MODEL_OVERRIDE")
+    [[ -z "${FALLBACK_MODEL_OVERRIDE:-}" && -n "${PIPELINE_FALLBACK_MODEL:-}" ]] && loop_args+=(--fallback-model "$PIPELINE_FALLBACK_MODEL")
 
     # Definition of Done: use plan-extracted DoD if available
     [[ -s "$dod_file" ]] && loop_args+=(--definition-of-done "$dod_file")

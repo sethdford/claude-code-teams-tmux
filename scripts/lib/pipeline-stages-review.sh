@@ -189,7 +189,11 @@ ${_skill_prompts}
 
     # Skip permissions — pipeline runs headlessly (claude -p) and has no terminal
     # for interactive permission prompts. Same rationale as build stage (line ~1083).
-    local review_args=(--print --model "$review_model" --max-turns 25 --dangerously-skip-permissions)
+    local review_args=(--print)
+    local _review_flags
+    _review_flags="$(_pipeline_claude_flags "review" "$review_model")"
+    # shellcheck disable=SC2206
+    review_args+=($_review_flags --max-turns 25 --dangerously-skip-permissions)
 
     # ── Two-Stage Review: Pass 1 (Spec Compliance) ──
     local _two_stage=false
