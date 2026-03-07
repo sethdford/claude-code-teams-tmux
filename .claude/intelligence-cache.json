@@ -2467,28 +2467,28 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Essential project structure context: Node.js, vitest test runner, npm package manager, commonjs imports, src/ directory. Directly informs build commands and tooling decisions during this stage."
+            "summary": "Critical: Contains 3 specific test failure patterns (sw-cleanup.sh output format, classify_failure not wired in daemon, test assertion issues) with root causes and fixes. Directly applicable to build stage test failures."
           },
           {
-            "file": "failures.json",
+            "file": "patterns.json",
             "relevance": 72,
-            "summary": "4 test failures from previous runs: sw-cleanup.sh output format (5x), sw-daemon.sh classify_failure integration, sw-hygiene.sh exit code. These are likely to recur in build loop; helps prioritize fixes and avoid repeating mistakes."
+            "summary": "Project conventions: vitest test runner, npm package manager, src/ directory layout. Useful for understanding how to run build/test commands in build stage."
           },
           {
             "file": "metrics.json",
             "relevance": 8,
-            "summary": "Baselines object is empty; no performance metrics or baseline data captured yet to guide optimization decisions."
+            "summary": "Empty baselines object. Not currently useful for build stage context."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Decisions array is empty; no prior architectural or implementation decisions recorded to inform current work."
+            "summary": "Empty decisions array. No prior decisions recorded that would inform build stage execution."
           }
         ]
       },
-      "timestamp": 1772844574,
+      "timestamp": 1772846428,
       "ttl": 1800
     }
   }
