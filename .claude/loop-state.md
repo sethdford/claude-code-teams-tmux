@@ -1,119 +1,181 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Based on my thorough codebase analysis, I'll provide the detailed implementation plan directly. Here's the comprehensive, concrete plan that addresses all validation feedback:
 
 ---
 
-## Summary
+# Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+## Executive Summary
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+This plan builds on existing infrastructure in `sw-adaptive.sh` (percentile calculations) and `daemon-adaptive.sh` (timeout functions) to implement intelligent, data-driven stage timeouts based on P95 duration percentiles from a 30-day rolling window. Auto-adjusts every 7 days.
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+## Task Decomposition (15 Concrete Tasks)
+
+### Phase 1: Schema & Data Collection (Tasks 1-3)
+
+**Task 1: Add `stage_durations` SQLite table**
+- **Input**: Current schema (sw-db.sh:134-200)
+- **Output**: New migration `scripts/lib/db-schema-7.sql`
+- **Schema**:
+  ```sql
+  CREATE TABLE IF NOT EXISTS stage_durations (
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
-## Context
-## Component Diagram
-## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json",
+      "relevance": 78,
+      "summary": "Detailed project structure (vitest, npm, src/ layout, commonjs imports) essential for building and testing the timeout engine feature"
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json",
+      "relevance": 42,
+      "summary": "Confirms Node.js project type; basic but less detailed than the first patterns entry"
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "failures.json",
+      "relevance": 25,
+      "summary": "Previous test failures in sw-cleanup.sh and sw-code-review-test.sh; useful context to avoid similar issues during build stage"
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 12,
+      "summary": "Empty baselines object, but potentially relevant for capturing P95 duration metrics that drive the timeout auto-tuning"
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 8,
+      "summary": "Empty decisions array; could track design choices for timeout engine, but no prior context available"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Adaptive Stage Timeout Engine with P95 Duration-Based Auto-Tuning — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **performance**: Optimize percentile calculations to avoid becoming a bottleneck; evaluate cost-benefit of in-memory vs disk storage; analyze resource usage across millions of pipeline runs.
+- **systematic-debugging**: Use this before build to review auto-patrol cycle history and previous timeout attempts to avoid repeating mistakes.
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Performance Expertise
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+Apply these optimization patterns:
+
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
+
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
+
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
+
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
+
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Systematic Debugging: Root Cause Analysis
+
+A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+
+### Phase 1: Evidence Collection
+- Read the error output from the previous attempt carefully
+- Identify the EXACT line/file where the failure occurred
+- Check if the error is a symptom or the root cause
+- Look for patterns: is this a known error type?
+
+### Phase 2: Hypothesis Formation
+- List 3 possible root causes for this failure
+- For each hypothesis, identify what evidence would confirm or deny it
+- Rank hypotheses by likelihood
+
+### Phase 3: Root Cause Verification
+- Test the most likely hypothesis first
+- Read the relevant source code — don't guess
+- Check if previous artifacts (plan.md, design.md) are correct or flawed
+- If the plan was correct but execution failed, focus on execution
+- If the plan was flawed, document what was wrong
+
+### Phase 4: Targeted Fix
+- Fix the ROOT CAUSE, not the symptom
+- If the previous approach was fundamentally wrong, choose a different approach
+- If it was a minor error, make the minimal fix
+- Document what went wrong and why the new approach is better
+
+IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
+2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
+3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
+4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-07T16:25:22Z
+last_iteration_at: 2026-03-07T16:25:22Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
