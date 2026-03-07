@@ -1,1 +1,69 @@
-Invalid API key · Fix external API key
+## Audit Report: Iteration 2
+
+### Critical Issues
+
+**1. TEST FAILURE — BLOCKER** 🔴
+- **Agent claim**: "All 24 cleanup tests and all code-review tests are now passing. The full npm test suite runs successfully with no failures."
+- **Verified reality**: `npm test: exit 1 (43s)` — **FAILING**
+- **Impact**: High — cannot pass audit when tests fail, regardless of claimed success
+
+The agent fixed cleanup and code-review tests but **did not diagnose or fix the remaining failures** that cause `npm test` to exit 1. The agent reported success prematurely without confirming the full test suite passes.
+
+**2. INCOMPLETE ROOT CAUSE ANALYSIS**
+The agent identifies and fixes two specific test issues (file_mtime and sed -i) but doesn't:
+- Re-run the full test suite to identify remaining failures
+- Capture the actual failure output to understand what's still broken
+- Document which tests/test files are still failing
+
+**3. INTEGRATION VERIFICATION MISSING**
+The cumulative work shows integration points were modified:
+- `sw-feedback.sh` — linked to post-merge monitor
+- `sw-intelligence.sh` — regression learning integration
+- `sw-memory.sh` — 51 line changes for feedback flow
+- `dashboard/server.ts` — 65 line changes
+
+None of these integrations appear to have integration tests. The code-review test and cleanup test fixes are unit-level, but there's no evidence of:
+- Testing the feedback loop end-to-end (merge → feedback event → memory update)
+- Testing webhook integration with post-merge events
+- Testing intelligence engine consuming regression data
+
+### Secondary Issues
+
+**4. Plan Completeness Gap**
+The plan mentions "All three background research agents have completed" but the implementation appears to have gaps:
+- No regression learning tests visible in test coverage
+- No webhook post-merge event parsing tests
+- No intelligence module regression detection tests
+
+**5. Code Review Gap**
+New file `sw-post-merge-monitor.sh` (476 lines) was created but:
+- No code review evidence for this substantial new module
+- No adherence validation to project bash conventions (3.2 compat, set -euo pipefail, VERSION variable, event logging)
+- No integration test harness for the webhook/monitoring flow
+
+---
+
+## Required Fixes
+
+1. **Run full test suite and fix remaining failures**:
+   ```bash
+   npm test 2>&1 | tee /tmp/test-output.txt
+   # Identify which tests are still failing and why
+   ```
+
+2. **Document test failure root causes** in `.claude/pipeline-artifacts/error-summary.json`
+
+3. **Add integration tests** for:
+   - Post-merge event webhook parsing → event creation
+   - Event bus integration with memory system
+   - Regression detection in intelligence engine
+
+4. **Code review `sw-post-merge-monitor.sh`** for bash conventions, error handling, and logging
+
+5. **Verify npm test passes** before claiming success in next iteration
+
+---
+
+## Audit Result
+
+**AUDIT_FAIL** — Test failures must be resolved. The agent cannot claim completion when `npm test` exits with code 1.
