@@ -26,7 +26,7 @@ _pipeline_claude_flags() {
 
     # Effort level: explicit override > per-stage default
     local effort="${EFFORT_LEVEL_OVERRIDE:-$(_stage_effort_level "$stage")}"
-    flags+=("--effort-level" "$effort")
+    flags+=("--effort" "$effort")
 
     # Fallback model
     if [[ -n "${FALLBACK_MODEL_OVERRIDE:-}" ]]; then

@@ -454,7 +454,7 @@ build_claude_flags() {
     fi
 
     if [[ -n "${EFFORT_LEVEL:-}" ]]; then
-        flags+=("--effort-level" "$EFFORT_LEVEL")
+        flags+=("--effort" "$EFFORT_LEVEL")
     fi
 
     if [[ -n "${FALLBACK_MODEL:-}" ]]; then

@@ -218,10 +218,10 @@ else
 fi
 
 echo -e "${DIM}  effort level flag${RESET}"
-if grep -q 'effort-level' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
-    assert_pass "build_claude_flags supports --effort-level"
+if grep -q '"--effort"' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
+    assert_pass "build_claude_flags supports --effort"
 else
-    assert_fail "build_claude_flags supports --effort-level"
+    assert_fail "build_claude_flags supports --effort"
 fi
 
 echo -e "${DIM}  fallback model flag${RESET}"

@@ -1184,7 +1184,7 @@ AUDIT_PROMPT
     # Use structured output for machine-parseable audit results
     local schema_file="${SCRIPT_DIR}/../schemas/audit-result.json"
     if [[ -f "$schema_file" ]]; then
-        audit_flags+=("--json-schema" "$schema_file")
+        audit_flags+=("--json-schema" "$(cat "$schema_file")")
     fi
 
     local exit_code=0
