@@ -1,0 +1,2832 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-03-07T01:05:12Z",
+  "summary": {
+    "total_found": 325,
+    "high_priority": 187,
+    "medium_priority": 138,
+    "low_priority": 0
+  },
+  "policies": {
+    "check-version-consistency.err": {
+      "value": 1,
+      "type": "integer",
+      "source": "check-version-consistency.sh:53",
+      "variable": "ERR",
+      "priority": 3,
+      "tags": [
+        "version",
+        "consistency"
+      ],
+      "confidence": 0.80
+    },
+    "architecture._architecture_context_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "architecture.sh:2",
+      "variable": "_ARCHITECTURE_CONTEXT_LOADED",
+      "priority": 3,
+      "tags": [],
+      "confidence": 0.80
+    },
+    "audit-trail._audit_trail_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "audit-trail.sh:3",
+      "variable": "_AUDIT_TRAIL_LOADED",
+      "priority": 3,
+      "tags": [
+        "trail"
+      ],
+      "confidence": 0.80
+    },
+    "compound-audit._compound_audit_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "compound-audit.sh:3",
+      "variable": "_COMPOUND_AUDIT_LOADED",
+      "priority": 3,
+      "tags": [
+        "audit"
+      ],
+      "confidence": 0.80
+    },
+    "config._sw_config_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "config.sh:2",
+      "variable": "_SW_CONFIG_LOADED",
+      "priority": 3,
+      "tags": [],
+      "confidence": 0.80
+    },
+    "daemon-adaptive._daemon_adaptive_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-adaptive.sh:2",
+      "variable": "_DAEMON_ADAPTIVE_LOADED",
+      "priority": 4,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-adaptive.empty_queue_cycles": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-adaptive.sh:25",
+      "variable": "EMPTY_QUEUE_CYCLES",
+      "priority": 4,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-dispatch._daemon_dispatch_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-dispatch.sh:2",
+      "variable": "_DAEMON_DISPATCH_LOADED",
+      "priority": 4,
+      "tags": [
+        "dispatch"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-failure._daemon_failure_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-failure.sh:2",
+      "variable": "_DAEMON_FAILURE_LOADED",
+      "priority": 4,
+      "tags": [
+        "failure"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-failure.daemon_consecutive_failure_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-failure.sh:139",
+      "variable": "DAEMON_CONSECUTIVE_FAILURE_COUNT",
+      "priority": 4,
+      "tags": [
+        "failure"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-health._daemon_health_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-health.sh:2",
+      "variable": "_DAEMON_HEALTH_LOADED",
+      "priority": 4,
+      "tags": [
+        "health"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-patrol._daemon_patrol_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-patrol.sh:2",
+      "variable": "_DAEMON_PATROL_LOADED",
+      "priority": 4,
+      "tags": [
+        "patrol"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-poll._daemon_poll_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-poll.sh:2",
+      "variable": "_DAEMON_POLL_LOADED",
+      "priority": 5,
+      "tags": [
+        "poll"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-poll.backoff_secs": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-poll.sh:107",
+      "variable": "BACKOFF_SECS",
+      "priority": 4,
+      "tags": [
+        "poll"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-poll.poll_cycle_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-poll.sh:1026",
+      "variable": "POLL_CYCLE_COUNT",
+      "priority": 5,
+      "tags": [
+        "poll"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state._daemon_state_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-state.sh:2",
+      "variable": "_DAEMON_STATE_LOADED",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-state.sh:21",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.gh_consecutive_failures": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-state.sh:97",
+      "variable": "GH_CONSECUTIVE_FAILURES",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.gh_backoff_until": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-state.sh:98",
+      "variable": "GH_BACKOFF_UNTIL",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.last_auth_check_epoch": {
+      "value": 0,
+      "type": "integer",
+      "source": "daemon-state.sh:115",
+      "variable": "LAST_AUTH_CHECK_EPOCH",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.auth_check_interval": {
+      "value": 300,
+      "type": "integer",
+      "source": "daemon-state.sh:116",
+      "variable": "AUTH_CHECK_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-state.state_lock_fd": {
+      "value": 7,
+      "type": "integer",
+      "source": "daemon-state.sh:245",
+      "variable": "STATE_LOCK_FD",
+      "priority": 4,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-triage._daemon_triage_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "daemon-triage.sh:2",
+      "variable": "_DAEMON_TRIAGE_LOADED",
+      "priority": 4,
+      "tags": [
+        "triage"
+      ],
+      "confidence": 0.95
+    },
+    "decide-autonomy._decide_autonomy_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "decide-autonomy.sh:2",
+      "variable": "_DECIDE_AUTONOMY_LOADED",
+      "priority": 3,
+      "tags": [
+        "autonomy"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._decide_scoring_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "decide-scoring.sh:2",
+      "variable": "_DECIDE_SCORING_LOADED",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._w_impact": {
+      "value": 30,
+      "type": "integer",
+      "source": "decide-scoring.sh:6",
+      "variable": "_W_IMPACT",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._w_urgency": {
+      "value": 25,
+      "type": "integer",
+      "source": "decide-scoring.sh:7",
+      "variable": "_W_URGENCY",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._w_effort": {
+      "value": 20,
+      "type": "integer",
+      "source": "decide-scoring.sh:8",
+      "variable": "_W_EFFORT",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._w_confidence": {
+      "value": 15,
+      "type": "integer",
+      "source": "decide-scoring.sh:9",
+      "variable": "_W_CONFIDENCE",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-scoring._w_risk": {
+      "value": 10,
+      "type": "integer",
+      "source": "decide-scoring.sh:10",
+      "variable": "_W_RISK",
+      "priority": 3,
+      "tags": [
+        "scoring"
+      ],
+      "confidence": 0.80
+    },
+    "decide-signals._decide_signals_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "decide-signals.sh:2",
+      "variable": "_DECIDE_SIGNALS_LOADED",
+      "priority": 3,
+      "tags": [
+        "signals"
+      ],
+      "confidence": 0.80
+    },
+    "fleet-failover._fleet_failover_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "fleet-failover.sh:2",
+      "variable": "_FLEET_FAILOVER_LOADED",
+      "priority": 3,
+      "tags": [
+        "failover"
+      ],
+      "confidence": 0.80
+    },
+    "helpers._sw_helpers_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "helpers.sh:3",
+      "variable": "_SW_HELPERS_LOADED",
+      "priority": 3,
+      "tags": [],
+      "confidence": 0.80
+    },
+    "helpers._sw_schema_warned": {
+      "value": 1,
+      "type": "integer",
+      "source": "helpers.sh:77",
+      "variable": "_SW_SCHEMA_WARNED",
+      "priority": 3,
+      "tags": [],
+      "confidence": 0.80
+    },
+    "loop-convergence._loop_convergence_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "loop-convergence.sh:2",
+      "variable": "_LOOP_CONVERGENCE_LOADED",
+      "priority": 4,
+      "tags": [
+        "convergence"
+      ],
+      "confidence": 0.95
+    },
+    "loop-iteration._loop_iteration_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "loop-iteration.sh:2",
+      "variable": "_LOOP_ITERATION_LOADED",
+      "priority": 4,
+      "tags": [
+        "iteration"
+      ],
+      "confidence": 0.95
+    },
+    "loop-progress._loop_progress_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "loop-progress.sh:2",
+      "variable": "_LOOP_PROGRESS_LOADED",
+      "priority": 4,
+      "tags": [
+        "progress"
+      ],
+      "confidence": 0.95
+    },
+    "loop-restart._loop_restart_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "loop-restart.sh:2",
+      "variable": "_LOOP_RESTART_LOADED",
+      "priority": 4,
+      "tags": [
+        "restart"
+      ],
+      "confidence": 0.95
+    },
+    "loop-restart.iteration": {
+      "value": 0,
+      "type": "integer",
+      "source": "loop-restart.sh:6",
+      "variable": "ITERATION",
+      "priority": 4,
+      "tags": [
+        "restart"
+      ],
+      "confidence": 0.95
+    },
+    "loop-restart.consecutive_failures": {
+      "value": 0,
+      "type": "integer",
+      "source": "loop-restart.sh:77",
+      "variable": "CONSECUTIVE_FAILURES",
+      "priority": 4,
+      "tags": [
+        "restart"
+      ],
+      "confidence": 0.95
+    },
+    "loop-restart.total_commits": {
+      "value": 0,
+      "type": "integer",
+      "source": "loop-restart.sh:8",
+      "variable": "TOTAL_COMMITS",
+      "priority": 4,
+      "tags": [
+        "restart"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-detection._pipeline_detection_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-detection.sh:2",
+      "variable": "_PIPELINE_DETECTION_LOADED",
+      "priority": 3,
+      "tags": [
+        "detection"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-github._pipeline_github_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-github.sh:2",
+      "variable": "_PIPELINE_GITHUB_LOADED",
+      "priority": 3,
+      "tags": [
+        "github"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-intelligence._pipeline_intelligence_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-intelligence.sh:2",
+      "variable": "_PIPELINE_INTELLIGENCE_LOADED",
+      "priority": 3,
+      "tags": [
+        "intelligence"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality-checks._pipeline_quality_checks_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-quality-checks.sh:2",
+      "variable": "_PIPELINE_QUALITY_CHECKS_LOADED",
+      "priority": 3,
+      "tags": [
+        "quality",
+        "checks"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality-checks.pipeline_max_backtracks": {
+      "value": 2,
+      "type": "integer",
+      "source": "pipeline-quality-checks.sh:773",
+      "variable": "PIPELINE_MAX_BACKTRACKS",
+      "priority": 5,
+      "tags": [
+        "quality",
+        "checks"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-quality._pipeline_quality_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-quality.sh:2",
+      "variable": "_PIPELINE_QUALITY_LOADED",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality.pipeline_coverage_threshold": {
+      "value": 60,
+      "type": "integer",
+      "source": "pipeline-quality.sh:16",
+      "variable": "PIPELINE_COVERAGE_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-quality.pipeline_quality_gate_threshold": {
+      "value": 70,
+      "type": "integer",
+      "source": "pipeline-quality.sh:17",
+      "variable": "PIPELINE_QUALITY_GATE_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-quality.quality_coverage_threshold": {
+      "value": 70,
+      "type": "integer",
+      "source": "pipeline-quality.sh:18",
+      "variable": "QUALITY_COVERAGE_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-quality.quality_gate_score_threshold": {
+      "value": 70,
+      "type": "integer",
+      "source": "pipeline-quality.sh:19",
+      "variable": "QUALITY_GATE_SCORE_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.95
+    },
+    "pipeline-quality.quality_weight_test_pass": {
+      "value": 30,
+      "type": "integer",
+      "source": "pipeline-quality.sh:20",
+      "variable": "QUALITY_WEIGHT_TEST_PASS",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality.quality_weight_coverage": {
+      "value": 20,
+      "type": "integer",
+      "source": "pipeline-quality.sh:21",
+      "variable": "QUALITY_WEIGHT_COVERAGE",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality.quality_weight_security": {
+      "value": 20,
+      "type": "integer",
+      "source": "pipeline-quality.sh:22",
+      "variable": "QUALITY_WEIGHT_SECURITY",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality.quality_weight_architecture": {
+      "value": 15,
+      "type": "integer",
+      "source": "pipeline-quality.sh:23",
+      "variable": "QUALITY_WEIGHT_ARCHITECTURE",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-quality.quality_weight_correctness": {
+      "value": 15,
+      "type": "integer",
+      "source": "pipeline-quality.sh:24",
+      "variable": "QUALITY_WEIGHT_CORRECTNESS",
+      "priority": 3,
+      "tags": [
+        "quality"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages-build._pipeline_stages_build_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages-build.sh:2",
+      "variable": "_PIPELINE_STAGES_BUILD_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages",
+        "build"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages-delivery._pipeline_stages_delivery_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages-delivery.sh:2",
+      "variable": "_PIPELINE_STAGES_DELIVERY_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages",
+        "delivery"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages-intake._pipeline_stages_intake_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages-intake.sh:2",
+      "variable": "_PIPELINE_STAGES_INTAKE_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages",
+        "intake"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages-monitor._pipeline_stages_monitor_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages-monitor.sh:2",
+      "variable": "_PIPELINE_STAGES_MONITOR_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages",
+        "monitor"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages-review._pipeline_stages_review_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages-review.sh:2",
+      "variable": "_PIPELINE_STAGES_REVIEW_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages",
+        "review"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-stages._pipeline_stages_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-stages.sh:2",
+      "variable": "_PIPELINE_STAGES_LOADED",
+      "priority": 3,
+      "tags": [
+        "stages"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-state._pipeline_state_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "pipeline-state.sh:2",
+      "variable": "_PIPELINE_STATE_LOADED",
+      "priority": 3,
+      "tags": [
+        "state"
+      ],
+      "confidence": 0.80
+    },
+    "policy.policy_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "policy.sh:2",
+      "variable": "POLICY_LOADED",
+      "priority": 3,
+      "tags": [],
+      "confidence": 0.80
+    },
+    "skill-memory._skill_memory_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "skill-memory.sh:2",
+      "variable": "_SKILL_MEMORY_LOADED",
+      "priority": 3,
+      "tags": [
+        "memory"
+      ],
+      "confidence": 0.80
+    },
+    "skill-memory.skill_memory_max_records": {
+      "value": 200,
+      "type": "integer",
+      "source": "skill-memory.sh:5",
+      "variable": "SKILL_MEMORY_MAX_RECORDS",
+      "priority": 5,
+      "tags": [
+        "memory"
+      ],
+      "confidence": 0.95
+    },
+    "skill-registry._skill_registry_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "skill-registry.sh:2",
+      "variable": "_SKILL_REGISTRY_LOADED",
+      "priority": 3,
+      "tags": [
+        "registry"
+      ],
+      "confidence": 0.80
+    },
+    "test-helpers._test_helpers_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "test-helpers.sh:3",
+      "variable": "_TEST_HELPERS_LOADED",
+      "priority": 3,
+      "tags": [
+        "helpers"
+      ],
+      "confidence": 0.80
+    },
+    "test-helpers.total": {
+      "value": 0,
+      "type": "integer",
+      "source": "test-helpers.sh:16",
+      "variable": "TOTAL",
+      "priority": 3,
+      "tags": [
+        "helpers"
+      ],
+      "confidence": 0.80
+    },
+    "adaptive.min_confidence_samples": {
+      "value": 10,
+      "type": "integer",
+      "source": "sw-adaptive.sh:31",
+      "variable": "MIN_CONFIDENCE_SAMPLES",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.med_confidence_samples": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-adaptive.sh:32",
+      "variable": "MED_CONFIDENCE_SAMPLES",
+      "priority": 3,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.80
+    },
+    "adaptive.min_timeout": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-adaptive.sh:33",
+      "variable": "MIN_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.max_timeout": {
+      "value": 7200,
+      "type": "integer",
+      "source": "sw-adaptive.sh:34",
+      "variable": "MAX_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.min_iterations": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-adaptive.sh:35",
+      "variable": "MIN_ITERATIONS",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.max_iterations": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-adaptive.sh:36",
+      "variable": "MAX_ITERATIONS",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.min_poll_interval": {
+      "value": 10,
+      "type": "integer",
+      "source": "sw-adaptive.sh:37",
+      "variable": "MIN_POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.max_poll_interval": {
+      "value": 300,
+      "type": "integer",
+      "source": "sw-adaptive.sh:38",
+      "variable": "MAX_POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.min_coverage": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-adaptive.sh:39",
+      "variable": "MIN_COVERAGE",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adaptive.max_coverage": {
+      "value": 100,
+      "type": "integer",
+      "source": "sw-adaptive.sh:40",
+      "variable": "MAX_COVERAGE",
+      "priority": 5,
+      "tags": [
+        "adaptive"
+      ],
+      "confidence": 0.95
+    },
+    "adversarial-test.adversarial_max_rounds": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-adversarial-test.sh:182",
+      "variable": "ADVERSARIAL_MAX_ROUNDS",
+      "priority": 5,
+      "tags": [
+        "adversarial",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "agi-roadmap-test.skip": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-agi-roadmap-test.sh:26",
+      "variable": "SKIP",
+      "priority": 3,
+      "tags": [
+        "agi",
+        "roadmap",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "auth.oauth_timeout": {
+      "value": 900,
+      "type": "integer",
+      "source": "sw-auth.sh:33",
+      "variable": "OAUTH_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "auth"
+      ],
+      "confidence": 0.95
+    },
+    "chaos-test.gh_consecutive_failures": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-chaos-test.sh:156",
+      "variable": "GH_CONSECUTIVE_FAILURES",
+      "priority": 3,
+      "tags": [
+        "chaos",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.windows_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:50",
+      "variable": "WINDOWS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.windows_killed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:51",
+      "variable": "WINDOWS_KILLED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.team_dirs_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:52",
+      "variable": "TEAM_DIRS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.team_dirs_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:53",
+      "variable": "TEAM_DIRS_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.task_dirs_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:54",
+      "variable": "TASK_DIRS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.task_dirs_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:55",
+      "variable": "TASK_DIRS_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.artifacts_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:56",
+      "variable": "ARTIFACTS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.artifacts_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:57",
+      "variable": "ARTIFACTS_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.checkpoints_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:58",
+      "variable": "CHECKPOINTS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.checkpoints_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:59",
+      "variable": "CHECKPOINTS_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.heartbeats_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:60",
+      "variable": "HEARTBEATS_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.heartbeats_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:61",
+      "variable": "HEARTBEATS_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.branches_found": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:62",
+      "variable": "BRANCHES_FOUND",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.branches_removed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cleanup.sh:63",
+      "variable": "BRANCHES_REMOVED",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "cleanup.state_reset": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-cleanup.sh:228",
+      "variable": "STATE_RESET",
+      "priority": 3,
+      "tags": [
+        "cleanup"
+      ],
+      "confidence": 0.80
+    },
+    "connect.heartbeat_interval": {
+      "value": 10,
+      "type": "integer",
+      "source": "sw-connect.sh:36",
+      "variable": "HEARTBEAT_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "connect"
+      ],
+      "confidence": 0.95
+    },
+    "cost._default_opus_input_per_m": {
+      "value": 15,
+      "type": "integer",
+      "source": "sw-cost.sh:53",
+      "variable": "_DEFAULT_OPUS_INPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._default_opus_output_per_m": {
+      "value": 75,
+      "type": "integer",
+      "source": "sw-cost.sh:54",
+      "variable": "_DEFAULT_OPUS_OUTPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._default_sonnet_input_per_m": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-cost.sh:55",
+      "variable": "_DEFAULT_SONNET_INPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._default_sonnet_output_per_m": {
+      "value": 15,
+      "type": "integer",
+      "source": "sw-cost.sh:56",
+      "variable": "_DEFAULT_SONNET_OUTPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._default_haiku_input_per_m": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-cost.sh:57",
+      "variable": "_DEFAULT_HAIKU_INPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._default_haiku_output_per_m": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-cost.sh:58",
+      "variable": "_DEFAULT_HAIKU_OUTPUT_PER_M",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "cost._budget_unconfigured_warned": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-cost.sh:244",
+      "variable": "_BUDGET_UNCONFIGURED_WARNED",
+      "priority": 3,
+      "tags": [
+        "cost"
+      ],
+      "confidence": 0.80
+    },
+    "daemon-test.health_stale_timeout": {
+      "value": 1800,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:601",
+      "variable": "HEALTH_STALE_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.degradation_window": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:657",
+      "variable": "DEGRADATION_WINDOW",
+      "priority": 4,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.degradation_cfr_threshold": {
+      "value": 30,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:658",
+      "variable": "DEGRADATION_CFR_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.degradation_success_threshold": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:659",
+      "variable": "DEGRADATION_SUCCESS_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.poll_interval": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:37",
+      "variable": "POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:38",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.patrol_max_issues": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:43",
+      "variable": "PATROL_MAX_ISSUES",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.patrol_failures_threshold": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:730",
+      "variable": "PATROL_FAILURES_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.patrol_retry_threshold": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:48",
+      "variable": "PATROL_RETRY_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.progress_checks_before_warn": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:873",
+      "variable": "PROGRESS_CHECKS_BEFORE_WARN",
+      "priority": 4,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.progress_checks_before_kill": {
+      "value": 6,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:874",
+      "variable": "PROGRESS_CHECKS_BEFORE_KILL",
+      "priority": 4,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon-test.progress_hard_limit_s": {
+      "value": 10800,
+      "type": "integer",
+      "source": "sw-daemon-test.sh:901",
+      "variable": "PROGRESS_HARD_LIMIT_S",
+      "priority": 5,
+      "tags": [
+        "daemon",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.on_failure_log_lines": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-daemon.sh:163",
+      "variable": "ON_FAILURE_LOG_LINES",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.priority_lane_max": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-daemon.sh:168",
+      "variable": "PRIORITY_LANE_MAX",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.auto_scale_interval": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-daemon.sh:175",
+      "variable": "AUTO_SCALE_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.max_workers": {
+      "value": 8,
+      "type": "integer",
+      "source": "sw-daemon.sh:179",
+      "variable": "MAX_WORKERS",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.min_workers": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-daemon.sh:180",
+      "variable": "MIN_WORKERS",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.worker_mem_gb": {
+      "value": 4,
+      "type": "integer",
+      "source": "sw-daemon.sh:181",
+      "variable": "WORKER_MEM_GB",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.est_cost_per_job": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-daemon.sh:182",
+      "variable": "EST_COST_PER_JOB",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.patrol_failures_threshold": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-daemon.sh:190",
+      "variable": "PATROL_FAILURES_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.patrol_retry_threshold": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-daemon.sh:194",
+      "variable": "PATROL_RETRY_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.last_patrol_epoch": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-daemon.sh:195",
+      "variable": "LAST_PATROL_EPOCH",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.backoff_secs": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-daemon.sh:203",
+      "variable": "BACKOFF_SECS",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "daemon.empty_queue_cycles": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-daemon.sh:510",
+      "variable": "EMPTY_QUEUE_CYCLES",
+      "priority": 4,
+      "tags": [
+        "daemon"
+      ],
+      "confidence": 0.95
+    },
+    "db._sw_db_loaded": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-db.sh:7",
+      "variable": "_SW_DB_LOADED",
+      "priority": 3,
+      "tags": [
+        "db"
+      ],
+      "confidence": 0.80
+    },
+    "db.schema_version": {
+      "value": 6,
+      "type": "integer",
+      "source": "sw-db.sh:35",
+      "variable": "SCHEMA_VERSION",
+      "priority": 3,
+      "tags": [
+        "db"
+      ],
+      "confidence": 0.80
+    },
+    "decide-test._w_impact": {
+      "value": 30,
+      "type": "integer",
+      "source": "sw-decide-test.sh:338",
+      "variable": "_W_IMPACT",
+      "priority": 3,
+      "tags": [
+        "decide",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "decompose.complexity_threshold": {
+      "value": 70,
+      "type": "integer",
+      "source": "sw-decompose.sh:30",
+      "variable": "COMPLEXITY_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "decompose"
+      ],
+      "confidence": 0.95
+    },
+    "decompose.hours_threshold": {
+      "value": 8,
+      "type": "integer",
+      "source": "sw-decompose.sh:31",
+      "variable": "HOURS_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "decompose"
+      ],
+      "confidence": 0.95
+    },
+    "decompose.max_subtasks": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-decompose.sh:32",
+      "variable": "MAX_SUBTASKS",
+      "priority": 5,
+      "tags": [
+        "decompose"
+      ],
+      "confidence": 0.95
+    },
+    "decompose.min_subtasks": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-decompose.sh:33",
+      "variable": "MIN_SUBTASKS",
+      "priority": 5,
+      "tags": [
+        "decompose"
+      ],
+      "confidence": 0.95
+    },
+    "doctor.warn": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-doctor.sh:25",
+      "variable": "WARN",
+      "priority": 3,
+      "tags": [
+        "doctor"
+      ],
+      "confidence": 0.80
+    },
+    "e2e-integration-test.pipeline_timeout": {
+      "value": 600,
+      "type": "integer",
+      "source": "sw-e2e-integration-test.sh:29",
+      "variable": "PIPELINE_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "e2e",
+        "integration",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "e2e-smoke-test.pipeline_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-e2e-smoke-test.sh:279",
+      "variable": "PIPELINE_EXIT",
+      "priority": 3,
+      "tags": [
+        "e2e",
+        "smoke",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "e2e-system-test.pipeline_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-e2e-system-test.sh:194",
+      "variable": "PIPELINE_EXIT",
+      "priority": 3,
+      "tags": [
+        "e2e",
+        "system",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "e2e-system-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-e2e-system-test.sh:244",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "e2e",
+        "system",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "e2e-system-test.sw_loop_iteration": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-e2e-system-test.sh:335",
+      "variable": "SW_LOOP_ITERATION",
+      "priority": 3,
+      "tags": [
+        "e2e",
+        "system",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "eventbus.event_ttl_days": {
+      "value": 7,
+      "type": "integer",
+      "source": "sw-eventbus.sh:28",
+      "variable": "EVENT_TTL_DAYS",
+      "priority": 3,
+      "tags": [
+        "eventbus"
+      ],
+      "confidence": 0.80
+    },
+    "feedback.error_threshold": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-feedback.sh:29",
+      "variable": "ERROR_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "feedback"
+      ],
+      "confidence": 0.95
+    },
+    "fix.max_parallel": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-fix.sh:35",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "fix"
+      ],
+      "confidence": 0.95
+    },
+    "github-graphql-test.mock_gh_exit_code": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-github-graphql-test.sh:303",
+      "variable": "MOCK_GH_EXIT_CODE",
+      "priority": 3,
+      "tags": [
+        "github",
+        "graphql",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "init-test.init_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-init-test.sh:212",
+      "variable": "INIT_EXIT",
+      "priority": 3,
+      "tags": [
+        "init",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "integration-claude-test.script_timeout": {
+      "value": 120,
+      "type": "integer",
+      "source": "sw-integration-claude-test.sh:9",
+      "variable": "SCRIPT_TIMEOUT",
+      "priority": 5,
+      "tags": [
+        "integration",
+        "claude",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-compat-test.shipwright_force_color": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-lib-compat-test.sh:13",
+      "variable": "SHIPWRIGHT_FORCE_COLOR",
+      "priority": 3,
+      "tags": [
+        "lib",
+        "compat",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "lib-daemon-dispatch-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-dispatch-test.sh:24",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "dispatch",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-dispatch-test.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-dispatch-test.sh:29",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "dispatch",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-dispatch-test.poll_interval": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-lib-daemon-dispatch-test.sh:126",
+      "variable": "POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "dispatch",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-dispatch-test.gh_backoff_until": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-dispatch-test.sh:306",
+      "variable": "GH_BACKOFF_UNTIL",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "dispatch",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-failure-test.max_retries_api_error": {
+      "value": 6,
+      "type": "integer",
+      "source": "sw-lib-daemon-failure-test.sh:126",
+      "variable": "MAX_RETRIES_API_ERROR",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "failure",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-failure-test.max_retries": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-lib-daemon-failure-test.sh:127",
+      "variable": "MAX_RETRIES",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "failure",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-failure-test.daemon_consecutive_failure_count": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-lib-daemon-failure-test.sh:146",
+      "variable": "DAEMON_CONSECUTIVE_FAILURE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "failure",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.poll_interval": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:19",
+      "variable": "POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:20",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:28",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.system_cores": {
+      "value": 8,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:164",
+      "variable": "SYSTEM_CORES",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.worker_mem_gb": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:166",
+      "variable": "WORKER_MEM_GB",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.estimated_cost_per_job_usd": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:168",
+      "variable": "ESTIMATED_COST_PER_JOB_USD",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.max_workers": {
+      "value": 8,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:169",
+      "variable": "MAX_WORKERS",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-patrol-test.min_workers": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-lib-daemon-patrol-test.sh:170",
+      "variable": "MIN_WORKERS",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "patrol",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.poll_interval": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:18",
+      "variable": "POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:19",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.min_workers": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:20",
+      "variable": "MIN_WORKERS",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.max_workers": {
+      "value": 4,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:21",
+      "variable": "MAX_WORKERS",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.worker_mem_gb": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:22",
+      "variable": "WORKER_MEM_GB",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:30",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.backoff_secs": {
+      "value": 150,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:278",
+      "variable": "BACKOFF_SECS",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-poll-test.gh_consecutive_failures": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-poll-test.sh:259",
+      "variable": "GH_CONSECUTIVE_FAILURES",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "poll",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-state-test.poll_interval": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-lib-daemon-state-test.sh:19",
+      "variable": "POLL_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "state",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-state-test.max_parallel": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-lib-daemon-state-test.sh:20",
+      "variable": "MAX_PARALLEL",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "daemon",
+        "state",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-state-test.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-state-test.sh:26",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "state",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-state-test.gh_consecutive_failures": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-state-test.sh:224",
+      "variable": "GH_CONSECUTIVE_FAILURES",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "state",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-state-test.gh_backoff_until": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-state-test.sh:225",
+      "variable": "GH_BACKOFF_UNTIL",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "state",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-daemon-triage-test.daemon_log_write_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-lib-daemon-triage-test.sh:23",
+      "variable": "DAEMON_LOG_WRITE_COUNT",
+      "priority": 4,
+      "tags": [
+        "lib",
+        "daemon",
+        "triage",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "lib-pipeline-intelligence-test.pipeline_backtrack_count": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-lib-pipeline-intelligence-test.sh:253",
+      "variable": "PIPELINE_BACKTRACK_COUNT",
+      "priority": 3,
+      "tags": [
+        "lib",
+        "pipeline",
+        "intelligence",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "lib-pipeline-intelligence-test.pipeline_max_backtracks": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-lib-pipeline-intelligence-test.sh:254",
+      "variable": "PIPELINE_MAX_BACKTRACKS",
+      "priority": 5,
+      "tags": [
+        "lib",
+        "pipeline",
+        "intelligence",
+        "test"
+      ],
+      "confidence": 0.95
+    },
+    "loop.fast_test_interval": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-loop.sh:45",
+      "variable": "FAST_TEST_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.agents": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-loop.sh:48",
+      "variable": "AGENTS",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.restart_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:58",
+      "variable": "RESTART_COUNT",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.loop_input_tokens": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:62",
+      "variable": "LOOP_INPUT_TOKENS",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.loop_output_tokens": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:63",
+      "variable": "LOOP_OUTPUT_TOKENS",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.loop_cost_millicents": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:64",
+      "variable": "LOOP_COST_MILLICENTS",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.extension_size": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-loop.sh:67",
+      "variable": "EXTENSION_SIZE",
+      "priority": 5,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.max_extensions": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-loop.sh:68",
+      "variable": "MAX_EXTENSIONS",
+      "priority": 5,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.extension_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:2115",
+      "variable": "EXTENSION_COUNT",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.circuit_breaker_threshold": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-loop.sh:71",
+      "variable": "CIRCUIT_BREAKER_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.min_progress_lines": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-loop.sh:72",
+      "variable": "MIN_PROGRESS_LINES",
+      "priority": 5,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.iteration": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:2113",
+      "variable": "ITERATION",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.consecutive_failures": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:2114",
+      "variable": "CONSECUTIVE_FAILURES",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.total_commits": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:565",
+      "variable": "TOTAL_COMMITS",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "loop.stuckness_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-loop.sh:2116",
+      "variable": "STUCKNESS_COUNT",
+      "priority": 4,
+      "tags": [
+        "loop"
+      ],
+      "confidence": 0.95
+    },
+    "model-router.complexity_low": {
+      "value": 30,
+      "type": "integer",
+      "source": "sw-model-router.sh:47",
+      "variable": "COMPLEXITY_LOW",
+      "priority": 3,
+      "tags": [
+        "model",
+        "router"
+      ],
+      "confidence": 0.80
+    },
+    "model-router.complexity_high": {
+      "value": 80,
+      "type": "integer",
+      "source": "sw-model-router.sh:48",
+      "variable": "COMPLEXITY_HIGH",
+      "priority": 3,
+      "tags": [
+        "model",
+        "router"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.pipeline_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:302",
+      "variable": "PIPELINE_EXIT",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.intelligence_complexity": {
+      "value": 8,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:753",
+      "variable": "INTELLIGENCE_COMPLEXITY",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.vitals_weight_momentum": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:1080",
+      "variable": "VITALS_WEIGHT_MOMENTUM",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.vitals_weight_convergence": {
+      "value": 50,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:1081",
+      "variable": "VITALS_WEIGHT_CONVERGENCE",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.vitals_weight_budget": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:1082",
+      "variable": "VITALS_WEIGHT_BUDGET",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline-test.vitals_weight_error_maturity": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline-test.sh:1083",
+      "variable": "VITALS_WEIGHT_ERROR_MATURITY",
+      "priority": 3,
+      "tags": [
+        "pipeline",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline.pipeline_exit_code": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-pipeline.sh:228",
+      "variable": "PIPELINE_EXIT_CODE",
+      "priority": 3,
+      "tags": [
+        "pipeline"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline.self_heal_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline.sh:480",
+      "variable": "SELF_HEAL_COUNT",
+      "priority": 3,
+      "tags": [
+        "pipeline"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline.total_input_tokens": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline.sh:482",
+      "variable": "TOTAL_INPUT_TOKENS",
+      "priority": 3,
+      "tags": [
+        "pipeline"
+      ],
+      "confidence": 0.80
+    },
+    "pipeline.total_output_tokens": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-pipeline.sh:483",
+      "variable": "TOTAL_OUTPUT_TOKENS",
+      "priority": 3,
+      "tags": [
+        "pipeline"
+      ],
+      "confidence": 0.80
+    },
+    "predictive.default_anomaly_threshold": {
+      "value": 3,
+      "type": "integer",
+      "source": "sw-predictive.sh:38",
+      "variable": "DEFAULT_ANOMALY_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "predictive"
+      ],
+      "confidence": 0.95
+    },
+    "predictive.default_warning_multiplier": {
+      "value": 2,
+      "type": "integer",
+      "source": "sw-predictive.sh:39",
+      "variable": "DEFAULT_WARNING_MULTIPLIER",
+      "priority": 3,
+      "tags": [
+        "predictive"
+      ],
+      "confidence": 0.80
+    },
+    "predictive.default_ema_alpha": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-predictive.sh:40",
+      "variable": "DEFAULT_EMA_ALPHA",
+      "priority": 3,
+      "tags": [
+        "predictive"
+      ],
+      "confidence": 0.80
+    },
+    "prep-test.prep_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-prep-test.sh:131",
+      "variable": "PREP_EXIT",
+      "priority": 3,
+      "tags": [
+        "prep",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "prep.src_file_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-prep.sh:445",
+      "variable": "SRC_FILE_COUNT",
+      "priority": 3,
+      "tags": [
+        "prep"
+      ],
+      "confidence": 0.80
+    },
+    "prep.test_file_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-prep.sh:446",
+      "variable": "TEST_FILE_COUNT",
+      "priority": 3,
+      "tags": [
+        "prep"
+      ],
+      "confidence": 0.80
+    },
+    "prep.total_lines": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-prep.sh:59",
+      "variable": "TOTAL_LINES",
+      "priority": 3,
+      "tags": [
+        "prep"
+      ],
+      "confidence": 0.80
+    },
+    "reaper.interval": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-reaper.sh:27",
+      "variable": "INTERVAL",
+      "priority": 5,
+      "tags": [
+        "reaper"
+      ],
+      "confidence": 0.95
+    },
+    "reaper.grace_period": {
+      "value": 15,
+      "type": "integer",
+      "source": "sw-reaper.sh:28",
+      "variable": "GRACE_PERIOD",
+      "priority": 3,
+      "tags": [
+        "reaper"
+      ],
+      "confidence": 0.80
+    },
+    "reaper.windows_killed": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-reaper.sh:289",
+      "variable": "WINDOWS_KILLED",
+      "priority": 3,
+      "tags": [
+        "reaper"
+      ],
+      "confidence": 0.80
+    },
+    "reaper.dirs_cleaned": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-reaper.sh:341",
+      "variable": "DIRS_CLEANED",
+      "priority": 3,
+      "tags": [
+        "reaper"
+      ],
+      "confidence": 0.80
+    },
+    "recruit-test.sw_recruit_no_llm": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-recruit-test.sh:8",
+      "variable": "SW_RECRUIT_NO_LLM",
+      "priority": 3,
+      "tags": [
+        "recruit",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "review-rerun-test.total": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-review-rerun-test.sh:19",
+      "variable": "TOTAL",
+      "priority": 3,
+      "tags": [
+        "review",
+        "rerun",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "security-audit.critical_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-security-audit.sh:27",
+      "variable": "CRITICAL_COUNT",
+      "priority": 3,
+      "tags": [
+        "security",
+        "audit"
+      ],
+      "confidence": 0.80
+    },
+    "security-audit.high_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-security-audit.sh:28",
+      "variable": "HIGH_COUNT",
+      "priority": 3,
+      "tags": [
+        "security",
+        "audit"
+      ],
+      "confidence": 0.80
+    },
+    "security-audit.medium_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-security-audit.sh:29",
+      "variable": "MEDIUM_COUNT",
+      "priority": 3,
+      "tags": [
+        "security",
+        "audit"
+      ],
+      "confidence": 0.80
+    },
+    "security-audit.low_count": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-security-audit.sh:30",
+      "variable": "LOW_COUNT",
+      "priority": 3,
+      "tags": [
+        "security",
+        "audit"
+      ],
+      "confidence": 0.80
+    },
+    "server-api-test.skip": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-server-api-test.sh:9",
+      "variable": "SKIP",
+      "priority": 3,
+      "tags": [
+        "server",
+        "api",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "session-test.session_exit": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-session-test.sh:64",
+      "variable": "SESSION_EXIT",
+      "priority": 3,
+      "tags": [
+        "session",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "setup.warn": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-setup.sh:29",
+      "variable": "WARN",
+      "priority": 3,
+      "tags": [
+        "setup"
+      ],
+      "confidence": 0.80
+    },
+    "strategic.strategic_max_issues": {
+      "value": 5,
+      "type": "integer",
+      "source": "sw-strategic.sh:32",
+      "variable": "STRATEGIC_MAX_ISSUES",
+      "priority": 5,
+      "tags": [
+        "strategic"
+      ],
+      "confidence": 0.95
+    },
+    "strategic.strategic_cooldown_seconds": {
+      "value": 14400,
+      "type": "integer",
+      "source": "sw-strategic.sh:33",
+      "variable": "STRATEGIC_COOLDOWN_SECONDS",
+      "priority": 3,
+      "tags": [
+        "strategic"
+      ],
+      "confidence": 0.80
+    },
+    "strategic.strategic_max_tokens": {
+      "value": 4096,
+      "type": "integer",
+      "source": "sw-strategic.sh:35",
+      "variable": "STRATEGIC_MAX_TOKENS",
+      "priority": 5,
+      "tags": [
+        "strategic"
+      ],
+      "confidence": 0.95
+    },
+    "strategic.strategic_strategy_lines": {
+      "value": 200,
+      "type": "integer",
+      "source": "sw-strategic.sh:36",
+      "variable": "STRATEGIC_STRATEGY_LINES",
+      "priority": 3,
+      "tags": [
+        "strategic"
+      ],
+      "confidence": 0.80
+    },
+    "strategic.strategic_overlap_threshold": {
+      "value": 60,
+      "type": "integer",
+      "source": "sw-strategic.sh:38",
+      "variable": "STRATEGIC_OVERLAP_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "strategic"
+      ],
+      "confidence": 0.95
+    },
+    "stream.capture_interval": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-stream.sh:29",
+      "variable": "CAPTURE_INTERVAL",
+      "priority": 5,
+      "tags": [
+        "stream"
+      ],
+      "confidence": 0.95
+    },
+    "stream.buffer_lines": {
+      "value": 500,
+      "type": "integer",
+      "source": "sw-stream.sh:30",
+      "variable": "BUFFER_LINES",
+      "priority": 3,
+      "tags": [
+        "stream"
+      ],
+      "confidence": 0.80
+    },
+    "testgen.coverage_threshold": {
+      "value": 70,
+      "type": "integer",
+      "source": "sw-testgen.sh:33",
+      "variable": "COVERAGE_THRESHOLD",
+      "priority": 5,
+      "tags": [
+        "testgen"
+      ],
+      "confidence": 0.95
+    },
+    "tmux.warn": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-tmux.sh:20",
+      "variable": "WARN",
+      "priority": 3,
+      "tags": [
+        "tmux"
+      ],
+      "confidence": 0.80
+    },
+    "tracker-providers-test.total": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-tracker-providers-test.sh:20",
+      "variable": "TOTAL",
+      "priority": 3,
+      "tags": [
+        "tracker",
+        "providers",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "tracker-test.no_github": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-tracker-test.sh:402",
+      "variable": "NO_GITHUB",
+      "priority": 3,
+      "tags": [
+        "tracker",
+        "test"
+      ],
+      "confidence": 0.80
+    },
+    "triage.triage_ai": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-triage.sh:693",
+      "variable": "TRIAGE_AI",
+      "priority": 3,
+      "tags": [
+        "triage"
+      ],
+      "confidence": 0.80
+    },
+    "ux.prefers_reduced_motion": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-ux.sh:359",
+      "variable": "PREFERS_REDUCED_MOTION",
+      "priority": 3,
+      "tags": [
+        "ux"
+      ],
+      "confidence": 0.80
+    },
+    "ux.no_color": {
+      "value": 1,
+      "type": "integer",
+      "source": "sw-ux.sh:357",
+      "variable": "NO_COLOR",
+      "priority": 3,
+      "tags": [
+        "ux"
+      ],
+      "confidence": 0.80
+    },
+    "ux.force_color": {
+      "value": 0,
+      "type": "integer",
+      "source": "sw-ux.sh:358",
+      "variable": "FORCE_COLOR",
+      "priority": 3,
+      "tags": [
+        "ux"
+      ],
+      "confidence": 0.80
+    }
+  }
+}
