@@ -3,7 +3,7 @@
 # ║  shipwright policy-discovery — Systematic Hardcoded Policy Discovery      ║
 # ║  Identify and migrate hardcoded policies to config files                  ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-set -euo pipefail
+set -eo pipefail
 
 VERSION="3.2.4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,53 +14,59 @@ ARTIFACTS_DIR="${REPO_DIR}/.claude/pipeline-artifacts"
 REPORT_FILE="${ARTIFACTS_DIR}/discovery-report.json"
 FINDINGS_FILE="${ARTIFACTS_DIR}/findings.jsonl"
 
-# ─── Output helpers (fallback) ──────────────────────────────────────────────
+# ─── Output helpers ──────────────────────────────────────────────────────────
 info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
 warn()    { echo -e "\033[38;2;250;204;21m\033[1m⚠\033[0m $*"; }
 error()   { echo -e "\033[38;2;248;113;113m\033[1m✗\033[0m $*" >&2; }
 now_iso() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 
-# ─── Main scanner using grep + awk ──────────────────────────────────────────
+# ─── Main scanner using find + sed + awk ──────────────────────────────────
 cmd_scan() {
     info "Scanning for hardcoded values..."
 
     mkdir -p "$ARTIFACTS_DIR"
     rm -f "$FINDINGS_FILE"
 
-    # Use awk to process files and accumulate findings
-    find "$SCRIPT_DIR" -name "*.sh" -type f -print0 | while IFS= read -r -d '' file; do
-        [[ -f "$file" ]] || continue
-        [[ "$file" == *"-test.sh" ]] && continue
+    local count=0
 
+    # Scan each script file for hardcoded values
+    find "$SCRIPT_DIR" -name "*.sh" -type f ! -name "*-test.sh" | while read -r file; do
         relfile="${file#$REPO_DIR/}"
 
-        # Assignments: VAR=123
-        grep -nE "^[[:space:]]*(local[[:space:]]+)?[A-Z_][A-Z0-9_]*=[0-9]+" "$file" 2>/dev/null | \
-        awk -v relfile="$relfile" -F: '{
-            match($2, /[0-9]+/);
-            value=substr($2, RSTART, RLENGTH);
-            printf "%s\t%d\t%s\t%s\t%d\n", relfile, $1, value, "assignment", 4
-        }' >> "$FINDINGS_FILE"
+        # Scan for assignments, timeouts, comparisons
+        # Use sed to prepend filename:line, then awk to extract values
+        {
+            # Assignments: VAR=123
+            grep -nE "^[[:space:]]*(local[[:space:]]+)?[A-Z_][A-Z0-9_]*=[0-9]+" "$file" 2>/dev/null | \
+            while IFS= read -r line; do
+                linenum="${line%%:*}"
+                content="${line#*:}"
+                value=$(echo "$content" | grep -oE "[0-9]+" | head -1)
+                [[ -n "$value" ]] && echo -e "$relfile\t$linenum\t$value\tassignment\t4"
+            done
 
-        # Timeouts: sleep N, timeout N
-        grep -nE "(sleep|timeout)[[:space:]]+[0-9]+" "$file" 2>/dev/null | \
-        awk -v relfile="$relfile" -F: '{
-            match($2, /[0-9]+/);
-            value=substr($2, RSTART, RLENGTH);
-            printf "%s\t%d\t%s\t%s\t%d\n", relfile, $1, value, "timeout", 5
-        }' >> "$FINDINGS_FILE"
+            # Timeouts: sleep N, timeout N
+            grep -nE "(sleep|timeout)[[:space:]]+[0-9]+" "$file" 2>/dev/null | \
+            while IFS= read -r line; do
+                linenum="${line%%:*}"
+                content="${line#*:}"
+                value=$(echo "$content" | grep -oE "[0-9]+" | head -1)
+                [[ -n "$value" ]] && echo -e "$relfile\t$linenum\t$value\ttimeout\t5"
+            done
 
-        # Comparisons: -gt 100, -lt 50, etc.
-        grep -nE "[[:space:]](-gt|-lt|-ge|-le)[[:space:]]+[0-9]+" "$file" 2>/dev/null | \
-        awk -v relfile="$relfile" -F: '{
-            match($2, /[0-9]+/);
-            value=substr($2, RSTART, RLENGTH);
-            printf "%s\t%d\t%s\t%s\t%d\n", relfile, $1, value, "comparison", 3
-        }' >> "$FINDINGS_FILE"
+            # Comparisons: -gt 100
+            grep -nE "[[:space:]](-gt|-lt|-ge|-le)[[:space:]]+[0-9]+" "$file" 2>/dev/null | \
+            while IFS= read -r line; do
+                linenum="${line%%:*}"
+                content="${line#*:}"
+                value=$(echo "$content" | grep -oE "[0-9]+" | head -1)
+                [[ -n "$value" ]] && echo -e "$relfile\t$linenum\t$value\tcomparison\t3"
+            done
+        } >> "$FINDINGS_FILE"
     done
 
-    # Count findings and display result
+    # Count findings
     local count=$(wc -l < "$FINDINGS_FILE" 2>/dev/null || echo 0)
     success "Scanned $count hardcoded values"
     [[ $count -eq 0 ]] && warn "No findings detected"
@@ -158,17 +164,20 @@ cmd_plan() {
 
     local plan_file="${ARTIFACTS_DIR}/migration-plan.json"
 
-    # Generate simple plan listing top 5 candidates
+    # Generate plan listing top 5 candidates
     {
         echo "{"
         echo "  \"migration_candidates\": ["
 
-        local first=true
-        jq -r '.findings | sort_by(.priority) | reverse | .[0:5][] | @json' "$REPORT_FILE" 2>/dev/null | while read -r json_line; do
-            [[ "$first" == "true" ]] || echo ","
-            first=false
-            echo "    $(echo "$json_line" | jq '.')"
-        done
+        jq -r '.findings | sort_by(.priority) | reverse | .[0:5][] | @json' "$REPORT_FILE" 2>/dev/null | {
+            local first=true
+            while read -r json_line; do
+                [[ -z "$json_line" ]] && continue
+                [[ "$first" == "true" ]] || echo ","
+                first=false
+                echo "    $(echo "$json_line" | jq '.')"
+            done
+        }
 
         echo "  ],"
         echo "  \"schema_additions\": {},"
