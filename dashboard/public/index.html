@@ -108,6 +108,7 @@
         <button class="tab-btn" data-tab="pipeline-theater">Theater</button>
         <button class="tab-btn" data-tab="agent-cockpit">Cockpit</button>
         <button class="tab-btn" data-tab="shipyard">Shipyard</button>
+        <button class="tab-btn" data-tab="production-health">Production</button>
         <div class="tab-indicator" id="tab-indicator"></div>
       </div>
     </nav>
@@ -1028,6 +1029,189 @@
     <div class="tab-panel" id="panel-pipeline-theater"></div>
     <div class="tab-panel" id="panel-agent-cockpit"></div>
     <div class="tab-panel" id="panel-shipyard"></div>
+
+    <!-- Production Health panel -->
+    <div class="tab-panel" id="panel-production-health">
+      <div class="panel-header">
+        <h2>Production Health</h2>
+        <p class="panel-subtitle">
+          Post-merge monitoring: CI, deployment, and regression status
+        </p>
+      </div>
+      <div
+        id="production-health-summary"
+        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap"
+      >
+        <div
+          class="stat-card"
+          style="flex: 1; min-width: 120px; text-align: center"
+        >
+          <div class="stat-value" id="ph-total" style="font-size: 2rem">-</div>
+          <div class="stat-label">Total Merges</div>
+        </div>
+        <div
+          class="stat-card"
+          style="flex: 1; min-width: 120px; text-align: center"
+        >
+          <div
+            class="stat-value"
+            id="ph-stable"
+            style="font-size: 2rem; color: #4ade80"
+          >
+            -
+          </div>
+          <div class="stat-label">Stable</div>
+        </div>
+        <div
+          class="stat-card"
+          style="flex: 1; min-width: 120px; text-align: center"
+        >
+          <div
+            class="stat-value"
+            id="ph-degraded"
+            style="font-size: 2rem; color: #fbbf24"
+          >
+            -
+          </div>
+          <div class="stat-label">Degraded</div>
+        </div>
+        <div
+          class="stat-card"
+          style="flex: 1; min-width: 120px; text-align: center"
+        >
+          <div
+            class="stat-value"
+            id="ph-regression"
+            style="font-size: 2rem; color: #f43f5e"
+          >
+            -
+          </div>
+          <div class="stat-label">Regression</div>
+        </div>
+      </div>
+      <table class="data-table" style="width: 100%; border-collapse: collapse">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 0.5rem">PR</th>
+            <th style="text-align: left; padding: 0.5rem">Status</th>
+            <th style="text-align: left; padding: 0.5rem">Merged</th>
+            <th style="text-align: left; padding: 0.5rem">Signals</th>
+          </tr>
+        </thead>
+        <tbody id="ph-table-body">
+          <tr>
+            <td
+              colspan="4"
+              style="padding: 1rem; text-align: center; opacity: 0.5"
+            >
+              Loading...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // Production Health panel logic
+      (function () {
+        var loaded = false;
+        function loadProductionHealth() {
+          if (loaded) return;
+          loaded = true;
+          fetch("/api/production-health")
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              var s = data.summary || {};
+              document.getElementById("ph-total").textContent = s.total || 0;
+              document.getElementById("ph-stable").textContent = s.stable || 0;
+              document.getElementById("ph-degraded").textContent =
+                s.degraded || 0;
+              document.getElementById("ph-regression").textContent =
+                s.regression || 0;
+
+              var tbody = document.getElementById("ph-table-body");
+              var merges = data.merges || [];
+              if (merges.length === 0) {
+                tbody.innerHTML =
+                  '<tr><td colspan="4" style="padding:1rem;text-align:center;opacity:0.5;">No post-merge data yet</td></tr>';
+                return;
+              }
+              var html = "";
+              for (var i = 0; i < merges.length && i < 50; i++) {
+                var m = merges[i];
+                var color =
+                  m.status === "stable"
+                    ? "#4ade80"
+                    : m.status === "degraded"
+                      ? "#fbbf24"
+                      : "#f43f5e";
+                var icon =
+                  m.status === "stable"
+                    ? "&#10003;"
+                    : m.status === "degraded"
+                      ? "&#9888;"
+                      : "&#10007;";
+                var signals = m.signals || [];
+                var sigText =
+                  signals.length === 0
+                    ? "-"
+                    : signals
+                        .map(function (s) {
+                          return s.type;
+                        })
+                        .join(", ");
+                var merged = m.merged_at
+                  ? new Date(m.merged_at).toLocaleDateString()
+                  : "-";
+                html +=
+                  "<tr>" +
+                  '<td style="padding:0.5rem;">#' +
+                  m.pr +
+                  "</td>" +
+                  '<td style="padding:0.5rem;color:' +
+                  color +
+                  ';">' +
+                  icon +
+                  " " +
+                  m.status +
+                  "</td>" +
+                  '<td style="padding:0.5rem;">' +
+                  merged +
+                  "</td>" +
+                  '<td style="padding:0.5rem;font-size:0.85em;">' +
+                  sigText +
+                  "</td>" +
+                  "</tr>";
+              }
+              tbody.innerHTML = html;
+            })
+            .catch(function () {
+              document.getElementById("ph-table-body").innerHTML =
+                '<tr><td colspan="4" style="padding:1rem;text-align:center;opacity:0.5;">Could not load production health data</td></tr>';
+            });
+        }
+        // Observe tab activation
+        var observer = new MutationObserver(function (mutations) {
+          mutations.forEach(function (m) {
+            if (
+              m.target.id === "panel-production-health" &&
+              m.target.classList.contains("active")
+            ) {
+              loadProductionHealth();
+            }
+          });
+        });
+        var panel = document.getElementById("panel-production-health");
+        if (panel) {
+          observer.observe(panel, {
+            attributes: true,
+            attributeFilter: ["class"],
+          });
+        }
+      })();
+    </script>
 
     <script src="dist/main.js"></script>
   </body>

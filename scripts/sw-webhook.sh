@@ -113,6 +113,30 @@ process_webhook_event() {
 
         echo "$event_record" >> "$WEBHOOK_EVENTS_FILE"
         info "Webhook: Issue #${issue_num} labeled '${label_name}' in ${repo_full_name}"
+
+        # Detect regression-labeled issues for post-merge feedback
+        if [[ "$label_name" == "regression" ]]; then
+            local issue_body
+            issue_body=$(echo "$payload" | jq -r '.issue.body // ""' 2>/dev/null || echo "")
+
+            # Extract PR numbers referenced in the issue body (e.g., #123)
+            local pr_refs
+            pr_refs=$(echo "$issue_body" | grep -oE '#[0-9]+' | tr -d '#' | head -5 || true)
+
+            if [[ -n "$pr_refs" ]]; then
+                if type emit_event >/dev/null 2>&1; then
+                    local first_pr
+                    first_pr=$(echo "$pr_refs" | head -1)
+                    emit_event "webhook.regression_issue" \
+                        "issue_number=$issue_num" \
+                        "repo=$repo_full_name" \
+                        "title=${issue_title:0:80}" \
+                        "referenced_pr=$first_pr"
+                fi
+                info "Webhook: Regression issue #${issue_num} references PR(s) in ${repo_full_name}"
+            fi
+        fi
+
         return 0
     fi
 
@@ -153,6 +177,70 @@ process_webhook_event() {
         fi
 
         info "Webhook: PR #${pr_num} merged in ${repo_full_name}"
+        return 0
+    fi
+
+    # Handle push events (CI failures on main branch)
+    if [[ "$event_type" == "push" ]]; then
+        local ref
+        ref=$(echo "$payload" | jq -r '.ref // empty' 2>/dev/null || echo "")
+
+        # Only process pushes to main/master
+        if [[ "$ref" != "refs/heads/main" && "$ref" != "refs/heads/master" ]]; then
+            return 1
+        fi
+
+        local repo_full_name head_commit
+        repo_full_name=$(echo "$payload" | jq -r '.repository.full_name // empty' 2>/dev/null || echo "")
+        head_commit=$(echo "$payload" | jq -r '.head_commit.id // empty' 2>/dev/null || echo "")
+
+        if [[ -z "$repo_full_name" || -z "$head_commit" ]]; then
+            return 1
+        fi
+
+        ensure_dir
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "webhook.push_main" \
+                "repo=$repo_full_name" \
+                "ref=${ref}" \
+                "head_commit=${head_commit:0:40}"
+        fi
+
+        info "Webhook: Push to main in ${repo_full_name} (${head_commit:0:7})"
+        return 0
+    fi
+
+    # Handle deployment_status events (deployment failures)
+    if [[ "$event_type" == "deployment_status" ]]; then
+        local state
+        state=$(echo "$payload" | jq -r '.deployment_status.state // empty' 2>/dev/null || echo "")
+
+        # Only process failure states
+        if [[ "$state" != "failure" && "$state" != "error" ]]; then
+            return 1
+        fi
+
+        local repo_full_name deploy_env deploy_sha description
+        repo_full_name=$(echo "$payload" | jq -r '.repository.full_name // empty' 2>/dev/null || echo "")
+        deploy_env=$(echo "$payload" | jq -r '.deployment.environment // "unknown"' 2>/dev/null || echo "unknown")
+        deploy_sha=$(echo "$payload" | jq -r '.deployment.sha // empty' 2>/dev/null || echo "")
+        description=$(echo "$payload" | jq -r '.deployment_status.description // ""' 2>/dev/null || echo "")
+
+        if [[ -z "$repo_full_name" || -z "$deploy_sha" ]]; then
+            return 1
+        fi
+
+        ensure_dir
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "webhook.deployment_failure" \
+                "repo=$repo_full_name" \
+                "environment=$deploy_env" \
+                "sha=${deploy_sha:0:40}" \
+                "state=$state" \
+                "description=${description:0:100}"
+        fi
+
+        info "Webhook: Deployment $state in ${deploy_env} for ${repo_full_name} (${deploy_sha:0:7})"
         return 0
     fi
 

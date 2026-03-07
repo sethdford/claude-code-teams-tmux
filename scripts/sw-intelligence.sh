@@ -1378,6 +1378,41 @@ intelligence_production_risk_adjustment() {
     echo "$adjustment"
 }
 
+# intelligence_regression_iteration_boost [analysis_json]
+# Reads post-merge regression data and returns 0-5 extra iterations
+# recommended for issues touching files with production regression history.
+# Used by pipeline composer to adjust build loop iteration counts.
+intelligence_regression_iteration_boost() {
+    local analysis_json="${1:-}"
+    local boost=0
+
+    local post_merge_health="${HOME}/.shipwright/post-merge-health.jsonl"
+    [[ ! -f "$post_merge_health" ]] && { echo "$boost"; return 0; }
+
+    # Count total regressions
+    local regression_count=0
+    regression_count=$(grep -c '"regression"' "$post_merge_health" 2>/dev/null || true)
+    regression_count="${regression_count:-0}"
+
+    # Count degraded merges
+    local degraded_count=0
+    degraded_count=$(grep -c '"degraded"' "$post_merge_health" 2>/dev/null || true)
+    degraded_count="${degraded_count:-0}"
+
+    # Boost based on regression history
+    if [[ "$regression_count" -ge 5 ]]; then
+        boost=5
+    elif [[ "$regression_count" -ge 3 ]]; then
+        boost=3
+    elif [[ "$regression_count" -ge 1 ]]; then
+        boost=2
+    elif [[ "$degraded_count" -ge 3 ]]; then
+        boost=1
+    fi
+
+    echo "$boost"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLI INTERFACE
 # ═══════════════════════════════════════════════════════════════════════════════

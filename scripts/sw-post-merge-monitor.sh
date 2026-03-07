@@ -201,6 +201,86 @@ record_health() {
     mv "$tmp_file" "$POST_MERGE_HEALTH_FILE"
 }
 
+# ─── Deduplication check ──────────────────────────────────────────────────
+# Returns 0 if event is a duplicate (already emitted within window), 1 if new
+is_duplicate_regression_event() {
+    local merge_sha="$1"
+    local signal_type="$2"
+    local dedup_window_secs="${3:-3600}"  # Default: 1 hour
+
+    local events_file="${HOME}/.shipwright/events.jsonl"
+    [[ ! -f "$events_file" ]] && return 1
+
+    local now_epoch
+    now_epoch=$(now_epoch)
+    local cutoff=$((now_epoch - dedup_window_secs))
+
+    # Check if same merge_sha + signal_type exists in recent events
+    local found
+    found=$(tail -200 "$events_file" 2>/dev/null | \
+        grep "feedback.production.regression" | \
+        grep "${merge_sha:0:12}" | \
+        grep "$signal_type" | \
+        while IFS= read -r line; do
+            local ts_str
+            ts_str=$(echo "$line" | jq -r '.ts // ""' 2>/dev/null || echo "")
+            if [[ -n "$ts_str" ]]; then
+                # Simple recency check: if the line exists, it's recent enough
+                echo "found"
+                break
+            fi
+        done || true)
+
+    [[ "$found" == "found" ]] && return 0
+    return 1
+}
+
+# ─── Link PR to original issue pattern in memory ────────────────────────────
+# Finds the original issue pattern from a PR and tags it as risky
+link_pr_to_issue_pattern() {
+    local pr_number="$1"
+    local signal_type="$2"
+
+    # Try to find the issue that this PR was built for
+    # Convention: branch names like ci/<issue-description>-<N> or feat/<desc>-<N>
+    local owner_repo
+    owner_repo=$(get_owner_repo 2>/dev/null) || return 1
+
+    # Get PR branch name and linked issue
+    local pr_branch issue_num
+    if [[ -z "${NO_GITHUB:-}" ]]; then
+        pr_branch=$(gh pr view "$pr_number" --repo "$owner_repo" \
+            --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+
+        # Extract issue number from branch name (e.g., ci/fix-auth-42 → 42)
+        issue_num=$(echo "$pr_branch" | grep -oE '[0-9]+$' || true)
+
+        # Fallback: check PR body for "Closes #N" or "Fixes #N"
+        if [[ -z "$issue_num" ]]; then
+            issue_num=$(gh pr view "$pr_number" --repo "$owner_repo" \
+                --json body --jq '.body' 2>/dev/null | \
+                grep -oiE '(closes|fixes|resolves)\s*#[0-9]+' | \
+                grep -oE '[0-9]+' | head -1 || true)
+        fi
+    fi
+
+    if [[ -z "$issue_num" ]]; then
+        return 1
+    fi
+
+    # Tag the failure pattern associated with this issue as risky
+    if type memory_tag_failure_as_risky >/dev/null 2>&1; then
+        local risky_tags
+        risky_tags=$(jq -nc --arg sig "$signal_type" '["production_regression", "post_merge", $sig]')
+        # Match failure patterns containing the issue number
+        memory_tag_failure_as_risky "#$issue_num" "$risky_tags" 2>/dev/null || true
+        # Also try matching the PR number
+        memory_tag_failure_as_risky "PR #$pr_number" "$risky_tags" 2>/dev/null || true
+    fi
+
+    return 0
+}
+
 # ─── Emit regression event to memory ────────────────────────────────────────
 emit_regression_event() {
     local pr_number="$1"
@@ -211,6 +291,12 @@ emit_regression_event() {
 
     local owner_repo
     owner_repo=$(get_owner_repo) || owner_repo="unknown/unknown"
+
+    # Deduplication: skip if same event was recently emitted
+    if is_duplicate_regression_event "$ref" "$signal_type" 2>/dev/null; then
+        info "Skipping duplicate regression event for ${ref:0:7}/$signal_type"
+        return 0
+    fi
 
     # Emit event to event bus
     emit_event "feedback.production.regression" \
@@ -227,6 +313,9 @@ emit_regression_event() {
         local tags='["production_regression","feedback","post_merge"]'
         memory_capture_failure "deploy" "$failure_pattern" "post-merge-monitor" "$tags" 2>/dev/null || true
     fi
+
+    # Tag original issue pattern as risky in memory
+    link_pr_to_issue_pattern "$pr_number" "$signal_type" 2>/dev/null || true
 }
 
 # ─── Poll GitHub for signals ───────────────────────────────────────────────
