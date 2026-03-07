@@ -35,16 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "team": [
-          "docs-writer",
-          "architect",
-          "reviewer"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "devops",
+          "optimizer"
         ],
-        "reasoning": "Stale documentation in a 710-file codebase with complex shell/TypeScript architecture requires: (1) docs-writer to regenerate/update content, (2) architect to ensure accuracy against current design patterns and AUTO marker structure, (3) reviewer for completeness validation. Shipwright's documentation system uses code-sourced AUTO sections — architect ensures alignment. Tester not needed (examples tested separately). Security/DevOps/PM roles out of scope.",
-        "estimated_cost": 4.5,
-        "risk_level": "medium"
+        "confidence": 0.85,
+        "reasoning": "Real-time event streaming requires architectural design for event flow, pipeline integration, and scalability; builder implements, DevOps handles operational aspects, optimizer ensures performance.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772432701,
+      "timestamp": 1772872936,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -2165,6 +2167,237 @@
       },
       "timestamp": 1772436242,
       "ttl": 3600
+    },
+    "443bad5e7c6bf51755e780b1ba65fa47": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "backend",
+        "key_risks": [
+          "Event ordering and consistency under concurrent pipeline loads",
+          "Over-filtering relevant patterns (false negatives missing applicable learnings)",
+          "Under-filtering irrelevant events (false positives causing context noise)",
+          "Integration complexity between intelligence engine and build loop subscription",
+          "Difficulty testing parallel pipeline scenarios reliably in CI"
+        ],
+        "implementation_hints": [
+          "Extend intelligence engine to publish intelligence.pattern.discovered events via eventbus with pattern type and affected files",
+          "Implement file path overlap matching logic for event relevance filtering",
+          "Add eventbus subscription at build loop initialization, polling between iterations",
+          "Design structured event schema with pattern type, file list, recommendation, source pipeline ID",
+          "Consider deduplication and ordering guarantees for event delivery during high concurrency",
+          "Create integration test spawning 2+ parallel build loops on similar code to validate cross-pipeline learning"
+        ]
+      },
+      "timestamp": 1772872420,
+      "ttl": 3600
+    },
+    "8ddf3a47089f2f21a9bb9217b18e2d65": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1772872437,
+      "ttl": 1800
+    },
+    "7b66586733d669f5e446999dc567b527": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 11,
+        "estimated_tokens": 275000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1772872452,
+      "ttl": 3600
+    },
+    "4d6539938f39ebcb3189c5af15e1dd33": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Contains project structure conventions (src/ dir, vitest runner, npm, CommonJS), critical for planning implementation layout and testing strategy"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Confirms nodejs project type detected from bootstrap, provides basic project classification for the feature context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 25,
+            "summary": "Currently empty but relevant architectural decisions document; would inform design choices for event streaming feature if populated"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Empty but relevant for identifying risk patterns; would inform failure modes to avoid in real-time streaming implementation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Could contain cross-repo patterns about event streaming; currently empty but relevant for finding established patterns"
+          }
+        ]
+      },
+      "timestamp": 1772872471,
+      "ttl": 1800
+    },
+    "5d521667c56ce217d5d47ca6970e1616": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Detailed project structure, conventions, and test patterns critical for understanding validation constraints when replanning the feature"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Captures failure patterns that could explain why plan validation was rejected, but currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 42,
+            "summary": "Stores architectural decisions that may constrain valid plans, but currently empty"
+          }
+        ]
+      },
+      "timestamp": 1772872662,
+      "ttl": 1800
+    },
+    "a6edae17137d309512060cabf40be5a2": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Project conventions (Node.js, JavaScript, vitest, CommonJS) are essential for designing streaming architecture. Source directory structure and test patterns inform module organization for event pipeline components."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Confirms Node.js project type detected at bootstrap. Provides minimal architectural context compared to detailed patterns entry."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 18,
+            "summary": "Currently empty but would be valuable for design stage. Would contain prior architectural decisions affecting streaming pipeline design if populated."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 12,
+            "summary": "Currently empty. Would inform design risks and edge cases in event streaming if populated with historical failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Currently empty. Would establish performance baselines and throughput targets for real-time event streaming if populated."
+          }
+        ]
+      },
+      "timestamp": 1772872700,
+      "ttl": 1800
+    },
+    "1e744b57b5dc2d5a521211fb8553ad3d": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Contains project conventions (source_dir, test_pattern, import_style) and test runner info that provides foundational context for understanding the codebase architecture, but does not address design approaches or anti-patterns"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Placeholder for cross-repo learnings and common patterns that could theoretically capture design decisions, but is empty and has no relevant anti-pattern or design approach data"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Designed to capture architectural decisions but currently empty; would be the most relevant entry if populated with rejected design approaches for the Real-Time Intelligence Event Streaming feature"
+          }
+        ]
+      },
+      "timestamp": 1772872713,
+      "ttl": 1800
+    },
+    "e97507d6914c05a53964fd32435e6aa5": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical project metadata: node type, vitest test runner, npm package manager, source directory structure, test patterns, and import style. Essential for configuring build and test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Empty failure list indicates no known failure patterns from previous builds. Relevant for baseline understanding, though lack of data limits utility."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Simple nodejs type confirmation from bootstrap detection. Redundant with more detailed patterns.json entry but validates project type consistency."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Empty baselines object provides no historical context, but structure is available for establishing build performance baselines during this run."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Empty decisions list indicates no prior architectural decisions captured. Could be relevant for build strategy but currently provides no actionable context."
+          }
+        ]
+      },
+      "timestamp": 1772872915,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure (src/, vitest, npm, commonjs) critical for correct build execution"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Historical build failures (if any recorded) help avoid repeating same errors"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Build performance baselines useful for monitoring but currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Architectural decisions may impact build configuration but currently empty"
+          }
+        ]
+      },
+      "timestamp": 1772872925,
+      "ttl": 1800
+    },
+    "a643b5e570106c7becd572efda518c06": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1772873320,
+      "ttl": 1800
     }
   }
 }
