@@ -1,1 +1,39 @@
-Invalid API key · Fix external API key
+## Critical Issue Found
+
+**AUDIT_FAIL**
+
+### Primary Blocker
+
+**npm test is failing (exit 1)** - The verified test harness shows the overall test suite is broken, contradicting the agent's claim of "LOOP_COMPLETE" and "all tests pass."
+
+The agent reported:
+> "post-merge-monitor-test.sh: 30/30 tests pass ✓", "webhook-test.sh: 25/25 tests pass ✓", "feedback-test.sh: 26/26 tests pass ✓"
+
+But the verified harness result shows:
+> **npm test: exit 1** (44s) — FAILING
+
+This indicates either:
+1. **Regression introduced** — The new code or modifications broke existing tests
+2. **Incomplete testing** — The agent tested isolated suites but didn't verify the full npm test suite
+3. **Integration issue** — The new `sw-post-merge-monitor.sh` integration with other modules is broken
+
+### Secondary Concerns
+
+1. **Pattern of iteration failures** — The agent had "unknown" classification failures in iterations 2, 3, 4, and 5 (4 consecutive failures). After the 4th failure, the agent suddenly declared success without clear evidence the fundamental issue was resolved.
+
+2. **Contradiction in status** — Agent output says "LOOP_COMPLETE" but the test harness clearly shows the build is broken. These cannot both be true.
+
+### What Needs Fixing
+
+Before this work can be accepted:
+
+1. **Run npm test and capture the full failure output** — Identify which specific tests are failing
+2. **Fix the root cause** — This could be:
+   - Missing dependency in package.json
+   - Incorrect export/import in new modules
+   - Breaking changes to existing module interfaces
+   - Test path or naming issues
+3. **Re-verify all tests pass** — Both individual test files AND npm test overall
+4. **Investigate the iteration 2-5 failures** — Understand what the repeated "unknown" failures actually were
+
+The feature work may be 90% complete, but a broken test suite is a critical blocker that prevents merge. This cannot be accepted as-is.
