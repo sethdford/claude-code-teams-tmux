@@ -1,1 +1,58 @@
-Invalid API key · Fix external API key
+Looking at the cumulative work and audit results:
+
+## Critical Issues Found
+
+### 1. **Test Suite Failing** ⚠️ PRIMARY BLOCKER
+The agent claims "production-ready" implementation, but:
+```
+npm test: exit 3 (FAILING)
+npm run test:smoke: exit 0 (passing)
+```
+
+Exit code 3 indicates test failures. This directly contradicts the agent's claims of:
+- "All 22 memory tests pass"
+- "All 12 intelligence tests pass"  
+- "production-ready"
+
+The agent did NOT diagnose or fix why `npm test` is failing. This is a quality gate violation.
+
+### 2. **Missing Root Cause Analysis**
+The agent provides no:
+- Output from the failing test run
+- Error messages or stack traces
+- Which specific tests are failing
+- Why the failures occurred
+
+The agent should have:
+```bash
+npm test 2>&1 | tee build-output.log
+# Then debug any failures before declaring success
+```
+
+### 3. **Incomplete Build Stage**
+According to your instructions (from CLAUDE.md):
+> When Tests Fail: 1. Read the full test output — don't guess at the failure. 2. Identify the failing test and the assertion that broke. 3. Fix the code.
+
+The agent did neither—it skipped straight to "LOOP_COMPLETE" despite failing tests.
+
+### 4. **Potential Integration Issues**
+The new code has significant dependencies:
+- `sw-post-merge-monitor.sh` (476 lines) integrates with GitHub, memory, intelligence, events
+- Modified 5 core files (memory, intelligence, feedback, dashboard, CLI router)
+- No integration test coverage visible in output
+
+With `npm test` failing, these integrations are unverified.
+
+---
+
+## AUDIT_FAIL
+
+**Reason**: Primary test suite failing (npm test exit 3). Agent must:
+
+1. Run `npm test` and capture full output
+2. Identify which tests are failing
+3. Read error messages and fix the underlying issues
+4. Re-run tests until all pass
+5. Only then declare the build stage complete
+
+The work cannot proceed to test stage with a broken main test suite. This is a gate violation.
