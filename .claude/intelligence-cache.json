@@ -35,18 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "optimizer",
         "secondary_roles": [
           "architect",
-          "optimizer",
-          "tester"
+          "builder",
+          "devops"
         ],
-        "confidence": 0.88,
-        "reasoning": "Adaptive timeout engine requires architectural design of P95 strategy, implementation of metrics collection and tuning algorithm, performance optimization of the engine itself, and comprehensive edge-case testing.",
+        "confidence": 0.9,
+        "reasoning": "P95 duration analysis and metric-driven timeout optimization are core performance optimization tasks; Architect needed for system design, Builder for implementation, DevOps for metrics infrastructure.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772912231,
+      "timestamp": 1772923739,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -555,27 +555,31 @@
       "result": {
         "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 78,
+        "success_probability": 80,
         "recommended_template": "standard",
         "issue_type": "performance",
         "key_risks": [
-          "Percentile calculation errors leading to incorrect timeout values",
-          "Data persistence and rolling window management complexity",
-          "Insufficient historical data for new stage types causing calculation failures",
-          "Integration complexity with existing pipeline stage lifecycle",
-          "Edge case handling when adjusting timeouts with minimum thresholds and new stages"
+          "Percentile calculation correctness affecting timeout accuracy",
+          "Rolling window edge cases with insufficient historical data",
+          "Cascade effects from adjusted timeouts masking real failures",
+          "Data consistency across daemon restarts and distributed workers",
+          "Integration complexity across daemon, pipeline, and dashboard systems",
+          "False timeout failures if P95 calculation deviates from actual distribution"
         ],
         "implementation_hints": [
-          "Implement data collection first: record stage duration and outcome on every completion",
-          "Use SQLite (sw-db.sh already exists) for persistent rolling 30-day history storage",
-          "Create sw-adaptive-timeout.sh following established pattern of sw-adaptive.sh",
-          "Integrate with daemon patrol to trigger timeout adjustments every 7 days",
-          "Add adaptive_timeout config section to daemon-config.json with manual override support",
-          "Implement metrics tracking for timeouts_avoided and false_timeouts_prevented in dashboard",
-          "Test with synthetic historical data before enabling in production environments"
+          "Leverage existing sw-db.sh SQLite persistence layer for duration tracking",
+          "Implement percentile calculation using sorted arrays or SQL window functions",
+          "Add adaptive_timeouts_enabled feature flag in daemon-config.json for gradual rollout",
+          "Start with 7-day window validation before expanding to full 30-day rolling window",
+          "Create comprehensive sw-adaptive-timeout-test.sh with synthetic data covering all distribution shapes",
+          "Dashboard: visualize current timeout vs P95 delta, 30-day adjustment history, metrics (timeouts_avoided, false_timeouts_prevented)",
+          "Implement grace period: new P95 timeouts take effect on next pipeline run after recalculation",
+          "Integrate into daemon patrol loop to recalculate every 7 days automatically",
+          "Add anomaly detection: validate P95 against historical max to catch corrupt duration data",
+          "Event log all timeout adjustments with before/after values for auditability"
         ]
       },
-      "timestamp": 1772916050,
+      "timestamp": 1772922728,
       "ttl": 3600
     },
     "33189144d0eabe941f54fe5339f3c812": {
@@ -691,33 +695,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
+            "file": "patterns.json",
             "relevance": 45,
-            "summary": "Project structure (Node.js, vitest, CommonJS) essential for planning implementation of timeout engine logic and understanding where P95 calculations integrate with build system"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 22,
-            "summary": "Test failure patterns show heartbeat/timing detection issues; could inform timeout staleness detection and summary reporting similar to proposed P95 auto-tuning"
-          },
-          {
-            "file": "patterns.json (second entry)",
-            "relevance": 15,
-            "summary": "Confirms Node.js project type from bootstrap; minimal additional detail compared to first patterns.json entry"
+            "summary": "Describes project structure (src/, test_pattern: *.test.js, vitest, commonjs), conventions, and package manager (npm) — useful for understanding where timeout engine code should be placed and how tests are written"
           },
           {
             "file": "metrics.json",
+            "relevance": 30,
+            "summary": "Semantically related to P95 duration-based tuning since metrics are central to adaptive timeout logic, though currently empty so provides no concrete guidance"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Confirms nodejs project type detected during bootstrap, overlaps with more detailed patterns.json entry above"
+          },
+          {
+            "file": "failures.json",
             "relevance": 8,
-            "summary": "Baseline metrics structure exists but is empty; would be critical for P95 duration tracking and tuning decisions if populated"
+            "summary": "Contains test failures (sw-cleanup.sh heartbeat detection, sed template errors) unrelated to timeout engine feature; provides context on existing test quality issues but not directly applicable"
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Architectural decisions array is empty; would be valuable for understanding prior timeout/performance design choices but contains no data"
+            "relevance": 3,
+            "summary": "Empty decisions array; no prior architectural choices captured for reference"
           }
         ]
       },
-      "timestamp": 1772916092,
+      "timestamp": 1772922775,
       "ttl": 1800
     },
     "7d0688a3d4a868f930917fa62d0c8023": {
@@ -725,22 +729,22 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 85,
-            "summary": "Contains categorized test failures with root causes and fixes from recent pipeline runs. Directly relevant to understanding what validation failures occur during plan execution and how to address them."
+            "relevance": 25,
+            "summary": "Contains test failure patterns and root causes. While the specific failures (cleanup.sh heartbeat detection, sed command issues) don't directly relate to the adaptive timeout engine, the pattern of test validation issues informs why a plan might be rejected during validation"
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 40,
-            "summary": "Documents project conventions (vitest test runner, CommonJS imports, npm package manager, src/ directory) needed to understand testing/validation framework for the timeout engine feature."
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "First entry shows project conventions (vitest test runner, npm package manager, commonjs imports). Relevant for understanding the testing framework and conventions that would apply to validating an adaptive timeout feature implementation"
           },
           {
-            "file": "patterns.json (second entry)",
-            "relevance": 15,
-            "summary": "Confirms Node.js project type detected during bootstrap. Minimal context but establishes project language/runtime environment."
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Contains baselines concept which relates conceptually to P95 duration-based metrics. Currently empty but the structure is relevant to understanding metrics-driven features, though provides no actionable information for plan validation"
           }
         ]
       },
-      "timestamp": 1772911875,
+      "timestamp": 1772923384,
       "ttl": 1800
     },
     "ad5c4830dce9fba5655dfd373702d195": {
@@ -749,54 +753,54 @@
           {
             "file": "patterns.json",
             "relevance": 25,
-            "summary": "Project structure (Node.js, vitest, commonjs) provides baseline context for implementation patterns and conventions that inform architecture design"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 20,
-            "summary": "Confirms Node.js project type; minimal but relevant for understanding the technology stack of the adaptive timeout engine"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 10,
-            "summary": "Shows recent test failures; unrelated to timeout design but provides context on test infrastructure and codebase stability state"
+            "summary": "Establishes project conventions (Node.js, commonjs, vitest) which inform implementation details, but doesn't directly address timeout architecture patterns or P95 metrics"
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object; would be highly relevant if populated with P95 duration measurements, but currently contains no data"
+            "relevance": 15,
+            "summary": "Currently empty baselines object, but would be critical for storing P95 duration data and historical performance metrics needed for auto-tuning"
           },
           {
             "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Empty decisions array, but would document architectural choices about timeout calculation, P95 algorithm selection, and auto-tuning strategies"
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "No cross-repo learning captured; could contain patterns from other timeout implementations or P95-based scaling systems"
+          },
+          {
+            "file": "failures.json",
             "relevance": 5,
-            "summary": "Empty decisions array; would capture prior architectural choices relevant to timeout/tuning design, but currently unpopulated"
+            "summary": "Contains unrelated test failures (sw-cleanup.sh heartbeat detection, sed path issues); no relevance to timeout engine architecture"
           }
         ]
       },
-      "timestamp": 1772911930,
+      "timestamp": 1772923441,
       "ttl": 1800
     },
     "3897af5172e7d49bdd2a645bef9efff4": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 15,
-            "summary": "Contains project structure info (vitest, npm, commonjs) that would apply to any code changes, including timeout engine implementation, but lacks domain-specific anti-patterns"
+            "file": "patterns.json (first entry)",
+            "relevance": 20,
+            "summary": "Contains project conventions and test patterns. Marginally relevant for understanding codebase structure and testing anti-patterns, though not specific to timeout engine design."
           },
           {
             "file": "failures.json",
-            "relevance": 5,
-            "summary": "Records test failures in unrelated modules (sw-cleanup.sh heartbeat detection), not relevant to timeout engine design or P95 metrics"
+            "relevance": 15,
+            "summary": "Documents actual test failures and fixes in the codebase. Shows anti-pattern examples (sed command issues, dry-run mode detection logic), which informs what NOT to do in implementations."
           },
           {
-            "file": "decisions.json",
-            "relevance": 0,
-            "summary": "Empty decisions log; no previously captured design decisions or rejected approaches available"
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object provides no useful information for evaluating timeout engine design approaches or anti-patterns."
           }
         ]
       },
-      "timestamp": 1772911939,
+      "timestamp": 1772923451,
       "ttl": 1800
     },
     "845b751ee7f987558efbbace53f0a842": {
@@ -804,32 +808,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project structure (Node.js, vitest, npm), source directory layout, test patterns (*.test.js), and import conventions (commonjs) — essential setup information for implementing the timeout engine feature"
+            "relevance": 60,
+            "summary": "Project setup with Node.js/vitest/CommonJS conventions. Essential for understanding test harness and build environment for the timeout engine implementation."
           },
           {
             "file": "failures.json",
-            "relevance": 42,
-            "summary": "Test failure patterns from this codebase showing heartbeat detection and output formatting issues — useful precedents for avoiding similar bugs during build stage"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 18,
-            "summary": "Confirms project type as nodejs with detection metadata — redundant with first patterns.json, minimal additional value"
+            "relevance": 35,
+            "summary": "Test failure patterns in the codebase showing common issues (heartbeat detection, sed invocations). Informs error handling and edge case coverage for timeout stage."
           },
           {
             "file": "metrics.json",
-            "relevance": 8,
-            "summary": "Empty baselines object; potentially relevant for recording P95 duration metrics, but currently contains no data"
+            "relevance": 25,
+            "summary": "Currently empty baselines structure. Relevant for P95-based auto-tuning since this is where collected duration metrics would be stored and retrieved."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Duplicate project type entry (nodejs, 2026-02-21). Less detailed than first patterns.json; redundant confirmation of project type."
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array; could track architectural decisions for the timeout engine, but no existing entries"
+            "relevance": 10,
+            "summary": "Empty decisions log. Not currently relevant; would become useful when recording design choices for timeout tuning algorithm."
           }
         ]
       },
-      "timestamp": 1772912207,
+      "timestamp": 1772923717,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -837,27 +841,27 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 92,
-            "summary": "Project configuration is essential for build stage: defines test runner (vitest), source directory layout, import style, and package manager (npm). Required to properly execute builds and understand project structure."
+            "relevance": 95,
+            "summary": "Provides project structure (Vitest, npm, src/ layout), import style (CommonJS), and test patterns needed to execute builds and tests successfully"
           },
           {
             "file": "failures.json",
-            "relevance": 45,
-            "summary": "Test stage failures are relevant to build context as build output feeds into test stage. Contains patterns for detecting test failures and sw-cleanup.sh behavior, which can inform build iteration strategy."
+            "relevance": 68,
+            "summary": "Documents test-stage failures with root causes (sw-cleanup.sh staleness detection, sed command issues) that may recur during current build; informs prevention strategy"
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines dictionary provides no actionable data for build stage context."
+            "relevance": 12,
+            "summary": "Contains empty baselines object; no actionable data for build stage context"
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array provides no historical context or architectural decisions relevant to build execution."
+            "relevance": 10,
+            "summary": "Empty decisions array; provides no context relevant to build execution"
           }
         ]
       },
-      "timestamp": 1772912217,
+      "timestamp": 1772923725,
       "ttl": 1800
     },
     "30cd36785de97d3cc6ce2ebeab61cfb6": {
@@ -894,6 +898,24 @@
         "confidence": 78
       },
       "timestamp": 1772916076,
+      "ttl": 3600
+    },
+    "1334523c5aa7321ee7fbbada9e147322": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1772922740,
+      "ttl": 1800
+    },
+    "1a303e8f8fa736bdbcd963337fabd244": {
+      "result": {
+        "estimated_cost_usd": 10.25,
+        "estimated_iterations": 5,
+        "estimated_tokens": 70000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1772922760,
       "ttl": 3600
     }
   }
