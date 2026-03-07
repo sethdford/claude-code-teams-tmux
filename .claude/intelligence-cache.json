@@ -2172,31 +2172,28 @@
       "result": {
         "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 75,
-        "recommended_template": "cost-aware",
+        "success_probability": 78,
+        "recommended_template": "standard",
         "issue_type": "performance",
         "key_risks": [
-          "Budget overrun if scoring thresholds are too aggressive or edge cases missed",
-          "Model switching mid-iteration causing state inconsistency or API compatibility issues",
-          "Fallback mechanism failing to revert model, leaving expensive model active on error",
-          "Cost tracking inaccuracy: burst decisions not properly logged or correlated with outcomes",
-          "Regression in existing build loop behavior from added branching logic",
-          "Integration complexity with progress.md, error-summary.json, and state management"
+          "Model switching state management - mid-iteration burst failure could leave loop inconsistent",
+          "Cost estimation accuracy - estimated_cost_to_complete threshold may not reflect actual overrun risk",
+          "Progress metric calculation - test pass/fail trends vary by test suite, hard to normalize",
+          "Fallback recovery - reverting model after burst failure needs clean loop continuation",
+          "Budget miscalculation - burst decision based on remaining budget could exceed hard limit"
         ],
         "implementation_hints": [
-          "Build scoring function as isolated unit with comprehensive test cases before integration",
-          "Leverage existing progress.md and error-summary.json for progress rate calculation",
-          "Validate budget via sw-cost.sh before any model upgrade; use conservative thresholds",
-          "Explicit try-catch wrapper: guarantee revert to original $ANTHROPIC_MODEL on burst iteration failure",
-          "Log burst decisions to costs.json with iteration count, model used, success/failure outcome",
-          "Add optional dry-run mode (via config flag) that recommends burst but doesn't execute",
-          "Track metrics: burst success rate, cost-per-completion savings, false positive rate",
-          "Use daemon-config.json feature flag for safe rollout and A/B testing",
-          "Dashboard indicator: extend existing pipeline state JSON with burst_active boolean",
-          "Handle edge cases: zero iterations remaining, negative budget, API errors on model switch"
+          "Store progress_rate as exponential moving average of iteration success rates, not raw deltas",
+          "Persist burst session state in .claude/pipeline-artifacts/burst-session.json across iterations",
+          "Model upgrade via BURST_ORIGINAL_MODEL=${ANTHROPIC_MODEL}; export ANTHROPIC_MODEL=opus; on fallback restore original",
+          "Calculate cost_to_complete = estimated_cost_per_iteration × iterations_remaining; trigger when remaining_budget > 2× this value",
+          "Log all burst events (trigger, upgrade, outcome) to costs.json under new 'burst_decisions' array with ISO timestamp + metrics snapshot",
+          "For dashboard, consume burst mode state from pipeline-state.md (add BURST_MODE=active|inactive line)",
+          "Unit test: score function with mock metrics (progress 30-100%, iterations 1-5, budgets 0-20), verify scoring is monotonic",
+          "Edge case: prevent burst activation on iteration 1-2 (not enough data); require min 1 completed iteration before burst eligibility"
         ]
       },
-      "timestamp": 1772844093,
+      "timestamp": 1772870091,
       "ttl": 3600
     },
     "271e88fe21f425568f1a454835cc9851": {
@@ -2220,35 +2217,40 @@
     "694db461215ebbc8bc583782ca313271": {
       "result": {
         "issue_type": "infrastructure",
-        "confidence": 0.88,
+        "confidence": 0.95,
         "secondary_domains": [
           "performance",
+          "observability",
           "cost-optimization"
         ],
         "complexity_assessment": {
-          "score": 6,
-          "reasoning": "Requires cost-performance scoring algorithm, model override mechanism, budget validation, and fallback logic. Moderate state complexity, but no distributed systems challenges. Main risk is heuristic accuracy and cost tracking integrity."
+          "score": 7,
+          "reasoning": "Requires understanding build loop state machine, budget tracking system, model routing, and cost estimation. Integration touches sw-loop.sh (critical path), costs.json (persistent state), and dashboard. Previous attempt failed, suggesting hidden complexity around trajectory analysis or budget calculations."
         },
         "skill_plan": {
           "plan": [
+            "architecture-design",
             "brainstorming",
-            "architecture-design"
+            "cost-trajectory-analysis"
           ],
           "design": [
-            "api-design",
-            "performance"
+            "architecture-design",
+            "performance",
+            "cost-trajectory-analysis"
           ],
           "build": [
             "performance",
             "testing-strategy"
           ],
           "review": [
-            "pr-quality",
-            "adversarial-quality"
+            "two-stage-review",
+            "security-audit",
+            "pr-quality"
           ],
           "compound_quality": [
-            "security-audit",
-            "observability"
+            "adversarial-quality",
+            "validation-thoroughness",
+            "testing-strategy"
           ],
           "pr": [
             "pr-quality"
@@ -2257,51 +2259,52 @@
             "deploy-safety"
           ],
           "validate": [
-            "validation-thoroughness"
+            "validation-thoroughness",
+            "observability"
           ],
           "monitor": [
             "observability"
           ]
         },
         "skill_rationale": {
-          "brainstorming": "Challenge assumptions about burst triggers (70% threshold, 3 iterations cutoff, cost-to-complete heuristics) before implementation to avoid hard-coding arbitrary constants without validation.",
-          "architecture-design": "Document where cost-performance scoring lives (sw-loop.sh vs separate module), how state persists across iterations, and integration points with model routing and costs.json.",
-          "api-design": "Burst mode decision interface must be clean (structured recommendation object with score, reason, estimated_cost) so loop can act on it predictably and dashboard can consume it.",
-          "performance": "Cost-performance scoring runs on every loop iteration (hot path); must complete in <100ms to avoid slowing the build without reducing latency overhead.",
-          "testing-strategy": "Complex business logic (progress scoring, budget validation, threshold conditions) needs comprehensive unit tests covering: happy path, budget edge cases, progress stall scenarios, and fallback failures.",
-          "pr-quality": "This touches build loop economics; reviewers need clear before/after on cost impact, scoring rationale, and fallback guarantees so they can assess risk to production builds.",
-          "adversarial-quality": "Probe failure modes: What if progress metric is gamed? What if burst iteration fails mid-execution? What if budget depletes during burst? What if scoring is non-deterministic?",
-          "security-audit": "Cost tracking feeds financial decisions and model routing; verify data integrity (no fake progress reports), log tampering prevention, and audit trail completeness so burst decisions are defensible.",
-          "observability": "Dashboard requires BURST MODE indicator, cost delta metrics (burst vs baseline), and decision frequency to show effectiveness of the optimizer to users.",
-          "deploy-safety": "Cost-performance changes alter build loop behavior; deploy as canary (10% of builds) first, monitor for unexpected cost spikes or model thrashing before full rollout.",
-          "validation-thoroughness": "Unit tests won't catch real-world progress patterns (flaky tests, slow-down spells); run live validation on production builds to confirm burst recommendations match observed trajectories."
+          "architecture-design": "Must document current loop state machine and how burst mode integrates without breaking convergence detection or checkpoint logic.",
+          "brainstorming": "Challenge assumption that progress_score > 70 + iterations < 3 is the right burst trigger; consider alternate signals (velocity acceleration, budget-efficiency ratio).",
+          "cost-trajectory-analysis": "Core to this issue: real-time analysis of progress rate, iteration consumption, and budget trending is what enables safe burst decisions without overspending.",
+          "performance": "Cost-performance tradeoff is the entire point; scoring function must run in milliseconds without blocking the loop, and estimated_cost_to_complete calculation must be accurate.",
+          "testing-strategy": "Burst mode logic has many edge cases: low-budget rejection, model-unavailable fallback, loop convergence with model change. Need scenario-based test matrix.",
+          "two-stage-review": "First pass: verify scoring function correctness and cost safety logic. Second pass: check fallback mechanism and cost tracking for audit trail correctness.",
+          "security-audit": "Cost tracking must not leak budget/pricing data in logs or dashboard; burst decisions must be immutable/auditable for cost analysis.",
+          "pr-quality": "Cost-performance optimizer is strategic and non-obvious; PR must clearly explain why burst mode reduces cost-to-complete, not just how it works.",
+          "adversarial-quality": "Find failure modes: what if progress_score stays at 70.1 infinitely? What if fallback fails mid-burst? What if model costs change between burst decision and execution?",
+          "validation-thoroughness": "Real-world test: run loop with artificially constrained budget, verify burst mode activates at right moment, confirm total cost is actually lower than non-burst baseline.",
+          "deploy-safety": "Burst mode affects cost calculations for all pipelines. Rollback plan: if burst decisions correlate with budget overruns, disable via feature flag immediately.",
+          "observability": "Post-deploy: track burst activation rate, success rate, cost savings vs. non-burst baseline, fallback frequency. Alert if burst mode increases total cost."
         },
         "generated_skills": [
           {
             "name": "cost-trajectory-analysis",
-            "reason": "No existing skill specifically covers the novel domain of analyzing build loop trajectory (progress rate, iteration consumption, budget depletion) and translating into strategic cost-performance recommendations. This requires specialized heuristics and validation patterns.",
-            "content": "## Cost-Trajectory Analysis for Build Loop Optimization\n\nBurst mode decisions require analyzing three trajectory signals in real time:\n\n### 1. Progress Scoring (0-100)\nTrack test pass/fail trend over last 3 iterations:\n- **Strong progress** (80+): Tests passing, few regressions\n- **Stalled progress** (30-50): Tests oscillating, slow convergence\n- **No progress** (<30): Repeated failures\n\nCalculate as: `(passing_tests / total_tests × 100) + (iteration_trend_bonus × 10)` capped at 100.\n\n### 2. Iteration Runway\n- **Plenty left** (>5): Wait, don't burst\n- **Running low** (3-5): Burst *if* progress is strong (≥70) and budget allows\n- **Critical** (<3): Final chance; burst only if progress ≥70 and cost-to-complete < cost-of-restart\n\n### 3. Budget Runway\nEstimate remaining cost to completion using: `(avg_cost_per_iteration × iterations_remaining)`.\n- Burst is only justified if: `budget_remaining ≥ 2 × cost_to_complete`\n- This 2x margin ensures we can recover from one burst failure and restart if needed.\n\n### Decision Logic\n```\nBurst recommended when:\n  progress_score ≥ 70\n  AND iterations_remaining ≤ 3\n  AND budget_remaining ≥ 2 × estimated_cost_to_complete\n  AND (cost_of_burst_iteration + cost_of_recovery) < cost_of_restart\n```\n\n### Fallback & Learning\n- If burst iteration fails: revert to original model, log the failure\n- Track burst outcomes in costs.json: `{timestamp, triggered, progress_score, budget_before, cost_actual, result}`\n- Periodically retune thresholds using historical data: Did bursts in range [65-75] progress score actually complete faster?\n\n### Implementation Checklist\n1. Parse `progress.md` to extract: test results, iteration count, current cost\n2. Calculate progress_score, iterations_remaining, budget_remaining\n3. Check all three conditions; recommend burst only if all true\n4. Inject `ANTHROPIC_MODEL=claude-opus-4-6` for next iteration (not current)\n5. Log decision to costs.json with reason and outcome\n6. On fallback, clear $ANTHROPIC_MODEL and log failure reason"
+            "reason": "No existing skill covers real-time analysis of three correlated trajectory signals (progress rate, iteration consumption, budget trend) needed to make safe burst mode decisions. This is specialized to cost-performance optimization and not generic observability or performance tuning.",
+            "content": "## Cost-Trajectory Analysis for Burst Mode\n\nBurst mode decisions require analyzing three trajectory signals in real time:\n\n### 1. Progress Trajectory\n**Signal**: Are tests passing at accelerating rate? Is there momentum?\n- Compare test pass rate in iteration N vs. N-1 vs. N-2\n- Score function: (passing_tests_now / total_tests) - (passing_tests_prev / total_tests) = delta\n- Exponential moving average: `progress_score = 0.7 * prev_score + 0.3 * delta` (smooth out noise)\n- **Threshold**: progress_score > 70 means sustained forward motion, not a one-off win\n- **Red flag**: if progress_score peaked then declined, don't burst (might be local optimum)\n\n### 2. Iteration Budget Trajectory\n**Signal**: How many iterations do we have left before exhaustion?\n- Input: `max_iterations` (configured), `current_iteration` (from loop state)\n- Remaining: `max_iterations - current_iteration`\n- **Threshold**: iterations_remaining < 3 means we're running out of runway\n- **Rationale**: Need buffer for at least 2-3 more attempts with new model; if we burst on iteration 8/10, only 1 attempt left = too risky\n\n### 3. Budget Trajectory\n**Signal**: Do we have enough budget to afford burst and still complete?\n- Input: `budget_remaining` (from costs.json), `estimated_cost_to_complete` (from previous iterations)\n- Burst uptime: estimate cost delta between current model (e.g., Haiku) and upgraded model (e.g., Sonnet) for remaining iterations\n- Formula: `burst_cost_increase = (upgrade_model_price - current_model_price) × iterations_remaining`\n- **Threshold**: `budget_remaining > (2 × (estimated_cost_to_complete + burst_cost_increase))`\n  - The 2× multiplier provides safety margin against estimate errors\n  - If estimate is off by 50%, we still have cushion\n\n### Implementation Checklist\n\n**Cost Tracking (costs.json)**\n- Log every burst decision: `{\"iteration\": N, \"burst_triggered\": true, \"progress_score\": 75.2, \"iterations_remaining\": 2, \"budget_before\": 5.00, \"estimated_cost_to_complete\": 2.50}`\n- Log burst outcome: `{\"iteration\": N, \"burst_succeeded\": true, \"cost_actual\": 0.32, \"time_saved_iterations\": 1}`\n- Include in costs.json under `burst_log` array for post-run analysis\n\n**Fallback Safety**\n- If burst iteration fails (tests still failing after upgrade), immediately revert `$ANTHROPIC_MODEL` to original\n- Log fallback: `{\"iteration\": N, \"burst_failed\": true, \"reason\": \"tests_still_failing\", \"reverted_to\": \"haiku\"}`\n- Do NOT burst again (set flag to prevent infinite retry loop)\n\n**Dashboard Indicator**\n- When burst_mode is active, show badge: `🚀 BURST MODE` (upgraded model name, e.g., `🚀 Sonnet`)\n- Include burst metadata in loop progress output: `Iteration 8/10 | Progress: 75% | Budget: $4.50 | 🚀 Sonnet`\n\n### Common Pitfalls\n\n1. **Hardcoded thresholds** — `progress_score > 70` should be tunable; different projects converge at different rates\n2. **Ignoring estimate uncertainty** — If estimated_cost_to_complete has high variance, increase safety multiplier to 3×\n3. **Not accounting for model latency** — Opus may be slower per iteration; adjust estimated_cost_to_complete accordingly\n4. **Burst spam** — If burst fails, don't retry burst immediately; only allow burst once per run\n5. **Missing audit trail** — Every burst decision must be logged; otherwise impossible to measure ROI"
           }
         ],
         "review_focus": [
-          "Burst mode trigger thresholds (70% progress score, 3 iterations, 2x budget margin)—validate these are not arbitrary and have data backing",
-          "Cost-to-complete estimation accuracy—ensure calculation doesn't underestimate remaining work",
-          "Fallback behavior—verify burst failures don't cascade; model reverts cleanly and iteration completes with fallback model",
-          "Cost tracking integrity—all burst decisions logged with timestamp, decision rationale, actual cost; no missing entries",
-          "Model override mechanism—$ANTHROPIC_MODEL injection only applies to next iteration, doesn't leak across builds or threads",
-          "Progress scoring reliability—metric is consistent, not noisy; validate tests-passing ratio matches dashboard UI",
-          "Budget exhaustion protection—verify budget checks prevent over-spend even if scoring is slightly off"
+          "Scoring function correctness: Verify progress_score EMA calculation doesn't have off-by-one errors or stale state",
+          "Budget safety: Confirm 2× safety multiplier is appropriate; check for double-counting of burst cost vs. baseline estimate",
+          "Fallback mechanism: Ensure burst failure correctly reverts $ANTHROPIC_MODEL and prevents infinite retry loops",
+          "Cost tracking fidelity: All burst decisions logged to costs.json with iteration, scores, and outcomes for audit trail",
+          "Dashboard UX: Burst mode badge is clearly visible and doesn't obscure other loop status (progress %, time remaining)",
+          "Convergence detector interaction: Model switch mid-loop shouldn't confuse test pass/fail trending or cause false convergence detection"
         ],
         "risk_areas": [
-          "Budget exhaustion: Burst mode could cause spend spike if cost estimation is optimistic or burst fails after consuming budget",
-          "Progress scoring noise: If progress metric oscillates, burst recommendations may thrash between models repeatedly",
-          "State corruption: Burst mode state (last model, budget consumed, iteration count) must survive across loop iterations atomically",
-          "Cascading fallbacks: Multiple consecutive burst failures could trigger rapid model switching, consuming budget without progress",
-          "Cost learning bias: If only successful bursts are logged, learning system becomes biased toward repeating bursts even when ineffective",
-          "Concurrent burst requests: If multiple agents run simultaneously, burst decisions could conflict or double-spend budget"
+          "Cost estimate accuracy — if estimated_cost_to_complete is systematically wrong, burst decision safety margin erodes",
+          "Infinite burst loops — if fallback fails and burst is re-triggered on next iteration, could spiral into budget overrun",
+          "Model availability — burst assumes Opus is always available; what if API rate limit or quota exceeded during burst iteration?",
+          "Progress score false positives — high progress_score from one-off test fix doesn't guarantee future iterations will converge faster",
+          "Previous attempt failure context — issue notes 'pipeline/failed' label; investigate what broke in prior attempt (budget overflow? scoring bugs?)",
+          "Feature flag missing — no mention of disable/rollback plan if burst mode systematically increases costs instead of decreasing"
         ]
       },
-      "timestamp": 1772844181,
+      "timestamp": 1772870171,
       "ttl": 3600
     },
     "f6ce88e2e0eca4167e91000c280d4a14": {
@@ -2309,32 +2312,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project structure (Node.js, vitest, npm, CommonJS) and source conventions needed for planning implementation strategy"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 45,
-            "summary": "Known test failures in sw-cleanup.sh, sw-daemon.sh affecting cost-optimization paths; documents failure patterns to avoid"
-          },
-          {
-            "file": "global.json",
-            "relevance": 15,
-            "summary": "Empty cross-repo learnings; minimal value for this plan phase"
+            "relevance": 78,
+            "summary": "Contains project structure (src/ source dir, vitest test runner, commonjs imports) and conventions needed to plan the feature architecture and code organization"
           },
           {
             "file": "metrics.json",
-            "relevance": 10,
-            "summary": "No baseline metrics captured; potentially useful if performance baselines existed for cost-performance comparison"
+            "relevance": 52,
+            "summary": "For a cost-performance optimizer feature, baseline metrics are conceptually critical to understand current state and design optimization targets, though currently empty"
           },
           {
             "file": "decisions.json",
+            "relevance": 28,
+            "summary": "Empty but relevant: prior architectural decisions about performance/cost tradeoffs would inform optimizer design during planning phase"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 18,
+            "summary": "Empty currently, but understanding prior failures helps avoid pitfalls when planning feature integration points"
+          },
+          {
+            "file": "global.json",
             "relevance": 5,
-            "summary": "Empty decisions array; no prior architectural decisions to reference for optimizer feature"
+            "summary": "No cross-repo learnings captured; minimal relevance to planning this specific feature"
           }
         ]
       },
-      "timestamp": 1772844195,
+      "timestamp": 1772870189,
       "ttl": 1800
     },
     "48c4f1448a2f198a9a3c94f320c7d4cb": {
@@ -2532,6 +2535,65 @@
       ],
       "timestamp": 1772845219,
       "ttl": 1800
+    },
+    "b805dcb96351654ece5a3a3ce8d27ec5": {
+      "result": {
+        "estimated_iterations": 3,
+        "reasoning": {
+          "base_complexity": "Medium (6/10) with detailed implementation guidance",
+          "wip_status": "Already started (recent WIP commit visible)",
+          "key_factors": [
+            "State persistence layer - requires 1 iteration to stabilize",
+            "Cost calculation edge cases - 1 iteration for threshold tuning",
+            "Fallback recovery paths - 1 iteration for error handling"
+          ],
+          "confidence": "Medium (78% success probability suggests some unknowns remain)"
+        }
+      },
+      "timestamp": 1772870104,
+      "ttl": 1800
+    },
+    "5c9c3a788893624114c3072490c960b9": {
+      "result": {
+        "estimated_cost_usd": 9.75,
+        "estimated_iterations": 3,
+        "estimated_tokens": 74500,
+        "likely_failure_stage": "build",
+        "confidence": 72,
+        "cost_breakdown": {
+          "planning": 1.20,
+          "design": 1.55,
+          "build_per_iteration": 2.10,
+          "test_per_iteration": 1.80,
+          "review": 1.30
+        },
+        "token_breakdown": {
+          "planning": 8000,
+          "design": 10000,
+          "build_per_iteration": 12500,
+          "test_per_iteration": 10000,
+          "review_merge": 5500
+        },
+        "risk_factors": {
+          "state_management_complexity": "high",
+          "burst_session_persistence": "medium",
+          "fallback_recovery": "medium",
+          "budget_calculation_accuracy": "medium"
+        },
+        "iteration_breakdown": {
+          "iteration_1": "Core burst mode activation logic + state persistence",
+          "iteration_2": "Model switching + fallback recovery + edge cases",
+          "iteration_3": "Integration testing + edge case validation + dashboard state"
+        },
+        "confidence_factors": {
+          "issue_clarity": 0.85,
+          "implementation_hints_available": 0.90,
+          "state_management_risk": 0.60,
+          "similar_historical_data": 0.65
+        }
+      },
+      "timestamp": 1772870118,
+      "ttl": 3600
     }
   }
 }
