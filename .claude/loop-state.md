@@ -1,101 +1,182 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Pipeline Cost-Performance Dynamic Optimizer with Burst Mode
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Plan created at `.claude/plan.md`. Summary of key decisions:
 
----
+**Architecture**: New `scripts/lib/loop-burst.sh` module (following the `loop-convergence.sh` pattern) with 4 functions, integrated via 4-5 lines in `sw-loop.sh`'s main loop.
 
-## Summary
+**Files**: 1 new (`lib/loop-burst.sh`), 3 modified (`sw-loop.sh`, `sw-loop-test.sh`, `sw-tmux-status.sh`)
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Key design choices**:
+- Separate sourced module over inline code — keeps `sw-loop.sh` from growing and enables isolated testing
+- Conservative burst triggers: requires score > 70 (test trend + velocity + commits), < 3 iterations remaining, AND budget > 2x estimated cost-to-complete
+- Safe defaults everywhere — any error in burst logic results in no burst (never blocks the loop)
+- Burst is one-shot per iteration with automatic revert on failure
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
-
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**12 tasks** covering implementation, integration, dashboard badge, and 9+ unit tests.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Pipeline Cost-Performance Dynamic Optimizer with Burst Mode
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Interface Contract
+# Returns integer 0-100 on stdout. Safe default: 0 on any error.
+# Sets BURST_ACTIVE, BURST_ORIGINAL_MODEL, overrides CLAUDE_MODEL. 
+# Safe default: BURST_ACTIVE=false on any error.
+# Called at iteration start. Reverts model if previous burst failed.
+# Always resets BURST_ACTIVE=false (burst is one-shot per iteration).
+# Fire-and-forget JSON append to ~/.shipwright/costs.json .burst_decisions[]
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "failures.json",
+      "relevance": 92,
+      "summary": "4 known test failures from previous builds: sw-cleanup.sh stale heartbeat output, classify_failure not wired in daemon, sw-hygiene.sh platform-refactor exit code. Critical to avoid repeating during build stage."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
+      "file": "patterns.json (project config)",
       "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "summary": "Project structure essential for build: vitest test runner, npm, commonjs imports, src/ directory, *.test.js pattern. Captured today, highly current."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (bootstrap)",
+      "relevance": 18,
+      "summary": "Minimal project type info (nodejs) from Feb 21. Overlaps with detailed patterns.json but much less actionable for build stage."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 14,
+      "summary": "Empty baselines structure exists but no data. Could inform build decisions if populated with performance baselines."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "global.json",
+      "relevance": 10,
+      "summary": "Empty cross-repo learnings and patterns. Low current value but could contain useful patterns if populated from other builds."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Pipeline Cost-Performance Dynamic Optimizer with Burst Mode — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **performance**: Cost-performance scoring runs on every loop iteration (hot path); must complete in <100ms to avoid slowing the build without reducing latency overhead.
+- **testing-strategy**: Complex business logic (progress scoring, budget validation, threshold conditions) needs comprehensive unit tests covering: happy path, budget edge cases, progress stall scenarios, and fallback failures.
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Performance Expertise
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+Apply these optimization patterns:
+
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
+
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
+
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
+
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
+
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-07T00:50:30Z
+last_iteration_at: 2026-03-07T00:50:30Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -106,14 +187,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
