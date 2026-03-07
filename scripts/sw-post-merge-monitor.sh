@@ -17,6 +17,11 @@ REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
+
+# Memory system integration (for regression tracking)
+# shellcheck source=sw-memory.sh
+[[ -f "$SCRIPT_DIR/sw-memory.sh" ]] && source "$SCRIPT_DIR/sw-memory.sh"
+
 # Fallbacks when helpers not loaded (e.g. test env)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -216,10 +221,11 @@ emit_regression_event() {
         "repo=$owner_repo" \
         "context=${error_context:0:100}"
 
-    # Capture in memory system if available
+    # Capture in memory system with production tags
     if type memory_capture_failure >/dev/null 2>&1; then
-        local failure_pattern="PR #$pr_number: $signal_type ($error_context)"
-        memory_capture_failure "production" "$failure_pattern" "production" "{\"production_regression\":\"pr_$pr_number\"}" 2>/dev/null || true
+        local failure_pattern="[PRODUCTION_REGRESSION] PR #$pr_number: $signal_type — $error_context (confidence: $confidence)"
+        local tags='["production_regression","feedback","post_merge"]'
+        memory_capture_failure "deploy" "$failure_pattern" "post-merge-monitor" "$tags" 2>/dev/null || true
     fi
 }
 

@@ -74,51 +74,90 @@ validate_webhook_signature() {
     fi
 }
 
-# Parse webhook payload and emit event if labeled issue
+# Parse webhook payload and emit event if labeled issue or merged PR
 # Returns 0 if event was processed, 1 if it was ignored
 process_webhook_event() {
     local payload="$1"
     local event_type="${2:-unknown}"
 
-    # Only process issues.labeled events
-    if [[ "$event_type" != "issues" ]]; then
-        return 1
+    # Handle issues.labeled events
+    if [[ "$event_type" == "issues" ]]; then
+        local action
+        action=$(echo "$payload" | jq -r '.action // empty' 2>/dev/null || echo "")
+
+        if [[ "$action" != "labeled" ]]; then
+            return 1
+        fi
+
+        local issue_num repo_full_name issue_title label_name
+        issue_num=$(echo "$payload" | jq -r '.issue.number // empty' 2>/dev/null || echo "")
+        repo_full_name=$(echo "$payload" | jq -r '.repository.full_name // empty' 2>/dev/null || echo "")
+        issue_title=$(echo "$payload" | jq -r '.issue.title // empty' 2>/dev/null || echo "")
+        label_name=$(echo "$payload" | jq -r '.label.name // empty' 2>/dev/null || echo "")
+
+        if [[ -z "$issue_num" || -z "$repo_full_name" || -z "$label_name" ]]; then
+            return 1
+        fi
+
+        # Write event to webhook events file for daemon to process
+        ensure_dir
+        local event_record
+        event_record=$(jq -nc \
+            --arg ts "$(now_iso)" \
+            --arg ts_epoch "$(now_epoch)" \
+            --arg repo "$repo_full_name" \
+            --arg issue "$issue_num" \
+            --arg title "$issue_title" \
+            --arg label "$label_name" \
+            '{ts: $ts, ts_epoch: $ts_epoch, source: "webhook", repo: $repo, issue: $issue, title: $title, label: $label}')
+
+        echo "$event_record" >> "$WEBHOOK_EVENTS_FILE"
+        info "Webhook: Issue #${issue_num} labeled '${label_name}' in ${repo_full_name}"
+        return 0
     fi
 
-    local action
-    action=$(echo "$payload" | jq -r '.action // empty' 2>/dev/null || echo "")
+    # Handle pull_request.closed events (includes merged PRs)
+    if [[ "$event_type" == "pull_request" ]]; then
+        local action
+        action=$(echo "$payload" | jq -r '.action // empty' 2>/dev/null || echo "")
 
-    if [[ "$action" != "labeled" ]]; then
-        return 1
+        if [[ "$action" != "closed" ]]; then
+            return 1
+        fi
+
+        local pr_merged
+        pr_merged=$(echo "$payload" | jq -r '.pull_request.merged // false' 2>/dev/null || echo "false")
+
+        if [[ "$pr_merged" != "true" ]]; then
+            return 1
+        fi
+
+        # Trigger post-merge-monitor for this PR
+        local pr_num repo_full_name pr_title merge_commit
+        pr_num=$(echo "$payload" | jq -r '.pull_request.number // empty' 2>/dev/null || echo "")
+        repo_full_name=$(echo "$payload" | jq -r '.repository.full_name // empty' 2>/dev/null || echo "")
+        pr_title=$(echo "$payload" | jq -r '.pull_request.title // empty' 2>/dev/null || echo "")
+        merge_commit=$(echo "$payload" | jq -r '.pull_request.merge_commit_sha // empty' 2>/dev/null || echo "")
+
+        if [[ -z "$pr_num" || -z "$repo_full_name" ]]; then
+            return 1
+        fi
+
+        # Emit post-merge event for monitoring
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "webhook.pull_request_merged" \
+                "pr_number=$pr_num" \
+                "repo=$repo_full_name" \
+                "title=${pr_title:0:80}" \
+                "merge_commit=${merge_commit:0:40}"
+        fi
+
+        info "Webhook: PR #${pr_num} merged in ${repo_full_name}"
+        return 0
     fi
 
-    # Extract relevant fields
-    local issue_num repo_full_name issue_title label_name
-    issue_num=$(echo "$payload" | jq -r '.issue.number // empty' 2>/dev/null || echo "")
-    repo_full_name=$(echo "$payload" | jq -r '.repository.full_name // empty' 2>/dev/null || echo "")
-    issue_title=$(echo "$payload" | jq -r '.issue.title // empty' 2>/dev/null || echo "")
-    label_name=$(echo "$payload" | jq -r '.label.name // empty' 2>/dev/null || echo "")
-
-    if [[ -z "$issue_num" || -z "$repo_full_name" || -z "$label_name" ]]; then
-        return 1
-    fi
-
-    # Write event to webhook events file for daemon to process
-    ensure_dir
-    local event_record
-    event_record=$(jq -nc \
-        --arg ts "$(now_iso)" \
-        --arg ts_epoch "$(now_epoch)" \
-        --arg repo "$repo_full_name" \
-        --arg issue "$issue_num" \
-        --arg title "$issue_title" \
-        --arg label "$label_name" \
-        '{ts: $ts, ts_epoch: $ts_epoch, source: "webhook", repo: $repo, issue: $issue, title: $title, label: $label}')
-
-    echo "$event_record" >> "$WEBHOOK_EVENTS_FILE"
-
-    info "Webhook: Issue #${issue_num} labeled '${label_name}' in ${repo_full_name}"
-    return 0
+    # Unknown or unhandled event type
+    return 1
 }
 
 # ─── HTTP Server (lightweight bash + nc) ───────────────────────────────────
