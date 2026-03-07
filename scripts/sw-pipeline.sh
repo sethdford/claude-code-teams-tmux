@@ -159,15 +159,16 @@ format_duration() {
 # Rotate event log if needed (standalone mode — daemon has its own rotation in poll loop)
 rotate_event_log_if_needed() {
     local events_file="${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}"
-    local max_lines=10000
+    local max_lines=$(_config_get_int "pipeline.event_log_max_lines" 10000)
+    local keep_lines=$(_config_get_int "pipeline.event_log_keep_lines" 5000)
     [[ ! -f "$events_file" ]] && return
     local lines
     lines=$(wc -l < "$events_file" 2>/dev/null || true)
     lines="${lines:-0}"
     if [[ "$lines" -gt "$max_lines" ]]; then
         local tmp="${events_file}.rotating"
-        if tail -5000 "$events_file" > "$tmp" 2>/dev/null && mv "$tmp" "$events_file" 2>/dev/null; then
-            info "Rotated events.jsonl: ${lines} -> 5000 lines"
+        if tail -"$keep_lines" "$events_file" > "$tmp" 2>/dev/null && mv "$tmp" "$events_file" 2>/dev/null; then
+            info "Rotated events.jsonl: ${lines} -> ${keep_lines} lines"
         fi
     fi
 }
