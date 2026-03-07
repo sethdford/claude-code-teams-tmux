@@ -514,6 +514,38 @@ setup_dirs() {
     export SHIPWRIGHT_PIPELINE_ID="pipeline-$$-${ISSUE_NUMBER:-0}"
 }
 
+# ─── Repo Language Detection ────────────────────────────────────────────────
+
+_detect_repo_language() {
+    local root="${1:-.}"
+    # Check for common package managers and config files
+    if [[ -f "$root/package.json" ]]; then
+        echo "javascript"
+    elif [[ -f "$root/go.mod" ]]; then
+        echo "go"
+    elif [[ -f "$root/Cargo.toml" ]]; then
+        echo "rust"
+    elif [[ -f "$root/pyproject.toml" || -f "$root/requirements.txt" || -f "$root/setup.py" ]]; then
+        echo "python"
+    elif [[ -f "$root/Gemfile" ]]; then
+        echo "ruby"
+    elif [[ -f "$root/pom.xml" ]]; then
+        echo "java"
+    elif [[ -f "$root/build.gradle" || -f "$root/build.gradle.kts" ]]; then
+        echo "kotlin"
+    elif [[ -f "$root/composer.json" ]]; then
+        echo "php"
+    elif [[ -f "$root/pubspec.yaml" ]]; then
+        echo "dart"
+    elif [[ -f "$root/.swift-version" || -f "$root/Package.swift" ]]; then
+        echo "swift"
+    elif [[ -f "$root/.csharpproject" ]]; then
+        echo "csharp"
+    else
+        echo "unknown"
+    fi
+}
+
 # ─── Pipeline Config Loading ───────────────────────────────────────────────
 
 find_pipeline_config() {
@@ -2797,6 +2829,11 @@ pipeline_start() {
         local _outcome_complexity="medium"
         [[ "${INTELLIGENCE_COMPLEXITY:-5}" -le 3 ]] && _outcome_complexity="low"
         [[ "${INTELLIGENCE_COMPLEXITY:-5}" -ge 7 ]] && _outcome_complexity="high"
+        local _root_cause_stage="${CURRENT_STAGE_ID:-}"
+        local _root_cause_category="${LAST_STAGE_ERROR_CLASS:-}"
+        [[ "$_outcome_success" -eq 1 ]] && _root_cause_stage="" && _root_cause_category=""
+        local _repo_language
+        _repo_language=$(_detect_repo_language "${PROJECT_ROOT:-.}")
         db_record_outcome \
             "${SHIPWRIGHT_PIPELINE_ID:-pipeline-$$-${ISSUE_NUMBER:-0}}" \
             "${ISSUE_NUMBER:-}" \
@@ -2805,7 +2842,10 @@ pipeline_start() {
             "${total_dur_s:-0}" \
             "${SELF_HEAL_COUNT:-0}" \
             "${total_cost:-0}" \
-            "$_outcome_complexity" 2>/dev/null || true
+            "$_outcome_complexity" \
+            "$_root_cause_stage" \
+            "$_root_cause_category" \
+            "$_repo_language" 2>/dev/null || true
     fi
 
     # Validate cost prediction against actual (after total_cost is computed)

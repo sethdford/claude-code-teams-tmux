@@ -173,6 +173,21 @@ analytics_dashboard() {
         echo ""
     fi
 
+    # Stage Success Rates
+    local by_stage_success
+    by_stage_success=$(db_analytics_by_stage_success "$period")
+    local stage_success_count
+    stage_success_count=$(echo "$by_stage_success" | jq 'length' 2>/dev/null || echo "0")
+    if [[ "$stage_success_count" -gt 0 ]]; then
+        echo -e "  ${BOLD}Stage Success Rates${RESET}"
+        echo -e "  ${DIM}%-15s %8s %8s %8s${RESET}" | xargs printf "  %-15s %8s %8s %8s\n" "Stage" "Reached" "Passed" "Rate"
+        echo -e "  ${DIM}──────────────────────────────────────────${RESET}"
+        echo "$by_stage_success" | jq -r '.[] | "  \(.stage_name)\t\(.reached)\t\(.passed)\t\(.success_rate)%"' 2>/dev/null | while IFS=$'\t' read -r stage reached passed rate; do
+            printf "  %-15s %8s %8s %8s\n" "$stage" "$reached" "$passed" "$rate"
+        done
+        echo ""
+    fi
+
     # Stage Failures
     local by_stage_failure
     by_stage_failure=$(db_analytics_by_stage_failure "$period")
@@ -182,6 +197,21 @@ analytics_dashboard() {
         echo -e "  ${BOLD}Failure Attribution (by Stage)${RESET}"
         echo "$by_stage_failure" | jq -r '.[] | "  \(.stage_name)\t\(.failure_count)\t\(.pct_of_failures)%"' 2>/dev/null | while IFS=$'\t' read -r stage fc pct; do
             printf "  ${RED}%-15s${RESET} %4s failures  (%s)\n" "$stage" "$fc" "$pct"
+        done
+        echo ""
+    fi
+
+    # Repo Language Breakdown
+    local by_repo_language
+    by_repo_language=$(db_analytics_by_repo_language "$period")
+    local language_count
+    language_count=$(echo "$by_repo_language" | jq 'length' 2>/dev/null || echo "0")
+    if [[ "$language_count" -gt 0 ]]; then
+        echo -e "  ${BOLD}By Repository Language${RESET}"
+        echo -e "  ${DIM}%-15s %6s %6s %6s %8s${RESET}" | xargs printf "  %-15s %6s %6s %6s %8s\n" "Language" "Total" "Pass" "Fail" "Rate"
+        echo -e "  ${DIM}─────────────────────────────────────────────${RESET}"
+        echo "$by_repo_language" | jq -r '.[] | "  \(.language)\t\(.total)\t\(.successful)\t\(.total - .successful)\t\(.success_rate)%"' 2>/dev/null | while IFS=$'\t' read -r lang tot ok fl rt; do
+            printf "  %-15s %6s %6s %6s %8s\n" "$lang" "$tot" "$ok" "$fl" "$rt"
         done
         echo ""
     fi
