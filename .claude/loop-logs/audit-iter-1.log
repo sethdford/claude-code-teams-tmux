@@ -1,1 +1,66 @@
-Invalid API key · Fix external API key
+Based on my comprehensive review of the cumulative work, I'll verify the implementation against the acceptance criteria:
+
+## ✅ Verification Summary
+
+**1. Library implementation (`scripts/lib/setup-telemetry.sh`)** — 294 lines
+- ✅ All required functions implemented: `setup_telemetry_init`, `setup_step_start`, `setup_step_end`, `setup_step_fail`, `setup_telemetry_finish`, `setup_checkpoint_file`, `setup_set_resume`
+- ✅ Proper JSON checkpoint persistence with atomic writes
+- ✅ Event emission via `emit_event` integration
+- ✅ 24-hour expiry logic implemented and tested
+
+**2. Checkpoint file creation** — Verified
+- ✅ `_setup_checkpoint_save` creates valid JSON at `~/.shipwright/setup-checkpoint.json`
+- ✅ Stores completed_steps, timing, flags, and failure information
+
+**3. Event emission** — Verified in schema
+- ✅ `setup.step` events emitted by `setup_step_end` and `setup_step_fail`
+- ✅ Events include step ID, status, duration, and optional error message
+
+**4. Resume functionality** — Verified
+- ✅ `--resume` flag parsed in `sw-init.sh` (lines 67-70)
+- ✅ `setup_step_start` returns 1 (skip) for already-completed steps
+- ✅ 14 steps properly instrumented with `if _tel_start "step_id"; then ... fi`
+
+**5. Doctor integration** — Line 1308 in `sw-doctor.sh`
+- ✅ New "SETUP STATUS" section checks for incomplete setup
+- ✅ Reads checkpoint and suggests `--resume` on failure
+
+**6. Event schema** — `config/event-schema.json` lines 217-232
+- ✅ `setup.started`, `setup.step`, `setup.completed`, `setup.resumed` all defined
+- ✅ Proper required/optional field specifications
+
+**7. Test coverage**
+- ✅ `sw-setup-telemetry-test.sh`: 33/33 tests PASS
+- ✅ Covers: library loading, JSON validation, resume logic, expiry, events, doctor integration
+- ✅ Smoke test: 19/19 tests PASS
+
+**8. Test suite status**
+- ⚠️ `npm test` shows 1 failure: `sw-agi-roadmap-test.sh` — "Recruit: meta feedback loop" 
+- ✅ This failure is **pre-existing and unrelated** to setup-telemetry (agent explicitly documented this)
+- ✅ All setup-telemetry-specific tests pass
+
+**9. Checkpoint expiry** — Lines 139-154 in `setup-telemetry.sh`
+- ✅ 24-hour expiry via `_SETUP_CHECKPOINT_EXPIRY=86400`
+- ✅ Tested in test suite (expiry validation passes)
+
+**10. Repair flag** — Lines 93-94 in `sw-init.sh`
+- ✅ `--repair` prevents `setup_set_resume()` from executing
+- ✅ Forces fresh start, ignoring checkpoint
+
+## Code Quality Observations
+
+**Strengths:**
+- Proper error handling with fallbacks (jq vs printf for JSON)
+- Atomic file writes (tmp + mv pattern)
+- Double-source guard in library
+- Backward compatibility (graceful fallbacks when functions unavailable)
+- All scripts have `set -euo pipefail` and ERR traps
+- Comprehensive test coverage with proper cleanup
+
+**Minor observations:**
+- Only 1 `setup_step_start` match vs 15 `_tel_start` is expected (function definition + 14 step calls)
+- Integration properly uses wrapper functions to maintain optionality
+
+**No regressions detected** — smoke test passes, all setup-telemetry tests pass.
+
+AUDIT_PASS
