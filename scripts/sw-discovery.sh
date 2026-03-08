@@ -8,7 +8,7 @@ set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC2034
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -502,6 +502,284 @@ show_status() {
     [[ -f "$DISCOVERIES_FILE" ]] && echo -e "  ${CYAN}Size:${RESET} $(du -h "$DISCOVERIES_FILE" | cut -f1)"
 }
 
+# ─── Real-Time Bus Integration ──────────────────────────────────────────
+# Event bus publish/subscribe for instant knowledge sharing
+discovery_bus_publish() {
+    local discovery_id="$1"
+    local priority="$2"
+    local confidence="$3"
+    local entry_json="$4"
+
+    # Try eventbus if available, fallback to JSONL
+    if command -v shipwright >/dev/null 2>&1 && shipwright eventbus status >/dev/null 2>&1; then
+        # Publish to event bus with discovery metadata
+        local payload
+        payload=$(jq -cn \
+            --arg discovery_id "$discovery_id" \
+            --arg priority "$priority" \
+            --arg confidence "$confidence" \
+            --argjson entry "$entry_json" \
+            '{discovery_id: $discovery_id, priority: $priority, confidence: $confidence, entry: $entry}')
+
+        shipwright eventbus publish "discovery.new" "discovery" "$discovery_id" "$payload" 2>/dev/null || true
+        emit_event "discovery.published" "discovery_id=$discovery_id" "priority=$priority" "confidence=$confidence"
+    else
+        # Fallback: just log to events.jsonl
+        emit_event "discovery.new" "discovery_id=$discovery_id" "priority=$priority" "confidence=$confidence"
+    fi
+}
+
+discovery_bus_subscribe() {
+    local repo_filter="${1:-}"
+    local domain_filter="${2:-}"
+
+    # Subscribe via eventbus if available
+    if command -v shipwright >/dev/null 2>&1; then
+        shipwright eventbus subscribe "discovery.new" 2>/dev/null | while IFS= read -r event; do
+            [[ -z "$event" ]] && continue
+
+            local entry_repo entry_domain
+            entry_repo=$(echo "$event" | jq -r '.entry.repo // ""' 2>/dev/null || echo "")
+            entry_domain=$(echo "$event" | jq -r '.entry.category // ""' 2>/dev/null || echo "")
+
+            # Filter by repo and domain if specified
+            if [[ -n "$repo_filter" && "$entry_repo" != "$repo_filter" ]]; then
+                continue
+            fi
+            if [[ -n "$domain_filter" && "$entry_domain" != "$domain_filter" ]]; then
+                continue
+            fi
+
+            echo "$event"
+        done
+    else
+        warn "Event bus not available — fallback to JSONL polling"
+    fi
+}
+
+# ─── Fleet Broadcasting ──────────────────────────────────────────────────
+discovery_fleet_broadcast() {
+    local discovery_id="$1"
+    local entry_json="$2"
+    local fleet_config="${3:-.claude/fleet-config.json}"
+
+    # If fleet config exists, broadcast to all peer repos
+    if [[ -f "$fleet_config" ]]; then
+        local peer_repos
+        peer_repos=$(jq -r '.repos[]?.path // empty' "$fleet_config" 2>/dev/null || true)
+
+        if [[ -n "$peer_repos" ]]; then
+            local repo_count=0
+            while IFS= read -r repo_path; do
+                [[ -z "$repo_path" ]] && continue
+
+                local peer_discovery_dir
+                peer_discovery_dir="${repo_path}/.shipwright/discoveries"
+
+                # Skip if this is the current repo
+                if [[ "$repo_path" == "$(pwd)" ]]; then
+                    continue
+                fi
+
+                # Write discovery to peer's discovery directory
+                if mkdir -p "$peer_discovery_dir"; then
+                    local tmp_file peer_file
+                    tmp_file=$(mktemp)
+                    peer_file="${peer_discovery_dir}/fleet-sync.jsonl"
+
+                    echo "$entry_json" >> "$tmp_file"
+                    mv "$tmp_file" "$peer_file" 2>/dev/null || true
+                    repo_count=$((repo_count + 1))
+                fi
+            done <<< "$peer_repos"
+
+            [[ "$repo_count" -gt 0 ]] && success "Broadcasted to ${repo_count} fleet repos"
+        fi
+    fi
+}
+
+# ─── Priority & Urgency Assignment ──────────────────────────────────────
+discovery_prioritize() {
+    local severity="${1:-}"
+    local impact="${2:-normal}"
+
+    # Assign priority based on severity and impact
+    local priority="P3"
+
+    case "$severity" in
+        security|critical|data-loss|crash)
+            priority="P0"
+            ;;
+        test-failure|regression|blocking)
+            priority="P1"
+            ;;
+        performance|deprecation|warning)
+            priority="P2"
+            ;;
+        info|enhancement|suggestion)
+            priority="P3"
+            ;;
+    esac
+
+    # Elevate if high impact
+    if [[ "$impact" == "high" ]]; then
+        case "$priority" in
+            P3) priority="P2" ;;
+            P2) priority="P1" ;;
+            P1) priority="P0" ;;
+        esac
+    fi
+
+    echo "$priority"
+}
+
+# ─── Confidence Scoring ──────────────────────────────────────────────────
+discovery_score_confidence() {
+    local pattern_occurrences="${1:-1}"
+    local fix_success_rate="${2:-50}"
+    local semantic_relevance="${3:-50}"
+
+    # Confidence = (occurrences * 10) + (success_rate * 0.4) + (relevance * 0.3)
+    # Capped at 100
+    local confidence=0
+
+    # Base score from occurrences (max 50 points: 1 occ=10, 5+ occ=50)
+    local occ_score=$((pattern_occurrences * 10))
+    [[ "$occ_score" -gt 50 ]] && occ_score=50
+    confidence=$((confidence + occ_score))
+
+    # Success rate contribution (max 40 points)
+    local success_score=$((fix_success_rate * 4 / 10))
+    [[ "$success_score" -gt 40 ]] && success_score=40
+    confidence=$((confidence + success_score))
+
+    # Semantic relevance contribution (max 10 points)
+    local relevance_score=$((semantic_relevance * 1 / 10))
+    [[ "$relevance_score" -gt 10 ]] && relevance_score=10
+    confidence=$((confidence + relevance_score))
+
+    [[ "$confidence" -gt 100 ]] && confidence=100
+
+    echo "$confidence"
+}
+
+# ─── Consumption Tracking ───────────────────────────────────────────────
+get_consumption_file() {
+    local discovery_id="$1"
+    echo "${DISCOVERIES_DIR}/consumption-${discovery_id}.json"
+}
+
+discovery_acknowledge() {
+    local discovery_id="$1"
+    local pipeline_id="${SHIPWRIGHT_PIPELINE_ID:-unknown}"
+    local helpful="${2:-true}"
+
+    ensure_discoveries_dir
+
+    local consumption_file
+    consumption_file=$(get_consumption_file "$discovery_id")
+
+    # Initialize or append to consumption tracking
+    if [[ ! -f "$consumption_file" ]]; then
+        echo '{"discovery_id":"'"$discovery_id"'","consumed_by":[],"consumption_count":0,"helpful_count":0}' > "$consumption_file"
+    fi
+
+    # Update consumption data
+    local tmp_file
+    tmp_file=$(mktemp)
+
+    jq \
+        --arg pipeline_id "$pipeline_id" \
+        --arg ts "$(now_iso)" \
+        --arg helpful "$helpful" \
+        '.consumed_by += [{"pipeline_id": $pipeline_id, "ts": $ts, "helpful": ($helpful == "true")}] |
+         .consumption_count += 1 |
+         .helpful_count += (if ($helpful == "true") then 1 else 0 end)' \
+        "$consumption_file" > "$tmp_file"
+
+    mv "$tmp_file" "$consumption_file"
+    emit_event "discovery.consumed" "discovery_id=$discovery_id" "pipeline_id=$pipeline_id" "helpful=$helpful"
+}
+
+discovery_consumption_stats() {
+    local discovery_id="$1"
+
+    ensure_discoveries_dir
+
+    local consumption_file
+    consumption_file=$(get_consumption_file "$discovery_id")
+
+    if [[ ! -f "$consumption_file" ]]; then
+        echo '{"consumption_count":0,"helpfulness_rate":0.0}'
+        return 0
+    fi
+
+    jq '{
+        consumption_count: .consumption_count,
+        helpfulness_rate: (if .consumption_count > 0 then (.helpful_count / .consumption_count) else 0 end),
+        helpful_count: .helpful_count,
+        consumers: (.consumed_by | length)
+    }' "$consumption_file" 2>/dev/null || echo '{"consumption_count":0,"helpfulness_rate":0.0}'
+}
+
+# ─── Memory Promotion ───────────────────────────────────────────────────
+discovery_promote_to_memory() {
+    local discovery_id="$1"
+    local category="${2:-}"
+    local discovery_text="${3:-}"
+
+    ensure_discoveries_dir
+
+    local consumption_file
+    consumption_file=$(get_consumption_file "$discovery_id")
+
+    if [[ ! -f "$consumption_file" ]]; then
+        warn "No consumption data for discovery: $discovery_id"
+        return 1
+    fi
+
+    # Check if consumed 3+ times and helpful
+    local stats
+    stats=$(jq '{consumed: .consumption_count >= 3, helpful: (.helpful_count / .consumption_count > 0.5)}' "$consumption_file" 2>/dev/null || echo "{}")
+
+    local consumed helpful
+    consumed=$(echo "$stats" | jq -r '.consumed // false' 2>/dev/null)
+    helpful=$(echo "$stats" | jq -r '.helpful // false' 2>/dev/null)
+
+    if [[ "$consumed" != "true" || "$helpful" != "true" ]]; then
+        info "Discovery not yet ready for memory promotion (consumed=${consumed}, helpful=${helpful})"
+        return 1
+    fi
+
+    # Manually write to memory directory (memory system may not be sourced)
+    local mem_root="${HOME}/.shipwright/memory"
+    mkdir -p "$mem_root"
+
+    local failures_file="$mem_root/failures.json"
+    local tmp_file
+
+    # Build the memory entry
+    local memory_entry
+    memory_entry=$(jq -cn \
+        --arg pattern "$category" \
+        --arg root_cause "$discovery_text" \
+        --arg fix "Applied based on cross-pipeline discovery: $discovery_id" \
+        --arg ts "$(now_iso)" \
+        '{pattern: $pattern, root_cause: $root_cause, fix: $fix, fix_effectiveness_rate: 80, discovered_at: $ts}')
+
+    # Append to failures.json
+    if [[ -f "$failures_file" ]]; then
+        tmp_file=$(mktemp)
+        jq '.failures += ['"$memory_entry"']' "$failures_file" > "$tmp_file"
+        mv "$tmp_file" "$failures_file"
+    else
+        echo "{\"failures\":[${memory_entry}]}" > "$failures_file"
+    fi
+
+    emit_event "discovery.promoted" "discovery_id=$discovery_id" "category=$category"
+    success "Promoted discovery to persistent memory: $discovery_id"
+}
+
 # show_help: display usage
 show_help() {
     echo -e "${CYAN}${BOLD}shipwright discovery${RESET} — Cross-Pipeline Real-Time Learning"
@@ -525,6 +803,18 @@ show_help() {
     echo -e "  ${CYAN}status${RESET}"
     echo -e "    Show discovery channel statistics and health"
     echo ""
+    echo -e "  ${CYAN}acknowledge${RESET} <discovery-id> [helpful]"
+    echo -e "    Track consumption of a discovery (helpful=true/false)"
+    echo ""
+    echo -e "  ${CYAN}prioritize${RESET} <severity> [impact]"
+    echo -e "    Assign P0-P3 priority to a discovery"
+    echo ""
+    echo -e "  ${CYAN}score${RESET} <occurrences> [success_rate] [relevance]"
+    echo -e "    Score confidence for a discovery (0-100)"
+    echo ""
+    echo -e "  ${CYAN}promote${RESET} <discovery-id> <category> <text>"
+    echo -e "    Promote discovery to persistent memory (if 3+ consumptions)"
+    echo ""
     echo -e "  ${CYAN}help${RESET}"
     echo -e "    Show this help message"
     echo ""
@@ -535,7 +825,9 @@ show_help() {
     echo -e "  ${DIM}shipwright discovery broadcast \"auth-fix\" \"src/auth/*.ts\" \"JWT validation failure resolved\" \"Added claim verification\"${RESET}"
     echo -e "  ${DIM}shipwright discovery query \"src/**/*.js,src/**/*.ts\" 5${RESET}"
     echo -e "  ${DIM}shipwright discovery inject \"src/api/**\" 2>&1 | xargs -I {} echo \"Learning: {}\"${RESET}"
-    echo -e "  ${DIM}shipwright discovery clean 172800${RESET}              # Remove discoveries older than 48h"
+    echo -e "  ${DIM}shipwright discovery acknowledge abc123 true${RESET}"
+    echo -e "  ${DIM}shipwright discovery prioritize security high${RESET}"
+    echo -e "  ${DIM}shipwright discovery score 5 80 75${RESET}"
     echo -e "  ${DIM}shipwright discovery status${RESET}"
 }
 
@@ -572,6 +864,34 @@ main() {
             ;;
         status)
             show_status
+            ;;
+        acknowledge)
+            [[ $# -lt 1 ]] && {
+                error "acknowledge requires: discovery-id [helpful]"
+                exit 1
+            }
+            discovery_acknowledge "$1" "${2:-true}"
+            ;;
+        prioritize)
+            [[ $# -lt 1 ]] && {
+                error "prioritize requires: severity [impact]"
+                exit 1
+            }
+            discovery_prioritize "$1" "${2:-normal}"
+            ;;
+        score)
+            [[ $# -lt 1 ]] && {
+                error "score requires: occurrences [success_rate] [relevance]"
+                exit 1
+            }
+            discovery_score_confidence "$1" "${2:-50}" "${3:-50}"
+            ;;
+        promote)
+            [[ $# -lt 3 ]] && {
+                error "promote requires: discovery-id, category, text"
+                exit 1
+            }
+            discovery_promote_to_memory "$1" "$2" "$3"
             ;;
         help|--help|-h)
             show_help
