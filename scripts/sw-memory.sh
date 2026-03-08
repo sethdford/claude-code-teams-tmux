@@ -43,6 +43,10 @@ fi
 # shellcheck source=sw-intelligence.sh
 [[ -f "$SCRIPT_DIR/sw-intelligence.sh" ]] && source "$SCRIPT_DIR/sw-intelligence.sh"
 
+# ─── Memory Effectiveness Tracker ──────────────────────────────────────────
+# shellcheck source=lib/memory-effectiveness.sh
+[[ -f "$SCRIPT_DIR/lib/memory-effectiveness.sh" ]] && source "$SCRIPT_DIR/lib/memory-effectiveness.sh"
+
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
