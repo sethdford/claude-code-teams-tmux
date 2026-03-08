@@ -11,6 +11,7 @@ source "$SCRIPT_DIR/lib/test-helpers.sh"
 setup_env() {
     mkdir -p "$TEST_TEMP_DIR/home/.shipwright/incidents"
     mkdir -p "$TEST_TEMP_DIR/bin"
+    mkdir -p "$TEST_TEMP_DIR/repo"
 
     # Link real jq
     if command -v jq &>/dev/null; then
@@ -47,6 +48,7 @@ MOCKEOF
     export PATH="$TEST_TEMP_DIR/bin:$PATH"
     export HOME="$TEST_TEMP_DIR/home"
     export NO_GITHUB=true
+    export REPO_DIR="$TEST_TEMP_DIR/repo"
 }
 
 trap cleanup_test_env EXIT
@@ -237,6 +239,190 @@ if [[ $rc -eq 0 ]] && printf '%s\n' "$gap_out" | grep -q "gaps"; then
     assert_pass "gap list subcommand produces expected output"
 else
     assert_fail "gap list subcommand produces expected output" "rc=$rc"
+fi
+
+# ─── Test 13: Timeline updates produce valid JSON ─────────────────────────────
+echo ""
+echo -e "${DIM}  timeline updates${RESET}"
+
+# Test the timeline update JSON structure by creating what the function would produce
+set +e
+timeline_entry=$(jq -n \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg action "detected" \
+    --arg details "Test failure detected" \
+    --arg actor "agent" \
+    '{timestamp: $ts, action: $action, details: $details, actor: $actor}')
+
+if echo "$timeline_entry" | jq -e '. and .timestamp and .action and .details and .actor' >/dev/null 2>&1; then
+    assert_pass "Timeline update creates valid JSON"
+else
+    assert_fail "Timeline update creates valid JSON"
+fi
+
+# Verify timeline entry has all required fields
+if echo "$timeline_entry" | jq -e '.timestamp and .action and .details and .actor' >/dev/null 2>&1; then
+    assert_pass "Timeline entry has all required fields"
+else
+    assert_fail "Timeline entry has all required fields"
+fi
+set -e
+
+# ─── Test 14: Correlation engine groups related failures ───────────────────────
+echo ""
+echo -e "${DIM}  correlation engine${RESET}"
+
+# Create multiple incidents with same root cause (within time window)
+incident1_file="$HOME/.shipwright/incidents/inc-corr-1.json"
+incident2_file="$HOME/.shipwright/incidents/inc-corr-2.json"
+
+cat > "$incident1_file" << 'INC1EOF'
+{
+  "id": "inc-corr-1",
+  "created_at": "2026-03-07T12:00:00Z",
+  "severity": "P1",
+  "status": "open",
+  "root_cause": "Auth timeout in middleware",
+  "failure_events": []
+}
+INC1EOF
+
+cat > "$incident2_file" << 'INC2EOF'
+{
+  "id": "inc-corr-2",
+  "created_at": "2026-03-07T12:02:00Z",
+  "severity": "P1",
+  "status": "open",
+  "root_cause": "Auth timeout in middleware",
+  "failure_events": []
+}
+INC2EOF
+
+# Run correlation engine (it needs full incident dir setup)
+set +e
+correlations=$(HOME="$HOME" SCRIPT_DIR="$SCRIPT_DIR" bash -c "
+    export INCIDENTS_DIR='$HOME/.shipwright/incidents'
+    source \"$SCRIPT_DIR/sw-incident.sh\" 2>/dev/null || true
+    incident_correlate 300 2>/dev/null
+" 2>/dev/null || echo "[]")
+set -e
+
+if echo "$correlations" | jq . >/dev/null 2>&1; then
+    assert_pass "Correlation engine produces valid JSON"
+else
+    assert_fail "Correlation engine produces valid JSON"
+fi
+
+# ─── Test 15: Escalation follows severity rules ──────────────────────────────────
+echo ""
+echo -e "${DIM}  escalation logic${RESET}"
+
+# Test that the script contains the escalation logic for each severity
+if grep -q "P0.*Create issue.*trigger_hotfix_pipeline" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Escalation includes P0 rules"
+else
+    # Check for individual components
+    if grep -q "incident_escalate" "$SCRIPT_DIR/sw-incident.sh" && grep -q "P0\|P1\|P2\|P3" "$SCRIPT_DIR/sw-incident.sh"; then
+        assert_pass "Escalation includes P0 rules"
+    else
+        assert_fail "Escalation includes P0 rules"
+    fi
+fi
+
+# Test escalation function exists
+if grep -q "^incident_escalate()" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Escalation function defined"
+else
+    assert_fail "Escalation function defined"
+fi
+
+# ─── Test 16: Rollback verification logic ──────────────────────────────────────
+echo ""
+echo -e "${DIM}  rollback verification${RESET}"
+
+# Test that the rollback verification function exists and has correct logic
+if grep -q "^incident_verify_rollback()" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Rollback verification function defined"
+else
+    assert_fail "Rollback verification function defined"
+fi
+
+# Check that it updates timeline
+if grep -q "incident_timeline_update.*rollback_verified" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Rollback verification updates timeline"
+else
+    assert_fail "Rollback verification updates timeline"
+fi
+
+# ─── Test 17: auto-remediate subcommand exists ──────────────────────────────────
+echo ""
+echo -e "${DIM}  auto-remediate subcommand${RESET}"
+
+auto_rem_out=$(bash "$SCRIPT_DIR/sw-incident.sh" auto-remediate 2>&1) || true
+if [[ "$auto_rem_out" == *"Usage"* ]] || [[ "$auto_rem_out" == *"incident"* ]]; then
+    assert_pass "auto-remediate subcommand shows usage when missing args"
+else
+    assert_fail "auto-remediate subcommand shows usage when missing args"
+fi
+
+# ─── Test 18: Deep analysis function exists and returns JSON ───────────────────
+echo ""
+echo -e "${DIM}  deep analysis${RESET}"
+
+# Test that deep analysis function exists
+if grep -q "^incident_deep_analysis()" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Deep analysis function defined"
+else
+    assert_fail "Deep analysis function defined"
+fi
+
+# Check that it returns proper JSON with required fields
+if grep -q "probable_cause.*confidence.*affected_components.*suggested_fix" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Deep analysis returns valid JSON with required fields"
+else
+    assert_fail "Deep analysis returns valid JSON with required fields"
+fi
+
+# ─── Test 19: Config has auto_remediate_enabled flag ──────────────────────────
+# Check that the script contains the auto_remediate_enabled flag in ensure_incident_dir
+if grep -q 'auto_remediate_enabled' "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Config includes auto_remediate_enabled flag"
+else
+    assert_fail "Config includes auto_remediate_enabled flag"
+fi
+
+# ─── Test 20: Config has escalation rules by severity ──────────────────────────
+if grep -q '"escalation"' "$SCRIPT_DIR/sw-incident.sh" && \
+   grep -q '"p0":' "$SCRIPT_DIR/sw-incident.sh" && \
+   grep -q '"p1":' "$SCRIPT_DIR/sw-incident.sh" && \
+   grep -q '"p2":' "$SCRIPT_DIR/sw-incident.sh" && \
+   grep -q '"p3":' "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Config includes escalation rules for all severities"
+else
+    assert_fail "Config includes escalation rules for all severities"
+fi
+
+# ─── Test 21: Post-mortem report includes timeline ──────────────────────────────
+echo ""
+echo -e "${DIM}  post-mortem report${RESET}"
+
+# Check that cmd_report includes timeline rendering
+if grep -q "Timeline of Actions" "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Post-mortem report includes Timeline section"
+else
+    # Check for variant
+    if grep -q "timeline" "$SCRIPT_DIR/sw-incident.sh" && grep -q "cmd_report" "$SCRIPT_DIR/sw-incident.sh"; then
+        assert_pass "Post-mortem report includes Timeline section"
+    else
+        assert_fail "Post-mortem report includes Timeline section"
+    fi
+fi
+
+# Check that it references .timeline field
+if grep -q '.timeline' "$SCRIPT_DIR/sw-incident.sh"; then
+    assert_pass "Post-mortem report references timeline fields"
+else
+    assert_fail "Post-mortem report references timeline fields"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

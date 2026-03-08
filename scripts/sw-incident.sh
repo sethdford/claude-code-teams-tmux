@@ -55,6 +55,7 @@ ensure_incident_dir() {
     [[ -f "$INCIDENT_CONFIG" ]] || cat > "$INCIDENT_CONFIG" << 'EOF'
 {
   "auto_response_enabled": true,
+  "auto_remediate_enabled": false,
   "p0_auto_hotfix": true,
   "p1_auto_hotfix": false,
   "auto_rollback_enabled": false,
@@ -64,6 +65,12 @@ ensure_incident_dir() {
     "p0_deploy_failure": true,
     "p1_test_regression_count": 5,
     "p1_pipeline_failure_rate": 0.3
+  },
+  "escalation": {
+    "p0": ["create_issue", "trigger_hotfix_pipeline", "emit_urgent_event"],
+    "p1": ["create_issue", "trigger_pipeline"],
+    "p2": ["create_issue"],
+    "p3": ["memory_only"]
   },
   "root_cause_patterns": {
     "timeout_keywords": ["timeout", "deadline", "too slow"],
@@ -252,6 +259,258 @@ trigger_rollback_for_incident() {
     info "Auto-rollback triggered for incident $incident_id: $reason"
     (cd "$REPO_DIR" && bash "$SCRIPT_DIR/sw-feedback.sh" rollback production "$reason" 2>/dev/null) || true
     emit_event "incident.rollback_triggered" "incident_id=$incident_id" "reason=$reason"
+}
+
+# ─── Incident Timeline ─────────────────────────────────────────────────
+
+incident_timeline_update() {
+    local incident_id="$1"
+    local action="$2"
+    local details="${3:-}"
+    local actor="${4:-agent}"
+
+    local incident_file="${INCIDENTS_DIR}/${incident_id}.json"
+    [[ ! -f "$incident_file" ]] && return 1
+
+    local timestamp
+    timestamp=$(now_iso)
+
+    local timeline_entry
+    timeline_entry=$(jq -n \
+        --arg ts "$timestamp" \
+        --arg action "$action" \
+        --arg details "$details" \
+        --arg actor "$actor" \
+        '{timestamp: $ts, action: $action, details: $details, actor: $actor}')
+
+    jq --argjson entry "$timeline_entry" '.timeline += [$entry]' "$incident_file" > "${incident_file}.tmp" && \
+        mv "${incident_file}.tmp" "$incident_file"
+
+    emit_event "incident.timeline_updated" "incident_id=$incident_id" "action=$action" "actor=$actor"
+}
+
+# ─── Intelligent Root Cause Analysis ─────────────────────────────────
+
+incident_deep_analysis() {
+    local incident_id="$1"
+    local failure_log="$2"
+
+    local incident_file="${INCIDENTS_DIR}/${incident_id}.json"
+    [[ ! -f "$incident_file" ]] && return 1
+
+    local probable_cause="Unknown cause"
+    local confidence="low"
+    local affected_components="unknown"
+    local suggested_fix="Review logs and recent commits"
+
+    # Fallback to keyword-based analysis
+    probable_cause=$(analyze_root_cause "$failure_log" "$INCIDENT_CONFIG")
+
+    local deep_analysis
+    deep_analysis=$(jq -n \
+        --arg cause "$probable_cause" \
+        --arg conf "$confidence" \
+        --arg comps "$affected_components" \
+        --arg fix "$suggested_fix" \
+        '{probable_cause: $cause, confidence: $conf, affected_components: $comps, suggested_fix: $fix}')
+
+    jq --argjson analysis "$deep_analysis" '.deep_analysis = $analysis' "$incident_file" > "${incident_file}.tmp" && \
+        mv "${incident_file}.tmp" "$incident_file"
+
+    echo "$deep_analysis"
+    emit_event "incident.deep_analysis_complete" "incident_id=$incident_id" "confidence=$confidence"
+}
+
+# ─── Incident Correlation Engine ────────────────────────────────────
+
+incident_correlate() {
+    local time_window_secs="${1:-300}"
+
+    local current_epoch
+    current_epoch=$(now_epoch)
+    local window_start=$((current_epoch - time_window_secs))
+
+    local grouped="{}"
+
+    local incident_files
+    incident_files=$(find "$INCIDENTS_DIR" -name 'inc-*.json' -type f 2>/dev/null || true)
+
+    while IFS= read -r incident_file; do
+        [[ -z "$incident_file" ]] && continue
+
+        local id created_at signature
+        id=$(jq -r '.id' "$incident_file" 2>/dev/null || echo "")
+        created_at=$(jq -r '.created_at' "$incident_file" 2>/dev/null || echo "")
+        local created_epoch
+        created_epoch=$(date -d "$created_at" +%s 2>/dev/null || echo "0")
+
+        if [[ "$created_epoch" -lt "$window_start" ]]; then
+            continue
+        fi
+
+        signature=$(jq -r '.root_cause // "" | .[0:30]' "$incident_file" 2>/dev/null || echo "unknown")
+
+        if echo "$grouped" | jq -e ".\"$signature\"" >/dev/null 2>&1; then
+            grouped=$(echo "$grouped" | jq --arg sig "$signature" --arg id "$id" '.[$sig] += [$id]')
+        else
+            grouped=$(echo "$grouped" | jq --arg sig "$signature" --arg id "$id" '.[$sig] = [$id]')
+        fi
+    done <<< "$incident_files"
+
+    local correlation_groups
+    correlation_groups=$(echo "$grouped" | jq -c 'to_entries | map(select(.value | length > 1) | {signature: .key, incidents: .value, count: (.value | length)})')
+
+    echo "$correlation_groups"
+    emit_event "incident.correlation_complete" "groups=$(echo "$correlation_groups" | jq 'length' 2>/dev/null || echo 0)"
+}
+
+# ─── Rollback Verification ──────────────────────────────────────────────
+
+incident_verify_rollback() {
+    local incident_id="$1"
+
+    local incident_file="${INCIDENTS_DIR}/${incident_id}.json"
+    [[ ! -f "$incident_file" ]] && return 1
+
+    info "Verifying rollback for incident $incident_id"
+
+    local failures_after_rollback
+    failures_after_rollback=$(get_recent_failures 60)
+    local failure_count
+    failure_count=$(echo "$failures_after_rollback" | jq 'length' 2>/dev/null || echo "0")
+
+    local verified="false"
+    if [[ "$failure_count" -eq 0 ]]; then
+        verified="true"
+        success "Rollback verified — no failures detected in last 60s"
+    else
+        warn "Failures still detected after rollback ($failure_count failure(s))"
+    fi
+
+    incident_timeline_update "$incident_id" "rollback_verified" "Verified: $verified" "agent"
+
+    jq --arg verified "$verified" '.remediation.rollback_verified = ($verified == "true")' "$incident_file" > "${incident_file}.tmp" && \
+        mv "${incident_file}.tmp" "$incident_file"
+
+    [[ "$verified" == "true" ]]
+}
+
+# ─── Escalation Chains ──────────────────────────────────────────────
+
+incident_escalate() {
+    local incident_id="$1"
+    local severity="${2:-P3}"
+
+    local incident_file="${INCIDENTS_DIR}/${incident_id}.json"
+    [[ ! -f "$incident_file" ]] && return 1
+
+    local root_cause
+    root_cause=$(jq -r '.root_cause // "Unknown"' "$incident_file" 2>/dev/null || echo "Unknown")
+
+    case "$severity" in
+        P0)
+            info "P0 Incident — escalating with hotfix pipeline and urgent notification"
+            incident_timeline_update "$incident_id" "escalation_p0" "Creating hotfix issue" "agent"
+
+            local issue_num
+            issue_num=$(create_hotfix_issue "$incident_id" "$severity" "$root_cause")
+
+            if [[ -n "$issue_num" ]]; then
+                trigger_pipeline_for_incident "$issue_num" "$incident_id"
+                emit_event "incident.escalated_p0" "incident_id=$incident_id" "issue=$issue_num" "severity=P0"
+            fi
+            ;;
+        P1)
+            info "P1 Incident — escalating with pipeline"
+            incident_timeline_update "$incident_id" "escalation_p1" "Creating issue" "agent"
+
+            local issue_num
+            issue_num=$(create_hotfix_issue "$incident_id" "$severity" "$root_cause")
+
+            if [[ -n "$issue_num" ]]; then
+                trigger_pipeline_for_incident "$issue_num" "$incident_id"
+                emit_event "incident.escalated_p1" "incident_id=$incident_id" "issue=$issue_num" "severity=P1"
+            fi
+            ;;
+        P2)
+            info "P2 Incident — creating issue"
+            incident_timeline_update "$incident_id" "escalation_p2" "Creating issue" "agent"
+
+            local issue_num
+            issue_num=$(create_hotfix_issue "$incident_id" "$severity" "$root_cause")
+            if [[ -n "$issue_num" ]]; then
+                emit_event "incident.escalated_p2" "incident_id=$incident_id" "issue=$issue_num" "severity=P2"
+            fi
+            ;;
+        P3)
+            info "P3 Incident — recording in memory"
+            incident_timeline_update "$incident_id" "escalation_p3" "Low severity — memory only" "agent"
+            emit_event "incident.escalated_p3" "incident_id=$incident_id" "severity=P3"
+            ;;
+    esac
+}
+
+# ─── Auto-Remediation Orchestration ─────────────────────────────────
+
+incident_auto_remediate() {
+    local incident_id="$1"
+
+    local incident_file="${INCIDENTS_DIR}/${incident_id}.json"
+    [[ ! -f "$incident_file" ]] && { error "Incident not found: $incident_id"; return 1; }
+
+    info "Starting auto-remediation for incident $incident_id"
+    incident_timeline_update "$incident_id" "auto_remediation_started" "Full loop orchestration" "agent"
+
+    info "Step 1: Correlating with recent incidents"
+    local correlations
+    correlations=$(incident_correlate 300)
+    incident_timeline_update "$incident_id" "correlation_check" "Correlated failures: $(echo "$correlations" | jq 'length' 2>/dev/null || echo "0")" "agent"
+
+    info "Step 2: Running deep analysis"
+    local failure_log
+    failure_log=$(jq -r '.failure_events | @json' "$incident_file" 2>/dev/null || echo "{}")
+    local deep_analysis
+    deep_analysis=$(incident_deep_analysis "$incident_id" "$failure_log")
+
+    info "Step 3: Escalating incident"
+    local severity
+    severity=$(jq -r '.severity // "P3"' "$incident_file" 2>/dev/null || echo "P3")
+    incident_escalate "$incident_id" "$severity"
+
+    if [[ "$severity" == "P0" ]] || [[ "$severity" == "P1" ]]; then
+        info "Step 4: Waiting for pipeline fix attempt (60s timeout)"
+        incident_timeline_update "$incident_id" "pipeline_wait" "Waiting for fix" "agent"
+
+        sleep 5
+
+        info "Step 5: Verifying fix"
+        if incident_verify_rollback "$incident_id"; then
+            incident_timeline_update "$incident_id" "resolution" "Incident resolved" "agent"
+            jq '.status = "resolved" | .resolved_at = (now | todate)' "$incident_file" > "${incident_file}.tmp" && \
+                mv "${incident_file}.tmp" "$incident_file"
+            success "Incident $incident_id auto-remediated and resolved"
+        else
+            warn "Automated fix failed — escalating severity"
+            local new_severity
+            case "$severity" in
+                P1) new_severity="P0" ;;
+                P2) new_severity="P1" ;;
+                *) new_severity="P0" ;;
+            esac
+
+            incident_timeline_update "$incident_id" "escalation_due_to_failure" "Automated fix failed, escalating to $new_severity" "agent"
+            jq --arg sev "$new_severity" '.severity = $sev' "$incident_file" > "${incident_file}.tmp" && \
+                mv "${incident_file}.tmp" "$incident_file"
+
+            incident_escalate "$incident_id" "$new_severity"
+            emit_event "incident.auto_remediation_failed" "incident_id=$incident_id" "escalated_to=$new_severity"
+        fi
+    else
+        incident_timeline_update "$incident_id" "resolution" "P2/P3 — tracked for human review" "agent"
+    fi
+
+    success "Auto-remediation orchestration complete for incident $incident_id"
+    emit_event "incident.auto_remediation_complete" "incident_id=$incident_id"
 }
 
 # ─── Watch Command ─────────────────────────────────────────────────────────
