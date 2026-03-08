@@ -531,8 +531,8 @@ project_recommend_template() {
         confidence=75
         reason="Larger codebase with comprehensive testing and CI"
 
-    elif [[ "$has_k8s" == "true" || "$has_compose" == "true" ]]; then
-        # Has deployment infrastructure
+    elif [[ "$has_deploy" == "true" ]]; then
+        # Has deployment infrastructure (Dockerfile, Docker Compose, or Kubernetes)
         template="deployed"
         confidence=90
         reason="Project with containerization and deployment config"

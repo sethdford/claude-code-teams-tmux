@@ -158,9 +158,9 @@ test_proj="$TEST_TEMP_DIR/python-project"
 create_python_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects python type" "$result" '"type":"python"'
-assert_contains "Detects pip build tool" "$result" '"build_tool":"pip"'
-assert_contains "Detects pytest runner" "$result" '"test_runner":"pytest"'
+assert_json_key "Detects python type" "$result" ".type" "python"
+assert_json_key "Detects pip build tool" "$result" ".build_tool" "pip"
+assert_json_key "Detects pytest runner" "$result" ".test_runner" "pytest"
 
 # ─── Test: project_detect_type with Golang ────────────────────────────────────
 print_test_section "project_detect_type — Golang"
@@ -169,9 +169,9 @@ test_proj="$TEST_TEMP_DIR/golang-project"
 create_golang_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects golang type" "$result" '"type":"golang"'
-assert_contains "Detects gin framework" "$result" '"framework":"gin"'
-assert_contains "Detects go build tool" "$result" '"build_tool":"go"'
+assert_json_key "Detects golang type" "$result" ".type" "golang"
+assert_json_key "Detects gin framework" "$result" ".framework" "gin"
+assert_json_key "Detects go build tool" "$result" ".build_tool" "go"
 
 # ─── Test: project_detect_type with Rust ──────────────────────────────────────
 print_test_section "project_detect_type — Rust"
@@ -180,9 +180,9 @@ test_proj="$TEST_TEMP_DIR/rust-project"
 create_rust_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects rust type" "$result" '"type":"rust"'
-assert_contains "Detects actix-web framework" "$result" '"framework":"actix-web"'
-assert_contains "Detects cargo build tool" "$result" '"build_tool":"cargo"'
+assert_json_key "Detects rust type" "$result" ".type" "rust"
+assert_json_key "Detects actix-web framework" "$result" ".framework" "actix-web"
+assert_json_key "Detects cargo build tool" "$result" ".build_tool" "cargo"
 
 # ─── Test: project_detect_type with Ruby ──────────────────────────────────────
 print_test_section "project_detect_type — Ruby"
@@ -191,8 +191,8 @@ test_proj="$TEST_TEMP_DIR/ruby-project"
 create_ruby_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects ruby type" "$result" '"type":"ruby"'
-assert_contains "Detects bundler build tool" "$result" '"build_tool":"bundler"'
+assert_json_key "Detects ruby type" "$result" ".type" "ruby"
+assert_json_key "Detects bundler build tool" "$result" ".build_tool" "bundler"
 
 # ─── Test: project_detect_type with Java ──────────────────────────────────────
 print_test_section "project_detect_type — Java"
@@ -201,8 +201,8 @@ test_proj="$TEST_TEMP_DIR/java-project"
 create_java_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects java type" "$result" '"type":"java"'
-assert_contains "Detects maven build tool" "$result" '"build_tool":"maven"'
+assert_json_key "Detects java type" "$result" ".type" "java"
+assert_json_key "Detects maven build tool" "$result" ".build_tool" "maven"
 
 # ─── Test: project_detect_type with Bash ──────────────────────────────────────
 print_test_section "project_detect_type — Bash"
@@ -211,7 +211,7 @@ test_proj="$TEST_TEMP_DIR/bash-project"
 create_bash_project "$test_proj"
 result=$(project_detect_type "$test_proj") || true
 
-assert_contains "Detects bash type" "$result" '"type":"bash"'
+assert_json_key "Detects bash type" "$result" ".type" "bash"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Test: project_detect_test_cmd
@@ -284,13 +284,15 @@ create_nodejs_project "$test_proj"
 result=$(project_recommend_template "$test_proj") || true
 
 # Small project should get "fast" template
-assert_contains "Small project recommends fast" "$result" '"template":"fast"'
+assert_json_key "Small project recommends fast" "$result" ".template" "fast"
 
 # ─── Test: project_recommend_template with Docker ────────────────────────────
 print_test_section "project_recommend_template — Deployment project"
 
 test_proj="$TEST_TEMP_DIR/deploy-project"
-create_nodejs_project "$test_proj"
+mkdir -p "$test_proj"
+
+# Create Dockerfile first (before detection)
 cat > "$test_proj/Dockerfile" <<'EOF'
 FROM node:18
 WORKDIR /app
@@ -299,10 +301,15 @@ RUN npm install
 CMD ["npm", "start"]
 EOF
 
+# Then create minimal project files
+cat > "$test_proj/package.json" <<'EOF'
+{"name": "test", "scripts": {"test": "jest"}}
+EOF
+
 result=$(project_recommend_template "$test_proj") || true
 
 # Project with Dockerfile should get "deployed" template
-assert_contains "Deployment project recommends deployed" "$result" '"template":"deployed"'
+assert_json_key "Deployment project recommends deployed" "$result" ".template" "deployed"
 
 # ─── Test: project_recommend_template returns JSON with reason ──────────────────
 print_test_section "project_recommend_template — JSON structure"
@@ -373,7 +380,7 @@ cat > "$test_proj/package.json" <<'EOF'
 EOF
 touch "$test_proj/yarn.lock"
 result=$(project_detect_type "$test_proj") || true
-assert_contains "Detects yarn lock" "$result" '"build_tool":"yarn"'
+assert_json_key "Detects yarn lock" "$result" ".build_tool" "yarn"
 
 # Project with pnpm
 test_proj="$TEST_TEMP_DIR/pnpm-project"
@@ -383,7 +390,7 @@ cat > "$test_proj/package.json" <<'EOF'
 EOF
 touch "$test_proj/pnpm-lock.yaml"
 result=$(project_detect_type "$test_proj") || true
-assert_contains "Detects pnpm lock" "$result" '"build_tool":"pnpm"'
+assert_json_key "Detects pnpm lock" "$result" ".build_tool" "pnpm"
 
 # Project with multiple frameworks detected (Express)
 test_proj="$TEST_TEMP_DIR/express-project"
@@ -392,7 +399,7 @@ cat > "$test_proj/package.json" <<'EOF'
 {"name": "test", "dependencies": {"express": "^4.0"}}
 EOF
 result=$(project_detect_type "$test_proj") || true
-assert_contains "Detects express framework" "$result" '"framework":"express"'
+assert_json_key "Detects express framework" "$result" ".framework" "express"
 
 # Project with both Python and Node (Node should win)
 test_proj="$TEST_TEMP_DIR/mixed-project"
@@ -404,7 +411,7 @@ cat > "$test_proj/requirements.txt" <<'EOF'
 requests==2.0
 EOF
 result=$(project_detect_type "$test_proj") || true
-assert_contains "package.json takes precedence over requirements.txt" "$result" '"type":"nodejs"'
+assert_json_key "package.json takes precedence over requirements.txt" "$result" ".type" "nodejs"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Test: Type detection without explicit type parameter
