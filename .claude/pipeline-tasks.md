@@ -1,23 +1,29 @@
 # Pipeline Tasks — Test Infrastructure Pre-Flight Validation Gate
 
 ## Implementation Checklist
-- [ ] Task 1: Add `--skip-test-validation` flag to `parse_args()` in `pipeline-cli.sh`
-- [ ] Task 2: Add `SKIP_TEST_VALIDATION` default variable in `pipeline-cli.sh` and `pipeline-stages.sh`
-- [ ] Task 3: Create `scripts/lib/pipeline-test-validation.sh` with module guard, defaults, helpers loaded
-- [ ] Task 4: Implement `_vtf_find_test_files()` — language-aware test file discovery
-- [ ] Task 5: Implement `_vtf_check_bash_harness()` — checks for required boilerplate patterns
-- [ ] Task 6: Implement `_vtf_check_shellcheck()` — shellcheck validation with graceful fallback
-- [ ] Task 7: Implement `_vtf_check_mock_structure()` — mock directory pattern validation
-- [ ] Task 8: Implement `validate_test_infrastructure()` — orchestrator that writes `test-validation.json` and returns actionable errors
-- [ ] Task 9: Source the new module in `pipeline-stages.sh`
-- [ ] Task 10: Call `validate_test_infrastructure()` in `stage_intake()` after test command detection
-- [ ] Task 11: Create `scripts/sw-pipeline-test-validation-test.sh` test suite with positive cases (valid harness)
-- [ ] Task 12: Add negative test cases (missing file, not executable, missing boilerplate, shellcheck errors)
-- [ ] Task 13: Add edge case tests (skip flag, no test files, non-bash project)
-- [ ] Task 14: Register test suite in `package.json`
+- [ ] **Create library**: Implement `scripts/lib/pipeline-validation.sh` with all validation functions
+- [ ] **Helper 1**: Implement `_validate_test_file()` with all checks (PASS, FAIL, ERR, shellcheck)
+- [ ] **Helper 2**: Implement `_verify_mock_structure()` to check mock directory layout
+- [ ] **Integration**: Modify `scripts/sw-pipeline.sh` intake stage to call validation
+- [ ] **CLI flag**: Add `--skip-test-validation` argument parsing to pipeline
+- [ ] **JSON report**: Implement report generation with timestamp, summary, per-file details
+- [ ] **Test suite**: Create `scripts/sw-pipeline-validation-test.sh` with 6+ test cases
+- [ ] **Test positive**: Cover valid harness, mock structure, report generation
+- [ ] **Test negative**: Cover missing PASS, missing FAIL, missing ERR, missing mock dirs
+- [ ] **Test edge case**: Cover skip-validation flag, multiple test files, shellcheck failures
+- [ ] **Documentation**: Update `.claude/CLAUDE.md` with flag documentation
+- [ ] **Manual validation**: Test on this repository's own test harness
+- [ ] **Error messages**: Ensure all error messages are actionable and point to report file
+- [ ] **Integration test**: Run a pipeline with validation enabled to verify intake stage flow
+- [ ] `validate_test_infrastructure()` function exists in `scripts/lib/pipeline-validation.sh`
+- [ ] Checks for PASS counter, FAIL counter, ERR trap, test_ functions
+- [ ] Runs shellcheck on all test files, reports errors
+- [ ] Verifies mock directory structure (scripts/mocks/bin, scripts/mocks/data)
+- [ ] Generates `.claude/pipeline-artifacts/test-validation.json` report
+- [ ] Report includes timestamp, summary, per-file details, error list
 
 ## Context
 - Pipeline: standard
-- Branch: ci/test-infrastructure-pre-flight-validatio-232
+- Branch: test/test-infrastructure-pre-flight-validatio-232
 - Issue: #232
-- Generated: 2026-03-08T12:22:08Z
+- Generated: 2026-03-08T12:37:51Z
