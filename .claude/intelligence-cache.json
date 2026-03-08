@@ -546,29 +546,29 @@
       "result": {
         "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 78,
+        "success_probability": 75,
         "recommended_template": "standard",
-        "issue_type": "performance",
+        "issue_type": "backend",
         "key_risks": [
-          "Score threshold accuracy (60 may need tuning based on real data)",
-          "Pattern matching false positives causing unnecessary context injection",
-          "Performance overhead of pre-pipeline scoring on every run",
-          "Metric collection accuracy and overhead under high pipeline volume",
-          "Integration complexity with existing sw-intelligence.sh and sw-memory.sh",
-          "Pattern set growth over time affecting matching performance"
+          "Pattern scoring algorithm may not accurately match failures across diverse contexts",
+          "Proactive injection of irrelevant context could confuse agent decision-making",
+          "Metrics tracking could become incomplete or inconsistent without careful implementation",
+          "Integration with sw-intelligence.sh and sw-memory.sh could introduce regressions",
+          "Performance impact from running scoring function on every pipeline start",
+          "Pattern effectiveness threshold (60) may require context-specific tuning"
         ],
         "implementation_hints": [
-          "Start with simple heuristic scoring (issue similarity, file overlap, error signature) before ML",
-          "Implement pattern effectiveness decay - downweight old/ineffective patterns",
-          "Cache pattern matches in JSONlog to avoid repeated computation per run",
-          "Use feature flag for A/B testing proactive injection (default off initially)",
-          "Structure tracking as immutable events in ~shipwright/memory/ to enable analysis",
-          "Implement configurable threshold (60) in daemon-config.json for tuning",
-          "Run dashboard metrics as async batch job, not on critical path",
-          "Test with historical pipeline data before enabling in production"
+          "Design multi-signal scoring function: issue similarity, file overlap, error signature match",
+          "Implement dry-run mode first to validate scoring accuracy before actual injection",
+          "Leverage existing pattern format from sw-memory.sh to ensure compatibility",
+          "Test scoring on historical failure data to establish baseline accuracy before production",
+          "Start with conservative injection threshold (30-40) in testing, increase gradually",
+          "Add metrics collection hooks before building dashboard visualization",
+          "Consider A/B testing different scoring algorithm weights to optimize effectiveness",
+          "Define clear pattern structure and versioning for JSON export consistency"
         ]
       },
-      "timestamp": 1772926103,
+      "timestamp": 1772927875,
       "ttl": 3600
     },
     "46cf04afef7eca5c17f555b3dd0e2345": {
@@ -577,27 +577,27 @@
         "risk_level": "medium",
         "success_probability": 72,
         "recommended_template": "standard",
-        "issue_type": "refactor",
+        "issue_type": "testing",
         "key_risks": [
-          "Pattern matching accuracy - false positives could pollute context, false negatives miss opportunities",
-          "Integration complexity with sw-intelligence.sh and sw-memory.sh - two interdependent systems",
-          "Context window bloat - injecting memory patterns could exceed token budgets if not carefully sized",
-          "Threshold calibration - 60-point threshold needs empirical validation against historical pipelines",
-          "Metrics attribution - difficult to prove causation (pattern prevented failure vs coincidence)",
-          "Performance overhead - scoring before every pipeline start adds latency"
+          "Scoring algorithm accuracy (false positives/negatives in pattern matching)",
+          "Difficulty measuring 'failure prevented' (absence of events is hard to verify)",
+          "Schema migration for tracking new metrics without breaking existing memory system",
+          "Performance impact of scoring every incoming issue against full pattern database",
+          "Integration complexity with sw-intelligence.sh and sw-memory.sh modules",
+          "Dashboard query performance on large historical memory datasets"
         ],
         "implementation_hints": [
-          "Implement scoring incrementally: file overlap (simple), error signature TF-IDF (moderate), issue similarity (complex)",
-          "Cache pattern scores keyed by (incoming issue, pattern id, timestamp) to avoid recomputation",
-          "Design outcome tracking table with columns: pattern_id, pipeline_id, score, injected, failure_type, prevented (boolean)",
-          "Start with 60 threshold but make it configurable via daemon-config.json and tunable by strategic agent",
-          "Prototype pattern injection as 2-3 bullet points in loop context (not full memory dump) to control token cost",
-          "Validate scoring accuracy on 50+ historical pipelines before enabling proactive injection in production",
-          "Create A/B test flag: control group (no injection) vs treatment (injection) to isolate impact",
-          "Ensure JSON export format aligns with strategic agent's analysis needs (pattern effectiveness, cost, signal/noise ratio)"
+          "Start with file overlap + error signature matching before implementing complex similarity scoring",
+          "Create incremental schema version for tracking metadata without breaking backward compatibility",
+          "Build scoring test suite first using historical issues and known repeat failures",
+          "Cache frequently matched patterns to avoid re-scoring on similar issues",
+          "Track 'prevented' vs 'inadequate context' vs 'different failure type' as separate outcomes",
+          "Implement pattern confidence scoring (0-100) rather than binary success/failure",
+          "Export format should be JSON-compatible with existing memory structure for strategic agent consumption",
+          "Consider adding 'time_since_injection' metric to validate pattern freshness"
         ]
       },
-      "timestamp": 1772926154,
+      "timestamp": 1772927923,
       "ttl": 3600
     }
   }

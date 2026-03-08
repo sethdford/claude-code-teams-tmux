@@ -1258,7 +1258,7 @@ else
 fi
 
 test_case "reflect calls meta-validation"
-if grep -q "_recruit_meta_validate_self_tune.*accuracy" "${SCRIPT_DIR}/sw-recruit.sh"; then
+if grep -q "_recruit_meta_validate_self_tune.*accuracy" "${SCRIPT_DIR}/lib/recruit-learning.sh"; then
     pass
 else
     fail "reflect does not call meta-validation"
@@ -1293,14 +1293,14 @@ else
 fi
 
 test_case "auto self-tune triggers after ingest-pipeline"
-if grep -q "Auto-running self-tune after ingesting" "${SCRIPT_DIR}/sw-recruit.sh"; then
+if grep -q "Auto-running self-tune after ingesting" "${SCRIPT_DIR}/lib/recruit-learning.sh"; then
     pass
 else
     fail "ingest-pipeline does not auto-trigger self-tune"
 fi
 
 test_case "auto evolve triggers after sufficient outcomes"
-if grep -q "Auto-running evolve" "${SCRIPT_DIR}/sw-recruit.sh"; then
+if grep -q "Auto-running evolve" "${SCRIPT_DIR}/lib/recruit-learning.sh"; then
     pass
 else
     fail "ingest-pipeline does not auto-trigger evolve"
