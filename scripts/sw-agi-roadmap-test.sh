@@ -380,13 +380,13 @@ test_recruit_policy_integration() {
 
 # ── 2.17 Recruit: meta feedback loop ─────────────────────────────────────
 test_recruit_meta_loop() {
-    grep -q '_recruit_meta_validate_self_tune' "$SCRIPT_DIR/sw-recruit.sh" || {
+    grep -q '_recruit_meta_validate_self_tune' "$SCRIPT_DIR/sw-recruit.sh" "$SCRIPT_DIR"/lib/recruit-*.sh 2>/dev/null || {
         echo "recruit missing meta-validation function"
         return 1
     }
-    # Verify reflect calls meta-validation
+    # Verify reflect calls meta-validation (check both main script and libraries)
     local reflect_section
-    reflect_section=$(sed -n '/_recruit_reflect()/,/^}/p' "$SCRIPT_DIR/sw-recruit.sh")
+    reflect_section=$(sed -n '/_recruit_reflect()/,/^}/p' "$SCRIPT_DIR/sw-recruit.sh" "$SCRIPT_DIR"/lib/recruit-*.sh 2>/dev/null || true)
     echo "$reflect_section" | grep -q '_recruit_meta_validate_self_tune' || {
         echo "reflect does not call meta-validation"
         return 1

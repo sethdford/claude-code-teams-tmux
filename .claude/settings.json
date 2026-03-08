@@ -158,14 +158,8 @@
     "enabled": true,
     "mode": "auto-allow",
     "filesystem": {
-      "allowedPaths": [
-        "./"
-      ],
-      "deniedPaths": [
-        "/etc",
-        "/System",
-        "/Library"
-      ]
+      "allowedPaths": ["./"],
+      "deniedPaths": ["/etc", "/System", "/Library"]
     },
     "network": {
       "allowedDomains": [
@@ -187,7 +181,10 @@
     "CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES": "1",
     "CLAUDE_CODE_TST_NAMES_IN_MESSAGES": "1",
     "CLAUDE_CODE_EAGER_FLUSH": "1",
-    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "1"
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "1",
+    "CLAUDE_CODE_EFFORT_LEVEL": "medium",
+    "ENABLE_TOOL_SEARCH": "auto",
+    "MAX_MCP_OUTPUT_TOKENS": "50000"
   },
   "fileSuggestion": "./scripts/shipwright-file-suggest.sh"
 }

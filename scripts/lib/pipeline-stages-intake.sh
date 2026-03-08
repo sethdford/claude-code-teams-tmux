@@ -24,7 +24,7 @@ stage_intake() {
             [[ "$ISSUE_LABELS" == "null" ]] && ISSUE_LABELS=""
         else
             # Fallback: just get title
-            GOAL=$(gh issue view "$ISSUE_NUMBER" --json title -q .title 2>/dev/null) || {
+            GOAL=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title' 2>/dev/null) || {
                 error "Failed to fetch issue #$ISSUE_NUMBER"
                 return 1
             }

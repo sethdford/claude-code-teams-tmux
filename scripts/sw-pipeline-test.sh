@@ -111,7 +111,7 @@ TMPL
 # Usage: pipeline_config_with_stages "intake,plan,build"
 pipeline_config_with_stages() {
     local enabled_csv="$1"
-    local all_stages=("intake" "plan" "build" "test" "review" "pr" "deploy" "validate")
+    local all_stages=("intake" "plan" "build" "test" "review" "compound_quality" "pr" "deploy" "validate")
     local json='{ "name": "test-custom", "description": "Custom test pipeline",'
     json+=' "defaults": { "test_cmd": "echo all-tests-passed", "model": "opus", "agents": 1 },'
     json+=' "stages": ['
@@ -242,10 +242,13 @@ ISSUE_JSON
         esac
         ;;
     api)
-        # gh api → return JSON with comment id for progress tracking
-        if echo "$*" | grep -q "comments"; then
-            echo '{"id": 12345}'
-        fi
+        # gh api → return JSON based on endpoint
+        case "$2" in
+            *"/comments"*) echo '{"id": 12345}' ;;
+            "user") echo '{"login": "testuser"}' ;;
+            *"check-runs"*) echo '{"check_runs": []}' ;;
+            *) echo '{}' ;;
+        esac
         exit 0
         ;;
     *)
@@ -819,8 +822,33 @@ ISSUE_JSON
         esac
         ;;
     api)
-        if echo "$*" | grep -q "comments"; then
-            echo '{"id": 12345}'
+        local path="$2"
+        local jq_filter=""
+        # Parse jq filter from arguments
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --jq) jq_filter="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+
+        # Return JSON based on endpoint
+        local json_response
+        if [[ "$path" == *"/comments"* ]]; then
+            json_response='{"id": 12345}'
+        elif [[ "$path" == "user" ]] || [[ -z "$path" ]]; then
+            json_response='{"login": "testuser"}'
+        elif [[ "$path" == *"check-runs"* ]]; then
+            json_response='{"check_runs": []}'
+        else
+            json_response='{}'
+        fi
+
+        # Apply jq filter if provided
+        if [[ -n "$jq_filter" ]]; then
+            echo "$json_response" | jq -r "$jq_filter"
+        else
+            echo "$json_response"
         fi
         exit 0
         ;;
@@ -829,8 +857,8 @@ esac
 GH_EOF
     chmod +x "$TEST_TEMP_DIR/bin/gh"
 
-    # Use a pipeline with review and test stages to verify they are skipped
-    pipeline_config_with_stages "intake,plan,build,test,review,pr" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
+    # Use a pipeline with compound_quality stage to verify it is skipped by documentation label
+    pipeline_config_with_stages "intake,plan,build,test,review,compound_quality,pr" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
 
     # Run with an issue that has documentation label
     invoke_pipeline start --issue 99 --skip-gates
@@ -857,6 +885,7 @@ test_intelligent_skip_low_complexity() {
   "stages": [
     {"id": "intake", "enabled": true, "gate": "auto", "config": {}},
     {"id": "plan", "enabled": true, "gate": "auto", "config": {}},
+    {"id": "design", "enabled": true, "gate": "auto", "config": {}},
     {"id": "build", "enabled": true, "gate": "auto", "config": {}},
     {"id": "test", "enabled": true, "gate": "auto", "config": {}},
     {"id": "review", "enabled": true, "gate": "auto", "config": {}},

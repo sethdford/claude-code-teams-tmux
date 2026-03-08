@@ -535,7 +535,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-doc-fleet.sh` | 815 | Documentation Fleet Orchestrator |
 | `scripts/sw-docs-agent.sh` | 525 | Auto-sync README, wiki, API docs |
 | `scripts/sw-docs.sh` | 626 | Documentation Keeper |
-| `scripts/sw-doctor.sh` | 1326 | Validate Shipwright setup |
+| `scripts/sw-doctor.sh` | 1635 | Validate Shipwright setup |
 | `scripts/sw-dora.sh` | 605 | DORA Metrics Dashboard with Engineering Intelligence |
 | `scripts/sw-durable.sh` | 708 | Durable Workflow Engine |
 | `scripts/sw-e2e-orchestrator.sh` | 535 | Test suite registry & execution |
@@ -567,7 +567,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-patrol-meta.sh` | 776 | Shipwright Self-Improvement Patrol |
 | `scripts/sw-pipeline-composer.sh` | 444 | Dynamic Pipeline Composition |
 | `scripts/sw-pipeline-vitals.sh` | 1076 | Pipeline Vitals Engine |
-| `scripts/sw-pipeline.sh` | 263 | Autonomous Feature Delivery (Idea → Production) |
+| `scripts/sw-pipeline.sh` | 266 | Autonomous Feature Delivery (Idea → Production) |
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
@@ -653,6 +653,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-adapters-test.sh` | 197 | Structural/smoke tests for terminal & deploy |
 | `scripts/sw-adaptive-model-test.sh` | 399 | Test Suite for Adaptive Model Selection |
 | `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
+| `scripts/sw-adaptive-timeout-test.sh` | 406 | Test Suite for Adaptive Stage Timeout Engine |
 | `scripts/sw-adversarial-test.sh` | 258 | Validate adversarial agent code review |
 | `scripts/sw-agi-roadmap-test.sh` | 857 | Tests every feature we implemented |
 | `scripts/sw-architecture-enforcer-test.sh` | 301 | Validate architecture model |
@@ -684,7 +685,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-doc-fleet-test.sh` | 344 | Validate documentation fleet operations |
 | `scripts/sw-docs-agent-test.sh` | 182 | Validate documentation agent operations |
 | `scripts/sw-docs-test.sh` | 781 | Validate documentation keeper, AUTO sections, |
-| `scripts/sw-doctor-test.sh` | 299 | Validate setup diagnostics |
+| `scripts/sw-doctor-test.sh` | 420 | Validate setup diagnostics |
 | `scripts/sw-dora-test.sh` | 241 | Validate DORA metrics dashboard, DX metrics, |
 | `scripts/sw-durable-test.sh` | 221 | Validate durable workflow engine |
 | `scripts/sw-e2e-integration-test.sh` | 352 | Real Claude + Real GitHub |
@@ -723,7 +724,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-daemon-poll-test.sh` | 344 | Unit tests for poll, health, cleanup |
 | `scripts/sw-lib-daemon-state-test.sh` | 383 | Unit tests for state management |
 | `scripts/sw-lib-daemon-triage-test.sh` | 267 | Unit tests for triage scoring |
-| `scripts/sw-lib-error-actionability-test.sh` | 149 |  |
+| `scripts/sw-lib-error-actionability-test.sh` | 213 |  |
 | `scripts/sw-lib-helpers-test.sh` | 229 | Unit tests for shared helper functions |
 | `scripts/sw-lib-pipeline-detection-test.sh` | 391 | Unit tests for detection fns |
 | `scripts/sw-lib-pipeline-intelligence-test.sh` | 410 | Unit tests for intelligence |
@@ -749,6 +750,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-pr-lifecycle-test.sh` | 317 | Validate autonomous PR management |
 | `scripts/sw-predictive-test.sh` | 691 | Unit tests for predictive intelligence |
 | `scripts/sw-prep-test.sh` | 636 | Validate repo preparation |
+| `scripts/sw-project-detect-test.sh` | 434 | Unit tests for project detection |
 | `scripts/sw-ps-test.sh` | 296 | Validate agent process status display |
 | `scripts/sw-public-dashboard-test.sh` | 165 | Validate public dashboard generation |
 | `scripts/sw-quality-test.sh` | 227 | Validate ruthless quality validation engine |

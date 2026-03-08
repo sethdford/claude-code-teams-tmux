@@ -28,6 +28,9 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
 
+# Ensure pipeline intelligence skip module is loaded (provides pipeline_should_skip_stage)
+[[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -566,13 +569,15 @@ run_pipeline() {
         fi
 
         # Intelligence: evaluate whether to skip this stage
-        local skip_reason=""
-        skip_reason=$(pipeline_should_skip_stage "$id" 2>/dev/null) || true
-        if [[ -n "$skip_reason" ]]; then
-            echo -e "  ${DIM}○ ${id} — skipped (intelligence: ${skip_reason})${RESET}"
-            set_stage_status "$id" "complete"
-            completed=$((completed + 1))
-            continue
+        if type pipeline_should_skip_stage >/dev/null 2>&1; then
+            local skip_reason=""
+            skip_reason=$(pipeline_should_skip_stage "$id" 2>/dev/null) || true
+            if [[ -n "$skip_reason" ]]; then
+                echo -e "  ${DIM}○ ${id} — skipped (intelligence: ${skip_reason})${RESET}"
+                set_stage_status "$id" "complete"
+                completed=$((completed + 1))
+                continue
+            fi
         fi
 
         local stage_status

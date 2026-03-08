@@ -6,7 +6,7 @@
 
 set -uo pipefail
 
-VERSION="1.0.0"
+VERSION="3.2.4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ─── Test Harness Setup ──────────────────────────────────────────────────────
