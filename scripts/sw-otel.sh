@@ -73,7 +73,8 @@ cmd_metrics() {
     # Stage timing
     # shellcheck disable=SC2034
     declare -a stages
-    declare -a stage_durations
+    declare -a stage_durations=()
+
 
     # Model costs
     # shellcheck disable=SC2034
@@ -130,7 +131,8 @@ cmd_metrics() {
 
     # Calculate histogram buckets for stage durations
     local stage_p50=0 stage_p99=0
-    if [[ ${#stage_durations[@]} -gt 0 ]]; then
+    local _sd_count=0; [[ ${stage_durations[@]+x} ]] && _sd_count=${#stage_durations[@]}
+    if [[ "$_sd_count" -gt 0 ]]; then
         # Simple approximation for percentiles
         stage_p50=$(printf '%s\n' "${stage_durations[@]}" | cut -d: -f2 | sort -n | head -n $((${#stage_durations[@]}/2)) | tail -n1 || echo "0")
         stage_p99=$(printf '%s\n' "${stage_durations[@]}" | cut -d: -f2 | sort -n | tail -n1 || echo "0")
