@@ -688,9 +688,9 @@
     },
     "f485c3000ea19afc97820809cc016dc4": {
       "result": {
-        "estimated_iterations": 7
+        "estimated_iterations": 4
       },
-      "timestamp": 1772972193,
+      "timestamp": 1772974027,
       "ttl": 1800
     },
     "2ff9d4a3b91783f101542ba4d0774033": {
@@ -816,112 +816,112 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 92,
-            "summary": "Directly relevant to understanding validation failures. Captured failure patterns would explain why the conservative pipeline template plan was rejected."
-          },
-          {
             "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Contains detailed project configuration (vitest, npm, source structure). Understanding the test setup and project conventions is critical for validating pipeline template compatibility."
+            "relevance": 72,
+            "summary": "Detailed project structure (Node.js, vitest, npm, source conventions) is essential for validating pipeline template requirements and constraints"
           },
           {
-            "file": "metrics.json",
-            "relevance": 62,
-            "summary": "Baseline metrics would inform whether the conservative template meets reliability and performance requirements without regressions."
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Directly addresses the rejection context (validation failures) - would contain validation error patterns to avoid in conservative template design, though currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Could inform what conservative design decisions have been made previously, though currently empty"
           }
         ]
       },
-      "timestamp": 1772972525,
+      "timestamp": 1772974680,
       "ttl": 1800
     },
     "c4de71e31a34bbf9178319b2a04d25b4": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 45,
-            "summary": "Project structure conventions (source_dir: src/, test_pattern: *.test.js, vitest runner) inform where pipeline template code belongs and testing approach"
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Critical for emergency conservative design—past failure patterns directly inform risk mitigation strategies and gate placement"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 72,
+            "summary": "Reliability baselines and thresholds define what 'maximum reliability' means; essential for setting SLOs and pipeline abort criteria"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 68,
+            "summary": "Architectural constraints and prior decisions inform pipeline stage design and gating strategy for safety"
+          },
+          {
+            "file": "global.json",
+            "relevance": 48,
+            "summary": "Cross-repo reliability patterns and learnings provide comparative data on conservative pipeline approaches"
           },
           {
             "file": "patterns.json",
             "relevance": 25,
-            "summary": "Project type confirmation (nodejs) validates language/ecosystem for pipeline template design decisions"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 15,
-            "summary": "No prior architectural decisions recorded; would ideally contain conservative patterns and reliability constraints for reference"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 12,
-            "summary": "Empty failure list means no learned reliability anti-patterns available; should be populated during emergency template testing"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 8,
-            "summary": "No baseline metrics captured; would inform reliability SLOs and performance constraints for conservative template design"
+            "summary": "Project structure details (Node.js, vitest, npm) provide implementation context but minimal guidance on pipeline architecture patterns"
           }
         ]
       },
-      "timestamp": 1772972626,
+      "timestamp": 1772974738,
       "ttl": 1800
     },
     "b4fdc28f3c4b0a473f799bd07a3994ce": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 25,
-            "summary": "Contains project conventions (test patterns, source layout) that establish baseline reliability practices, though doesn't directly address rejected approaches"
-          },
-          {
-            "file": "global.json",
-            "relevance": 10,
-            "summary": "Designed to capture cross-repo learnings and common anti-patterns, but currently empty—would be most relevant if populated with rejected emergency-template approaches"
-          },
-          {
             "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Could store architectural decision records including rejected design approaches for conservative templates, but array is empty"
+            "relevance": 35,
+            "summary": "Design decisions and rejected approaches for pipeline templates should be stored here; currently empty but most appropriate location for emergency conservative template anti-patterns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "Failed pipeline approaches and problematic patterns would be captured here; empty but relevant for tracking rejected design decisions"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 15,
+            "summary": "Project conventions and structure patterns; minimally relevant but could inform reliability constraints for conservative pipeline templates"
           }
         ]
       },
-      "timestamp": 1772972634,
+      "timestamp": 1772974748,
       "ttl": 1800
     },
     "313492971bafdcefe75f0383f0ff5986": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (repo: sethdford/shipwright, 2026-03-08)",
             "relevance": 95,
-            "summary": "Contains project configuration essential for build stage: test runner (vitest), package manager (npm), source directory structure, and test patterns. Critical for reliable build execution."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Confirms nodejs project type detected at bootstrap. Less detailed than primary patterns file but validates project classification."
+            "summary": "Contains concrete project build configuration: test_runner (vitest), package_manager (npm), source conventions, and import style. Essential for reliable build stage execution."
           },
           {
             "file": "failures.json",
+            "relevance": 50,
+            "summary": "Critical for emergency conservative pipeline: knowing past build failures prevents regression, though currently empty. Would inform safety measures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline metrics establish reliability targets and catch performance regressions. Important for maximum reliability goal, though baselines are empty."
+          },
+          {
+            "file": "patterns.json (project_type: nodejs, 2026-02-21)",
             "relevance": 25,
-            "summary": "Empty failure history indicates no captured error patterns. Useful signal that conservative template can avoid known pitfalls, but provides no actionable guidance."
+            "summary": "Basic project type confirmation, less detailed than comprehensive first patterns.json entry. Provides minimal build configuration context."
           },
           {
             "file": "decisions.json",
             "relevance": 20,
-            "summary": "No previous architectural decisions captured. Low relevance but shows clean slate for conservative decision-making."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 15,
-            "summary": "No established baselines. Minimal relevance for build stage, though could inform conservative timeout and resource allocation if populated."
+            "summary": "Historical build decisions could inform conservative approach, but list is empty. Low immediate relevance to stage execution."
           }
         ]
       },
-      "timestamp": 1772972834,
+      "timestamp": 1772974842,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -930,26 +930,26 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Critical for build stage: specifies test runner (vitest), package manager (npm), source directory (src/), test pattern (*.test.js), and import style. Directly actionable for setting up and running builds."
+            "summary": "Contains essential build configuration: test runner (vitest), package manager (npm), project type (node), source directory structure, and test patterns - all critical for executing build stage"
           },
           {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Useful for avoiding repeating build/test failures during this stage. Currently empty but high value when populated with captured failure patterns."
-          },
-          {
-            "file": "decisions.json",
             "relevance": 45,
-            "summary": "May contain architectural or build strategy decisions that influence how to organize build outputs or test execution. Currently empty."
+            "summary": "Documents previous build failures to avoid repeating mistakes; currently empty but provides context on known issues that could affect build reliability"
           },
           {
             "file": "metrics.json",
-            "relevance": 35,
-            "summary": "Could provide performance baselines for build and test execution timing. Currently empty but useful for understanding expected build duration."
+            "relevance": 25,
+            "summary": "Performance baselines for build stages; currently empty but would help optimize build time and detect regressions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Architectural decisions; currently empty but lower priority for build stage execution compared to configuration and failure patterns"
           }
         ]
       },
-      "timestamp": 1772972841,
+      "timestamp": 1772974852,
       "ttl": 1800
     },
     "4fb22f4dca05b7e3bc44c2a74d90a560": {
