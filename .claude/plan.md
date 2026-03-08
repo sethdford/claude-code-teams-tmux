@@ -1,30 +1,41 @@
 # Implementation Plan: Test Failure Recovery Loop with Smart Iteration Budget Management
 
-**Goal**: Implement intelligent test failure tracking and recovery in the build loop to detect and abort on repeated test failures while providing targeted context for agent retries.
+**Goal**: Implement intelligent test failure recovery and adaptive iteration budget management to:
+1. Detect test failures and re-enter build/test cycle with enhanced error context
+2. Adapt iteration limits based on issue complexity, failure patterns, and context exhaustion
+3. Track failure patterns across iterations for intelligent decision-making
 
-**Complexity Level**: Medium
-**Estimated Scope**: 4-5 focused tasks per agent
-**Integration Points**: 3 main locations in existing code
+**Complexity Level**: Medium-High (8/10)
+**Estimated Scope**: 10-15 focused tasks
+**Integration Points**: 4 major locations (library, sw-loop.sh, loop-iteration.sh, tests)
+**Estimated Effort**: 40-50 hours
 
 ---
 
-## Problem Statement & Hypothesis
+## Problem Statement & Analysis
 
 The build loop (`sw-loop.sh`) currently:
 - ✅ Detects test failures via `TEST_PASSED` flag
 - ✅ Extracts generic error lines via `write_error_summary()`
-- ✅ Injects error context into the next iteration
-- ❌ **Does NOT** extract individual test names from output
-- ❌ **Does NOT** track which specific tests fail across iterations
-- ❌ **Does NOT** detect when the same test fails 3+ consecutive times
-- ❌ **Does NOT** inject "previously failed test names" into context
+- ✅ Has basic iteration limits (MAX_ITERATIONS, auto-extend)
+- ✅ Has apply_adaptive_budget() for intelligent budgeting
+- ❌ **Does NOT** comprehensively test the recovery mechanism
+- ❌ **Does NOT** have smart budget based on failure severity and patterns
+- ❌ **Does NOT** distinguish context exhaustion from code errors
+- ❌ **Does NOT** track per-test failure signatures
+- ❌ **Does NOT** escalate budget for high-impact failures
 
 This means:
-1. If test `auth.test.js::login` fails in iteration 3, then `api.test.ts::getUser` fails in iteration 4, then `auth.test.js::login` fails again in iteration 5 → the loop treats these as 3 independent errors and doesn't recognize the pattern
-2. The circuit breaker detects *generic* repetition (same error hash 3x) but misses test-specific patterns
-3. Agents waste iterations fixing different issues without seeing "you've already tried to fix login 3 times"
+1. When tests fail, recovery is haphazard — no structured error context injected
+2. Iteration budget is static per complexity level, doesn't adapt to actual failure patterns
+3. If same test fails 3x, loop doesn't recognize pattern or escalate
+4. No distinction: "I'm stuck in infinite loop" vs "Context window full" vs "Different bugs each iteration"
 
-**Root Cause**: Test failure tracking operates at the category level ("test_assertion") not the test name level.
+**Root Cause**: Test failure recovery exists but lacks:
+- Per-test failure tracking (specific vs generic)
+- Failure severity detection (assertion vs syntax vs timeout)
+- Adaptive budget escalation (increase budget on repeated failures)
+- Context exhaustion detection (token counting)
 
 ---
 
