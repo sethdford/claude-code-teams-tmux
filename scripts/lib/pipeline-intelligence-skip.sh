@@ -129,9 +129,15 @@ pipeline_should_skip_stage() {
     # Check for skip overrides in reassessment
     local reassessment_file="$ARTIFACTS_DIR/reassessment.json"
     if [[ -f "$reassessment_file" ]]; then
+        # Validate JSON before parsing to prevent jq errors
+        if ! jq empty "$reassessment_file" 2>/dev/null; then
+            # File exists but is not valid JSON — skip it
+            return 1
+        fi
         local skip_stages
-        skip_stages=$(jq -r '.skip_stages[]?' "$reassessment_file" 2>/dev/null)
+        skip_stages=$(jq -r '.skip_stages[]?' "$reassessment_file" 2>/dev/null) || true
         while IFS= read -r skip_stage; do
+            [[ -z "$skip_stage" ]] && continue
             [[ "$skip_stage" == "$stage" ]] && echo "reassessment" && return 0
         done <<< "$skip_stages"
     fi

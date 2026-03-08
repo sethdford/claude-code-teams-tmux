@@ -788,7 +788,8 @@ HEAL_EOF
 # 16. Intelligence: Stage Skipping with Documentation Label
 # ──────────────────────────────────────────────────────────────────────────────
 test_intelligent_skip_docs_label() {
-    # Create a custom mock gh that returns documentation label
+    # Use standard mock gh (already created in setup)
+    # Override the mock to return documentation label
     cat > "$TEST_TEMP_DIR/bin/gh" <<'GH_EOF'
 #!/usr/bin/env bash
 case "$1" in
@@ -822,34 +823,12 @@ ISSUE_JSON
         esac
         ;;
     api)
-        local path="$2"
-        local jq_filter=""
-        # Parse jq filter from arguments
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                --jq) jq_filter="$2"; shift 2 ;;
-                *) shift ;;
-            esac
-        done
-
-        # Return JSON based on endpoint
-        local json_response
-        if [[ "$path" == *"/comments"* ]]; then
-            json_response='{"id": 12345}'
-        elif [[ "$path" == "user" ]] || [[ -z "$path" ]]; then
-            json_response='{"login": "testuser"}'
-        elif [[ "$path" == *"check-runs"* ]]; then
-            json_response='{"check_runs": []}'
-        else
-            json_response='{}'
-        fi
-
-        # Apply jq filter if provided
-        if [[ -n "$jq_filter" ]]; then
-            echo "$json_response" | jq -r "$jq_filter"
-        else
-            echo "$json_response"
-        fi
+        case "$2" in
+            *"/comments"*) echo '{"id": 12345}' ;;
+            "user") echo '{"login": "testuser"}' ;;
+            *"check-runs"*) echo '{"check_runs": []}' ;;
+            *) echo '{}' ;;
+        esac
         exit 0
         ;;
     *) exit 0 ;;
