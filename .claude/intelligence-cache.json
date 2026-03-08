@@ -35,9 +35,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "devops",
+          "tester"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Telemetry architecture design + checkpoint/recovery strategy = architect-led with builder/devops/tester for implementation, infrastructure, and validation.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772931152,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -599,6 +608,314 @@
       },
       "timestamp": 1772927923,
       "ttl": 3600
+    },
+    "9a264fb721e3a88b49a7a7667df8a562": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 76,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Breaking existing setup/install flow - could prevent user onboarding",
+          "Checkpoint state corruption or version incompatibility issues",
+          "Resume logic edge cases with partial completion and file inconsistencies",
+          "Over-instrumentation making setup scripts harder to debug and maintain",
+          "Race conditions if setup is interrupted during checkpoint writes",
+          "Idempotency challenges when resuming from checkpoints mid-process"
+        ],
+        "implementation_hints": [
+          "Implement telemetry collection first (low-risk, high-value) before checkpoint/resume",
+          "Use atomic writes (tmp file + mv) for checkpoint state to prevent corruption",
+          "Design checkpoint versioning for forward/backward compatibility",
+          "Validate checkpoint integrity before attempting resume",
+          "Test all resume failure paths: corrupted state, missing files, version mismatch",
+          "Mock setup steps in tests to avoid side effects during validation",
+          "Ensure all setup steps are idempotent for safe resumption",
+          "Add explicit checkpoints at major boundaries: prerequisites → files → config → validation",
+          "Document checkpoint schema and recovery procedure clearly",
+          "Integrate with existing events.jsonl logging infrastructure (leverage emit_event pattern)"
+        ]
+      },
+      "timestamp": 1772930576,
+      "ttl": 3600
+    },
+    "4041755242707a7607cb64125996e18b": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1772930587,
+      "ttl": 1800
+    },
+    "d535d2689344f90eeba91214079bd70b": {
+      "result": {
+        "estimated_cost_usd": 1.05,
+        "estimated_iterations": 3,
+        "estimated_tokens": 135000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1772930599,
+      "ttl": 3600
+    },
+    "9334512693ef37b214b3a4f608de7a1f": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "observability",
+          "developer-experience",
+          "error-recovery"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires idempotency verification across three scripts, safe state management for checkpoints, metrics instrumentation, and dashboard integration—moderate complexity with high risk around recovery path edge cases"
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "observability",
+            "testing-strategy"
+          ],
+          "review": [
+            "security-audit",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about setup failure modes—are we instrumenting the right steps? What edge cases in recovery (partial failures, version mismatches) could cause silent success?",
+          "architecture-design": "Checkpoint/recovery is a durable pattern; formalize it as an ADR covering state schema, idempotency contracts, and rollback semantics to guide implementation",
+          "data-pipeline": "Telemetry emission (step_name, duration, success/failure, error_type → events.jsonl) needs a clean, versioned schema that's extensible for future monitoring",
+          "observability": "Metrics must be emitted even when recovery runs; inject telemetry at entry/exit of each setup step and verify emissions reach the event bus",
+          "testing-strategy": "Recovery paths cannot be tested via full reruns; design synthetic failure injection (mock step failures) to validate recovery logic without 30min rerun cycles",
+          "security-audit": "Checkpoint files (~/.shipwright/setup-checkpoint.json) may contain paths, git URLs, or user tokens; audit for PII leakage and verify file permissions (0600)",
+          "adversarial-quality": "Think like chaos: what happens if checkpoint is corrupted mid-write? If step succeeds but telemetry fails? If user interrupts recovery? Find failure modes in checkpoint recovery",
+          "validation-thoroughness": "Smoke test isn't enough—actually run setup, inject a failure, verify recovery resumes correctly and metrics reflect both original failure and recovery attempt",
+          "pr-quality": "Changes span install.sh, shipwright setup, shipwright init, plus dashboard; reviewers need a clear walkthrough of the checkpoint format and recovery flow",
+          "deploy-safety": "Setup scripts are user-facing and widely run; rollout should be gradual with feature flag (checkpoint disabled by default) until metrics prove reliability"
+        },
+        "generated_skills": [
+          {
+            "name": "setup-recovery-resilience",
+            "reason": "No existing skill addresses idempotency verification, safe state management for long-running operations, or synthetic failure injection for recovery paths—all critical for this issue",
+            "content": "## Setup Recovery Resilience\n\nWhen adding recovery capabilities to setup scripts, idempotency and safe state management are non-negotiable. This skill guides design and testing of resumable setup workflows.\n\n### Idempotency Contracts\n\nEach setup step must be idempotent: running it twice produces the same result as running it once, regardless of the step's prior state.\n\n**Idempotent patterns**:\n- File creation: Check if file exists before creating; use atomic writes (temp file + mv)\n- Permission changes: chmod/chown are idempotent; verify target state, not change\n- Directory creation: mkdir -p is idempotent\n- Config appends: Check for key before appending; use grep -q with && || pattern\n- Environment setup (tmux, GitHub): Idempotent if tool validates state before modifying\n\n**Non-idempotent patterns to avoid**:\n- git clone into existing dir (fails if dir exists)\n- npm install into uncleaned node_modules (may conflict with existing packages)\n- Version updates without checking current version first\n- Direct file overwrites without backup\n\n**Testing idempotency**: Run the step twice in the same session (simulating recovery) and verify the second run succeeds with no-op or identical result.\n\n### Safe State Management\n\nCheckpoint files hold the recovery state; they must be:\n1. **Atomic**: Write to temp file, then mv atomically. Prevent partial writes.\n2. **Versioned**: Include checkpoint schema version so old checkpoints don't break on upgrades.\n3. **Scoped**: Each checkpoint is per-invocation; don't persist across users or environments.\n4. **Filterable**: Never store secrets, tokens, or PII; store only step name, timestamp, and error context.\n\nCheckpoint JSON structure:\n```json\n{\n  \"schema_version\": \"1.0\",\n  \"started_at\": \"2026-03-08T10:30:45Z\",\n  \"last_completed_step\": \"prerequisites_check\",\n  \"steps_completed\": [\"prerequisites_check\", \"file_installation\"],\n  \"steps_failed\": [],\n  \"error_context\": {\n    \"failed_step\": null,\n    \"error_type\": null,\n    \"recovery_suggestion\": null\n  }\n}\n```\n\n### Synthetic Failure Injection for Testing\n\nRecovery paths cannot be tested with real failures (30min setup cycles are too expensive). Instead:\n\n1. **Mock failures**: Define a test mode where setup steps can be force-failed via env var (e.g., `TEST_FAIL_AT=prerequisites_check` makes that step fail)\n2. **Checkpoint-only testing**: Create a checkpoint as if setup reached step N, then invoke recovery and verify it skips N and runs N+1 onward\n3. **State validation**: After recovery completes, verify the final state is identical to a fresh full run\n4. **Error injection**: Corrupt the checkpoint file and verify recovery fails gracefully with a clear error message\n\n### Graceful Failure Handling\n\nWhen recovery fails:\n1. Preserve the original checkpoint (don't overwrite it)\n2. Emit a detailed error to stderr with the failed step and a recovery suggestion\n3. Log the error to events.jsonl with error_type (idempotency_violation, file_corruption, etc.)\n4. Exit with a non-zero code but provide a next-step (e.g., \"run `shipwright setup --reset` to start fresh\")\n\n### Integration with Telemetry\n\nEvery step (both initial run and recovery) must emit:\n- `step_name`: identifier (e.g., \"prerequisites_check\")\n- `duration_ms`: elapsed time\n- `success`: boolean\n- `error_type`: null or error classification (permissions, not_found, validation_failed, etc.)\n- `is_recovery`: boolean (true if running as part of recovery)\n\nThis allows the dashboard to distinguish setup failures from recovery attempts and identify systemic issues.\n"
+          }
+        ],
+        "review_focus": [
+          "Idempotency of each instrumented step—can recovery safely re-run failed steps without side effects?",
+          "Checkpoint file format: schema versioning, security (no secrets/tokens), atomic writes",
+          "Recovery logic: correctly skips completed steps, resumes from failure point, handles partial failures",
+          "Telemetry schema: extensible, no PII, correctly correlated with checkpoint state",
+          "Integration with `shipwright doctor`—does it detect incomplete setup and suggest --resume?",
+          "Graceful degradation: what if events.jsonl is unavailable? Does setup still work?"
+        ],
+        "risk_areas": [
+          "Idempotency violations: setup steps not truly idempotent, causing recovery to fail or corrupt state",
+          "Checkpoint corruption: partial writes or version mismatches cause recovery to fail; no rollback mechanism",
+          "PII leakage: checkpoint accidentally captures tokens, SSH keys, or user credentials",
+          "Dashboard unavailable: metrics emitted to events.jsonl but dashboard crashes or lags; users see no feedback",
+          "Recovery cascades: if recovery itself fails, user has no clear recovery path (infinite loop risk)",
+          "Performance regression: checkpoint I/O and metrics emission slow down setup beyond target <5min"
+        ]
+      },
+      "timestamp": 1772930654,
+      "ttl": 3600
+    },
+    "498490684a1a82b8c273fb3c1efbc5d7": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "First failure describes heartbeat staleness detection issues in sw-cleanup.sh; directly relevant to checkpoint staleness logic and recovery detection"
+          },
+          {
+            "file": "patterns.json (detailed)",
+            "relevance": 74,
+            "summary": "Complete project conventions (Node.js, vitest, src/ dir, commonjs) essential for planning telemetry implementation and checkpoint system architecture"
+          },
+          {
+            "file": "global.json",
+            "relevance": 38,
+            "summary": "Cross-repo learnings field could contain telemetry patterns and recovery strategies from other projects; currently empty but structurally relevant"
+          },
+          {
+            "file": "patterns.json (minimal)",
+            "relevance": 32,
+            "summary": "Confirms Node.js project type but minimal detail; less useful than detailed patterns.json for implementation planning"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 21,
+            "summary": "Baselines structure would store telemetry reference metrics; currently empty but foundational for checkpoint monitoring"
+          }
+        ]
+      },
+      "timestamp": 1772930673,
+      "ttl": 1800
+    },
+    "f014c63990ac9e1223c16f4a85a0ea43": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains documented test failures including sw-cleanup.sh heartbeat staleness detection issues and checkpoint/recovery-related failures. Directly relevant to understanding why plan validation rejected the checkpoint system implementation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Defines project structure (src/, vitest, npm, commonjs) and conventions needed to implement the telemetry and checkpoint system correctly within the existing codebase."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Basic project type detection (nodejs). Minimal value compared to the more detailed patterns entry; generic across many repos."
+          }
+        ]
+      },
+      "timestamp": 1772930867,
+      "ttl": 1800
+    },
+    "149ded74448874c8c7351ff292730796": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines Node.js project structure (src/ dir), CommonJS imports, vitest test runner, and npm conventions. Directly informs telemetry instrumentation points, checkpoint storage patterns, and test structure for recovery system."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 38,
+            "summary": "Records heartbeat staleness detection failures in sw-cleanup.sh. Relevant for checkpoint cleanup logic and automatic recovery state management patterns."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Minimal project type confirmation (Node.js). Redundant with more detailed patterns.json entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 0,
+            "summary": "Empty baselines object. Cannot inform performance targets or reliability architecture for telemetry system."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 0,
+            "summary": "Empty decisions array. No prior architectural decisions to build upon for checkpoint system design."
+          }
+        ]
+      },
+      "timestamp": 1772930909,
+      "ttl": 1800
+    },
+    "0bf82d3dd77f4b195defa8964c1ceb88": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Contains test failures related to heartbeat staleness detection and system cleanup logic (sw-cleanup.sh). Tangentially relevant as these involve system state tracking and recovery mechanisms, though not directly addressing telemetry or checkpoint design approaches."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 20,
+            "summary": "Documents project type (Node.js), test framework (vitest), and source structure. Provides baseline project configuration context but lacks specific relevance to rejected design approaches for telemetry/recovery systems."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 10,
+            "summary": "Minimal project type annotation (nodejs). Generic project metadata with no bearing on installation, telemetry, recovery, or checkpoint design decisions."
+          }
+        ]
+      },
+      "timestamp": 1772930920,
+      "ttl": 1800
+    },
+    "cf0a7d056de630dd744fe964d75c19bd": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Documents test failures in sw-cleanup.sh (heartbeat staleness detection) and sed invocations. Recovery/checkpoint systems depend on proper cleanup and state management. These are blocking test failures the build stage must address."
+          },
+          {
+            "file": "patterns.json (detailed config)",
+            "relevance": 78,
+            "summary": "Defines project structure: Node.js, vitest test runner, npm, src/ directory, *.test.js pattern, CommonJS imports. Essential for the build stage to execute tests and validate telemetry checkpoint system correctly."
+          },
+          {
+            "file": "patterns.json (minimal)",
+            "relevance": 42,
+            "summary": "Confirms project_type: nodejs from bootstrap phase. Less detailed than other patterns.json entry but provides redundant validation of project type."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Could be populated with performance metrics for telemetry/checkpoint system, but currently provides no actionable data for build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. Architectural decisions about telemetry/recovery system would be relevant, but none are currently documented."
+          }
+        ]
+      },
+      "timestamp": 1772931132,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure (Node.js, vitest, npm, src/ dir, *.test.js pattern, CommonJS) is critical for understanding build/test execution paths and dependencies"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Recurring test failures in sw-cleanup.sh and template validation (4 and 3 sightings) provide context on likely breakpoints to watch and fix during build iterations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baselines object provides no actionable context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "Empty decisions array provides no architectural context"
+          }
+        ]
+      },
+      "timestamp": 1772931141,
+      "ttl": 1800
     }
   }
 }
