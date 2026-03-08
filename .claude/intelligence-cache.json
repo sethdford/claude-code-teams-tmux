@@ -541,6 +541,64 @@
       },
       "timestamp": 1772897205,
       "ttl": 1800
+    },
+    "efc27fd08f5baa0fe3a75dc8b3b9f177": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "performance",
+        "key_risks": [
+          "Score threshold accuracy (60 may need tuning based on real data)",
+          "Pattern matching false positives causing unnecessary context injection",
+          "Performance overhead of pre-pipeline scoring on every run",
+          "Metric collection accuracy and overhead under high pipeline volume",
+          "Integration complexity with existing sw-intelligence.sh and sw-memory.sh",
+          "Pattern set growth over time affecting matching performance"
+        ],
+        "implementation_hints": [
+          "Start with simple heuristic scoring (issue similarity, file overlap, error signature) before ML",
+          "Implement pattern effectiveness decay - downweight old/ineffective patterns",
+          "Cache pattern matches in JSONlog to avoid repeated computation per run",
+          "Use feature flag for A/B testing proactive injection (default off initially)",
+          "Structure tracking as immutable events in ~shipwright/memory/ to enable analysis",
+          "Implement configurable threshold (60) in daemon-config.json for tuning",
+          "Run dashboard metrics as async batch job, not on critical path",
+          "Test with historical pipeline data before enabling in production"
+        ]
+      },
+      "timestamp": 1772926103,
+      "ttl": 3600
+    },
+    "46cf04afef7eca5c17f555b3dd0e2345": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Pattern matching accuracy - false positives could pollute context, false negatives miss opportunities",
+          "Integration complexity with sw-intelligence.sh and sw-memory.sh - two interdependent systems",
+          "Context window bloat - injecting memory patterns could exceed token budgets if not carefully sized",
+          "Threshold calibration - 60-point threshold needs empirical validation against historical pipelines",
+          "Metrics attribution - difficult to prove causation (pattern prevented failure vs coincidence)",
+          "Performance overhead - scoring before every pipeline start adds latency"
+        ],
+        "implementation_hints": [
+          "Implement scoring incrementally: file overlap (simple), error signature TF-IDF (moderate), issue similarity (complex)",
+          "Cache pattern scores keyed by (incoming issue, pattern id, timestamp) to avoid recomputation",
+          "Design outcome tracking table with columns: pattern_id, pipeline_id, score, injected, failure_type, prevented (boolean)",
+          "Start with 60 threshold but make it configurable via daemon-config.json and tunable by strategic agent",
+          "Prototype pattern injection as 2-3 bullet points in loop context (not full memory dump) to control token cost",
+          "Validate scoring accuracy on 50+ historical pipelines before enabling proactive injection in production",
+          "Create A/B test flag: control group (no injection) vs treatment (injection) to isolate impact",
+          "Ensure JSON export format aligns with strategic agent's analysis needs (pattern effectiveness, cost, signal/noise ratio)"
+        ]
+      },
+      "timestamp": 1772926154,
+      "ttl": 3600
     }
   }
 }

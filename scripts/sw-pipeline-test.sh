@@ -1493,7 +1493,7 @@ test_coverage_json_created() {
 # 46. _pipeline_compact_goal returns goal + plan + design headers
 # ──────────────────────────────────────────────────────────────────────────────
 test_compact_goal() {
-    # Extract and test _pipeline_compact_goal
+    # Source the util module to get _pipeline_compact_goal
     local fns_script="$TEST_TEMP_DIR/compact-goal-fns.sh"
     cat > "$fns_script" <<'FEOF'
 #!/usr/bin/env bash
@@ -1506,8 +1506,8 @@ ISSUE_NUMBER=""
 NO_GITHUB=true
 FEOF
 
-    # Extract the function from the real pipeline
-    sed -n '/^_pipeline_compact_goal()/,/^}/p' "$REAL_PIPELINE_SCRIPT" >> "$fns_script" 2>/dev/null
+    # Source the pipeline-util module which contains _pipeline_compact_goal
+    cat "$TEST_TEMP_DIR/scripts/lib/pipeline-util.sh" >> "$fns_script" 2>/dev/null || true
 
     # Create mock plan and design files
     local plan_file="$TEST_TEMP_DIR/plan.md"
@@ -1538,7 +1538,7 @@ test_load_composed_pipeline() {
 {"stages":[{"id":"intake"},{"id":"build","max_iterations":25},{"id":"test"},{"id":"pr"}]}
 JSON
 
-    # Extract the function
+    # Source the CLI module to get load_composed_pipeline
     local fns_script="$TEST_TEMP_DIR/composed-fns.sh"
     cat > "$fns_script" <<'FEOF'
 #!/usr/bin/env bash
@@ -1553,7 +1553,8 @@ ISSUE_NUMBER=""
 NO_GITHUB=true
 FEOF
 
-    sed -n '/^load_composed_pipeline()/,/^}/p' "$REAL_PIPELINE_SCRIPT" >> "$fns_script" 2>/dev/null
+    # Source the pipeline-cli module which contains load_composed_pipeline
+    cat "$TEST_TEMP_DIR/scripts/lib/pipeline-cli.sh" >> "$fns_script" 2>/dev/null || true
 
     local result
     result=$(
