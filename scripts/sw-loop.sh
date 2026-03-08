@@ -38,6 +38,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
+# Intelligent session restart with enhanced briefings and cross-session tracking
+[[ -f "$SCRIPT_DIR/lib/session-restart.sh" ]] && source "$SCRIPT_DIR/lib/session-restart.sh"
 # Context window budget monitoring (issue #209)
 # shellcheck source=lib/context-budget.sh
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
@@ -2459,6 +2461,12 @@ run_loop_with_restarts() {
         fi
 
         RESTART_COUNT=$(( RESTART_COUNT + 1 ))
+
+        # Capture comprehensive state and generate briefing before restart
+        if type restart_before_restart >/dev/null 2>&1; then
+            restart_before_restart || warn "Failed to prepare restart briefing (continuing anyway)"
+        fi
+
         if type emit_event >/dev/null 2>&1; then
             emit_event "loop.restart" "restart=$RESTART_COUNT" "max=$MAX_RESTARTS" "iteration=$ITERATION"
         fi

@@ -50,6 +50,9 @@ fi
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
+# Root cause classifier for failure analysis and platform issue auto-creation
+# shellcheck source=lib/root-cause.sh
+[[ -f "$SCRIPT_DIR/lib/root-cause.sh" ]] && source "$SCRIPT_DIR/lib/root-cause.sh" 2>/dev/null || true
 PIPELINE_COVERAGE_THRESHOLD="${PIPELINE_COVERAGE_THRESHOLD:-60}"
 PIPELINE_QUALITY_GATE_THRESHOLD="${PIPELINE_QUALITY_GATE_THRESHOLD:-70}"
 
