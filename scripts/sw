@@ -164,7 +164,7 @@ show_help_all() {
     echo -e "  ${CYAN}auth${RESET}          ${CYAN}webhook${RESET}       ${CYAN}eventbus${RESET}      ${CYAN}otel${RESET}          ${CYAN}context${RESET}"
     echo -e "  ${CYAN}trace${RESET}         ${CYAN}widgets${RESET}       ${CYAN}connect${RESET}       ${CYAN}remote${RESET}        ${CYAN}launchd${RESET}"
     echo -e "  ${CYAN}jira${RESET}          ${CYAN}linear${RESET}        ${CYAN}tracker${RESET}       ${CYAN}heartbeat${RESET}     ${CYAN}checkpoint${RESET}"
-    echo -e "  ${CYAN}durable${RESET}       ${CYAN}autonomous${RESET}    ${CYAN}pm${RESET}            ${CYAN}strategic${RESET}     ${CYAN}team-stages${RESET}"
+    echo -e "  ${CYAN}stall-detector${RESET} ${CYAN}durable${RESET}       ${CYAN}autonomous${RESET}    ${CYAN}pm${RESET}            ${CYAN}strategic${RESET}"
     echo -e "  ${CYAN}ux${RESET}            ${CYAN}mission-control${RESET}  ${CYAN}tmux${RESET}       ${CYAN}reaper${RESET}        ${CYAN}e2e${RESET}"
     echo -e "  ${CYAN}init${RESET}          ${CYAN}setup${RESET}         ${CYAN}doctor${RESET}        ${CYAN}cleanup${RESET}       ${CYAN}upgrade${RESET}"
     echo -e "  ${CYAN}templates${RESET}     ${CYAN}version${RESET}"
@@ -404,6 +404,9 @@ main() {
             ;;
         checkpoint)
             exec "$SCRIPT_DIR/sw-checkpoint.sh" "$@"
+            ;;
+        stall-detector)
+            exec "$SCRIPT_DIR/sw-stall-detector.sh" "$@"
             ;;
         durable)
             exec "$SCRIPT_DIR/sw-durable.sh" "$@"
