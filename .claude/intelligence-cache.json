@@ -829,23 +829,23 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 80,
-            "summary": "Contains complete project metadata (test runner, source dir, conventions) essential for building/validating diagnostic tools that must understand codebase structure"
+            "file": "patterns.json (detailed)",
+            "relevance": 72,
+            "summary": "Project conventions and structure (vitest, npm, src/, commonjs) are essential context for validating plans that target this repo's test infrastructure and diagnostic tooling"
           },
           {
-            "file": "patterns.json",
-            "relevance": 40,
-            "summary": "Confirms Node.js project type from bootstrap, provides minimal but foundational context for diagnostic tool requirements"
+            "file": "patterns.json (simple)",
+            "relevance": 35,
+            "summary": "Confirms nodejs project type and bootstrap source, but less detailed than first patterns.json; provides minimal context for understanding validation requirements"
           },
           {
             "file": "failures.json",
-            "relevance": 30,
-            "summary": "Empty failure history indicates no captured patterns to learn from, which may explain why plan validation lacked sufficient diagnostic context"
+            "relevance": 22,
+            "summary": "Currently empty, but conceptually relevant—a diagnostic tool would analyze captured failure patterns; understanding past validation failures would inform plan improvement"
           }
         ]
       },
-      "timestamp": 1772950947,
+      "timestamp": 1772952834,
       "ttl": 1800
     },
     "3b08a075100d695f1a375c8133bda4f9": {
@@ -853,55 +853,55 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Provides detailed project conventions (Node.js, vitest, CommonJS, src/ structure, test patterns) that directly inform architecture design for the diagnostic report generator"
+            "relevance": 75,
+            "summary": "Project config (vitest, src/ dir, commonjs) provides architectural context for where diagnostics will integrate and testing patterns to follow"
           },
           {
             "file": "patterns.json",
-            "relevance": 50,
-            "summary": "Confirms Node.js project type from bootstrap detection; less detailed than first patterns entry but validates project classification"
+            "relevance": 55,
+            "summary": "Confirms nodejs project type, guiding technology choices and diagnostic framework selection for the auto-diagnostic generator"
           },
           {
             "file": "failures.json",
-            "relevance": 25,
-            "summary": "Currently empty but defines the expected structure for failure pattern storage, which is core to what a pipeline failure diagnostic tool needs to analyze"
+            "relevance": 40,
+            "summary": "Empty but topically critical—pipeline failure patterns would directly inform diagnostic report structure and detection logic if populated"
           },
           {
             "file": "decisions.json",
-            "relevance": 18,
-            "summary": "Empty but establishes where architectural decisions should be recorded; relevant for documenting design choices about the diagnostic system itself"
+            "relevance": 30,
+            "summary": "Empty but relevant for architecture—past decisions would constrain design choices and ensure alignment with existing patterns"
           },
           {
-            "file": "metrics.json",
-            "relevance": 15,
-            "summary": "No baseline data yet, but would define performance metrics and baselines that a diagnostic tool should track and compare against"
+            "file": "global.json",
+            "relevance": 25,
+            "summary": "Empty cross-repo learnings would inform diagnostic patterns, but currently no transferable knowledge available"
           }
         ]
       },
-      "timestamp": 1772951039,
+      "timestamp": 1772952876,
       "ttl": 1800
     },
     "9a777a72c84fedbe6a08249302a4d96c": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 45,
-            "summary": "Contains project structure (Node.js, vitest, npm, src/ dir, CommonJS) - relevant for understanding how to integrate diagnostic generator into test harness"
+            "file": "global.json",
+            "relevance": 30,
+            "summary": "Contains cross_repo_learnings structure where anti-patterns and rejected approaches should be captured; currently empty but structurally relevant for storing known anti-patterns"
           },
           {
-            "file": "patterns.json",
-            "relevance": 35,
-            "summary": "Confirms Node.js project type from bootstrap detection - useful for tooling/runtime decisions"
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Could theoretically store rejected design decisions and architectural choices, but currently empty; structural alignment with anti-pattern documentation needs"
           },
           {
             "file": "failures.json",
-            "relevance": 20,
-            "summary": "Currently empty but most directly relevant memory file type - would capture pipeline failure patterns that a diagnostic tool should analyze"
+            "relevance": 15,
+            "summary": "Empty failures array could capture failure patterns that inform anti-pattern avoidance; currently no data to leverage"
           }
         ]
       },
-      "timestamp": 1772951049,
+      "timestamp": 1772952888,
       "ttl": 1800
     },
     "b992cd7a86a8b9037e0fb4b492472fec": {
@@ -910,31 +910,31 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Contains critical project configuration (vitest runner, src/ directory, *.test.js pattern, commonjs imports). Essential for executing tests during build stage and generating accurate diagnostics."
+            "summary": "Contains critical project structure: node/vitest setup, src/ directory, test patterns, import style—essential for configuring build stage and test execution"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Confirms nodejs project type detected at bootstrap; less detailed than primary patterns entry but validates project classification"
           },
           {
             "file": "failures.json",
-            "relevance": 80,
-            "summary": "Stores captured failure patterns. Although currently empty, this is the primary data source a diagnostic report generator would consume to analyze and report on pipeline failures."
-          },
-          {
-            "file": "global.json",
-            "relevance": 45,
-            "summary": "Contains cross-repo learnings and common failure patterns. Provides broader context for diagnosing failures and identifying whether issues are project-specific or systemic."
+            "relevance": 30,
+            "summary": "Currently empty but structure ready for capturing build failures; relevant for failure diagnostic pipeline once populated with historical data"
           },
           {
             "file": "metrics.json",
-            "relevance": 30,
-            "summary": "Stores performance baselines. Useful for comparing current build metrics against historical baseline to identify regressions or anomalies in diagnostics."
+            "relevance": 25,
+            "summary": "Prepared for baseline metrics storage; could track build performance/reliability once populated"
           },
           {
             "file": "decisions.json",
             "relevance": 15,
-            "summary": "Architectural decisions log. Lower priority for build stage but could provide context on why certain build/test configurations were chosen."
+            "summary": "Empty decisions array; could store build strategy choices but no current context relevant to diagnostic stage"
           }
         ]
       },
-      "timestamp": 1772949484,
+      "timestamp": 1772953083,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -942,27 +942,27 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Essential for build stage: defines test runner (vitest), package manager (npm), source directory (src/), test patterns, and language/framework. Directly informs how to run build and test commands."
+            "relevance": 100,
+            "summary": "Contains critical build configuration: test runner (vitest), package manager (npm), source directory (src/), test pattern, and import style needed for build execution"
           },
           {
             "file": "failures.json",
-            "relevance": 78,
-            "summary": "Captures previous build/test failures and root causes. When populated, provides critical context for avoiding known breakage patterns during build stage."
+            "relevance": 45,
+            "summary": "Would help avoid past build failures, but currently empty with no recorded failure patterns"
           },
           {
             "file": "metrics.json",
-            "relevance": 42,
-            "summary": "Baseline metrics (build time, test coverage, etc.) help detect regressions and performance anomalies. Currently empty but useful when populated."
+            "relevance": 20,
+            "summary": "Performance baselines useful for optimization but currently empty"
           },
           {
             "file": "decisions.json",
-            "relevance": 25,
-            "summary": "Architectural/implementation decisions may affect build structure, but not directly relevant to build stage execution. Currently empty."
+            "relevance": 15,
+            "summary": "Architectural decisions would inform build approach but currently no decisions recorded"
           }
         ]
       },
-      "timestamp": 1772949493,
+      "timestamp": 1772953089,
       "ttl": 1800
     },
     "5836b9d2e3694e3f0f71f9be456224f4": {
@@ -970,62 +970,39 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 95,
-            "summary": "Captures recorded pipeline failure patterns; directly supports analyzing and diagnosing failures for the report generator"
+            "relevance": 80,
+            "summary": "Directly stores pipeline failure data that the diagnostic report generator would need to analyze and report on"
           },
           {
-            "file": "patterns.json",
-            "relevance": 80,
-            "summary": "Documents project structure (test runner: vitest, source_dir, package_manager: npm); context needed to run diagnostics appropriately"
+            "file": "patterns.json (first entry with conventions)",
+            "relevance": 65,
+            "summary": "Project structure (test_pattern, source_dir, import_style) informs how to detect and report failures in this specific codebase"
           },
           {
             "file": "metrics.json",
-            "relevance": 65,
-            "summary": "Contains performance baselines; helps establish baseline metrics for diagnostic comparisons and anomaly detection"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 55,
-            "summary": "Previous architectural decisions; informs design approach for how the diagnostic system should integrate with pipeline"
+            "relevance": 50,
+            "summary": "Baseline metrics could be used to detect performance regressions and anomalies in pipeline diagnostics"
           },
           {
             "file": "global.json",
+            "relevance": 35,
+            "summary": "Cross-repo learnings about common failure patterns could inform what the diagnostic report should surface"
+          },
+          {
+            "file": "patterns.json (second entry - minimal)",
             "relevance": 20,
-            "summary": "Cross-repo learnings; minimal relevance to this project-specific feature planning"
+            "summary": "Basic project type detection has minimal value; less detailed than first patterns entry"
           }
         ]
       },
-      "timestamp": 1772950501,
+      "timestamp": 1772952422,
       "ttl": 1800
     },
     "7adff622d148f344eb7414df7bccc1b2": {
       "result": {
-        "estimated_iterations": 6,
-        "reasoning": {
-          "complexity_factor": "7/10 suggests 6-8 iterations baseline",
-          "key_drivers": [
-            "Multiple integration points (sw-loop, pipeline stages, event bus)",
-            "Concurrency and race condition handling required",
-            "Retention/cleanup policy edge cases",
-            "Performance non-blocking requirements with timeout"
-          ],
-          "mitigating_factors": [
-            "82% success probability (solid foundation)",
-            "Reusable patterns available (error-log.jsonl, diagnostics)",
-            "Standard template (not complex/full)",
-            "Clear implementation hints provided"
-          ],
-          "iteration_breakdown": {
-            "1": "Basic report generation, hook integration",
-            "2": "Concurrency handling, race condition fixes",
-            "3": "Retention policy implementation",
-            "4": "Performance optimization, timeout handling",
-            "5": "Test multiple failure scenarios",
-            "6": "Edge case fixes, final validation"
-          }
-        }
+        "estimated_iterations": 5
       },
-      "timestamp": 1772950474,
+      "timestamp": 1772952407,
       "ttl": 1800
     },
     "7bfb9f0a94703f88f950fe1462bc2fc3": {
