@@ -109,6 +109,9 @@ fi
 # shellcheck source=sw-cost.sh
 # for cost_record persistence to costs.json + DB
 [[ -f "$SCRIPT_DIR/sw-cost.sh" ]] && source "$SCRIPT_DIR/sw-cost.sh"
+# shellcheck source=lib/cost-optimizer.sh
+# for dynamic cost-performance pipeline optimization (budget checks, reductions, burst mode)
+[[ -f "$SCRIPT_DIR/lib/cost-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/cost-optimizer.sh"
 # shellcheck source=lib/skill-registry.sh
 # for skill_analyze_outcome (AI outcome learning)
 [[ -f "$SCRIPT_DIR/lib/skill-registry.sh" ]] && source "$SCRIPT_DIR/lib/skill-registry.sh"
