@@ -74,8 +74,11 @@ doctor_fix_missing_dirs() {
             if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
                 info "  [DRY] Would create directory: $dir"
             else
-                mkdir -p "$dir"
-                emit_event "doctor_fix" "type=mkdir" "path=$dir"
+                if ! mkdir -p "$dir" 2>/dev/null; then
+                    result="skipped"
+                else
+                    emit_event "doctor_fix" "type=mkdir" "path=$dir"
+                fi
             fi
         fi
     done
@@ -109,11 +112,17 @@ doctor_fix_permissions() {
 doctor_fix_missing_config() {
     local result="fixed"
 
+    # Ensure .claude directory exists
+    mkdir -p .claude 2>/dev/null || { result="skipped"; echo "$result"; return; }
+
     # Create .claude/daemon-config.json
     local daemon_cfg=".claude/daemon-config.json"
     if [[ ! -f "$daemon_cfg" ]]; then
-        local tmp_cfg="${daemon_cfg}.tmp.$$"
-        cat > "$tmp_cfg" <<'EOF'
+        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
+            info "  [DRY] Would create: $daemon_cfg"
+        else
+            local tmp_cfg="${daemon_cfg}.tmp.$$"
+            cat > "$tmp_cfg" <<'EOF'
 {
   "max_parallel": 2,
   "auto_scale": false,
@@ -139,9 +148,6 @@ doctor_fix_missing_config() {
   }
 }
 EOF
-        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
-            info "  [DRY] Would create: $daemon_cfg"
-        else
             mv "$tmp_cfg" "$daemon_cfg"
             emit_event "doctor_fix" "type=create_config" "path=$daemon_cfg"
         fi
@@ -150,8 +156,11 @@ EOF
     # Create .claude/settings.json
     local settings_cfg=".claude/settings.json"
     if [[ ! -f "$settings_cfg" ]]; then
-        local tmp_cfg="${settings_cfg}.tmp.$$"
-        cat > "$tmp_cfg" <<'EOF'
+        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
+            info "  [DRY] Would create: $settings_cfg"
+        else
+            local tmp_cfg="${settings_cfg}.tmp.$$"
+            cat > "$tmp_cfg" <<'EOF'
 {
   "hooks": {
     "pre-tool-use": ".claude/hooks/pre-tool-use.sh",
@@ -160,9 +169,6 @@ EOF
   }
 }
 EOF
-        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
-            info "  [DRY] Would create: $settings_cfg"
-        else
             mv "$tmp_cfg" "$settings_cfg"
             emit_event "doctor_fix" "type=create_config" "path=$settings_cfg"
         fi
@@ -171,17 +177,17 @@ EOF
     # Create ~/.shipwright/budget.json
     local budget_file="$HOME/.shipwright/budget.json"
     if [[ ! -f "$budget_file" ]]; then
-        local tmp_file="${budget_file}.tmp.$$"
-        cat > "$tmp_file" <<'EOF'
+        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
+            info "  [DRY] Would create: $budget_file"
+        else
+            local tmp_file="${budget_file}.tmp.$$"
+            cat > "$tmp_file" <<'EOF'
 {
   "daily_limit_usd": 10.0,
   "reset_hour_utc": 0,
   "enabled": true
 }
 EOF
-        if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then
-            info "  [DRY] Would create: $budget_file"
-        else
             mkdir -p "$(dirname "$budget_file")"
             mv "$tmp_file" "$budget_file"
             emit_event "doctor_fix" "type=create_config" "path=$budget_file"
