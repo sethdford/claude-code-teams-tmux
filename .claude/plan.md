@@ -18,7 +18,7 @@
 4. Injects "previously failed tests" context into the next iteration's prompt
 
 **Implicit requirements**:
-- Must not break any of the 143 existing test suites
+- Must not break any existing test suites
 - Must follow Bash 3.2 compatibility (no associative arrays, no readarray)
 - Must use atomic writes (tmp+mv) for state files
 - Must gracefully degrade if module is missing (guard pattern)
@@ -203,12 +203,13 @@ Using existing test harness pattern from `scripts/lib/test-helpers.sh`:
 
 ### Step 3: Integrate into `scripts/sw-loop.sh` (4 surgical additions)
 
-**Addition 1** — Source module (after line 40, with other loop-*.sh modules):
+**Addition 1** — Source module (after line 50, with other lib modules):
 ```bash
 # Test failure tracking for smart abort (issue #230)
+# shellcheck source=lib/loop-test-failure-tracker.sh
 [[ -f "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" ]] && source "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" 2>/dev/null || true
 ```
-Location: After line 40 (`loop-progress.sh` source), before line 41 (`session-restart.sh` source).
+Location: After line 50 (`error-actionability.sh` source), before line 51 (`test-optimizer.sh` source).
 
 **Addition 2** — Record failures after test gate (after line 2237 `write_error_summary`):
 ```bash
@@ -265,9 +266,9 @@ ${failed_tests_section:+$failed_tests_section
 
 ### Step 5: Register test suite in `package.json`
 
-Add to the test script's list of test suites:
+Add to the test script's chain (after `sw-lib-pipeline-state-test.sh`):
 ```
-./scripts/sw-lib-loop-test-failure-tracker-test.sh
+&& bash scripts/sw-lib-loop-test-failure-tracker-test.sh
 ```
 
 ### Step 6: Run full test suite and verify
@@ -294,7 +295,7 @@ npm test
 - [ ] Task 3: Add `tft_check_repeated_failures()` consecutive detection with grace period
 - [ ] Task 4: Add `tft_compose_context_section()` markdown generator and `tft_reset()`
 - [ ] Task 5: Create `scripts/sw-lib-loop-test-failure-tracker-test.sh` test suite (22+ tests)
-- [ ] Task 6: Source module in `scripts/sw-loop.sh` (line ~41)
+- [ ] Task 6: Source module in `scripts/sw-loop.sh` (line ~51)
 - [ ] Task 7: Record failures after test gate in `scripts/sw-loop.sh` (line ~2238)
 - [ ] Task 8: Add abort check after `check_max_iterations` in `scripts/sw-loop.sh` (line ~2111)
 - [ ] Task 9: Reset state on session restart in `scripts/sw-loop.sh` (line ~2485)
@@ -396,6 +397,6 @@ The new module approach wins because it has the lowest blast radius, highest tes
 
 ---
 
-**Plan Version**: 2.0 (refined from v1.0 with exact line numbers and verified integration points)
+**Plan Version**: 3.0 (verified integration points against actual source lines)
 **Created**: 2026-03-08
 **Status**: Ready for build stage
