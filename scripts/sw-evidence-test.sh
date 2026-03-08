@@ -211,4 +211,206 @@ status_out=$(run_evidence status 2>&1) || true
 assert_contains "status shows manifest path" "$status_out" "manifest"
 assert_contains "status shows collectors" "$status_out" "Collectors"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# mutation testing collector
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "mutation testing"
+
+# Create a simple target script
+cat > "$TEST_REPO/test-target.sh" << 'TARGET'
+#!/usr/bin/env bash
+check_positive() {
+    local num=$1
+    if [[ "$num" -gt 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+check_positive 5
+TARGET
+chmod +x "$TEST_REPO/test-target.sh"
+
+# Update policy with mutation collector
+cat > "$TEST_REPO/config/policy.json" <<'POLICY3'
+{
+  "evidence": {
+    "collectors": [
+      {
+        "name": "mutation-test",
+        "type": "mutation",
+        "testCommand": "bash test-target.sh",
+        "targetFiles": "test-target.sh",
+        "mutationThreshold": 50
+      }
+    ]
+  }
+}
+POLICY3
+
+mutation_out=$(run_evidence capture mutation 2>&1) || true
+assert_contains "mutation capture runs" "$mutation_out" "mutation"
+
+# Check evidence file was created
+assert_file_exists "mutation evidence file" "$TEST_REPO/.claude/evidence/mutation-test.json"
+
+# Verify mutation evidence structure
+mutation_evidence=$(cat "$TEST_REPO/.claude/evidence/mutation-test.json" 2>/dev/null || echo "{}")
+assert_contains "mutation has mutation_score" "$mutation_evidence" "mutation_score"
+assert_contains "mutation has total_mutants" "$mutation_evidence" "total_mutants"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# property-based testing collector
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "property-based testing"
+
+# Update policy with property collector
+cat > "$TEST_REPO/config/policy.json" <<'POLICY4'
+{
+  "evidence": {
+    "collectors": [
+      {
+        "name": "property-test",
+        "type": "property",
+        "propertyCommand": "echo ok && exit 0",
+        "iterations": 10
+      }
+    ]
+  }
+}
+POLICY4
+
+rm -rf "$TEST_REPO/.claude/evidence"/*
+mkdir -p "$TEST_REPO/.claude/evidence"
+
+property_out=$(run_evidence capture property 2>&1) || true
+assert_contains "property capture runs" "$property_out" "property"
+
+assert_file_exists "property evidence file" "$TEST_REPO/.claude/evidence/property-test.json"
+
+property_evidence=$(cat "$TEST_REPO/.claude/evidence/property-test.json" 2>/dev/null || echo "{}")
+assert_contains "property has passed_count" "$property_evidence" "passed_count"
+assert_contains "property has failed_count" "$property_evidence" "failed_count"
+assert_contains "property has total_iterations" "$property_evidence" "total_iterations"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# invariant checking collector
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "invariant checking"
+
+# Update policy with invariant collector
+cat > "$TEST_REPO/config/policy.json" <<'POLICY5'
+{
+  "evidence": {
+    "collectors": [
+      {
+        "name": "invariant-test",
+        "type": "invariant",
+        "invariantName": "file-exists",
+        "checkCommand": "test -f test-target.sh && exit 0 || exit 1"
+      }
+    ]
+  }
+}
+POLICY5
+
+rm -rf "$TEST_REPO/.claude/evidence"/*
+mkdir -p "$TEST_REPO/.claude/evidence"
+
+invariant_out=$(run_evidence capture invariant 2>&1) || true
+assert_contains "invariant capture runs" "$invariant_out" "invariant"
+
+assert_file_exists "invariant evidence file" "$TEST_REPO/.claude/evidence/invariant-test.json"
+
+invariant_evidence=$(cat "$TEST_REPO/.claude/evidence/invariant-test.json" 2>/dev/null || echo "{}")
+assert_contains "invariant has invariant_name" "$invariant_evidence" "invariant_name"
+assert_contains "invariant has check_exit_code" "$invariant_evidence" "check_exit_code"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# artifact capture
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "artifact capture"
+
+# Create a test artifact
+cat > "$TEST_REPO/test-artifact.txt" << 'ARTIFACT'
+Build Log
+---------
+All tests passed: 100/100
+Coverage: 95%
+ARTIFACT
+
+rm -rf "$TEST_REPO/.claude/evidence"/*
+mkdir -p "$TEST_REPO/.claude/evidence"
+
+artifact_out=$(cd "$TEST_REPO" && bash "$TEST_REPO/scripts/sw-evidence.sh" artifact "build-log" "test-artifact.txt" 2>&1) || true
+assert_contains "artifact capture runs" "$artifact_out" "artifact"
+
+assert_file_exists "artifact stored" "$TEST_REPO/.claude/evidence/artifacts/build-log"
+assert_file_exists "artifact manifest created" "$TEST_REPO/.claude/evidence/artifacts-manifest.json"
+
+artifact_manifest=$(cat "$TEST_REPO/.claude/evidence/artifacts-manifest.json" 2>/dev/null || echo "[]")
+assert_contains "artifact manifest has name" "$artifact_manifest" "build-log"
+assert_contains "artifact manifest has sha256" "$artifact_manifest" "sha256"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# quality score computation
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "quality score computation"
+
+# Create a policy with multiple collectors to test quality scoring
+cat > "$TEST_REPO/config/policy.json" <<'POLICY6'
+{
+  "evidence": {
+    "collectors": [
+      {
+        "name": "cli-pass",
+        "type": "cli",
+        "command": "true",
+        "expectedExitCode": 0
+      },
+      {
+        "name": "mutation-simple",
+        "type": "mutation",
+        "testCommand": "true",
+        "targetFiles": "test-target.sh",
+        "mutationThreshold": 50
+      },
+      {
+        "name": "property-simple",
+        "type": "property",
+        "propertyCommand": "exit 0",
+        "iterations": 5
+      },
+      {
+        "name": "invariant-simple",
+        "type": "invariant",
+        "invariantName": "test-invariant",
+        "checkCommand": "exit 0"
+      }
+    ]
+  }
+}
+POLICY6
+
+rm -rf "$TEST_REPO/.claude/evidence"/*
+mkdir -p "$TEST_REPO/.claude/evidence"
+
+# Capture all collectors
+run_evidence capture 2>/dev/null || true
+
+# Get quality score
+quality_out=$(run_evidence quality-score 2>&1) || true
+assert_contains "quality-score command runs" "$quality_out" "quality"
+assert_contains "quality-score shows score" "$quality_out" "score"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# list types (updated)
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "list types with new collectors"
+
+types_out=$(run_evidence types 2>&1) || true
+assert_contains "types lists mutation" "$types_out" "mutation"
+assert_contains "types lists property" "$types_out" "property"
+assert_contains "types lists invariant" "$types_out" "invariant"
+
 print_test_results

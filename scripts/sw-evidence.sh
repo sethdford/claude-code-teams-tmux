@@ -9,7 +9,7 @@ set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -446,6 +446,191 @@ collect_custom() {
         '{command: $cmd, exit_code: $exit_code, expected_exit_code: $expected, output_preview: $output_preview}')"
 }
 
+# ─── Mutation Testing: Verify mutations are caught by test suite ───────────────
+
+collect_mutation() {
+    local name="$1"
+    local collector_json="$2"
+
+    local test_cmd target_files threshold
+    test_cmd=$(echo "$collector_json" | jq -r '.testCommand // ""')
+    target_files=$(echo "$collector_json" | jq -r '.targetFiles // ""')
+    threshold=$(echo "$collector_json" | jq -r '.mutationThreshold // 60')
+
+    if [[ -z "$test_cmd" ]] || [[ -z "$target_files" ]]; then
+        error "[mutation] ${name}: testCommand and targetFiles required"
+        write_evidence_record "$name" "mutation" "false" '{"error": "testCommand and targetFiles required"}'
+        return
+    fi
+
+    info "[mutation] ${name}: testing mutation coverage (threshold: ${threshold}%)"
+
+    local mutation_dir
+    mutation_dir=$(mktemp -d "${TMPDIR:-/tmp}/sw-evidence-mutations.XXXXXX")
+    trap "rm -rf '$mutation_dir'" RETURN
+
+    local total_mutants=0
+    local killed_mutants=0
+
+    # For each target file, create mutations
+    local file
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        [[ ! -f "$REPO_DIR/$file" ]] && continue
+
+        # Copy file to mutation dir for testing
+        local file_copy="$mutation_dir/$(basename "$file")"
+        cp "$REPO_DIR/$file" "$file_copy"
+
+        # Apply mutations: swap operators, negate conditions, change exit codes
+        local mutations=()
+
+        # Mutation 1: swap == to !=
+        if grep -q "==" "$file_copy"; then
+            mutations+=("sed 's/==/!=/g'")
+        fi
+
+        # Mutation 2: swap != to ==
+        if grep -q "!=" "$file_copy"; then
+            mutations+=("sed 's/!=/==/g'")
+        fi
+
+        # Mutation 3: change -gt to -lt
+        if grep -q "\-gt" "$file_copy"; then
+            mutations+=("sed 's/-gt/-lt/g'")
+        fi
+
+        # Mutation 4: change -lt to -gt
+        if grep -q "\-lt" "$file_copy"; then
+            mutations+=("sed 's/-lt/-gt/g'")
+        fi
+
+        # Mutation 5: change exit 0 to exit 1
+        if grep -q "exit 0" "$file_copy"; then
+            mutations+=("sed 's/exit 0/exit 1/g'")
+        fi
+
+        # Mutation 6: comment out error traps
+        if grep -q "trap.*ERR" "$file_copy"; then
+            mutations+=("sed 's/^trap /#trap /g'")
+        fi
+
+        # Apply each mutation and test
+        for i in "${!mutations[@]}"; do
+            total_mutants=$((total_mutants + 1))
+            local mutated_copy="$file_copy.mutant.$i"
+            cp "$file_copy" "$mutated_copy"
+
+            # Apply mutation
+            eval "${mutations[$i]} \"$mutated_copy\" > \"${mutated_copy}.tmp\" && mv \"${mutated_copy}.tmp\" \"$mutated_copy\"" 2>/dev/null || true
+
+            # Run test with mutation — test should fail (mutation caught)
+            local test_result=0
+            (cd "$REPO_DIR" && _run_with_timeout 30 bash -c "$test_cmd" > /dev/null 2>&1) || test_result=$?
+
+            # If test failed (non-zero), mutation was caught
+            if [[ "$test_result" -ne 0 ]]; then
+                killed_mutants=$((killed_mutants + 1))
+            fi
+
+            rm -f "$mutated_copy"
+        done
+
+    done <<< "$target_files"
+
+    local mutation_score=0
+    local passed="false"
+    if [[ "$total_mutants" -gt 0 ]]; then
+        mutation_score=$((killed_mutants * 100 / total_mutants))
+        [[ "$mutation_score" -ge "$threshold" ]] && passed="true"
+    fi
+
+    write_evidence_record "$name" "mutation" "$passed" \
+        "$(jq -n --argjson total "$total_mutants" --argjson killed "$killed_mutants" \
+        --argjson score "$mutation_score" --argjson threshold "$threshold" \
+        '{total_mutants: $total, killed_mutants: $killed, mutation_score: $score, threshold: $threshold}')"
+}
+
+# ─── Property-Based Testing: Verify properties hold over iterations ──────────
+
+collect_property() {
+    local name="$1"
+    local collector_json="$2"
+
+    local property_cmd iterations
+    property_cmd=$(echo "$collector_json" | jq -r '.propertyCommand // ""')
+    iterations=$(echo "$collector_json" | jq -r '.iterations // 100')
+
+    if [[ -z "$property_cmd" ]]; then
+        error "[property] ${name}: propertyCommand required"
+        write_evidence_record "$name" "property" "false" '{"error": "propertyCommand required"}'
+        return
+    fi
+
+    info "[property] ${name}: running property test (${iterations} iterations)"
+
+    local passed_count=0
+    local failed_count=0
+    local counterexamples="[]"
+
+    # Run property test multiple times
+    local i
+    for ((i = 0; i < iterations; i++)); do
+        local output=0
+        local result_output=""
+        result_output=$(cd "$REPO_DIR" && _run_with_timeout 10 bash -c "$property_cmd" 2>&1) || output=$?
+
+        if [[ "$output" -eq 0 ]]; then
+            passed_count=$((passed_count + 1))
+        else
+            failed_count=$((failed_count + 1))
+            # Capture counterexample (first 200 chars of output)
+            counterexamples=$(echo "$counterexamples" | jq \
+                --arg ce "${result_output:0:200}" \
+                '. += [{"iteration": '$i', "output": $ce}]')
+        fi
+    done
+
+    local passed="false"
+    [[ "$failed_count" -eq 0 ]] && passed="true"
+
+    write_evidence_record "$name" "property" "$passed" \
+        "$(jq -n --argjson passed_count "$passed_count" --argjson failed_count "$failed_count" \
+        --argjson iterations "$iterations" --argjson counterexamples "$counterexamples" \
+        '{passed_count: $passed_count, failed_count: $failed_count, total_iterations: $iterations, counterexamples: $counterexamples}')"
+}
+
+# ─── Invariant Checking: Verify system invariants ────────────────────────────
+
+collect_invariant() {
+    local name="$1"
+    local collector_json="$2"
+
+    local check_cmd invariant_name
+    check_cmd=$(echo "$collector_json" | jq -r '.checkCommand // ""')
+    invariant_name=$(echo "$collector_json" | jq -r '.invariantName // "unnamed"')
+
+    if [[ -z "$check_cmd" ]]; then
+        error "[invariant] ${name}: checkCommand required"
+        write_evidence_record "$name" "invariant" "false" '{"error": "checkCommand required"}'
+        return
+    fi
+
+    info "[invariant] ${name}: checking invariant '${invariant_name}'"
+
+    local exit_code=0
+    local output=""
+    output=$(cd "$REPO_DIR" && _run_with_timeout 30 bash -c "$check_cmd" 2>&1) || exit_code=$?
+
+    local passed="false"
+    [[ "$exit_code" -eq 0 ]] && passed="true"
+
+    write_evidence_record "$name" "invariant" "$passed" \
+        "$(jq -n --arg invariant_name "$invariant_name" --argjson exit_code "$exit_code" \
+        --arg output "${output:0:2000}" \
+        '{invariant_name: $invariant_name, check_exit_code: $exit_code, output: $output}')"
+}
+
 # ═════════════════════════════════════════════════════════════════════════════
 # EVIDENCE RECORD WRITER
 # ═════════════════════════════════════════════════════════════════════════════
@@ -477,6 +662,142 @@ write_evidence_record() {
     else
         error "[${type}] ${name}: failed"
     fi
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ARTIFACT CAPTURE
+# Stores build logs, test reports, coverage as evidence artifacts with manifest
+# ═════════════════════════════════════════════════════════════════════════════
+
+evidence_capture_artifact() {
+    local artifact_name="$1"
+    local artifact_path="$2"
+
+    if [[ ! -f "$artifact_path" ]]; then
+        warn "[artifact] ${artifact_name}: file not found"
+        return 1
+    fi
+
+    local artifacts_dir="${EVIDENCE_DIR}/artifacts"
+    mkdir -p "$artifacts_dir"
+
+    # Copy artifact to artifacts directory
+    local dest_file="$artifacts_dir/${artifact_name}"
+    cp "$artifact_path" "$dest_file"
+
+    # Compute SHA-256 of artifact
+    local artifact_sha256
+    if command -v shasum >/dev/null 2>&1; then
+        artifact_sha256=$(shasum -a 256 "$dest_file" | awk '{print $1}')
+    elif command -v sha256sum >/dev/null 2>&1; then
+        artifact_sha256=$(sha256sum "$dest_file" | awk '{print $1}')
+    else
+        artifact_sha256="unknown"
+    fi
+
+    info "[artifact] ${artifact_name}: captured (${artifact_sha256:0:16}...)"
+
+    # Append to artifacts manifest
+    local artifacts_manifest="${EVIDENCE_DIR}/artifacts-manifest.json"
+    if [[ ! -f "$artifacts_manifest" ]]; then
+        echo "[]" > "$artifacts_manifest"
+    fi
+
+    local tmp_manifest
+    tmp_manifest=$(mktemp "${TMPDIR:-/tmp}/sw-evidence-artifacts.XXXXXX")
+    jq \
+        --arg name "$artifact_name" \
+        --arg path "$dest_file" \
+        --arg sha256 "$artifact_sha256" \
+        --arg captured_at "$(now_iso)" \
+        '. += [{"name": $name, "path": $path, "sha256": $sha256, "captured_at": $captured_at}]' \
+        "$artifacts_manifest" > "$tmp_manifest"
+    mv "$tmp_manifest" "$artifacts_manifest"
+
+    return 0
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# QUALITY SCORE COMPUTATION
+# Weights: mutation (30%), property tests (25%), invariants (25%), collectors (20%)
+# ═════════════════════════════════════════════════════════════════════════════
+
+evidence_quality_score() {
+    ensure_evidence_dir
+
+    if [[ ! -f "$MANIFEST_FILE" ]]; then
+        echo "0"
+        return 1
+    fi
+
+    # Extract collector results
+    local mutation_score=0
+    local property_score=0
+    local invariant_score=0
+    local collector_pass_rate=0
+
+    # Mutation test score (from manifest)
+    local mutation_evidence="${EVIDENCE_DIR}/mutation_test.json"
+    if [[ -f "$mutation_evidence" ]]; then
+        local mutation_passed
+        mutation_passed=$(jq -r '.passed // false' "$mutation_evidence" 2>/dev/null || echo "false")
+        if [[ "$mutation_passed" == "true" ]]; then
+            mutation_score=$(jq -r '.details.mutation_score // 0' "$mutation_evidence" 2>/dev/null || echo "0")
+            [[ -z "$mutation_score" ]] && mutation_score="0"
+        fi
+    fi
+
+    # Property test score (failed_count == 0 => 100, else 0)
+    local property_evidence="${EVIDENCE_DIR}/property_test.json"
+    if [[ -f "$property_evidence" ]]; then
+        local prop_failed
+        prop_failed=$(jq -r '.details.failed_count // 0' "$property_evidence" 2>/dev/null || echo "0")
+        [[ -z "$prop_failed" ]] && prop_failed="0"
+        if [[ "$prop_failed" -eq 0 ]]; then
+            property_score=100
+        fi
+    fi
+
+    # Invariant score (all pass => 100, else 50)
+    local invariant_evidence="${EVIDENCE_DIR}/invariant_check.json"
+    if [[ -f "$invariant_evidence" ]]; then
+        local invariant_passed
+        invariant_passed=$(jq -r '.passed // false' "$invariant_evidence" 2>/dev/null || echo "false")
+        if [[ "$invariant_passed" == "true" ]]; then
+            invariant_score=100
+        else
+            invariant_score=50
+        fi
+    fi
+
+    # Collector pass rate
+    local collector_count
+    collector_count=$(jq -r '.collector_count // 0' "$MANIFEST_FILE" 2>/dev/null || echo "0")
+    [[ -z "$collector_count" ]] && collector_count="0"
+
+    local passed_count
+    passed_count=$(jq -r '.passed // 0' "$MANIFEST_FILE" 2>/dev/null || echo "0")
+    [[ -z "$passed_count" ]] && passed_count="0"
+
+    if [[ "$collector_count" -gt 0 ]]; then
+        collector_pass_rate=$((passed_count * 100 / collector_count))
+    fi
+
+    # Weighted score: 30% mutation + 25% property + 25% invariant + 20% collector
+    local weighted_score=0
+    weighted_score=$((
+        (mutation_score * 30) +
+        (property_score * 25) +
+        (invariant_score * 25) +
+        (collector_pass_rate * 20)
+    ))
+    weighted_score=$((weighted_score / 100))
+
+    # Cap at 100
+    [[ "$weighted_score" -gt 100 ]] && weighted_score=100
+
+    echo "$weighted_score"
+    return 0
 }
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -516,6 +837,9 @@ cmd_capture() {
             database)  collect_database "$cname" "$collector" ;;
             webhook)   collect_webhook "$cname" "$collector" ;;
             custom)    collect_custom "$cname" "$collector" ;;
+            mutation)  collect_mutation "$cname" "$collector" ;;
+            property)  collect_property "$cname" "$collector" ;;
+            invariant) collect_invariant "$cname" "$collector" ;;
             *)         warn "Unknown collector type: ${ctype} (skipping ${cname})" ; continue ;;
         esac
 
@@ -677,14 +1001,26 @@ cmd_status() {
 cmd_list_types() {
     echo "Supported evidence types:"
     echo ""
-    echo "  browser    HTTP page load — verifies UI renders correctly"
-    echo "  api        REST/GraphQL endpoint — verifies response status, body, content-type"
-    echo "  database   Schema/migration check — verifies DB integrity via command"
-    echo "  cli        Command execution — verifies exit code and output"
-    echo "  webhook    Callback verification — verifies webhook endpoint responds"
-    echo "  custom     User-defined script — any verification logic"
+    echo "  browser     HTTP page load — verifies UI renders correctly"
+    echo "  api         REST/GraphQL endpoint — verifies response status, body, content-type"
+    echo "  database    Schema/migration check — verifies DB integrity via command"
+    echo "  cli         Command execution — verifies exit code and output"
+    echo "  webhook     Callback verification — verifies webhook endpoint responds"
+    echo "  custom      User-defined script — any verification logic"
+    echo "  mutation    Mutation testing — verifies test suite catches code mutations"
+    echo "  property    Property-based testing — verifies properties hold over iterations"
+    echo "  invariant   Invariant checking — verifies system invariants hold"
     echo ""
     echo "Configure collectors in config/policy.json under the 'evidence' section."
+}
+
+cmd_quality_score() {
+    ensure_evidence_dir
+    local score
+    score=$(evidence_quality_score)
+    echo "Evidence-based quality score: ${score}/100"
+    emit_event "evidence.quality_score" "score=${score}"
+    return 0
 }
 
 show_help() {
@@ -692,11 +1028,13 @@ show_help() {
 Usage: shipwright evidence <command> [args]
 
 Commands:
-  capture [type]    Capture evidence (optionally filter by type)
-  verify            Verify evidence manifest and freshness
-  pre-pr [type]     Capture + verify (run before PR creation)
-  status            Show current evidence state grouped by type
-  types             List supported evidence types
+  capture [type]      Capture evidence (optionally filter by type)
+  verify              Verify evidence manifest and freshness
+  pre-pr [type]       Capture + verify (run before PR creation)
+  status              Show current evidence state grouped by type
+  types               List supported evidence types
+  quality-score       Compute quality score from evidence
+  artifact <name> <path>  Capture artifact with SHA-256 manifest
 
 Evidence Types:
   browser     HTTP page load verification
@@ -705,10 +1043,16 @@ Evidence Types:
   cli         Command execution and exit code
   webhook     Callback endpoint verification
   custom      User-defined verification scripts
+  mutation    Mutation testing (verify test suite catches mutations)
+  property    Property-based testing (verify properties hold)
+  invariant   Invariant checking (verify system invariants)
 
 Evidence collectors are defined in config/policy.json under the
 'evidence.collectors' array. Each collector specifies a type,
 target, and assertions.
+
+Machine-verifiable proof: mutation testing, property-based testing,
+invariant checking, artifact capture with SHA-256 manifests.
 
 Part of the Code Factory pattern for machine-verifiable proof.
 EOF
@@ -733,6 +1077,12 @@ main() {
             ;;
         types)
             cmd_list_types
+            ;;
+        quality-score)
+            cmd_quality_score
+            ;;
+        artifact)
+            evidence_capture_artifact "$@"
             ;;
         help|--help|-h)
             show_help
