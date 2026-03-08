@@ -558,7 +558,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2471 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2524 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2114 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1023 | Intelligent Model Routing & Cost Optimization |
@@ -567,7 +567,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-patrol-meta.sh` | 776 | Shipwright Self-Improvement Patrol |
 | `scripts/sw-pipeline-composer.sh` | 444 | Dynamic Pipeline Composition |
 | `scripts/sw-pipeline-vitals.sh` | 1076 | Pipeline Vitals Engine |
-| `scripts/sw-pipeline.sh` | 257 | Autonomous Feature Delivery (Idea → Production) |
+| `scripts/sw-pipeline.sh` | 260 | Autonomous Feature Delivery (Idea → Production) |
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
@@ -589,6 +589,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-self-optimize.sh` | 1690 | Learning & Self-Tuning System |
 | `scripts/sw-session.sh` | 553 | Launch a Claude Code team session in a new tmux window |
 | `scripts/sw-setup.sh` | 376 | Comprehensive onboarding wizard |
+| `scripts/sw-stall-detector.sh` | 406 | Pipeline Stall & Deadlock Detection |
 | `scripts/sw-standup.sh` | 721 | Automated Daily Standups for AI Agent Teams |
 | `scripts/sw-status.sh` | 869 | Dashboard showing Claude Code team status |
 | `scripts/sw-strategic.sh` | 943 | Strategic Intelligence Agent |
@@ -609,7 +610,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-webhook.sh` | 621 | GitHub Webhook Receiver for Instant Issue Processing |
 | `scripts/sw-widgets.sh` | 528 | Embeddable Status Widgets |
 | `scripts/sw-worktree.sh` | 421 | Git worktree management for multi-agent isolation |
-| `scripts/sw` | 617 | CLI router — dispatches subcommands via exec |
+| `scripts/sw` | 620 | CLI router — dispatches subcommands via exec |
 <!-- /AUTO:core-scripts -->
 
 ### GitHub API Modules
@@ -665,7 +666,9 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-cleanup-test.sh` | 168 | Clean up orphaned sessions & artifacts |
 | `scripts/sw-code-review-test.sh` | 173 | Clean code & architecture analysis tests |
 | `scripts/sw-connect-test.sh` | 822 | Validate dashboard connection, heartbeat |
+| `scripts/sw-context-budget-test.sh` | 335 | Context Window Budget Monitor tests |
 | `scripts/sw-context-test.sh` | 219 | Context Engine for Pipeline Stages tests |
+| `scripts/sw-convergence-test.sh` | 324 | Unit tests for convergence detection |
 | `scripts/sw-cost-test.sh` | 234 | Validate token usage & cost intelligence |
 | `scripts/sw-daemon-test.sh` | 1985 | Unit tests for daemon metrics, health, alerting |
 | `scripts/sw-dashboard-e2e-test.sh` | 591 | full live validation |
@@ -755,12 +758,15 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-replay-test.sh` | 167 | Pipeline run replay & timeline viewing |
 | `scripts/sw-retro-test.sh` | 171 | Sprint retrospective engine tests |
 | `scripts/sw-review-rerun-test.sh` | 317 | SHA-deduped rerun comment writer |
+| `scripts/sw-root-cause-test.sh` | 374 |  |
 | `scripts/sw-scale-test.sh` | 151 | Dynamic agent team scaling |
 | `scripts/sw-security-audit-test.sh` | 162 | Security auditing tests |
 | `scripts/sw-self-optimize-test.sh` | 837 | Unit tests for learning & tuning system |
 | `scripts/sw-server-api-test.sh` | 713 | Dashboard Server API Test Suite |
+| `scripts/sw-session-restart-test.sh` | 520 | Intelligent restart briefing system |
 | `scripts/sw-session-test.sh` | 586 | E2E validation of session creation flow |
 | `scripts/sw-setup-test.sh` | 262 | Validate comprehensive onboarding wizard |
+| `scripts/sw-stall-detector-test.sh` | 367 | Validate stall detection and abort |
 | `scripts/sw-standup-test.sh` | 241 | Validate daily standup automation |
 | `scripts/sw-status-test.sh` | 294 | Validate status dashboard and --json output |
 | `scripts/sw-strategic-test.sh` | 214 | Validate strategic intelligence agent |
