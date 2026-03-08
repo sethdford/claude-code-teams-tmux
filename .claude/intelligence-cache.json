@@ -35,9 +35,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "tester",
+        "secondary_roles": [
+          "devops",
+          "reviewer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Test infrastructure pre-flight validation requires test automation, quality validation, and infrastructure readiness checks—core tester expertise. DevOps provides pipeline gating knowledge, reviewer adds quality assurance perspective.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772972866,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -649,6 +657,304 @@
       },
       "timestamp": 1772933189,
       "ttl": 3600
+    },
+    "0f9a8166867bfd09d11627ede69a7ac7": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "shellcheck dependency availability in all environments",
+          "validation rules too strict causing false positives",
+          "mock directory structure assumptions misaligned with actual projects",
+          "integration with intake stage affects pipeline startup time"
+        ],
+        "implementation_hints": [
+          "Make shellcheck optional with warning fallback if not installed",
+          "Use flexible glob patterns for mock directory validation instead of exact paths",
+          "Include both passed and failed checks in JSON report for debugging",
+          "Add configurable validation strictness levels (strict/lenient)",
+          "Leverage existing shell helpers from lib/ for file/permission checks",
+          "Ensure error messages include remediation steps (e.g., 'add ERR trap to test file')"
+        ]
+      },
+      "timestamp": 1772972233,
+      "ttl": 3600
+    },
+    "3500cabed83ebf37ad94b886d30fcf6d": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1772972246,
+      "ttl": 1800
+    },
+    "887855959bf711052c78d3c9900eb43a": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 2,
+        "estimated_tokens": 68000,
+        "likely_failure_stage": "test",
+        "confidence": 82
+      },
+      "timestamp": 1772972258,
+      "ttl": 3600
+    },
+    "a0a5fc2138fbf2522c8df061b52b5c39": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "infrastructure",
+          "quality-assurance"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Marked as 'fast' complexity. Involves straightforward validation checks (file existence, executability, pattern matching, shellcheck integration) with clear acceptance criteria. Primary risk is avoiding false positives that break existing pipelines or false negatives that miss real issues."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "architecture-design",
+            "systematic-debugging"
+          ],
+          "design": [
+            "api-design",
+            "architecture-design"
+          ],
+          "build": [
+            "testing-strategy",
+            "shipwright-test-harness-conventions"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "testing-strategy": "The core of this issue is validating test harness structure; testing-strategy guides design of comprehensive validation checks that catch both positive cases (valid harnesses) and negative cases (missing/broken infrastructure).",
+          "architecture-design": "Validation runs in the intake stage and blocks pipeline progression; architecture-design ensures the validation integrates cleanly with existing pipeline flow without creating tight coupling or excessive side effects.",
+          "systematic-debugging": "The issue notes 'many failed pipelines may have broken test harnesses'; understanding failure modes and root causes of broken test infrastructure informs what patterns and checks are actually important to validate.",
+          "api-design": "The validate_test_infrastructure() function is called by other pipeline components; API-design ensures the function signature, error codes, and JSON report schema are clean and extensible.",
+          "shipwright-test-harness-conventions": "This issue specifically requires validation of Shipwright-specific harness patterns (PASS/FAIL counters, ERR trap, mock directory structure); a dedicated skill documents the exact conventions and patterns the validator should enforce.",
+          "pr-quality": "This feature changes intake behavior for all pipelines; PR-quality ensures the change is communicated clearly with examples of validation reports, explaining why validation is needed and how to use the --skip-test-validation flag.",
+          "adversarial-quality": "Look for ways the validation could fail: false positives that reject valid test files, false negatives that miss broken infrastructure, performance regressions in intake, edge cases with different shellcheck versions.",
+          "validation-thoroughness": "The test suite must cover positive cases (valid harnesses), negative cases (missing/broken infrastructure), and edge cases; validation-thoroughness ensures actual user experience is tested, not just code paths."
+        },
+        "generated_skills": [
+          {
+            "name": "shipwright-test-harness-conventions",
+            "reason": "No existing skill documents Shipwright's specific test harness patterns and conventions that the validation function must check. These patterns are foundational to the entire test suite infrastructure and must be validated precisely.",
+            "content": "## Shipwright Test Harness Conventions\n\n### Purpose\nShipwright enforces a consistent test harness pattern across all 100+ test suites. The `validate_test_infrastructure()` function checks that test files conform to these conventions.\n\n### Required Harness Patterns\n\nEvery test file must include:\n\n#### 1. Shebang & Set Options\n```bash\n#!/bin/bash\nset -euo pipefail\n```\nValidation: Check first two lines match this pattern (allow comments between).\n\n#### 2. Version Variable\n```bash\nVERSION=\"X.Y.Z\"\n```\nValidation: Grep for `^VERSION=` near top of file (before first function).\n\n#### 3. PASS/FAIL Counters\n```bash\nPASS=0 FAIL=0\n```\nValidation: Grep for both `PASS=0` and `FAIL=0` at file scope (not inside functions).\n\n#### 4. ERR Trap\n```bash\ntrap 'FAIL=$((FAIL+1)); echo \"ERR: $BASH_COMMAND at line $LINENO\"' ERR\n```\nValidation: Grep for `trap` + `ERR`, ensure it increments `FAIL` and prints error context.\n\n#### 5. Test Case Pattern\nTest cases follow this structure:\n```bash\n# Test: Description of what's being tested\nif condition_passes; then\n  PASS=$((PASS+1))\nelse\n  FAIL=$((FAIL+1))\n  echo \"FAIL: specific error message\"\nfi\n```\nValidation: At least 2 test cases with `PASS=$((PASS+1))` or `FAIL=$((FAIL+1))`.\n\n#### 6. Summary Output\n```bash\necho \"PASS: $PASS, FAIL: $FAIL\"\nexit $FAIL\n```\nValidation: Grep for summary line and exit with `$FAIL`.\n\n### Mock Directory Structure\nTests that use mock binaries must have:\n```\n<repo>/.claude/test-mocks/\n├── mock-<command-1>\n├── mock-<command-2>\n└── ...\n```\nValidation: Check `.claude/test-mocks/` exists and contains at least one `mock-*` file.\n\n### Shellcheck Requirements\n- Run: `shellcheck --shell=bash <test-file>`\n- Validation: Exit code 0 means no errors; any errors fail validation.\n- Ignore codes: SC2086 (unquoted expansion) only when intentional in mock setup.\n\n### Executability\nValidation: Test file must have execute bit (`-x`): `test -x <file>`.\n\n### When Validation Fails\nOutput a clear error message identifying which check failed:\n- \"Test file not executable\"\n- \"Missing PASS/FAIL counters\"\n- \"ERR trap not found or malformed\"\n- \"shellcheck errors: <count> issues\"\n- \"Mock directory missing or empty\"\n\n### Edge Cases\nAccept test files without mock binaries if `.claude/test-mocks/` is not referenced in the file. Allow --skip-test-validation flag for edge cases (e.g., tests that intentionally don't follow conventions)."
+          }
+        ],
+        "review_focus": [
+          "Validation patterns match actual Shipwright test file conventions (PASS/FAIL/ERR trap/shellcheck)",
+          "Error messages are actionable and explain what to fix, not just that validation failed",
+          "JSON report schema (.claude/pipeline-artifacts/test-validation.json) is well-structured and parseable",
+          "Integration with intake stage doesn't block legitimate edge cases without --skip-test-validation flag",
+          "False positive rate: validation doesn't reject valid test harnesses due to formatting variations",
+          "False negative rate: validation catches all required patterns (test suite covers positive and negative cases)",
+          "Shellcheck integration handles different versions gracefully",
+          "Performance: validation completes in < 100ms per test file",
+          "Mock directory structure check correctly identifies valid mock binary directories"
+        ],
+        "risk_areas": [
+          "Over-validation causing existing valid pipelines to fail in intake (regression risk)",
+          "False positives on test files with legitimate pattern variations (script diversity)",
+          "Shellcheck false positives from environment-specific warnings",
+          "Performance regression: if validation is slow, every pipeline intake is delayed",
+          "Pattern matching brittleness: regex/grep patterns must handle whitespace and comment variations",
+          "Backwards compatibility: --skip-test-validation flag must be well-documented to prevent confusion",
+          "Edge cases: test files that follow conventions but use different variable names or function structures"
+        ]
+      },
+      "timestamp": 1772972312,
+      "ttl": 3600
+    },
+    "f47a9888e2646be8876829ded369eac9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical test infrastructure metadata: test_runner (vitest), test_pattern (*.test.js), source_dir (src/), package_manager (npm). Essential for validating test setup in pre-flight gate."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Shows no recent test failures, providing baseline context for what the validation gate should verify against. Relevant for understanding current test health."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 48,
+            "summary": "Confirms project_type as nodejs with bootstrap source. Provides secondary validation of project context but less detailed than primary patterns entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 32,
+            "summary": "Contains baselines object structure for test metrics, though currently empty. Would be useful for comparing pre-flight validation results against historical baselines."
+          },
+          {
+            "file": "global.json",
+            "relevance": 18,
+            "summary": "Contains common_patterns and cross_repo_learnings arrays, both empty. Minimal relevance to test infrastructure pre-flight validation for this specific repo."
+          }
+        ]
+      },
+      "timestamp": 1772972326,
+      "ttl": 1800
+    },
+    "71a7bc3d5e8027e99ae1f531ccfaffdd": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Contains test infrastructure config (vitest runner, test_pattern, source_dir, import_style) critical for pre-flight validation gate assessment"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Basic project type detection (nodejs) provides minimal context for test infrastructure validation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "Currently empty but designed to track validation failures - relevant structure but no recorded data to inform current rejection"
+          }
+        ]
+      },
+      "timestamp": 1772972537,
+      "ttl": 1800
+    },
+    "54b9690bd15836579e279554a8a9f2ae": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (detailed)",
+            "relevance": 85,
+            "summary": "Defines test infrastructure: vitest test runner, test patterns (*.test.js), project conventions (Node.js, npm, CommonJS). Essential for designing pre-flight validation rules."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Currently empty, but failure history directly informs validation gate rules—what errors should be caught before deployment."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 40,
+            "summary": "Architectural decisions constrain the gate design. While empty now, this is where validation policy decisions belong."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 30,
+            "summary": "Baseline metrics for test performance/coverage thresholds. Empty now, but needed to set validation gates based on historical data."
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Cross-repo patterns for test infrastructure. Currently empty, but could provide validation patterns from other projects."
+          }
+        ]
+      },
+      "timestamp": 1772972636,
+      "ttl": 1800
+    },
+    "bd1e85550341649d89ede5744ae99ae9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Contains active test infrastructure configuration (vitest runner, test patterns, conventions) - directly relevant to understanding current pre-flight validation approach and what anti-patterns to avoid"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 65,
+            "summary": "Structured for tracking decisions including rejected design approaches, but currently empty - would be most relevant for capturing rejected anti-patterns once populated"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 48,
+            "summary": "Confirms nodejs project type detected at bootstrap - foundational context for test infrastructure validation decisions but less specific than active configuration"
+          }
+        ]
+      },
+      "timestamp": 1772972646,
+      "ttl": 1800
+    },
+    "d3698989322280f4a0d8c38d4d30702d": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical build configuration: test runner (vitest), test pattern (*.test.js), source directory (src/), package manager (npm), and import style. Directly enables pre-flight test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Empty failures array indicates no known failure patterns to work around during build stage validation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 28,
+            "summary": "Confirms project type as nodejs with bootstrap detection timestamp. Less detailed than comprehensive patterns entry but provides baseline project classification."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Empty baselines object provides no actionable metrics for validation gating decisions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array offers no prior architectural or process decisions relevant to test infrastructure validation."
+          }
+        ]
+      },
+      "timestamp": 1772972840,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project configuration (node, vitest, npm) and build conventions (source_dir, test_pattern) are essential for executing build stage correctly"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Captured build/test failures would inform which issues to avoid during this build; currently empty but high-value if populated"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Architectural decisions could affect build approach, but currently empty and less immediately relevant to build execution"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Performance baselines could be useful for regression detection post-build, but currently empty and not critical for build stage"
+          }
+        ]
+      },
+      "timestamp": 1772972852,
+      "ttl": 1800
     }
   }
 }
