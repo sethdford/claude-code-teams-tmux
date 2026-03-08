@@ -38,6 +38,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
+# Convergence detection and scoring (issue #203)
+[[ -f "$SCRIPT_DIR/lib/convergence.sh" ]] && source "$SCRIPT_DIR/lib/convergence.sh" 2>/dev/null || true
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
@@ -2302,6 +2304,36 @@ ${GOAL}"
 
         # Quality gates (automated checks)
         run_quality_gates
+
+        # Convergence detection (issue #203) — score iteration progress and detect convergence
+        if type convergence_integrate >/dev/null 2>&1; then
+            local conv_exit=0
+            convergence_integrate || conv_exit=$?
+            case "$conv_exit" in
+                1)
+                    # Converged — stop successfully
+                    info "Build loop converged — stopping"
+                    STATUS="complete"
+                    write_state
+                    write_progress
+                    show_summary
+                    return 0
+                    ;;
+                2)
+                    # Diverging — stop with failure
+                    warn "Build loop diverging — stopping (scores declining consistently)"
+                    STATUS="diverging"
+                    write_state
+                    write_progress
+                    show_summary
+                    return 1
+                    ;;
+                3)
+                    # Oscillating — escalate to manual review
+                    warn "Build loop oscillating — consider manual review or model escalation"
+                    ;;
+            esac
+        fi
 
         # Guarded completion (replaces naive grep check)
         if guard_completion; then
