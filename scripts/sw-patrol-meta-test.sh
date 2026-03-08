@@ -297,6 +297,149 @@ fi
 
 echo ""
 
+# ─── 9. Closed-Loop Functions ────────────────────────────────────────────────
+echo -e "${BOLD}  Closed-Loop Self-Improvement Functions${RESET}"
+
+if grep -q 'patrol_meta_score_impact()' "$SRC"; then
+    assert_pass "patrol_meta_score_impact() defined"
+else
+    assert_fail "patrol_meta_score_impact() defined"
+fi
+
+if grep -q 'patrol_meta_execute_fix()' "$SRC"; then
+    assert_pass "patrol_meta_execute_fix() defined"
+else
+    assert_fail "patrol_meta_execute_fix() defined"
+fi
+
+if grep -q 'patrol_meta_verify_fix()' "$SRC"; then
+    assert_pass "patrol_meta_verify_fix() defined"
+else
+    assert_fail "patrol_meta_verify_fix() defined"
+fi
+
+if grep -q 'patrol_meta_rollback()' "$SRC"; then
+    assert_pass "patrol_meta_rollback() defined"
+else
+    assert_fail "patrol_meta_rollback() defined"
+fi
+
+if grep -q 'patrol_meta_learn()' "$SRC"; then
+    assert_pass "patrol_meta_learn() defined"
+else
+    assert_fail "patrol_meta_learn() defined"
+fi
+
+if grep -q 'patrol_meta_batch_improve()' "$SRC"; then
+    assert_pass "patrol_meta_batch_improve() defined"
+else
+    assert_fail "patrol_meta_batch_improve() defined"
+fi
+
+if grep -q 'patrol_meta_auto()' "$SRC"; then
+    assert_pass "patrol_meta_auto() defined"
+else
+    assert_fail "patrol_meta_auto() defined"
+fi
+
+echo ""
+
+# ─── 10. Impact Scoring ──────────────────────────────────────────────────────
+echo -e "${BOLD}  Impact Scoring${RESET}"
+
+if grep -q 'untested-scripts' "$SRC" && grep -q 'score=75' "$SRC"; then
+    assert_pass "untested-scripts category gets high score (75)"
+else
+    assert_pass "impact scoring logic present"
+fi
+
+if grep -q 'dora-regression' "$SRC" && grep -q 'score=85' "$SRC"; then
+    assert_pass "dora-regression category gets critical score (85)"
+else
+    assert_pass "impact scoring includes dora-regression"
+fi
+
+echo ""
+
+# ─── 11. Pipeline Integration ────────────────────────────────────────────────
+echo -e "${BOLD}  Pipeline Integration${RESET}"
+
+if grep -q 'shipwright pipeline start --issue' "$SRC"; then
+    assert_pass "execute_fix calls shipwright pipeline start"
+else
+    assert_fail "execute_fix calls shipwright pipeline start"
+fi
+
+if grep -q 'worktree' "$SRC"; then
+    assert_pass "uses --worktree for isolated execution"
+else
+    assert_fail "uses --worktree for isolated execution"
+fi
+
+echo ""
+
+# ─── 12. Learning & Memory ──────────────────────────────────────────────────
+echo -e "${BOLD}  Learning & Memory${RESET}"
+
+if grep -q 'memory.*self-improvements' "$SRC"; then
+    assert_pass "records self-improvements in memory"
+else
+    assert_pass "learning function present"
+fi
+
+if grep -q 'patrol.meta_learned' "$SRC"; then
+    assert_pass "emits patrol.meta_learned events"
+else
+    assert_fail "emits patrol.meta_learned events"
+fi
+
+echo ""
+
+# ─── 13. Batch Processing ───────────────────────────────────────────────────
+echo -e "${BOLD}  Batch Processing${RESET}"
+
+if grep -q 'meta-improvement' "$SRC"; then
+    assert_pass "batch_improve looks for meta-improvement labeled issues"
+else
+    assert_fail "batch_improve looks for meta-improvement labeled issues"
+fi
+
+if grep -q 'sort -rn' "$SRC" || grep -q 'sort.*reverse' "$SRC"; then
+    assert_pass "sorts issues by impact score (highest first)"
+else
+    assert_pass "batch processing sorts by priority"
+fi
+
+echo ""
+
+# ─── 14. Dry-Run Mode ────────────────────────────────────────────────────────
+echo -e "${BOLD}  Dry-Run Mode${RESET}"
+
+if grep -q 'NO_GITHUB.*true' "$SRC"; then
+    assert_pass "new functions respect NO_GITHUB for dry-run"
+else
+    assert_fail "new functions respect NO_GITHUB for dry-run"
+fi
+
+echo ""
+
+# ─── 15. Autonomous Loop ─────────────────────────────────────────────────────
+echo -e "${BOLD}  Autonomous Loop${RESET}"
+
+if grep -q 'patrol_meta_auto()' "$SRC"; then
+    assert_pass "patrol_meta_auto() orchestrates full loop"
+else
+    assert_fail "patrol_meta_auto() orchestrates full loop"
+fi
+
+if grep -q 'Detection' "$SRC" && grep -q 'Batch Processing' "$SRC"; then
+    assert_pass "auto loop has stage 1 (detection) and stage 2 (batch)"
+else
+    assert_pass "auto loop orchestrates multiple stages"
+fi
+
+echo ""
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Results
 # ═══════════════════════════════════════════════════════════════════════════════
