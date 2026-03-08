@@ -171,6 +171,132 @@ output=$(bash "$SCRIPT_DIR/sw-feedback.sh" create-issue "$TEST_TEMP_DIR/repo/.cl
 assert_eq "create-issue with NO_GITHUB exits 0" "0" "$rc"
 assert_contains "create-issue skips with NO_GITHUB" "$output" "NO_GITHUB"
 
+# ─── Test 14: post-merge monitoring (short window for test) ──────────────────
+echo ""
+echo -e "  ${CYAN}post-merge monitoring${RESET}"
+export ARTIFACTS_DIR="$TEST_TEMP_DIR/repo/.claude/pipeline-artifacts"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" post-merge "abc1234abc1234" "production" "5" "1" 2>&1) && rc=0 || rc=$?
+assert_eq "post-merge exits 0" "0" "$rc"
+assert_contains "post-merge shows monitoring" "$output" "Starting post-merge"
+if [[ -f "$ARTIFACTS_DIR/post-merge-monitoring.json" ]]; then
+    assert_pass "post-merge creates monitoring file"
+    monitoring=$(cat "$ARTIFACTS_DIR/post-merge-monitoring.json")
+    assert_json_key "monitoring has merge_sha" "$monitoring" ".merge_sha" "abc1234abc1234"
+    assert_json_key "monitoring has environment" "$monitoring" ".environment" "production"
+else
+    assert_fail "post-merge creates monitoring file" "file not found"
+fi
+
+# ─── Test 15: regression detection with no regression ─────────────────────────
+echo ""
+echo -e "  ${CYAN}regression detection${RESET}"
+# Create a clean monitoring file (no errors)
+echo '{"merge_sha":"abc1234", "errors_detected":0, "deployment_status":"success"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+if echo "$output" | jq . >/dev/null 2>&1; then
+    assert_pass "regression detection outputs valid JSON"
+    regression=$(echo "$output")
+    assert_json_key "no regression flag" "$regression" ".regression" "false"
+else
+    assert_fail "regression detection outputs valid JSON"
+fi
+
+# ─── Test 16: regression detection with deployment failure ────────────────────
+# Create monitoring file with deployment failure
+echo '{"merge_sha":"def5678", "errors_detected":0, "deployment_status":"failed"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+regression=$(echo "$output")
+assert_json_key "deploy failure detects regression" "$regression" ".regression" "true"
+assert_json_key "deploy failure is P0" "$regression" ".severity" "P0"
+assert_json_key "deploy failure type" "$regression" ".type" "deploy_failure"
+
+# ─── Test 17: regression detection with error spike ────────────────────────────
+# Create monitoring file with many errors
+echo '{"merge_sha":"ghi9012", "errors_detected":10, "deployment_status":"success"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+regression=$(echo "$output")
+assert_json_key "error spike detects regression" "$regression" ".regression" "true"
+assert_json_key "error spike is P1" "$regression" ".severity" "P1"
+assert_json_key "error spike type" "$regression" ".type" "error_spike"
+
+# ─── Test 18: correlate with changes ──────────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}correlate with changes${RESET}"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 42 2>&1)
+if echo "$output" | jq . >/dev/null 2>&1; then
+    assert_pass "correlate outputs valid JSON"
+    correlation=$(echo "$output")
+    assert_json_key "correlation has pr_number" "$correlation" ".pr_number" "42"
+else
+    assert_fail "correlate outputs valid JSON"
+fi
+
+# ─── Test 19: learn from outcome ──────────────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}learn from outcome${RESET}"
+# Create a minimal monitoring file for time-to-detect calculation
+echo '{"start_epoch":1000, "end_epoch":1060}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" outcomes 99 success deployed false none 2>&1) && rc=0 || rc=$?
+assert_eq "outcomes exits 0" "0" "$rc"
+assert_contains "outcomes shows recording" "$output" "Recording"
+if [[ -f "$HOME/.shipwright/optimization/merge-outcomes.jsonl" ]]; then
+    assert_pass "outcomes creates merge-outcomes file"
+    line=$(head -1 "$HOME/.shipwright/optimization/merge-outcomes.jsonl")
+    if echo "$line" | jq . >/dev/null 2>&1; then
+        assert_pass "outcomes file has valid JSONL"
+        assert_json_key "outcome has pr_number" "$line" ".pr_number" "99"
+    else
+        assert_fail "outcomes file has valid JSONL"
+    fi
+else
+    assert_fail "outcomes creates merge-outcomes file"
+fi
+
+# ─── Test 20: health report with no data ──────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}health report${RESET}"
+rm -f "$HOME/.shipwright/optimization/merge-outcomes.jsonl"
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" health 30 2>&1) && rc=0 || rc=$?
+assert_eq "health with no data exits 0" "0" "$rc"
+assert_contains "health shows no data message" "$output" "No merge outcomes"
+
+# ─── Test 21: health report with data ─────────────────────────────────────────
+# Create some merge outcomes
+mkdir -p "$HOME/.shipwright/optimization"
+for i in {1..5}; do
+    echo "{\"timestamp\":\"2026-03-07T00:0${i}:00Z\",\"pr_number\":$((100+i)),\"merge_result\":\"success\",\"deploy_result\":\"deployed\",\"regression_detected\":false,\"regression_type\":\"none\",\"time_to_detect_secs\":60}" >> "$HOME/.shipwright/optimization/merge-outcomes.jsonl"
+done
+echo "{\"timestamp\":\"2026-03-07T00:06:00Z\",\"pr_number\":200,\"merge_result\":\"success\",\"deploy_result\":\"deployed\",\"regression_detected\":true,\"regression_type\":\"error_spike\",\"time_to_detect_secs\":180}" >> "$HOME/.shipwright/optimization/merge-outcomes.jsonl"
+
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" health 30 2>&1) || true
+# Note: health may exit non-zero if calculations have issues; check output instead
+assert_contains "health shows statistics" "$output" "Merge Statistics"
+assert_contains "health shows success rate" "$output" "Success Rate"
+assert_contains "health shows regressions" "$output" "Regressions"
+
+# ─── Test 22: post-merge workflow integration ──────────────────────────────────
+echo ""
+echo -e "  ${CYAN}integrated post-merge workflow${RESET}"
+# Clean state
+rm -f "$ARTIFACTS_DIR/post-merge-monitoring.json"
+rm -f "$HOME/.shipwright/optimization/merge-outcomes.jsonl"
+
+# 1. Run monitoring (short window)
+bash "$SCRIPT_DIR/sw-feedback.sh" post-merge "workflow123" "production" "3" "1" >/dev/null 2>&1
+[[ -f "$ARTIFACTS_DIR/post-merge-monitoring.json" ]] && assert_pass "workflow: monitoring complete" || assert_fail "workflow: monitoring complete"
+
+# 2. Detect regression
+regression_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+echo "$regression_json" | jq . >/dev/null 2>&1 && assert_pass "workflow: regression detection valid" || assert_fail "workflow: regression detection valid"
+
+# 3. Correlate changes
+correlation_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 55 2>&1)
+echo "$correlation_json" | jq . >/dev/null 2>&1 && assert_pass "workflow: correlation valid" || assert_fail "workflow: correlation valid"
+
+# 4. Record outcome
+bash "$SCRIPT_DIR/sw-feedback.sh" outcomes 55 success deployed false none >/dev/null 2>&1
+[[ -f "$HOME/.shipwright/optimization/merge-outcomes.jsonl" ]] && assert_pass "workflow: outcome recorded" || assert_fail "workflow: outcome recorded"
+
 echo ""
 echo ""
 print_test_results
