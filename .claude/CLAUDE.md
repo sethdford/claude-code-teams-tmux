@@ -541,7 +541,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-e2e-orchestrator.sh` | 535 | Test suite registry & execution |
 | `scripts/sw-eventbus.sh` | 415 | Durable event bus for real-time inter-component |
 | `scripts/sw-evidence.sh` | 1100 | Machine-Verifiable Proof for Agent Deliveries |
-| `scripts/sw-feedback.sh` | 466 | Production Feedback Loop |
+| `scripts/sw-feedback.sh` | 999 | Production Feedback Loop |
 | `scripts/sw-fix.sh` | 474 | Bulk Fix Across Multiple Repos |
 | `scripts/sw-fleet-discover.sh` | 550 | Auto-Discovery from GitHub Orgs |
 | `scripts/sw-fleet-viz.sh` | 411 | Multi-Repo Fleet Visualization |
@@ -558,8 +558,8 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2524 | Continuous agent loop harness for Claude Code |
-| `scripts/sw-memory.sh` | 2114 | Persistent Learning & Context System |
+| `scripts/sw-loop.sh` | 2527 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-memory.sh` | 2118 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1023 | Intelligent Model Routing & Cost Optimization |
 | `scripts/sw-otel.sh` | 609 | OpenTelemetry Observability |
@@ -567,7 +567,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-patrol-meta.sh` | 776 | Shipwright Self-Improvement Patrol |
 | `scripts/sw-pipeline-composer.sh` | 444 | Dynamic Pipeline Composition |
 | `scripts/sw-pipeline-vitals.sh` | 1076 | Pipeline Vitals Engine |
-| `scripts/sw-pipeline.sh` | 260 | Autonomous Feature Delivery (Idea → Production) |
+| `scripts/sw-pipeline.sh` | 263 | Autonomous Feature Delivery (Idea → Production) |
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
@@ -651,6 +651,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | --- | ---: | --- |
 | `scripts/sw-activity-test.sh` | 219 | Validate live agent activity stream |
 | `scripts/sw-adapters-test.sh` | 197 | Structural/smoke tests for terminal & deploy |
+| `scripts/sw-adaptive-model-test.sh` | 399 | Test Suite for Adaptive Model Selection |
 | `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
 | `scripts/sw-adversarial-test.sh` | 258 | Validate adversarial agent code review |
 | `scripts/sw-agi-roadmap-test.sh` | 857 | Tests every feature we implemented |
@@ -669,6 +670,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-context-budget-test.sh` | 335 | Context Window Budget Monitor tests |
 | `scripts/sw-context-test.sh` | 219 | Context Engine for Pipeline Stages tests |
 | `scripts/sw-convergence-test.sh` | 324 | Unit tests for convergence detection |
+| `scripts/sw-cost-optimizer-test.sh` | 466 | Test suite for cost optimization |
 | `scripts/sw-cost-test.sh` | 234 | Validate token usage & cost intelligence |
 | `scripts/sw-daemon-test.sh` | 1985 | Unit tests for daemon metrics, health, alerting |
 | `scripts/sw-dashboard-e2e-test.sh` | 591 | full live validation |
@@ -691,7 +693,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-e2e-system-test.sh` | 465 | Proves full daemon→pipeline→loop→PR flow |
 | `scripts/sw-eventbus-test.sh` | 155 | Durable event bus tests |
 | `scripts/sw-evidence-test.sh` | 416 | Unit tests for sw-evidence.sh |
-| `scripts/sw-feedback-test.sh` | 176 | Production Feedback Loop tests |
+| `scripts/sw-feedback-test.sh` | 302 | Production Feedback Loop tests |
 | `scripts/sw-fix-test.sh` | 619 | Unit tests for bulk fix across repos |
 | `scripts/sw-fleet-discover-test.sh` | 274 | Validate GitHub org auto-discovery, |
 | `scripts/sw-fleet-test.sh` | 822 | Unit tests for fleet orchestration |
@@ -732,6 +734,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-logs-test.sh` | 281 | Validate agent pane log viewing, searching, |
 | `scripts/sw-loop-test.sh` | 816 | Validate continuous agent loop harness |
 | `scripts/sw-memory-discovery-e2e-test.sh` | 411 | Memory & Discovery E2E Test |
+| `scripts/sw-memory-effectiveness-test.sh` | 495 | Unit tests |
 | `scripts/sw-memory-test.sh` | 871 | Unit tests for memory system & cost tracking |
 | `scripts/sw-mission-control-test.sh` | 153 | Validate mission control dashboard |
 | `scripts/sw-model-router-test.sh` | 303 | Intelligent model routing & optimization |
@@ -774,6 +777,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-swarm-test.sh` | 153 | Dynamic agent swarm management tests |
 | `scripts/sw-team-stages-test.sh` | 148 | Validate multi-agent stage execution |
 | `scripts/sw-templates-test.sh` | 251 | Validate team template browser |
+| `scripts/sw-test-optimizer-test.sh` | 395 | Test suite for test execution optimizer |
 | `scripts/sw-testgen-test.sh` | 160 | Test generation & coverage tests |
 | `scripts/sw-tmux-pipeline-test.sh` | 187 | Validate tmux pipeline management |
 | `scripts/sw-tmux-test.sh` | 746 | Validate tmux doctor, install, fix, reload, |
