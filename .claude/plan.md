@@ -1,294 +1,362 @@
-# Design: Pipeline Failure Auto-Diagnostic Report Generator
+# Plan: Pipeline Failure Auto-Diagnostic Report Generator
 
-## Context
+## Socratic Design Refinement
 
-When a Shipwright pipeline fails, operators must manually hunt across multiple artifact files (`error-log.jsonl`, `pipeline-state.md`, `events.jsonl`, memory `failures.json`) to understand what went wrong and what to do next. Each file uses a different format, and the failure-relevant data is interleaved with success data. The daemon's retry escalation logic (`daemon-failure.sh`) classifies failures for its own purposes but doesn't surface a human-readable or machine-parseable diagnostic to the operator.
+### Requirements Clarity
 
-**Constraints from the codebase:**
-- All scripts are Bash 3.2 compatible (`set -euo pipefail`, no associative arrays, no `readarray`, no `${var,,}`)
-- Every script carries a `VERSION="3.2.4"` variable kept in sync with `package.json`
-- Existing libraries already perform root-cause classification (`lib/root-cause.sh`), error actionability scoring (`lib/error-actionability.sh`), pipeline state reading (`lib/pipeline-state.sh`), and memory search (`sw-memory.sh`) — but no single entry point aggregates them into a coherent report
-- The pipeline failure path in `lib/pipeline-commands.sh` (around line 887-904) already performs memory capture and outcome analysis — the diagnostic call must slot in after these without disrupting them
-- CLI commands are registered in `scripts/sw` via `case` statements using `exec "$SCRIPT_DIR/sw-<cmd>.sh" "$@"` pattern
-- The project follows a one-script-per-feature pattern (see `sw-replay.sh`, `sw-retro.sh`, `sw-vitals.sh`)
+**Minimum viable change:** A new `shipwright diagnose` command that aggregates all existing failure data (pipeline state, error logs, root cause classification, memory patterns, vitals, loop errors) into a single structured diagnostic report — both human-readable markdown and machine-readable JSON.
 
-## Decision
+**Implicit requirements:**
+- Must work with partial data (not all pipelines produce all artifacts)
+- Must be callable both manually and automatically from `daemon_on_failure()`
+- Should surface actionable insights, not just raw data dumps
+- Should integrate with the existing `observe` command group
 
-**Create a standalone `scripts/sw-diagnose.sh`** that aggregates data from existing libraries and artifact files, producing a structured 7-section diagnostic report in Markdown (terminal) or JSON (`--json`) format.
+**Acceptance criteria:**
+1. `shipwright diagnose` generates a report from the most recent failed pipeline
+2. `shipwright diagnose --issue N` targets a specific issue's failure data
+3. Report includes: error timeline, root cause analysis, similar past failures, suggested fixes, health vitals at failure time
+4. `--json` flag produces machine-readable output
+5. Auto-invocation from daemon failure handler with report path in GitHub issue comment
+6. Report persisted to `.claude/pipeline-artifacts/diagnostic-report.md`
+7. Test suite passes with ≥15 test cases
 
-### Component Diagram
+### Alternatives Considered
+
+**Approach A: Single monolithic script**
+- One `sw-diagnose.sh` that reads all data sources and generates the report inline
+- Pros: Simple, self-contained, easy to understand
+- Cons: ~800+ lines, duplicates logic from existing modules (root-cause, memory, vitals), harder to test individual sections
+- Blast radius: 1 new file + 2 minor edits (CLI router + daemon-failure)
+
+**Approach B: Library + CLI pattern (CHOSEN)**
+- Library functions in `scripts/lib/diagnostic-report.sh` for data collection and report assembly
+- Thin CLI wrapper in `scripts/sw-diagnose.sh` for user interaction
+- Pros: Reusable from daemon, tests, and CLI; follows established codebase pattern (every major feature has lib/ + CLI); individual sections are testable
+- Cons: 2 new files instead of 1
+- Blast radius: 2 new files + 3 minor edits (CLI router, daemon-failure, package.json)
+
+**Approach C: Extend existing `sw-replay.sh`**
+- Add a `diagnose` subcommand to the existing replay script
+- Pros: No new files, builds on existing data reading code
+- Cons: Replay is about viewing past runs; diagnostics is about analyzing failures. Different concerns. Would bloat replay from 542 → 900+ lines. Violates single-responsibility.
+- Rejected: Wrong abstraction level
+
+**Why Approach B:** It follows the exact pattern used by every other feature in this codebase (daemon-failure.sh, pipeline-state.sh, session-restart.sh are all lib modules consumed by CLI scripts). The library can be sourced by `daemon_on_failure()` without spawning a subprocess. The CLI wrapper handles argument parsing and display.
+
+### Risk Assessment
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Missing artifacts (no error-log.jsonl, no loop-logs) | Report has empty sections | Each section checks file existence and outputs "No data available" gracefully |
+| Daemon integration slows failure handling | Delays retry spawn | Generate report asynchronously (background subshell), write path to state |
+| Root-cause module not loaded in daemon context | Function not found errors | Source root-cause.sh with module guard (already has `_ROOT_CAUSE_LOADED` pattern) |
+| Large error-log.jsonl (1000+ entries) | Slow parsing | Limit to last 50 entries (matches existing `rootcause_analyze_error_log` pattern) |
+| jq not available | Report generation fails | Graceful fallback to basic grep-based extraction (matches doctor.sh pattern) |
+
+### Dependency Analysis
+
+**Depends on (read-only):**
+- `scripts/lib/root-cause.sh` — `rootcause_classify()`, `rootcause_analyze_error_log()`
+- `scripts/lib/error-actionability.sh` — `score_error_actionability()`
+- `scripts/lib/pipeline-state.sh` — state file format (YAML frontmatter)
+- `scripts/sw-memory.sh` — `memory_ranked_search()` (via subprocess call)
+- `scripts/sw-pipeline-vitals.sh` — vitals data format (progress snapshots)
+- `scripts/lib/helpers.sh` — `info()`, `error()`, `emit_event()`, color constants
+
+**Modified by this change:**
+- `scripts/sw` — add `diagnose` to CLI router (1 line in main case, 1 line in observe group)
+- `scripts/lib/daemon-failure.sh` — add diagnostic report generation in `daemon_on_failure()` (5 lines)
+- `package.json` — register test suite (1 line)
+
+**Nothing depends on the new code** — purely additive.
+
+---
+
+## Files to Modify
+
+### New Files
+1. **`scripts/lib/diagnostic-report.sh`** — Library: data collection, section generators, report assembly (~350 lines)
+2. **`scripts/sw-diagnose.sh`** — CLI: argument parsing, help, display, JSON output (~250 lines)
+3. **`scripts/sw-diagnose-test.sh`** — Test suite (~400 lines)
+
+### Modified Files
+4. **`scripts/sw`** — Add `diagnose` command to CLI router (2 lines)
+5. **`scripts/lib/daemon-failure.sh`** — Auto-generate report on failure (5 lines)
+6. **`package.json`** — Register `sw-diagnose-test.sh` in test scripts
+
+---
+
+## Implementation Steps
+
+### Step 1: Create `scripts/lib/diagnostic-report.sh`
+
+The library module with these functions:
 
 ```
-                    ┌─────────────────────────────────┐
-                    │         scripts/sw (router)      │
-                    │   diagnose|diagnostic → exec     │
-                    └──────────────┬──────────────────┘
-                                   │
-                    ┌──────────────▼──────────────────┐
-                    │      sw-diagnose.sh (NEW)        │
-                    │  CLI entry + orchestrator        │
-                    │  ─────────────────────────       │
-                    │  1. Collect (read-only)          │
-                    │  2. Classify (via libs)          │
-                    │  3. Render (md or json)          │
-                    └──┬──────┬──────┬──────┬─────────┘
-                       │      │      │      │
-          ┌────────────▼┐ ┌───▼────┐ ┌▼─────┴────┐ ┌──────────┐
-          │ lib/         │ │ lib/   │ │ lib/       │ │ sw-      │
-          │ root-cause.sh│ │ error- │ │ pipeline-  │ │ memory.sh│
-          │              │ │ action-│ │ state.sh   │ │          │
-          │ classify()   │ │ ability│ │ get_stage  │ │ search() │
-          │ analyze()    │ │ score()│ │ _status()  │ │ query()  │
-          └──────────────┘ └────────┘ └────────────┘ └──────────┘
-                    ▲              ▲              ▲
-                    │   READ-ONLY DATA SOURCES    │
-          ┌─────────┴──────────────┴──────────────┴───────┐
-          │  .claude/pipeline-state.md (YAML frontmatter) │
-          │  .claude/pipeline-artifacts/error-log.jsonl    │
-          │  .claude/pipeline-artifacts/error-summary.json │
-          │  ~/.shipwright/events.jsonl                    │
-          │  ~/.shipwright/memory/{hash}/failures.json     │
-          └───────────────────────────────────────────────┘
+diag_collect_pipeline_state(project_root) → JSON
 ```
-
-### Data Flow
+- Reads `.claude/pipeline-state.md` YAML frontmatter
+- Extracts: status, current_stage, stage_statuses, stage_timings, last_error, error_class
+- Returns structured JSON with pipeline metadata
 
 ```
-Request (CLI or auto-invoke)
-  │
-  ▼
-Parse args (--json, --save, --quiet, --artifacts <dir>, --all)
-  │
-  ▼
-diag_collect_pipeline_summary()
-  ├─ Read pipeline-state.md YAML frontmatter
-  └─ Extract: goal, template, branch, issue#, start_time, duration, final_status, failed_stage
-  │
-  ▼
-diag_collect_stage_timeline()
-  ├─ Parse stage_progress field from pipeline-state.md
-  └─ Produce: array of {stage, status, duration} triples
-  │
-  ▼
-diag_collect_errors()
-  ├─ Read error-log.jsonl (last MAX_ERRORS entries, default 50)
-  ├─ Group by error type (syntax, test, logic, runtime, dependency, etc.)
-  └─ Produce: error groups with counts
-  │
-  ▼
-diag_classify_root_cause()
-  ├─ Source lib/root-cause.sh
-  ├─ Call rootcause_classify() on aggregated error text
-  └─ Produce: {classification, confidence_pct, evidence[], suggested_action}
-  │
-  ▼
-diag_score_errors()
-  ├─ Source lib/error-actionability.sh
-  ├─ Call score_error_actionability() per error
-  └─ Produce: errors ranked by actionability score (0-100)
-  │
-  ▼
-diag_find_memory_matches()
-  ├─ Call sw-memory.sh search with error signatures
-  └─ Produce: array of {pattern, root_cause, fix, effectiveness_rate}
-  │
-  ▼
-diag_generate_recommendations()
-  ├─ Map root_cause classification → ordered action list
-  ├─ Merge with memory fix suggestions
-  └─ Produce: prioritized list of actionable next steps
-  │
-  ▼
-Render (diag_render_markdown OR diag_render_json)
-  │
-  ▼
-Output (stdout, or --save → pipeline-artifacts/diagnostic-report.{md,json})
-  │
-  ▼
-emit_event "diagnostic.generated"
+diag_collect_error_log(artifacts_dir, max_entries) → JSON
+```
+- Reads `.claude/pipeline-artifacts/error-log.jsonl` (last N entries)
+- Groups by error type, counts occurrences
+- Scores each error via `score_error_actionability()`
+- Returns JSON array with type distribution and top errors
+
+```
+diag_collect_loop_errors(project_root) → JSON
+```
+- Reads `.claude/loop-logs/error-summary.json`
+- Reads `.claude/loop-logs/progress.md` for iteration context
+- Returns JSON with iteration count, error lines, test status
+
+```
+diag_collect_root_cause(error_message, stage, exit_code) → JSON
+```
+- Calls `rootcause_classify()` for primary classification
+- Calls `rootcause_analyze_error_log()` for pattern analysis
+- Returns combined root cause assessment with confidence
+
+```
+diag_collect_similar_failures(query, repo_hash) → JSON
+```
+- Calls `memory_ranked_search()` with failure context as query
+- Returns top 5 similar past failures with fix effectiveness
+
+```
+diag_collect_vitals(artifacts_dir) → JSON
+```
+- Reads latest progress snapshot from vitals data
+- Computes health score at failure time if data available
+- Returns health metrics (momentum, convergence, budget, error maturity)
+
+```
+diag_suggest_fixes(root_cause_json, similar_failures_json) → JSON
+```
+- Based on root cause category, suggests concrete next steps
+- Incorporates fixes from similar past failures
+- Prioritizes by fix effectiveness rate
+
+```
+diag_generate_report(project_root, issue_num, output_format) → string
+```
+- Orchestrates all collectors
+- Assembles into markdown report (or JSON if format=json)
+- Writes to `.claude/pipeline-artifacts/diagnostic-report.md`
+- Returns report path
+
+**Report structure:**
+```markdown
+# Pipeline Failure Diagnostic Report
+
+## Summary
+| Field | Value |
+|-------|-------|
+| Issue | #N |
+| Failed Stage | build |
+| Root Cause | code_bug (85% confidence) |
+| Generated | 2026-03-08T12:34:56Z |
+
+## Timeline
+- 12:00:00 — intake: ✓ (2s)
+- 12:00:02 — plan: ✓ (45s)
+- 12:00:47 — build: ✗ (15m 23s)
+
+## Root Cause Analysis
+Category: code_bug
+Confidence: 85%
+Evidence:
+- Test failure in build stage
+- Non-zero exit code
+
+## Error Details
+### Top Errors (from error-log.jsonl)
+| Type | Count | Example |
+|------|-------|---------|
+| test | 5 | AssertionError: expected true... |
+| syntax | 1 | Unexpected token ... |
+
+### Build Loop Errors (from error-summary.json)
+Iteration: 15/20
+Error lines:
+- TypeError: Cannot read property 'name'...
+
+## Similar Past Failures
+1. [seen 3x] TypeError pattern — Fix: check null before access (effectiveness: 80%)
+
+## Suggested Fixes
+1. Check test assertions for incorrect expectations
+2. Review null/undefined access patterns (similar to past fix)
+
+## Health at Failure
+Score: 42/100 (Critical)
+Momentum: 15% — stalled
+Convergence: declining
+Budget: 65% remaining
 ```
 
-### Interface Contracts
+### Step 2: Create `scripts/sw-diagnose.sh`
 
-```typescript
-// === CLI Interface ===
-// shipwright diagnose [options]
-// Options:
-//   --json              Output JSON instead of Markdown
-//   --save              Write report to .claude/pipeline-artifacts/diagnostic-report.{md,json}
-//   --quiet             Suppress terminal output (use with --save)
-//   --artifacts <dir>   Override artifacts directory (default: .claude/pipeline-artifacts)
-//   --all               Include all errors (not just last 50)
-//   help                Show help text
-// Exit codes: 0 = report generated, 1 = no artifacts found, 2 = usage error
+CLI wrapper:
+- `shipwright diagnose` — latest failed pipeline
+- `shipwright diagnose --issue N` — specific issue
+- `shipwright diagnose --json` — JSON output
+- `shipwright diagnose --worktree PATH` — diagnose from worktree
+- `shipwright diagnose help` — usage
 
-// === Data Collection Functions ===
+Pattern: follows `sw-replay.sh` / `sw-retro.sh` CLI structure.
 
-// diag_collect_pipeline_summary() → void
-// Sets globals: DIAG_GOAL, DIAG_TEMPLATE, DIAG_BRANCH, DIAG_ISSUE,
-//               DIAG_START_TIME, DIAG_DURATION, DIAG_STATUS, DIAG_FAILED_STAGE
-// Reads: $STATE_FILE (.claude/pipeline-state.md)
-// Error: Sets DIAG_STATUS="unknown" if state file missing
+Key implementation details:
+- Source `lib/diagnostic-report.sh`
+- Parse args (issue number, json flag, worktree path)
+- Determine project root (worktree or current)
+- Call `diag_generate_report()`
+- Display report or output JSON
+- Exit 0 on success, 1 if no failure data found
 
-// diag_collect_stage_timeline() → void
-// Sets global: DIAG_STAGES (newline-delimited "stage:status:duration" triples)
-// Reads: $STATE_FILE stage_progress field
-// Error: Sets DIAG_STAGES="" if no stage data
+### Step 3: Integrate into CLI router (`scripts/sw`)
 
-// diag_collect_errors() → void
-// Sets globals: DIAG_ERROR_COUNT, DIAG_ERROR_GROUPS (JSON via jq),
-//               DIAG_RAW_ERRORS (last $MAX_ERRORS lines from error-log.jsonl)
-// Reads: $ERROR_LOG (.claude/pipeline-artifacts/error-log.jsonl)
-// Error: Sets DIAG_ERROR_COUNT=0 if file missing/empty
-
-// diag_classify_root_cause() → void
-// Sets globals: DIAG_ROOT_CAUSE, DIAG_ROOT_CONFIDENCE, DIAG_ROOT_EVIDENCE,
-//               DIAG_ROOT_ACTION
-// Depends: lib/root-cause.sh::rootcause_classify()
-// Error: Sets DIAG_ROOT_CAUSE="unknown", DIAG_ROOT_CONFIDENCE=0
-
-// diag_score_errors() → void
-// Sets global: DIAG_SCORED_ERRORS (JSON array of {error, score, category})
-// Depends: lib/error-actionability.sh::score_error_actionability()
-// Error: Returns empty array if scoring unavailable
-
-// diag_find_memory_matches() → void
-// Sets global: DIAG_MEMORY_MATCHES (JSON array of {pattern, root_cause, fix, rate})
-// Depends: sw-memory.sh (subshell invocation)
-// Error: Returns empty array if no matches or memory unavailable
-
-// diag_generate_recommendations() → void
-// Sets global: DIAG_RECOMMENDATIONS (newline-delimited action strings)
-// Reads: DIAG_ROOT_CAUSE, DIAG_MEMORY_MATCHES
-// Error: Produces generic "investigate error-log.jsonl" recommendation
-
-// === Rendering Functions ===
-
-// diag_render_markdown() → stdout
-// Reads all DIAG_* globals, formats with Unicode box-drawing + colors
-// Produces: 7-section Markdown report
-
-// diag_render_json() → stdout
-// Reads all DIAG_* globals, formats via jq
-// Produces: JSON object with keys: summary, stages, errors, root_cause,
-//           memory_matches, recommendations, artifacts
-
-// === Integration Points ===
-
-// Auto-invocation (pipeline-commands.sh, non-blocking):
-//   bash "$SCRIPT_DIR/sw-diagnose.sh" --save --quiet 2>/dev/null || true
-//
-// Daemon reference (daemon-failure.sh, informational):
-//   [[ -f "$diag_report" ]] && daemon_log INFO "Diagnostic report: $diag_report"
+Add to main `case` block:
+```bash
+diagnose)
+    exec "$SCRIPT_DIR/sw-diagnose.sh" "$@"
+    ;;
 ```
 
-### Error Boundaries
+Add to `route_observe()`:
+```bash
+diagnose)     exec "$SCRIPT_DIR/sw-diagnose.sh" "$@" ;;
+```
 
-| Component | Errors Handled | Propagation |
-|-----------|---------------|-------------|
-| `sw-diagnose.sh` (entry) | Missing artifact dir, missing state file, invalid args | Exit 1 with clear message; exit 2 for usage |
-| `diag_collect_*` functions | Missing/empty files, malformed YAML/JSON | Set `DIAG_*` globals to safe defaults ("unknown", "", 0); never exit |
-| `diag_classify_root_cause` | `lib/root-cause.sh` not found, `rootcause_classify()` fails | Falls back to `DIAG_ROOT_CAUSE="unknown"` with confidence 0 |
-| `diag_score_errors` | `lib/error-actionability.sh` not found | Returns empty scored array; report shows raw errors without scores |
-| `diag_find_memory_matches` | Memory system unavailable, no matches | Returns empty array; report shows "No historical matches" |
-| `diag_render_json` | `jq` not installed | `check_jq` at CLI entry; if missing, suggest install and exit 1 |
-| Pipeline auto-invoke | Any failure in diagnose | Wrapped in `|| true` — pipeline completion never blocked |
-| Daemon reference | Report file missing | Conditional check `[[ -f ]]` — no log if absent |
+Update help text for observe group.
 
-**Key safety principle:** Every integration point is wrapped in `|| true` or conditional checks. A diagnostic failure must never block pipeline completion, daemon operation, or retry logic.
+### Step 4: Integrate into daemon failure handler
 
-## Alternatives Considered
+In `scripts/lib/daemon-failure.sh`, in `daemon_on_failure()` after the PM agent learn call (line ~338), before the GitHub comment section:
 
-### 1. Extend `sw-replay.sh` with `replay diagnose` subcommand
+```bash
+# Generate diagnostic report (non-blocking)
+local diag_report_path=""
+if [[ -f "$SCRIPT_DIR/lib/diagnostic-report.sh" ]]; then
+    source "$SCRIPT_DIR/lib/diagnostic-report.sh" 2>/dev/null || true
+    if [[ "$(type -t diag_generate_report 2>/dev/null)" == "function" ]]; then
+        local diag_root="${WORKTREE_DIR:-${REPO_DIR}/.worktrees}/daemon-issue-${issue_num}"
+        [[ ! -d "$diag_root/.claude" ]] && diag_root="$REPO_DIR"
+        diag_report_path=$(diag_generate_report "$diag_root" "$issue_num" "markdown" 2>/dev/null || true)
+    fi
+fi
+```
 
-**Pros:**
-- Reuses existing event-reading and timeline-rendering code
-- No new script file
+Then include the diagnostic summary in the existing GitHub issue comment body.
 
-**Cons:**
-- Violates single-responsibility — replay shows *what happened* (timeline), diagnose explains *why it failed* (root cause analysis)
-- Bloats `sw-replay.sh` (currently 542 lines) with unrelated logic
-- Harder to test diagnostic functions in isolation
-- `replay` reads from `events.jsonl` (timeline events); `diagnose` reads from `error-log.jsonl` + `pipeline-state.md` (failure artifacts) — different data sources
+### Step 5: Create test suite (`scripts/sw-diagnose-test.sh`)
 
-**Rejected because:** Conceptual mismatch. DVR playback and failure diagnosis are orthogonal concerns.
+Following the test harness pattern from `sw-replay-test.sh`:
+- Source `lib/test-helpers.sh`
+- Mock binaries (git, gh, jq)
+- Create fixture data (pipeline-state.md, error-log.jsonl, error-summary.json, progress.md)
+- Test each collector function independently
+- Test full report generation with complete data
+- Test graceful handling of missing data
+- Test JSON output mode
+- Test CLI argument parsing
+- Test help output
 
-### 2. Extend `lib/audit-trail.sh` `audit_finalize()`
+### Step 6: Register test in package.json
 
-**Pros:**
-- Already runs at pipeline completion — no new integration point needed
-- Audit report is the natural place for a "what went wrong" section
+Add to scripts section:
+```json
+"test:diagnose": "bash scripts/sw-diagnose-test.sh"
+```
 
-**Cons:**
-- Mixes auditing (compliance, completeness tracking) with diagnostics (failure investigation)
-- Makes audit reports noisy for *successful* pipelines (would need conditional logic to suppress diagnostic sections on success)
-- `audit_finalize()` is already complex; adding 200+ lines of diagnostic logic increases blast radius
-- Audit reports are consumed by compound_quality stage — injecting diagnostic sections changes downstream expectations
+---
 
-**Rejected because:** Different audiences (auditor vs. operator) and different lifecycle (audit = every run, diagnose = failures only).
+## Task Decomposition
 
-### 3. Inline diagnostic generation in `daemon-failure.sh`
+1. Create `scripts/lib/diagnostic-report.sh` with module guard, defaults, and helper sourcing — **no dependencies**
+2. Implement `diag_collect_pipeline_state()` — parse pipeline-state.md YAML frontmatter — **depends on Task 1**
+3. Implement `diag_collect_error_log()` — read/group/score error-log.jsonl entries — **depends on Task 1**
+4. Implement `diag_collect_loop_errors()` — read error-summary.json and progress.md — **depends on Task 1**
+5. Implement `diag_collect_root_cause()` — orchestrate root cause classification — **depends on Task 1**
+6. Implement `diag_collect_similar_failures()` — query memory system for matching patterns — **depends on Task 1**
+7. Implement `diag_collect_vitals()` — read health snapshots at failure time — **depends on Task 1**
+8. Implement `diag_suggest_fixes()` — generate actionable fix suggestions from root cause + history — **depends on Task 1**
+9. Implement `diag_generate_report()` — orchestrate all collectors into markdown/JSON report — **depends on Tasks 2-8**
+10. Create `scripts/sw-diagnose.sh` CLI wrapper with arg parsing, help, display — **depends on Task 9**
+11. Add `diagnose` to CLI router in `scripts/sw` (main case + observe group) — **depends on Task 10**
+12. Integrate auto-generation into `daemon_on_failure()` in `scripts/lib/daemon-failure.sh` — **depends on Task 1**
+13. Create `scripts/sw-diagnose-test.sh` test suite with ≥15 test cases — **depends on Tasks 1-10**
+14. Register test in `package.json` — **depends on Task 13**
+15. Verify all tests pass and report format is correct — **depends on Tasks 13-14**
 
-**Pros:**
-- Closest to where failure classification already happens
-- No CLI routing needed
+Note: Tasks 2-8 are independent of each other and can be implemented in parallel. Task 12 only depends on Task 1 (not 9) because it sources the library directly.
 
-**Cons:**
-- Only available in daemon mode — not usable interactively via `shipwright diagnose`
-- `daemon-failure.sh` is a shared library sourced by `sw-daemon.sh` — adding I/O-heavy report generation violates its focused responsibility (classify + retry-decide)
-- Can't produce standalone Markdown/JSON reports for operator consumption
-- Not testable in isolation from daemon machinery
+---
 
-**Rejected because:** Limits diagnostic access to daemon-only context; defeats the "operator runs `shipwright diagnose` to investigate" use case.
+## Task Checklist
 
-## Implementation Plan
+- [ ] Task 1: Create `scripts/lib/diagnostic-report.sh` with module guard, defaults, helper sourcing
+- [ ] Task 2: Implement `diag_collect_pipeline_state()` — parse pipeline-state.md YAML frontmatter
+- [ ] Task 3: Implement `diag_collect_error_log()` — read/group/score error-log.jsonl entries
+- [ ] Task 4: Implement `diag_collect_loop_errors()` — read error-summary.json and progress.md
+- [ ] Task 5: Implement `diag_collect_root_cause()` — orchestrate root cause classification
+- [ ] Task 6: Implement `diag_collect_similar_failures()` — query memory system for matching patterns
+- [ ] Task 7: Implement `diag_collect_vitals()` — read health snapshots at failure time
+- [ ] Task 8: Implement `diag_suggest_fixes()` — generate actionable fix suggestions
+- [ ] Task 9: Implement `diag_generate_report()` — orchestrate collectors into markdown/JSON
+- [ ] Task 10: Create `scripts/sw-diagnose.sh` CLI wrapper with arg parsing, help, display
+- [ ] Task 11: Add `diagnose` to CLI router in `scripts/sw` (main case + observe group)
+- [ ] Task 12: Integrate auto-generation into `daemon_on_failure()` in daemon-failure.sh
+- [ ] Task 13: Create `scripts/sw-diagnose-test.sh` test suite with ≥15 test cases
+- [ ] Task 14: Register test in `package.json`
+- [ ] Task 15: Verify all tests pass and report format is correct
 
-### Files to Create
+---
 
-| File | Lines (est.) | Purpose |
-|------|-------------|---------|
-| `scripts/sw-diagnose.sh` | ~450 | Diagnostic report generator — data collection, classification, rendering |
-| `scripts/sw-diagnose-test.sh` | ~350 | 17 test cases covering all sections, edge cases, JSON validation |
+## Testing Approach
 
-### Files to Modify
+### Unit Tests (in `sw-diagnose-test.sh`)
+1. **Help output** — verify usage text contains expected subcommands
+2. **Pipeline state collection** — mock pipeline-state.md, verify JSON output structure
+3. **Pipeline state missing** — no state file, verify graceful empty JSON
+4. **Error log collection** — mock error-log.jsonl with varied types, verify grouping
+5. **Error log empty** — no error log, verify graceful handling
+6. **Loop error collection** — mock error-summary.json and progress.md, verify extraction
+7. **Loop errors missing** — no loop-logs dir, verify graceful handling
+8. **Root cause classification** — provide known error messages, verify categories
+9. **Similar failures search** — mock memory files, verify ranked results
+10. **Vitals collection** — mock progress snapshots, verify health data
+11. **Fix suggestions** — verify suggestions match root cause category
+12. **Full report generation** — provide all fixture data, verify markdown structure
+13. **Full report with missing data** — empty artifacts dir, verify "No data" messages throughout
+14. **JSON output mode** — verify valid JSON with all expected top-level keys
+15. **Report file persistence** — verify file written to pipeline-artifacts/diagnostic-report.md
+16. **Error log entry limit** — verify only last N entries processed (not unbounded)
+17. **Issue-specific targeting** — `--issue N` resolves correct data directory
+18. **Event emission** — verify `diagnose.report_generated` event emitted
 
-| File | Change | Lines | Risk |
-|------|--------|-------|------|
-| `scripts/sw` | Add `diagnose\|diagnostic)` case in CLI router (near line 474, after `replay`) | +2 | None — append-only to case statement |
-| `scripts/lib/pipeline-commands.sh` | Auto-invoke `sw-diagnose.sh --save --quiet` after memory capture (after line 904) | +4 | Low — wrapped in `|| true`, after existing failure handling |
-| `scripts/lib/daemon-failure.sh` | Log diagnostic report path after failure classification (after line 198) | +2 | None — informational log, conditional on file existence |
-| `package.json` | Register `sw-diagnose-test.sh` in npm test script | +1 | None — append to existing test chain |
+### Integration Points
+- Daemon integration tested via mock `daemon_on_failure()` call with fixture data
+- CLI routing tested via `bash scripts/sw diagnose help`
 
-### Dependencies
+---
 
-- **No new dependencies.** All required libraries already exist in the codebase.
-- **Runtime deps:** `jq` (validated by `shipwright doctor`), `bash` 3.2+, standard POSIX utilities (`date`, `tail`, `head`, `sed`, `grep`)
+## Definition of Done
 
-### Risk Areas
-
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|-----------|------------|
-| `rootcause_classify()` returns unexpected format | Report shows garbled root cause | Low — function is stable, used by daemon | Validate return structure; fall back to "unknown" |
-| Large `error-log.jsonl` (>10K lines) | Slow `jq` processing, high memory | Medium — long-running daemon pipelines can accumulate | Default `MAX_ERRORS=50` with `--all` opt-in |
-| Pipeline failure path regression | Pipeline exit/cleanup disrupted | Low | `|| true` wrapper; diagnose runs *after* all existing failure handling |
-| State file format changes | Summary extraction breaks | Very Low — format is stable YAML frontmatter | Defensive `grep`/`sed` parsing with fallbacks |
-| Test suite false-positives in CI | Flaky tests slow pipeline | Low | Mock all data sources; no external calls; deterministic fixtures |
-
-## Validation Criteria
-
-- [ ] `shipwright diagnose` produces readable Markdown report with all 7 sections when run against a failed pipeline's artifacts
-- [ ] `shipwright diagnose --json` produces valid JSON (verified by `jq .` exit code 0) with keys: `summary`, `stages`, `errors`, `root_cause`, `memory_matches`, `recommendations`, `artifacts`
-- [ ] `shipwright diagnose --save` writes `diagnostic-report.md` and `diagnostic-report.json` to `.claude/pipeline-artifacts/`
-- [ ] Graceful degradation: running with no artifacts produces "No pipeline artifacts found" (exit 1), no crash
-- [ ] Graceful degradation: empty `error-log.jsonl` produces report with "No errors recorded" section
-- [ ] Graceful degradation: missing `lib/root-cause.sh` falls back to "unknown" classification without crashing
-- [ ] Pipeline failure path auto-generates diagnostic report — verified by checking file existence after a failed pipeline run
-- [ ] Auto-invocation is non-blocking — a deliberately broken `sw-diagnose.sh` does not prevent pipeline completion
-- [ ] Daemon logs diagnostic report path on failure (visible in daemon log output)
-- [ ] CLI router dispatches both `diagnose` and `diagnostic` aliases correctly
-- [ ] Test suite has 17 test cases, all passing, covering: help output, no artifacts, empty errors, summary extraction, stage timeline, error classification, 4 root cause patterns, actionability scoring, memory matches, recommendations, JSON output, save artifacts, error limit, mixed error types
-- [ ] Script passes `bash -n scripts/sw-diagnose.sh` (syntax check)
-- [ ] No Bash 3.2 violations: no `declare -A`, `readarray`, `${var,,}`, `${var^^}`
-- [ ] `VERSION` variable matches `package.json` version
-- [ ] No GitHub API calls made during diagnostic generation (respects `$NO_GITHUB` / offline operation)
-- [ ] `emit_event "diagnostic.generated"` fires on successful report generation (verifiable in `events.jsonl`)
+- [ ] `shipwright diagnose` produces a readable diagnostic report from the latest failed pipeline
+- [ ] `shipwright diagnose --issue N` targets a specific issue
+- [ ] `shipwright diagnose --json` outputs valid, parseable JSON
+- [ ] Report includes all 6 sections: summary, timeline, root cause, error details, similar failures, suggested fixes
+- [ ] Each section degrades gracefully when data is missing (no crashes, shows "No data available")
+- [ ] Daemon failure handler auto-generates report and includes summary in GitHub issue comment
+- [ ] Report persisted to `.claude/pipeline-artifacts/diagnostic-report.md`
+- [ ] Test suite has ≥15 passing tests
+- [ ] All existing tests continue to pass (no regressions)
+- [ ] Script follows project conventions: `set -euo pipefail`, Bash 3.2 compatible, VERSION variable, module guard, atomic writes
+- [ ] `shipwright observe diagnose` alias works via route_observe
+- [ ] Event emitted: `diagnose.report_generated` with issue number and report path
