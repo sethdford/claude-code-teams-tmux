@@ -4,40 +4,35 @@
       "result": {
         "results": [
           {
-            "file": "architecture.json",
-            "relevance": 95,
-            "summary": "Contains coding conventions, patterns, and dependencies essential for build stage context"
-          },
-          {
             "file": "failures.json",
-            "relevance": 80,
-            "summary": "Failure patterns from previous builds inform the current build stage to avoid repeating mistakes"
+            "relevance": 85,
+            "summary": "Test failure pattern directly related to pipeline stage artifacts (plan.md, review.md) not being written. Root cause involves adaptive stage timeout engine refactor affecting stage execution flow and artifact paths—critical for understanding build stage issues."
           },
           {
             "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Could contain learned patterns relevant to build optimization, currently empty"
-          },
-          {
-            "file": "decisions.json",
             "relevance": 50,
-            "summary": "Past architectural decisions may constrain or guide build stage choices"
+            "summary": "Project metadata showing vitest as test runner and npm as package manager. Relevant for understanding build/test execution environment and conventions used in the build stage."
           },
           {
             "file": "metrics.json",
-            "relevance": 40,
-            "summary": "Build performance baselines could inform iteration limits and timeouts"
+            "relevance": 20,
+            "summary": "Contains baseline metrics object but is empty. Minimal relevance to build stage context without populated data."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No actionable context for build stage work."
           }
         ]
       },
-      "timestamp": 1770948186,
+      "timestamp": 1772937569,
       "ttl": 1800
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "raw_response": "Mock claude response"
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772984580,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -268,7 +263,7 @@
           }
         }
       ],
-      "timestamp": 1772897013,
+      "timestamp": 1772984911,
       "ttl": 1800
     },
     "fdbb7bc340414cf938cecd4b790fa9e2": {
@@ -629,25 +624,28 @@
       "result": {
         "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
+        "success_probability": 68,
+        "recommended_template": "full",
         "issue_type": "frontend",
         "key_risks": [
-          "Accuracy of failure attribution logic across multiple dimension combinations (template/stage/language/complexity)",
-          "Performance impact of aggregating metrics across multiple time windows and breakdown dimensions simultaneously",
-          "Data consistency when tracking pipeline state transitions in high-volume scenarios",
-          "Backward compatibility with existing shipwright status and dashboard commands"
+          "Performance degradation when aggregating large event logs",
+          "Metric calculation accuracy critical - wrong data worse than none",
+          "Real-time update latency affecting dashboard responsiveness",
+          "Integration complexity with existing shipwright status/dashboard commands",
+          "Scaling challenges with repos containing thousands of pipelines"
         ],
         "implementation_hints": [
-          "Extend sw-db.sh with materialized views/indices for pre-calculated metrics by template, stage, language, complexity",
-          "Leverage sw-eventbus.sh to capture granular pipeline events for accurate failure attribution",
-          "Implement time-series bucketing in SQLite for efficient 7/30/90 day trend calculations with minimal query overhead",
-          "Stream real-time pipeline progress via dashboard server WebSocket layer to frontend clients",
-          "Analyze error-log.jsonl entries grouped by stage and error signature to build failure pattern taxonomy",
-          "Create dedicated /api/metrics JSON endpoint consumable by strategic agent for actionable recommendations"
+          "Build backend analytics layer first - verify metric calculations before UI",
+          "Leverage existing SQLite persistence layer for efficient historical queries",
+          "Design JSON schema for strategic agent consumption before implementation",
+          "Implement incremental aggregation with cached metrics to avoid recalculation",
+          "Add comprehensive unit tests for all metric calculations (high priority)",
+          "Use existing events.jsonl and heartbeat infrastructure as data sources",
+          "Implement efficient time-window queries (7/30/90 days) with indexed lookups",
+          "Consider sampling strategy for real-time updates, full aggregation for historical"
         ]
       },
-      "timestamp": 1772933189,
+      "timestamp": 1772936833,
       "ttl": 3600
     }
   }

@@ -111,7 +111,7 @@ TMPL
 # Usage: pipeline_config_with_stages "intake,plan,build"
 pipeline_config_with_stages() {
     local enabled_csv="$1"
-    local all_stages=("intake" "plan" "build" "test" "review" "pr" "deploy" "validate")
+    local all_stages=("intake" "plan" "build" "test" "review" "compound_quality" "pr" "deploy" "validate")
     local json='{ "name": "test-custom", "description": "Custom test pipeline",'
     json+=' "defaults": { "test_cmd": "echo all-tests-passed", "model": "opus", "agents": 1 },'
     json+=' "stages": ['
@@ -242,9 +242,33 @@ ISSUE_JSON
         esac
         ;;
     api)
-        # gh api → return JSON with comment id for progress tracking
-        if echo "$*" | grep -q "comments"; then
-            echo '{"id": 12345}'
+        # gh api → return JSON based on endpoint, handle --jq flag
+        json_output=""
+        case "$2" in
+            *"/comments"*) json_output='{"id": 12345}' ;;
+            "user") json_output='{"login": "testuser"}' ;;
+            *"check-runs"*) json_output='{"check_runs": []}' ;;
+            *) json_output='{}' ;;
+        esac
+
+        # Handle --jq flag if present
+        jq_filter=""
+        for arg in "$@"; do
+            case "$arg" in
+                --jq) jq_filter="true" ;;
+                *)
+                    if [[ "$jq_filter" == "true" ]]; then
+                        jq_filter="$arg"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+
+        if [[ -n "$jq_filter" && "$jq_filter" != "true" ]]; then
+            echo "$json_output" | jq -r "$jq_filter" 2>/dev/null || true
+        else
+            echo "$json_output"
         fi
         exit 0
         ;;
@@ -785,7 +809,8 @@ HEAL_EOF
 # 16. Intelligence: Stage Skipping with Documentation Label
 # ──────────────────────────────────────────────────────────────────────────────
 test_intelligent_skip_docs_label() {
-    # Create a custom mock gh that returns documentation label
+    # Use standard mock gh (already created in setup)
+    # Override the mock to return documentation label
     cat > "$TEST_TEMP_DIR/bin/gh" <<'GH_EOF'
 #!/usr/bin/env bash
 case "$1" in
@@ -819,8 +844,33 @@ ISSUE_JSON
         esac
         ;;
     api)
-        if echo "$*" | grep -q "comments"; then
-            echo '{"id": 12345}'
+        # gh api → return JSON based on endpoint, handle --jq flag
+        json_output=""
+        case "$2" in
+            *"/comments"*) json_output='{"id": 12345}' ;;
+            "user") json_output='{"login": "testuser"}' ;;
+            *"check-runs"*) json_output='{"check_runs": []}' ;;
+            *) json_output='{}' ;;
+        esac
+
+        # Handle --jq flag if present
+        jq_filter=""
+        for arg in "$@"; do
+            case "$arg" in
+                --jq) jq_filter="true" ;;
+                *)
+                    if [[ "$jq_filter" == "true" ]]; then
+                        jq_filter="$arg"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+
+        if [[ -n "$jq_filter" && "$jq_filter" != "true" ]]; then
+            echo "$json_output" | jq -r "$jq_filter" 2>/dev/null || true
+        else
+            echo "$json_output"
         fi
         exit 0
         ;;
@@ -829,14 +879,14 @@ esac
 GH_EOF
     chmod +x "$TEST_TEMP_DIR/bin/gh"
 
-    # Use a pipeline with review and test stages to verify they are skipped
-    pipeline_config_with_stages "intake,plan,build,test,review,pr" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
+    # Use a pipeline with compound_quality stage to verify it is skipped by documentation label
+    pipeline_config_with_stages "intake,plan,build,test,review,compound_quality,pr" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
 
     # Run with an issue that has documentation label
     invoke_pipeline start --issue 99 --skip-gates
 
     assert_exit_code 0 "pipeline with docs label should complete" &&
-    assert_output_contains "intelligence.*label:documentation|stage.*skipped.*intelligence" "should show intelligence-based skip" &&
+    assert_output_contains "skipped.*intelligence" "should show intelligence-based skip for at least one stage" &&
     assert_file_exists ".claude/pipeline-artifacts/intake.json" "intake should run"
 }
 
@@ -857,6 +907,7 @@ test_intelligent_skip_low_complexity() {
   "stages": [
     {"id": "intake", "enabled": true, "gate": "auto", "config": {}},
     {"id": "plan", "enabled": true, "gate": "auto", "config": {}},
+    {"id": "design", "enabled": true, "gate": "auto", "config": {}},
     {"id": "build", "enabled": true, "gate": "auto", "config": {}},
     {"id": "test", "enabled": true, "gate": "auto", "config": {}},
     {"id": "review", "enabled": true, "gate": "auto", "config": {}},

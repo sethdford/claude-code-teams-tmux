@@ -28,6 +28,14 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
 
+# Ensure pipeline intelligence skip module is loaded (provides pipeline_should_skip_stage)
+# SCRIPT_DIR may point to scripts/ or scripts/lib/ depending on how this module was sourced
+if [[ -f "$SCRIPT_DIR/pipeline-intelligence-skip.sh" ]]; then
+    source "$SCRIPT_DIR/pipeline-intelligence-skip.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
+    source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
+fi
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -506,11 +514,11 @@ run_pipeline() {
     fi
 
     local stages
-    stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG")
+    stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG" 2>/dev/null)
 
     local stage_count enabled_count
-    stage_count=$(jq '.stages | length' "$PIPELINE_CONFIG")
-    enabled_count=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG")
+    stage_count=$(jq '.stages | length' "$PIPELINE_CONFIG" 2>/dev/null)
+    enabled_count=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG" 2>/dev/null)
     local completed=0
 
     # Check which stages are enabled to determine if we use the self-healing loop
@@ -524,9 +532,9 @@ run_pipeline() {
 
     while IFS= read -r -u 3 stage; do
         local id enabled gate
-        id=$(echo "$stage" | jq -r '.id')
-        enabled=$(echo "$stage" | jq -r '.enabled')
-        gate=$(echo "$stage" | jq -r '.gate')
+        id=$(echo "$stage" | jq -r '.id' 2>/dev/null)
+        enabled=$(echo "$stage" | jq -r '.enabled' 2>/dev/null)
+        gate=$(echo "$stage" | jq -r '.gate' 2>/dev/null)
 
         CURRENT_STAGE_ID="$id"
 
@@ -565,14 +573,16 @@ run_pipeline() {
             continue
         fi
 
-        # Intelligence: evaluate whether to skip this stage
-        local skip_reason=""
-        skip_reason=$(pipeline_should_skip_stage "$id" 2>/dev/null) || true
-        if [[ -n "$skip_reason" ]]; then
-            echo -e "  ${DIM}○ ${id} — skipped (intelligence: ${skip_reason})${RESET}"
-            set_stage_status "$id" "complete"
-            completed=$((completed + 1))
-            continue
+        # Intelligence: evaluate whether to skip this stage (after intake, which populates ISSUE_LABELS)
+        if [[ "$id" != "intake" ]] && type pipeline_should_skip_stage >/dev/null 2>&1; then
+            local skip_reason=""
+            skip_reason=$(pipeline_should_skip_stage "$id" 2>/dev/null) || true
+            if [[ -n "$skip_reason" ]]; then
+                echo -e "  ${DIM}○ ${id} — skipped (intelligence: ${skip_reason})${RESET}"
+                set_stage_status "$id" "complete"
+                completed=$((completed + 1))
+                continue
+            fi
         fi
 
         local stage_status
@@ -606,7 +616,7 @@ run_pipeline() {
             fi
             # Gate check for build
             local build_gate
-            build_gate=$(echo "$stage" | jq -r '.gate')
+            build_gate=$(echo "$stage" | jq -r '.gate' 2>/dev/null)
             if [[ "$build_gate" == "approve" && "$SKIP_GATES" != "true" ]]; then
                 show_stage_preview "build"
                 local answer=""

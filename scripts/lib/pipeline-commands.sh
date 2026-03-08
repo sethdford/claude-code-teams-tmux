@@ -628,7 +628,7 @@ pipeline_start() {
 
         # Restore GOAL from issue if not already set
         if [[ -z "$GOAL" && -n "$ISSUE_NUMBER" ]]; then
-            GOAL=$(_timeout "$(_config_get_int "network.gh_timeout" 30 2>/dev/null || echo 30)" gh issue view "$ISSUE_NUMBER" --json title -q .title 2>/dev/null || echo "Issue #${ISSUE_NUMBER}")
+            GOAL=$(_timeout "$(_config_get_int "network.gh_timeout" 30 2>/dev/null || echo 30)" gh issue view "$ISSUE_NUMBER" --json title --jq '.title' 2>/dev/null || echo "Issue #${ISSUE_NUMBER}")
             info "CI resume: goal from issue — ${GOAL}"
         fi
 
@@ -762,6 +762,7 @@ pipeline_start() {
     if type publish_event >/dev/null 2>&1; then
         publish_event "pipeline.started" "{\"issue\":\"${ISSUE_NUMBER:-0}\",\"pipeline\":\"${PIPELINE_NAME}\",\"goal\":\"${GOAL:0:200}\"}" 2>/dev/null || true
     fi
+
 
     run_pipeline
     local exit_code=$?

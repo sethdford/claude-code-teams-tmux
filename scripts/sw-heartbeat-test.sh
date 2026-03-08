@@ -460,18 +460,18 @@ test_checkpoint_files_modified() {
 # 15. Pipeline script has heartbeat functions
 # ──────────────────────────────────────────────────────────────────────────────
 test_pipeline_has_heartbeat() {
-    local pipeline="$SCRIPT_DIR/sw-pipeline.sh"
+    local util_lib="$SCRIPT_DIR/lib/pipeline-util.sh"
 
-    if ! grep -q "start_heartbeat()" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} start_heartbeat() not found in pipeline"
+    if ! grep -q "start_heartbeat()" "$util_lib" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} start_heartbeat() not found in pipeline-util.sh"
         return 1
     fi
-    if ! grep -q "stop_heartbeat()" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} stop_heartbeat() not found in pipeline"
+    if ! grep -q "stop_heartbeat()" "$util_lib" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} stop_heartbeat() not found in pipeline-util.sh"
         return 1
     fi
-    if ! grep -q "stop_heartbeat" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} stop_heartbeat not called in cleanup"
+    if ! grep -q "stop_heartbeat" "$util_lib" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} stop_heartbeat not called in pipeline-util.sh"
         return 1
     fi
     return 0
@@ -498,14 +498,14 @@ test_loop_has_heartbeat_checkpoint() {
 # 17. Pipeline has human intervention checks
 # ──────────────────────────────────────────────────────────────────────────────
 test_pipeline_human_intervention() {
-    local pipeline="$SCRIPT_DIR/sw-pipeline.sh"
+    local execution_lib="$SCRIPT_DIR/lib/pipeline-execution.sh"
 
-    if ! grep -q "skip-stage.txt" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} skip-stage.txt check not found in pipeline"
+    if ! grep -q "skip-stage.txt" "$execution_lib" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} skip-stage.txt check not found in pipeline-execution.sh"
         return 1
     fi
-    if ! grep -q "human-message.txt" "$pipeline" 2>/dev/null; then
-        echo -e "    ${RED}✗${RESET} human-message.txt check not found in pipeline"
+    if ! grep -q "human-message.txt" "$execution_lib" 2>/dev/null; then
+        echo -e "    ${RED}✗${RESET} human-message.txt check not found in pipeline-execution.sh"
         return 1
     fi
     return 0

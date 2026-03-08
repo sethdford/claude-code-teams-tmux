@@ -3,7 +3,9 @@
 [[ -n "${_SKILL_REGISTRY_LOADED:-}" ]] && return 0
 _SKILL_REGISTRY_LOADED=1
 
-SKILLS_DIR="${SKILLS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../skills" && pwd)}"
+_skill_registry_base="$(dirname "${BASH_SOURCE[0]}")/../skills"
+SKILLS_DIR="${SKILLS_DIR:-$( cd "$_skill_registry_base" 2>/dev/null && pwd || echo "$_skill_registry_base" )}"
+unset _skill_registry_base
 
 # skill_get_prompts — Returns newline-separated list of skill file paths for a given (issue_type, stage).
 #   $1: issue_type (frontend|backend|api|database|infrastructure|documentation|security|performance|refactor|testing)

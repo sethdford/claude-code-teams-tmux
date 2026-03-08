@@ -18,7 +18,7 @@ set -euo pipefail
 [[ -n "${_MODULE_ERROR_ACTIONABILITY_LOADED:-}" ]] && return 0
 _MODULE_ERROR_ACTIONABILITY_LOADED=1
 
-VERSION="3.2.5"
+VERSION="3.2.4"
 
 # Score an error message for actionability
 # Input: error message (string)

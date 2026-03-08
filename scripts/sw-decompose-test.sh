@@ -202,9 +202,10 @@ assert_contains "help shows schedule cmd" "$output" "schedule"
 assert_contains "help shows critical-path cmd" "$output" "critical-path"
 assert_contains "help shows visualize cmd" "$output" "visualize"
 
-# Test version shows 3.3.0
+# Test version shows current version
 output=$(bash "$SCRIPT_DIR/sw-decompose.sh" --version 2>&1) && rc=0 || rc=$?
-assert_contains "version shows 3.3" "$output" "3.3"
+expected_ver=$(jq -r '.version' "$SCRIPT_DIR/../package.json" 2>/dev/null || echo "3")
+assert_contains "version shows $expected_ver" "$output" "$expected_ver"
 
 # Test analyze mock data includes dependencies
 output=$(bash "$SCRIPT_DIR/sw-decompose.sh" analyze 99 2>&1) && rc=0 || rc=$?
