@@ -1,555 +1,401 @@
 # Implementation Plan: Test Failure Recovery Loop with Smart Iteration Budget Management
 
-**Goal**: Implement intelligent test failure recovery and adaptive iteration budget management to:
-1. Detect test failures and re-enter build/test cycle with enhanced error context
-2. Adapt iteration limits based on issue complexity, failure patterns, and context exhaustion
-3. Track failure patterns across iterations for intelligent decision-making
+**Goal**: Build a test failure tracking module that detects per-test failure patterns across iterations, provides smart recovery context injection, and adapts iteration budget based on failure severity.
 
-**Complexity Level**: Medium-High (8/10)
-**Estimated Scope**: 10-15 focused tasks
-**Integration Points**: 4 major locations (library, sw-loop.sh, loop-iteration.sh, tests)
-**Estimated Effort**: 40-50 hours
+**Complexity**: Medium (6/10) — new library module + 4 surgical integration points
+**Estimated Lines**: ~350 new, ~80 modified
 
 ---
 
-## Problem Statement & Analysis
+## Socratic Design Analysis
 
-The build loop (`sw-loop.sh`) currently:
-- ✅ Detects test failures via `TEST_PASSED` flag
-- ✅ Extracts generic error lines via `write_error_summary()`
-- ✅ Has basic iteration limits (MAX_ITERATIONS, auto-extend)
-- ✅ Has apply_adaptive_budget() for intelligent budgeting
-- ❌ **Does NOT** comprehensively test the recovery mechanism
-- ❌ **Does NOT** have smart budget based on failure severity and patterns
-- ❌ **Does NOT** distinguish context exhaustion from code errors
-- ❌ **Does NOT** track per-test failure signatures
-- ❌ **Does NOT** escalate budget for high-impact failures
+### Requirements Clarity
 
-This means:
-1. When tests fail, recovery is haphazard — no structured error context injected
-2. Iteration budget is static per complexity level, doesn't adapt to actual failure patterns
-3. If same test fails 3x, loop doesn't recognize pattern or escalate
-4. No distinction: "I'm stuck in infinite loop" vs "Context window full" vs "Different bugs each iteration"
+**Minimum viable change**: A new `lib/loop-test-failure-tracker.sh` module that:
+1. Extracts individual test names from test framework output (Jest, Pytest, Go, Vitest)
+2. Tracks which tests fail in which iterations via a JSON state file
+3. Detects when the same test fails 3+ consecutive iterations → abort
+4. Injects "previously failed tests" context into the next iteration's prompt
 
-**Root Cause**: Test failure recovery exists but lacks:
-- Per-test failure tracking (specific vs generic)
-- Failure severity detection (assertion vs syntax vs timeout)
-- Adaptive budget escalation (increase budget on repeated failures)
-- Context exhaustion detection (token counting)
+**Implicit requirements**:
+- Must not break any of the 143 existing test suites
+- Must follow Bash 3.2 compatibility (no associative arrays, no readarray)
+- Must use atomic writes (tmp+mv) for state files
+- Must gracefully degrade if module is missing (guard pattern)
 
----
+**Acceptance criteria** (self-defined):
+- `tft_extract_test_names()` correctly parses 5 test framework formats
+- State file tracks per-test failure history as JSON
+- Loop aborts with `STATUS="abort_repeated_test_failure"` after 3 consecutive same-test failures
+- Grace period: no abort in iterations 1-2
+- Non-consecutive failures (gaps) do NOT trigger abort
+- Context section injected into `compose_prompt()` showing previously failed tests
+- State resets on session restart
+- All existing tests pass (`npm test` exit 0)
 
-## Design Alternatives Considered
+### Design Alternatives
 
-### Alternative 1: Extend `diagnose_failure()` to track test names
-**Pros**:
-- Builds on existing error classification logic
-- Minimal new infrastructure
+**Alternative A: Extend `diagnose_failure()` in sw-loop.sh**
+- Pros: No new files, builds on existing diagnostic path
+- Cons: `diagnose_failure()` is already 100+ lines, mixes concerns (classification + tracking), sw-loop.sh is 2527 lines
+- Blast radius: Medium — changes core diagnostic path that runs every iteration
+- Trade-off: Less complexity but worse maintainability
 
-**Cons**:
-- `diagnose_failure()` is already complex (100+ lines)
-- Violates Single Responsibility Principle (error classification + test tracking)
-- Diagnosis happens *after* test failure but *before* next iteration — awkward for injection
-- Would require refactoring existing function
+**Alternative B: Add 8th signal to `detect_stuckness()` in loop-convergence.sh**
+- Pros: Stuckness detection already has signal infrastructure
+- Cons: Stuckness fires after iteration completes (too late for same-iteration injection), triggers session restart not clean abort, mixes generic health with test-specific logic
+- Blast radius: Medium-High — alters convergence/stuckness logic
+- Trade-off: Reuses infrastructure but wrong abstraction level
 
-**Blast Radius**: Medium — changes core diagnostic path
+**Alternative C (Chosen): New `lib/loop-test-failure-tracker.sh` module**
+- Pros: Clean separation of concerns, testable in isolation, follows `lib/loop-*.sh` pattern, non-breaking if missing, minimal integration points (4 lines in sw-loop.sh)
+- Cons: One more file to maintain
+- Blast radius: **Low** — all existing code unchanged except 4 surgical additions
+- Trade-off: Best maintainability and testability at cost of one new file
 
----
+**Why C wins**: The existing `lib/loop-*.sh` pattern (convergence.sh, iteration.sh, restart.sh, progress.sh) proves this architecture works. Adding a 5th module is the natural extension.
 
-### Alternative 2: Add test name tracking to `detect_stuckness()`
-**Pros**:
-- Stuckness detection already has 7 signals; adding an 8th is natural
-- Could leverage existing signal infrastructure
-
-**Cons**:
-- Stuckness fires *after* iteration completes — too late for same-iteration injection
-- Stuckness triggers session restart at count 3 — not a clean "early abort" message
-- Mixes stuckness detection (generic loop health) with test-specific logic
-- Test tracking is a separate concern
-
-**Blast Radius**: Medium-High — alters convergence/stuckness logic
-
----
-
-### Alternative 3 (Chosen): New `lib/loop-test-failure-tracker.sh` module ✓
-**Pros**:
-- ✅ Clean separation of concerns
-- ✅ Testable in isolation with ~20 unit tests
-- ✅ Minimal changes to existing code (3 integration points)
-- ✅ Follows existing pattern of `lib/loop-*.sh` modules
-- ✅ Non-breaking if module missing (`type ... >/dev/null` guards)
-- ✅ Easy to disable/experiment with
-
-**Cons**:
-- New file to maintain
-
-**Blast Radius**: **Low** — surgical integration points, additive changes
-
-**Trade-offs**: Simplicity (40% of complexity) vs. Separation of Concerns (worth the extra module)
-
----
-
-## Task Decomposition with Explicit Dependencies
-
-### Phase 1: Core Module Implementation
-
-**Task 1: Create `lib/loop-test-failure-tracker.sh` with test name extraction**
-- **Dependency**: None
-- **Time**: ~1 hour
-- **Deliverable**: `tft_extract_test_names()` function
-- **Details**:
-  - Parse Jest format: `FAIL  src/auth.test.js` or `✕ login should validate credentials`
-  - Parse Pytest format: `FAILED tests/test_auth.py::test_login`
-  - Parse Go test format: `--- FAIL: TestLogin` or `FAIL\tpkg/auth`
-  - Parse Vitest format: `FAIL  src/auth.test.ts > login > validates credentials`
-  - Parse generic format: `FAIL:` or `✗` followed by identifier
-  - Output: Max 20 newline-separated test identifiers
-  - Handle empty/malformed output gracefully (return empty string)
-
-**Task 2: Implement state management functions**
-- **Dependency**: Task 1
-- **Time**: ~45 minutes
-- **Deliverables**:
-  - `tft_record_iteration(iteration, test_output)` — atomic JSON writes to `$LOG_DIR/test-failure-tracking.json`
-  - `tft_check_repeated_failures(threshold)` — detect 3+ consecutive failures
-  - `tft_compose_context_section()` — generate markdown section for injection
-  - `tft_reset()` — clear state on session restart
-- **Details**:
-  - State format:
-    ```json
-    {
-      "version": 1,
-      "failed_tests": {
-        "src/auth.test.js::login": {"iterations": [3, 4, 5], "first_seen": 3},
-        "tests/api.test.py::test_endpoint": {"iterations": [4, 5], "first_seen": 4}
-      },
-      "last_iteration": 5,
-      "last_updated": "2026-03-08T12:34:56Z"
-    }
-    ```
-  - Atomic writes: tmp file + `mv` (not direct echo)
-  - Graceful degradation: warn on corruption, reset to empty state
-  - "Consecutive" = streak ends at current iteration (iterations list must have no gaps within threshold)
-  - `TFT_ABORT_REASON` variable for human-readable message
-  - `TFT_REPEATED_TESTS` variable with comma-separated test names
-
-**Task 3: Create comprehensive test suite `sw-loop-test-failure-tracker-test.sh`**
-- **Dependency**: Task 1, Task 2
-- **Time**: ~1.5 hours
-- **Deliverables**: ≥20 test cases
-- **Test Categories**:
-  - **Parser Tests (6 tests)**: Jest, Pytest, Go test, Vitest, generic, empty output
-  - **State Management Tests (4 tests)**: create, read, update, corrupt recovery
-  - **Consecutive Detection Tests (3 tests)**: exact threshold (3), below (2), above (5)
-  - **Non-consecutive Tests (2 tests)**: gaps break streak, non-adjacent failures
-  - **Grace Period Tests (2 tests)**: no abort in iter 1-2 even if failure
-  - **Edge Cases (3 tests)**: >20 tests truncation, special chars, unicode test names
-
----
-
-### Phase 2: Loop Integration
-
-**Task 4: Source module and integrate into `sw-loop.sh`** ⇐ Blocks Task 5
-- **Dependency**: Task 2, Task 3 (tests passing)
-- **Time**: ~15 minutes
-- **Deliverables**:
-  - Source line at ~line 40 with other lib modules
-  - ```bash
-    [[ -f "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" ]] && source "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" 2>/dev/null || true
-    ```
-
-**Task 5: Record test failures after test gate** ⇐ Depends on Task 4
-- **Dependency**: Task 4
-- **Time**: ~15 minutes
-- **Location**: After `write_error_summary` at ~line 2237
-- **Code**:
-  ```bash
-  # Track individual test failures for smart abort
-  if type tft_record_iteration >/dev/null 2>&1; then
-      local test_output_for_tracking=""
-      [[ "${TEST_PASSED:-}" == "false" ]] && test_output_for_tracking="${TEST_OUTPUT:-}"
-      tft_record_iteration "$ITERATION" "$test_output_for_tracking" 2>/dev/null || true
-  fi
-  ```
-
-**Task 6: Add abort check in main loop** ⇐ Depends on Task 4, Task 5
-- **Dependency**: Task 4
-- **Time**: ~20 minutes
-- **Location**: After `check_circuit_breaker` at ~line 2109 (before ITERATION increment)
-- **Code**:
-  ```bash
-  # Smart test failure abort — same test failing 3+ consecutive iterations
-  if type tft_check_repeated_failures >/dev/null 2>&1; then
-      if tft_check_repeated_failures 3; then
-          STATUS="abort_repeated_test_failure"
-          error "Aborting: repeated test failure — ${TFT_ABORT_REASON:-unknown}"
-          if type emit_event >/dev/null 2>&1; then
-              emit_event "loop.abort_repeated_test_failure" \
-                  "iteration=$ITERATION" \
-                  "tests=${TFT_REPEATED_TESTS:-}" \
-                  "reason=${TFT_ABORT_REASON:-}"
-          fi
-          write_state
-          write_progress
-          show_summary
-          break
-      fi
-  fi
-  ```
-
-**Task 7: Reset state on session restart** ⇐ Depends on Task 4
-- **Dependency**: Task 4
-- **Time**: ~10 minutes
-- **Location**: In restart block at ~line 2074 or in the restart initialization
-- **Code**:
-  ```bash
-  # Reset test failure tracking for fresh session
-  type tft_reset >/dev/null 2>&1 && tft_reset || true
-  ```
-
----
-
-### Phase 3: Prompt Composition Integration
-
-**Task 8: Inject failed test context into prompts** ⇐ Depends on Task 2
-- **Dependency**: Task 2 (context section function), Task 4 (module sourced)
-- **Time**: ~25 minutes
-- **Location**: In `compose_prompt()` at ~lib/loop-iteration.sh:118, after error summary section
-- **Code**:
-  ```bash
-  # Previously failed test names (smart abort context)
-  local failed_tests_section=""
-  if type tft_compose_context_section >/dev/null 2>&1; then
-      failed_tests_section="$(tft_compose_context_section 2>/dev/null || true)"
-  fi
-  ```
-  And inject into heredoc:
-  ```bash
-  ${failed_tests_section:+${failed_tests_section}
-  }
-  ```
-
----
-
-### Phase 4: Testing & Verification
-
-**Task 9: Run full test suite and verify no regressions**
-- **Dependency**: Task 3, Task 6, Task 8
-- **Time**: ~30 minutes
-- **Commands**:
-  ```bash
-  npm test  # All 102+ test suites
-  ./scripts/sw-loop-test-failure-tracker-test.sh  # New suite specifically
-  ./scripts/sw-loop-test.sh  # Existing loop tests
-  ./scripts/sw-convergence-test.sh  # Convergence/stuckness tests
-  ```
-- **Success Criteria**:
-  - ✅ All 20+ new tests pass
-  - ✅ No regressions in loop/convergence tests
-  - ✅ Exit code 0 from npm test
-
-**Task 10: Integration smoke test in live loop (optional)**
-- **Dependency**: Task 9
-- **Time**: ~20 minutes (optional)
-- **Details**: Run a mini loop with a test that fails 3x, verify abort
-  - Create temp repo with flaky test
-  - Run: `shipwright loop "fix test" --test-cmd "npm test" --max-iterations 10`
-  - Verify loop exits with `STATUS="abort_repeated_test_failure"` at iteration 5 or less
-
----
-
-## Risk Analysis
+### Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|-----------|
-| **False positive abort on flaky test** | Medium | High | Require 3 *consecutive* iterations (not just 3 total). Grace period: no abort in iterations 1-2. Add `--grace-iterations` flag if needed. |
-| **Parser misses test names (unusual framework)** | Low | Low | Fallback to generic pattern. Log parse results. Loop continues as before if no names extracted. |
-| **JSON state corruption** | Low | Medium | Atomic writes (tmp+mv). Validate JSON on read. Reset to empty state on corruption, log warning. |
-| **Context bloat from many failed tests** | Low | Low | Cap at 5 tests in injection. ~200 chars max per section. |
-| **Breaking existing convergence logic** | Very Low | High | New module is additive. Existing `detect_stuckness()` unchanged. Guards prevent breakage if module missing (`type ... >/dev/null`). |
-| **Memory exhaustion from large state file** | Very Low | Low | Max 20 tests tracked. State file ~500 bytes typical. Annual rotation if ever needed. |
-| **Race condition in atomic file writes** | Very Low | Medium | Use `mv` (atomic on same filesystem), not `echo >`. Temp file in same dir as target. |
+|------|-----------|--------|-----------|
+| False positive abort on flaky test | Medium | High | Require 3 *consecutive* iterations (gaps break streak). Grace period: no abort in iter 1-2. |
+| Parser misses test names (unusual framework) | Low | Low | Graceful fallback: if no names extracted, loop continues as before. No abort without names. |
+| JSON state corruption | Low | Medium | Atomic writes (tmp+mv). Validate JSON on read. Reset to empty on corruption. |
+| Breaking existing convergence logic | Very Low | High | New module is purely additive. Guards prevent breakage if missing. |
+| `while read` subshell variable loss | Medium | Medium | Use `while read; done < <(cmd)` pattern per CLAUDE.md pitfalls. |
+| Context bloat from many failed tests | Low | Low | Cap at 5 tests in injection, ~200 chars max per section. |
+
+### Dependency Analysis
+
+- **Depends on**: `jq` (already required), `$LOG_DIR` variable (set by sw-loop.sh), test output from `run_test_gate()`
+- **Depended on by**: Nothing — purely additive module
+- **Circular dependency risk**: None — module is sourced but never sources back
 
 ---
 
-## Definition of Done (Acceptance Criteria)
+## Files to Modify
 
-### Functional Requirements
-- [ ] **Test name extraction**: `tft_extract_test_names()` correctly parses Jest, Pytest, Go test, Vitest, and npm test output with ≥90% accuracy
-- [ ] **State tracking**: Failed tests tracked per iteration in `test-failure-tracking.json` with atomic writes
-- [ ] **Early abort**: Build loop exits with `STATUS="abort_repeated_test_failure"` when same test fails 3+ *consecutive* iterations
-- [ ] **Context injection**: "Previously failed tests: [list]" section injected into agent prompt via `compose_prompt()`
-- [ ] **Event emission**: `loop.abort_repeated_test_failure` event emitted with test names and abort reason
-- [ ] **Grace period**: No abort triggered in first 2 iterations, even if tests fail
-- [ ] **Non-consecutive handling**: Failures in iterations 1, 3, 5 do NOT trigger abort (gaps break streak)
-- [ ] **Session restart reset**: Tracking state cleared on session restart, fresh start with clean file
+### New Files
+1. `scripts/lib/loop-test-failure-tracker.sh` (~300 lines) — Core recovery module
+2. `scripts/sw-lib-loop-test-failure-tracker-test.sh` (~450 lines) — Unit test suite
 
-### Quality Requirements
-- [ ] **Test coverage**: ≥20 test cases covering happy path, error cases, edge cases
-  - Jest/Pytest/Go/Vitest parser tests (6)
-  - State management tests (4)
-  - Consecutive detection tests (3)
-  - Non-consecutive tests (2)
-  - Grace period tests (2)
-  - Edge case tests (3)
-- [ ] **No regressions**: Existing test suites pass
-  - `sw-loop-test.sh` — all cases pass
-  - `sw-convergence-test.sh` — all cases pass
-  - Full `npm test` — exit 0
-- [ ] **Error handling**: Graceful degradation on malformed input, JSON corruption, missing files
-- [ ] **Performance**: No measurable slowdown in loop iterations (<50ms overhead per iteration)
-- [ ] **Code quality**:
-  - Bash 3.2 compatible (no associative arrays, `readarray`, etc.)
-  - Follows Shipwright shell standards (`set -euo pipefail`, atomic writes, `emit_event`)
-  - Documented with inline comments for complex logic
-  - No shell injection vulnerabilities (proper quoting, `jq --arg` for JSON)
-
-### Integration Requirements
-- [ ] **Module sourcing**: New module sourced in `sw-loop.sh` with proper guards
-- [ ] **Test gate integration**: Failure tracking called after `write_error_summary()`
-- [ ] **Abort integration**: Check happens before iteration increment (allows proper STATE/progress save)
-- [ ] **Prompt injection**: Context section appears in composed prompt for next iteration
-- [ ] **Event tracking**: Event emitted with proper format (iteration, test names, reason)
-- [ ] **Session state**: Reset function called on session restart
+### Modified Files
+3. `scripts/sw-loop.sh` (+8 lines) — Source module, record failures, check abort, reset on restart
+4. `scripts/lib/loop-iteration.sh` (+12 lines) — Inject failed test context into `compose_prompt()`
+5. `package.json` (+1 line) — Register new test suite
 
 ---
 
-## Implementation Steps (Detailed)
+## Implementation Steps
 
-### Step 1: Create `scripts/lib/loop-test-failure-tracker.sh` (Core Module)
+### Step 1: Create `scripts/lib/loop-test-failure-tracker.sh`
 
-File structure:
+The core module with 5 public functions:
+
 ```bash
-#!/usr/bin/env bash
-# VERSION=1.0.0
-# Test failure name extraction and tracking for smart loop abort
+# Module guard
+[[ -n "${_LOOP_TEST_FAILURE_TRACKER_LOADED:-}" ]] && return 0
+_LOOP_TEST_FAILURE_TRACKER_LOADED=1
 
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Global variables
+# Global state
 TFT_STATE_FILE=""
 TFT_ABORT_REASON=""
 TFT_REPEATED_TESTS=""
+```
 
-# Function 1: tft_extract_test_names(test_output) → stdout
-# Parse test output and extract individual test names
-# Supports: Jest, Pytest, Go test, Vitest, generic
-# Returns: max 20 newline-separated test identifiers
-tft_extract_test_names() {
-    local output="$1"
-    [[ -z "$output" ]] && return 0
+**Function 1: `tft_extract_test_names(test_output)`**
+- Input: Raw test output string
+- Output: Newline-separated test identifiers (max 20) on stdout
+- Parsers (in priority order):
+  1. **Jest**: `FAIL  src/auth.test.js` or `✕ login should validate credentials`
+  2. **Pytest**: `FAILED tests/test_auth.py::test_login`
+  3. **Go test**: `--- FAIL: TestLogin` or `FAIL\tpkg/auth`
+  4. **Vitest**: `FAIL  src/auth.test.ts > login > validates`
+  5. **Generic fallback**: Lines matching `FAIL:` or `✗` or `✕`
+- Empty input → empty output (return 0)
+- Dedup results, cap at 20
 
-    local test_names=()
+**Function 2: `tft_record_iteration(iteration, test_output)`**
+- Extract test names from output
+- Load/create state file at `$LOG_DIR/test-failure-tracking.json`
+- For each failed test: append current iteration to its history array
+- Atomic write: `tmp.$$` + `mv`
+- State format:
+  ```json
+  {
+    "version": 1,
+    "failed_tests": {
+      "src/auth.test.js::login": { "iterations": [3, 4, 5], "first_seen": 3 }
+    },
+    "last_iteration": 5,
+    "last_updated": "2026-03-08T12:34:56Z"
+  }
+  ```
+- If test_output is empty (tests passed), still update `last_iteration` but don't add any failures
 
-    # Jest: "✕ login should validate credentials" or "FAIL  src/auth.test.js"
-    local jest_tests
-    jest_tests=$(echo "$output" | grep -iE '(✕|✗|FAIL\s+).*\.(test|spec)\.(js|ts|tsx)' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | head -20)
-    if [[ -n "$jest_tests" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && test_names+=("$line")
-        done < <(echo "$jest_tests")
+**Function 3: `tft_check_repeated_failures(threshold)`**
+- Default threshold: 3
+- Read state file, check each test's iteration array
+- "Consecutive" = the last N entries form an unbroken sequence ending at `last_iteration`
+  - Example: iterations [3,4,5] with last_iteration=5, threshold=3 → consecutive ✓
+  - Example: iterations [3,5,7] with last_iteration=7, threshold=3 → NOT consecutive (gaps)
+- Grace period: if `last_iteration < 3`, return 1 (no abort)
+- Sets `TFT_ABORT_REASON` and `TFT_REPEATED_TESTS` on match
+- Return 0 if abort warranted, 1 otherwise
+- Critical: Use `< <(jq ...)` pattern to avoid subshell variable loss
+
+**Function 4: `tft_compose_context_section()`**
+- Read state file, extract top 5 most-failed tests (sorted by iteration count desc)
+- Output markdown section:
+  ```
+  ## Previously Failed Tests
+  These tests have failed in recent iterations — focus fixes here:
+  - src/auth.test.js::login (iterations: 3, 4, 5) ⚠️ 3 consecutive
+  - api.test.py::test_endpoint (iterations: 4, 5)
+  ```
+- If no state file or no failures, output empty string
+- Cap output at 5 tests, ~200 chars
+
+**Function 5: `tft_reset()`**
+- Remove state file
+- Clear global variables
+
+### Step 2: Create test suite `scripts/sw-lib-loop-test-failure-tracker-test.sh`
+
+Using existing test harness pattern from `scripts/lib/test-helpers.sh`:
+
+**Parser Tests (6 tests)**:
+1. Jest format: `✕ login should validate` → extracts test name
+2. Pytest format: `FAILED tests/test_auth.py::test_login` → extracts qualified name
+3. Go test format: `--- FAIL: TestLogin (0.01s)` → extracts `TestLogin`
+4. Vitest format: `FAIL  src/auth.test.ts > login > validates` → extracts full path
+5. Generic format: `FAIL: something broke` → extracts description
+6. Empty input: returns empty, exit 0
+
+**State Management Tests (4 tests)**:
+7. Record creates new state file with correct JSON structure
+8. Record appends iteration to existing test history
+9. Record handles passed tests (empty output) — updates last_iteration only
+10. Corrupted JSON file → graceful reset to empty state
+
+**Consecutive Detection Tests (5 tests)**:
+11. Exact threshold (3 consecutive: iters [3,4,5], last=5) → returns 0
+12. Below threshold (2 consecutive: iters [4,5], last=5) → returns 1
+13. Above threshold (5 consecutive: iters [1,2,3,4,5], last=5) → returns 0
+14. Non-consecutive (gaps: iters [1,3,5], last=5) → returns 1
+15. Sets TFT_ABORT_REASON and TFT_REPEATED_TESTS correctly
+
+**Grace Period Tests (2 tests)**:
+16. Iteration 1 with failure → no abort (returns 1)
+17. Iteration 2 with failure → no abort (returns 1)
+
+**Context Section Tests (2 tests)**:
+18. With failures → markdown section with test names and iteration lists
+19. No state file → empty output
+
+**Reset Test (1 test)**:
+20. Reset removes state file and clears globals
+
+**Edge Cases (2 tests)**:
+21. More than 20 test names → truncated to 20
+22. Special characters in test names (quotes, spaces) → handled via jq --arg
+
+### Step 3: Integrate into `scripts/sw-loop.sh` (4 surgical additions)
+
+**Addition 1** — Source module (after line 40, with other loop-*.sh modules):
+```bash
+# Test failure tracking for smart abort (issue #230)
+[[ -f "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" ]] && source "$SCRIPT_DIR/lib/loop-test-failure-tracker.sh" 2>/dev/null || true
+```
+Location: After line 40 (`loop-progress.sh` source), before line 41 (`session-restart.sh` source).
+
+**Addition 2** — Record failures after test gate (after line 2237 `write_error_summary`):
+```bash
+# Track individual test failures for smart abort (issue #230)
+if type tft_record_iteration >/dev/null 2>&1 && [[ -n "$TEST_CMD" ]]; then
+    tft_record_iteration "$ITERATION" "${TEST_OUTPUT:-}" 2>/dev/null || true
+fi
+```
+Location: After line 2237, before line 2238.
+
+**Addition 3** — Check for repeated failure abort (after line 2110 `check_max_iterations`):
+```bash
+# Smart test failure abort — same test failing 3+ consecutive iterations (issue #230)
+if type tft_check_repeated_failures >/dev/null 2>&1 && [[ "${ITERATION:-0}" -gt 0 ]]; then
+    if tft_check_repeated_failures 3; then
+        STATUS="abort_repeated_test_failure"
+        error "Aborting: repeated test failure — ${TFT_ABORT_REASON:-unknown}"
+        emit_event "loop.abort_repeated_test_failure" \
+            "iteration=$ITERATION" \
+            "tests=${TFT_REPEATED_TESTS:-}" \
+            "reason=${TFT_ABORT_REASON:-}" 2>/dev/null || true
+        write_state
+        write_progress
+        show_summary
+        break
     fi
+fi
+```
+Location: After line 2110 (`check_max_iterations || break`), before line 2111 (`check_budget_gate`).
 
-    # Pytest: "FAILED tests/test_auth.py::test_login"
-    local pytest_tests
-    pytest_tests=$(echo "$output" | grep -iE 'FAILED.*\.py::test_' | sed 's/^FAILED[[:space:]]*//' | sed 's/[[:space:]]*$//' | head -20)
-    if [[ -n "$pytest_tests" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && test_names+=("$line")
-        done < <(echo "$pytest_tests")
-    fi
+**Addition 4** — Reset on session restart (in restart block, after line 2484 `STUCKNESS_COUNT=0`):
+```bash
+# Reset test failure tracking for fresh session
+type tft_reset >/dev/null 2>&1 && tft_reset 2>/dev/null || true
+```
+Location: After line 2484, before line 2485.
 
-    # Go test: "--- FAIL: TestLogin"
-    local go_tests
-    go_tests=$(echo "$output" | grep -E '(FAIL|---\s+FAIL).*Test[A-Za-z0-9_]+' | sed 's/^[^T]*Test/Test/' | sed 's/[[:space:]]*$//' | head -20)
-    if [[ -n "$go_tests" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && test_names+=("$line")
-        done < <(echo "$go_tests")
-    fi
+### Step 4: Integrate into `scripts/lib/loop-iteration.sh`
 
-    # Vitest: "FAIL  src/auth.test.ts > login > validates credentials"
-    local vitest_tests
-    vitest_tests=$(echo "$output" | grep -E 'FAIL\s+.*test\.(ts|tsx|js).*>' | sed 's/^FAIL[[:space:]]*//' | sed 's/[[:space:]]*$//' | head -20)
-    if [[ -n "$vitest_tests" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && test_names+=("$line")
-        done < <(echo "$vitest_tests")
-    fi
+**In `compose_prompt()` — build failed test section** (after line 118, after error_summary_section):
+```bash
+# Previously failed test names for smart recovery (issue #230)
+local failed_tests_section=""
+if type tft_compose_context_section >/dev/null 2>&1; then
+    failed_tests_section="$(tft_compose_context_section 2>/dev/null || true)"
+fi
+```
 
-    # Generic fallback: any line with "FAIL:" or "✗"
-    if [[ ${#test_names[@]} -eq 0 ]]; then
-        local generic_tests
-        generic_tests=$(echo "$output" | grep -iE '(FAIL:|✗|✕)' | sed 's/^[[:space:]]*[✗✕]*[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | head -20)
-        if [[ -n "$generic_tests" ]]; then
-            while IFS= read -r line; do
-                [[ -n "$line" ]] && test_names+=("$line")
-            done < <(echo "$generic_tests")
-        fi
-    fi
-
-    # Output unique tests (max 20)
-    local -a unique_tests=()
-    for test in "${test_names[@]}"; do
-        # Avoid duplicates
-        grep -Fxq "$test" <<< "$(printf '%s\n' "${unique_tests[@]}")" 2>/dev/null || unique_tests+=("$test")
-    done
-
-    printf '%s\n' "${unique_tests[@]:0:20}"
+**In heredoc** (after line 358, after error_summary_section injection):
+```bash
+${failed_tests_section:+$failed_tests_section
 }
+```
 
-# Function 2: tft_record_iteration(iteration, test_output)
-# Record failed tests from this iteration
-tft_record_iteration() {
-    local iteration="$1"
-    local test_output="$2"
+### Step 5: Register test suite in `package.json`
 
-    [[ -z "$TFT_STATE_FILE" ]] && TFT_STATE_FILE="${LOG_DIR:-/tmp}/test-failure-tracking.json"
+Add to the test script's list of test suites:
+```
+./scripts/sw-lib-loop-test-failure-tracker-test.sh
+```
 
-    local failed_tests
-    failed_tests=$(tft_extract_test_names "$test_output")
+### Step 6: Run full test suite and verify
 
-    # Load existing state or initialize
-    local state_json="{\"version\":1,\"failed_tests\":{},\"last_iteration\":0}"
-    if [[ -f "$TFT_STATE_FILE" ]]; then
-        state_json=$(jq . "$TFT_STATE_FILE" 2>/dev/null || echo "{\"version\":1,\"failed_tests\":{},\"last_iteration\":0}")
-    fi
+```bash
+# New test suite
+./scripts/sw-lib-loop-test-failure-tracker-test.sh
 
-    # Update failed_tests object
-    # For each failed test: append iteration to history
-    # For passed tests (not in current failures): they don't get added/cleared
+# Existing loop tests (regression check)
+./scripts/sw-loop-test.sh
+./scripts/sw-convergence-test.sh
+./scripts/sw-session-restart-test.sh
 
-    # [Implementation continues...]
-    echo "$state_json" | jq --arg iter "$iteration" --argjson ts "$(date -u +%s)" \
-        '.last_iteration = ($iter | tonumber) | .last_updated = "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"' \
-        > "$TFT_STATE_FILE.tmp.$$"
-
-    mv "$TFT_STATE_FILE.tmp.$$" "$TFT_STATE_FILE" 2>/dev/null || true
-}
-
-# Function 3: tft_check_repeated_failures(threshold)
-# Return 0 if any test has threshold+ consecutive failures ending at current iteration
-# Sets TFT_ABORT_REASON and TFT_REPEATED_TESTS
-tft_check_repeated_failures() {
-    local threshold="${1:-3}"
-    TFT_ABORT_REASON=""
-    TFT_REPEATED_TESTS=""
-
-    [[ -z "$TFT_STATE_FILE" ]] && TFT_STATE_FILE="${LOG_DIR:-/tmp}/test-failure-tracking.json"
-    [[ ! -f "$TFT_STATE_FILE" ]] && return 1
-
-    local current_iter
-    current_iter=$(jq -r '.last_iteration // 0' "$TFT_STATE_FILE" 2>/dev/null || echo "0")
-
-    # Check each failed test
-    local repeated_count=0
-    local repeated_names=()
-
-    jq -r '.failed_tests | to_entries[] | "\(.key)|\(.value.iterations | join(","))"' "$TFT_STATE_FILE" 2>/dev/null | while IFS='|' read -r test_name iterations_str; do
-        # Parse iterations array
-        # Check if last $threshold items are consecutive and end at $current_iter
-
-        # [Implementation continues...]
-        repeated_names+=("$test_name")
-        repeated_count=$((repeated_count + 1))
-    done
-
-    if [[ $repeated_count -gt 0 ]]; then
-        TFT_ABORT_REASON="$repeated_count test(s) failed in 3+ consecutive iterations"
-        TFT_REPEATED_TESTS="$(printf '%s,' "${repeated_names[@]}" | sed 's/,$//')"
-        return 0
-    fi
-
-    return 1
-}
-
-# Function 4: tft_compose_context_section()
-# Generate markdown section for prompt injection
-tft_compose_context_section() {
-    [[ -z "$TFT_STATE_FILE" ]] && TFT_STATE_FILE="${LOG_DIR:-/tmp}/test-failure-tracking.json"
-    [[ ! -f "$TFT_STATE_FILE" ]] && return 0
-
-    # Extract top 5 most-failed tests
-    # Format: "- test_name (iterations X, Y, Z) ⚠️ X consecutive"
-
-    echo "## Previously Failed Tests"
-    echo "These tests have failed in recent iterations — focus fixes here:"
-    jq -r '.failed_tests | to_entries | sort_by(.value.iterations | length) | reverse | .[0:5] | .[] | "- \(.key) (iterations: \(.value.iterations | join(", ")))"' "$TFT_STATE_FILE" 2>/dev/null || true
-}
-
-# Function 5: tft_reset()
-# Clear tracking state (called on session restart)
-tft_reset() {
-    [[ -z "$TFT_STATE_FILE" ]] && TFT_STATE_FILE="${LOG_DIR:-/tmp}/test-failure-tracking.json"
-    rm -f "$TFT_STATE_FILE" 2>/dev/null || true
-}
+# Full suite
+npm test
 ```
 
 ---
 
-### Step 2: Create test suite `scripts/sw-loop-test-failure-tracker-test.sh`
+## Task Checklist
 
-[20+ test cases covering parsers, state management, abort logic, edge cases]
+- [ ] Task 1: Create `scripts/lib/loop-test-failure-tracker.sh` with `tft_extract_test_names()` parser (5 formats: Jest, Pytest, Go, Vitest, generic)
+- [ ] Task 2: Add `tft_record_iteration()` state management with atomic JSON writes
+- [ ] Task 3: Add `tft_check_repeated_failures()` consecutive detection with grace period
+- [ ] Task 4: Add `tft_compose_context_section()` markdown generator and `tft_reset()`
+- [ ] Task 5: Create `scripts/sw-lib-loop-test-failure-tracker-test.sh` test suite (22+ tests)
+- [ ] Task 6: Source module in `scripts/sw-loop.sh` (line ~41)
+- [ ] Task 7: Record failures after test gate in `scripts/sw-loop.sh` (line ~2238)
+- [ ] Task 8: Add abort check after `check_max_iterations` in `scripts/sw-loop.sh` (line ~2111)
+- [ ] Task 9: Reset state on session restart in `scripts/sw-loop.sh` (line ~2485)
+- [ ] Task 10: Inject failed test context in `scripts/lib/loop-iteration.sh` `compose_prompt()` (line ~119 + heredoc ~359)
+- [ ] Task 11: Register test suite in `package.json`
+- [ ] Task 12: Run new test suite and verify all 22+ tests pass
+- [ ] Task 13: Run existing loop/convergence/restart test suites — zero regressions
+- [ ] Task 14: Run full `npm test` — exit 0
 
----
+### Task Dependencies
 
-### Step 3: Integrate into `sw-loop.sh`
+```
+Task 1 ──┐
+Task 2 ──┤── Task 5 (test suite needs all functions)
+Task 3 ──┤
+Task 4 ──┘
+           │
+Task 5 ────┤── Task 12 (run new tests)
+           │
+Task 6 ────┤
+Task 7 ────┤── Task 13 (regression check)
+Task 8 ────┤
+Task 9 ────┤
+Task 10 ───┘
+           │
+Task 11 ───┤── Task 14 (full suite)
+Task 12 ───┤
+Task 13 ───┘
+```
 
-Three integration points (as described in Tasks 4-7)
-
----
-
-### Step 4: Integrate into `lib/loop-iteration.sh`
-
-Inject context section in `compose_prompt()` (Task 8)
+Tasks 1-4 can be done sequentially in one file write.
+Tasks 6-10 can be done in parallel (independent integration points).
+Tasks 12-14 are sequential verification.
 
 ---
 
 ## Testing Approach
 
-### Test Pyramid
-- **Parser tests** (6): Jest, Pytest, Go, Vitest, generic, empty
-- **State tests** (4): CRUD, JSON corruption
-- **Abort logic tests** (3): Exact threshold, below, above
-- **Edge case tests** (7): Non-consecutive, grace period, >20 tests, special chars, etc.
+### Unit Tests (22+ cases in sw-lib-loop-test-failure-tracker-test.sh)
+- **Parser accuracy**: 6 test frameworks × 1 case each = 6 tests
+- **State management**: create, append, pass, corruption = 4 tests
+- **Consecutive detection**: exact, below, above, gaps, variable setting = 5 tests
+- **Grace period**: iter 1, iter 2 = 2 tests
+- **Context section**: with failures, no file = 2 tests
+- **Reset**: clears state = 1 test
+- **Edge cases**: >20 names, special chars = 2 tests
 
-### Coverage Targets
-- 100% of `tft_extract_test_names()` branches
-- 100% of abort detection logic (threshold boundary, grace period)
-- 100% of state management (create, read, update, reset)
+### Regression Tests (existing suites, unmodified)
+- `sw-loop-test.sh` — 30+ existing tests must pass
+- `sw-convergence-test.sh` — 20 tests must pass
+- `sw-session-restart-test.sh` — 12 tests must pass
 
-### Critical Paths
-1. **Happy**: Test fails → names extracted → tracked → 3 consecutive → abort
-2. **Error**: No parseable names → graceful no-op, loop continues
-3. **Recovery**: Corrupted JSON → reset to empty, warn, continue
-
----
-
-## Glossary
-
-| Term | Definition |
-|------|-----------|
-| **Consecutive failures** | A test appears in the iteration history with no gaps up to the current iteration (e.g., iterations [3,4,5] are consecutive, [3,5,7] are not) |
-| **Grace period** | First 2 iterations (iterations 1-2) never trigger abort, even if tests fail |
-| **Repeated failure** | A test meets the threshold (default 3) of consecutive iterations |
-| **State file** | `$LOG_DIR/test-failure-tracking.json` — atomic storage of failed test names + iteration history |
+### Integration Verification
+- The new module is guarded by `type ... >/dev/null 2>&1` so if anything fails to load, the loop continues as before — zero regression risk.
 
 ---
 
-## Summary
+## Definition of Done
 
-**Total Implementation Effort**: ~5-6 hours across 10 concrete tasks
+### Functional
+- [ ] `tft_extract_test_names()` parses Jest, Pytest, Go test, Vitest, and generic output
+- [ ] State file tracks per-test failure history with atomic writes
+- [ ] Loop exits with `STATUS="abort_repeated_test_failure"` after 3 consecutive same-test failures
+- [ ] Grace period prevents abort in iterations 1-2
+- [ ] Non-consecutive failures (gaps in iteration sequence) do NOT trigger abort
+- [ ] `compose_prompt()` injects "Previously Failed Tests" section when failures exist
+- [ ] State resets cleanly on session restart
+- [ ] `loop.abort_repeated_test_failure` event emitted with test names and reason
 
-**Key Dependencies**:
-- Task 1 → Tasks 2, 3
-- Task 2 → Tasks 4, 8
-- Task 3 → Task 9
-- Task 4 → Tasks 5, 6, 7, 8
-- Tasks 5, 6, 7 → Task 9
-- Task 8 → Task 9
+### Quality
+- [ ] 22+ unit tests in dedicated test suite, all passing
+- [ ] Zero regressions in sw-loop-test.sh, sw-convergence-test.sh, sw-session-restart-test.sh
+- [ ] Full `npm test` exits 0
+- [ ] Bash 3.2 compatible (no associative arrays, readarray, ${var,,})
+- [ ] Atomic writes via tmp+mv pattern
+- [ ] Proper quoting and `jq --arg` for JSON (no string interpolation)
+- [ ] `set -euo pipefail` in all new scripts
+- [ ] Module guard pattern (`_LOOP_TEST_FAILURE_TRACKER_LOADED`)
+- [ ] Graceful degradation on missing module, corrupted state, or empty input
 
-**Non-Blocking Parallel Work**:
-- Task 3 (test suite) can be written in parallel with Tasks 4-8 (integration) once Task 2 is done
+### Integration
+- [ ] Module sourced in sw-loop.sh with `|| true` guard
+- [ ] Failure recording happens after `write_error_summary()` (line ~2238)
+- [ ] Abort check happens after `check_max_iterations` (line ~2111)
+- [ ] State reset happens in session restart block (line ~2485)
+- [ ] Context injection in `compose_prompt()` heredoc
 
-**Success Criteria**: ✅ All acceptance criteria in Definition of Done met, ✅ npm test passes, ✅ No regressions
+---
+
+## Alternatives Considered
+
+| Approach | Complexity | Blast Radius | Testability | Chosen? |
+|----------|-----------|-------------|------------|---------|
+| Extend `diagnose_failure()` | Low | Medium | Low (coupled) | No |
+| Add stuckness signal | Medium | Medium-High | Medium | No |
+| **New lib module** | **Medium** | **Low** | **High** | **Yes** |
+
+The new module approach wins because it has the lowest blast radius, highest testability, and follows the established `lib/loop-*.sh` pattern. The only downside (one more file) is negligible given the existing 6 loop lib modules.
+
+---
+
+**Plan Version**: 2.0 (refined from v1.0 with exact line numbers and verified integration points)
+**Created**: 2026-03-08
+**Status**: Ready for build stage
