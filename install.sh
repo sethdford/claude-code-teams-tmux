@@ -56,7 +56,27 @@ for arg in "$@"; do
     esac
 done
 
+# ─── Setup telemetry (if available — may not be on curl-pipe install) ──────
+# shellcheck source=scripts/lib/setup-telemetry.sh
+[[ -f "$SCRIPT_DIR/scripts/lib/setup-telemetry.sh" ]] && source "$SCRIPT_DIR/scripts/lib/setup-telemetry.sh"
+
+# Check for --resume flag
+_INSTALL_RESUME=false
+for _arg in "$@"; do
+    [[ "$_arg" == "--resume" ]] && _INSTALL_RESUME=true
+done
+
+if [[ "$(type -t setup_telemetry_init 2>/dev/null)" == "function" ]]; then
+    [[ "$_INSTALL_RESUME" == "true" ]] && setup_set_resume
+    setup_telemetry_init "$*"
+fi
+
+# Telemetry helpers
+_tel_start() { [[ "$(type -t setup_step_start 2>/dev/null)" == "function" ]] && setup_step_start "$@" || return 0; }
+_tel_end()   { [[ "$(type -t setup_step_end 2>/dev/null)" == "function" ]]   && setup_step_end "$@"   || true; }
+
 # ─── Prerequisite Check ─────────────────────────────────────────────────────
+if _tel_start "install_prereqs" "prerequisite validation"; then
 MISSING=()
 
 if command -v tmux &>/dev/null; then
@@ -123,6 +143,9 @@ fi
 
 echo -e "${GREEN}✓${RESET} ${BOLD}All prerequisites met${RESET}"
 echo ""
+
+_tel_end "install_prereqs"
+fi  # end install_prereqs step
 
 # ─── Delegate to shipwright init ─────────────────────────────────────────────
 exec "$SCRIPT_DIR/scripts/sw-init.sh" "$@"

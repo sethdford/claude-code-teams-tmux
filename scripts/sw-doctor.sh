@@ -1305,6 +1305,40 @@ else
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
+# SETUP STATUS — Check for incomplete setup with resume suggestion
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${PURPLE}${BOLD}  SETUP STATUS${RESET}"
+echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+_SETUP_CHECKPOINT="${HOME}/.shipwright/setup-checkpoint.json"
+if [[ -f "$_SETUP_CHECKPOINT" ]] && command -v jq >/dev/null 2>&1; then
+    _failed_step=$(jq -r '.failed_step // empty' "$_SETUP_CHECKPOINT" 2>/dev/null)
+    if [[ -n "$_failed_step" ]]; then
+        check_warn "Setup incomplete — failed at step '${_failed_step}'"
+        echo -e "    ${DIM}Resume: shipwright setup --resume${RESET}"
+    else
+        _completed=$(jq -r '.completed_steps | length // 0' "$_SETUP_CHECKPOINT" 2>/dev/null)
+        _passed=$(jq -r '.steps_passed // 0' "$_SETUP_CHECKPOINT" 2>/dev/null)
+        check_pass "Setup completed (${_completed} steps, ${_passed} passed)"
+    fi
+elif [[ -f "$_SETUP_CHECKPOINT" ]]; then
+    # jq not available — basic check
+    if grep -q '"failed_step"' "$_SETUP_CHECKPOINT" 2>/dev/null && ! grep -q '"failed_step":null' "$_SETUP_CHECKPOINT" 2>/dev/null; then
+        check_warn "Setup incomplete — run: shipwright setup --resume"
+    else
+        check_pass "Setup checkpoint present"
+    fi
+else
+    # No checkpoint file — check for key artifacts
+    if [[ -f "$HOME/.tmux.conf" ]] && command -v shipwright >/dev/null 2>&1; then
+        check_pass "Setup artifacts present (no checkpoint file)"
+    else
+        check_warn "Setup may be incomplete — no checkpoint found. Run: shipwright setup"
+    fi
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # Summary
 # ═════════════════════════════════════════════════════════════════════════════
 echo ""

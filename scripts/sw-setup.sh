@@ -68,12 +68,17 @@ get_install_cmd() {
     fi
 }
 
+# ─── Setup telemetry library ───────────────────────────────────────────────
+# shellcheck source=lib/setup-telemetry.sh
+[[ -f "$SCRIPT_DIR/lib/setup-telemetry.sh" ]] && source "$SCRIPT_DIR/lib/setup-telemetry.sh"
+
 # ─── Flag parsing ────────────────────────────────────────────────────────────
 SKIP_DAEMON_PROMPT=false
+RESUME_MODE=false
 for arg in "$@"; do
     case "$arg" in
         --help|-h)
-            echo "Usage: shipwright setup [--skip-daemon-prompt]"
+            echo "Usage: shipwright setup [--skip-daemon-prompt] [--resume]"
             echo ""
             echo "Comprehensive onboarding wizard with four phases:"
             echo ""
@@ -84,13 +89,28 @@ for arg in "$@"; do
             echo ""
             echo "Options:"
             echo "  --skip-daemon-prompt  Don't ask about daemon auto-processing"
+            echo "  --resume              Resume from last failed step"
             exit 0
             ;;
         --skip-daemon-prompt)
             SKIP_DAEMON_PROMPT=true
             ;;
+        --resume)
+            RESUME_MODE=true
+            ;;
     esac
 done
+
+# Initialize telemetry
+if [[ "$(type -t setup_telemetry_init 2>/dev/null)" == "function" ]]; then
+    [[ "$RESUME_MODE" == "true" ]] && setup_set_resume
+    setup_telemetry_init "--skip-daemon-prompt=$SKIP_DAEMON_PROMPT"
+fi
+
+# Telemetry helpers (safe to call even if library not loaded)
+_tel_start() { [[ "$(type -t setup_step_start 2>/dev/null)" == "function" ]] && setup_step_start "$@" || return 0; }
+_tel_end()   { [[ "$(type -t setup_step_end 2>/dev/null)" == "function" ]]   && setup_step_end "$@"   || true; }
+_tel_fail()  { [[ "$(type -t setup_step_fail 2>/dev/null)" == "function" ]]  && setup_step_fail "$@"  || true; }
 
 # Detect OS once at startup
 OS="$(detect_os)"
@@ -108,6 +128,7 @@ echo ""
 # ═════════════════════════════════════════════════════════════════════════════
 # PHASE 1: Prerequisites Check
 # ═════════════════════════════════════════════════════════════════════════════
+if _tel_start "prereqs" "prerequisite checks"; then
 echo -e "${PURPLE}${BOLD}  PHASE 1: PREREQUISITES${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
@@ -215,9 +236,13 @@ fi
 echo -e "  Summary: ${GREEN}${BOLD}${PASS}${RESET} passed  ${YELLOW}${BOLD}${WARN}${RESET} warnings  ${RED}${BOLD}${FAIL}${RESET} failed"
 echo ""
 
+_tel_end "prereqs"
+fi  # end prereqs step
+
 # ═════════════════════════════════════════════════════════════════════════════
 # PHASE 2: Repo Analysis
 # ═════════════════════════════════════════════════════════════════════════════
+if _tel_start "repo_analysis" "repository analysis"; then
 echo -e "${PURPLE}${BOLD}  PHASE 2: REPO ANALYSIS${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
@@ -295,6 +320,9 @@ fi
 
 echo ""
 
+_tel_end "repo_analysis"
+fi  # end repo_analysis step
+
 # ═════════════════════════════════════════════════════════════════════════════
 # PHASE 3: Configuration Generation
 # ═════════════════════════════════════════════════════════════════════════════
@@ -302,7 +330,10 @@ echo -e "${PURPLE}${BOLD}  PHASE 3: CONFIGURATION GENERATION${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
 
-"$SCRIPT_DIR/sw-init.sh"
+# Pass --resume through to sw-init.sh if active
+_init_args=()
+[[ "$RESUME_MODE" == "true" ]] && _init_args+=("--resume")
+"$SCRIPT_DIR/sw-init.sh" "${_init_args[@]+"${_init_args[@]}"}"
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Ask about daemon auto-processing
@@ -374,3 +405,8 @@ echo -e "${CYAN}${BOLD}  ╚═════════════════�
 echo ""
 success "Shipwright v${VERSION} setup complete — you're ready to orchestrate!"
 echo ""
+
+# Finalize telemetry
+if [[ "$(type -t setup_telemetry_finish 2>/dev/null)" == "function" ]]; then
+    setup_telemetry_finish
+fi

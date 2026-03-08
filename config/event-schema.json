@@ -213,6 +213,22 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "setup.started": {
+      "required": [],
+      "optional": ["flags", "session_id"]
+    },
+    "setup.step": {
+      "required": ["step", "status"],
+      "optional": ["duration_s", "error", "description"]
+    },
+    "setup.completed": {
+      "required": [],
+      "optional": ["total_duration_s", "steps_passed", "steps_failed", "steps_skipped"]
+    },
+    "setup.resumed": {
+      "required": [],
+      "optional": ["from_step", "completed_count"]
     }
   }
 }

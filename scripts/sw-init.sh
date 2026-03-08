@@ -34,11 +34,16 @@ if [[ "$(type -t now_iso 2>/dev/null)" != "function" ]]; then
   now_iso()   { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
   now_epoch() { date +%s; }
 fi
+# ─── Setup telemetry library ───────────────────────────────────────────────
+# shellcheck source=lib/setup-telemetry.sh
+[[ -f "$SCRIPT_DIR/lib/setup-telemetry.sh" ]] && source "$SCRIPT_DIR/lib/setup-telemetry.sh"
+
 # ─── Flag parsing ───────────────────────────────────────────────────────────
 DEPLOY_SETUP=false
 DEPLOY_PLATFORM=""
 SKIP_CLAUDE_MD=false
 REPAIR_MODE=false
+RESUME_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -59,14 +64,19 @@ while [[ $# -gt 0 ]]; do
             REPAIR_MODE=true
             shift
             ;;
+        --resume)
+            RESUME_MODE=true
+            shift
+            ;;
         --help|-h)
-            echo "Usage: shipwright init [--deploy] [--platform vercel|fly|railway|docker] [--no-claude-md] [--repair]"
+            echo "Usage: shipwright init [--deploy] [--platform vercel|fly|railway|docker] [--no-claude-md] [--repair] [--resume]"
             echo ""
             echo "Options:"
             echo "  --deploy             Detect deploy platform and generate deployed.json"
             echo "  --platform PLATFORM  Skip detection, use specified platform"
             echo "  --no-claude-md       Skip creating .claude/CLAUDE.md"
             echo "  --repair             Force clean reinstall of tmux config, plugins, and adapters"
+            echo "  --resume             Resume from last failed step (skip completed steps)"
             echo "  --help, -h           Show this help"
             exit 0
             ;;
@@ -77,14 +87,29 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Initialize telemetry (--repair ignores checkpoint, forces fresh)
+if [[ "$(type -t setup_telemetry_init 2>/dev/null)" == "function" ]]; then
+    if [[ "$RESUME_MODE" == "true" && "$REPAIR_MODE" == "false" ]]; then
+        setup_set_resume
+    fi
+    setup_telemetry_init "--deploy=$DEPLOY_SETUP --repair=$REPAIR_MODE --no-claude-md=$SKIP_CLAUDE_MD"
+fi
+
 echo ""
 echo -e "${CYAN}${BOLD}shipwright init${RESET} — Complete setup"
 echo -e "${DIM}══════════════════════════════════════════${RESET}"
 echo ""
 
-# ─── tmux.conf ────────────────────────────────────────────────────────────────
+# ─── Step 1: tmux.conf ─────────────────────────────────────────────────────────
 TOOK_FULL_TMUX_CONF=false
 IS_INTERACTIVE="${INTERACTIVE:-false}"
+
+# Helper: safely call telemetry functions if loaded
+_tel_start() { [[ "$(type -t setup_step_start 2>/dev/null)" == "function" ]] && setup_step_start "$@" || return 0; }
+_tel_end()   { [[ "$(type -t setup_step_end 2>/dev/null)" == "function" ]]   && setup_step_end "$@"   || true; }
+_tel_fail()  { [[ "$(type -t setup_step_fail 2>/dev/null)" == "function" ]]  && setup_step_fail "$@"  || true; }
+
+if _tel_start "tmux_conf" "tmux configuration"; then
 
 # --repair: remove stale files first for clean slate
 if [[ "$REPAIR_MODE" == "true" ]]; then
@@ -126,7 +151,11 @@ else
     warn "tmux.conf not found in package — skipping"
 fi
 
-# ─── Overlay ──────────────────────────────────────────────────────────────────
+_tel_end "tmux_conf"
+fi  # end tmux_conf step
+
+# ─── Step 2: Overlay ──────────────────────────────────────────────────────────
+if _tel_start "overlay" "overlay installation"; then
 if [[ -f "$REPO_DIR/tmux/shipwright-overlay.conf" ]]; then
     mkdir -p "$HOME/.tmux"
     cp "$REPO_DIR/tmux/shipwright-overlay.conf" "$HOME/.tmux/shipwright-overlay.conf"
@@ -177,7 +206,11 @@ if [[ "$TOOK_FULL_TMUX_CONF" == "false" && -f "$HOME/.tmux.conf" ]]; then
     fi
 fi
 
-# ─── TPM (Tmux Plugin Manager) ────────────────────────────────────────────
+_tel_end "overlay"
+fi  # end overlay step
+
+# ─── Step 3: TPM (Tmux Plugin Manager) ────────────────────────────────────
+if _tel_start "tpm" "TPM and plugin installation"; then
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]] || [[ "$REPAIR_MODE" == "true" ]]; then
     info "Installing TPM (Tmux Plugin Manager)..."
     rm -rf "$HOME/.tmux/plugins/tpm" 2>/dev/null || true
@@ -235,7 +268,11 @@ if [[ "$_tmux_plugins_installed" == "false" ]]; then
     fi
 fi
 
-# ─── tmux Adapter ────────────────────────────────────────────────────────────
+_tel_end "tpm"
+fi  # end tpm step
+
+# ─── Step 4: Adapters ────────────────────────────────────────────────────────
+if _tel_start "adapters" "adapter scripts"; then
 # Deploy the tmux adapter (pane ID safety layer) to ~/.shipwright/adapters/
 if [[ -f "$SCRIPT_DIR/adapters/tmux-adapter.sh" ]]; then
     mkdir -p "$HOME/.shipwright/adapters"
@@ -255,7 +292,11 @@ for _widget in sw-tmux-status.sh sw-tmux-role-color.sh; do
 done
 success "Installed tmux widgets → ~/.shipwright/scripts/"
 
-# ─── Fix iTerm2 mouse reporting if disabled ────────────────────────────────
+_tel_end "adapters"
+fi  # end adapters step
+
+# ─── Step 5: iTerm2 fix ────────────────────────────────────────────────────
+if _tel_start "iterm2" "iTerm2 mouse fix"; then
 if [[ "${LC_TERMINAL:-${TERM_PROGRAM:-}}" == *iTerm* ]]; then
     ITERM_MOUSE="$(defaults read com.googlecode.iterm2 "New Bookmarks" 2>/dev/null \
         | grep '"Mouse Reporting"' | head -1 | grep -oE '[0-9]+' || echo "unknown")"
@@ -268,7 +309,11 @@ if [[ "${LC_TERMINAL:-${TERM_PROGRAM:-}}" == *iTerm* ]]; then
     fi
 fi
 
-# ─── Verify tmux deployment ──────────────────────────────────────────────────
+_tel_end "iterm2"
+fi  # end iterm2 step
+
+# ─── Step 6: Verify tmux deployment ──────────────────────────────────────────
+if _tel_start "verify_deploy" "deployment verification"; then
 _verify_fail=0
 if [[ ! -f "$HOME/.tmux.conf" ]]; then
     error "VERIFY FAILED: ~/.tmux.conf not found after install"
@@ -289,7 +334,11 @@ if [[ $_verify_fail -eq 0 ]]; then
     success "Verified: tmux config, overlay, TPM, and plugins all deployed"
 fi
 
-# ─── CLI Bootstrap (symlinks + PATH) ─────────────────────────────────────────
+_tel_end "verify_deploy"
+fi  # end verify_deploy step
+
+# ─── Step 7: CLI Bootstrap (symlinks + PATH) ─────────────────────────────────
+if _tel_start "cli_bootstrap" "CLI symlinks and PATH"; then
 # Install sw/shipwright symlinks so the CLI works from anywhere
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
@@ -348,7 +397,11 @@ else
     success "~/.local/bin already in PATH"
 fi
 
-# ─── Team Templates ──────────────────────────────────────────────────────────
+_tel_end "cli_bootstrap"
+fi  # end cli_bootstrap step
+
+# ─── Step 8: Team Templates ──────────────────────────────────────────────────
+if _tel_start "team_templates" "team template installation"; then
 SHIPWRIGHT_DIR="$HOME/.shipwright"
 TEMPLATES_SRC="$REPO_DIR/tmux/templates"
 if [[ -d "$TEMPLATES_SRC" ]]; then
@@ -367,7 +420,11 @@ if [[ -d "$TEMPLATES_SRC" ]]; then
     success "Installed ${tpl_count} team templates → ~/.shipwright/templates/"
 fi
 
-# ─── Pipeline Templates ──────────────────────────────────────────────────────
+_tel_end "team_templates"
+fi  # end team_templates step
+
+# ─── Step 9: Pipeline Templates ──────────────────────────────────────────────
+if _tel_start "pipeline_templates" "pipeline template installation"; then
 PIPELINES_SRC="$REPO_DIR/templates/pipelines"
 if [[ -d "$PIPELINES_SRC" ]]; then
     mkdir -p "$SHIPWRIGHT_DIR/pipelines"
@@ -379,14 +436,22 @@ if [[ -d "$PIPELINES_SRC" ]]; then
     success "Installed ${pip_count} pipeline templates → ~/.shipwright/pipelines/"
 fi
 
-# ─── Bootstrap optimization & memory (cold-start) ─────────────────────────────
+_tel_end "pipeline_templates"
+fi  # end pipeline_templates step
+
+# ─── Step 10: Bootstrap optimization & memory (cold-start) ───────────────────
+if _tel_start "bootstrap_opt" "bootstrap optimization"; then
 if [[ -f "$SCRIPT_DIR/lib/bootstrap.sh" ]]; then
     source "$SCRIPT_DIR/lib/bootstrap.sh"
     bootstrap_optimization 2>/dev/null || true
     bootstrap_memory 2>/dev/null || true
 fi
 
-# ─── Shell Completions ────────────────────────────────────────────────────────
+_tel_end "bootstrap_opt"
+fi  # end bootstrap_opt step
+
+# ─── Step 11: Shell Completions ──────────────────────────────────────────────
+if _tel_start "shell_completions" "shell completions"; then
 # Detect shell type and install completions to the correct location
 # Detect the user's login shell (not the script's running shell).
 # This script runs in bash, so $BASH_VERSION is always set — check $SHELL first.
@@ -476,7 +541,11 @@ if [[ $install_completions -eq 1 ]]; then
     fi
 fi
 
-# ─── Claude Code Settings ────────────────────────────────────────────────────
+_tel_end "shell_completions"
+fi  # end shell_completions step
+
+# ─── Step 12: Claude Code Settings ──────────────────────────────────────────
+if _tel_start "claude_settings" "Claude Code settings"; then
 CLAUDE_DIR="$HOME/.claude"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 SETTINGS_TEMPLATE="$REPO_DIR/claude-code/settings.json.template"
@@ -536,7 +605,11 @@ SETTINGS_EOF
     success "Created ~/.claude/settings.json with agent teams enabled"
 fi
 
-# ─── Hooks ────────────────────────────────────────────────────────────────────
+_tel_end "claude_settings"
+fi  # end claude_settings step
+
+# ─── Step 13: Hooks ──────────────────────────────────────────────────────────
+if _tel_start "hooks" "hook installation"; then
 HOOKS_SRC="$REPO_DIR/claude-code/hooks"
 if [[ -d "$HOOKS_SRC" ]]; then
     mkdir -p "$CLAUDE_DIR/hooks"
@@ -613,7 +686,11 @@ if [[ -f "$SETTINGS_FILE" ]] && jq -e '.' "$SETTINGS_FILE" >/dev/null 2>&1; then
     fi
 fi
 
-# ─── CLAUDE.md — Global agent instructions ────────────────────────────────────
+_tel_end "hooks"
+fi  # end hooks step
+
+# ─── Step 14: CLAUDE.md — Global agent instructions ──────────────────────────
+if _tel_start "claude_md" "CLAUDE.md files"; then
 CLAUDE_MD_SRC="$REPO_DIR/claude-code/CLAUDE.md.shipwright"
 GLOBAL_CLAUDE_MD="$CLAUDE_DIR/CLAUDE.md"
 
@@ -649,6 +726,9 @@ if [[ "$SKIP_CLAUDE_MD" == "false" && -f "$CLAUDE_MD_SRC" ]]; then
         success "Created ${LOCAL_CLAUDE_MD} with Shipwright agent instructions"
     fi
 fi
+
+_tel_end "claude_md"
+fi  # end claude_md step
 
 # ─── GitHub CLI Authentication ────────────────────────────────────────────────
 # gh auth is required for daemon, pipeline, PR creation, and issue management
@@ -704,6 +784,11 @@ if [[ -f "$DASHBOARD_SRC/server.ts" ]]; then
         [[ -f "$_f" ]] && cp "$_f" "$DASHBOARD_DEST/public/$(basename "$_f")"
     done
     success "Dashboard files installed → ~/.local/share/shipwright/dashboard/"
+fi
+
+# ─── Finalize telemetry ────────────────────────────────────────────────────────
+if [[ "$(type -t setup_telemetry_finish 2>/dev/null)" == "function" ]]; then
+    setup_telemetry_finish
 fi
 
 # ─── Validation ───────────────────────────────────────────────────────────────
