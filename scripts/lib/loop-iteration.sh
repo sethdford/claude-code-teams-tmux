@@ -277,14 +277,26 @@ ${alt_strategy}"
         fi
     fi
 
-    # Session restart context — inject previous session progress
+    # Session restart context — inject intelligent briefing or fallback to progress
     local restart_section=""
-    if [[ "$SESSION_RESTART" == "true" ]] && [[ -f "$LOG_DIR/progress.md" ]]; then
-        restart_section="## Previous Session Progress
+    if [[ "$SESSION_RESTART" == "true" ]]; then
+        local briefing_file="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-briefing.md"
+        if [[ -f "$briefing_file" ]]; then
+            # Inject intelligent briefing from session-restart.sh
+            restart_section="## Session Restart Briefing
+$(cat "$briefing_file")
+
+You are starting a FRESH session after the previous one exhausted its context.
+Read the briefing above carefully and continue from where the previous session left off.
+Do NOT repeat work already done. Focus on what's failing and what to try next."
+        elif [[ -f "$LOG_DIR/progress.md" ]]; then
+            # Fallback to basic progress.md
+            restart_section="## Previous Session Progress
 $(cat "$LOG_DIR/progress.md")
 
 You are starting a FRESH session after the previous one exhausted its iterations.
 Read the progress above and continue from where it left off. Do NOT repeat work already done."
+        fi
     fi
 
     # Resume-from-checkpoint context — reconstruct Claude context for meaningful resume
@@ -469,8 +481,42 @@ run_claude_iteration() {
     local json_file="$LOG_DIR/iteration-${ITERATION}.json"
     local prompt
     prompt="$(compose_prompt)"
+
+    # Context budget monitoring and proactive trimming (issue #209)
+    local budget_estimate=""
+    local budget_status=""
+    if type context_budget_estimate >/dev/null 2>&1; then
+        budget_estimate=$(context_budget_estimate "$prompt" "${ARTIFACTS_DIR:-./.claude/pipeline-artifacts}" 2>/dev/null || echo "{}")
+        if [[ -n "$budget_estimate" ]]; then
+            budget_status=$(context_budget_check "$budget_estimate" 2>/dev/null || echo "{}")
+            local status_val=$(echo "$budget_status" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+
+            # Log budget state
+            if type context_budget_log_state >/dev/null 2>&1; then
+                context_budget_log_state "$budget_estimate" "$budget_status" "${ARTIFACTS_DIR:-./.claude/pipeline-artifacts}" 2>/dev/null || true
+            fi
+
+            # Warn if approaching limits
+            if [[ "$status_val" == "yellow" ]] || [[ "$status_val" == "red" ]] || [[ "$status_val" == "critical" ]]; then
+                local msg=$(echo "$budget_status" | jq -r '.message // "context budget alert"' 2>/dev/null || echo "")
+                if [[ -n "$msg" ]]; then
+                    warn "$msg"
+                fi
+            fi
+        fi
+    fi
+
     local final_prompt
     final_prompt=$(manage_context_window "$prompt")
+
+    # Apply proactive trimming if budget is tight
+    if [[ -n "$budget_status" ]]; then
+        local action=$(echo "$budget_status" | jq -r '.action // "continue"' 2>/dev/null || echo "continue")
+        if [[ "$action" != "continue" ]] && type context_budget_trim >/dev/null 2>&1; then
+            local trim_status=$(echo "$budget_status" | jq -r '.status // "green"' 2>/dev/null || echo "green")
+            final_prompt=$(context_budget_trim "$final_prompt" "$trim_status" 200000 2>/dev/null || echo "$final_prompt")
+        fi
+    fi
 
     local raw_prompt_chars=${#prompt}
     local prompt_chars=${#final_prompt}
@@ -553,6 +599,14 @@ run_claude_iteration() {
         audit_emit "loop.response" "iteration=$ITERATION" "chars=$response_chars" \
             "exit_code=$exit_code" "duration_s=$iter_duration" \
             "path=iteration-${ITERATION}.json" || true
+    fi
+
+    # Context budget: record iteration summary for context compression (issue #209)
+    if type context_budget_summarize_iteration >/dev/null 2>&1; then
+        # Extract test result from log or TEST_PASSED variable
+        local test_result="${TEST_OUTPUT:-}"
+        [[ -z "$test_result" && -n "${TEST_PASSED:-}" ]] && test_result=$([ "$TEST_PASSED" = true ] && echo "PASSED" || echo "FAILED")
+        context_budget_summarize_iteration "$ITERATION" "$log_file" "$test_result" "${ARTIFACTS_DIR:-./.claude/pipeline-artifacts}" 2>/dev/null || true
     fi
 
     # Show verbose output if requested

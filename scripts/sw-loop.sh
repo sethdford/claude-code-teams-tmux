@@ -38,6 +38,9 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
+# Context window budget monitoring (issue #209)
+# shellcheck source=lib/context-budget.sh
+[[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
 # Convergence detection and scoring (issue #203)
 [[ -f "$SCRIPT_DIR/lib/convergence.sh" ]] && source "$SCRIPT_DIR/lib/convergence.sh" 2>/dev/null || true
 # Error actionability scoring and enhancement for better error context
@@ -433,6 +436,16 @@ LOG_DIR="$STATE_DIR/loop-logs"
 WORKTREE_DIR="$PROJECT_ROOT/.worktrees"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
+
+# ─── Context Budget Initialization ────────────────────────────────────────────
+# Initialize context window budget tracker (issue #209)
+ARTIFACTS_DIR="${STATE_DIR}/pipeline-artifacts"
+mkdir -p "$ARTIFACTS_DIR"
+if type context_budget_init >/dev/null 2>&1; then
+    # Set total budget (default 800K, configurable via env/config)
+    local context_budget="${CONTEXT_BUDGET_TOKENS:-800000}"
+    context_budget_init "$context_budget" "$ARTIFACTS_DIR" 2>/dev/null || true
+fi
 
 # ─── Adaptive Model Selection ────────────────────────────────────────────────
 # Uses intelligence engine when available, falls back to defaults.
