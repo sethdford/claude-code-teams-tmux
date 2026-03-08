@@ -14,14 +14,17 @@ stage_intake() {
         local meta
         meta=$(gh_get_issue_meta "$ISSUE_NUMBER")
 
-        if [[ -n "$meta" ]]; then
-            GOAL=$(echo "$meta" | jq -r '.title // ""')
-            ISSUE_BODY=$(echo "$meta" | jq -r '.body // ""')
-            ISSUE_LABELS=$(echo "$meta" | jq -r '[.labels[].name] | join(",")' 2>/dev/null || true)
+        # Validate JSON before processing
+        if [[ -n "$meta" ]] && jq empty <<< "$meta" 2>/dev/null; then
+            GOAL=$(echo "$meta" | jq -r '.title // ""' 2>/dev/null) || GOAL=""
+            ISSUE_BODY=$(echo "$meta" | jq -r '.body // ""' 2>/dev/null) || ISSUE_BODY=""
+            ISSUE_LABELS=$(echo "$meta" | jq -r '[.labels[].name] | join(",")' 2>/dev/null) || ISSUE_LABELS=""
             ISSUE_MILESTONE=$(echo "$meta" | jq -r '.milestone.title // ""' 2>/dev/null || true)
             ISSUE_ASSIGNEES=$(echo "$meta" | jq -r '[.assignees[].login] | join(",")' 2>/dev/null || true)
             [[ "$ISSUE_MILESTONE" == "null" ]] && ISSUE_MILESTONE=""
             [[ "$ISSUE_LABELS" == "null" ]] && ISSUE_LABELS=""
+            # Export for use by intelligence skip functions
+            export ISSUE_LABELS
         else
             # Fallback: just get title
             GOAL=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title' 2>/dev/null) || {
@@ -92,7 +95,7 @@ stage_intake() {
         --arg milestone "${ISSUE_MILESTONE:-}" --arg body "${ISSUE_BODY:-}" \
         '{goal:$goal, type:$type, template:$template, branch:$branch,
           issue:$issue, language:$lang, test_cmd:$test_cmd,
-          labels:$labels, milestone:$milestone, body:$body}')"
+          labels:$labels, milestone:$milestone, body:$body}' 2>/dev/null)" || true
 
     # 7. AI-powered skill analysis (replaces static classification when available)
     if type skill_analyze_issue >/dev/null 2>&1; then

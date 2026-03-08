@@ -143,8 +143,8 @@ gh_build_progress_body() {
     stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG" 2>/dev/null)
     while IFS= read -r -u 3 stage; do
         local id enabled
-        id=$(echo "$stage" | jq -r '.id')
-        enabled=$(echo "$stage" | jq -r '.enabled')
+        id=$(echo "$stage" | jq -r '.id' 2>/dev/null) || id=""
+        enabled=$(echo "$stage" | jq -r '.enabled' 2>/dev/null) || enabled=""
 
         if [[ "$enabled" != "true" ]]; then
             body="${body}

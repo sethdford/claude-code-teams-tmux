@@ -763,15 +763,6 @@ pipeline_start() {
         publish_event "pipeline.started" "{\"issue\":\"${ISSUE_NUMBER:-0}\",\"pipeline\":\"${PIPELINE_NAME}\",\"goal\":\"${GOAL:0:200}\"}" 2>/dev/null || true
     fi
 
-    # Pre-fetch issue labels for intelligent stage skipping (before run_pipeline)
-    if [[ -n "$ISSUE_NUMBER" ]] && [[ -z "$ISSUE_LABELS" ]] && [[ "$GH_AVAILABLE" == "true" ]] && type gh_get_issue_meta >/dev/null 2>&1; then
-        local _issue_meta
-        _issue_meta=$(gh_get_issue_meta "$ISSUE_NUMBER" 2>/dev/null || true)
-        if [[ -n "$_issue_meta" ]]; then
-            ISSUE_LABELS=$(echo "$_issue_meta" | jq -r '[.labels[].name] | join(",")' 2>/dev/null || echo "")
-            [[ "$ISSUE_LABELS" == "null" ]] && ISSUE_LABELS=""
-        fi
-    fi
 
     run_pipeline
     local exit_code=$?

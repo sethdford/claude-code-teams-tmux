@@ -242,13 +242,34 @@ ISSUE_JSON
         esac
         ;;
     api)
-        # gh api → return JSON based on endpoint
+        # gh api → return JSON based on endpoint, handle --jq flag
+        json_output=""
         case "$2" in
-            *"/comments"*) echo '{"id": 12345}' ;;
-            "user") echo '{"login": "testuser"}' ;;
-            *"check-runs"*) echo '{"check_runs": []}' ;;
-            *) echo '{}' ;;
+            *"/comments"*) json_output='{"id": 12345}' ;;
+            "user") json_output='{"login": "testuser"}' ;;
+            *"check-runs"*) json_output='{"check_runs": []}' ;;
+            *) json_output='{}' ;;
         esac
+
+        # Handle --jq flag if present
+        jq_filter=""
+        for arg in "$@"; do
+            case "$arg" in
+                --jq) jq_filter="true" ;;
+                *)
+                    if [[ "$jq_filter" == "true" ]]; then
+                        jq_filter="$arg"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+
+        if [[ -n "$jq_filter" && "$jq_filter" != "true" ]]; then
+            echo "$json_output" | jq -r "$jq_filter" 2>/dev/null || true
+        else
+            echo "$json_output"
+        fi
         exit 0
         ;;
     *)
@@ -823,12 +844,34 @@ ISSUE_JSON
         esac
         ;;
     api)
+        # gh api → return JSON based on endpoint, handle --jq flag
+        json_output=""
         case "$2" in
-            *"/comments"*) echo '{"id": 12345}' ;;
-            "user") echo '{"login": "testuser"}' ;;
-            *"check-runs"*) echo '{"check_runs": []}' ;;
-            *) echo '{}' ;;
+            *"/comments"*) json_output='{"id": 12345}' ;;
+            "user") json_output='{"login": "testuser"}' ;;
+            *"check-runs"*) json_output='{"check_runs": []}' ;;
+            *) json_output='{}' ;;
         esac
+
+        # Handle --jq flag if present
+        jq_filter=""
+        for arg in "$@"; do
+            case "$arg" in
+                --jq) jq_filter="true" ;;
+                *)
+                    if [[ "$jq_filter" == "true" ]]; then
+                        jq_filter="$arg"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+
+        if [[ -n "$jq_filter" && "$jq_filter" != "true" ]]; then
+            echo "$json_output" | jq -r "$jq_filter" 2>/dev/null || true
+        else
+            echo "$json_output"
+        fi
         exit 0
         ;;
     *) exit 0 ;;

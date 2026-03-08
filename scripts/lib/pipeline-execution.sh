@@ -568,8 +568,8 @@ run_pipeline() {
             continue
         fi
 
-        # Intelligence: evaluate whether to skip this stage
-        if type pipeline_should_skip_stage >/dev/null 2>&1; then
+        # Intelligence: evaluate whether to skip this stage (after intake, which populates ISSUE_LABELS)
+        if [[ "$id" != "intake" ]] && type pipeline_should_skip_stage >/dev/null 2>&1; then
             local skip_reason=""
             skip_reason=$(pipeline_should_skip_stage "$id" 2>/dev/null) || true
             if [[ -n "$skip_reason" ]]; then
