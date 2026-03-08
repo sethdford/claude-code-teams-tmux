@@ -35,9 +35,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "tester",
+          "optimizer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Task requires designing metrics, scoring algorithms, and integration architecture for the memory effectiveness tracker; secondary roles validate the system and optimize performance.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772933264,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -573,32 +581,311 @@
     },
     "46cf04afef7eca5c17f555b3dd0e2345": {
       "result": {
-        "complexity": 7,
+        "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 72,
+        "success_probability": 75,
         "recommended_template": "standard",
         "issue_type": "testing",
         "key_risks": [
-          "Scoring algorithm accuracy (false positives/negatives in pattern matching)",
-          "Difficulty measuring 'failure prevented' (absence of events is hard to verify)",
-          "Schema migration for tracking new metrics without breaking existing memory system",
-          "Performance impact of scoring every incoming issue against full pattern database",
-          "Integration complexity with sw-intelligence.sh and sw-memory.sh modules",
-          "Dashboard query performance on large historical memory datasets"
+          "Scoring algorithm accuracy and potential false positives in pattern matching",
+          "Integration complexity between sw-intelligence.sh and sw-memory.sh systems",
+          "Performance overhead of pre-pipeline pattern matching at scale",
+          "Threshold tuning (60 is arbitrary without empirical validation)",
+          "Dashboard scalability with large historical pattern datasets"
         ],
         "implementation_hints": [
-          "Start with file overlap + error signature matching before implementing complex similarity scoring",
-          "Create incremental schema version for tracking metadata without breaking backward compatibility",
-          "Build scoring test suite first using historical issues and known repeat failures",
-          "Cache frequently matched patterns to avoid re-scoring on similar issues",
-          "Track 'prevented' vs 'inadequate context' vs 'different failure type' as separate outcomes",
-          "Implement pattern confidence scoring (0-100) rather than binary success/failure",
-          "Export format should be JSON-compatible with existing memory structure for strategic agent consumption",
-          "Consider adding 'time_since_injection' metric to validate pattern freshness"
+          "Audit existing memory pattern schema and structure before designing scorer",
+          "Prototype scoring logic against known failure cases from last 100 pipelines",
+          "Reuse similarity matching logic already in sw-intelligence.sh to avoid duplication",
+          "Decouple tracking (record metrics) from injection (use context) for testability",
+          "Add pattern score caching to prevent repeated expensive similarity calculations",
+          "Make threshold configurable per pipeline template (fast=40, standard=60, full=80)",
+          "Build metrics dashboard around ROI first: injection_count, prevention_rate, top_effective_patterns",
+          "Start with file overlap + error signature matching, add semantic similarity in v2"
         ]
       },
-      "timestamp": 1772927923,
+      "timestamp": 1772932539,
       "ttl": 3600
+    },
+    "0a03a03b78966e5868b824150ebe3489": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1772932547,
+      "ttl": 1800
+    },
+    "eb1ec84971bd735b28861b2709f559d0": {
+      "result": {
+        "estimated_cost_usd": 0.15,
+        "estimated_iterations": 2,
+        "estimated_tokens": 65000,
+        "likely_failure_stage": "build",
+        "confidence": 62
+      },
+      "timestamp": 1772932559,
+      "ttl": 3600
+    },
+    "013498e78eb81fb423b157b5bb049256": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "observability",
+          "data-pipeline",
+          "intelligence-systems"
+        ],
+        "complexity_assessment": {
+          "score": 6.5,
+          "reasoning": "Standard complexity as labeled, but requires careful integration with existing memory/intelligence systems to avoid breaking pattern storage or introducing circular dependencies in outcome tracking."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "data-pipeline",
+            "architecture-design"
+          ],
+          "design": [
+            "api-design",
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "data-pipeline",
+            "observability"
+          ],
+          "review": [
+            "architecture-design",
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "testing-strategy",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge core assumptions: Is file overlap a reliable signal? Could pattern injection create cascade failures? What makes a pattern 'effective' when failures have multiple causes?",
+          "data-pipeline": "Pattern scoring, injection decisions, and outcome tracking form a data pipeline that must be idempotent, debuggable, and resilient to missing/incomplete failure data.",
+          "architecture-design": "This feature must integrate cleanly with sw-intelligence.sh and sw-memory.sh without coupling tightly or breaking existing pattern discovery and retrieval flows.",
+          "api-design": "The scoring function's interface, threshold configuration, and outcome tracking API must be well-defined so other agents (strategic agent, patrol, daemon) can consume and refine patterns.",
+          "observability": "Without instrumentation at every step (pattern candidate selected → score computed → threshold checked → injection decision → outcome recorded), the metrics dashboard will be unreliable and the learning loop will fail.",
+          "adversarial-quality": "This is a learning system vulnerable to subtle cascading failures: patterns that seem effective but mislead future builds, false positive matches leading to wrong injections, or outcome tracking that misattributes success/failure.",
+          "testing-strategy": "Outcome tracking must be validated against ground truth (did the pattern actually prevent the failure, or did something else?); mock patterns with known effectiveness are essential.",
+          "pr-quality": "Integration with two existing systems requires clear commit messages showing before/after pipeline flow, explicit integration points, and evidence that existing tests still pass.",
+          "validation-thoroughness": "Verify end-to-end: inject a known-good pattern → observe pipeline behavior → confirm outcome tracking matches reality; don't just test that injection happens.",
+          "performance": "Scoring must be fast enough for pipeline startup; large pattern libraries could create bottlenecks. Measure and optimize pattern matching performance under load."
+        },
+        "generated_skills": [
+          {
+            "name": "memory-effectiveness-validation",
+            "reason": "No existing skill covers the unique challenge of validating whether injected patterns actually prevent failures (ground truth verification) vs. just measuring injection frequency.",
+            "content": "## Memory Effectiveness Validation\n\n### Challenge\nMeasuring pattern effectiveness is harder than it seems. A pattern might appear effective because:\n1. It genuinely prevented a failure\n2. The failure didn't occur for unrelated reasons\n3. The outcome tracking is wrong\n4. The issue was different enough that the pattern didn't apply\n\n### Validation Strategy\n\n**Ground Truth Definition**\n- Define what \"failure prevented\" means: test suite passed when it would have failed without injection? Specific error signature didn't occur? Reduced iteration count?\n- Ground truth must be measurable from pipeline state (logs, test output, git history) without requiring manual review.\n\n**Outcome Tracking Accuracy**\n- After pipeline completes, check: did the specific error type we predicted occur?\n- If pattern was injected AND error didn't occur, mark as \"potentially prevented.\"\n- If pattern was injected AND error occurred anyway, mark as \"ineffective.\"\n- If pattern was NOT injected (score < 60) AND error occurred, mark as \"missed opportunity.\"\n- Build confusion matrix: true positives, false positives, true negatives, false negatives.\n\n**Edge Cases to Handle**\n- Pattern injected but issue was too simple/different to need it (false positive injection, true negative outcome)\n- Multiple patterns injected simultaneously → can't isolate which one helped\n- Outcome depends on random factors (flaky tests, timing) → score patterns by success rate, not binary yes/no\n- Pattern matches but error signature changed → still track as partial effectiveness\n\n**Scoring Patterns for Refinement**\n- Calculate: (pattern_injected AND failure_prevented) / (pattern_injected AND applicable_issue) = true effectiveness\n- Calculate: (pattern_not_injected AND failure_occurred) / (pattern_not_injected AND applicable_issue) = detection miss rate\n- Flag patterns with low true effectiveness for removal or refinement\n- Flag patterns with high miss rates (should have been injected more often)"
+          }
+        ],
+        "review_focus": [
+          "Scoring algorithm: Does pattern matching (issue similarity, file overlap, error signature) reliably identify relevant patterns without high false positive rate?",
+          "Threshold tuning: Is 60 the right score for injection? What's the observed false positive injection rate in early validation?",
+          "Outcome tracking accuracy: Can the system reliably determine whether a pattern actually prevented a failure vs. the failure just not occurring?",
+          "Integration safety: Does memory pattern scoring preserve existing memory pattern discovery, retrieval, and storage without introducing circular dependencies?",
+          "Performance baseline: Does scoring add < 100ms latency to pipeline startup even with large pattern libraries?",
+          "Metrics quality: Do the dashboard metrics actually show pattern effectiveness or just injection frequency?"
+        ],
+        "risk_areas": [
+          "Overfitting patterns: Patterns learned from single issues may be too specific to ever match future issues, inflating pattern library without improving prevention rate.",
+          "Cascade failures: Injected patterns might change issue context in ways that make subsequent injections or error detection inaccurate.",
+          "Outcome tracking errors: If tracking whether a pattern prevented failure is wrong, the whole feedback loop trains on corrupted signals.",
+          "Performance regression: Pattern matching against growing library could slow every pipeline start; must monitor and optimize.",
+          "False positive injection misleading system: Patterns injected inappropriately could cause new failures that are misattributed to the injected pattern.",
+          "Memory system corruption: Integration could inadvertently corrupt existing pattern metadata or break memory retrieval for other systems."
+        ]
+      },
+      "timestamp": 1772932605,
+      "ttl": 3600
+    },
+    "84562822763b9920d8a631d0be62d299": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 98,
+            "summary": "Core data for the feature - contains captured failure patterns with root causes, fixes, and frequency counts that directly feed into effectiveness scoring and proactive prevention"
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 75,
+            "summary": "Project structure, test conventions, and source organization needed to understand where and how to integrate pattern tracking into the codebase"
+          },
+          {
+            "file": "global.json",
+            "relevance": 48,
+            "summary": "Demonstrates cross-repo learning structure that informs how to aggregate and share pattern effectiveness insights across multiple repositories"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 38,
+            "summary": "Shows baseline metrics structure that could store effectiveness scores and historical tracking data for patterns over time"
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 20,
+            "summary": "Minimal project type metadata; mostly redundant with first patterns.json entry but hints at multi-detection approach"
+          }
+        ]
+      },
+      "timestamp": 1772932622,
+      "ttl": 1800
+    },
+    "5a5ccfd0b4934f6051d64ed1850b8c08": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant - contains captured failure patterns with root causes, fixes, and frequency tracking (seen_count, last_seen). This is the core dataset that a Memory Pattern Effectiveness Tracker would analyze to score and prevent failures."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 45,
+            "summary": "Provides project structure context (vitest, npm, test_pattern) needed to understand failure patterns and validate that the tracker works within the project's testing environment conventions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Contains baselines structure for tracking effectiveness metrics. Relevant as the tracker would need to populate this with scoring data, though currently empty."
+          }
+        ]
+      },
+      "timestamp": 1772932897,
+      "ttl": 1800
+    },
+    "e6e0bef44dec5e8fb5e30df32a846986": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains captured failure patterns with root causes, fixes, seen counts, and timestamps. This is the core data structure a Memory Pattern Effectiveness Tracker would consume to score failure prevention and identify recurring issues."
+          },
+          {
+            "file": "patterns.json (first entry with conventions)",
+            "relevance": 50,
+            "summary": "Defines project conventions (source dir, test patterns, import style). Useful for understanding the codebase structure where the tracker will be implemented."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Contains baselines structure for metrics. Relevant for designing the scoring mechanism—baselines are essential for measuring pattern effectiveness and proactive failure prevention."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Framework for capturing architectural decisions. While empty, the structure is relevant for designing what metadata the effectiveness tracker should persist about patterns."
+          },
+          {
+            "file": "patterns.json (second entry with project_type)",
+            "relevance": 25,
+            "summary": "Generic project metadata (nodejs, timestamp). Minimal relevance—only confirms this is a Node.js project without architectural pattern details."
+          }
+        ]
+      },
+      "timestamp": 1772932926,
+      "ttl": 1800
+    },
+    "40ef01ea920ffe550dc539939314d95e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Contains failure pattern data with seen_count and timestamps for tracking failure frequency and recency—core to failure prevention scoring and pattern effectiveness measurement"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 58,
+            "summary": "Provides structure for tracking effectiveness baselines and metrics needed for memory pattern effectiveness scoring"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 48,
+            "summary": "Structure for tracking design decisions that could include rejected design approaches and anti-patterns analysis"
+          }
+        ]
+      },
+      "timestamp": 1772932943,
+      "ttl": 1800
+    },
+    "7e12ff757f7c3dae0a87ee70e2dd18df": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains captured failure patterns with root causes and fix strategies. Directly relevant to building a failure prevention scoring tracker—provides the actual data points needed to measure pattern effectiveness."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 68,
+            "summary": "Project configuration (Node.js, vitest, npm, CommonJS) needed to contextualize which patterns apply. Understanding tech stack is essential for evaluating pattern effectiveness in this specific codebase."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 32,
+            "summary": "Minimal project type detection metadata. Less detailed than the first patterns.json; provides only project_type and timestamp without actionable configuration details."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Empty baselines object but structurally relevant for tracking effectiveness metrics. Placeholder for historical baseline data against which pattern improvements could be measured."
+          },
+          {
+            "file": "global.json",
+            "relevance": 12,
+            "summary": "Empty cross-repo learnings array. Potentially relevant for identifying patterns that work across repositories, but currently contains no data."
+          }
+        ]
+      },
+      "timestamp": 1772933245,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 100,
+            "summary": "Defines project structure (vitest, javascript, src/, *.test.js pattern, commonjs) — essential for configuring build/test execution in the build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Documents 2 test-stage failures with root causes and fixes — critical context for avoiding regressions during build stage testing"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Contains empty baselines object — not applicable to current build stage context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array — not applicable to current build stage context"
+          }
+        ]
+      },
+      "timestamp": 1772933253,
+      "ttl": 1800
     }
   }
 }
