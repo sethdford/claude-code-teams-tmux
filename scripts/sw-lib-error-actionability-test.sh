@@ -146,4 +146,68 @@ assert_contains_category "TIMEOUT" "operation timed out" "TIMEOUT"
 assert_contains_category "MEMORY_ERROR" "out of memory" "MEMORY_ERROR"
 assert_contains_category "NETWORK_ERROR" "ECONNREFUSED network" "NETWORK_ERROR"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Location Extraction
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Location Extraction"
+
+loc_json=$(erract_extract_location "file.sh:42: error message")
+assert_contains "file:line format" "$loc_json" "42"
+assert_contains "file extraction" "$loc_json" "file.sh"
+
+loc_json=$(erract_extract_location "error at line 123")
+assert_contains "at line format" "$loc_json" "123"
+
+loc_json=$(erract_extract_location 'File "test.py", line 456')
+assert_contains "File format" "$loc_json" "456"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Deduplication
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Error Deduplication"
+
+dedup_result=$(erract_deduplicate "line 1
+line 2
+line 2
+line 2
+line 3")
+assert_contains "deduplicates repeated lines" "$dedup_result" "repeated 2 times"
+
+# ANSI codes should be stripped
+dedup_result=$(erract_deduplicate $'line 1\n\x1b[32mline 2\x1b[0m\nline 3')
+if [[ ! "$dedup_result" =~ $'\x1b' ]]; then
+    assert_pass "ANSI codes stripped"
+else
+    assert_fail "ANSI codes not stripped"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Error Classification
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Error Classification"
+
+class=$(erract_classify "SyntaxError: unexpected token")
+assert_eq "classify syntax error" "syntax" "$class"
+
+class=$(erract_classify "TypeError: is not a function")
+assert_eq "classify type error" "type" "$class"
+
+class=$(erract_classify "AssertionError: expected foo to equal bar")
+assert_eq "classify assertion" "assertion" "$class"
+
+class=$(erract_classify "Segmentation fault (core dumped)")
+assert_eq "classify runtime error" "runtime" "$class"
+
+class=$(erract_classify "Error: cannot find module 'lodash'")
+assert_eq "classify dependency error" "dependency" "$class"
+
+class=$(erract_classify "EACCES: permission denied")
+assert_eq "classify permission error" "permission" "$class"
+
+class=$(erract_classify "ECONNREFUSED: connection refused")
+assert_eq "classify network error" "network" "$class"
+
+class=$(erract_classify "Unknown strange error with no pattern")
+assert_eq "classify unknown error" "unknown" "$class"
+
 print_test_results

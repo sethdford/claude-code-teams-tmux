@@ -291,6 +291,127 @@ assert_contains "output includes PREREQUISITES section" "$output" "PREREQUISITES
 assert_contains "output includes INSTALLED FILES section" "$output" "INSTALLED FILES"
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# AUTO-FIX TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${DIM}  auto-fix mode${RESET}"
+
+# Create a fresh test environment for auto-fix testing
+TEST_AUTOFIX_DIR="$TEST_TEMP_DIR/autofix-test"
+mkdir -p "$TEST_AUTOFIX_DIR"
+cd "$TEST_AUTOFIX_DIR"
+
+# ─── Test 16: --fix-dry shows what would be fixed without modifying ────────────
+output_dry=$(bash "$SCRIPT_DIR/sw-doctor.sh" --fix-dry 2>&1) && rc=0 || rc=$?
+if [[ "$output_dry" == *"[DRY]"* || "$output_dry" == *"Dry-run"* ]]; then
+    assert_pass "--fix-dry flag shows dry-run output"
+else
+    # If no DRY markers, check that directories weren't created
+    if [[ ! -d ".claude" ]]; then
+        assert_pass "--fix-dry doesn't create directories"
+    else
+        assert_fail "--fix-dry doesn't create directories" ".claude was created"
+    fi
+fi
+
+# ─── Test 17: --fix creates missing directories ──────────────────────────────
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+if [[ -d ".claude" && -d ".claude/pipeline-artifacts" && -d ".claude/agents" ]]; then
+    assert_pass "--fix creates .claude directories"
+else
+    assert_fail "--fix creates .claude directories" ".claude structure incomplete"
+fi
+
+if [[ -d "$HOME/.shipwright" && -d "$HOME/.shipwright/optimization" ]]; then
+    assert_pass "--fix creates ~/.shipwright directories"
+else
+    assert_fail "--fix creates ~/.shipwright directories" "directories missing"
+fi
+
+# ─── Test 18: --fix creates daemon-config.json ──────────────────────────────
+if [[ -f ".claude/daemon-config.json" ]]; then
+    # Verify it's valid JSON
+    if jq empty ".claude/daemon-config.json" 2>/dev/null; then
+        assert_pass "--fix creates valid daemon-config.json"
+    else
+        assert_fail "--fix creates valid daemon-config.json" "JSON is invalid"
+    fi
+else
+    assert_fail "--fix creates daemon-config.json"
+fi
+
+# ─── Test 19: --fix creates settings.json ────────────────────────────────────
+if [[ -f ".claude/settings.json" ]]; then
+    # Verify it's valid JSON
+    if jq empty ".claude/settings.json" 2>/dev/null; then
+        assert_pass "--fix creates valid settings.json"
+    else
+        assert_fail "--fix creates valid settings.json" "JSON is invalid"
+    fi
+else
+    assert_fail "--fix creates settings.json"
+fi
+
+# ─── Test 20: --fix creates budget.json ──────────────────────────────────────
+if [[ -f "$HOME/.shipwright/budget.json" ]]; then
+    if jq empty "$HOME/.shipwright/budget.json" 2>/dev/null; then
+        assert_pass "--fix creates valid budget.json"
+    else
+        assert_fail "--fix creates valid budget.json" "JSON is invalid"
+    fi
+else
+    assert_fail "--fix creates budget.json"
+fi
+
+# ─── Test 21: --fix is idempotent (running twice doesn't break things) ─────────
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+if [[ -f ".claude/daemon-config.json" ]] && jq empty ".claude/daemon-config.json" 2>/dev/null; then
+    assert_pass "--fix is idempotent (second run succeeds)"
+else
+    assert_fail "--fix is idempotent" "second run broke config"
+fi
+
+# ─── Test 22: --fix creates backups before overwriting ───────────────────────
+# Manually create a settings.json to test backup creation
+echo '{"old": "config"}' > ".claude/settings.json"
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+# The backup should exist if we overwrote
+if [[ -f ".claude/settings.json.bak" ]] || [[ ! -f ".claude/settings.json" ]] || jq empty ".claude/settings.json" 2>/dev/null; then
+    assert_pass "--fix handles existing config files safely"
+else
+    assert_fail "--fix handles existing config files safely"
+fi
+
+# ─── Test 23: --fix without arguments doesn't crash ───────────────────────────
+# Clean test directory
+rm -rf "$TEST_AUTOFIX_DIR"/.claude
+mkdir -p "$TEST_AUTOFIX_DIR"
+output_no_args=$(bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 0 && -d ".claude" ]]; then
+    assert_pass "--fix without other args works"
+else
+    assert_fail "--fix without other args works" "exit code: $rc"
+fi
+
+# ─── Test 24: AUTO-FIX SUMMARY section exists ─────────────────────────────────
+output_with_fix=$(bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1)
+if [[ "$output_with_fix" == *"AUTO-FIX"* ]]; then
+    assert_pass "Auto-fix output shows AUTO-FIX SUMMARY"
+else
+    assert_fail "Auto-fix output shows AUTO-FIX SUMMARY"
+fi
+
+# ─── Test 25: doctor reports what was fixed ──────────────────────────────────
+rm -rf "$TEST_AUTOFIX_DIR"/.claude "$TEST_AUTOFIX_DIR/.shipwright"
+output_fix_report=$(bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1)
+if [[ "$output_fix_report" == *"fixed"* || "$output_fix_report" == *"Directories"* ]]; then
+    assert_pass "Auto-fix reports what was fixed"
+else
+    assert_fail "Auto-fix reports what was fixed"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

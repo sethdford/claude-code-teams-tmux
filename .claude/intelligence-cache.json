@@ -599,6 +599,56 @@
       },
       "timestamp": 1772927923,
       "ttl": 3600
+    },
+    "9a264fb721e3a88b49a7a7667df8a562": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "backend",
+        "key_risks": [
+          "Integration complexity with existing dashboard and status systems",
+          "Real-time performance and scalability across multiple metric dimensions",
+          "Historical data collection starting from zero baseline",
+          "JSON schema stability and compatibility with strategic agent consumption"
+        ],
+        "implementation_hints": [
+          "Leverage existing events.jsonl as primary data source for historical metrics",
+          "Build metrics aggregation layer on top of existing dashboard infrastructure (dashboard/server.ts)",
+          "Implement staged rollout: start with template/stage breakdowns, then add complexity/language/time-of-day dimensions",
+          "Use time-series aggregation with caching for 7/30/90 day trend windows",
+          "Design JSON export schema for direct strategic agent consumption with machine-readable format",
+          "Add real-time WebSocket updates for active pipeline tracking to reduce polling overhead"
+        ]
+      },
+      "timestamp": 1772933137,
+      "ttl": 3600
+    },
+    "f47c8c791624ae0369235ba3d8b0c737": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "frontend",
+        "key_risks": [
+          "Accuracy of failure attribution logic across multiple dimension combinations (template/stage/language/complexity)",
+          "Performance impact of aggregating metrics across multiple time windows and breakdown dimensions simultaneously",
+          "Data consistency when tracking pipeline state transitions in high-volume scenarios",
+          "Backward compatibility with existing shipwright status and dashboard commands"
+        ],
+        "implementation_hints": [
+          "Extend sw-db.sh with materialized views/indices for pre-calculated metrics by template, stage, language, complexity",
+          "Leverage sw-eventbus.sh to capture granular pipeline events for accurate failure attribution",
+          "Implement time-series bucketing in SQLite for efficient 7/30/90 day trend calculations with minimal query overhead",
+          "Stream real-time pipeline progress via dashboard server WebSocket layer to frontend clients",
+          "Analyze error-log.jsonl entries grouped by stage and error signature to build failure pattern taxonomy",
+          "Create dedicated /api/metrics JSON endpoint consumable by strategic agent for actionable recommendations"
+        ]
+      },
+      "timestamp": 1772933189,
+      "ttl": 3600
     }
   }
 }

@@ -10,10 +10,15 @@
 # ║  - Fix suggestion (15 pts)                                               ║
 # ║                                                                         ║
 # ║  Auto-enhances low-scoring errors (<70) with context.                    ║
+# ║  Provides error extraction, deduplication, and classification.           ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
 
-VERSION="3.2.4"
+# Module guard
+[[ -n "${_MODULE_ERROR_ACTIONABILITY_LOADED:-}" ]] && return 0
+_MODULE_ERROR_ACTIONABILITY_LOADED=1
+
+VERSION="3.2.5"
 
 # Score an error message for actionability
 # Input: error message (string)
@@ -184,4 +189,112 @@ needs_enhancement() {
   local score
   score=$(get_error_score "$error_msg")
   [[ $score -lt 70 ]] && return 0 || return 1
+}
+
+# ─── Additional Functions for Issue #187 ──────────────────────────────────
+
+# Extract file and line number from error message
+# Output: JSON with file and line fields, or empty if not found
+erract_extract_location() {
+    local error_msg="$1"
+    local file=""
+    local line=""
+
+    # Pattern 1: file.sh:123
+    if [[ $error_msg =~ ([a-zA-Z0-9._/-]+\.[a-zA-Z]+):([0-9]+) ]]; then
+        file="${BASH_REMATCH[1]}"
+        line="${BASH_REMATCH[2]}"
+    # Pattern 2: at line 123
+    elif [[ $error_msg =~ at[[:space:]]+line[[:space:]]+([0-9]+) ]]; then
+        line="${BASH_REMATCH[1]}"
+    # Pattern 3: File "file.py", line 123
+    elif [[ $error_msg =~ File[[:space:]]+\"([^\"]+)\",[[:space:]]+line[[:space:]]+([0-9]+) ]]; then
+        file="${BASH_REMATCH[1]}"
+        line="${BASH_REMATCH[2]}"
+    fi
+
+    # Output JSON
+    if [[ -n "$file" ]] || [[ -n "$line" ]]; then
+        jq -n \
+            --arg file "$file" \
+            --arg line "$line" \
+            '{file: $file, line: ($line | tonumber? // empty)}'
+    else
+        echo "{}"
+    fi
+}
+
+# Remove duplicate error lines and ANSI codes
+# Collapses repeated lines into "... (repeated N times)"
+# Output: cleaned error output (max 50 lines by default)
+erract_deduplicate() {
+    local error_output="$1"
+    local max_lines="${2:-50}"
+    local prev_line=""
+    local repeat_count=0
+    local line_num=0
+
+    while IFS= read -r line; do
+        line_num=$((line_num + 1))
+
+        # Strip ANSI color codes using sed (bash 3.2 compatible)
+        local clean_line
+        clean_line=$(printf '%s' "$line" | sed 's/\x1b\[[0-9;]*m//g')
+
+        # Skip empty lines
+        [[ -z "$clean_line" ]] && continue
+
+        # Check if this line is same as previous
+        if [[ "$clean_line" == "$prev_line" ]]; then
+            repeat_count=$((repeat_count + 1))
+        else
+            # Output previous line (if there was repetition)
+            if [[ $repeat_count -gt 0 ]]; then
+                printf '%s (repeated %d times)\n' "$prev_line" "$repeat_count"
+            elif [[ -n "$prev_line" ]]; then
+                printf '%s\n' "$prev_line"
+            fi
+
+            prev_line="$clean_line"
+            repeat_count=0
+
+            # Stop if we've output max_lines
+            if [[ $line_num -gt $max_lines ]]; then
+                break
+            fi
+        fi
+    done <<< "$error_output"
+
+    # Output final line
+    if [[ -n "$prev_line" ]]; then
+        if [[ $repeat_count -gt 0 ]]; then
+            printf '%s (repeated %d times)\n' "$prev_line" "$repeat_count"
+        else
+            printf '%s\n' "$prev_line"
+        fi
+    fi
+}
+
+# Classify error into one of: syntax, type, assertion, runtime, dependency, permission, network, unknown
+# Output: error type string
+erract_classify() {
+    local error_msg="$1"
+
+    if [[ $error_msg =~ (SyntaxError|parse error|unexpected token|invalid syntax) ]]; then
+        echo "syntax"
+    elif [[ $error_msg =~ (TypeError|type mismatch|wrong.*type|is not.*type|expected.*but got) ]]; then
+        echo "type"
+    elif [[ $error_msg =~ (AssertionError|assert|expect|should|test.*failed) ]]; then
+        echo "assertion"
+    elif [[ $error_msg =~ (segfault|Segmentation fault|OOM|out of memory|SIGKILL|signal 9|Killed|timeout|timed out) ]]; then
+        echo "runtime"
+    elif [[ $error_msg =~ (module not found|cannot find|import error|no such package|ENOENT|not found) ]]; then
+        echo "dependency"
+    elif [[ $error_msg =~ (EACCES|permission denied|permission.*denied|Access denied) ]]; then
+        echo "permission"
+    elif [[ $error_msg =~ (ECONNREFUSED|ECONNRESET|timeout|network|socket|DNS) ]]; then
+        echo "network"
+    else
+        echo "unknown"
+    fi
 }
