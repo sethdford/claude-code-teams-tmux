@@ -35,18 +35,19 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "devops",
         "secondary_roles": [
-          "devops",
-          "security-auditor",
-          "reviewer"
+          "architect",
+          "reviewer",
+          "tester",
+          "security-auditor"
         ],
-        "confidence": 0.9,
-        "reasoning": "Emergency conservative pipeline requires system design for reliability, DevOps for pipeline configuration, security-first defaults, and quality assurance enforcement.",
+        "confidence": 0.85,
+        "reasoning": "Pipeline template design requires DevOps expertise; architecture for template structure, review/testing for reliability validation, security auditor for conservative approach",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772972848,
+      "timestamp": 1772977490,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -662,28 +663,30 @@
     "7104cfbee7eae81ed630b9f84e608634": {
       "result": {
         "complexity": 4,
-        "risk_level": "medium",
-        "success_probability": 78,
+        "risk_level": "low",
+        "success_probability": 85,
         "recommended_template": "fast",
         "issue_type": "infrastructure",
         "key_risks": [
-          "CLI flag routing may fail to load emergency template correctly",
-          "Template override precedence unclear - timeout/model settings might not apply uniformly across all stages",
-          "Doubled timeouts and opus-only routing significantly increases token cost per job",
-          "Emergency template testing may not cover all integration edge cases with existing pipeline stages",
-          "Documentation drift if CLI changes are not fully reflected in CLAUDE.md"
+          "Incomplete or malformed template JSON schema causing pipeline parse failures",
+          "Pipeline start command flag support not properly integrated or tested",
+          "Model routing effort_level overrides not applied consistently across all stages",
+          "Documentation gaps in CLAUDE.md causing confusion about when to use emergency template",
+          "Checkpoint flag integration not properly wired in build loop iteration logic",
+          "Test suite incomplete, leaving template behavior partially unvalidated"
         ],
         "implementation_hints": [
-          "Create emergency.json template file first, validate structure matches existing templates before CLI integration",
-          "Test template loading standalone with mock pipeline run before adding --template flag support",
-          "Review existing template loading mechanism in sw-pipeline.sh to ensure consistent override behavior",
-          "Add comprehensive test suite covering template load, timeout application, model routing, and checkpoint behavior",
-          "Document each conservative setting with explicit rationale (e.g., why 2x timeouts, why opus-only)",
-          "Consider creating a template schema validator to prevent configuration errors",
-          "Verify cost tracking correctly accounts for increased iterations and model selection"
+          "Start by examining templates/pipelines/standard.json structure as the base template",
+          "Create emergency.json with stage_timeout_multiplier: 2.0 and explicit timeout overrides for each stage",
+          "Add effort_level: high to all stages to force opus-only routing via model router",
+          "Verify checkpoint_every_iteration flag exists in pipeline engine and enable it in template",
+          "Modify pipeline start command parser to accept --template emergency and load templates/pipelines/emergency.json",
+          "Add conditional gates section with all auto-approve for minimal manual intervention",
+          "Document in CLAUDE.md under Pipeline Templates table with use case: Maximum reliability fallback",
+          "Create test suite validating template loads, timeout multipliers apply, model routing is opus-only, and all flags are recognized"
         ]
       },
-      "timestamp": 1772972178,
+      "timestamp": 1772976764,
       "ttl": 3600
     },
     "f485c3000ea19afc97820809cc016dc4": {
@@ -707,76 +710,74 @@
     "1c0baa43bdff176a85a8668388512139": {
       "result": {
         "issue_type": "infrastructure",
-        "confidence": 0.88,
+        "confidence": 0.85,
         "secondary_domains": [
-          "configuration",
-          "testing",
-          "documentation"
+          "documentation",
+          "tooling"
         ],
         "complexity_assessment": {
-          "score": 5,
-          "reasoning": "Well-specified configuration work with clear acceptance criteria; complexity is in coordinating template structure, CLI integration, and test validation rather than algorithmic difficulty"
+          "score": 4,
+          "reasoning": "Straightforward configuration file addition with clear requirements (doubled timeouts, opus-only routing, disabled features), CLI flag support, and test validation. Well-scoped, additive change with low architectural risk."
         },
         "skill_plan": {
           "plan": [
             "architecture-design",
-            "brainstorming"
+            "documentation"
           ],
           "design": [
             "architecture-design",
-            "deploy-safety"
+            "api-design"
           ],
-          "build": [],
+          "build": [
+            "testing-strategy"
+          ],
           "review": [
-            "adversarial-quality",
-            "security-audit"
+            "two-stage-review",
+            "pr-quality"
           ],
           "compound_quality": [
-            "testing-strategy",
+            "adversarial-quality",
             "validation-thoroughness"
           ],
           "pr": [
-            "pr-quality",
-            "documentation"
+            "pr-quality"
           ],
           "deploy": [],
-          "validate": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
           "monitor": []
         },
         "skill_rationale": {
-          "architecture-design": "Create an ADR documenting the emergency template design rationale—why 2x timeouts, opus-only routing, and disabled intelligence are the right conservative tradeoffs for reliability",
-          "brainstorming": "Challenge assumptions: does disabling intelligence actually improve reliability, or does it remove useful safety checks? Are 50% more iterations the right knob to turn?",
-          "deploy-safety": "Emergency template is a fallback mechanism for platform reliability crises, so must be designed with predictable, observable behavior and clear failure modes",
-          "adversarial-quality": "Test failure scenarios: what breaks if opus hits rate limits? If checkpoints corrupt? If doubling timeouts still isn't enough? Find the template's limits",
-          "security-audit": "Verify disabling intelligence/prediction doesn't inadvertently bypass security checks, architecture validation, or other safety gates critical to reliable operation",
-          "testing-strategy": "Design test suite covering all acceptance criteria: timeout scaling validation, model routing force, checkpoint behavior, iteration limits, verbose logging output",
-          "validation-thoroughness": "Validate beyond tests that emergency template actually delivers claimed reliability improvements under realistic failure conditions, not just happy path execution",
-          "pr-quality": "Communicate the purpose, tradeoffs (slower/costlier but more reliable), and when to activate emergency template so teams use it appropriately",
-          "documentation": "Update CLAUDE.md Pipeline Templates section with emergency template entry, usage guidance, and rationale for when this fallback should be activated"
+          "architecture-design": "Understanding Shipwright's template system architecture and how configuration overrides cascade through stages is essential to designing an emergency template that reliably applies all conservative settings without side effects.",
+          "documentation": "Reviewing existing template documentation patterns ensures the emergency template integrates consistently with current CLAUDE.md conventions and prevents operator confusion about when to use standard vs emergency templates.",
+          "api-design": "The CLI flag for `--template emergency` must follow Shipwright's existing interface conventions (e.g., similar to `--pipeline-template`, consistent argument ordering) to avoid cognitive load and maintain CLI consistency.",
+          "testing-strategy": "Test suite must validate that all conservative overrides (2x timeouts, opus-only effort routing, checkpoint_every_iteration, +50% iterations/restarts) are correctly applied by the template system and interact correctly with stage-level configurations.",
+          "two-stage-review": "Two-pass review ensures both technical correctness (template structure, overrides apply correctly) and strategic correctness (conservative settings actually improve reliability without wasting resources or creating new failure modes).",
+          "pr-quality": "Clear PR description explaining the emergency template's purpose, when to use it (repeated failures, high-priority issues), cost implications (opus-only), and limitations (no auto-merge, verbose logging overhead) is critical for operator decision-making.",
+          "adversarial-quality": "Challenge whether ultra-conservative settings actually improve success rate or just hide failures under extended timeouts; test edge cases like pathological scenarios where 2x timeouts still fail, and verify opus-only routing doesn't create new bottlenecks.",
+          "validation-thoroughness": "Real-world smoke tests running actual pipelines with the emergency template must confirm it achieves claimed reliability improvements, and measure the cost/time trade-offs compared to standard template for honest operator evaluation."
         },
         "generated_skills": [],
         "review_focus": [
-          "Timeout doubling consistently applied across all 4 stages (intake, build, test, pr)",
-          "Model routing overrides force opus and prevent fallback to sonnet/haiku",
-          "Checkpoint save/restore cycle works correctly at iteration boundaries",
-          "Verbose logging provides sufficient detail without overwhelming output",
-          "Max iterations/restarts +50% logic correctly multiplies base values from standard template",
-          "--template emergency flag properly loads emergency.json and applies all overrides without partial application",
-          "Disabled intelligence/prediction flags don't cause pipeline execution failures or missing stage outputs",
-          "Minimal stage set (intake→build→test→pr) retains critical quality gates while removing optimization stages"
+          "Timeout multipliers: verify 2x standard values are both appropriate for reliability and reasonable for operator workflows (no pathological delays)",
+          "Model routing mechanics: confirm effort_level overrides actually force opus for all stages, and document token cost impact in CLAUDE.md",
+          "Checkpoint strategy: validate checkpoint_every_iteration provides recovery value without bloating state artifacts",
+          "CLI integration: ensure --template emergency works across all pipeline invocation patterns (pipeline start --issue, --goal, daemon mode)",
+          "Test coverage: verify tests cover all conservative settings and their interactions (e.g., high iteration count + checkpoint_every_iteration)",
+          "Documentation clarity: emergency template use case, cost warnings, and trade-offs must be unambiguous so operators choose it intentionally",
+          "Backward compatibility: adding new template must not affect existing template loading, selection logic, or CLI argument parsing"
         ],
         "risk_areas": [
-          "Model routing precedence bug: overrides not applied if inheritance chain is wrong, causing fallback to cheaper models",
-          "Checkpoint corruption leaving pipeline unrecoverable mid-iteration",
-          "Cost explosion from +50% iterations × opus-only pricing, creating user surprise",
-          "Disabled intelligence removing implicit safety checks (e.g., architecture validation, security scanning)",
-          "Verbose logging becoming unreadably noisy, defeating troubleshooting goal",
-          "CLI integration incomplete: template loads but some flags silently ignored",
-          "Timeouts still insufficient in actual emergencies, creating false sense of security",
-          "Template test suite passes locally but fails with real opus API calls and network delays"
+          "Timeout doubling could mask real code issues by allowing broken tests to time out instead of fail-fast with diagnostic output",
+          "Opus-only routing increases token costs dramatically—uncontrolled emergency template usage could exhaust daily budget or incur unexpected charges",
+          "No auto-merge leaves PRs in pending state indefinitely, requiring manual merge—could become operational bottleneck if template is used frequently",
+          "Disabling intelligence/prediction layers removes anomaly detection and cost optimization, potentially missing signals that standard template would catch",
+          "Template override mechanism complexity: ensure all 8 conservative settings (timeouts, effort, checkpoint, iterations, restarts, logging, intelligence, auto-merge) are correctly applied; partial application creates false reliability claims",
+          "Increased max_iterations without corresponding debugging improvements may not actually increase reliability—need to measure success rate delta empirically in validation"
         ]
       },
-      "timestamp": 1772972263,
+      "timestamp": 1772976833,
       "ttl": 3600
     },
     "58730b47a3c37116d9270f5380a44072": {
@@ -816,112 +817,112 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 72,
-            "summary": "Detailed project structure (Node.js, vitest, npm, source conventions) is essential for validating pipeline template requirements and constraints"
+            "file": "patterns.json (first entry)",
+            "relevance": 90,
+            "summary": "Contains detailed project structure (node/vitest), source conventions, and test patterns - essential context for understanding why pipeline template validation might reject plans that don't account for actual project setup"
           },
           {
             "file": "failures.json",
-            "relevance": 48,
-            "summary": "Directly addresses the rejection context (validation failures) - would contain validation error patterns to avoid in conservative template design, though currently empty"
+            "relevance": 75,
+            "summary": "Directly tracks validation failures referenced in context; currently empty but this is the canonical location where rejected plan validation errors should be recorded and analyzed"
           },
           {
-            "file": "decisions.json",
-            "relevance": 35,
-            "summary": "Could inform what conservative design decisions have been made previously, though currently empty"
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Would contain baselines for reliability metrics; empty now but relevant for conservative pipeline template decisions that depend on historical performance data"
           }
         ]
       },
-      "timestamp": 1772974680,
+      "timestamp": 1772977134,
       "ttl": 1800
     },
     "c4de71e31a34bbf9178319b2a04d25b4": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Critical for emergency conservative design—past failure patterns directly inform risk mitigation strategies and gate placement"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 72,
-            "summary": "Reliability baselines and thresholds define what 'maximum reliability' means; essential for setting SLOs and pipeline abort criteria"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 68,
-            "summary": "Architectural constraints and prior decisions inform pipeline stage design and gating strategy for safety"
-          },
-          {
-            "file": "global.json",
-            "relevance": 48,
-            "summary": "Cross-repo reliability patterns and learnings provide comparative data on conservative pipeline approaches"
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Project structure conventions (source_dir, test_runner, import style) inform pipeline stage sequencing and validation gates"
           },
           {
             "file": "patterns.json",
-            "relevance": 25,
-            "summary": "Project structure details (Node.js, vitest, npm) provide implementation context but minimal guidance on pipeline architecture patterns"
+            "relevance": 20,
+            "summary": "Project type (nodejs) confirms language-specific tooling needs for pipeline stages"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 10,
+            "summary": "Empty, but failure patterns would directly inform conservative reliability gates (currently no patterns captured)"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty, but prior architectural decisions would inform pipeline template design (currently no decisions captured)"
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Cross-repo learnings would inform best practices for reliable pipelines (currently empty)"
           }
         ]
       },
-      "timestamp": 1772974738,
+      "timestamp": 1772977232,
       "ttl": 1800
     },
     "b4fdc28f3c4b0a473f799bd07a3994ce": {
       "result": {
         "results": [
           {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Contains project structure details (node, vitest, test patterns) that could inform pipeline template conservative requirements, though no explicit anti-pattern or design rejection data"
+          },
+          {
+            "file": "global.json",
+            "relevance": 12,
+            "summary": "Designated for cross-repo learnings where pipeline template anti-patterns would be captured, but currently empty"
+          },
+          {
             "file": "decisions.json",
-            "relevance": 35,
-            "summary": "Design decisions and rejected approaches for pipeline templates should be stored here; currently empty but most appropriate location for emergency conservative template anti-patterns"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 20,
-            "summary": "Failed pipeline approaches and problematic patterns would be captured here; empty but relevant for tracking rejected design decisions"
-          },
-          {
-            "file": "patterns.json (first entry)",
-            "relevance": 15,
-            "summary": "Project conventions and structure patterns; minimally relevant but could inform reliability constraints for conservative pipeline templates"
+            "relevance": 8,
+            "summary": "Could store rejected pipeline design approaches and reliability decisions, but currently contains no recorded decisions"
           }
         ]
       },
-      "timestamp": 1772974748,
+      "timestamp": 1772977242,
       "ttl": 1800
     },
     "313492971bafdcefe75f0383f0ff5986": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (repo: sethdford/shipwright, 2026-03-08)",
+            "file": "patterns.json",
             "relevance": 95,
-            "summary": "Contains concrete project build configuration: test_runner (vitest), package_manager (npm), source conventions, and import style. Essential for reliable build stage execution."
+            "summary": "Detailed project detection (Node.js + vitest + npm) essential for build stage to run tests correctly and understand source structure"
           },
           {
             "file": "failures.json",
-            "relevance": 50,
-            "summary": "Critical for emergency conservative pipeline: knowing past build failures prevents regression, though currently empty. Would inform safety measures."
+            "relevance": 75,
+            "summary": "Critical for Emergency Conservative template—past failure patterns inform reliability strategy, though currently empty"
           },
           {
-            "file": "metrics.json",
-            "relevance": 40,
-            "summary": "Baseline metrics establish reliability targets and catch performance regressions. Important for maximum reliability goal, though baselines are empty."
-          },
-          {
-            "file": "patterns.json (project_type: nodejs, 2026-02-21)",
-            "relevance": 25,
-            "summary": "Basic project type confirmation, less detailed than comprehensive first patterns.json entry. Provides minimal build configuration context."
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Basic nodejs project type confirmation from bootstrap, somewhat redundant with detailed patterns but confirms project category"
           },
           {
             "file": "decisions.json",
-            "relevance": 20,
-            "summary": "Historical build decisions could inform conservative approach, but list is empty. Low immediate relevance to stage execution."
+            "relevance": 40,
+            "summary": "Architectural decisions could guide build choices, but currently unpopulated"
+          },
+          {
+            "file": "global.json",
+            "relevance": 30,
+            "summary": "Cross-repo learnings would help conservative builds, but no patterns captured yet"
           }
         ]
       },
-      "timestamp": 1772974842,
+      "timestamp": 1772977471,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -930,26 +931,26 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Contains essential build configuration: test runner (vitest), package manager (npm), project type (node), source directory structure, and test patterns - all critical for executing build stage"
+            "summary": "Directly provides project structure (Node.js, vitest, npm), source/test directories, and build conventions essential for the build stage"
           },
           {
             "file": "failures.json",
-            "relevance": 45,
-            "summary": "Documents previous build failures to avoid repeating mistakes; currently empty but provides context on known issues that could affect build reliability"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 25,
-            "summary": "Performance baselines for build stages; currently empty but would help optimize build time and detect regressions"
+            "relevance": 65,
+            "summary": "Captures previous build/test failures to help avoid regressions and inform debugging strategy during build iterations"
           },
           {
             "file": "decisions.json",
-            "relevance": 15,
-            "summary": "Architectural decisions; currently empty but lower priority for build stage execution compared to configuration and failure patterns"
+            "relevance": 60,
+            "summary": "Architectural and implementation decisions affect code structure and build constraints"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baselines are more relevant to quality gates post-build rather than the actual build execution"
           }
         ]
       },
-      "timestamp": 1772974852,
+      "timestamp": 1772977480,
       "ttl": 1800
     },
     "4fb22f4dca05b7e3bc44c2a74d90a560": {
@@ -984,6 +985,24 @@
       },
       "timestamp": 1772975426,
       "ttl": 1800
+    },
+    "d6e6b168165ad038362038d6b3e60ab8": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1772976775,
+      "ttl": 1800
+    },
+    "c31aebe7d65b5ee8dcfbceee75293ae7": {
+      "result": {
+        "estimated_cost_usd": 1.15,
+        "estimated_iterations": 2,
+        "estimated_tokens": 42000,
+        "likely_failure_stage": "test",
+        "confidence": 82
+      },
+      "timestamp": 1772976786,
+      "ttl": 3600
     }
   }
 }
