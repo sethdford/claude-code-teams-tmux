@@ -651,7 +651,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | --- | ---: | --- |
 | `scripts/sw-activity-test.sh` | 219 | Validate live agent activity stream |
 | `scripts/sw-adapters-test.sh` | 197 | Structural/smoke tests for terminal & deploy |
-| `scripts/sw-adaptive-model-test.sh` | 399 | Test Suite for Adaptive Model Selection |
+| `scripts/sw-adaptive-model-test.sh` | 417 | Test Suite for Adaptive Model Selection |
 | `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
 | `scripts/sw-adaptive-timeout-test.sh` | 406 | Test Suite for Adaptive Stage Timeout Engine |
 | `scripts/sw-adversarial-test.sh` | 258 | Validate adversarial agent code review |
@@ -678,7 +678,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-dashboard-test.sh` | 250 | validates dashboard structure |
 | `scripts/sw-db-test.sh` | 971 | SQLite Persistence Layer Test Suite |
 | `scripts/sw-decide-test.sh` | 519 | Unit tests for the Autonomous Decision Engine |
-| `scripts/sw-decompose-test.sh` | 220 | Intelligent Issue Decomposition tests |
+| `scripts/sw-decompose-test.sh` | 221 | Intelligent Issue Decomposition tests |
 | `scripts/sw-deps-test.sh` | 165 | Automated Dependency Update Management tests |
 | `scripts/sw-developer-simulation-test.sh` | 262 | Validate multi-persona |
 | `scripts/sw-discovery-test.sh` | 268 | Cross-Pipeline Real-Time Learning tests |
@@ -691,7 +691,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-e2e-integration-test.sh` | 352 | Real Claude + Real GitHub |
 | `scripts/sw-e2e-orchestrator-test.sh` | 157 | Test suite registry & execution |
 | `scripts/sw-e2e-smoke-test.sh` | 835 | Pipeline orchestration without API keys |
-| `scripts/sw-e2e-system-test.sh` | 465 | Proves full daemon→pipeline→loop→PR flow |
+| `scripts/sw-e2e-system-test.sh` | 473 | Proves full daemon→pipeline→loop→PR flow |
 | `scripts/sw-eventbus-test.sh` | 155 | Durable event bus tests |
 | `scripts/sw-evidence-test.sh` | 416 | Unit tests for sw-evidence.sh |
 | `scripts/sw-feedback-test.sh` | 302 | Production Feedback Loop tests |
@@ -743,7 +743,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-oversight-test.sh` | 164 | Quality oversight board tests |
 | `scripts/sw-patrol-meta-test.sh` | 449 | Validate self-improvement patrol |
 | `scripts/sw-pipeline-composer-test.sh` | 632 | Test Suite |
-| `scripts/sw-pipeline-test.sh` | 1908 | E2E validation invoking the REAL pipeline |
+| `scripts/sw-pipeline-test.sh` | 1959 | E2E validation invoking the REAL pipeline |
 | `scripts/sw-pipeline-vitals-test.sh` | 226 | Validate pipeline health scoring |
 | `scripts/sw-pm-test.sh` | 225 | Autonomous PM Agent test suite |
 | `scripts/sw-policy-e2e-test.sh` | 290 | Verify config/policy.json is honored |
