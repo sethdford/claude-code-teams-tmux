@@ -41,6 +41,9 @@ fi
 [[ -f "$SCRIPT_DIR/lib/pipeline-github.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-github.sh"
 # shellcheck source=lib/pipeline-detection.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-detection.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-detection.sh"
+# Adaptive Stage Timeout Engine (optional)
+# shellcheck source=lib/adaptive-timeout.sh
+[[ -f "$SCRIPT_DIR/lib/adaptive-timeout.sh" ]] && source "$SCRIPT_DIR/lib/adaptive-timeout.sh" 2>/dev/null || true
 # shellcheck source=lib/pipeline-quality-checks.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-quality-checks.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-quality-checks.sh"
 # shellcheck source=lib/pipeline-intelligence.sh
