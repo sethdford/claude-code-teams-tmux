@@ -38,14 +38,15 @@
         "primary_role": "architect",
         "secondary_roles": [
           "builder",
+          "tester",
           "docs-writer"
         ],
         "confidence": 0.85,
-        "reasoning": "Meta-feature for build loop context injection requires system design of pattern library architecture, context capture/injection mechanisms, and storage strategy before implementation.",
+        "reasoning": "Meta-feature requires architectural design of pattern library structure and build loop integration (architect), implementation (builder), comprehensive testing of meta-system (tester), and pattern documentation (docs-writer)",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1772973845,
+      "timestamp": 1772978326,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -662,28 +663,27 @@
       "result": {
         "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "documentation",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "refactor",
         "key_risks": [
-          "Modifying sw-loop.sh (critical build loop file) could introduce subtle bugs if context injection breaks",
-          "Pattern detection logic may misclassify features, injecting irrelevant or contradictory patterns",
-          "Context injection could bloat prompts and trigger token exhaustion in long-running loops",
-          "Patterns may not generalize across all Shipwright features; maintenance burden grows with codebase",
-          "Synchronization drift between pattern library docs and actual implementations over time"
+          "Pattern detection logic may misclassify feature types from issue descriptions",
+          "Context injection could bloat prompts or provide irrelevant patterns",
+          "Pattern library may not cover all emerging feature types",
+          "Patterns could become stale as codebase architecture evolves",
+          "Build loop performance impact from pattern detection and context injection"
         ],
         "implementation_hints": [
-          "Analyze features #200-#229 via git log and merged PRs to extract common patterns before creating templates",
-          "Create pattern metadata as structured JSON (detection rules, tags, example files) for machine-readable classification",
-          "Start with 3-4 highest-impact patterns; expand gradually based on loop failures to avoid over-engineering",
-          "Implement keyword-based pattern detection first (simple regex on issue title/body), test thoroughly before integrating into sw-loop.sh",
-          "Add feature type detection to sw-loop.sh using existing issue analysis; inject 1-2 most relevant patterns to avoid prompt bloat",
-          "Store pattern detection rules and recent patterns in .claude/memory/ for cross-session learning and refinement",
-          "Create unit test suite for detection logic before modifying sw-loop.sh; validate with historical issues",
-          "Track pattern injection effectiveness: measure correlation between pattern relevance and build loop completion rate"
+          "Analyze the 10 recent failures to identify actual meta-feature patterns before creating templates",
+          "Use features #200-#229 as the canonical basis for pattern extraction",
+          "Start with simple keyword-based pattern detection (title/description matching)",
+          "Create patterns.json file for versioning and easy updates independent of sw-loop.sh",
+          "Inject 1-2 most relevant patterns early in build loop prompt to set context",
+          "Validate pattern detection with test suite before production deployment",
+          "Include pattern adoption checklist in each template for consistency"
         ]
       },
-      "timestamp": 1772972209,
+      "timestamp": 1772977549,
       "ttl": 3600
     },
     "18492dcb2810cff99bd64906a71bd9fc": {
@@ -819,32 +819,32 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Contains concrete project structure (vitest, src/, commonjs conventions) essential for planning implementation. Specifies test patterns and import style needed for feature development."
+            "relevance": 95,
+            "summary": "Contains critical project configuration: test runner (vitest), package manager (npm), source structure (src/), conventions (commonjs imports, *.test.js pattern). Essential for planning feature development and build loop context."
           },
           {
             "file": "patterns.json",
-            "relevance": 40,
-            "summary": "Project type detection (nodejs) provides basic framework context, but lacks detail compared to detailed patterns.json entry."
+            "relevance": 50,
+            "summary": "Minimal metadata showing Node.js project type detected at bootstrap. Less detailed than the comprehensive patterns.json but confirms project type for context."
           },
           {
             "file": "failures.json",
-            "relevance": 15,
-            "summary": "Currently empty, but would be valuable for understanding failure patterns to avoid during feature implementation if it contained data."
+            "relevance": 20,
+            "summary": "Currently empty. Would be relevant to know previous failure patterns when planning build loop error handling, but no data captured yet."
           },
           {
             "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Empty decision history, but would help guide architectural choices for the pattern library feature if populated from previous planning stages."
+            "relevance": 15,
+            "summary": "Architectural decisions would inform feature design approach, but list is empty. Would be useful if populated with build loop design decisions."
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines; would provide performance targets for the build loop context injection feature if metrics were available."
+            "relevance": 10,
+            "summary": "Baseline metrics could guide performance targets for development pattern library, but baselines are not yet captured."
           }
         ]
       },
-      "timestamp": 1772975417,
+      "timestamp": 1772977584,
       "ttl": 1800
     },
     "fcde3a25f635c79dfcc5a37af1c41063": {
@@ -852,22 +852,22 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Contains detailed project structure, test runner configuration (vitest), source conventions, and import patterns—critical for validating plan specifications against actual codebase structure"
+            "relevance": 75,
+            "summary": "Contains actual project structure (vitest, commonjs, src/) and test patterns critical for validating pattern library applicability to the Shipwright codebase"
           },
           {
             "file": "failures.json",
             "relevance": 65,
-            "summary": "Directly tracks validation failures; empty but semantically aligned with context of rejected plan validation failures—would capture root causes if populated"
+            "summary": "Structurally designed to capture validation failures matching the 'rejected plan validation failures' context, though currently empty"
           },
           {
             "file": "decisions.json",
-            "relevance": 45,
-            "summary": "Stores decisions made about handling validation failures; relevant for preventing repeated rejection patterns in Meta-Feature Development context"
+            "relevance": 50,
+            "summary": "Would capture architectural decisions for meta-feature development and build loop context injection, but currently empty with no decision history"
           }
         ]
       },
-      "timestamp": 1772975862,
+      "timestamp": 1772977999,
       "ttl": 1800
     },
     "6541e249646c48ee2535655f0f1e66ff": {
@@ -986,6 +986,62 @@
       },
       "timestamp": 1772976818,
       "ttl": 1800
+    },
+    "2cdcb67da1aa72181a64eb76962769f7": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1772977559,
+      "ttl": 1800
+    },
+    "488ed7764e7e527b7cc76b0ac3ea3da4": {
+      "result": {
+        "estimated_cost_usd": 2.84,
+        "estimated_iterations": 3,
+        "estimated_tokens": 165000,
+        "likely_failure_stage": "design",
+        "confidence": 68,
+        "breakdown": {
+          "stage_costs": {
+            "intake": 0.08,
+            "plan": 0.22,
+            "design": 0.48,
+            "build": 0.91,
+            "test": 0.68,
+            "review": 0.31,
+            "compound_quality": 0.12,
+            "pr": 0.04
+          },
+          "token_distribution": {
+            "high_effort_stages": 72000,
+            "medium_effort_stages": 65000,
+            "low_effort_stages": 28000
+          },
+          "risk_factors": {
+            "pattern_detection_accuracy": "high",
+            "context_window_pressure": "medium",
+            "test_coverage_gaps": "medium"
+          },
+          "model_routing": {
+            "opus_percentage": 35,
+            "sonnet_percentage": 50,
+            "haiku_percentage": 15
+          }
+        },
+        "success_probability_adjusted": 70,
+        "likely_failure_causes": [
+          "Pattern matching logic fails on diverse issue descriptions",
+          "Context injection causes prompt overflow in build loop",
+          "Test suite insufficient to validate pattern accuracy"
+        ],
+        "recommendations": [
+          "Use pattern.json versioning to decouple from sw-loop.sh",
+          "Implement keyword validation test before design approval",
+          "Consider design review gate before proceeding to build"
+        ]
+      },
+      "timestamp": 1772977571,
+      "ttl": 3600
     }
   }
 }
