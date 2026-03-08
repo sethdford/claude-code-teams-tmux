@@ -7,7 +7,7 @@ set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC2034
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -104,7 +104,7 @@ decompose_analyze() {
     local issue_num="$1"
 
     if [[ "$NO_GITHUB" == "true" ]]; then
-        # Mock data for testing (JSON only, no messages)
+        # Mock data for testing with dependencies for DAG features
         echo '{
             "issue_number": '$issue_num',
             "complexity_score": 85,
@@ -114,15 +114,27 @@ decompose_analyze() {
             "subtasks": [
                 {
                     "title": "Subtask 1: Design phase",
-                    "description": "Plan and document the new architecture"
+                    "description": "Plan and document the new architecture",
+                    "acceptance_criteria": ["Design approved", "Architecture documented"],
+                    "test_approach": "Code review",
+                    "depends_on": [],
+                    "estimated_hours": 3
                 },
                 {
                     "title": "Subtask 2: Implementation phase",
-                    "description": "Implement core changes"
+                    "description": "Implement core changes",
+                    "acceptance_criteria": ["Core features working", "Tests pass"],
+                    "test_approach": "Unit tests",
+                    "depends_on": [0],
+                    "estimated_hours": 6
                 },
                 {
                     "title": "Subtask 3: Integration & testing",
-                    "description": "Integrate changes and add tests"
+                    "description": "Integrate changes and add tests",
+                    "acceptance_criteria": ["Integration complete", "E2E tests pass"],
+                    "test_approach": "Integration tests",
+                    "depends_on": [1],
+                    "estimated_hours": 3
                 }
             ]
         }'
@@ -154,13 +166,21 @@ You are an issue complexity analyzer. Analyze the GitHub issue below and determi
 1. Complexity score (1-100): How intricate/multi-faceted is the work?
 2. Estimated hours (1-100): How long would this realistically take?
 3. Should decompose: Is complexity > 70 OR hours > 8?
-4. If should decompose: Generate 3-5 focused, independent subtasks
+4. If should decompose: Generate 3-5 focused subtasks with explicit dependencies
+
+For dependencies (DAG scheduling):
+- Index subtasks 0, 1, 2, ... in array order
+- Each subtask lists indices of tasks it depends on in "depends_on" array
+- Empty "depends_on" means no dependencies (can start immediately)
+- Task N can only depend on tasks 0..N-1 (no circular dependencies)
+- Examples: task 2 depends on [0, 1]; task 1 depends on [0]; task 0 depends on []
 
 Each subtask should be:
-- Self-contained (can be worked on independently)
+- Self-contained (can be worked on after dependencies complete)
 - Completable in one pipeline run (~20 iterations max)
 - Have clear acceptance criteria
 - Include test strategy
+- Have realistic estimated_hours for critical path analysis
 
 Return ONLY valid JSON (no markdown, no explanation):
 {
@@ -174,7 +194,9 @@ Return ONLY valid JSON (no markdown, no explanation):
             "title": "Subtask N: <clear title>",
             "description": "<1-2 sentences describing the work>",
             "acceptance_criteria": ["criterion 1", "criterion 2"],
-            "test_approach": "<how to validate this subtask>"
+            "test_approach": "<how to validate this subtask>",
+            "depends_on": [<list of task indices, or empty>],
+            "estimated_hours": <1-100>
         }
     ]
 }
@@ -341,6 +363,203 @@ decompose_mark_decomposed() {
     fi
 }
 
+# ─── DAG Validation: Check for cycles ──────────────────────────────────────
+decompose_validate_dag() {
+    local analysis_json="$1"
+
+    # Validate DAG structure: all depends_on indices must be < current index (no cycles)
+    jq -c '
+        .subtasks as $tasks |
+        ($tasks | length) as $n |
+        (
+            reduce range(0; $n) as $i (
+                {"valid": true, "error": null};
+                if .valid then
+                    (
+                        $tasks[$i].depends_on // []
+                    ) as $deps |
+                    (
+                        reduce $deps[] as $dep (
+                            .;
+                            if (.valid) then
+                                if $dep >= $i then
+                                    .valid = false |
+                                    .error = "invalid_dependency: task \($i) depends on task \($dep) at same or later index"
+                                elif $dep < 0 or $dep >= $n then
+                                    .valid = false |
+                                    .error = "out_of_range: task \($i) depends on nonexistent task \($dep)"
+                                else . end
+                            else . end
+                        )
+                    )
+                else . end
+            )
+        )
+    ' <<< "$analysis_json" 2>/dev/null || echo '{"valid": false, "error": "json_parse_error"}'
+}
+
+# ─── Topological Sort: Order subtasks into execution waves ──────────────────
+decompose_topo_sort() {
+    local analysis_json="$1"
+
+    # Validate DAG first
+    local validation
+    validation=$(decompose_validate_dag "$analysis_json")
+    if [[ "$(echo "$validation" | jq -r '.valid' 2>/dev/null)" != "true" ]]; then
+        error "DAG validation failed: $(echo "$validation" | jq -r '.error' 2>/dev/null)"
+        echo '{"error": "invalid_dag"}'
+        return 1
+    fi
+
+    # Calculate depth (wave) for each task: max depth of dependencies + 1
+    jq -c '
+        .subtasks as $tasks |
+        ($tasks | length) as $n |
+        (
+            reduce range(0; $n) as $i (
+                {};
+                . as $depths |
+                (
+                    if ($tasks[$i].depends_on // [] | length) == 0 then
+                        0
+                    else
+                        ([ $tasks[$i].depends_on[] | $depths[. | tostring] // 0 ] | max) + 1
+                    end
+                ) as $depth |
+                $depths + {($i | tostring): $depth}
+            )
+        ) as $depths |
+        (
+            # Group tasks by depth (wave)
+            reduce range(0; $n) as $i (
+                {};
+                . as $wave_map |
+                ($depths[$i | tostring] | tostring) as $wave_key |
+                $wave_map + {($wave_key): (($wave_map[$wave_key] // []) + [$i])}
+            )
+        ) as $wave_map |
+        (
+            # Convert to array of waves, sorted
+            [
+                ($wave_map | keys[] | tonumber) as $wave |
+                {
+                    "wave": ($wave + 1),
+                    "tasks": ($wave_map[$wave | tostring] | sort)
+                }
+            ] | sort_by(.wave)
+        ) |
+        {
+            "waves": .,
+            "total_tasks": $n,
+            "max_wave": (map(.wave) | max)
+        }
+    ' <<< "$analysis_json" 2>/dev/null
+}
+
+# ─── Critical Path Analysis: Find bottleneck tasks ──────────────────────────
+decompose_critical_path() {
+    local analysis_json="$1"
+
+    # Sum estimated_hours for all tasks as total critical path
+    jq -c '{
+        "critical_path_hours": ([.subtasks[].estimated_hours // 1] | add),
+        "total_tasks": (.subtasks | length),
+        "bottleneck_tasks": (
+            [
+                range(0; .subtasks | length) as $i |
+                select(.subtasks[$i].estimated_hours // 1 >= 4) |
+                {
+                    "index": $i,
+                    "title": .subtasks[$i].title,
+                    "hours": (.subtasks[$i].estimated_hours // 1)
+                }
+            ]
+        )
+    }' <<< "$analysis_json" 2>/dev/null
+}
+
+# ─── DAG Visualization: Render as ASCII or Mermaid ──────────────────────────
+decompose_visualize() {
+    local analysis_json="$1"
+    local format="${2:-text}"
+
+    case "$format" in
+        text)
+            jq -r '
+                .subtasks as $tasks |
+                "Dependencies DAG - Issue " + (.issue_number | tostring) + "\n" +
+                "==================================================\n" +
+                (
+                    reduce range(0; $tasks | length) as $i (
+                        "";
+                        . + "[\($i)] \($tasks[$i].title)\n" +
+                        (
+                            if ($tasks[$i].depends_on // [] | length) > 0 then
+                                "    depends on: \($tasks[$i].depends_on | map("[" + (. | tostring) + "]") | join(", "))\n"
+                            else
+                                "    (no dependencies)\n"
+                            end
+                        )
+                    )
+                )
+            ' <<< "$analysis_json" 2>/dev/null
+            ;;
+        mermaid)
+            jq -r '
+                .subtasks as $tasks |
+                "graph TD\n" +
+                (
+                    reduce range(0; $tasks | length) as $i (
+                        "";
+                        . + "  task\($i)[\"[\($i)] \($tasks[$i].title)\"]\n" +
+                        (
+                            if ($tasks[$i].depends_on // [] | length) > 0 then
+                                ($tasks[$i].depends_on | map("  task\(.) --> task\($i)\n") | join(""))
+                            else "" end
+                        )
+                    )
+                )
+            ' <<< "$analysis_json" 2>/dev/null
+            ;;
+        *)
+            error "Unknown format: $format (use 'text' or 'mermaid')"
+            return 1
+            ;;
+    esac
+}
+
+# ─── Schedule Creation: Generate execution plan ──────────────────────────────
+decompose_schedule() {
+    local analysis_json="$1"
+    local parent_issue="${2:-}"
+
+    # Get topological sort with waves
+    local waves_json
+    waves_json=$(decompose_topo_sort "$analysis_json") || return 1
+
+    # Create schedule file
+    local state_file
+    state_file="${REPO_DIR}/.claude/pipeline-artifacts/decompose-schedule-$(date +%s).json"
+    mkdir -p "$(dirname "$state_file")"
+
+    # Write schedule state
+    jq -c '{
+        "issue": ('$parent_issue'),
+        "created_at": now | todate,
+        "waves": .waves,
+        "task_status": (
+            reduce range(0; .total_tasks) as $i (
+                {};
+                . + {($i | tostring): "pending"}
+            )
+        )
+    }' <<< "$waves_json" > "$state_file"
+
+    info "Schedule created: $(jq '.total_tasks' <<< "$waves_json") tasks in $(jq '.max_wave' <<< "$waves_json") waves"
+    echo "$state_file"
+    emit_event "decompose.scheduled" "issue=$parent_issue" "total_tasks=$(jq '.total_tasks' <<< "$waves_json")" "waves=$(jq '.max_wave' <<< "$waves_json")"
+}
+
 # ─── Main: Analyze Only ─────────────────────────────────────────────────────
 cmd_analyze() {
     local issue_num="${1:-}"
@@ -480,6 +699,108 @@ cmd_auto() {
     return 0
 }
 
+# ─── Main: Visualize DAG ────────────────────────────────────────────────────
+cmd_visualize() {
+    local json_file="${1:-}"
+    local format="${2:-text}"
+
+    if [[ -z "$json_file" ]]; then
+        error "Usage: sw-decompose.sh visualize <analysis-json-file> [text|mermaid]"
+        return 1
+    fi
+
+    if [[ ! -f "$json_file" ]]; then
+        error "File not found: $json_file"
+        return 1
+    fi
+
+    echo ""
+    decompose_visualize "$(cat "$json_file")" "$format" || return 1
+    echo ""
+    emit_event "decompose.visualized" "file=$json_file" "format=$format"
+}
+
+# ─── Main: Critical Path Analysis ───────────────────────────────────────────
+cmd_critical_path() {
+    local json_file="${1:-}"
+
+    if [[ -z "$json_file" ]]; then
+        error "Usage: sw-decompose.sh critical-path <analysis-json-file>"
+        return 1
+    fi
+
+    if [[ ! -f "$json_file" ]]; then
+        error "File not found: $json_file"
+        return 1
+    fi
+
+    echo ""
+    info "Critical Path Analysis"
+    echo ""
+
+    decompose_critical_path "$(cat "$json_file")" | jq '.' 2>/dev/null || return 1
+
+    echo ""
+    emit_event "decompose.critical_path_analyzed" "file=$json_file"
+}
+
+# ─── Main: DAG Scheduling ──────────────────────────────────────────────────
+cmd_schedule() {
+    local json_file="${1:-}"
+    local parent_issue="${2:-}"
+
+    if [[ -z "$json_file" ]]; then
+        error "Usage: sw-decompose.sh schedule <analysis-json-file> [issue-number]"
+        return 1
+    fi
+
+    if [[ ! -f "$json_file" ]]; then
+        error "File not found: $json_file"
+        return 1
+    fi
+
+    local json_content
+    json_content=$(cat "$json_file")
+
+    # Extract issue number if not provided
+    if [[ -z "$parent_issue" ]]; then
+        parent_issue=$(echo "$json_content" | jq -r '.issue_number' 2>/dev/null || echo "")
+    fi
+
+    echo ""
+    info "DAG Scheduling"
+    echo ""
+
+    # Validate DAG
+    local validation
+    validation=$(decompose_validate_dag "$json_content")
+    if [[ "$(echo "$validation" | jq -r '.valid' 2>/dev/null)" != "true" ]]; then
+        error "Invalid DAG: $(echo "$validation" | jq -r '.error' 2>/dev/null)"
+        return 1
+    fi
+    success "DAG is acyclic"
+    echo ""
+
+    # Show visualization
+    decompose_visualize "$json_content" "text"
+    echo ""
+
+    # Get topological sort
+    local waves
+    waves=$(decompose_topo_sort "$json_content") || return 1
+
+    info "Execution Waves:"
+    echo "$waves" | jq -r '.waves[] | "  Wave \(.wave): Tasks \(.tasks | map("[" + (. | tostring) + "]") | join(", "))"'
+    echo ""
+
+    # Create schedule
+    local schedule_file
+    schedule_file=$(decompose_schedule "$json_content" "$parent_issue") || return 1
+
+    success "Schedule saved to: $schedule_file"
+    echo ""
+}
+
 # ─── CLI Router ──────────────────────────────────────────────────────────────
 main() {
     local cmd="${1:-help}"
@@ -494,22 +815,36 @@ main() {
         auto)
             cmd_auto "${2:-}"
             ;;
+        schedule)
+            cmd_schedule "${2:-}" "${3:-}"
+            ;;
+        critical-path)
+            cmd_critical_path "${2:-}"
+            ;;
+        visualize)
+            cmd_visualize "${2:-}" "${3:-text}"
+            ;;
         help|--help|-h)
             echo ""
-            echo -e "${CYAN}${BOLD}shipwright decompose${RESET} — Issue Complexity Analysis & Decomposition"
+            echo -e "${CYAN}${BOLD}shipwright decompose${RESET} — Issue Complexity & DAG Scheduling"
             echo ""
             echo -e "${BOLD}USAGE${RESET}"
-            echo -e "  ${CYAN}sw decompose${RESET} <command> <issue-number>"
+            echo -e "  ${CYAN}sw decompose${RESET} <command> [options]"
             echo ""
             echo -e "${BOLD}COMMANDS${RESET}"
-            echo -e "  ${CYAN}analyze${RESET} <num>     Analyze complexity without creating issues"
-            echo -e "  ${CYAN}decompose${RESET} <num>   Analyze + create subtask issues if needed"
-            echo -e "  ${CYAN}auto${RESET} <num>        Daemon mode: silent decomposition (returns 0)"
+            echo -e "  ${CYAN}analyze${RESET} <num>              Analyze complexity without creating issues"
+            echo -e "  ${CYAN}decompose${RESET} <num>            Analyze + create subtask issues if needed"
+            echo -e "  ${CYAN}auto${RESET} <num>                 Daemon mode: silent decomposition"
+            echo -e "  ${CYAN}schedule${RESET} <file> [issue]     Create execution schedule from analysis JSON"
+            echo -e "  ${CYAN}critical-path${RESET} <file>        Analyze critical path (bottlenecks)"
+            echo -e "  ${CYAN}visualize${RESET} <file> [fmt]      Render DAG (text or mermaid format)"
             echo ""
             echo -e "${BOLD}EXAMPLES${RESET}"
-            echo -e "  ${DIM}sw decompose analyze 42${RESET}    # See complexity score and reasoning"
-            echo -e "  ${DIM}sw decompose decompose 42${RESET}  # Create subtasks for issue #42"
-            echo -e "  ${DIM}sw decompose auto 42${RESET}       # Used by daemon (no output)"
+            echo -e "  ${DIM}sw decompose analyze 42${RESET}"
+            echo -e "  ${DIM}sw decompose decompose 42${RESET}"
+            echo -e "  ${DIM}sw decompose schedule analysis.json 42${RESET}"
+            echo -e "  ${DIM}sw decompose critical-path analysis.json${RESET}"
+            echo -e "  ${DIM}sw decompose visualize analysis.json mermaid${RESET}"
             echo ""
             ;;
         --version|-v)

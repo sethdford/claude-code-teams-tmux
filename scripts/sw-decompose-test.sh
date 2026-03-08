@@ -137,6 +137,84 @@ else
     assert_fail "events.jsonl created"
 fi
 
+# ─── Test 14-28: DAG scheduling tests ─────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}DAG scheduling (new features)${RESET}"
+
+# Create test JSON with dependencies
+analysis_file="$TEST_TEMP_DIR/analysis-with-deps.json"
+cat > "$analysis_file" <<'JSON'
+{
+    "issue_number": 42,
+    "complexity_score": 85,
+    "estimated_hours": 12,
+    "should_decompose": true,
+    "reasoning": "Issue involves major architectural changes",
+    "subtasks": [
+        {
+            "title": "Subtask 1: Design phase",
+            "description": "Plan and document the new architecture",
+            "depends_on": [],
+            "estimated_hours": 3
+        },
+        {
+            "title": "Subtask 2: Implementation phase",
+            "description": "Implement core changes",
+            "depends_on": [0],
+            "estimated_hours": 6
+        },
+        {
+            "title": "Subtask 3: Integration & testing",
+            "description": "Integrate changes and add tests",
+            "depends_on": [1],
+            "estimated_hours": 3
+        }
+    ]
+}
+JSON
+
+# Test schedule command
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" schedule "$analysis_file" 42 2>&1) && rc=0 || rc=$?
+assert_eq "schedule exits 0" "0" "$rc"
+assert_contains "schedule shows valid DAG" "$output" "acyclic"
+assert_contains "schedule shows waves" "$output" "Wave"
+
+# Test critical-path command
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" critical-path "$analysis_file" 2>&1) && rc=0 || rc=$?
+assert_eq "critical-path exits 0" "0" "$rc"
+assert_contains "critical-path shows title" "$output" "Critical Path"
+assert_contains "critical-path shows hours" "$output" "critical_path_hours"
+
+# Test visualize text format
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" visualize "$analysis_file" text 2>&1) && rc=0 || rc=$?
+assert_eq "visualize text exits 0" "0" "$rc"
+assert_contains "visualize shows DAG title" "$output" "Dependencies DAG"
+assert_contains "visualize shows task 0" "$output" "[0]"
+
+# Test visualize mermaid format
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" visualize "$analysis_file" mermaid 2>&1) && rc=0 || rc=$?
+assert_eq "visualize mermaid exits 0" "0" "$rc"
+assert_contains "visualize mermaid has graph" "$output" "graph TD"
+
+# Test help shows new commands
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" help 2>&1) && rc=0 || rc=$?
+assert_contains "help shows schedule cmd" "$output" "schedule"
+assert_contains "help shows critical-path cmd" "$output" "critical-path"
+assert_contains "help shows visualize cmd" "$output" "visualize"
+
+# Test version shows 3.3.0
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" --version 2>&1) && rc=0 || rc=$?
+assert_contains "version shows 3.3" "$output" "3.3"
+
+# Test analyze mock data includes dependencies
+output=$(bash "$SCRIPT_DIR/sw-decompose.sh" analyze 99 2>&1) && rc=0 || rc=$?
+json_output=$(printf '%s\n' "$output" | sed -n '/^{/,/^}/p')
+if [[ -n "$json_output" ]] && printf '%s\n' "$json_output" | jq '.subtasks[0].depends_on' >/dev/null 2>&1; then
+    assert_pass "mock data includes depends_on field"
+else
+    assert_fail "mock data includes depends_on field"
+fi
+
 echo ""
 echo ""
 print_test_results
