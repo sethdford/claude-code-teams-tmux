@@ -35,9 +35,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "incident-responder",
+        "secondary_roles": [
+          "devops",
+          "builder"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Auto-diagnostic report generator requires root cause analysis and debugging for pipeline failures (incident-responder's core strength), complemented by DevOps pipeline expertise and builder implementation skills.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772946185,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -649,6 +657,313 @@
       },
       "timestamp": 1772933189,
       "ttl": 3600
+    },
+    "5f222c439a3ed4e42f008a2363ebc8a4": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Pipeline state file modifications could break existing tooling that parses it",
+          "Failure path is critical—diagnostic code must not mask real failures or prevent rollback",
+          "Data collection during failures might itself fail (e.g., git commands, file I/O), requiring robust error handling",
+          "Event emission on failure could silently fail, breaking observability before it starts",
+          "Repeated failures could accumulate large diagnostic reports; disk space and cleanup strategy needed"
+        ],
+        "implementation_hints": [
+          "Hook into failure paths in sw-pipeline.sh and sw-loop.sh early; study existing error handling patterns",
+          "Use atomic writes (write to tmp file, then mv) for all report creation to avoid partial writes",
+          "Wrap all diagnostic data collection in error traps; log collection failures to stderr but continue",
+          "Emit diagnostic event before appending to pipeline state (ordering matters for recovery)",
+          "Review memory system event format (emit_event usage) and failure classification taxonomy",
+          "Add report section for context window exhaustion detection—check if loop ran out of iterations",
+          "Test with multiple failure modes: test failure, build error, stage timeout, loop exhaustion",
+          "Consider report retention policy; prune old reports to avoid unbounded disk growth"
+        ]
+      },
+      "timestamp": 1772945655,
+      "ttl": 3600
+    },
+    "dd3e2c487036c480ee2060fed474f495": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1772945665,
+      "ttl": 1800
+    },
+    "686a0966b028cf1e76689c4df5a8086a": {
+      "result": {
+        "estimated_cost_usd": 0.68,
+        "estimated_iterations": 4,
+        "estimated_tokens": 18500,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772945676,
+      "ttl": 3600
+    },
+    "d5c9a2dcb93acb88ed6d405a7b96a94a": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "observability",
+          "automation",
+          "debugging"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Standard feature with clear acceptance criteria. Moderate integration scope (hook into failure paths), structured data aggregation, and multiple failure classifications. Straightforward test harness pattern but requires careful handling of edge cases like concurrent failures and large logs."
+        },
+        "skill_plan": {
+          "plan": [
+            "observability",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "failure-pattern-analysis"
+          ],
+          "build": [
+            "systematic-debugging",
+            "testing-strategy"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "observability": "Monitor the diagnostic system's health during deploy and in production; track report generation latency, event emission rates, and whether diagnostic suggestions actually lead to fixes.",
+          "brainstorming": "Challenge assumptions early: What diagnostic signals actually help? Is full git diff needed or just --stat? Will engineers find suggestions helpful or noise?",
+          "architecture-design": "Design how failure reports integrate with pipeline state, event bus, and memory system; create ADR explaining why certain data is captured and how future agents consume it.",
+          "failure-pattern-analysis": "Classify failures into categories (test_failure, build_error, timeout, context_exhaustion, etc.) and generate context-aware suggestions; this specialized skill defines the diagnostic structure and remediation logic.",
+          "systematic-debugging": "Implement failure detection and report generation using debugging-first approach; extract actionable signals from logs, diffs, and timeline data rather than dumping raw output.",
+          "testing-strategy": "Plan coverage for all failure categories; trigger test failures, build errors, timeouts, context exhaustion to validate report sections and classification accuracy.",
+          "two-stage-review": "Complex feature with multiple interdependencies (failure detection, report structure, event emission, pipeline state integration); pass 1 validates correctness of individual components, pass 2 validates integration.",
+          "adversarial-quality": "Stress-test edge cases: What if report generation itself fails and masks the original error? Handle concurrent failures, massive logs, missing historical logs, and events under load.",
+          "validation-thoroughness": "Beyond generating reports—validate they actually help debugging; simulate real failure scenarios and verify engineers can use reports to diagnose and fix issues.",
+          "pr-quality": "Explain why this observability feature matters (learning data for memory system, debugging patterns, cost reduction); make the diagnostic capability and event structure clear to reviewers.",
+          "deploy-safety": "Ensure diagnostic system itself doesn't degrade pipeline reliability; verify report generation doesn't add latency, event emission doesn't block, and large reports don't exhaust disk."
+        },
+        "generated_skills": [
+          {
+            "name": "failure-pattern-analysis",
+            "reason": "The issue requires precise failure classification and context-aware suggestion generation—capabilities not covered by existing skills. Standard debugging skills are about investigation; this skill is about structuring diagnostic intelligence and generating remediation recommendations based on failure category.",
+            "content": "## Failure Pattern Analysis & Remediation\n\nPipeline failures are learning opportunities, but only if you extract actionable intelligence and classify failures for future automation. This skill guides you through failure categorization, diagnostic structure design, and suggestion generation.\n\n### Failure Categories\n\nDefine these core categories for your diagnostic system:\n\n1. **test_failure** — Test assertion failures, timeouts in test suite, test setup/teardown errors\n2. **build_error** — Compilation failures, syntax errors, dependency resolution failures, link errors\n3. **timeout** — Stage exceeded configured duration, infinite loops, process hangs, unresponsive services\n4. **context_exhaustion** — AI agent ran out of context window mid-task, unable to complete iteration\n5. **integration_error** — External service failures, API errors, permission issues, network timeouts\n6. **resource_error** — Out of memory, disk full, file descriptor exhaustion, process limits\n7. **deadlock** — Circular dependencies, blocked mutual operations, race conditions, lock contention\n8. **user_error** — Invalid input, misconfiguration, user-initiated abort\n\n### Diagnostic Report Structure\n\nStructure reports with these sections to support both human debugging and automated learning:\n\n1. **Failure Summary** — Classification, timestamp, affected stage, duration until failure\n2. **Error Details** — Last 100 lines of stage logs, error-log.jsonl entries, stack traces, assertion messages\n3. **Context** — Git branch and HEAD commit, git status output, files changed in failed attempt\n4. **Timeline** — Duration of each completed stage, wall-clock timestamps, iteration count if in build loop\n5. **Reproduction** — Exact command invoked, environment variables, parameters, git state snapshot\n6. **Suggestions** — 2-3 context-aware recommendations based on failure classification and error patterns\n\n### Suggestion Generation Rules\n\nGenerate targeted recommendations:\n\n- **test_failure**: Suggest running failing test individually, check test isolation (shared state), suggest adding debugging output to test\n- **build_error**: Suggest checking dependency versions, clearing build cache, verifying compiler version, running in clean environment\n- **timeout**: Suggest increasing timeout threshold if legitimate work, profile the slow operation, check for infinite loops or unresponsive services\n- **context_exhaustion**: Suggest resuming with `--max-restarts` enabled, breaking task into smaller chunks, checking for excessive logging or intermediate artifacts\n- **integration_error**: Suggest checking service status, verifying credentials and permissions, checking network connectivity, enabling verbose API logging\n- **resource_error**: Suggest freeing disk space or memory, increasing system limits, breaking work into batches, reducing parallelism\n- **deadlock**: Suggest examining lock ordering and dependencies, breaking circular dependency chains, enabling debug logging for synchronization\n- **user_error**: Suggest correcting configuration, validating input, checking documentation\n\n### Event Emission\n\nEmit structured diagnostic events with:\n- Type: `pipeline.failure_diagnostic`\n- Class: The failure category (test_failure, build_error, etc.)\n- Stage: The affected stage name\n- Duration: Seconds elapsed before failure\n- Attempt: Current retry count (0 if first attempt)\n- Suggestion_count: Number of recommendations generated\n\nThese events feed the memory system, intelligence layer, and predictive analysis for future optimization.\n\n### Integration Pattern\n\n1. On pipeline failure (any stage fails or loop exhausts iterations)\n2. Examine logs, errors, git state\n3. Classify failure into a category using patterns in error messages\n4. Extract diagnostic context (git diff, last N lines of each log, timeline)\n5. Generate 2-3 targeted suggestions based on classification\n6. Structure report markdown with sections\n7. Write to `.claude/pipeline-artifacts/failure-report-<timestamp>.md`\n8. Append summary (classification + suggestions) to pipeline state file\n9. Emit diagnostic event with classification and metadata\n10. Optional: Sync stale diagnostics to observability backend\n\n### Data Quality\n\n- **Actionability**: Every suggestion should be testable (can user/agent try it?)\n- **Brevity**: One-line classification, 2-3 sentences per suggestion\n- **Specificity**: Reference actual error messages and git diffs, not generic advice\n- **Completeness**: Include all required sections even if some are empty\n- **Safety**: Filter logs for secrets (API keys, passwords, tokens)\n\n### Testing Approach\n\nFor each failure category, design a test that:\n1. Triggers that specific failure type (failing test, bad code, timeout scenario, etc.)\n2. Verifies correct classification in diagnostic event\n3. Validates expected sections present in generated report\n4. Checks that 2-3 suggestions were generated and are relevant\n5. Confirms event was emitted with correct class and metadata\n6. Spot-check that suggestions are actionable (not vague)"
+          }
+        ],
+        "review_focus": [
+          "Failure classification logic: Does it correctly categorize all failure types? Are edge cases handled (e.g., ambiguous error messages)?",
+          "Report completeness: All required sections present (summary, errors, context, timeline, reproduction, suggestions)? Information density appropriate (not too sparse, not overloaded)?",
+          "Suggestion quality: Are suggestions actionable? Do they target the specific failure class? Would an engineer actually try them to debug?",
+          "Integration correctness: Hooked into all failure paths? Pipeline state updates without data loss? Event emissions don't block failure handling?",
+          "Data safety: Logs filtered for secrets? Large reports handled (size limits or streaming)? Concurrent failures handled cleanly?",
+          "Test coverage: All 8 failure categories tested? Report structure validated per category? Suggestion generation verified?",
+          "Performance: Report generation latency acceptable? Doesn't slow down pipeline failure handling? Event bus can handle volume?"
+        ],
+        "risk_areas": [
+          "Report generation failure masks original error—implement try-catch with fallback minimal report if generation fails",
+          "Large logs cause huge report files—implement size limits or tail-only strategy (last 100 lines per log)",
+          "Concurrent stage failures—clarify whether report captures all failed stages or just first failure",
+          "Sensitive data in error logs (API keys, tokens, passwords)—implement log filtering before inclusion in report",
+          "Missing historical logs (rotated or deleted)—gracefully skip unavailable logs rather than failing report generation",
+          "Event bus saturation during cascading failures—verify event emission uses async/fire-and-forget pattern",
+          "Report structure brittle to future log format changes—define versioning scheme for report format"
+        ]
+      },
+      "timestamp": 1772945737,
+      "ttl": 3600
+    },
+    "d282aafcb6763c583840a99a641d9793": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Directly captures pipeline failure data structure; core subject matter for the diagnostic report generator"
+          },
+          {
+            "file": "patterns.json (detailed)",
+            "relevance": 80,
+            "summary": "Contains project conventions, test runner config, and source structure—essential for understanding what diagnostic data to collect"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Defines baseline metrics framework; diagnostic reports require metrics to establish normal vs. abnormal pipeline behavior"
+          },
+          {
+            "file": "global.json",
+            "relevance": 55,
+            "summary": "Cross-repo learnings could inform diagnostic pattern detection across multiple failure types"
+          },
+          {
+            "file": "patterns.json (minimal)",
+            "relevance": 45,
+            "summary": "Confirms project type; minimal overlap with detailed patterns entry, low added value for planning"
+          }
+        ]
+      },
+      "timestamp": 1772945758,
+      "ttl": 1800
+    },
+    "66ae6a988652c2f5468737bb6a8b3eda": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Contains actual project structure (nodejs/vitest/npm), source directory, test patterns, and import style conventions—essential for validating code generation and understanding project architecture when designing the diagnostic report generator."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 42,
+            "summary": "Confirms project_type as nodejs with detection metadata, but lacks detailed conventions needed for plan validation—minimal overlap with diagnostic task requirements."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 28,
+            "summary": "Empty decisions array, but semantically relevant as the right location to capture architectural decisions about the diagnostic report generator once the plan is approved."
+          }
+        ]
+      },
+      "timestamp": 1772945979,
+      "ttl": 1800
+    },
+    "3b08a075100d695f1a375c8133bda4f9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Contains project conventions (source_dir, test_pattern, import_style), test runner (vitest), and Node.js framework details—essential for designing consistent architecture patterns for the diagnostic report generator"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Confirms Node.js project type and bootstrap detection—useful validation of project context but less detailed than the more comprehensive patterns entry"
+          },
+          {
+            "file": "global.json",
+            "relevance": 25,
+            "summary": "Currently empty but structured for cross-repo learnings and common patterns—would be valuable for understanding broader architectural patterns if populated"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Currently empty but designed to capture architectural decisions—would help avoid repeating past design mistakes if populated"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Currently empty but intended to capture failure patterns—relevant for understanding what diagnostic patterns the tool should detect, pending population"
+          }
+        ]
+      },
+      "timestamp": 1772946087,
+      "ttl": 1800
+    },
+    "9a777a72c84fedbe6a08249302a4d96c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Contains project structure and conventions (source_dir, test_pattern, import_style) that inform what design approaches are viable or rejected"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 28,
+            "summary": "Structure exists to capture architectural decisions and rejections, but currently empty—would be most relevant if populated with rejected approach details"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 22,
+            "summary": "Could capture failure patterns that led to rejection of certain design approaches, but currently empty"
+          }
+        ]
+      },
+      "timestamp": 1772946097,
+      "ttl": 1800
+    },
+    "b992cd7a86a8b9037e0fb4b492472fec": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 85,
+            "summary": "Detailed project detection with test runner (vitest), source directory structure, import style, and package manager (npm). Critical for build stage to understand codebase conventions and test infrastructure."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Tracks failure patterns. Empty now, but this is the core data structure for a failure diagnostic report generator. Relevant for understanding what the build stage should produce."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 40,
+            "summary": "Confirms nodejs project type. Minimal duplicate information compared to first patterns.json entry, but provides bootstrap detection timestamp."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Contains baseline metrics that could be used in diagnostics. Currently empty, but relevant context for the diagnostic report structure."
+          },
+          {
+            "file": "global.json",
+            "relevance": 12,
+            "summary": "Cross-repo learnings and common patterns. Not applicable to this specific project context; provides no actionable data for build stage."
+          }
+        ]
+      },
+      "timestamp": 1772946166,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Critical for build stage: defines project type (node), test runner (vitest), package manager (npm), source directory (src/), and test patterns. Directly informs build commands and test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Potentially useful for avoiding previous build/test failures, but currently empty. Would be more relevant if it contained captured failure patterns."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Architectural decisions that may affect build configuration and conventions, but currently empty. Could inform refactoring or tooling decisions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Baseline metrics for performance tracking, but not directly relevant to build stage execution and currently empty."
+          }
+        ]
+      },
+      "timestamp": 1772946174,
+      "ttl": 1800
     }
   }
 }
