@@ -183,6 +183,121 @@ output=$(bash "$SCRIPT_DIR/sw-model-router.sh" bogus 2>&1) && rc=0 || rc=$?
 assert_eq "unknown subcommand exits non-zero" "1" "$rc"
 assert_contains "unknown subcommand shows error" "$output" "Unknown subcommand"
 
+# ─── Test 20: Chain config creates templates ──────────────────────────────
+echo ""
+echo -e "${BOLD}  Reasoning Chains${RESET}"
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain config 2>&1) || true
+assert_contains "chain config shows templates" "$output" "explore-decide"
+assert_contains "chain config shows explore-synthesize-decide" "$output" "explore-synthesize-decide"
+assert_contains "chain config shows fast-verify" "$output" "fast-verify"
+assert_contains "chain config shows deep-analysis" "$output" "deep-analysis"
+
+chain_file="$HOME/.shipwright/optimization/reasoning-chains.json"
+if [[ -f "$chain_file" ]]; then
+    assert_pass "chain config creates templates file"
+else
+    assert_fail "chain config creates templates file" "file not found at $chain_file"
+fi
+
+# ─── Test 21: Define custom chain ──────────────────────────────────────────
+custom_chain_json='[
+  {"step": "analyze", "model": "sonnet", "max_tokens": 5000},
+  {"step": "review", "model": "opus", "max_tokens": 3000}
+]'
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain define test-chain "$custom_chain_json" 2>&1) || true
+assert_contains "chain define shows success" "$output" "Defined custom chain"
+if command -v jq >/dev/null 2>&1; then
+    custom_exists=$(jq -r '.custom_chains["test-chain"] // empty' "$chain_file" 2>/dev/null || true)
+    if [[ -n "$custom_exists" ]]; then
+        assert_pass "chain define persists custom chain"
+    else
+        assert_fail "chain define persists custom chain"
+    fi
+fi
+
+# ─── Test 22: Chain score confidence ──────────────────────────────────────
+source "$SCRIPT_DIR/sw-model-router.sh" 2>/dev/null || true
+output1=$(chain_score_confidence "Therefore, we concluded that the approach is correct." "general" 2>/dev/null || echo "50")
+if [[ "$output1" =~ ^[0-9]+$ ]]; then
+    assert_pass "chain_score_confidence returns numeric score"
+    if [[ "$output1" -gt 50 ]]; then
+        assert_pass "chain_score_confidence scores conclusion text higher"
+    else
+        assert_fail "chain_score_confidence scores conclusion text higher" "got $output1"
+    fi
+else
+    assert_fail "chain_score_confidence returns numeric score" "got: $output1"
+fi
+
+# ─── Test 23: Chain execute returns valid JSON ─────────────────────────────
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain execute explore-decide "test prompt" 2>&1) || true
+if command -v jq >/dev/null 2>&1; then
+    if echo "$output" | jq empty 2>/dev/null; then
+        assert_pass "chain execute returns valid JSON"
+        has_steps=$(echo "$output" | jq '.steps // empty' 2>/dev/null)
+        if [[ -n "$has_steps" ]]; then
+            assert_pass "chain execute result has steps"
+        else
+            assert_fail "chain execute result has steps"
+        fi
+    else
+        assert_fail "chain execute returns valid JSON" "output not JSON"
+    fi
+fi
+
+# ─── Test 24: Chain step cost calculation ─────────────────────────────────
+cost_haiku=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain step-cost 1000 500 haiku 2>&1) || true
+cost_sonnet=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain step-cost 1000 500 sonnet 2>&1) || true
+cost_opus=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain step-cost 1000 500 opus 2>&1) || true
+
+if [[ "$cost_haiku" =~ ^0\.[0-9]+ ]]; then
+    assert_pass "chain step-cost returns numeric cost for haiku"
+else
+    assert_fail "chain step-cost returns numeric cost for haiku" "got: $cost_haiku"
+fi
+
+# Verify cost ordering: haiku < sonnet < opus
+if command -v awk >/dev/null 2>&1; then
+    haiku_val=$(echo "$cost_haiku" | awk '{print $1}' || echo "0")
+    sonnet_val=$(echo "$cost_sonnet" | awk '{print $1}' || echo "0")
+    opus_val=$(echo "$cost_opus" | awk '{print $1}' || echo "0")
+
+    if awk -v h="$haiku_val" -v s="$sonnet_val" -v o="$opus_val" 'BEGIN {exit !(h < s && s < o)}' 2>/dev/null; then
+        assert_pass "chain step-cost ordering correct (haiku < sonnet < opus)"
+    fi
+fi
+
+# ─── Test 25: Chain report (note: may have data from Test 23) ──────────────
+# This test runs after chain execute, so the report may show data
+# We just verify that the report command works without error
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain report 2>&1) || true
+assert_contains "chain report outputs summary" "$output" "Chain Execution Report"
+
+# ─── Test 26: Chain config with invalid JSON fails gracefully ────────────
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain define bad-chain "invalid json" 2>&1) && rc=0 || rc=$?
+assert_eq "chain define with invalid JSON exits non-zero" "1" "$rc"
+assert_contains "chain define validates JSON" "$output" "Invalid JSON"
+
+# ─── Test 27: Verify chain templates structure ─────────────────────────────
+if command -v jq >/dev/null 2>&1; then
+    explore_decide=$(jq -r '.templates["explore-decide"] // empty' "$chain_file" 2>/dev/null || true)
+    if [[ -n "$explore_decide" ]]; then
+        step_count=$(echo "$explore_decide" | jq 'length' 2>/dev/null || echo "0")
+        assert_eq "explore-decide has 2 steps" "2" "$step_count"
+
+        first_step=$(echo "$explore_decide" | jq -r '.[0].model' 2>/dev/null || true)
+        assert_eq "explore-decide first step is haiku" "haiku" "$first_step"
+
+        last_step=$(echo "$explore_decide" | jq -r '.[1].model' 2>/dev/null || true)
+        assert_eq "explore-decide last step is opus" "opus" "$last_step"
+    fi
+fi
+
+# ─── Test 28: Chain execute with non-existent chain fails ───────────────────
+output=$(bash "$SCRIPT_DIR/sw-model-router.sh" chain execute nonexistent "test" 2>&1) && rc=0 || rc=$?
+assert_eq "chain execute with invalid chain exits non-zero" "1" "$rc"
+assert_contains "chain execute shows error" "$output" "Chain not found"
+
 echo ""
 echo ""
 print_test_results

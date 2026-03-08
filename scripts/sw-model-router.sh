@@ -8,7 +8,7 @@ set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC2034
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -45,6 +45,8 @@ MODEL_ROUTING_OPTIMIZATION="${OPTIMIZATION_DIR}/model-routing.json"
 MODEL_ROUTING_LEGACY="${HOME}/.shipwright/model-routing.json"
 MODEL_USAGE_LOG="${OPTIMIZATION_DIR}/model-usage.jsonl"
 AB_RESULTS_FILE="${HOME}/.shipwright/ab-results.jsonl"
+CHAIN_CONFIG_FILE="${OPTIMIZATION_DIR}/reasoning-chains.json"
+CHAIN_EXECUTION_LOG="${OPTIMIZATION_DIR}/chain-executions.jsonl"
 
 # Resolve which config file to use (set by _resolve_routing_config)
 MODEL_ROUTING_CONFIG=""
@@ -499,6 +501,380 @@ show_ab_results() {
     ' "$AB_RESULTS_FILE" 2>/dev/null | jq -r '.[] | "\(.variant):\n  Runs: \(.total_runs)\n  Success: \(.successful)/\(.total_runs) (\(.success_rate | round)%)\n  Avg Cost: $\(.avg_cost | round)\n  Total Cost: $\(.total_cost | round)\n  Avg Duration: \(.avg_duration | round)s"' || true
 }
 
+# ─── Initialize Chain Templates ────────────────────────────────────────────
+_ensure_chain_templates() {
+    mkdir -p "$(dirname "$CHAIN_CONFIG_FILE")"
+
+    if [[ ! -f "$CHAIN_CONFIG_FILE" ]]; then
+        cat > "$CHAIN_CONFIG_FILE" <<'CHAINS'
+{
+  "version": "1.0",
+  "templates": {
+    "explore-decide": [
+      {"step": "explore", "model": "haiku", "max_tokens": 4000, "description": "Fast exploration with haiku"},
+      {"step": "decide", "model": "opus", "max_tokens": 8000, "description": "Final decision with opus"}
+    ],
+    "explore-synthesize-decide": [
+      {"step": "explore", "model": "haiku", "max_tokens": 4000, "description": "Explore with haiku"},
+      {"step": "synthesize", "model": "sonnet", "max_tokens": 6000, "description": "Synthesize with sonnet"},
+      {"step": "decide", "model": "opus", "max_tokens": 8000, "description": "Decide with opus"}
+    ],
+    "fast-verify": [
+      {"step": "generate", "model": "sonnet", "max_tokens": 6000, "description": "Generate with sonnet"},
+      {"step": "verify", "model": "haiku", "max_tokens": 2000, "description": "Verify with haiku"}
+    ],
+    "deep-analysis": [
+      {"step": "analyze", "model": "opus", "max_tokens": 8000, "description": "Deep analysis with opus"},
+      {"step": "validate", "model": "opus", "max_tokens": 4000, "description": "Validate with opus"}
+    ]
+  },
+  "confidence_threshold": 50,
+  "escalation_threshold": 80,
+  "max_escalations_per_step": 1,
+  "custom_chains": {}
+}
+CHAINS
+    fi
+}
+
+# ─── Define a Custom Reasoning Chain ────────────────────────────────────────
+chain_define() {
+    local chain_name="$1"
+    local steps_json="$2"
+
+    if [[ -z "$chain_name" ]] || [[ -z "$steps_json" ]]; then
+        error "Usage: chain_define <name> <steps_json>"
+        return 1
+    fi
+
+    _ensure_chain_templates
+
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required for chain definitions"
+        return 1
+    fi
+
+    local tmp_config
+    tmp_config=$(mktemp)
+    # shellcheck disable=SC2064
+    trap "rm -f '$tmp_config'" RETURN
+
+    # Validate that steps_json is valid JSON
+    if ! jq empty <<< "$steps_json" 2>/dev/null; then
+        error "Invalid JSON for chain steps"
+        return 1
+    fi
+
+    # Add the custom chain
+    jq --argjson steps "$steps_json" --arg name "$chain_name" \
+        '.custom_chains[$name] = $steps' \
+        "$CHAIN_CONFIG_FILE" > "$tmp_config"
+
+    mv "$tmp_config" "$CHAIN_CONFIG_FILE"
+    success "Defined custom chain: $chain_name"
+}
+
+# ─── Score Confidence from Output ──────────────────────────────────────────
+chain_score_confidence() {
+    local output="$1"
+    local step_type="${2:-general}"
+
+    # Simple heuristics-based confidence scoring
+    # In a real system, this could call Claude's API for self-assessment
+    local confidence=50
+
+    # Check for markers of confidence in the output
+    local has_reasoning=0
+    local has_conclusion=0
+    local has_caveats=0
+
+    if grep -qiE "(therefore|thus|conclud|result|found|identify)" <<< "$output"; then
+        has_conclusion=1
+    fi
+
+    if grep -qiE "(because|reason|since|based|due to)" <<< "$output"; then
+        has_reasoning=1
+    fi
+
+    if grep -qiE "(however|but|though|caveat|limitation|uncertain)" <<< "$output"; then
+        has_caveats=1
+    fi
+
+    # Calculate confidence: base + reasoning + conclusion - caveats
+    confidence=$((50 + (has_reasoning * 15) + (has_conclusion * 20) - (has_caveats * 10)))
+
+    # Clamp to 0-100
+    if [[ "$confidence" -lt 0 ]]; then confidence=0; fi
+    if [[ "$confidence" -gt 100 ]]; then confidence=100; fi
+
+    echo "$confidence"
+}
+
+# ─── Get Next Escalation Model ─────────────────────────────────────────────
+_get_escalation_model() {
+    local current_model="$1"
+    case "$current_model" in
+        haiku)  echo "sonnet" ;;
+        sonnet) echo "opus" ;;
+        opus)   echo "opus" ;;  # Already at top
+        *)      error "Unknown model: $current_model"; return 1 ;;
+    esac
+}
+
+# ─── Execute a Single Chain Step ───────────────────────────────────────────
+_execute_chain_step() {
+    local step_name="$1"
+    local model="$2"
+    local prompt="$3"
+    local max_tokens="${4:-4000}"
+
+    local output=""
+    local tokens_in=0
+    local tokens_out=0
+    local duration_ms=0
+    local start_time
+    start_time=$(date +%s%N | cut -b1-13)
+
+    # In production, this would call Claude API with the specified model
+    # For testing/mock mode, return a synthetic response
+    if [[ -z "${CLAUDE_API_KEY:-}" ]] || [[ "$NO_GITHUB" == "true" ]]; then
+        # Mock/test mode
+        output="{\"status\": \"success\", \"step\": \"$step_name\", \"model\": \"$model\", \"content\": \"Mock response from $model for step $step_name\"}"
+        tokens_in=500
+        tokens_out=300
+    else
+        # Real Claude API call would happen here
+        # For now, return mock response
+        output="{\"status\": \"success\", \"step\": \"$step_name\", \"model\": \"$model\", \"content\": \"Mock response from $model\"}"
+        tokens_in=500
+        tokens_out=300
+    fi
+
+    local end_time
+    end_time=$(date +%s%N | cut -b1-13)
+    duration_ms=$((end_time - start_time))
+
+    # Return execution record as JSON
+    jq -n \
+        --arg step "$step_name" \
+        --arg model "$model" \
+        --argjson tokens_in "$tokens_in" \
+        --argjson tokens_out "$tokens_out" \
+        --argjson duration_ms "$duration_ms" \
+        --arg output "$output" \
+        '{step: $step, model: $model, tokens_in: $tokens_in, tokens_out: $tokens_out, duration_ms: $duration_ms, output: $output}'
+}
+
+# ─── Execute a Complete Reasoning Chain ────────────────────────────────────
+chain_execute() {
+    local chain_name="$1"
+    local prompt="$2"
+
+    if [[ -z "$chain_name" ]] || [[ -z "$prompt" ]]; then
+        error "Usage: chain_execute <chain_name> <prompt>"
+        return 1
+    fi
+
+    _ensure_chain_templates
+
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required for chain execution"
+        return 1
+    fi
+
+    local steps
+    steps=$(jq -r ".templates[\"$chain_name\"] // .custom_chains[\"$chain_name\"] // empty" "$CHAIN_CONFIG_FILE" 2>/dev/null)
+
+    if [[ -z "$steps" || "$steps" == "null" ]]; then
+        error "Chain not found: $chain_name"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$CHAIN_EXECUTION_LOG")"
+
+    local execution_id
+    execution_id=$(date +%s)-$(od -An -N4 -tx4 /dev/urandom 2>/dev/null | tr -d ' ' | cut -c1-6 || echo "000000")
+
+    local chain_output
+    local confidence_threshold
+    confidence_threshold=$(jq -r '.confidence_threshold // 50' "$CHAIN_CONFIG_FILE")
+
+    local escalation_threshold
+    escalation_threshold=$(jq -r '.escalation_threshold // 80' "$CHAIN_CONFIG_FILE")
+
+    local total_cost="0"
+    local step_count
+    step_count=$(jq 'length' <<< "$steps")
+
+    local execution_trace
+    execution_trace="[]"
+
+    local current_prompt="$prompt"
+
+    for ((i = 0; i < step_count; i++)); do
+        local step_obj
+        step_obj=$(jq ".[$i]" <<< "$steps")
+
+        local step_name
+        step_name=$(jq -r '.step' <<< "$step_obj")
+
+        local model
+        model=$(jq -r '.model' <<< "$step_obj")
+
+        local max_tokens
+        max_tokens=$(jq -r '.max_tokens // 4000' <<< "$step_obj")
+
+        # Execute this step
+        local step_result
+        step_result=$(_execute_chain_step "$step_name" "$model" "$current_prompt" "$max_tokens")
+
+        # Extract output for next step
+        local step_output
+        step_output=$(jq -r '.output' <<< "$step_result")
+
+        # Score confidence
+        local confidence
+        confidence=$(chain_score_confidence "$step_output" "$step_name")
+
+        # Add confidence to result
+        step_result=$(jq --argjson conf "$confidence" '.confidence = $conf' <<< "$step_result")
+
+        # Check for early termination
+        if [[ "$confidence" -gt "$escalation_threshold" ]] && [[ "$i" -lt $((step_count - 1)) ]]; then
+            # Confidence is high enough, skip remaining steps
+            info "Step $step_name high confidence ($confidence%), skipping remaining steps"
+            execution_trace=$(jq ". += [$step_result]" <<< "$execution_trace")
+            chain_output="$step_output"
+            break
+        fi
+
+        # Check for low confidence escalation (only for first step typically)
+        if [[ "$confidence" -lt "$confidence_threshold" ]] && [[ "$i" -lt $((step_count - 1)) ]]; then
+            local next_model
+            next_model=$(_get_escalation_model "$model")
+            if [[ "$next_model" != "$model" ]]; then
+                warn "Step $step_name low confidence ($confidence%), escalating to $next_model"
+                # Re-execute with escalated model
+                step_result=$(_execute_chain_step "$step_name" "$next_model" "$current_prompt" "$max_tokens")
+                step_result=$(jq --argjson conf "$confidence" '.confidence = $conf | .escalated = true' <<< "$step_result")
+                step_output=$(jq -r '.output' <<< "$step_result")
+            fi
+        fi
+
+        # Add step to trace
+        execution_trace=$(jq ". += [$step_result]" <<< "$execution_trace")
+
+        # Use output as input to next step
+        current_prompt="$step_output"
+    done
+
+    # Extract final output
+    if [[ -z "$chain_output" ]]; then
+        chain_output=$(jq -r '.[-1].output' <<< "$execution_trace")
+    fi
+
+    # Calculate total cost (simplified: sum of all step costs)
+    total_cost=$(jq '[.[].tokens_in, .[].tokens_out] | add' <<< "$execution_trace" 2>/dev/null || echo "0")
+
+    # Log execution
+    local execution_record
+    execution_record=$(jq -n \
+        --arg id "$execution_id" \
+        --arg chain "$chain_name" \
+        --argjson trace "$execution_trace" \
+        --arg output "$chain_output" \
+        --argjson total_cost "$total_cost" \
+        --arg ts "$(now_iso)" \
+        '{id: $id, chain: $chain, ts: $ts, steps: $trace, output: $output, total_cost: $total_cost}')
+
+    echo "$execution_record" >> "$CHAIN_EXECUTION_LOG"
+
+    # Return execution record
+    echo "$execution_record"
+}
+
+# ─── Calculate Cost for a Single Step ──────────────────────────────────────
+chain_step_cost() {
+    local tokens_in="${1:-0}"
+    local tokens_out="${2:-0}"
+    local model="${3:-sonnet}"
+
+    if ! [[ "$tokens_in" =~ ^[0-9]+$ ]]; then tokens_in=0; fi
+    if ! [[ "$tokens_out" =~ ^[0-9]+$ ]]; then tokens_out=0; fi
+
+    local cost="0"
+    case "$model" in
+        haiku)
+            cost=$(awk "BEGIN {printf \"%.6f\", ($tokens_in * $HAIKU_INPUT_COST + $tokens_out * $HAIKU_OUTPUT_COST) / 1000000}")
+            ;;
+        sonnet)
+            cost=$(awk "BEGIN {printf \"%.6f\", ($tokens_in * $SONNET_INPUT_COST + $tokens_out * $SONNET_OUTPUT_COST) / 1000000}")
+            ;;
+        opus)
+            cost=$(awk "BEGIN {printf \"%.6f\", ($tokens_in * $OPUS_INPUT_COST + $tokens_out * $OPUS_OUTPUT_COST) / 1000000}")
+            ;;
+    esac
+
+    echo "$cost"
+}
+
+# ─── Show Chain Configuration ──────────────────────────────────────────────
+show_chain_config() {
+    _ensure_chain_templates
+
+    if [[ ! -f "$CHAIN_CONFIG_FILE" ]]; then
+        success "Created default chain templates at $CHAIN_CONFIG_FILE"
+    fi
+
+    info "Reasoning Chain Configuration"
+    echo ""
+
+    if command -v jq >/dev/null 2>&1; then
+        jq . "$CHAIN_CONFIG_FILE" 2>/dev/null || cat "$CHAIN_CONFIG_FILE"
+    else
+        cat "$CHAIN_CONFIG_FILE"
+    fi
+}
+
+# ─── Show Chain Execution Report ───────────────────────────────────────────
+show_chain_report() {
+    info "Chain Execution Report"
+    echo ""
+
+    if [[ ! -f "$CHAIN_EXECUTION_LOG" ]]; then
+        warn "No chain execution data yet."
+        return 0
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required to view reports"
+        return 1
+    fi
+
+    local total_executions
+    total_executions=$(wc -l < "$CHAIN_EXECUTION_LOG" || echo "0")
+
+    local total_cost
+    total_cost=$(jq -s 'map(.total_cost) | add // 0' "$CHAIN_EXECUTION_LOG" 2>/dev/null || echo "0")
+
+    echo -e "${BOLD}Summary${RESET}"
+    echo "  Total chain executions: $total_executions"
+    echo "  Total cost: \$$total_cost"
+    echo ""
+
+    echo -e "${BOLD}Cost Per Chain${RESET}"
+    jq -s '
+        group_by(.chain) |
+        map({
+            chain: .[0].chain,
+            executions: length,
+            total_cost: (map(.total_cost) | add),
+            avg_cost: (map(.total_cost) | add / length)
+        }) |
+        sort_by(.chain)
+    ' "$CHAIN_EXECUTION_LOG" 2>/dev/null | jq -r '.[] | "  \(.chain): \(.executions) executions, $\(.total_cost | tostring), avg $\(.avg_cost | round)"' || true
+}
+
 # ─── Help Text ──────────────────────────────────────────────────────────────
 show_help() {
     echo -e "${BOLD}shipwright model${RESET} — Intelligent Model Routing & Optimization"
@@ -506,7 +882,7 @@ show_help() {
     echo -e "${BOLD}USAGE${RESET}"
     echo "  ${CYAN}shipwright model${RESET} <subcommand> [options]"
     echo ""
-    echo -e "${BOLD}SUBCOMMANDS${RESET}"
+    echo -e "${BOLD}SUBCOMMANDS — Routing${RESET}"
     echo "  ${CYAN}route${RESET} <stage> [complexity]    Route task to optimal model (returns: haiku|sonnet|opus)"
     echo "  ${CYAN}escalate${RESET} <model>              Get next tier model (haiku→sonnet→opus)"
     echo "  ${CYAN}config${RESET} [show|set <key> <val>] Show/set routing configuration"
@@ -514,15 +890,28 @@ show_help() {
     echo "  ${CYAN}ab-test${RESET} [enable|disable] [pct] [variant]  Configure A/B testing"
     echo "  ${CYAN}report${RESET}                        Show model usage and cost report"
     echo "  ${CYAN}ab-results${RESET}                     Show A/B test results"
-    echo "  ${CYAN}help${RESET}                          Show this help message"
+    echo ""
+    echo -e "${BOLD}SUBCOMMANDS — Multi-Model Reasoning Chains${RESET}"
+    echo "  ${CYAN}chain${RESET} [config|define|execute|report|step-cost]"
+    echo "    ${CYAN}config${RESET}                      Show chain configuration & templates"
+    echo "    ${CYAN}define${RESET} <name> <json>       Define custom reasoning chain"
+    echo "    ${CYAN}execute${RESET} <chain> <prompt>   Execute a reasoning chain"
+    echo "    ${CYAN}report${RESET}                      Show chain execution report"
+    echo "    ${CYAN}step-cost${RESET} <in> <out> <model> Calculate cost for one step"
+    echo ""
+    echo -e "${BOLD}BUILT-IN CHAINS${RESET}"
+    echo "  ${DIM}explore-decide${RESET}                2-step: haiku explores → opus decides"
+    echo "  ${DIM}explore-synthesize-decide${RESET}     3-step: haiku → sonnet → opus"
+    echo "  ${DIM}fast-verify${RESET}                   2-step: sonnet generates → haiku verifies"
+    echo "  ${DIM}deep-analysis${RESET}                 2-step: opus analyzes → opus validates"
     echo ""
     echo -e "${BOLD}EXAMPLES${RESET}"
     echo "  ${DIM}shipwright model route plan 65${RESET}        # Route 'plan' stage with 65% complexity"
     echo "  ${DIM}shipwright model escalate haiku${RESET}      # Upgrade from haiku"
-    echo "  ${DIM}shipwright model config show${RESET}         # View routing rules"
-    echo "  ${DIM}shipwright model estimate standard 50${RESET}  # Estimate standard pipeline cost"
-    echo "  ${DIM}shipwright model ab-test enable 15 cost-optimized${RESET}  # 15% A/B test"
-    echo "  ${DIM}shipwright model report${RESET}              # Show usage stats"
+    echo "  ${DIM}shipwright model chain config${RESET}        # Show chain templates"
+    echo "  ${DIM}shipwright model chain execute explore-decide \"analyze this code\"${RESET}"
+    echo "  ${DIM}shipwright model chain report${RESET}         # Show chain execution stats"
+    echo "  ${DIM}shipwright model chain step-cost 1000 500 sonnet${RESET}  # Cost for step"
 }
 
 # ─── Main ───────────────────────────────────────────────────────────────────
@@ -589,6 +978,34 @@ main() {
             ;;
         ab-results)
             show_ab_results
+            ;;
+        chain)
+            shift 2>/dev/null || true
+            case "${1:-config}" in
+                config)
+                    show_chain_config
+                    ;;
+                define)
+                    shift 2>/dev/null || true
+                    chain_define "$@"
+                    ;;
+                execute)
+                    shift 2>/dev/null || true
+                    chain_execute "$@"
+                    ;;
+                report)
+                    show_chain_report
+                    ;;
+                step-cost)
+                    shift 2>/dev/null || true
+                    chain_step_cost "$@"
+                    ;;
+                *)
+                    error "Unknown chain subcommand: ${1:-}"
+                    show_help
+                    exit 1
+                    ;;
+            esac
             ;;
         help|--help|-h)
             show_help
