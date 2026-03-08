@@ -29,7 +29,12 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
 
 # Ensure pipeline intelligence skip module is loaded (provides pipeline_should_skip_stage)
-[[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
+# SCRIPT_DIR may point to scripts/ or scripts/lib/ depending on how this module was sourced
+if [[ -f "$SCRIPT_DIR/pipeline-intelligence-skip.sh" ]]; then
+    source "$SCRIPT_DIR/pipeline-intelligence-skip.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
+    source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
+fi
 
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
@@ -509,11 +514,11 @@ run_pipeline() {
     fi
 
     local stages
-    stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG")
+    stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG" 2>/dev/null)
 
     local stage_count enabled_count
-    stage_count=$(jq '.stages | length' "$PIPELINE_CONFIG")
-    enabled_count=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG")
+    stage_count=$(jq '.stages | length' "$PIPELINE_CONFIG" 2>/dev/null)
+    enabled_count=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG" 2>/dev/null)
     local completed=0
 
     # Check which stages are enabled to determine if we use the self-healing loop
@@ -527,9 +532,9 @@ run_pipeline() {
 
     while IFS= read -r -u 3 stage; do
         local id enabled gate
-        id=$(echo "$stage" | jq -r '.id')
-        enabled=$(echo "$stage" | jq -r '.enabled')
-        gate=$(echo "$stage" | jq -r '.gate')
+        id=$(echo "$stage" | jq -r '.id' 2>/dev/null)
+        enabled=$(echo "$stage" | jq -r '.enabled' 2>/dev/null)
+        gate=$(echo "$stage" | jq -r '.gate' 2>/dev/null)
 
         CURRENT_STAGE_ID="$id"
 
@@ -611,7 +616,7 @@ run_pipeline() {
             fi
             # Gate check for build
             local build_gate
-            build_gate=$(echo "$stage" | jq -r '.gate')
+            build_gate=$(echo "$stage" | jq -r '.gate' 2>/dev/null)
             if [[ "$build_gate" == "approve" && "$SKIP_GATES" != "true" ]]; then
                 show_stage_preview "build"
                 local answer=""

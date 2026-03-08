@@ -886,7 +886,7 @@ GH_EOF
     invoke_pipeline start --issue 99 --skip-gates
 
     assert_exit_code 0 "pipeline with docs label should complete" &&
-    assert_output_contains "intelligence.*label:documentation|stage.*skipped.*intelligence" "should show intelligence-based skip" &&
+    assert_output_contains "skipped.*intelligence" "should show intelligence-based skip for at least one stage" &&
     assert_file_exists ".claude/pipeline-artifacts/intake.json" "intake should run"
 }
 
