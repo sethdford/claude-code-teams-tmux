@@ -35,9 +35,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "# Implementation Plan\n\n## Files to Modify\n- src/auth.js\n\n### Task Checklist\n- [ ] Create auth module\n- [ ] Add JWT validation\n\n### Definition of Done\n- [ ] All tests pass"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "tester",
+          "optimizer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Implement test failure recovery loop mechanism (builder) with test failure analysis (tester) and iteration budget optimization (optimizer)",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1771767843,
+      "timestamp": 1772946327,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -649,6 +657,311 @@
       },
       "timestamp": 1772933189,
       "ttl": 3600
+    },
+    "c0ab10df348660a9f052746f91e9fba5": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "full",
+        "issue_type": "testing",
+        "key_risks": [
+          "Test output parsing fragility across frameworks (jest/pytest/go test/npm test formats vary)",
+          "False positive detection of repeated failures (flaky tests, transient errors)",
+          "State corruption or loss of progress.md tracking across iterations",
+          "Premature loop abort terminating work that would eventually succeed",
+          "Context window overhead from injecting large failed test lists",
+          "Idempotency issues if same failure detected multiple times in single iteration"
+        ],
+        "implementation_hints": [
+          "Use framework-specific regex patterns for reliable test name extraction",
+          "Store failure tracking as JSON in progress.md for atomicity and queryability",
+          "Implement rolling window (last N) not all-time counts to handle transient failures",
+          "Design idempotent tracking—parse output once per iteration, deduplicate entries",
+          "Create mock test framework outputs in test suite covering edge cases and formats",
+          "Add graceful degradation: if parsing fails, log but continue without tracking",
+          "Include debug logging for failure detection to support troubleshooting",
+          "Structure injected context as compact JSON to minimize token consumption",
+          "Allow variance/retry budget before abort (e.g., 3 consecutive but skip flakes)",
+          "Validate parser against real pytest/jest/go test output samples before generalizing"
+        ]
+      },
+      "timestamp": 1772945644,
+      "ttl": 3600
+    },
+    "257cf89e9a8edc199dbd68300b15e788": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1772945653,
+      "ttl": 1800
+    },
+    "7c73ec0d1fded364a23df2e5fbb1cf74": {
+      "result": {
+        "estimated_cost_usd": 4.75,
+        "estimated_iterations": 2,
+        "estimated_tokens": 165000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1772945666,
+      "ttl": 3600
+    },
+    "57dbc68fea7b20b10b1d0b0841d9f2c0": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "infrastructure",
+          "reliability",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Well-scoped feature with clear acceptance criteria. Main complexity is robust parsing of 4+ test output formats (jest, pytest, go test, npm test) and managing state consistency across iterations. Integration points with sw-loop.sh are well-defined but require care to avoid breaking existing behavior."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming",
+            "testing-strategy"
+          ],
+          "design": [
+            "architecture-design",
+            "security-audit"
+          ],
+          "build": [],
+          "review": [
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Prior failure recovery attempts may have had blind spots—need structured investigation to understand existing loop behavior, failure patterns, and edge cases before adding early abort logic",
+          "brainstorming": "Challenge assumptions about 3-failure threshold, distinguish between transient/flaky failures vs real errors, and validate that early abort won't mask underlying issues developers need to see",
+          "testing-strategy": "Core implementation depends on robust test output parsing and state validation—need strong patterns for handling malformed output, mocking multiple test frameworks, and testing abort detection logic",
+          "architecture-design": "The failure state tracking mechanism (data structure, storage location, context injection format) needs an ADR so future build loop improvements don't break this feature or conflict with progress.md schema",
+          "security-audit": "Parsing untrusted test output from multiple formatters could introduce injection vulnerabilities if test names contain shell metacharacters or malicious payloads—validate input handling before accepting names into context",
+          "adversarial-quality": "Simulate chaos scenarios: malformed test output, partial failures, false positives from flaky tests, concurrent iterations, and incomplete progress.md to find where early abort logic fails",
+          "pr-quality": "PR must clearly document the new state tracking mechanism, abort heuristics (why 3 consecutive?), and context injection strategy so reviewers understand the recovery behavior and can spot edge cases",
+          "validation-thoroughness": "Smoke tests alone won't catch false positive aborts or issues with real multi-format test output—validate against actual jest, pytest, go test, and npm test failure patterns from real projects",
+          "observability": "Post-deploy, monitor false positive abort rates, context injection effectiveness, and iteration success delta to catch issues with flaky test heuristics before they block real work",
+          "deploy-safety": "This fundamentally changes build loop recovery behavior—needs careful staged rollout with metrics to detect if early abort is aborting on flaky tests or masking real issues"
+        },
+        "generated_skills": [
+          {
+            "name": "intelligent-test-failure-recovery",
+            "reason": "No existing skill addresses the specific patterns needed: parsing 4+ test output formats robustly, designing failure state machines that distinguish transient failures from real errors, and context injection strategies that don't bloat windows or mask issues",
+            "content": "## Intelligent Test Failure Recovery\n\nWhen tests fail in a build loop, smart detection and recovery saves iterations without creating false positives. This skill guides robust implementation of failure detection, abort heuristics, and context injection.\n\n### Test Output Parsing Strategy\n\n**Handle 4+ test framework formats:**\n- **Jest**: Extract test names from FAIL blocks or JSON reporter: `FAIL  src/auth.test.js › login` → `src/auth.test.js › login`\n- **Pytest**: Parse pytest output or pytest-json-report: `FAILED tests/test_auth.py::test_login` → `tests/test_auth.py::test_login`\n- **Go test**: Extract from `FAIL: TestName` lines\n- **npm test**: Framework-agnostic—pass through framework detector first (jest, mocha, vitest)\n- **Fallback**: Extract lines matching `(FAIL|ERROR|✗).*test.*` but mark as low-confidence\n\nStore test names as filesystem-safe identifiers. Never assume format—validate parsing against real output samples from each framework. Use escape-safe regex to handle special characters (colons, spaces, slashes).\n\n### Failure State Tracking\n\n**State structure in `.claude/loop-state.json`:**\n```json\n{\n  \"iteration\": 5,\n  \"failed_tests\": {\n    \"src/auth.test.js::login\": [3, 4, 5],\n    \"tests/api.test.py::test_endpoint\": [4, 5]\n  },\n  \"last_updated\": \"2026-03-08T12:34:56Z\",\n  \"abort_reason\": null\n}\n```\n\nMaintain iteration history for each test. Detect when a test appears in 3+ **consecutive** iterations (e.g., [3,4,5] or [4,5,6]). Update on every iteration, even on success, to reset the streak counter.\n\n### Abort Logic & Heuristics\n\n**Conservative thresholds prevent false positives on flaky tests:**\n- Require 3+ consecutive iterations with same test failing (not just any 3 failures)\n- Don't abort on iterations 1-2 (environment setup phase)\n- Exclude tests marked flaky in CI config (if available)\n- Log abort reason clearly: \"test X failed in iterations 3, 4, 5 (3 consecutive)\"\n\n**Context injection format (compact, max 5 tests):**\n```\nPreviously failed tests (aborting after 3 consecutive failures):\n- src/auth.test.js::login (iterations 3→4→5)\n- tests/api.test.py::endpoint (iterations 4→5)\n\nFocus on these tests: likely code errors, not transient failures.\n```\n\nLimit to 5 tests max to avoid context bloat. If >5 tests fail, pick 5 most recent. Omit iteration numbers if output is too long.\n\n### Risk Mitigation\n\n**False positives (aborting on flaky tests):**\n- Log all abort decisions with full failure history to `error-log.jsonl`\n- Monitor abort rate in daemon metrics—if >15%, review thresholds\n- Document threshold decision (3 consecutive) in ADR and test comments\n- Consider grace period: don't abort if total iterations < 6\n\n**Malformed test output:**\n- Validate regex patterns against common edge cases: multi-line names, Unicode, special chars\n- Implement safe fallback: if parsing fails, skip update and continue loop\n- Log parse errors but don't abort—assume transient formatter issue\n- Test with intentionally corrupted output samples\n\n**State consistency:**\n- Use atomic writes (tmp file + mv) for loop-state.json to prevent corruption\n- Validate JSON on read—if invalid, reset to empty state and log warning\n- Include version field in state for future schema migrations\n\n**Context window pollution:**\n- Measure context tokens after injection—warn if >5% increase\n- Implement pagination for large test lists (use most recent failures)\n\n### Testing Pattern\n\n**Unit test: Parser correctness with real samples**\n```bash\n# Jest\necho 'FAIL  __tests__/login.test.js' | extract_test_name\n# → __tests__/login.test.js\n\n# Pytest\necho 'FAILED tests/test_auth.py::test_login - AssertionError' | extract_test_name\n# → tests/test_auth.py::test_login\n```\n\n**Integration test: Abort detection**\n- Simulate 5 iterations: test fails at iterations 3, 4, 5 only\n- Verify abort triggers at iteration 5\n- Verify state.json shows [3,4,5] for that test\n- Verify context injection includes test name\n\n**Chaos test: Malformed & edge cases**\n- Empty test output → no abort, continue\n- Partial/truncated JSON → log warning, continue\n- Flaky test failing at iterations 1,3,5 (non-consecutive) → no abort\n- Many tests (20+) → abort but only inject top 5\n"
+          }
+        ],
+        "review_focus": [
+          "Test output parsing correctly handles jest, pytest, go test, and npm test formats with real-world sample outputs (not just happy path)",
+          "Abort logic strictly requires 3+ **consecutive** iterations, not just any 3 failures, to avoid false positives on flaky tests",
+          "State tracking uses atomic writes and validates JSON to prevent corruption across iterations",
+          "Context injection limits test list to 5 tests max and measures token impact to avoid bloating context window",
+          "Early abort is clearly logged with test names, iteration history, and abort reason for debugging and monitoring",
+          "Backward compatibility: existing progress.md files and loop state still work after this change"
+        ],
+        "risk_areas": [
+          "False positive aborts on intermittently failing tests—threshold of 3 iterations may be too aggressive for real-world flaky tests; monitor abort rates post-deploy",
+          "Test name parsing from untrusted output could introduce injection vectors if names contain shell metacharacters—validate input sanitization before accepting into context",
+          "State corruption if `.claude/loop-state.json` is truncated, invalid JSON, or written concurrently—need defensive parsing and atomic writes",
+          "Context window bloat if many tests fail—must enforce test list limit and measure token impact",
+          "Breaking existing build loop behavior—early abort could mask real issues if thresholds are wrong; needs careful staged rollout with monitoring"
+        ]
+      },
+      "timestamp": 1772945731,
+      "ttl": 3600
+    },
+    "9738d58513ad49029a62ad1913f33fed": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical test configuration: vitest test runner, test pattern matching, source directory structure, and npm package manager. Essential for planning test strategy and understanding how to run tests."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Would document past test failures and recovery patterns, directly relevant to 'failure recovery loop' context. Currently empty but high potential relevance if populated with historical failure data."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Confirms nodejs project type detected on 2026-02-21. Less detailed than the first patterns.json entry but serves as baseline project identification."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Baselines for performance metrics could inform iteration budget management strategy. Currently empty but relevant dimension for test planning."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Architectural decisions could inform test design and iteration strategy. Currently empty but would be relevant if populated with design decisions about failure recovery."
+          }
+        ]
+      },
+      "timestamp": 1772945743,
+      "ttl": 1800
+    },
+    "86ca792dfa3cbcee47e75bbb7ed10674": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Detailed project configuration including test_runner (vitest), test_pattern (*.test.js), and source structure. Essential for understanding test execution in failure recovery loop."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Designed to capture test failure patterns and history. Critical for test failure recovery loops to learn from previous failures, though currently empty."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline metrics structure relevant to iteration budget management and performance tracking, though baselines are currently empty."
+          }
+        ]
+      },
+      "timestamp": 1772946075,
+      "ttl": 1800
+    },
+    "d77387199b628f8758a500e5a44e7b5d": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Defines project structure (vitest test runner, npm, CommonJS), test patterns (*.test.js), and source layout (src/). Critical for designing test infrastructure integration in failure recovery loop."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Confirms nodejs project type detected during bootstrap. Less detailed than primary patterns.json but validates core platform assumptions."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Currently empty but designed to capture failure patterns. Once populated, would directly inform iteration recovery strategies and budget allocation."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Baselines structure is empty but essential for iteration budget management. Would track performance metrics for loop tuning decisions."
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Cross-repo learnings container currently empty. Could inform universal patterns for test recovery if populated from other Shipwright deployments."
+          }
+        ]
+      },
+      "timestamp": 1772946205,
+      "ttl": 1800
+    },
+    "ab6b81292bb0016dea4ec3f9b5f94ac9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 50,
+            "summary": "Contains test runner (vitest), test patterns (*.test.js), and project structure directly applicable to test failure recovery loop implementation"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Should capture rejected design approaches and architectural decisions for the recovery loop feature, though currently empty"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 28,
+            "summary": "Would contain captured iteration failures and anti-patterns to inform smart budget management, though currently empty"
+          }
+        ]
+      },
+      "timestamp": 1772946216,
+      "ttl": 1800
+    },
+    "329764e650b1c47c3db72ae87b68e5d5": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (with vitest/npm/src config)",
+            "relevance": 95,
+            "summary": "Contains critical project structure: test runner (vitest), package manager (npm), source directory, test pattern, and import style. Essential for build stage test execution."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 50,
+            "summary": "Baselines would inform 'Smart Iteration Budget Management' for tracking test performance and iteration costs, though currently empty."
+          },
+          {
+            "file": "patterns.json (with project_type nodejs)",
+            "relevance": 40,
+            "summary": "Minimal confirmation of Node.js project type from bootstrap detection; less detailed than the first patterns entry."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Test failure patterns are directly relevant to 'Test Failure Recovery Loop' context, but currently empty with no historical recovery patterns available."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Previous architectural decisions could inform iteration strategy and budget allocation, but array is empty with no recorded decisions."
+          }
+        ]
+      },
+      "timestamp": 1772946312,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 100,
+            "summary": "Build stage requires project structure: test_runner (vitest), package_manager (npm), source_dir (src/), test patterns, and language specifics"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Would inform build debugging strategies if populated, but currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Could document build-related decisions, but currently empty"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Performance baselines could optimize build times, but currently empty"
+          }
+        ]
+      },
+      "timestamp": 1772946320,
+      "ttl": 1800
     }
   }
 }
