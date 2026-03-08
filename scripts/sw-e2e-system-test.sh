@@ -42,9 +42,14 @@ setup_e2e_env() {
 
     # Copy real pipeline and dependencies
     cp "$REAL_PIPELINE" "$TEMP_DIR/scripts/sw-pipeline.sh"
+    [[ -f "$SCRIPT_DIR/sw" ]] && cp "$SCRIPT_DIR/sw" "$TEMP_DIR/scripts/sw"
     [[ -d "$SCRIPT_DIR/lib" ]] && cp -r "$SCRIPT_DIR/lib" "$TEMP_DIR/scripts/lib"
-    # Copy skills directory (required by skill-registry.sh)
-    [[ -d "$SCRIPT_DIR/skills" ]] && cp -r "$SCRIPT_DIR/skills" "$TEMP_DIR/scripts/skills"
+    # Copy skills directory (required by skill-registry.sh) — create empty if missing
+    if [[ -d "$SCRIPT_DIR/skills" ]]; then
+        cp -r "$SCRIPT_DIR/skills" "$TEMP_DIR/scripts/skills"
+    else
+        mkdir -p "$TEMP_DIR/scripts/skills"
+    fi
     for dep in sw-intelligence.sh sw-pipeline-composer.sh sw-pipeline-vitals.sh sw-context.sh \
                sw-github-graphql.sh sw-github-checks.sh sw-github-deploy.sh sw-checkpoint.sh \
                sw-loop.sh sw-self-optimize.sh sw-memory.sh sw-discovery.sh sw-durable.sh; do
@@ -54,6 +59,9 @@ setup_e2e_env() {
     # Link real jq and git
     command -v jq >/dev/null 2>&1 && ln -sf "$(command -v jq)" "$TEMP_DIR/bin/jq" 2>/dev/null || true
     command -v git >/dev/null 2>&1 && ln -sf "$(command -v git)" "$TEMP_DIR/bin/git" 2>/dev/null || true
+
+    # Link sw script to bin/ so it's in PATH
+    [[ -f "$TEMP_DIR/scripts/sw" ]] && ln -sf "$TEMP_DIR/scripts/sw" "$TEMP_DIR/bin/sw" 2>/dev/null || true
 
     create_mock_claude
     create_mock_gh

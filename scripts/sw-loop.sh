@@ -94,7 +94,7 @@ MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
 REPO_OVERRIDE=""
-VERSION="3.4.0"
+VERSION="3.2.4"
 
 # ─── Token Tracking ─────────────────────────────────────────────────────────
 LOOP_INPUT_TOKENS=0
@@ -448,8 +448,8 @@ ARTIFACTS_DIR="${STATE_DIR}/pipeline-artifacts"
 mkdir -p "$ARTIFACTS_DIR"
 if type context_budget_init >/dev/null 2>&1; then
     # Set total budget (default 800K, configurable via env/config)
-    local context_budget="${CONTEXT_BUDGET_TOKENS:-800000}"
-    context_budget_init "$context_budget" "$ARTIFACTS_DIR" 2>/dev/null || true
+    CONTEXT_BUDGET="${CONTEXT_BUDGET_TOKENS:-800000}"
+    context_budget_init "$CONTEXT_BUDGET" "$ARTIFACTS_DIR" 2>/dev/null || true
 fi
 
 # ─── Adaptive Model Selection ────────────────────────────────────────────────
