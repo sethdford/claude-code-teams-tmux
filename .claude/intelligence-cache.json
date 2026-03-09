@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "devops"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Dry-run mode requires upfront architectural design of validation rules, plan integrity checks, and pipeline integration before implementation.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773037672,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -268,9 +277,25 @@
     },
     "fdbb7bc340414cf938cecd4b790fa9e2": {
       "result": {
-        "raw_response": "ok"
+        "complexity": 5,
+        "risk_level": "high",
+        "success_probability": 25,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Insufficient requirements and context",
+          "Ambiguous title with no acceptance criteria",
+          "Cannot determine scope without issue body",
+          "Unclear what 'test' refers to"
+        ],
+        "implementation_hints": [
+          "Request clarification on what should be tested",
+          "Define specific test cases or coverage goals",
+          "Identify system/component being tested",
+          "Establish success criteria before implementation"
+        ]
       },
-      "timestamp": 1771463517,
+      "timestamp": 1773038043,
       "ttl": 3600
     },
     "dce27dbb395347163aefb2c7fd90ac9f": {
@@ -647,6 +672,237 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "f760d56fd70aacc5db86a66aff1e8007": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "medium",
+        "success_probability": 82,
+        "recommended_template": "fast",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Cost estimate accuracy must stay synchronized with actual cost calculation logic to avoid misleading developers",
+          "Timeout predictions from pipeline composer need to be verified against real execution data",
+          "Configuration validation may miss edge cases with template inheritance and overrides",
+          "Dry-run output accuracy is critical to usefulness - stale predictions reduce developer trust"
+        ],
+        "implementation_hints": [
+          "Extract cost estimation into a reusable function from sw-cost.sh to keep dry-run synchronized with actual runs",
+          "Reuse pipeline composition logic from sw-pipeline-composer.sh to display what would actually execute",
+          "Create validation function that walks through each stage's prerequisites and dependencies without executing",
+          "Generate tabular output format (stage name, timeout, gate type, model, estimated cost) for easy scanning",
+          "Store dry-run output to .claude/pipeline-artifacts/last-dry-run.json for comparison with actual execution",
+          "Test each of 7 templates plus custom cost-aware and effort-level overrides"
+        ]
+      },
+      "timestamp": 1773036834,
+      "ttl": 3600
+    },
+    "76f9cb5e83632a4d216fa27245e723f8": {
+      "result": {
+        "estimated_iterations": 3,
+        "reasoning": {
+          "complexity_factor": "4/10 (medium-low) - straightforward infrastructure feature",
+          "success_probability_factor": "82% - high confidence in approach",
+          "template_factor": "fast recommended - suggests quick implementation",
+          "risk_factors": [
+            "Synchronization accuracy (cost, timeouts) requires verification",
+            "7 template variants + overrides need testing",
+            "Validation edge cases need discovery"
+          ],
+          "iteration_breakdown": {
+            "iteration_1": "Core implementation - extract cost function, reuse pipeline composition, basic dry-run output",
+            "iteration_2": "Template testing - verify all 7 templates produce correct output, fix edge cases",
+            "iteration_3": "Validation & polish - ensure cost/timeout sync, test overrides, finalize output format"
+          }
+        }
+      },
+      "timestamp": 1773036846,
+      "ttl": 1800
+    },
+    "70ceeecdcb84c0f37536dd84342a458a": {
+      "result": {
+        "estimated_cost_usd": 3.50,
+        "estimated_iterations": 2,
+        "estimated_tokens": 60000,
+        "likely_failure_stage": "test",
+        "confidence": 80
+      },
+      "timestamp": 1773036855,
+      "ttl": 3600
+    },
+    "6b825262876977fe07182a1a5b3ae6dc": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Contains test failures specific to sw-cleanup.sh dry-run mode not detecting stale heartbeats or reporting found items. Directly applicable to understanding dry-run implementation pitfalls and requirements for the new Pipeline Dry-Run Mode feature."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 46,
+            "summary": "Project structure metadata (Node.js, vitest, npm, commonjs conventions). Provides context for understanding the codebase architecture when planning feature implementation."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 27,
+            "summary": "Minimal project type detection (nodejs). Provides basic project identification but with less detail than the first patterns entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 9,
+            "summary": "Empty baselines object contains no relevant data for planning dry-run mode validation feature."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array provides no prior architectural or implementation decisions to inform dry-run mode planning."
+          }
+        ]
+      },
+      "timestamp": 1773036869,
+      "ttl": 1800
+    },
+    "457ff66f2793c0b93a58924af422f041": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 100,
+            "summary": "Contains two captured failures directly about sw-cleanup.sh dry-run mode not detecting stale heartbeats and omitting summary output with '--force' hint. Directly addresses the validation failures context."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Project structure metadata (vitest test runner, npm, src/ source dir, *.test.js pattern). Useful context for understanding test setup but not specific to dry-run validation issues."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Generic nodejs project detection metadata. Minimal relevance to plan validation failure context."
+          }
+        ]
+      },
+      "timestamp": 1773037391,
+      "ttl": 1800
+    },
+    "9ef39d150ffab634b5cd864dcd45268c": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly documents dry-run mode validation issues in sw-cleanup.sh, including detection of stale items, output summary formatting, and --force hints. Shows real architecture requirements for dry-run execution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Contains project technology stack (Node, vitest, npm). Minimal relevance—provides implementation context but not architectural patterns for dry-run design."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Provides only project type metadata (nodejs, detection timestamp). Not relevant to dry-run architecture design patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. No actionable content for dry-run design stage."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty common patterns and cross-repo learnings. No relevant content for dry-run mode architecture."
+          }
+        ]
+      },
+      "timestamp": 1773037499,
+      "ttl": 1800
+    },
+    "4e4da10c280bdddbb97882e69815f8cc": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly addresses dry-run mode defects in sw-cleanup.sh: missing --force hint output and stale heartbeat detection logic. Captures root causes and fixes for dry-run execution plan validation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Contains project configuration (test runner, source dir, import style) but has no bearing on dry-run mode design or anti-patterns."
+          },
+          {
+            "file": "global.json",
+            "relevance": 3,
+            "summary": "Empty cross-repo learnings. No relevant insights for Pipeline Dry-Run Mode design approaches or anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1773037508,
+      "ttl": 1800
+    },
+    "51239092397255f08f4b94eea41a0b68": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains specific dry-run mode failures in sw-cleanup.sh affecting heartbeat detection and output formatting—directly addresses the execution plan validation dry-run context with concrete fixes"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure with vitest test runner, npm conventions, and source layout essential for understanding build stage dependencies and test execution patterns"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Generic nodejs project type detection from bootstrap—minimal context but confirms language/runtime for build stage configuration"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines structure—minimal utility for current build stage planning"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log—no prior architectural choices or context available for dry-run mode implementation"
+          }
+        ]
+      },
+      "timestamp": 1773037653,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Provides project configuration (Node.js, vitest, npm, src/ directory) essential for build stage setup and test execution"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Documents test-stage failures in sw-cleanup.sh with root causes and fixes; directly applicable if build stage re-encounters these test failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object; no actionable metrics for build stage context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; no architectural or implementation decisions to inform build stage"
+          }
+        ]
+      },
+      "timestamp": 1773037660,
+      "ttl": 1800
     }
   }
 }
