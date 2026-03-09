@@ -136,9 +136,8 @@ create_mock_claude() {
 prompt=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --print|--output-format) shift ;;
-        --model|--max-turns)     shift 2 ;;
-        -p)                      shift 2 ;;
+        --print|--output-format|--dangerously-skip-permissions) shift ;;
+        --model|--max-turns|--effort|--fallback-model|-p) shift 2 ;;
         *)                       prompt="$1"; shift ;;
     esac
 done
@@ -395,8 +394,13 @@ invoke_pipeline() {
     PIPELINE_EXIT=0
 
     # Invoke the REAL pipeline script as a subprocess
+    # Clear parent pipeline env vars to prevent leaking into test subprocess
     PIPELINE_OUTPUT=$(
         cd "$TEST_TEMP_DIR/project"
+        unset PIPELINE_TEMPLATE PIPELINE_FALLBACK_MODEL PIPELINE_JOB_ID
+        unset ARTIFACTS_DIR SCRIPT_DIR SW_LOOP_STATUS SW_LOOP_GOAL
+        unset SW_LOOP_TEST_OUTPUT SW_LOOP_FINDINGS SW_LOOP_MODIFIED
+        unset SHIPWRIGHT_PIPELINE_ID
         PATH="$TEST_TEMP_DIR/bin:$PATH" \
         bash "$TEST_TEMP_DIR/scripts/sw-pipeline.sh" "$subcommand" "$@" 2>&1
     ) || PIPELINE_EXIT=$?
