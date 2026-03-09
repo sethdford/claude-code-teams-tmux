@@ -203,6 +203,10 @@ result=$(printf '%s' "$result" | tr -cd '[:alnum:]-')
 assert_eq "Incident label → hotfix template" "hotfix" "$result"
 
 # Score-based (no special labels)
+result=$(select_pipeline_template "enhancement" 95 2>/dev/null | tail -1)
+result=$(printf '%s' "$result" | tr -cd '[:alnum:]-')
+assert_eq "Very high score → minimal template" "minimal" "$result"
+
 result=$(select_pipeline_template "enhancement" 75 2>/dev/null | tail -1)
 result=$(printf '%s' "$result" | tr -cd '[:alnum:]-')
 assert_eq "High score → fast template" "fast" "$result"

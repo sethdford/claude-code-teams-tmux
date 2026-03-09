@@ -513,7 +513,13 @@ project_recommend_template() {
         -not -path "*/target/*" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 
     # Heuristics for template recommendation
-    if [[ "$src_file_count" -lt 20 && "$test_file_count" -lt 5 && "$has_deploy" == "false" ]]; then
+    if [[ "$src_file_count" -le 5 && "$has_deploy" == "false" && "$has_ci" == "false" ]]; then
+        # Trivial project — single-file or handful of files
+        template="minimal"
+        confidence=90
+        reason="Trivial project with very few source files"
+
+    elif [[ "$src_file_count" -lt 20 && "$test_file_count" -lt 5 && "$has_deploy" == "false" ]]; then
         # Small project, no tests, no deploy
         template="fast"
         confidence=85

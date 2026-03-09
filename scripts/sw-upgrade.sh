@@ -186,6 +186,7 @@ FILES=(
     "devops.json|tmux/templates/devops.json|$HOME/.shipwright/templates/devops.json|false|false"
     "architecture.json|tmux/templates/architecture.json|$HOME/.shipwright/templates/architecture.json|false|false"
     "definition-of-done.example.md|docs/definition-of-done.example.md|$HOME/.shipwright/templates/definition-of-done.example.md|false|false"
+    "pipeline-minimal.json|templates/pipelines/minimal.json|$HOME/.shipwright/pipelines/minimal.json|false|false"
     "pipeline-standard.json|templates/pipelines/standard.json|$HOME/.shipwright/pipelines/standard.json|false|false"
     "pipeline-fast.json|templates/pipelines/fast.json|$HOME/.shipwright/pipelines/fast.json|false|false"
     "pipeline-full.json|templates/pipelines/full.json|$HOME/.shipwright/pipelines/full.json|false|false"

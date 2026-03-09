@@ -437,7 +437,9 @@ select_pipeline_template() {
     fi
 
     # ── Score-based selection ──
-    if [[ "$score" -ge 70 ]]; then
+    if [[ "$score" -ge 90 ]]; then
+        echo "minimal"
+    elif [[ "$score" -ge 70 ]]; then
         echo "fast"
     elif [[ "$score" -ge 40 ]]; then
         echo "standard"

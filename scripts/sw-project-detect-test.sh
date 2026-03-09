@@ -277,13 +277,27 @@ assert_eq "Rust build command" "cargo build" "$result"
 # Test: project_recommend_template
 # ═══════════════════════════════════════════════════════════════════════════════
 
-print_test_section "project_recommend_template — Small project"
+print_test_section "project_recommend_template — Trivial project (minimal)"
+
+test_proj="$TEST_TEMP_DIR/trivial-project"
+create_nodejs_project "$test_proj"
+# Trivial project (0 source files, no CI, no deploy) should get "minimal"
+result=$(project_recommend_template "$test_proj") || true
+assert_json_key "Trivial project recommends minimal" "$result" ".template" "minimal"
+
+# ─── Test: project_recommend_template — Small project (fast) ─────────────────
+print_test_section "project_recommend_template — Small project (fast)"
 
 test_proj="$TEST_TEMP_DIR/small-project"
 create_nodejs_project "$test_proj"
+# Add enough source files to exceed the minimal threshold (>5 files)
+mkdir -p "$test_proj/src"
+for i in 1 2 3 4 5 6 7 8; do
+    echo "module.exports = {};" > "$test_proj/src/file${i}.js"
+done
 result=$(project_recommend_template "$test_proj") || true
 
-# Small project should get "fast" template
+# Small project with >5 source files should get "fast" template
 assert_json_key "Small project recommends fast" "$result" ".template" "fast"
 
 # ─── Test: project_recommend_template with Docker ────────────────────────────
