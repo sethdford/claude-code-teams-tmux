@@ -59,6 +59,7 @@ show_help() {
     echo -e "  ${DIM}--ignore-budget${RESET}           Skip budget enforcement checks"
     echo -e "  ${DIM}--worktree [=name]${RESET}         Run in isolated git worktree (parallel-safe)"
     echo -e "  ${DIM}--dry-run${RESET}                 Show what would happen without executing"
+    echo -e "  ${DIM}--json${RESET}                    Output dry-run plan as JSON (requires --dry-run)"
     echo -e "  ${DIM}--slack-webhook <url>${RESET}     Send notifications to Slack"
     echo -e "  ${DIM}--self-heal <n>${RESET}            Build→test retry cycles on failure (default: 2)"
     echo -e "  ${DIM}--max-iterations <n>${RESET}       Override max build loop iterations"
@@ -145,6 +146,7 @@ parse_args() {
             --worktree=*) AUTO_WORKTREE=true; WORKTREE_NAME="${1#--worktree=}"; WORKTREE_NAME="${WORKTREE_NAME//[^a-zA-Z0-9_-]/}"; if [[ -z "$WORKTREE_NAME" ]]; then error "Invalid worktree name (alphanumeric, hyphens, underscores only)"; exit 1; fi; shift ;;
             --worktree)   AUTO_WORKTREE=true; shift ;;
             --dry-run)     DRY_RUN=true; shift ;;
+            --json)        DRY_RUN_JSON=true; shift ;;
             --slack-webhook) SLACK_WEBHOOK="$2"; shift 2 ;;
             --self-heal)   BUILD_TEST_RETRIES="${2:-3}"; shift 2 ;;
             --max-restarts)

@@ -776,6 +776,103 @@ test_dry_run() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 14b. Dry run shows per-stage timeouts
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_shows_timeouts() {
+    write_standard_template
+
+    invoke_pipeline start --goal "Timeout test" --skip-gates --dry-run
+
+    assert_exit_code 0 "dry-run with timeouts should succeed" &&
+    assert_output_contains "Timeout" "shows timeout column header" &&
+    assert_output_contains "[0-9]+[msd]" "shows formatted timeout values"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14c. Dry run shows per-stage cost breakdown
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_shows_per_stage_cost() {
+    write_standard_template
+
+    invoke_pipeline start --goal "Cost test" --skip-gates --dry-run
+
+    assert_exit_code 0 "dry-run with costs should succeed" &&
+    assert_output_contains "Per-Stage Cost Breakdown" "shows cost breakdown section" &&
+    assert_output_contains "Input Tokens" "shows input tokens column" &&
+    assert_output_contains "Output Tokens" "shows output tokens column" &&
+    assert_output_contains "TOTAL" "shows total row"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14d. Dry run validates configuration
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_validates_config() {
+    write_standard_template
+
+    invoke_pipeline start --goal "Config test" --skip-gates --dry-run
+
+    assert_exit_code 0 "dry-run config validation should succeed" &&
+    assert_output_contains "Configuration Validation" "shows config validation section" &&
+    assert_output_contains "canonical" "checks stage ordering"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14e. Dry run shows summary section
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_shows_summary() {
+    write_standard_template
+
+    invoke_pipeline start --goal "Summary test" --skip-gates --dry-run
+
+    assert_exit_code 0 "dry-run summary should succeed" &&
+    assert_output_contains "Summary" "shows summary section" &&
+    assert_output_contains "Enabled Stages" "shows enabled stages count" &&
+    assert_output_contains "Estimated Cost" "shows estimated cost" &&
+    assert_output_contains "Total Timeout" "shows total timeout" &&
+    assert_output_contains "Budget Status" "shows budget section"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14f. Dry run JSON output mode
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_json_output() {
+    write_standard_template
+
+    invoke_pipeline start --goal "JSON test" --skip-gates --dry-run --json
+
+    assert_exit_code 0 "dry-run JSON should succeed" &&
+    # Extract JSON block from output (strip ANSI codes, find JSON object)
+    local clean_output json_block
+    clean_output=$(printf '%s' "$PIPELINE_OUTPUT" | sed $'s/\033\[[0-9;]*m//g')
+    json_block=$(printf '%s\n' "$clean_output" | awk '/^[{]/{found=1} found{print} /^[}]/ && found{exit}')
+    if printf '%s' "$json_block" | jq . >/dev/null 2>&1; then
+        echo -e "    ${GREEN}✓${RESET} Output contains valid JSON block"
+    else
+        echo -e "    ${RED}✗${RESET} Output does not contain valid JSON block"
+        echo "$PIPELINE_OUTPUT" | tail -10 | sed 's/^/      /'
+        return 1
+    fi &&
+    # Check key fields exist in JSON
+    assert_output_contains '"pipeline"' "JSON has pipeline field" &&
+    assert_output_contains '"stages"' "JSON has stages array" &&
+    assert_output_contains '"cost"' "JSON has cost object" &&
+    assert_output_contains '"total_timeout_s"' "JSON has total_timeout_s" &&
+    assert_output_contains '"valid"' "JSON has valid field"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14g. Dry run shows intelligence skip predictions
+# ──────────────────────────────────────────────────────────────────────────────
+test_dry_run_shows_skip_predictions() {
+    write_standard_template
+
+    invoke_pipeline start --goal "Skip test" --skip-gates --dry-run
+
+    assert_exit_code 0 "dry-run skip predictions should succeed" &&
+    assert_output_contains "Intelligence Skip Predictions" "shows skip predictions section"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 15. Self-healing build→test retry loop
 # ──────────────────────────────────────────────────────────────────────────────
 test_self_healing() {
@@ -1877,6 +1974,12 @@ main() {
         "test_resume:Resume continues from partial state"
         "test_abort:Abort marks pipeline as aborted"
         "test_dry_run:Dry run shows config, no artifacts"
+        "test_dry_run_shows_timeouts:Dry run shows per-stage timeouts"
+        "test_dry_run_shows_per_stage_cost:Dry run shows per-stage cost breakdown"
+        "test_dry_run_validates_config:Dry run validates configuration"
+        "test_dry_run_shows_summary:Dry run shows summary section"
+        "test_dry_run_json_output:Dry run JSON output mode"
+        "test_dry_run_shows_skip_predictions:Dry run shows intelligence skip predictions"
         "test_self_healing:Self-healing build→test retry loop"
         "test_intelligent_skip_docs_label:Intelligence: Skip stages for documentation issues"
         "test_intelligent_skip_low_complexity:Intelligence: Skip stages for low complexity"

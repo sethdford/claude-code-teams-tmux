@@ -190,18 +190,79 @@ pipeline_cleanup_worktree() {
 # ─── Dry Run Mode ───────────────────────────────────────────────────────────
 
 # ─── Dry-Run Mode ──────────────────────────────────────────────────
-run_dry_run() {
-    echo ""
-    echo -e "${BLUE}${BOLD}━━━ Dry Run: Pipeline Validation ━━━${RESET}"
-    echo ""
+# ─── Dry-Run Helpers ──────────────────────────────────────────────
 
+# Format seconds into human-readable duration (e.g. "5m 0s", "30m 0s")
+_dry_run_fmt_duration() {
+    local secs="${1:-0}"
+    if [[ "$secs" -ge 3600 ]]; then
+        printf "%dh %dm %ds" $((secs/3600)) $((secs%3600/60)) $((secs%60))
+    elif [[ "$secs" -ge 60 ]]; then
+        printf "%dm %ds" $((secs/60)) $((secs%60))
+    else
+        printf "%ds" "$secs"
+    fi
+}
+
+# Estimate per-stage token counts based on stage type
+_dry_run_stage_token_estimate() {
+    local stage="${1:-unknown}"
+    local input_tok output_tok
+    case "$stage" in
+        intake)           input_tok=4000;  output_tok=2000 ;;
+        plan)             input_tok=12000; output_tok=8000 ;;
+        design)           input_tok=15000; output_tok=10000 ;;
+        build)            input_tok=20000; output_tok=12000 ;;
+        test)             input_tok=8000;  output_tok=4000 ;;
+        review)           input_tok=15000; output_tok=8000 ;;
+        compound_quality) input_tok=12000; output_tok=6000 ;;
+        pr)               input_tok=6000;  output_tok=3000 ;;
+        merge)            input_tok=3000;  output_tok=1500 ;;
+        deploy)           input_tok=8000;  output_tok=4000 ;;
+        validate)         input_tok=6000;  output_tok=3000 ;;
+        monitor)          input_tok=6000;  output_tok=3000 ;;
+        *)                input_tok=8000;  output_tok=4000 ;;
+    esac
+    echo "${input_tok}:${output_tok}"
+}
+
+# Get cost rates for a model (input_rate:output_rate per 1M tokens)
+_dry_run_model_cost_rate() {
+    local model="${1:-opus}"
+    local input_rate output_rate
+    input_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${model}.input // 3" 2>/dev/null || echo "3")
+    output_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${model}.output // 15" 2>/dev/null || echo "15")
+    echo "${input_rate}:${output_rate}"
+}
+
+# Get timeout for a stage (adaptive if available, else default)
+_dry_run_get_stage_timeout() {
+    local stage="${1:-unknown}"
+    if type timeout_get >/dev/null 2>&1; then
+        timeout_get "$stage"
+    elif type _timeout_default >/dev/null 2>&1; then
+        _timeout_default "$stage"
+    else
+        # Hardcoded fallback matching adaptive-timeout.sh defaults
+        case "$stage" in
+            intake) echo 60 ;; plan) echo 300 ;; design) echo 300 ;;
+            build) echo 1800 ;; test) echo 600 ;; review) echo 600 ;;
+            compound_quality) echo 900 ;; pr) echo 120 ;; merge) echo 120 ;;
+            deploy) echo 300 ;; validate) echo 300 ;; monitor) echo 300 ;;
+            *) echo 300 ;;
+        esac
+    fi
+}
+
+# ─── Main Dry-Run Function ───────────────────────────────────────
+
+run_dry_run() {
     # Validate pipeline config
     if [[ ! -f "$PIPELINE_CONFIG" ]]; then
         error "Pipeline config not found: $PIPELINE_CONFIG"
         return 1
     fi
 
-    # Validate JSON structure
     local validate_json
     validate_json=$(jq . "$PIPELINE_CONFIG" 2>/dev/null) || {
         error "Pipeline config is not valid JSON: $PIPELINE_CONFIG"
@@ -215,34 +276,28 @@ run_dry_run() {
     enabled_stages=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG")
     gated_stages=$(jq '[.stages[] | select(.enabled == true and .gate == "approve")] | length' "$PIPELINE_CONFIG")
 
-    # Build model (per-stage override or default)
+    # Default model
     local default_model stage_model
     default_model=$(jq -r '.defaults.model // "opus"' "$PIPELINE_CONFIG")
     stage_model="$MODEL"
     [[ -z "$stage_model" ]] && stage_model="$default_model"
 
-    echo -e "  ${BOLD}Pipeline:${RESET}       $pipeline_name"
-    echo -e "  ${BOLD}Stages:${RESET}         $enabled_stages enabled of $stages_count total"
-    if [[ "$SKIP_GATES" == "true" ]]; then
-        echo -e "  ${BOLD}Gates:${RESET}         ${YELLOW}all auto (--skip-gates)${RESET}"
-    else
-        echo -e "  ${BOLD}Gates:${RESET}         $gated_stages approval gate(s)"
-    fi
-    echo -e "  ${BOLD}Model:${RESET}         $stage_model"
-    echo ""
+    # ── Collect per-stage data ─────────────────────────────────────
+    local total_input_est=0 total_output_est=0 total_timeout=0
+    local total_cost_est="0" config_warnings="" skipped_stages=""
+    local stages_data="" json_stages=""
+    local prev_stage_order=0
 
-    # Table header
-    echo -e "${CYAN}${BOLD}Stage         Enabled  Gate     Model${RESET}"
-    echo -e "${CYAN}────────────────────────────────────────${RESET}"
+    # Canonical stage ordering for validation
+    local canonical_order="intake:1 plan:2 design:3 build:4 test:5 review:6 compound_quality:7 pr:8 merge:9 deploy:10 validate:11 monitor:12"
 
-    # List all stages
     while IFS= read -r stage_json; do
         local stage_id stage_enabled stage_gate stage_config_model stage_model_display
         stage_id=$(echo "$stage_json" | jq -r '.id')
         stage_enabled=$(echo "$stage_json" | jq -r '.enabled')
         stage_gate=$(echo "$stage_json" | jq -r '.gate')
 
-        # Determine stage model (config override or default)
+        # Model per stage
         stage_config_model=$(echo "$stage_json" | jq -r '.config.model // ""')
         if [[ -n "$stage_config_model" && "$stage_config_model" != "null" ]]; then
             stage_model_display="$stage_config_model"
@@ -250,91 +305,334 @@ run_dry_run() {
             stage_model_display="$default_model"
         fi
 
-        # Format enabled
-        local enabled_str
+        # Timeout
+        local timeout_val timeout_str
+        timeout_val=$(_dry_run_get_stage_timeout "$stage_id")
+        timeout_str=$(_dry_run_fmt_duration "$timeout_val")
+
+        # Token estimates & cost (only for enabled stages)
+        local input_est=0 output_est=0 stage_cost="0.0000"
         if [[ "$stage_enabled" == "true" ]]; then
-            enabled_str="${GREEN}yes${RESET}"
-        else
-            enabled_str="${DIM}no${RESET}"
+            local tokens
+            tokens=$(_dry_run_stage_token_estimate "$stage_id")
+            input_est="${tokens%%:*}"
+            output_est="${tokens##*:}"
+            total_input_est=$((total_input_est + input_est))
+            total_output_est=$((total_output_est + output_est))
+            total_timeout=$((total_timeout + timeout_val))
+
+            local rates input_rate output_rate
+            rates=$(_dry_run_model_cost_rate "$stage_model_display")
+            input_rate="${rates%%:*}"
+            output_rate="${rates##*:}"
+            stage_cost=$(awk -v it="$input_est" -v ir="$input_rate" -v ot="$output_est" -v or_="$output_rate" \
+                'BEGIN{printf "%.4f", (it/1000000)*ir + (ot/1000000)*or_}')
+            total_cost_est=$(awk -v t="$total_cost_est" -v s="$stage_cost" 'BEGIN{printf "%.4f", t+s}')
         fi
 
-        # Format gate
-        local gate_str
-        if [[ "$stage_enabled" == "true" ]]; then
-            if [[ "$stage_gate" == "approve" ]]; then
+        # Intelligence skip prediction
+        local skip_reason=""
+        if [[ "$stage_enabled" == "true" ]] && type pipeline_should_skip_stage >/dev/null 2>&1; then
+            skip_reason=$(pipeline_should_skip_stage "$stage_id" 2>/dev/null) || skip_reason=""
+        fi
+        if [[ -n "$skip_reason" ]]; then
+            skipped_stages="${skipped_stages}${stage_id}(${skip_reason}) "
+        fi
+
+        # Config validation: check stage ordering
+        local expected_order=0
+        local pair
+        for pair in $canonical_order; do
+            if [[ "${pair%%:*}" == "$stage_id" ]]; then
+                expected_order="${pair##*:}"
+                break
+            fi
+        done
+        if [[ "$expected_order" -gt 0 && "$prev_stage_order" -gt 0 && "$expected_order" -lt "$prev_stage_order" ]]; then
+            config_warnings="${config_warnings}stage '$stage_id' is out of canonical order; "
+        fi
+        [[ "$expected_order" -gt 0 ]] && prev_stage_order="$expected_order"
+
+        # Config validation: gate values
+        if [[ "$stage_gate" != "auto" && "$stage_gate" != "approve" && "$stage_gate" != "skip" ]]; then
+            config_warnings="${config_warnings}stage '$stage_id' has invalid gate '$stage_gate'; "
+        fi
+
+        # Config validation: missing id
+        if [[ -z "$stage_id" || "$stage_id" == "null" ]]; then
+            config_warnings="${config_warnings}stage missing 'id' field; "
+        fi
+
+        # Store for display and JSON
+        stages_data="${stages_data}${stage_id}|${stage_enabled}|${stage_gate}|${stage_model_display}|${timeout_str}|${input_est}|${output_est}|${stage_cost}|${skip_reason}|${timeout_val}
+"
+        # Build JSON array element
+        json_stages="${json_stages}$(jq -n \
+            --arg id "$stage_id" \
+            --arg enabled "$stage_enabled" \
+            --arg gate "$stage_gate" \
+            --arg model "$stage_model_display" \
+            --argjson timeout "$timeout_val" \
+            --argjson input_tokens "$input_est" \
+            --argjson output_tokens "$output_est" \
+            --arg cost "$stage_cost" \
+            --arg skip_reason "$skip_reason" \
+            '{id:$id, enabled:($enabled=="true"), gate:$gate, model:$model, timeout_s:$timeout, input_tokens:$input_tokens, output_tokens:$output_tokens, cost_usd:$cost, skip_prediction:$skip_reason}' 2>/dev/null),"
+    done < <(jq -c '.stages[]' "$PIPELINE_CONFIG")
+
+    # ── Tool validation ────────────────────────────────────────────
+    local tool_errors=0 tool_results=""
+    local required_tools=("git" "jq")
+    local optional_tools=("gh" "claude" "bc")
+    for tool in "${required_tools[@]}"; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            tool_results="${tool_results}${tool}:ok:required "
+        else
+            tool_results="${tool_results}${tool}:missing:required "
+            tool_errors=$((tool_errors + 1))
+        fi
+    done
+    for tool in "${optional_tools[@]}"; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            tool_results="${tool_results}${tool}:ok:optional "
+        else
+            tool_results="${tool_results}${tool}:missing:optional "
+        fi
+    done
+
+    # ── Budget status ──────────────────────────────────────────────
+    local budget_enabled="false" daily_budget="unlimited" budget_remaining="unlimited" budget_status="no_budget"
+    local budget_file="$HOME/.shipwright/budget.json"
+    if [[ -f "$budget_file" ]]; then
+        budget_enabled=$(jq -r '.enabled // false' "$budget_file" 2>/dev/null || echo "false")
+        if [[ "$budget_enabled" == "true" ]]; then
+            daily_budget=$(jq -r '.daily_budget_usd // 0' "$budget_file" 2>/dev/null || echo "0")
+            # Try to get today's spending from cost module
+            local today_spent="0"
+            if type cost_remaining_budget >/dev/null 2>&1; then
+                budget_remaining=$(cost_remaining_budget 2>/dev/null || echo "$daily_budget")
+            else
+                budget_remaining="$daily_budget"
+            fi
+            # Determine budget status
+            local remaining_after
+            remaining_after=$(awk -v r="$budget_remaining" -v c="$total_cost_est" 'BEGIN{printf "%.4f", r-c}')
+            local is_negative
+            is_negative=$(awk -v r="$remaining_after" 'BEGIN{print (r < 0) ? "yes" : "no"}')
+            if [[ "$is_negative" == "yes" ]]; then
+                budget_status="over_budget"
+            else
+                budget_status="within_budget"
+            fi
+        fi
+    fi
+
+    # ── JSON output mode ───────────────────────────────────────────
+    if [[ "${DRY_RUN_JSON:-false}" == "true" ]]; then
+        # Remove trailing comma from json_stages
+        json_stages="${json_stages%,}"
+
+        local tools_json=""
+        for entry in $tool_results; do
+            local t_name="${entry%%:*}"; local rest="${entry#*:}"
+            local t_status="${rest%%:*}"; local t_type="${rest##*:}"
+            tools_json="${tools_json}$(jq -n --arg name "$t_name" --arg status "$t_status" --arg type "$t_type" \
+                '{name:$name, status:$status, type:$type}'),"
+        done
+        tools_json="${tools_json%,}"
+
+        jq -n \
+            --arg pipeline "$pipeline_name" \
+            --argjson stages_count "$stages_count" \
+            --argjson enabled_stages "$enabled_stages" \
+            --argjson gated_stages "$gated_stages" \
+            --arg model "$stage_model" \
+            --argjson stages "[$json_stages]" \
+            --argjson tools "[$tools_json]" \
+            --argjson tool_errors "$tool_errors" \
+            --argjson total_input "$total_input_est" \
+            --argjson total_output "$total_output_est" \
+            --arg total_cost "$total_cost_est" \
+            --argjson total_timeout "$total_timeout" \
+            --arg budget_status "$budget_status" \
+            --arg daily_budget "$daily_budget" \
+            --arg budget_remaining "$budget_remaining" \
+            --arg config_warnings "$config_warnings" \
+            --arg skipped_stages "${skipped_stages% }" \
+            '{
+                pipeline: $pipeline,
+                stages_total: $stages_count,
+                stages_enabled: $enabled_stages,
+                gates: $gated_stages,
+                model: $model,
+                stages: $stages,
+                tools: $tools,
+                tool_errors: $tool_errors,
+                cost: {
+                    total_input_tokens: $total_input,
+                    total_output_tokens: $total_output,
+                    estimated_usd: $total_cost,
+                    budget_status: $budget_status,
+                    daily_budget_usd: $daily_budget,
+                    budget_remaining_usd: $budget_remaining
+                },
+                total_timeout_s: $total_timeout,
+                config_warnings: $config_warnings,
+                skip_predictions: $skipped_stages,
+                valid: ($tool_errors == 0 and ($config_warnings | length) == 0)
+            }'
+        return $([[ "$tool_errors" -gt 0 ]] && echo 1 || echo 0)
+    fi
+
+    # ── Human-readable output ──────────────────────────────────────
+
+    echo ""
+    echo -e "${BLUE}${BOLD}━━━ Dry Run: Pipeline Execution Plan ━━━${RESET}"
+    echo ""
+
+    echo -e "  ${BOLD}Pipeline:${RESET}       $pipeline_name"
+    echo -e "  ${BOLD}Stages:${RESET}         $enabled_stages enabled of $stages_count total"
+    if [[ "$SKIP_GATES" == "true" ]]; then
+        echo -e "  ${BOLD}Gates:${RESET}          ${YELLOW}all auto (--skip-gates)${RESET}"
+    else
+        echo -e "  ${BOLD}Gates:${RESET}          $gated_stages approval gate(s)"
+    fi
+    echo -e "  ${BOLD}Model:${RESET}          $stage_model"
+    echo ""
+
+    # Stage table with timeout and cost columns
+    echo -e "${CYAN}${BOLD}Stage              Enabled  Gate     Model    Timeout     Est. Cost${RESET}"
+    echo -e "${CYAN}──────────────────────────────────────────────────────────────────────${RESET}"
+
+    local line
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local s_id s_enabled s_gate s_model s_timeout s_input s_output s_cost s_skip
+        IFS='|' read -r s_id s_enabled s_gate s_model s_timeout s_input s_output s_cost s_skip _ <<< "$line"
+
+        local enabled_str gate_str skip_indicator=""
+        if [[ "$s_enabled" == "true" ]]; then
+            enabled_str="${GREEN}yes${RESET}"
+            if [[ "$s_gate" == "approve" ]]; then
                 gate_str="${YELLOW}approve${RESET}"
             else
                 gate_str="${GREEN}auto${RESET}"
             fi
         else
+            enabled_str="${DIM}no${RESET}"
             gate_str="${DIM}—${RESET}"
         fi
 
-        printf "%-15s %s  %s  %s\n" "$stage_id" "$enabled_str" "$gate_str" "$stage_model_display"
-    done < <(jq -c '.stages[]' "$PIPELINE_CONFIG")
+        if [[ -n "$s_skip" ]]; then
+            skip_indicator=" ${YELLOW}[skip:${s_skip}]${RESET}"
+        fi
+
+        printf "%-18s %s  %-8s %-8s %-11s \$%s%s\n" \
+            "$s_id" "$enabled_str" "$gate_str" "$s_model" "$s_timeout" "$s_cost" "$skip_indicator"
+    done <<< "$stages_data"
 
     echo ""
 
-    # Validate required tools
+    # Per-stage cost breakdown
+    echo -e "${BLUE}${BOLD}━━━ Per-Stage Cost Breakdown ━━━${RESET}"
+    echo ""
+    echo -e "${CYAN}${BOLD}Stage              Input Tokens  Output Tokens  Model    Cost${RESET}"
+    echo -e "${CYAN}──────────────────────────────────────────────────────────────────${RESET}"
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local s_id s_enabled s_gate s_model s_timeout s_input s_output s_cost
+        IFS='|' read -r s_id s_enabled s_gate s_model s_timeout s_input s_output s_cost _ _ <<< "$line"
+        [[ "$s_enabled" != "true" ]] && continue
+
+        printf "%-18s %12s  %13s  %-8s \$%s\n" \
+            "$s_id" "~$s_input" "~$s_output" "$s_model" "$s_cost"
+    done <<< "$stages_data"
+
+    echo -e "${CYAN}──────────────────────────────────────────────────────────────────${RESET}"
+    printf "%-18s %12s  %13s  %-8s ${BOLD}\$%s${RESET}\n" \
+        "TOTAL" "~$total_input_est" "~$total_output_est" "$stage_model" "$total_cost_est"
+    echo ""
+
+    # Configuration validation
+    echo -e "${BLUE}${BOLD}━━━ Configuration Validation ━━━${RESET}"
+    echo ""
+
+    if [[ -z "$config_warnings" ]]; then
+        echo -e "  ${GREEN}✓${RESET} Stage ordering follows canonical sequence"
+        echo -e "  ${GREEN}✓${RESET} All gate values are valid"
+        echo -e "  ${GREEN}✓${RESET} All stages have required 'id' field"
+    else
+        # Split warnings and display
+        local old_ifs="$IFS"
+        IFS=';'
+        local warn_item
+        for warn_item in $config_warnings; do
+            warn_item=$(echo "$warn_item" | sed 's/^ *//;s/ *$//')
+            [[ -n "$warn_item" ]] && echo -e "  ${YELLOW}⚠${RESET} $warn_item"
+        done
+        IFS="$old_ifs"
+    fi
+    echo ""
+
+    # Intelligence skip predictions
+    echo -e "${BLUE}${BOLD}━━━ Intelligence Skip Predictions ━━━${RESET}"
+    echo ""
+
+    if [[ -n "${skipped_stages% }" ]]; then
+        local skip_entry
+        for skip_entry in $skipped_stages; do
+            local skip_id="${skip_entry%%(*}"
+            local skip_why="${skip_entry#*(}"
+            skip_why="${skip_why%)}"
+            echo -e "  ${YELLOW}⟳${RESET} ${BOLD}$skip_id${RESET} — skip reason: $skip_why"
+        done
+        echo -e "\n  ${DIM}(Predictions are approximate; actual skips depend on intake results)${RESET}"
+    else
+        echo -e "  ${GREEN}✓${RESET} No stages predicted to be skipped"
+    fi
+    echo ""
+
+    # Tool validation
     echo -e "${BLUE}${BOLD}━━━ Tool Validation ━━━${RESET}"
     echo ""
 
-    local tool_errors=0
-    local required_tools=("git" "jq")
-    local optional_tools=("gh" "claude" "bc")
-
-    for tool in "${required_tools[@]}"; do
-        if command -v "$tool" >/dev/null 2>&1; then
-            echo -e "  ${GREEN}✓${RESET} $tool"
+    for entry in $tool_results; do
+        local t_name="${entry%%:*}"; local rest="${entry#*:}"
+        local t_status="${rest%%:*}"; local t_type="${rest##*:}"
+        if [[ "$t_status" == "ok" ]]; then
+            echo -e "  ${GREEN}✓${RESET} $t_name"
+        elif [[ "$t_type" == "required" ]]; then
+            echo -e "  ${RED}✗${RESET} $t_name ${RED}(required)${RESET}"
         else
-            echo -e "  ${RED}✗${RESET} $tool ${RED}(required)${RESET}"
-            tool_errors=$((tool_errors + 1))
+            echo -e "  ${DIM}○${RESET} $t_name"
         fi
     done
+    echo ""
 
-    for tool in "${optional_tools[@]}"; do
-        if command -v "$tool" >/dev/null 2>&1; then
-            echo -e "  ${GREEN}✓${RESET} $tool"
+    # Budget status
+    echo -e "${BLUE}${BOLD}━━━ Budget Status ━━━${RESET}"
+    echo ""
+
+    if [[ "$budget_enabled" == "true" ]]; then
+        echo -e "  ${BOLD}Daily Budget:${RESET}      \$$daily_budget USD"
+        echo -e "  ${BOLD}Remaining:${RESET}         \$$budget_remaining USD"
+        echo -e "  ${BOLD}Estimated Cost:${RESET}    \$$total_cost_est USD"
+        if [[ "$budget_status" == "over_budget" ]]; then
+            echo -e "  ${RED}${BOLD}⚠ Estimated cost exceeds remaining budget${RESET}"
         else
-            echo -e "  ${DIM}○${RESET} $tool"
+            echo -e "  ${GREEN}✓${RESET} Within daily budget"
         fi
-    done
-
-    echo ""
-
-    # Cost estimation: use historical averages from past pipelines when available
-    echo -e "${BLUE}${BOLD}━━━ Estimated Resource Usage ━━━${RESET}"
-    echo ""
-
-    local stages_json
-    stages_json=$(jq '[.stages[] | select(.enabled == true)]' "$PIPELINE_CONFIG" 2>/dev/null || echo "[]")
-    local est
-    est=$(estimate_pipeline_cost "$stages_json")
-    local input_tokens_estimate output_tokens_estimate
-    input_tokens_estimate=$(echo "$est" | jq -r '.input_tokens // 0')
-    output_tokens_estimate=$(echo "$est" | jq -r '.output_tokens // 0')
-
-    # Calculate cost based on selected model
-    local input_rate output_rate input_cost output_cost total_cost
-    input_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${stage_model}.input // 3" 2>/dev/null || echo "3")
-    output_rate=$(echo "$COST_MODEL_RATES" | jq -r ".${stage_model}.output // 15" 2>/dev/null || echo "15")
-
-    # Cost calculation: tokens per million * rate
-    input_cost=$(awk -v tokens="$input_tokens_estimate" -v rate="$input_rate" 'BEGIN{printf "%.4f", (tokens / 1000000) * rate}')
-    output_cost=$(awk -v tokens="$output_tokens_estimate" -v rate="$output_rate" 'BEGIN{printf "%.4f", (tokens / 1000000) * rate}')
-    total_cost=$(awk -v i="$input_cost" -v o="$output_cost" 'BEGIN{printf "%.4f", i + o}')
-
-    echo -e "  ${BOLD}Estimated Input Tokens:${RESET}  ~$input_tokens_estimate"
-    echo -e "  ${BOLD}Estimated Output Tokens:${RESET} ~$output_tokens_estimate"
-    echo -e "  ${BOLD}Model Cost Rate:${RESET}        $stage_model"
-    echo -e "  ${BOLD}Estimated Cost:${RESET}         \$$total_cost USD"
+    else
+        echo -e "  ${DIM}No daily budget configured${RESET}"
+        echo -e "  ${DIM}Set with: shipwright cost budget set <amount>${RESET}"
+    fi
     echo ""
 
     # Validate composed pipeline if intelligence is enabled
     if [[ -f "$ARTIFACTS_DIR/composed-pipeline.json" ]] && type composer_validate_pipeline >/dev/null 2>&1; then
         echo -e "${BLUE}${BOLD}━━━ Intelligence-Composed Pipeline ━━━${RESET}"
         echo ""
-
         if composer_validate_pipeline "$(cat "$ARTIFACTS_DIR/composed-pipeline.json" 2>/dev/null || echo "")" 2>/dev/null; then
             echo -e "  ${GREEN}✓${RESET} Composed pipeline is valid"
         else
@@ -343,7 +641,26 @@ run_dry_run() {
         echo ""
     fi
 
-    # Final validation result
+    # Summary
+    echo -e "${BLUE}${BOLD}━━━ Summary ━━━${RESET}"
+    echo ""
+    echo -e "  ${BOLD}Enabled Stages:${RESET}    $enabled_stages"
+    echo -e "  ${BOLD}Approval Gates:${RESET}    $gated_stages"
+    echo -e "  ${BOLD}Total Timeout:${RESET}     $(_dry_run_fmt_duration "$total_timeout")"
+    echo -e "  ${BOLD}Estimated Cost:${RESET}    \$$total_cost_est USD"
+    echo -e "  ${BOLD}Total Tokens:${RESET}      ~$((total_input_est + total_output_est))"
+
+    local total_warnings=0
+    [[ -n "$config_warnings" ]] && total_warnings=$((total_warnings + 1))
+    [[ "$tool_errors" -gt 0 ]] && total_warnings=$((total_warnings + tool_errors))
+    [[ "$budget_status" == "over_budget" ]] && total_warnings=$((total_warnings + 1))
+
+    if [[ "$total_warnings" -gt 0 ]]; then
+        echo -e "  ${YELLOW}${BOLD}Warnings:${RESET}          $total_warnings"
+    fi
+    echo ""
+
+    # Final result
     if [[ "$tool_errors" -gt 0 ]]; then
         error "Dry run validation failed: $tool_errors required tool(s) missing"
         return 1
