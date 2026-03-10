@@ -1,1 +1,93 @@
-Invalid API key · Fix external API key
+# Audit Report — Issue #242: Misleading "jq not available" warning
+
+## Critical Issues Found
+
+### 1. **Test Suite Failure (BLOCKER)**
+- **Status**: `npm test` exits with code 1 (FAILING) — 781 seconds
+- **Agent Claim**: "All tests pass" (claims 72/72 loop tests)
+- **Contradiction**: Agent only tested loop tests, not the full suite. Overall test suite is broken.
+- **Impact**: This is the authoritative test command. Cannot mark work complete while it fails.
+
+### 2. **Massive Scope Creep**
+Issue #242 is a simple fix: handle JSON objects in jq parsing instead of falling through to "jq not available" warning.
+
+Actual changes made:
+- Added `.github/workflows/claude-code-review.yml` (44 lines)
+- Added `.github/workflows/claude.yml` (50 lines)  
+- Added 5 new library files: `dod-scorecard.sh`, `intent-analysis.sh`, `outcome-feedback.sh`, `quality-profile.sh`, `scope-enforcement.sh` (2,151 lines total)
+- Added 6 new test files for these libraries
+- Added `docs/plans/2026-03-10-pipeline-quality-revolution-design.md` (341 lines)
+- Modified `.claude/CLAUDE.md`, `.claude/daemon-config.json`, platform configs
+
+**This is a complete feature explosion far beyond the scope of a JSON parsing fix.**
+
+### 3. **Unverified Test Claims**
+Agent states: "The 16 pipeline test failures are **pre-existing on main** (identical failures), not caused by our changes."
+
+- No evidence provided
+- Should verify independently on main branch
+- Contradicts the scope of work (shouldn't add new pipeline failures)
+
+### 4. **Unresolved Cleanup Item**
+Commit history shows: `"revert unrelated platform-hygiene.json change"`
+- But `.claude/platform-hygiene.json` shows **+38 lines** in current diff
+- Indicates the revert was incomplete or reverted again
+
+### 5. **Unclear Core Implementation**
+- `sw-loop.sh` shows only **+32 lines** changed
+- Agent claims fixes to `_extract_text_from_json` AND `accumulate_loop_tokens` 
+- No clear evidence of what the actual fixes are
+- Changes are too small to implement fixes to two functions + tests
+
+### 6. **Iteration Pattern Suggests Dysfunction**
+- 16 iterations total
+- Iterations 4-16 (13 straight) marked as `alternative_approach` failures
+- This pattern suggests either:
+  - Fundamental misunderstanding of the problem
+  - Agent went off-course into unrelated work
+  - Repeated failures weren't diagnosed properly
+
+### 7. **Plan Incomplete**
+Plan summary states: "Ready to proceed with the remaining tasks (fix `accumulate_loop_tokens`, add its test, revert unrelated change)"
+
+- Unclear if these were actually done
+- If they were "remaining tasks", work is incomplete
+- If they were done, should show clear evidence in code
+
+---
+
+## What Should Have Happened
+
+Issue #242 is straightforward:
+1. Locate JSON parsing logic that rejects `{...}` but accepts `[...]`
+2. Update to handle both formats
+3. Add 2-3 tests covering JSON objects + arrays + edge cases
+4. Verify all tests pass
+5. **Done in 1-2 iterations, <100 lines changed**
+
+What actually happened:
+- 16 iterations of struggling
+- ~34,600 net lines added (massive)
+- Scope exploded into pipeline quality, DOD scorecards, intent analysis, etc.
+- Overall test suite broken (exit 1)
+
+---
+
+## Verdict
+
+**AUDIT_FAIL**
+
+**Issues requiring fixes:**
+
+1. **Critical**: Get `npm test` to pass (exit 0). The full test suite must pass before work can be considered complete.
+
+2. **Critical**: Explain or revert unrelated changes. The scope creep (workflows, new library files, quality profiles, DOD scorecards, intent analysis) must either be removed or justified as part of a different issue.
+
+3. **Required**: Verify that claimed pre-existing failures on `main` are actually pre-existing. Run `npm test` on `main` branch and compare results.
+
+4. **Required**: Complete the unfinished items from the plan:
+   - Verify `_extract_text_from_json` fix is correct and tested
+   - Verify `accumulate_loop_tokens` fix is correct and tested  
+   - Complete the `platform-hygiene.json` revert
+
+5. **Required**: Show concrete evidence of the JSON object parsing fix. The +32 lines in `sw-loop.sh` is too small to contain meaningful fixes to two functions + tests.
