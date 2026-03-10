@@ -1,1 +1,62 @@
-Invalid API key · Fix external API key
+Excellent! The fix is verified. Let me provide my comprehensive audit:
+
+## Critical Code Review — Iteration 1
+
+### ✅ Goal Achievement
+The agent successfully fixed the misleading "jq not available" warning when Claude outputs JSON objects. The root cause was correctly identified: `_extract_text_from_json` in `sw-loop.sh` only handled JSON arrays (`[`), not objects (`{`), causing valid JSON objects to be treated as unparseable and showing a false "jq not available" warning.
+
+### ✅ Implementation Quality
+
+**Code Changes (lines 578-609 in sw-loop.sh):**
+1. **Line 579**: Extended Case 2 condition from `"[" only` to `"[" || "{"` with jq availability check ✓
+2. **Lines 581-587**: Added proper branching for arrays vs objects:
+   - Arrays: `jq -r '.[-1].result // empty'` (extract from last element)
+   - Objects: `jq -r '.result // empty'` (extract from top level)
+3. **Lines 593-597**: Added `.content` fallback with same branching logic
+4. **Lines 608-613**: Case 3 (JSON but no jq) now only triggers when jq is genuinely unavailable
+
+**Quality Metrics:**
+- Minimal changeset (22 net lines in production code, 38 lines in tests)
+- Bash 3.2 compatible (no modern bash-isms)
+- Proper error handling (`|| true`, safe quoting)
+- Follows existing patterns in the codebase
+- No TODO/FIXME/HACK comments left behind
+
+### ✅ Test Coverage
+
+**New Tests (3 added):**
+- JSON object with `.result` field → extracts correctly ✓
+- JSON object with `.content` fallback (no `.result`) → extracts correctly ✓
+- JSON object with no extractable fields → shows placeholder message ✓
+
+**Test Results:**
+- All 68 sw-loop tests PASS (including 3 new + 65 existing) ✓
+- No regressions in array handling, plain text, or empty file handling ✓
+- Pre-existing 3 cleanup test failures are unrelated to this fix
+
+**Manual Verification:**
+- JSON object extraction confirmed working with jq available ✓
+- No false warnings when jq is present ✓
+
+### ✅ No Blockers or Incomplete Work
+- All implementation tasks marked complete
+- All critical paths tested
+- Error cases covered (no .result field, .content fallback, etc.)
+- Edge cases handled (objects with/without fields)
+
+### ⚠️ Test Suite Status
+- `npm test` exits with code 3 due to 3 pre-existing failures in `sw-cleanup-test.sh` (stale heartbeat detection, summary counting)
+- These are **NOT** caused by this fix and were present before
+- The loop tests themselves: **ALL 68 PASS**
+
+### Summary
+The work is **complete and correct**. The agent:
+1. ✓ Identified root cause accurately
+2. ✓ Implemented minimal, focused fix
+3. ✓ Added comprehensive tests (happy path + error cases + edge cases)
+4. ✓ Verified no regressions
+5. ✓ Code quality is acceptable and follows project conventions
+
+The misleading jq warning is now resolved — JSON objects are properly parsed, and warnings only appear when jq is genuinely unavailable.
+
+**AUDIT_PASS**
