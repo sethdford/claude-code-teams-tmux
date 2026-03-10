@@ -286,7 +286,8 @@ JSON
             local prev="${scores[$prev_idx]:-0}"
             local curr="${scores[$i]}"
             local delta=$((curr - prev))
-            [[ "$delta" -eq 0 ]] && stalled_count=$((stalled_count + 1))
+            [[ "$delta" -lt 0 ]] && delta=$((0 - delta))
+            [[ "$delta" -le 3 ]] && stalled_count=$((stalled_count + 1))
         done
         if [[ "$stalled_count" -ge 2 ]]; then
             cat <<JSON
@@ -429,6 +430,31 @@ convergence_integrate() {
     # For first iteration, can't compute trend
     if [[ "$iteration" -lt 1 ]]; then
         return 0
+    fi
+
+    # ── LOOP_COMPLETE signal check ─────────────────────────────────────────
+    # If the agent explicitly signaled completion and tests pass, stop immediately.
+    # This prevents wasting iterations when the work is done but scores stay ~50.
+    local _log_file="${LOG_DIR:-}/iteration-${iteration}.log"
+    if [[ "$test_passed" == "true" ]] && grep -q "LOOP_COMPLETE" "$_log_file" 2>/dev/null; then
+        # Write a converged recommendation so the pipeline knows why we stopped
+        local rec_file="${ARTIFACTS_DIR}/convergence-recommendation.json"
+        mkdir -p "$ARTIFACTS_DIR"
+        cat > "$rec_file.tmp.$$" <<CONV_JSON
+{
+  "status": "converged",
+  "recommendation": "stop",
+  "reason": "agent_signaled_complete_tests_pass",
+  "confidence": 0.95
+}
+CONV_JSON
+        mv "$rec_file.tmp.$$" "$rec_file"
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "convergence.agent_complete" \
+                "iteration=$iteration" \
+                "test_passed=$test_passed" 2>/dev/null || true
+        fi
+        return 1  # Stop success
     fi
 
     # Compute test transition (newly passing/failing)
