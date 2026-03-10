@@ -174,6 +174,10 @@ show_stage_preview() {
 
 # ─── Load domain-specific stage modules ───────────────────────────────────────
 
+# Load scope enforcement module for planned vs actual file tracking
+_SCOPE_ENFORCEMENT_SH="${SCRIPT_DIR}/lib/scope-enforcement.sh"
+[[ -f "$_SCOPE_ENFORCEMENT_SH" ]] && source "$_SCOPE_ENFORCEMENT_SH"
+
 _PIPELINE_STAGES_INTAKE_SH="${SCRIPT_DIR}/lib/pipeline-stages-intake.sh"
 [[ -f "$_PIPELINE_STAGES_INTAKE_SH" ]] && source "$_PIPELINE_STAGES_INTAKE_SH"
 

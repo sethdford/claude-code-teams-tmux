@@ -299,9 +299,23 @@ ${_skill_prompts}
         test_cmd=$(jq -r --arg id "build" '(.stages[] | select(.id == $id) | .config.test_cmd) // .defaults.test_cmd // ""' "$PIPELINE_CONFIG" 2>/dev/null) || true
         [[ "$test_cmd" == "null" ]] && test_cmd=""
     fi
-    # Auto-detect if still empty
+    # Auto-detect if still empty — prefer fast variants for build iterations
     if [[ -z "$test_cmd" ]]; then
-        test_cmd=$(detect_test_cmd)
+        # Check for fast test scripts first (build loop runs tests every iteration)
+        if [[ -f "$PROJECT_ROOT/package.json" ]]; then
+            local _fast_test=""
+            _fast_test=$(jq -r '.scripts["test:fast"] // .scripts["test:smoke"] // ""' "$PROJECT_ROOT/package.json" 2>/dev/null) || true
+            if [[ -n "$_fast_test" && "$_fast_test" != "null" ]]; then
+                local _pm
+                _pm=$(detect_package_manager 2>/dev/null || echo "npm")
+                test_cmd="$_pm run test:$(jq -r 'if .scripts["test:fast"] then "fast" else "smoke" end' "$PROJECT_ROOT/package.json" 2>/dev/null)"
+                info "Using fast test command for build iterations: ${DIM}$test_cmd${RESET}"
+            fi
+        fi
+        # Fall back to full test command
+        if [[ -z "$test_cmd" ]]; then
+            test_cmd=$(detect_test_cmd)
+        fi
     fi
 
     # Discover additional test commands (subdirectories, extra scripts)
@@ -477,6 +491,24 @@ ${commit_msgs}" --model haiku < /dev/null 2>/dev/null || true)
                 warn "Commit message quality low (score: ${quality_score}/100)"
             else
                 info "Commit quality score: ${quality_score}/100"
+            fi
+        fi
+    fi
+
+    # ── Scope Enforcement: Compare planned vs actual files ──
+    if type generate_scope_report >/dev/null 2>&1; then
+        local plan_file="$ARTIFACTS_DIR/plan.md"
+        if [[ -f "$plan_file" ]]; then
+            info "Analyzing scope: comparing planned vs actual files..."
+            generate_scope_report "$plan_file" "origin/${BASE_BRANCH:-main}" "$ARTIFACTS_DIR" 2>/dev/null || true
+            if [[ -f "$ARTIFACTS_DIR/scope-report.json" ]]; then
+                local unplanned_count
+                unplanned_count=$(jq '.unplanned_files | length' "$ARTIFACTS_DIR/scope-report.json" 2>/dev/null || echo "0")
+                if [[ "$unplanned_count" -gt 0 ]]; then
+                    warn "Scope analysis: $unplanned_count unplanned file(s) changed (see scope-report.json)"
+                else
+                    info "Scope analysis: all changes are planned"
+                fi
             fi
         fi
     fi

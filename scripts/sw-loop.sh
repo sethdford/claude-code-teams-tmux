@@ -1895,8 +1895,11 @@ PROMPT
         break
     fi
 
-    # Auto-commit
+    # Auto-commit — stage only source files, exclude build artifacts
     git add -A 2>/dev/null || true
+    git reset -- .claude/loop-logs/ .claude/loop-state.md .claude/intelligence-cache.json \
+        .claude/platform-hygiene.json .claude/pipeline-artifacts/ .claude/code-review.json \
+        .claude/hygiene-report.json .claude/pr-draft.md 2>/dev/null || true
     if git commit -m "agent-${AGENT_NUM}: iteration ${ITERATION}" --no-verify 2>/dev/null; then
         if ! git push origin "loop/agent-${AGENT_NUM}" 2>/dev/null; then
             echo -e "  ${YELLOW}⚠${RESET} git push failed for loop/agent-${AGENT_NUM} — remote may be out of sync"

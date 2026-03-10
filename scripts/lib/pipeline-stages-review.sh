@@ -57,25 +57,115 @@ stage_review() {
         review_model="$CLAUDE_MODEL"
     fi
 
-    # Build review prompt with project context
-    local review_prompt="You are a senior code reviewer. Review this git diff thoroughly.
+    # Build adversarial review prompt with project context
+    local review_prompt="You are a SKEPTICAL senior engineer reviewing code for production.
+Your job is to FIND PROBLEMS, not confirm quality.
 
 For each issue found, use this format:
 - **[SEVERITY]** file:line — description
 
 Severity levels: Critical, Bug, Security, Warning, Suggestion
 
-Focus on:
+Mandatory requirements:
+1. Find at least 3 issues (or explain why code is exceptional)
+2. Check EVERY acceptance criterion — mark PASS/FAIL with evidence
+3. Flag every scope creep (unplanned files)
+4. Verify all never-ship rules are not violated
+5. Assess all always-require rules are met
+
+Focus areas:
 1. Logic bugs and edge cases
 2. Security vulnerabilities (injection, XSS, auth bypass, etc.)
 3. Error handling gaps
 4. Performance issues
 5. Missing validation
-6. Project convention violations (see conventions below)
+6. Project convention violations (see standards below)
+7. Architectural constraint violations
+8. Data validation and sanitization gaps
 
-Be specific. Reference exact file paths and line numbers. Only flag genuine issues.
-If no issues are found, write: \"Review clean — no issues found.\"
+Be thorough and adversarial. Only accept exceptional code without issues.
 "
+
+    # Inject quality profile standards (never-ship, always-require, focus areas)
+    local quality_profile="${PROJECT_ROOT}/.claude/quality-profile.json"
+    if [[ -f "$quality_profile" ]]; then
+        local never_ship_rules always_require_rules focus_areas learned_rules
+
+        never_ship_rules=$(jq -r '.quality.never_ship[]? // empty' "$quality_profile" 2>/dev/null | sed 's/^/  - /')
+        if [[ -n "$never_ship_rules" ]]; then
+            review_prompt+="
+## Project Standards — NEVER SHIP Rules
+These are absolute violations that must be caught:
+${never_ship_rules}
+"
+        fi
+
+        always_require_rules=$(jq -r '.quality.always_require[]? // empty' "$quality_profile" 2>/dev/null | sed 's/^/  - /')
+        if [[ -n "$always_require_rules" ]]; then
+            review_prompt+="
+## Project Standards — ALWAYS REQUIRE
+These must be present in this PR:
+${always_require_rules}
+"
+        fi
+
+        focus_areas=$(jq -r '.review.focus_areas[]? // empty' "$quality_profile" 2>/dev/null | sed 's/^/  - /')
+        if [[ -n "$focus_areas" ]]; then
+            review_prompt+="
+## Review Focus Areas
+Pay extra attention to these areas for this project:
+${focus_areas}
+"
+        fi
+
+        learned_rules=$(jq -r '.quality.learned_rules[]? | "\(.rule) (source: \(.source), confidence: \(.confidence))" | @base64' "$quality_profile" 2>/dev/null | while read -r encoded; do
+            [[ -z "$encoded" ]] && continue
+            echo "$encoded" | base64 -d 2>/dev/null || true
+        done | sed 's/^/  - /')
+        if [[ -n "$learned_rules" ]]; then
+            review_prompt+="
+## Learned Rules from Previous Reviews
+These patterns were discovered from past code review findings:
+${learned_rules}
+"
+        fi
+    fi
+
+    # Inject acceptance criteria from intake stage
+    local acceptance_file="$ARTIFACTS_DIR/acceptance-criteria.json"
+    if [[ -f "$acceptance_file" ]]; then
+        local ac_list
+        ac_list=$(jq -r '.acceptance_criteria[]? // empty' "$acceptance_file" 2>/dev/null | sed 's/^/  - /')
+        if [[ -n "$ac_list" ]]; then
+            review_prompt+="
+## Definition of Done (Acceptance Criteria)
+Verify EVERY criterion below is met:
+${ac_list}
+"
+        fi
+    fi
+
+    # Inject scope report (planned vs actual files)
+    local scope_file="$ARTIFACTS_DIR/scope-report.json"
+    if [[ -f "$scope_file" ]]; then
+        local planned_files unplanned_files
+        planned_files=$(jq -r '.planned_files[]? // empty' "$scope_file" 2>/dev/null | sed 's/^/  - /')
+        unplanned_files=$(jq -r '.unplanned_files[]? // empty' "$scope_file" 2>/dev/null | sed 's/^/  - UNPLANNED: /')
+
+        if [[ -n "$planned_files" ]]; then
+            review_prompt+="
+## Scope Report
+Planned files to modify:
+${planned_files}
+"
+        fi
+        if [[ -n "$unplanned_files" ]]; then
+            review_prompt+="
+Unplanned files changed (scope creep?):
+${unplanned_files}
+"
+        fi
+    fi
 
     # Inject previous review findings and anti-patterns from memory
     if type intelligence_search_memory >/dev/null 2>&1; then
@@ -307,12 +397,12 @@ If all requirements are met, write: \"Spec compliance: PASS — all planned task
     fi
 
     # ── Review Blocking Gate ──
-    # Block pipeline on critical/security issues unless compound_quality handles them
+    # Block pipeline on critical/bug/security issues (bugs now block as per spec)
     local security_count
     security_count=$(grep -ciE '\*\*\[?Security\]?\*\*' "$review_file" 2>/dev/null || true)
     security_count="${security_count:-0}"
 
-    local blocking_issues=$((critical_count + security_count))
+    local blocking_issues=$((critical_count + bug_count + security_count))
 
     if [[ "$blocking_issues" -gt 0 ]]; then
         # Check if compound_quality stage is enabled — if so, let it handle issues
@@ -389,7 +479,7 @@ ${review_summary}
 }
 
 # ─── Compound Quality (fallback) ────────────────────────────────────────────
-# Basic implementation: adversarial review, negative testing, e2e checks, DoD audit.
+# Machine-verifiable DoD scorecard, then adversarial review, negative testing, e2e checks.
 # If pipeline-intelligence.sh was sourced first, its enhanced version takes priority.
 if ! type stage_compound_quality >/dev/null 2>&1; then
 stage_compound_quality() {
@@ -400,6 +490,42 @@ stage_compound_quality() {
         local _cq_retry_hints
         _cq_retry_hints=$(cat "$_retry_ctx" 2>/dev/null || true)
         rm -f "$_retry_ctx"
+    fi
+
+    # Source DoD scorecard library
+    if [[ -f "$SCRIPT_DIR/lib/dod-scorecard.sh" ]]; then
+        # shellcheck disable=SC1090
+        source "$SCRIPT_DIR/lib/dod-scorecard.sh"
+    fi
+
+    # ── Machine-Verifiable DoD Scorecard (runs first) ──
+    info "Computing machine-verifiable Definition of Done scorecard..."
+    local quality_profile="${PROJECT_ROOT}/.claude/quality-profile.json"
+    local dod_scorecard_json
+    dod_scorecard_json=$(compute_dod_scorecard "${BASE_BRANCH:-main}" "$ARTIFACTS_DIR" "$quality_profile" 2>/dev/null) || true
+
+    if [[ -n "$dod_scorecard_json" ]]; then
+        # Display scorecard
+        local scorecard_display
+        scorecard_display=$(format_scorecard "$dod_scorecard_json")
+        echo "$scorecard_display"
+
+        # Log scorecard
+        log_stage "compound_quality" "DoD Scorecard computed"
+
+        # If scorecard fails, skip LLM checks and return failure
+        if ! scorecard_passed "$dod_scorecard_json"; then
+            local blocking_failures
+            blocking_failures=$(get_blocking_failures "$dod_scorecard_json")
+            error "DoD Scorecard gate failed on: $blocking_failures"
+            emit_event "compound_quality.dod_failed" \
+                "issue=${ISSUE_NUMBER:-0}" \
+                "failures=$blocking_failures"
+            return 1
+        else
+            success "DoD Scorecard gate passed"
+            emit_event "compound_quality.dod_passed" "issue=${ISSUE_NUMBER:-0}"
+        fi
     fi
 
     # Load skill prompts for compound quality (used by adversarial review)

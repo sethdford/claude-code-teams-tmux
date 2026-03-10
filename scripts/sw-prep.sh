@@ -44,6 +44,7 @@ FORCE=false
 CHECK_ONLY=false
 UPDATE_MODE=false
 WITH_CLAUDE=false
+INTERACTIVE=false
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 # Detection results
@@ -100,6 +101,7 @@ show_help() {
     echo -e "  ${CYAN}--force${RESET}        Overwrite existing files"
     echo -e "  ${CYAN}--check${RESET}        Audit existing prep (dry run)"
     echo -e "  ${CYAN}--update${RESET}       Refresh auto-generated sections only"
+    echo -e "  ${CYAN}--interactive${RESET}  Interactive quality profile dialogue"
     echo -e "  ${CYAN}--with-claude${RESET}  Deep analysis using Claude Code (slower, richer)"
     echo -e "  ${CYAN}--help, -h${RESET}     Show this help message"
     echo ""
@@ -130,6 +132,7 @@ for arg in "$@"; do
         --force)       FORCE=true ;;
         --check)       CHECK_ONLY=true ;;
         --update)      UPDATE_MODE=true ;;
+        --interactive) INTERACTIVE=true ;;
         --with-claude) WITH_CLAUDE=true ;;
         --help|-h)     show_help; exit 0 ;;
         *)
@@ -1598,6 +1601,156 @@ prep_check() {
     echo ""
 }
 
+# ─── generate_quality_profile — Interactive quality profile dialogue ────────
+
+generate_quality_profile() {
+    local profile_path="$PROJECT_ROOT/.claude/quality-profile.json"
+
+    # Load quality-profile library
+    if [[ -f "$SCRIPT_DIR/lib/quality-profile.sh" ]]; then
+        source "$SCRIPT_DIR/lib/quality-profile.sh"
+    else
+        warn "quality-profile.sh library not found"
+        return 1
+    fi
+
+    info "Generating quality profile..."
+
+    # Start with inferred values
+    local inferred
+    inferred=$(qp_infer_from_repo)
+
+    # Generate base profile
+    local base_profile
+    base_profile=$(generate_default_profile)
+
+    # In interactive mode, ask refinement questions
+    if $INTERACTIVE; then
+        echo ""
+        echo -e "${CYAN}${BOLD}Quality Profile Setup${RESET}"
+        echo -e "${DIM}Answer these questions to calibrate quality standards:${RESET}"
+        echo ""
+
+        # Q1: Max PR size
+        local max_pr_lines
+        read -p "Max PR size in lines (default 500): " max_pr_lines
+        max_pr_lines="${max_pr_lines:-500}"
+
+        # Q2: Max files per PR
+        local max_files
+        read -p "Max files per PR (default 15): " max_files
+        max_files="${max_files:-15}"
+
+        # Q3: Test philosophy
+        echo ""
+        echo -e "${DIM}Test philosophy:${RESET}"
+        echo "  1. test_after (default)"
+        echo "  2. tdd"
+        echo "  3. coverage_target"
+        echo "  4. manual"
+        read -p "Choose [1-4]: " test_choice
+
+        local philosophy="test_after"
+        case "$test_choice" in
+            2) philosophy="tdd" ;;
+            3) philosophy="coverage_target" ;;
+            4) philosophy="manual" ;;
+        esac
+
+        # Q4: Architecture pattern
+        echo ""
+        echo -e "${DIM}Architecture pattern:${RESET}"
+        echo "  1. monolith (default)"
+        echo "  2. modular_monolith"
+        echo "  3. microservices"
+        echo "  4. serverless"
+        echo "  5. library"
+        read -p "Choose [1-5]: " arch_choice
+
+        local arch_pattern="monolith"
+        case "$arch_choice" in
+            2) arch_pattern="modular_monolith" ;;
+            3) arch_pattern="microservices" ;;
+            4) arch_pattern="serverless" ;;
+            5) arch_pattern="library" ;;
+        esac
+
+        # Q5: Never ship rules
+        echo ""
+        read -p "Critical rules to never ship (comma-separated, or press Enter to skip): " never_ship
+
+        # Q6: Focus areas for code review
+        echo ""
+        read -p "Focus areas for review (comma-separated, e.g., 'performance,security'): " focus_areas
+
+        # Q7: Deployment strategy
+        echo ""
+        echo -e "${DIM}Deployment strategy:${RESET}"
+        echo "  1. direct (default)"
+        echo "  2. preview_then_production"
+        echo "  3. staged_rollout"
+        read -p "Choose [1-3]: " deploy_choice
+
+        local deploy_strategy="direct"
+        case "$deploy_choice" in
+            2) deploy_strategy="preview_then_production" ;;
+            3) deploy_strategy="staged_rollout" ;;
+        esac
+
+        # Build the updated profile
+        local never_ship_array="[]"
+        if [[ -n "$never_ship" ]]; then
+            never_ship_array=$(echo "$never_ship" | jq -R 'split(",") | map(ltrimstr(" ") | rtrimstr(" "))')
+        fi
+
+        local focus_areas_array="[]"
+        if [[ -n "$focus_areas" ]]; then
+            focus_areas_array=$(echo "$focus_areas" | jq -R 'split(",") | map(ltrimstr(" ") | rtrimstr(" "))')
+        fi
+
+        # Merge updates into base profile
+        base_profile=$(echo "$base_profile" | jq \
+            --arg max_pr "$max_pr_lines" \
+            --arg max_f "$max_files" \
+            --arg phil "$philosophy" \
+            --arg arch "$arch_pattern" \
+            --arg deploy "$deploy_strategy" \
+            --argjson never_ship "$never_ship_array" \
+            --argjson focus "$focus_areas_array" \
+            '.quality.max_pr_lines = ($max_pr | tonumber) |
+             .quality.max_files_per_pr = ($max_f | tonumber) |
+             .quality.never_ship = $never_ship |
+             .testing.philosophy = $phil |
+             .architecture.pattern = $arch |
+             .deployment.strategy = $deploy |
+             .review.focus_areas = $focus'
+        )
+    else
+        # Non-interactive: apply inferred values
+        local test_cmd focus_areas arch_pattern
+        test_cmd=$(echo "$inferred" | jq -r '.test_cmd')
+        arch_pattern=$(echo "$inferred" | jq -r '.framework')
+
+        # Merge inferred test command and architecture
+        if [[ -n "$test_cmd" && "$test_cmd" != "null" && "$test_cmd" != "" ]]; then
+            base_profile=$(echo "$base_profile" | jq --arg cmd "$test_cmd" '.testing.test_cmd = $cmd')
+        fi
+        if [[ -n "$arch_pattern" && "$arch_pattern" != "null" && "$arch_pattern" != "" ]]; then
+            base_profile=$(echo "$base_profile" | jq --arg arch "$arch_pattern" '.architecture.pattern = $arch')
+        fi
+    fi
+
+    # Save the profile
+    if qp_save "$base_profile"; then
+        success "Quality profile saved to .claude/quality-profile.json"
+        track_file ".claude/quality-profile.json"
+        return 0
+    else
+        error "Failed to save quality profile"
+        return 1
+    fi
+}
+
 # ─── prep_report — Summary output ──────────────────────────────────────────
 
 prep_report() {
@@ -1660,6 +1813,9 @@ main() {
     prep_generate_standards
     prep_generate_dod
     prep_generate_issue_templates
+
+    # Quality profile (auto or interactive)
+    generate_quality_profile
 
     # Deep analysis (optional)
     prep_with_claude
