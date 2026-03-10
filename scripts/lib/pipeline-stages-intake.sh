@@ -5,7 +5,7 @@ _PIPELINE_STAGES_INTAKE_LOADED=1
 
 # Load intent analysis module for acceptance criteria generation
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-source "${SCRIPT_DIR}/intent-analysis.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/intent-analysis.sh" 2>/dev/null || true
 
 stage_intake() {
     CURRENT_STAGE_ID="intake"

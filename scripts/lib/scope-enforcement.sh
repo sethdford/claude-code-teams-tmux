@@ -8,8 +8,8 @@ set -euo pipefail
 [[ -n "${_SCOPE_ENFORCEMENT_LOADED:-}" ]] && return 0
 _SCOPE_ENFORCEMENT_LOADED=1
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/helpers.sh"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "${SCRIPT_DIR}/lib/helpers.sh"
 
 VERSION="0.1.0"
 

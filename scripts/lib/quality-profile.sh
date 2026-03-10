@@ -10,7 +10,7 @@ _QUALITY_PROFILE_LOADED=1
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 QUALITY_PROFILE_PATH="${REPO_ROOT}/.claude/quality-profile.json"
 
