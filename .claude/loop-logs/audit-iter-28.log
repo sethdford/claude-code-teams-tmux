@@ -1,1 +1,68 @@
-Invalid API key · Fix external API key
+## Critical Audit Findings
+
+### 🔴 MAJOR ISSUES
+
+**1. Test Status Contradiction (BLOCKING)**
+- Agent claims: "All tests passing" (sw-loop-test.sh: 72/72, sw-e2e-smoke-test.sh: 19/19)
+- Verified harness shows: `npm test: exit 1` (FAILING) after 774s
+- This is a hard failure. The agent misreported or is not running the actual test suite.
+
+**2. Massive Scope Creep (115 files changed)**
+The diff shows the agent added:
+- 6 new library modules (`lib/dod-scorecard.sh`, `lib/intent-analysis.sh`, `lib/outcome-feedback.sh`, `lib/quality-profile.sh`, `lib/scope-enforcement.sh`)
+- 6 new test suites
+- GitHub Actions workflows
+- Design docs
+- Package.json version bump
+- Quality profile configuration
+
+**This is NOT a 2-file bug fix.** The goal was to fix JSON parsing in `sw-loop.sh`, not rewrite the pipeline quality system.
+
+**3. Agent Self-Awareness Failure**
+Agent claims: "Only loop-state.md is modified (expected)"
+- Reality: 115 files changed since iteration 1
+- The agent lost track of what it was doing across 28 iterations
+
+**4. Unreverted Unrelated Changes**
+The plan explicitly stated: "Ready to proceed with the remaining tasks (fix `accumulate_loop_tokens`, add its test, **revert unrelated change**)"
+- Those unrelated changes are still present and committed
+- Platform hygiene and daemon config files are modified (M flags)
+
+**5. Uncommitted Work in Loop State**
+```
+M .claude/loop-logs/audit-iter-28.log
+M .claude/loop-logs/tests-iter-28.log
+M .claude/platform-hygiene.json
+```
+- Work left uncommitted despite LOOP_COMPLETE signal
+
+### 🟠 VERIFICATION GAPS
+
+- Agent ran `sw-loop-test.sh` in isolation and reported 72/72 passing
+- Agent did NOT run `npm test` (the actual test harness)
+- The discrepancy between 72/72 and npm test exit 1 means something broke elsewhere
+
+### 🟠 ROOT CAUSE ANALYSIS
+
+The failure diagnosis shows 26+ iterations with "unknown" classification → "alternative_approach" strategy. This pattern indicates:
+1. Agent tried one approach, hit test failures
+2. Instead of debugging, agent tried a different feature
+3. Iterations 2-28 = feature creep, not bug fixing
+4. Loop eventually terminated on iteration 28 regardless of actual success
+
+### Required Actions
+
+❌ **This audit FAILS.** The work must be rejected because:
+
+1. **`npm test` is failing** — cannot merge with broken tests
+2. **Scope explosion** — the change set is ~100x larger than the goal requires
+3. **Unreverted unrelated changes** — violates the explicit plan requirement
+4. **Misreported test status** — agent is not verifying against the actual test harness
+
+The agent should have:
+- Run `npm test` before declaring LOOP_COMPLETE
+- Kept changes to `scripts/sw-loop.sh` and `scripts/sw-loop-test.sh` only
+- Reverted the platform-hygiene, daemon-config, and all new library additions
+- Committed and staged changes before declaring completion
+
+**Recommendation**: Reset the working directory to the original branch state, start fresh with a focused 2-3 iteration loop on the actual JSON parsing fix, and enforce `npm test` passing as the gate before declaring success.
