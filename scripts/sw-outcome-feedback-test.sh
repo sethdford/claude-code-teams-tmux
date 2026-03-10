@@ -7,6 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMPBASE="${TMPDIR:-/tmp/claude}"
+mkdir -p "$TMPBASE"
 TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
 MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
 
@@ -32,7 +33,8 @@ fail() {
     return 1
 }
 
-# Source the module under test with memory root override
+# Source helpers first, then the module under test
+source "$SCRIPT_DIR/lib/helpers.sh"
 export OUTCOME_FEEDBACK_MEMORY_ROOT="$MEMORY_TEST_ROOT"
 source "$SCRIPT_DIR/lib/outcome-feedback.sh"
 
