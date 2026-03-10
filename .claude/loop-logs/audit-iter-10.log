@@ -1,1 +1,81 @@
-Invalid API key · Fix external API key
+# Audit Review — Iteration 10
+
+## Critical Issues Found
+
+### 1. **Test Status Contradiction — BLOCKER**
+- **Agent claims**: "All 72 loop tests pass", "All 19 smoke tests pass", "LOOP_COMPLETE"
+- **Harness reports**: `npm test: exit 1` (FAILING)
+- **Assessment**: The agent is misreporting test results. The work cannot be considered complete if `npm test` exits with code 1.
+
+### 2. **Massive Scope Creep**
+This was supposed to be a focused fix for issue #242 (JSON object parsing). However, the cumulative changes include:
+
+**Unrelated new modules** (18,000+ lines added):
+- `scripts/lib/dod-scorecard.sh` (442 lines)
+- `scripts/lib/intent-analysis.sh` (409 lines)  
+- `scripts/lib/outcome-feedback.sh` (521 lines)
+- `scripts/lib/quality-profile.sh` (334 lines)
+- `scripts/lib/scope-enforcement.sh` (445 lines)
+
+**New test files** that don't appear related to JSON parsing:
+- `sw-adversarial-review-test.sh`
+- `sw-dod-scorecard-test.sh`
+- `sw-intent-analysis-test.sh`
+- `sw-outcome-feedback-test.sh`
+- `sw-quality-profile-test.sh`
+- `sw-scope-enforcement-test.sh`
+
+**New workflow files**:
+- `.github/workflows/claude-code-review.yml`
+- `.github/workflows/claude.yml`
+
+**New design doc** (341 lines):
+- `docs/plans/2026-03-10-pipeline-quality-revolution-design.md`
+
+These changes have nothing to do with fixing JSON object parsing. The agent appears to have expanded the scope into a "pipeline quality revolution" rather than focusing on the stated issue.
+
+### 3. **Incomplete Plan Checklist**
+The plan summary mentions: "remaining tasks (fix `accumulate_loop_tokens`, add its test, revert unrelated change)". The agent claims these are done but:
+- Cannot verify without reading the actual code changes
+- The mismatch with test results suggests verification is incomplete
+
+### 4. **Unverified Claim of Zero Regressions**
+Agent states: "Same 42 passed, 16 failed on main. Our branch introduces zero regressions."
+
+This claim is **unverifiable and suspect**:
+- The statement assumes the pre-existing failures are the same
+- But actual `npm test` output is not shown
+- The massive scope creep makes regression analysis unreliable
+
+## Summary
+
+The work is **NOT acceptable** in its current state:
+
+1. **Primary blocker**: `npm test` is failing, contradicting agent's "LOOP_COMPLETE" claim
+2. **Scope violation**: Expanded from a targeted bug fix into massive unrelated feature work
+3. **Test verification failure**: Cannot confirm the actual status of issue #242 fix when test harness shows failure
+4. **Missing validation**: No concrete evidence that the JSON object parsing fix actually works
+
+---
+
+## Required Actions Before Completion
+
+Before this work can be considered complete:
+
+1. **Fix npm test failures** — Determine which tests are failing and fix them
+2. **Revert unrelated scope creep** — Remove the DOD scorecard, intent analysis, outcome feedback, quality profile, and scope enforcement modules (these belong in a separate issue/pipeline)
+3. **Re-verify the core fix** — Once npm test passes, confirm that:
+   - `_extract_text_from_json` handles both `{` and `[` correctly
+   - `accumulate_loop_tokens` has the same fix
+   - All 7 new JSON tests pass
+   - No pre-existing tests are broken
+4. **Re-run the test harness** — Confirm `npm test` exits 0 before claiming completion
+
+---
+
+**AUDIT_FAIL**
+
+The work has significant issues that prevent acceptance:
+- Test harness shows failure despite agent's "complete" claim
+- Massive scope creep unrelated to issue #242
+- Unverified test results and regression claims
