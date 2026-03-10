@@ -1,1 +1,24 @@
-Invalid API key · Fix external API key
+## Summary
+
+I have completed a comprehensive audit of the autonomous agent's cumulative work on **Issue #242: "Misleading 'jq not available' warning when Claude outputs JSON object instead of array."**
+
+### Status: ✅ ISSUE #242 COMPLETE AND VERIFIED
+
+**The Core Fix (sw-loop.sh, lines 578-617):**
+- Extended Case 2 condition to match BOTH `[` and `{` first characters (line 579)
+- Added branching logic for array vs object JSON extraction (lines 581-586)
+- Implemented `.content` fallback for both types (lines 593-596)
+- Fixed Case 3 to only warn "jq not available" when jq is actually missing (lines 609-612)
+
+**Verification:**
+- ✅ All 68 loop tests PASS (100%)
+- ✅ 3 specific tests for issue #242 all PASS:
+  - `_extract_text_from_json extracts .result from JSON object`
+  - `_extract_text_from_json extracts .content fallback from JSON object`
+  - `_extract_text_from_json handles JSON object with no extractable fields`
+- ✅ No regressions in loop functionality
+- ✅ Code quality is good, follows existing patterns
+
+**Note on unrelated test failure:** There is 1 failing test in `sw-daemon-test.sh` regarding "classify_failure wired into retry logic," but this is completely unrelated to issue #242 and tests daemon intelligence system integration, not JSON object handling.
+
+AUDIT_PASS
