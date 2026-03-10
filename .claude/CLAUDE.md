@@ -558,7 +558,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2527 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2530 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2118 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1023 | Intelligent Model Routing & Cost Optimization |
@@ -571,7 +571,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
-| `scripts/sw-prep.sh` | 1675 | Repository Preparation for Agent Teams |
+| `scripts/sw-prep.sh` | 1831 | Repository Preparation for Agent Teams |
 | `scripts/sw-ps.sh` | 156 | Show running agent process status |
 | `scripts/sw-public-dashboard.sh` | 797 | Public real-time pipeline progress |
 | `scripts/sw-quality.sh` | 676 | Intelligent completion, audits, zero auto |
@@ -654,6 +654,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-adaptive-model-test.sh` | 417 | Test Suite for Adaptive Model Selection |
 | `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
 | `scripts/sw-adaptive-timeout-test.sh` | 406 | Test Suite for Adaptive Stage Timeout Engine |
+| `scripts/sw-adversarial-review-test.sh` | 266 | Adversarial Review Stage Tests |
 | `scripts/sw-adversarial-test.sh` | 258 | Validate adversarial agent code review |
 | `scripts/sw-agi-roadmap-test.sh` | 857 | Tests every feature we implemented |
 | `scripts/sw-architecture-enforcer-test.sh` | 301 | Validate architecture model |
@@ -686,6 +687,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-docs-agent-test.sh` | 182 | Validate documentation agent operations |
 | `scripts/sw-docs-test.sh` | 781 | Validate documentation keeper, AUTO sections, |
 | `scripts/sw-doctor-test.sh` | 420 | Validate setup diagnostics |
+| `scripts/sw-dod-scorecard-test.sh` | 412 | Machine-Verifiable DoD Scorecard Tests |
 | `scripts/sw-dora-test.sh` | 241 | Validate DORA metrics dashboard, DX metrics, |
 | `scripts/sw-durable-test.sh` | 221 | Validate durable workflow engine |
 | `scripts/sw-e2e-integration-test.sh` | 352 | Real Claude + Real GitHub |
@@ -713,6 +715,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-instrument-test.sh` | 172 | Pipeline instrumentation & feedback loops |
 | `scripts/sw-integration-claude-test.sh` | 63 | Budget-limited real Claude smoke |
 | `scripts/sw-intelligence-test.sh` | 534 | Unit tests for intelligence core |
+| `scripts/sw-intent-analysis-test.sh` | 443 | Test suite for intent analysis module |
 | `scripts/sw-jira-test.sh` | 284 | Validate Jira ↔ GitHub bidirectional sync |
 | `scripts/sw-launchd-test.sh` | 899 | Validate service management on |
 | `scripts/sw-lib-audit-trail-test.sh` | 311 |  |
@@ -740,6 +743,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-mission-control-test.sh` | 153 | Validate mission control dashboard |
 | `scripts/sw-model-router-test.sh` | 303 | Intelligent model routing & optimization |
 | `scripts/sw-otel-test.sh` | 146 | OpenTelemetry observability |
+| `scripts/sw-outcome-feedback-test.sh` | 425 | Unit tests for review capture & quality |
 | `scripts/sw-oversight-test.sh` | 164 | Quality oversight board tests |
 | `scripts/sw-patrol-meta-test.sh` | 449 | Validate self-improvement patrol |
 | `scripts/sw-pipeline-composer-test.sh` | 632 | Test Suite |
@@ -753,6 +757,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-project-detect-test.sh` | 434 | Unit tests for project detection |
 | `scripts/sw-ps-test.sh` | 296 | Validate agent process status display |
 | `scripts/sw-public-dashboard-test.sh` | 165 | Validate public dashboard generation |
+| `scripts/sw-quality-profile-test.sh` | 447 | Unit tests for quality profile library |
 | `scripts/sw-quality-test.sh` | 227 | Validate ruthless quality validation engine |
 | `scripts/sw-reaper-test.sh` | 232 | Validate automatic tmux pane cleanup |
 | `scripts/sw-recruit-test.sh` | 1395 | Test suite for AGI-level agent recruitment system |
@@ -765,6 +770,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-review-rerun-test.sh` | 317 | SHA-deduped rerun comment writer |
 | `scripts/sw-root-cause-test.sh` | 374 |  |
 | `scripts/sw-scale-test.sh` | 151 | Dynamic agent team scaling |
+| `scripts/sw-scope-enforcement-test.sh` | 435 | Test suite for scope enforcement |
 | `scripts/sw-security-audit-test.sh` | 162 | Security auditing tests |
 | `scripts/sw-self-optimize-test.sh` | 837 | Unit tests for learning & tuning system |
 | `scripts/sw-server-api-test.sh` | 713 | Dashboard Server API Test Suite |
