@@ -390,11 +390,11 @@ scan_platform_refactor() {
     local scripts_dir="${REPO_DIR}/scripts"
 
     local hardcoded_count fallback_count todo_count fixme_count hack_count
-    hardcoded_count=$(grep -rE "hardcoded|Hardcoded|HARDCODED" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    fallback_count=$(grep -rE "Fallback:|fallback:" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    todo_count=$(grep -rE "TODO" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    fixme_count=$(grep -rE "FIXME" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    hack_count=$(grep -rE "HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
+    hardcoded_count=$( (grep -rE "hardcoded|Hardcoded|HARDCODED" "$scripts_dir" --include="*.sh" 2>/dev/null || true) | wc -l | tr -d ' ')
+    fallback_count=$( (grep -rE "Fallback:|fallback:" "$scripts_dir" --include="*.sh" 2>/dev/null || true) | wc -l | tr -d ' ')
+    todo_count=$( (grep -rE "TODO" "$scripts_dir" --include="*.sh" 2>/dev/null || true) | wc -l | tr -d ' ')
+    fixme_count=$( (grep -rE "FIXME" "$scripts_dir" --include="*.sh" 2>/dev/null || true) | wc -l | tr -d ' ')
+    hack_count=$( (grep -rE "HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null || true) | wc -l | tr -d ' ')
     hardcoded_count=${hardcoded_count:-0}
     fallback_count=${fallback_count:-0}
     todo_count=${todo_count:-0}
@@ -408,8 +408,9 @@ scan_platform_refactor() {
     grep -rnE "hardcoded|Hardcoded|Fallback:|fallback:|TODO|FIXME|HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null > "$findings_raw" || true
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        local f="${line%%:*}"
+        local rest="${line#*:}"
+        local ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
