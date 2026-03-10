@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "project_name": "shipwright",
+  "generated_at": "2026-03-10T06:00:00Z",
+  "architecture": {
+    "pattern": "modular_monolith",
+    "layers": [
+      "cli-router",
+      "pipeline-stages",
+      "shared-libs",
+      "daemon",
+      "intelligence",
+      "dashboard"
+    ],
+    "dependency_direction": "inward",
+    "rules": [
+      "All scripts use set -euo pipefail",
+      "Bash 3.2 compatible: no declare -A, no readarray, no ${var,,}, no ${var^^}",
+      "Pipeline stages source from scripts/lib/ — never call scripts directly from stages",
+      "All GitHub API calls guarded with [[ $NO_GITHUB != true ]]",
+      "JSON operations use jq with --arg for escaping, never string interpolation",
+      "Atomic file writes: write to tmp file then mv, not direct echo > file",
+      "cd in helper functions must use subshells to avoid changing caller directory",
+      "Every script has VERSION variable at top kept in sync with package.json",
+      "Event logging via emit_event for observability"
+    ]
+  },
+  "testing": {
+    "philosophy": "test_after",
+    "min_coverage_delta": 0,
+    "required_test_types": ["unit"],
+    "test_cmd": "npm test",
+    "fast_test_cmd": "npm run test:smoke"
+  },
+  "quality": {
+    "max_pr_lines": 500,
+    "max_files_per_pr": 15,
+    "never_ship": [
+      "declare -A (associative arrays — breaks Bash 3.2)",
+      "readarray or mapfile (not available in Bash 3.2)",
+      "${var,,} or ${var^^} (case conversion — not in Bash 3.2)",
+      "grep -c under pipefail without || true (produces double output)",
+      "cmd | while read (loses variable state in subshell)",
+      "String interpolation in jq (injection risk — use --arg)",
+      "Direct echo > file without atomic tmp+mv pattern",
+      "GitHub API calls without NO_GITHUB guard",
+      "Hardcoded paths instead of using $SCRIPT_DIR or $REPO_DIR",
+      "git push --force to main or master"
+    ],
+    "always_require": [
+      "Source guard at top of library files: [[ -n ${_GUARD:-} ]] && return 0",
+      "ERR trap in test suites for debugging",
+      "PASS/FAIL counters in test suites with summary at end",
+      "Proper cleanup in test suites (trap cleanup EXIT)",
+      "Mock binaries in temp directory for test isolation",
+      "emit_event calls for key state transitions",
+      "info/success/warn/error output helpers for user-facing messages"
+    ],
+    "learned_rules": []
+  },
+  "review": {
+    "focus_areas": [
+      "Bash 3.2 compatibility (macOS default shell)",
+      "pipefail safety (grep -c, subshell variable scope)",
+      "Atomic file operations (race conditions in concurrent pipelines)",
+      "GitHub API error handling (rate limits, auth failures, missing repos)",
+      "Test isolation (mock binaries, temp dirs, no real API calls)",
+      "Context window efficiency (don't dump large outputs into prompts)"
+    ],
+    "blocking_severities": ["critical", "bug", "security"],
+    "min_issues_to_find": 3
+  },
+  "scope": {
+    "unplanned_files_block": false,
+    "decomposition_threshold_lines": 500
+  },
+  "deployment": {
+    "strategy": "direct",
+    "rollback_plan": "revert_commit",
+    "monitoring_window_minutes": 30
+  }
+}
