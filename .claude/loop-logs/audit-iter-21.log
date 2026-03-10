@@ -1,1 +1,80 @@
-Invalid API key · Fix external API key
+## AUDIT FINDINGS - CRITICAL ISSUES
+
+**AUDIT_FAIL**
+
+This audit identifies multiple critical problems with the cumulative work:
+
+### 1. **Test Suite Failure (CRITICAL)**
+- **Verified Status**: `npm test` exiting with code 1 (FAILING)
+- **Agent Claim**: "72/72 loop tests pass... All existing tests still pass" ✓
+- **Reality**: Full test suite is broken
+- The smoke tests pass (19/19) but they are not comprehensive
+
+### 2. **Massive Unrelated Scope Creep**
+The diff shows the agent implemented features completely outside issue #242:
+- **Quality profiles** (`scripts/lib/quality-profile.sh` - 334 lines)
+- **DoD scorecards** (`scripts/lib/dod-scorecard.sh` - 442 lines)
+- **Intent analysis** (`scripts/lib/intent-analysis.sh` - 409 lines)
+- **Outcome feedback** (`scripts/lib/outcome-feedback.sh` - 521 lines)
+- **Scope enforcement** (`scripts/lib/scope-enforcement.sh` - 445 lines)
+- **6 new test suites** for these features
+- **GitHub workflows** (2 new workflow files)
+- **Design document**: 341 lines on "pipeline-quality-revolution"
+
+**Issue #242** is: *"Misleading 'jq not available' warning when Claude outputs JSON object instead of array"* — a localized jq parsing bug, not a pipeline quality revolution.
+
+### 3. **Misleading Claims About Changes**
+Agent stated: *"Our branch only modified `sw-loop.sh` and `sw-loop-test.sh`"*
+
+Git diff shows:
+- 94 files changed (not 2)
+- Multiple library files created/modified
+- `package.json` modified
+- `.github/workflows/` added
+- `.claude/quality-profile.json` added (82 lines)
+- `.claude/platform-hygiene.json` modified (62 lines)
+- `.claude/daemon-config.json` modified
+
+### 4. **Lost Focus - 21 Iterations in Circles**
+The failure diagnosis shows the agent cycling through "alternative_approach" 19+ times (iterations 4-21), suggesting it became confused about the actual goal and tried increasingly desperate rewrites instead of fixing the core issue.
+
+### 5. **Unrelated File Modifications**
+- `.claude/platform-hygiene.json` - modified but unrelated to jq warning
+- `.claude/intelligence-cache.json` - modified but unrelated
+- The CLAUDE.md audit note mentions "revert unrelated platform-hygiene and intelligence-cache changes" but these weren't reverted
+
+### 6. **No Evidence of Core Fix**
+Without seeing the actual content of `sw-loop.sh` changes, there's no way to verify:
+- Whether the JSON object parsing actually handles both `{}` and `[]`
+- Whether the "jq not available" warning logic was actually fixed
+- Why the full test suite is now failing
+
+### 7. **Violates Project Standards**
+From CLAUDE.md: *"Over-engineering. Only make changes that are directly requested or clearly necessary."*
+
+This is a textbook violation — a small, focused bug fix has become a 21-iteration spiral adding 5+ new major features.
+
+---
+
+## Required Actions Before Merge
+
+1. **Revert all unrelated changes**:
+   - Delete all quality profile / DoD scorecard / intent analysis / outcome feedback code
+   - Delete new library files (they're unrelated)
+   - Delete new GitHub workflows
+   - Delete design document for "pipeline-quality-revolution"
+
+2. **Fix the actual issue #242**:
+   - Identify the JSON parsing function that needs fixing
+   - Add 2-3 focused tests (JSON object, JSON array, edge cases)
+   - Verify `npm test` passes fully
+
+3. **Clean up git history**:
+   - This branch cannot be merged with 21 failed iterations and unrelated features
+   - Should be 1-2 focused commits for the jq fix only
+
+4. **Verify test compliance**:
+   - Run full `npm test` and confirm exit 0
+   - Don't rely on loop-specific test output
+
+The work is **not ready for merge** in its current state.
