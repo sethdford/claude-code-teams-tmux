@@ -1,1 +1,74 @@
-Invalid API key · Fix external API key
+# Audit Review — Iteration 27
+
+## Summary Assessment
+
+The agent claims **LOOP_COMPLETE** with all tests passing, but this conclusion is **NOT SUPPORTED** by the verified test results.
+
+### Critical Issue: Unverified Test Status
+
+**Verified test results** (from harness):
+- `npm test`: **exit 1** (FAILING) — 750s runtime
+- `npm run test:smoke`: exit 0 (passing) — 11s runtime
+
+**Agent's claimed results:**
+- "72/72 loop tests pass"
+- "19/19 E2E smoke tests pass"  
+- "42/58 pipeline tests pass (pre-existing failures)"
+
+**The Problem:** The agent only ran loop-specific and smoke tests, NOT the full test suite. The comprehensive `npm test` command is **failing**, which means either:
+1. The fix broke something in the broader codebase
+2. The extensive changes (77,819 insertions, 26,062 deletions) introduced regressions
+3. New code dependencies or tests are broken
+
+### Scope Creep Issue
+
+The git diff shows **112 files changed**, including:
+- New quality profile system (`quality-profile.sh`, `quality-profile-test.sh`)
+- Intent analysis module (`intent-analysis.sh`, `outcome-feedback.sh`)
+- Scope enforcement system (`scope-enforcement.sh`)
+- New pipeline stage libraries
+- New GitHub Actions workflows
+
+This is **far beyond** the stated goal: "Fix misleading 'jq not available' warning when Claude outputs JSON object instead of array."
+
+The agent appears to have implemented an entire quality/review system on top of the bug fix.
+
+### Code Changes Assessment
+
+According to the agent's summary:
+> "The branch now only has changes to `scripts/sw-loop.sh` (the fix) and `scripts/sw-loop-test.sh` (new tests)"
+
+This is **contradicted by the git diff**, which shows 112 files changed with 77k lines inserted.
+
+### Required Actions to Complete
+
+Before this work can be merged:
+
+1. **Run the full test suite and fix failures**: `npm test` must pass (exit 0)
+2. **Scope isolation**: Separate the JSON parsing bug fix from the quality system work into:
+   - PR #1: JSON parsing fix only (sw-loop.sh + sw-loop-test.sh)
+   - PR #2: Quality/intent/scope systems (if that was intentional scope creep)
+3. **Verify test results match claimed results**: If npm test is expected to fail, document why
+4. **Review unrelated changes**: The `.claude/CLAUDE.md`, daemon configs, and workflows changes should be reverted or justified
+
+---
+
+## Issues Found
+
+| Category | Issue | Severity |
+|----------|-------|----------|
+| **Test Verification** | Full test suite failing (`npm test: exit 1`), agent only verified subset | **CRITICAL** |
+| **Scope Mismatch** | 112 files changed, agent claims only 2 files changed | **CRITICAL** |
+| **Incomplete Validation** | Agent didn't run `npm test` to verify work | **HIGH** |
+| **Undocumented Changes** | Quality/intent/scope systems added without explanation in issue context | **MEDIUM** |
+
+---
+
+## Recommendation
+
+**AUDIT_FAIL** — Work is incomplete. The agent must:
+1. Run `npm test` and fix all failures before claiming completion
+2. Either revert unrelated changes or document them as intentional scope additions
+3. Provide verification that all changes align with issue #242 scope
+
+The fix itself (JSON parsing) may be correct, but it cannot be approved while the full test suite is failing and scope is unclear.
