@@ -1,1 +1,26 @@
-Invalid API key · Fix external API key
+Perfect! The implementation is correct and complete. Here's the final verification:
+
+## Summary of Fix (Issue #242)
+
+**Goal**: Fix misleading "jq not available" warning when Claude outputs JSON object instead of array
+
+**Root Cause**: The `_extract_text_from_json()` function in `scripts/sw-loop.sh` only checked for `[` in Case 2, so JSON objects `{...}` would fall through to Case 3 which incorrectly warned "jq not available" even when jq was present.
+
+**Implementation** (commit `a23ecc9`):
+1. **Line 579**: Extended Case 2 to match BOTH `[` and `{` first characters
+2. **Lines 581-587**: Added branching jq extraction logic:
+   - Arrays: extract `.[-1].result` from last element
+   - Objects: extract `.result` from top level
+3. **Lines 593-597**: Added `.content` fallback for both types
+4. **Result**: Case 3 warning now only appears when jq is genuinely unavailable
+
+**Verification** ✅:
+- ✅ All 102+ test suites pass
+- ✅ JSON objects `{"type":"result","result":"Hello"}` → extracts "Hello"
+- ✅ JSON arrays `[{"type":"result",...}]` → still work (no regression)
+- ✅ No misleading "jq not available" warning when jq IS available
+- ✅ Accurate warning only when jq NOT available
+- ✅ Plain text and empty files still work
+- ✅ Git history clean with descriptive commits
+
+LOOP_COMPLETE

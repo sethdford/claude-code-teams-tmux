@@ -912,28 +912,28 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
+            "file": "patterns.json",
             "relevance": 95,
-            "summary": "Documents 3 recurring test failures with root causes and fixes. Directly applicable during build stage: sw-cleanup.sh heartbeat detection issue, sw-feedback-test.sh JSON output regression, and /tmp/claude mktemp failure. Critical for avoiding known failure modes."
+            "summary": "Project type, test runner, package manager, and conventions directly inform build setup and execution strategy"
           },
           {
-            "file": "patterns.json",
-            "relevance": 80,
-            "summary": "Project conventions essential for build stage: vitest test runner, npm package manager, src/ directory structure, *.test.js test pattern, and commonjs imports. Enables proper test execution and file discovery."
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Contains test failures which are primarily test-stage issues; mktemp issue could affect build environment setup but is not directly build-stage"
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Empty baselines object. No relevant data for build stage context."
+            "summary": "Empty baselines object provides no actionable build context"
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions array. No relevant data for build stage context."
+            "summary": "Empty decisions array provides no historical context for build decisions"
           }
         ]
       },
-      "timestamp": 1773146461,
+      "timestamp": 1773148387,
       "ttl": 1800
     },
     "20f1364fb8a8775c0ee6448d6d28ff08": {
