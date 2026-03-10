@@ -79,7 +79,7 @@ ORIGINAL_GOAL=""  # Preserved across restarts — GOAL gets appended to
 MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"
 TEST_CMD=""
 FAST_TEST_CMD=""
-FAST_TEST_INTERVAL=5
+FAST_TEST_INTERVAL=$(_config_get_int "loop.fast_test_interval" 5 2>/dev/null || echo 5)
 TEST_LOG_FILE=""
 MODEL="${SW_MODEL:-opus}"
 AGENTS=1
@@ -94,6 +94,7 @@ MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
 REPO_OVERRIDE=""
+SHOW_CONFIG=false
 VERSION="3.2.4"
 
 # ─── Token Tracking ─────────────────────────────────────────────────────────
@@ -103,13 +104,13 @@ LOOP_COST_MILLICENTS=0
 
 # ─── Flexible Iteration Defaults ────────────────────────────────────────────
 AUTO_EXTEND=true          # Auto-extend iterations when work is incomplete
-EXTENSION_SIZE=5          # Additional iterations per extension
-MAX_EXTENSIONS=3          # Max number of extensions (hard cap safety net)
+EXTENSION_SIZE=$(_config_get_int "loop.extension_size" 5 2>/dev/null || echo 5)
+MAX_EXTENSIONS=$(_config_get_int "loop.max_extensions" 3 2>/dev/null || echo 3)
 EXTENSION_COUNT=0         # Current number of extensions applied
 
 # ─── Circuit Breaker Defaults ──────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
-MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+CIRCUIT_BREAKER_THRESHOLD=$(_config_get_int "loop.circuit_breaker_threshold" 3 2>/dev/null || echo 3)
+MIN_PROGRESS_LINES=$(_config_get_int "loop.min_progress_lines" 5 2>/dev/null || echo 5)
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
@@ -156,6 +157,7 @@ show_help() {
     echo -e "  ${CYAN}--resume${RESET}                  Resume from existing .claude/loop-state.md"
     echo -e "  ${CYAN}--max-restarts${RESET} N          Max session restarts on exhaustion (default: 0)"
     echo -e "  ${CYAN}--verbose${RESET}                 Show full Claude output (default: summary)"
+    echo -e "  ${CYAN}--show-config${RESET}             Show all active loop config values with provenance"
     echo -e "  ${CYAN}--help${RESET}                    Show this help"
     echo ""
     echo -e "${BOLD}AUDIT & QUALITY${RESET}"
@@ -188,6 +190,71 @@ show_help() {
     echo -e "  ${DIM}State file:  .claude/loop-state.md${RESET}"
     echo -e "  ${DIM}Logs dir:    .claude/loop-logs/${RESET}"
     echo -e "  ${DIM}Resume:      shipwright loop --resume${RESET}"
+}
+
+# ─── Show Config ─────────────────────────────────────────────────────────────
+show_loop_config() {
+    echo -e "${CYAN}${BOLD}shipwright loop${RESET} — Active Configuration"
+    echo ""
+
+    # Helper to show a config value with provenance
+    _show_cfg() {
+        local key="$1" fallback="$2"
+        local val provenance
+        # Check env var first
+        local env_name="SHIPWRIGHT_$(echo "$key" | tr '[:lower:].' '[:upper:]_')"
+        local env_val="${!env_name:-}"
+        if [[ -n "$env_val" ]]; then
+            val="$env_val"; provenance="env ($env_name)"
+        elif [[ -f ".claude/daemon-config.json" ]] && jq -e ".${key}" ".claude/daemon-config.json" >/dev/null 2>&1; then
+            val=$(jq -r ".${key}" ".claude/daemon-config.json" 2>/dev/null); provenance="daemon-config.json"
+        elif [[ -f "${_POLICY_FILE:-}" ]] && jq -e ".${key}" "$_POLICY_FILE" >/dev/null 2>&1; then
+            val=$(jq -r ".${key}" "$_POLICY_FILE" 2>/dev/null); provenance="policy.json"
+        elif [[ -f "${_DEFAULTS_FILE:-}" ]] && jq -e ".${key}" "$_DEFAULTS_FILE" >/dev/null 2>&1; then
+            val=$(jq -r ".${key}" "$_DEFAULTS_FILE" 2>/dev/null); provenance="defaults.json"
+        else
+            val="$fallback"; provenance="inline fallback"
+        fi
+        printf "  %-40s %s  ${DIM}(%s)${RESET}\n" "$key" "$val" "$provenance"
+    }
+
+    echo -e "${BOLD}Loop Behavior${RESET}"
+    _show_cfg "loop.fast_test_interval" "5"
+    _show_cfg "loop.extension_size" "5"
+    _show_cfg "loop.max_extensions" "3"
+    _show_cfg "loop.circuit_breaker_threshold" "3"
+    _show_cfg "loop.min_progress_lines" "5"
+    _show_cfg "loop.test_timeout" "900"
+    _show_cfg "loop.max_restarts" "0"
+    _show_cfg "loop.claude_timeout" "1800"
+    _show_cfg "loop.sleep_between_iterations" "2"
+    _show_cfg "loop.multi_agent_sleep" "5"
+    _show_cfg "loop.worker_setup_sleep" "0.2"
+    _show_cfg "loop.worker_poll_sleep" "0.5"
+    _show_cfg "loop.cleanup_sleep" "1"
+    echo ""
+
+    echo -e "${BOLD}Convergence Scoring Weights${RESET}"
+    _show_cfg "loop.convergence.pass_bonus" "25"
+    _show_cfg "loop.convergence.regression_penalty" "15"
+    _show_cfg "loop.convergence.still_failing_penalty" "5"
+    _show_cfg "loop.convergence.code_change_bonus" "20"
+    _show_cfg "loop.convergence.code_change_cap_lines" "50"
+    _show_cfg "loop.convergence.min_change_penalty" "5"
+    _show_cfg "loop.convergence.no_change_penalty" "10"
+    _show_cfg "loop.convergence.error_threshold" "2"
+    _show_cfg "loop.convergence.max_error_penalty" "20"
+    _show_cfg "loop.convergence.trend_threshold" "5"
+    _show_cfg "loop.convergence.converged_score" "80"
+    _show_cfg "loop.convergence.converged_iterations" "2"
+    echo ""
+
+    echo -e "${BOLD}Context Budget${RESET}"
+    _show_cfg "loop.context_budget_chars" "180000"
+    _show_cfg "loop.context_trim_memory_chars" "20000"
+    _show_cfg "loop.context_trim_git_entries" "10"
+    _show_cfg "loop.context_trim_hotspot_files" "5"
+    _show_cfg "loop.context_trim_test_lines" "50"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -301,6 +368,10 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --roles=*) AGENT_ROLES="${1#--roles=}"; shift ;;
+        --show-config)
+            SHOW_CONFIG=true
+            shift
+            ;;
         --help|-h)
             show_help
             exit 0
@@ -352,6 +423,12 @@ fi
 
 # max-restarts is supported in both single-agent and multi-agent mode
 # In multi-agent mode, restarts apply per-agent (agent can be respawned up to MAX_RESTARTS)
+
+# Handle --show-config early exit
+if [[ "$SHOW_CONFIG" == "true" ]]; then
+    show_loop_config
+    exit 0
+fi
 
 # Validate numeric flags
 if ! [[ "$FAST_TEST_INTERVAL" =~ ^[1-9][0-9]*$ ]]; then
@@ -964,7 +1041,7 @@ run_test_gate() {
     local all_passed=true
     local test_results="[]"
     local combined_output=""
-    local test_timeout="${SW_TEST_TIMEOUT:-900}"
+    local test_timeout="${SW_TEST_TIMEOUT:-$(_config_get_int "loop.test_timeout" 900 2>/dev/null || echo 900)}"
 
     # Run primary test command
     if [[ -n "$active_test_cmd" ]]; then
@@ -1973,7 +2050,7 @@ launch_multi_agent() {
 
     # First pane becomes monitor
     tmux send-keys -t "$monitor_pane_id" "printf '\\033]2;loop-monitor\\033\\\\'" Enter
-    sleep 0.2
+    sleep "$(_config_get "loop.worker_setup_sleep" "0.2" 2>/dev/null || echo "0.2")"
     tmux send-keys -t "$monitor_pane_id" "clear && echo 'Loop Monitor — watching agent logs...'" Enter
 
     # Create worker panes
@@ -1983,9 +2060,9 @@ launch_multi_agent() {
 
         local worker_pane_id
         worker_pane_id="$(tmux split-window -t "$MULTI_WINDOW_NAME" -c "$PROJECT_ROOT" -P -F '#{pane_id}')"
-        sleep 0.1
+        sleep "$(_config_get "loop.worker_poll_sleep" "0.5" 2>/dev/null || echo "0.5")"
         tmux send-keys -t "$worker_pane_id" "printf '\\033]2;agent-${i}\\033\\\\'" Enter
-        sleep 0.1
+        sleep "$(_config_get "loop.worker_poll_sleep" "0.5" 2>/dev/null || echo "0.5")"
         tmux send-keys -t "$worker_pane_id" "bash '$worker_script'" Enter
     done
 
@@ -1995,7 +2072,7 @@ launch_multi_agent() {
 
     # In the monitor pane, tail all agent logs
     tmux select-pane -t "$monitor_pane_id"
-    sleep 0.5
+    sleep "$(_config_get "loop.worker_poll_sleep" "0.5" 2>/dev/null || echo "0.5")"
     tmux send-keys -t "$monitor_pane_id" "clear && tail -f $LOG_DIR/agent-*-iter-*.log 2>/dev/null || echo 'Waiting for agent logs...'" Enter
 
     success "Launched $AGENTS worker agents in window: $MULTI_WINDOW_NAME"
@@ -2058,7 +2135,7 @@ cleanup_multi_agent() {
             [[ -z "$pane_id" ]] && continue
             tmux send-keys -t "$pane_id" C-c 2>/dev/null || true
         done < <(tmux list-panes -t "$MULTI_WINDOW_NAME" -F '#{pane_id}' 2>/dev/null || true)
-        sleep 1
+        sleep "$(_config_get "loop.cleanup_sleep" "1" 2>/dev/null || echo "1")"
         tmux kill-window -t "$MULTI_WINDOW_NAME" 2>/dev/null || true
     fi
 

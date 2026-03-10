@@ -808,6 +808,180 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CONFIG-DRIVEN TUNABLES (Issue M-245)
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${CYAN}${BOLD}▸ Config-Driven Tunables${RESET}"
+
+# Test: defaults.json contains new loop config keys
+DEFAULTS_FILE="$SCRIPT_DIR/../config/defaults.json"
+if [[ -f "$DEFAULTS_FILE" ]]; then
+    for key in extension_size max_extensions circuit_breaker_threshold min_progress_lines test_timeout worker_setup_sleep worker_poll_sleep cleanup_sleep; do
+        if jq -e ".loop.${key}" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            assert_pass "defaults.json has loop.${key}"
+        else
+            assert_fail "defaults.json has loop.${key}"
+        fi
+    done
+else
+    assert_fail "defaults.json exists at expected path"
+fi
+
+# Test: defaults.json contains convergence scoring weights
+if [[ -f "$DEFAULTS_FILE" ]]; then
+    for key in pass_bonus regression_penalty still_failing_penalty code_change_bonus code_change_cap_lines min_change_penalty no_change_penalty error_threshold max_error_penalty trend_threshold converged_score converged_iterations; do
+        if jq -e ".loop.convergence.${key}" "$DEFAULTS_FILE" >/dev/null 2>&1; then
+            assert_pass "defaults.json has loop.convergence.${key}"
+        else
+            assert_fail "defaults.json has loop.convergence.${key}"
+        fi
+    done
+fi
+
+# Test: sw-loop.sh uses _config_get for tunables (not hardcoded)
+if grep -q '_config_get_int "loop.extension_size"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "EXTENSION_SIZE loaded from config"
+else
+    assert_fail "EXTENSION_SIZE loaded from config"
+fi
+
+if grep -q '_config_get_int "loop.max_extensions"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "MAX_EXTENSIONS loaded from config"
+else
+    assert_fail "MAX_EXTENSIONS loaded from config"
+fi
+
+if grep -q '_config_get_int "loop.circuit_breaker_threshold"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "CIRCUIT_BREAKER_THRESHOLD loaded from config"
+else
+    assert_fail "CIRCUIT_BREAKER_THRESHOLD loaded from config"
+fi
+
+if grep -q '_config_get_int "loop.min_progress_lines"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "MIN_PROGRESS_LINES loaded from config"
+else
+    assert_fail "MIN_PROGRESS_LINES loaded from config"
+fi
+
+if grep -q '_config_get_int "loop.test_timeout"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "test_timeout loaded from config"
+else
+    assert_fail "test_timeout loaded from config"
+fi
+
+if grep -q '_config_get "loop.worker_setup_sleep"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "worker_setup_sleep loaded from config"
+else
+    assert_fail "worker_setup_sleep loaded from config"
+fi
+
+if grep -q '_config_get "loop.worker_poll_sleep"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "worker_poll_sleep loaded from config"
+else
+    assert_fail "worker_poll_sleep loaded from config"
+fi
+
+if grep -q '_config_get "loop.cleanup_sleep"' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "cleanup_sleep loaded from config"
+else
+    assert_fail "cleanup_sleep loaded from config"
+fi
+
+# Test: --show-config flag exists
+if grep -q '\-\-show-config' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "--show-config flag supported"
+else
+    assert_fail "--show-config flag supported"
+fi
+
+if grep -q 'show_loop_config' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "show_loop_config function defined"
+else
+    assert_fail "show_loop_config function defined"
+fi
+
+# Test: convergence.sh uses config-driven weights
+CONV_FILE="$SCRIPT_DIR/lib/convergence.sh"
+if [[ -f "$CONV_FILE" ]]; then
+    if grep -q '_config_get_int "loop.convergence.pass_bonus"' "$CONV_FILE"; then
+        assert_pass "convergence.sh loads pass_bonus from config"
+    else
+        assert_fail "convergence.sh loads pass_bonus from config"
+    fi
+
+    if grep -q '_config_get_int "loop.convergence.regression_penalty"' "$CONV_FILE"; then
+        assert_pass "convergence.sh loads regression_penalty from config"
+    else
+        assert_fail "convergence.sh loads regression_penalty from config"
+    fi
+
+    if grep -q '_config_get_int "loop.convergence.converged_score"' "$CONV_FILE"; then
+        assert_pass "convergence.sh loads converged_score from config"
+    else
+        assert_fail "convergence.sh loads converged_score from config"
+    fi
+
+    if grep -q '_config_get_int "loop.convergence.trend_threshold"' "$CONV_FILE"; then
+        assert_pass "convergence.sh loads trend_threshold from config"
+    else
+        assert_fail "convergence.sh loads trend_threshold from config"
+    fi
+
+    # Test: convergence.sh has fallback when _config_get_int unavailable
+    if grep -q '_cfg_pass_bonus=25' "$CONV_FILE"; then
+        assert_pass "convergence.sh has inline fallback for scoring weights"
+    else
+        assert_fail "convergence.sh has inline fallback for scoring weights"
+    fi
+fi
+
+# Test: config precedence — env var overrides defaults
+# Verify the config library supports SHIPWRIGHT_ env var prefix
+if grep -q 'SHIPWRIGHT_' "$SCRIPT_DIR/lib/config.sh"; then
+    assert_pass "Config library supports SHIPWRIGHT_ env var prefix"
+else
+    assert_fail "Config library supports SHIPWRIGHT_ env var prefix"
+fi
+
+# Test: defaults.json values match previous hardcoded defaults (backward compat)
+if [[ -f "$DEFAULTS_FILE" ]]; then
+    ext_size=$(jq -r '.loop.extension_size' "$DEFAULTS_FILE" 2>/dev/null)
+    if [[ "$ext_size" == "5" ]]; then
+        assert_pass "Default extension_size matches previous hardcoded value (5)"
+    else
+        assert_fail "Default extension_size matches previous hardcoded value (5), got: $ext_size"
+    fi
+
+    max_ext=$(jq -r '.loop.max_extensions' "$DEFAULTS_FILE" 2>/dev/null)
+    if [[ "$max_ext" == "3" ]]; then
+        assert_pass "Default max_extensions matches previous hardcoded value (3)"
+    else
+        assert_fail "Default max_extensions matches previous hardcoded value (3), got: $max_ext"
+    fi
+
+    cb_thresh=$(jq -r '.loop.circuit_breaker_threshold' "$DEFAULTS_FILE" 2>/dev/null)
+    if [[ "$cb_thresh" == "3" ]]; then
+        assert_pass "Default circuit_breaker_threshold matches previous hardcoded value (3)"
+    else
+        assert_fail "Default circuit_breaker_threshold matches previous hardcoded value (3), got: $cb_thresh"
+    fi
+
+    pass_bonus=$(jq -r '.loop.convergence.pass_bonus' "$DEFAULTS_FILE" 2>/dev/null)
+    if [[ "$pass_bonus" == "25" ]]; then
+        assert_pass "Default convergence pass_bonus matches previous hardcoded value (25)"
+    else
+        assert_fail "Default convergence pass_bonus matches previous hardcoded value (25), got: $pass_bonus"
+    fi
+
+    converged_score=$(jq -r '.loop.convergence.converged_score' "$DEFAULTS_FILE" 2>/dev/null)
+    if [[ "$converged_score" == "80" ]]; then
+        assert_pass "Default converged_score matches previous hardcoded value (80)"
+    else
+        assert_fail "Default converged_score matches previous hardcoded value (80), got: $converged_score"
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -17,6 +17,11 @@ _CONVERGENCE_LOADED=1
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}"
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
+# Source config library if not already loaded
+if [[ "$(type -t _config_get_int 2>/dev/null)" != "function" ]]; then
+    [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh" 2>/dev/null || true
+fi
+
 # ─── Score an iteration's progress (0-100) ───────────────────────────────────
 #
 # Evaluates:
@@ -34,6 +39,28 @@ convergence_score_iteration() {
     local error_count="${5:-0}"
     local prev_score="${6:-50}"
 
+    # Load scoring weights from config (with inline fallbacks)
+    local _cfg_pass_bonus _cfg_regression_penalty _cfg_still_failing_penalty
+    local _cfg_code_change_bonus _cfg_code_change_cap _cfg_min_change_penalty
+    local _cfg_no_change_penalty _cfg_error_threshold _cfg_max_error_penalty _cfg_trend_threshold
+    if type _config_get_int >/dev/null 2>&1; then
+        _cfg_pass_bonus=$(_config_get_int "loop.convergence.pass_bonus" 25 2>/dev/null || echo 25)
+        _cfg_regression_penalty=$(_config_get_int "loop.convergence.regression_penalty" 15 2>/dev/null || echo 15)
+        _cfg_still_failing_penalty=$(_config_get_int "loop.convergence.still_failing_penalty" 5 2>/dev/null || echo 5)
+        _cfg_code_change_bonus=$(_config_get_int "loop.convergence.code_change_bonus" 20 2>/dev/null || echo 20)
+        _cfg_code_change_cap=$(_config_get_int "loop.convergence.code_change_cap_lines" 50 2>/dev/null || echo 50)
+        _cfg_min_change_penalty=$(_config_get_int "loop.convergence.min_change_penalty" 5 2>/dev/null || echo 5)
+        _cfg_no_change_penalty=$(_config_get_int "loop.convergence.no_change_penalty" 10 2>/dev/null || echo 10)
+        _cfg_error_threshold=$(_config_get_int "loop.convergence.error_threshold" 2 2>/dev/null || echo 2)
+        _cfg_max_error_penalty=$(_config_get_int "loop.convergence.max_error_penalty" 20 2>/dev/null || echo 20)
+        _cfg_trend_threshold=$(_config_get_int "loop.convergence.trend_threshold" 5 2>/dev/null || echo 5)
+    else
+        _cfg_pass_bonus=25; _cfg_regression_penalty=15; _cfg_still_failing_penalty=5
+        _cfg_code_change_bonus=20; _cfg_code_change_cap=50; _cfg_min_change_penalty=5
+        _cfg_no_change_penalty=10; _cfg_error_threshold=2; _cfg_max_error_penalty=20
+        _cfg_trend_threshold=5
+    fi
+
     local score=50  # Baseline
     local signals=()
 
@@ -41,8 +68,8 @@ convergence_score_iteration() {
     if [[ "$test_passed" == "true" ]]; then
         if [[ "$test_changed" == "true" ]]; then
             # Newly passing tests — major progress
-            score=$((score + 25))
-            signals+=("newly_passing_tests:+25")
+            score=$((score + _cfg_pass_bonus))
+            signals+=("newly_passing_tests:+${_cfg_pass_bonus}")
         else
             # Already passing — maintain score
             signals+=("tests_already_passing:0")
@@ -51,41 +78,41 @@ convergence_score_iteration() {
         # Tests failing
         if [[ "$test_changed" == "true" ]]; then
             # Newly failing tests — regression
-            score=$((score - 15))
-            signals+=("newly_failing_tests:-15")
+            score=$((score - _cfg_regression_penalty))
+            signals+=("newly_failing_tests:-${_cfg_regression_penalty}")
         else
             # Already failing — decay
-            score=$((score - 5))
-            signals+=("tests_still_failing:-5")
+            score=$((score - _cfg_still_failing_penalty))
+            signals+=("tests_still_failing:-${_cfg_still_failing_penalty}")
         fi
     fi
 
     # Signal 2: Code changes (meaningful = >5 lines)
     if [[ "$git_diff_lines" -gt 5 ]]; then
-        local change_bonus=20
-        # Scaling: cap at 50 line changes for max bonus
-        if [[ "$git_diff_lines" -gt 50 ]]; then
-            change_bonus=$((20 - (git_diff_lines - 50) / 10))
+        local change_bonus=$_cfg_code_change_bonus
+        # Scaling: cap at configured line threshold for max bonus
+        if [[ "$git_diff_lines" -gt "$_cfg_code_change_cap" ]]; then
+            change_bonus=$((_cfg_code_change_bonus - (git_diff_lines - _cfg_code_change_cap) / 10))
             [[ "$change_bonus" -lt 5 ]] && change_bonus=5
         fi
         score=$((score + change_bonus))
         signals+=("code_changes:+${change_bonus}")
     elif [[ "$git_diff_lines" -gt 0 ]]; then
         # Minimal changes — slight penalty
-        score=$((score - 5))
-        signals+=("minimal_changes:-5")
+        score=$((score - _cfg_min_change_penalty))
+        signals+=("minimal_changes:-${_cfg_min_change_penalty}")
     else
         # No changes — stalled
-        score=$((score - 10))
-        signals+=("no_code_changes:-10")
+        score=$((score - _cfg_no_change_penalty))
+        signals+=("no_code_changes:-${_cfg_no_change_penalty}")
     fi
 
     # Signal 3: Error repetition (from error-log.jsonl)
-    if [[ "$error_count" -gt 2 ]]; then
+    if [[ "$error_count" -gt "$_cfg_error_threshold" ]]; then
         local err_penalty
-        err_penalty=$((error_count - 2))
+        err_penalty=$((error_count - _cfg_error_threshold))
         err_penalty=$((err_penalty * 5))
-        [[ "$err_penalty" -gt 20 ]] && err_penalty=20
+        [[ "$err_penalty" -gt "$_cfg_max_error_penalty" ]] && err_penalty=$_cfg_max_error_penalty
         score=$((score - err_penalty))
         signals+=("repeated_errors:-${err_penalty}")
     fi
@@ -97,9 +124,9 @@ convergence_score_iteration() {
     # Determine trend vs previous score
     local trend="stable"
     local trend_delta=$((score - prev_score))
-    if [[ "$trend_delta" -gt 5 ]]; then
+    if [[ "$trend_delta" -gt "$_cfg_trend_threshold" ]]; then
         trend="improving"
-    elif [[ "$trend_delta" -lt -5 ]]; then
+    elif [[ "$trend_delta" -lt "-${_cfg_trend_threshold}" ]]; then
         trend="declining"
     fi
 
@@ -130,6 +157,16 @@ JSON
 #
 convergence_detect() {
     local history_file="${ARTIFACTS_DIR}/convergence-history.json"
+
+    # Load detection thresholds from config
+    local _cfg_converged_score _cfg_converged_iterations _cfg_trend_threshold
+    if type _config_get_int >/dev/null 2>&1; then
+        _cfg_converged_score=$(_config_get_int "loop.convergence.converged_score" 80 2>/dev/null || echo 80)
+        _cfg_converged_iterations=$(_config_get_int "loop.convergence.converged_iterations" 2 2>/dev/null || echo 2)
+        _cfg_trend_threshold=$(_config_get_int "loop.convergence.trend_threshold" 5 2>/dev/null || echo 5)
+    else
+        _cfg_converged_score=80; _cfg_converged_iterations=2; _cfg_trend_threshold=5
+    fi
 
     # If no history yet, can't detect
     if [[ ! -f "$history_file" ]]; then
@@ -194,16 +231,16 @@ JSON
 
     # Detection logic
 
-    # 1. Converged: Last 2 scores >= 80 and stable
-    if [[ "$num_scores" -ge 2 ]]; then
+    # 1. Converged: Last N scores >= threshold and stable
+    if [[ "$num_scores" -ge "$_cfg_converged_iterations" ]]; then
         local last1_idx=$((num_scores - 1))
         local last2_idx=$((num_scores - 2))
         local last1="${scores[$last1_idx]}"
         local last2="${scores[$last2_idx]}"
-        if [[ "$last1" -ge 80 && "$last2" -ge 80 ]]; then
+        if [[ "$last1" -ge "$_cfg_converged_score" && "$last2" -ge "$_cfg_converged_score" ]]; then
             local delta=$((last1 - last2))
-            [[ "$delta" -lt -5 ]] && delta=$((0 - delta))
-            if [[ "$delta" -le 5 ]]; then
+            [[ "$delta" -lt "-${_cfg_trend_threshold}" ]] && delta=$((0 - delta))
+            if [[ "$delta" -le "$_cfg_trend_threshold" ]]; then
                 cat <<JSON
 {
   "status": "converged",

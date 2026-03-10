@@ -53,7 +53,29 @@
     "context_trim_memory_chars": 20000,
     "context_trim_git_entries": 10,
     "context_trim_hotspot_files": 5,
-    "context_trim_test_lines": 50
+    "context_trim_test_lines": 50,
+    "extension_size": 5,
+    "max_extensions": 3,
+    "circuit_breaker_threshold": 3,
+    "min_progress_lines": 5,
+    "test_timeout": 900,
+    "worker_setup_sleep": 0.2,
+    "worker_poll_sleep": 0.5,
+    "cleanup_sleep": 1,
+    "convergence": {
+      "pass_bonus": 25,
+      "regression_penalty": 15,
+      "still_failing_penalty": 5,
+      "code_change_bonus": 20,
+      "code_change_cap_lines": 50,
+      "min_change_penalty": 5,
+      "no_change_penalty": 10,
+      "error_threshold": 2,
+      "max_error_penalty": 20,
+      "trend_threshold": 5,
+      "converged_score": 80,
+      "converged_iterations": 2
+    }
   },
   "dashboard": {
     "port": 8767,
