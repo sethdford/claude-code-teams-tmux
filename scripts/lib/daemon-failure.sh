@@ -201,8 +201,16 @@ daemon_on_failure() {
     # ── Auto-retry with strategy escalation ──
     if [[ "${RETRY_ESCALATION:-true}" == "true" ]]; then
         local retry_count
-        retry_count=$(jq -r --arg num "$issue_num" \
-            '.retry_counts[$num] // 0' "$STATE_FILE" 2>/dev/null || echo "0")
+        # Read retry count from SQLite first (durable across daemon restarts),
+        # then fall back to JSON state file
+        local _db_file="${DAEMON_DIR}/shipwright.db"
+        if command -v sqlite3 >/dev/null 2>&1 && [[ -f "$_db_file" ]]; then
+            retry_count=$(sqlite3 -cmd ".timeout 3000" "$_db_file" \
+                "SELECT COALESCE(MAX(retry_count), 0) FROM daemon_state WHERE issue_number = ${issue_num};" 2>/dev/null || echo "0")
+        else
+            retry_count=$(jq -r --arg num "$issue_num" \
+                '.retry_counts[$num] // 0' "$STATE_FILE" 2>/dev/null || echo "0")
+        fi
 
         # Non-retryable failures — skip retry entirely
         case "$failure_class" in
@@ -231,6 +239,12 @@ daemon_on_failure() {
                     locked_state_update \
                         --arg num "$issue_num" --argjson count "$retry_count" \
                         '.retry_counts[$num] = $count'
+
+                    # Also persist to SQLite (survives daemon restarts/state resets)
+                    if command -v sqlite3 >/dev/null 2>&1 && [[ -f "$_db_file" ]]; then
+                        sqlite3 -cmd ".timeout 3000" "$_db_file" \
+                            "UPDATE daemon_state SET retry_count = ${retry_count} WHERE issue_number = ${issue_num} AND status = 'active';" 2>/dev/null || true
+                    fi
 
                     daemon_log WARN "Auto-retry #${retry_count}/${effective_max} for issue #${issue_num} (class: ${failure_class})"
                     emit_event "daemon.retry" "issue=$issue_num" "retry=$retry_count" "max=$effective_max" "class=$failure_class"

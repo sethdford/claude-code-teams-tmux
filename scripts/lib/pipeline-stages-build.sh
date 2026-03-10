@@ -299,9 +299,23 @@ ${_skill_prompts}
         test_cmd=$(jq -r --arg id "build" '(.stages[] | select(.id == $id) | .config.test_cmd) // .defaults.test_cmd // ""' "$PIPELINE_CONFIG" 2>/dev/null) || true
         [[ "$test_cmd" == "null" ]] && test_cmd=""
     fi
-    # Auto-detect if still empty
+    # Auto-detect if still empty — prefer fast variants for build iterations
     if [[ -z "$test_cmd" ]]; then
-        test_cmd=$(detect_test_cmd)
+        # Check for fast test scripts first (build loop runs tests every iteration)
+        if [[ -f "$PROJECT_ROOT/package.json" ]]; then
+            local _fast_test=""
+            _fast_test=$(jq -r '.scripts["test:fast"] // .scripts["test:smoke"] // ""' "$PROJECT_ROOT/package.json" 2>/dev/null) || true
+            if [[ -n "$_fast_test" && "$_fast_test" != "null" ]]; then
+                local _pm
+                _pm=$(detect_package_manager 2>/dev/null || echo "npm")
+                test_cmd="$_pm run test:$(jq -r 'if .scripts["test:fast"] then "fast" else "smoke" end' "$PROJECT_ROOT/package.json" 2>/dev/null)"
+                info "Using fast test command for build iterations: ${DIM}$test_cmd${RESET}"
+            fi
+        fi
+        # Fall back to full test command
+        if [[ -z "$test_cmd" ]]; then
+            test_cmd=$(detect_test_cmd)
+        fi
     fi
 
     # Discover additional test commands (subdirectories, extra scripts)
