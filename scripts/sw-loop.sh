@@ -512,15 +512,26 @@ accumulate_loop_tokens() {
     local log_file="$1"
     [[ ! -f "$log_file" ]] && return 0
 
-    # If jq is available and the file looks like JSON, parse structured output
-    if command -v jq >/dev/null 2>&1 && head -c1 "$log_file" 2>/dev/null | grep -q '\['; then
+    # If jq is available and the file looks like JSON (array or object), parse structured output
+    local first_char
+    first_char=$(head -c1 "$log_file" 2>/dev/null || true)
+    if command -v jq >/dev/null 2>&1 && [[ "$first_char" == "[" || "$first_char" == "{" ]]; then
         local input_tok output_tok cache_read cache_create cost_usd
-        # The result object is the last element in the JSON array
-        input_tok=$(jq -r '.[-1].usage.input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
-        output_tok=$(jq -r '.[-1].usage.output_tokens // 0' "$log_file" 2>/dev/null || echo "0")
-        cache_read=$(jq -r '.[-1].usage.cache_read_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
-        cache_create=$(jq -r '.[-1].usage.cache_creation_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
-        cost_usd=$(jq -r '.[-1].total_cost_usd // 0' "$log_file" 2>/dev/null || echo "0")
+        if [[ "$first_char" == "[" ]]; then
+            # Array: the result object is the last element
+            input_tok=$(jq -r '.[-1].usage.input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            output_tok=$(jq -r '.[-1].usage.output_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cache_read=$(jq -r '.[-1].usage.cache_read_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cache_create=$(jq -r '.[-1].usage.cache_creation_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cost_usd=$(jq -r '.[-1].total_cost_usd // 0' "$log_file" 2>/dev/null || echo "0")
+        else
+            # Object: extract usage directly
+            input_tok=$(jq -r '.usage.input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            output_tok=$(jq -r '.usage.output_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cache_read=$(jq -r '.usage.cache_read_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cache_create=$(jq -r '.usage.cache_creation_input_tokens // 0' "$log_file" 2>/dev/null || echo "0")
+            cost_usd=$(jq -r '.total_cost_usd // 0' "$log_file" 2>/dev/null || echo "0")
+        fi
 
         LOOP_INPUT_TOKENS=$(( LOOP_INPUT_TOKENS + ${input_tok:-0} + ${cache_read:-0} + ${cache_create:-0} ))
         LOOP_OUTPUT_TOKENS=$(( LOOP_OUTPUT_TOKENS + ${output_tok:-0} ))
@@ -575,16 +586,26 @@ _extract_text_from_json() {
     local first_char
     first_char=$(head -c1 "$json_file" 2>/dev/null || true)
 
-    # Case 2: Valid JSON array — extract .result from last element
-    if [[ "$first_char" == "[" ]] && command -v jq >/dev/null 2>&1; then
+    # Case 2: Valid JSON (array or object) — extract .result with jq
+    if [[ "$first_char" == "[" || "$first_char" == "{" ]] && command -v jq >/dev/null 2>&1; then
         local extracted
-        extracted=$(jq -r '.[-1].result // empty' "$json_file" 2>/dev/null) || true
+        if [[ "$first_char" == "[" ]]; then
+            # Array: extract .result from last element
+            extracted=$(jq -r '.[-1].result // empty' "$json_file" 2>/dev/null) || true
+        else
+            # Object: extract .result directly
+            extracted=$(jq -r '.result // empty' "$json_file" 2>/dev/null) || true
+        fi
         if [[ -n "$extracted" ]]; then
             echo "$extracted" > "$log_file"
             return 0
         fi
         # jq succeeded but result was null/empty — try .content or raw text
-        extracted=$(jq -r '.[].content // empty' "$json_file" 2>/dev/null | head -500) || true
+        if [[ "$first_char" == "[" ]]; then
+            extracted=$(jq -r '.[].content // empty' "$json_file" 2>/dev/null | head -500) || true
+        else
+            extracted=$(jq -r '.content // empty' "$json_file" 2>/dev/null | head -500) || true
+        fi
         if [[ -n "$extracted" ]]; then
             echo "$extracted" > "$log_file"
             return 0

@@ -367,6 +367,87 @@ else
 fi
 rm -rf "$tmpdir2"
 
+# ─── Test 23: _extract_text_from_json — JSON object (not array) extraction ────
+echo ""
+echo -e "${DIM}  json object extraction (issue #242)${RESET}"
+_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+tmpdir3=$(mktemp -d)
+bash -c "
+warn() { echo \"WARN: \$*\" >&2; }
+$_extract_fn
+# JSON object with .result — should extract, NOT warn about jq
+echo '{\"type\":\"result\",\"result\":\"Object extraction works\",\"usage\":{\"input_tokens\":42}}' > '$tmpdir3/obj.json'
+_extract_text_from_json '$tmpdir3/obj.json' '$tmpdir3/obj_out.log' ''
+# JSON object without .result — should still use jq (try .content)
+echo '{\"type\":\"result\",\"content\":\"Fallback content\"}' > '$tmpdir3/obj_content.json'
+_extract_text_from_json '$tmpdir3/obj_content.json' '$tmpdir3/obj_content_out.log' ''
+# JSON object with neither .result nor .content — placeholder, no misleading warning
+echo '{\"type\":\"result\",\"usage\":{\"input_tokens\":10}}' > '$tmpdir3/obj_empty.json'
+_extract_text_from_json '$tmpdir3/obj_empty.json' '$tmpdir3/obj_empty_out.log' ''
+" 2>"$tmpdir3/stderr.log"
+
+if grep -q "Object extraction works" "$tmpdir3/obj_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .result from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .result from JSON object" "expected 'Object extraction works'"
+fi
+
+if grep -q "Fallback content" "$tmpdir3/obj_content_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .content fallback from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .content fallback from JSON object" "expected 'Fallback content'"
+fi
+
+if grep -q "no text result" "$tmpdir3/obj_empty_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json shows placeholder for JSON object without .result"
+else
+    assert_fail "_extract_text_from_json shows placeholder for JSON object without .result"
+fi
+
+# The misleading "jq not available" warning must NOT appear when jq IS available
+if grep -q "jq not available" "$tmpdir3/stderr.log" 2>/dev/null; then
+    assert_fail "_extract_text_from_json does not warn 'jq not available' when jq is present" "found misleading warning"
+else
+    assert_pass "_extract_text_from_json does not warn 'jq not available' when jq is present"
+fi
+rm -rf "$tmpdir3"
+
+# ─── Test 24: accumulate_loop_tokens — JSON object (not array) extraction ─────
+echo ""
+echo -e "${DIM}  accumulate_loop_tokens with JSON object (issue #242)${RESET}"
+_accum_fn=$(sed -n '/^accumulate_loop_tokens()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+tmpdir4=$(mktemp -d)
+# JSON object with usage data (as Claude CLI may emit)
+cat > "$tmpdir4/obj_tokens.json" <<'TOKJSON'
+{"type":"result","result":"done","usage":{"input_tokens":1500,"output_tokens":300,"cache_read_input_tokens":200,"cache_creation_input_tokens":50},"total_cost_usd":0.005}
+TOKJSON
+result=$(bash -c "
+LOOP_INPUT_TOKENS=0
+LOOP_OUTPUT_TOKENS=0
+LOOP_COST_MILLICENTS=0
+MODEL=opus
+$_accum_fn
+accumulate_loop_tokens '$tmpdir4/obj_tokens.json'
+echo \"input=\$LOOP_INPUT_TOKENS output=\$LOOP_OUTPUT_TOKENS cost=\$LOOP_COST_MILLICENTS\"
+" 2>/dev/null)
+# input_tokens=1500 + cache_read=200 + cache_create=50 = 1750
+if echo "$result" | grep -q "input=1750"; then
+    assert_pass "accumulate_loop_tokens parses input_tokens from JSON object"
+else
+    assert_fail "accumulate_loop_tokens parses input_tokens from JSON object" "got: $result"
+fi
+if echo "$result" | grep -q "output=300"; then
+    assert_pass "accumulate_loop_tokens parses output_tokens from JSON object"
+else
+    assert_fail "accumulate_loop_tokens parses output_tokens from JSON object" "got: $result"
+fi
+if echo "$result" | grep -q "cost=500"; then
+    assert_pass "accumulate_loop_tokens parses total_cost_usd from JSON object"
+else
+    assert_fail "accumulate_loop_tokens parses total_cost_usd from JSON object" "got: $result"
+fi
+rm -rf "$tmpdir4"
+
 # ─── Test 22: Script structure — circuit breaker, stuckness, test gate ────────
 echo ""
 echo -e "${DIM}  script structure${RESET}"
