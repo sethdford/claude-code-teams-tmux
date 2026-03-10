@@ -40,6 +40,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
 # Intelligent session restart with enhanced briefings and cross-session tracking
 [[ -f "$SCRIPT_DIR/lib/session-restart.sh" ]] && source "$SCRIPT_DIR/lib/session-restart.sh"
+# Failure mode classification and adaptive recovery (issue #246)
+[[ -f "$SCRIPT_DIR/lib/loop-failure-modes.sh" ]] && source "$SCRIPT_DIR/lib/loop-failure-modes.sh" 2>/dev/null || true
 # Context window budget monitoring (issue #209)
 # shellcheck source=lib/context-budget.sh
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
@@ -93,6 +95,7 @@ MAX_ITERATIONS_EXPLICIT=false
 MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
+FAILURE_MODE_OVERRIDE=""
 REPO_OVERRIDE=""
 VERSION="3.2.4"
 
@@ -295,6 +298,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-restarts=*) MAX_RESTARTS="${1#--max-restarts=}"; shift ;;
+        --failure-mode)
+            FAILURE_MODE_OVERRIDE="${2:-}"
+            [[ -z "$FAILURE_MODE_OVERRIDE" ]] && { error "Missing value for --failure-mode"; exit 1; }
+            shift 2
+            ;;
+        --failure-mode=*) FAILURE_MODE_OVERRIDE="${1#--failure-mode=}"; shift ;;
         --roles)
             AGENT_ROLES="${2:-}"
             [[ -z "$AGENT_ROLES" ]] && { error "Missing value for --roles"; exit 1; }
@@ -2468,13 +2477,32 @@ run_loop_with_restarts() {
 
         RESTART_COUNT=$(( RESTART_COUNT + 1 ))
 
+        # ─── Failure Mode Classification & Recovery (issue #246) ──────────
+        local failure_mode="${FAILURE_MODE_OVERRIDE:-code_error}"
+        if [[ -z "$FAILURE_MODE_OVERRIDE" ]] && type classify_loop_failure >/dev/null 2>&1; then
+            failure_mode=$(classify_loop_failure) || failure_mode="code_error"
+        fi
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "loop.failure_mode_classified" "mode=$failure_mode" "iteration=$ITERATION" "restart=$RESTART_COUNT"
+        fi
+        if type apply_loop_recovery >/dev/null 2>&1; then
+            apply_loop_recovery "$failure_mode" || warn "Recovery strategy failed for mode=$failure_mode (continuing anyway)"
+        fi
+        if type emit_event >/dev/null 2>&1; then
+            local strategy_name
+            strategy_name=$(get_recovery_strategy "$failure_mode" 2>/dev/null | jq -r '.strategy // "unknown"' 2>/dev/null || echo "unknown")
+            emit_event "loop.recovery_applied" "mode=$failure_mode" "strategy=$strategy_name" "iteration=$ITERATION"
+        fi
+        # Export for restart briefing
+        export CLASSIFIED_FAILURE_MODE="$failure_mode"
+
         # Capture comprehensive state and generate briefing before restart
         if type restart_before_restart >/dev/null 2>&1; then
             restart_before_restart || warn "Failed to prepare restart briefing (continuing anyway)"
         fi
 
         if type emit_event >/dev/null 2>&1; then
-            emit_event "loop.restart" "restart=$RESTART_COUNT" "max=$MAX_RESTARTS" "iteration=$ITERATION"
+            emit_event "loop.restart" "restart=$RESTART_COUNT" "max=$MAX_RESTARTS" "iteration=$ITERATION" "failure_mode=$failure_mode"
         fi
         info "Session restart ${RESTART_COUNT}/${MAX_RESTARTS} — resetting iteration counter"
 

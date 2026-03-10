@@ -267,11 +267,23 @@ restart_suggest_strategy() {
             focus="Most critical features for goal completion"
             avoid="Low-impact improvements, refactoring"
             ;;
-        stuck_loop)
+        stuck_loop|infinite_loop)
             strategy="Try a fundamentally different approach to the current problem"
             priority="critical"
             focus="Root cause analysis of the stuck point"
             avoid="Repeated small changes that didn't work before"
+            ;;
+        test_flakiness)
+            strategy="Isolate flaky tests and focus on deterministic failures only"
+            priority="medium"
+            focus="Identifying and skipping non-deterministic test failures"
+            avoid="Fixing tests that pass intermittently — they may not be broken"
+            ;;
+        dependency_issue)
+            strategy="Fix dependency resolution before attempting code changes"
+            priority="high"
+            focus="Ensuring all packages are installed and importable"
+            avoid="Code changes until dependencies are resolved"
             ;;
         manual)
             strategy="Continue from where you left off with fresh context"
@@ -454,9 +466,13 @@ restart_before_restart() {
         return 1
     }
 
-    # Detect restart reason
+    # Use classified failure mode if available, otherwise detect reason
     local reason
-    reason=$(restart_detect_reason) || true
+    if [[ -n "${CLASSIFIED_FAILURE_MODE:-}" ]]; then
+        reason="$CLASSIFIED_FAILURE_MODE"
+    else
+        reason=$(restart_detect_reason) || true
+    fi
 
     # Suggest strategy based on reason
     local strategy
