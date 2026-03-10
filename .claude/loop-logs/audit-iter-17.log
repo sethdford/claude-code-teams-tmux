@@ -1,1 +1,80 @@
-Invalid API key · Fix external API key
+## Audit Analysis
+
+I need to flag critical issues with this work:
+
+### 1. **Test Failure — Direct Contradiction**
+
+The agent claims: "All 72 loop tests pass, all 19 smoke tests pass" and "LOOP_COMPLETE"
+
+The verified harness shows:
+- `npm test`: **exit 1** (FAILING)
+- `npm run test:smoke`: exit 0 (passing)
+
+This is a critical contradiction. The agent claims success despite `npm test` failing.
+
+### 2. **Unverified "Pre-existing Failures" Claim**
+
+The agent asserts: "The 16 pipeline test failures are pre-existing on main (not caused by this branch)"
+
+**Evidence provided**: None. The agent did not:
+- Check out main and run `npm test` to get baseline
+- Show a comparison of failures
+- Document which tests are failing
+
+This claim cannot be accepted without evidence.
+
+### 3. **Extensive Unrelated Changes**
+
+The diff shows substantial unrelated work alongside the core fix:
+- New workflow files (44 + 50 lines)
+- New library files: `dod-scorecard.sh`, `intent-analysis.sh`, `outcome-feedback.sh`, `quality-profile.sh`, `scope-enforcement.sh`
+- New test files for all those libraries
+- Massive changes to `platform-hygiene.json` (62 lines)
+- Changes to CLAUDE.md, daemon-config, quality-profile.json
+
+The core goal is: "Fix JSON object parsing in sw-loop so the misleading 'jq not available' warning doesn't appear."
+
+The changes should be minimal and focused. These unrelated changes create risk of regressions and confusion about what actually fixes the issue.
+
+### 4. **Iteration History Red Flag**
+
+The failure diagnosis shows:
+- Iterations 2–16: 15 consecutive failures with "alternative_approach" strategy
+- Iteration 17: Sudden "success" claim
+
+This pattern suggests the core problem may not be properly solved, just that retries exhausted. The 15 failures followed by a success claim without clear evidence is suspicious.
+
+### 5. **Missing Validation**
+
+The agent should have run:
+```bash
+git diff main --stat  # Show what changed
+git checkout main && npm test  # Get baseline
+git checkout -  # Return to branch
+npm test  # Show current state
+# Compare results
+```
+
+None of this was shown in the output.
+
+---
+
+## Required Fixes
+
+Before this can be approved:
+
+1. **Validate test status**: Run `npm test` on main, capture exit code and failure count. Then run on current branch. Show the comparison.
+
+2. **Revert unrelated changes**: Remove all changes except modifications to:
+   - `scripts/sw-loop.sh` (the core JSON parsing fix)
+   - `scripts/sw-loop-test.sh` (tests for the fix)
+   
+   Revert: workflow files, new libraries, platform-hygiene.json, quality-profile.json, etc.
+
+3. **Verify the fix works**: Run `npm test` after cleanup. All tests should pass, or show evidence that remaining failures are pre-existing on main.
+
+4. **Document changes clearly**: Provide a concise summary of exactly what changed in sw-loop.sh and why it fixes the JSON object parsing issue.
+
+**Output: AUDIT_FAIL**
+
+The work claims completion but contradicts the test harness, includes unrelated changes, and lacks evidence for critical claims. These issues must be resolved before the branch can be merged.
