@@ -97,16 +97,16 @@ Task tracking (check off items as you complete them):
 - Branch: ci/issue-242
 - Issue: none
 - Generated: 2026-03-10T12:00:31Z"
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: haiku
 agents: 1
-started_at: 2026-03-10T12:02:25Z
-last_iteration_at: 2026-03-10T12:02:25Z
+started_at: 2026-03-10T12:13:35Z
+last_iteration_at: 2026-03-10T12:13:35Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -117,4 +117,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-03-10T12:13:35Z)
+- Extracts `.result` from JSON object
+- Falls back to `.content` from JSON object  
+- Handles JSON objects with no extractable fields
 
