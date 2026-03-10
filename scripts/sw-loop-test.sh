@@ -367,6 +367,44 @@ else
 fi
 rm -rf "$tmpdir2"
 
+# ─── Test 21b: _extract_text_from_json — JSON object (not array) ──────────────
+echo ""
+echo -e "${DIM}  json object extraction (issue #242)${RESET}"
+_extract_fn_obj=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+tmpdir3=$(mktemp -d)
+bash -c "
+warn() { :; }
+$_extract_fn_obj
+# JSON object with .result field
+echo '{\"type\":\"result\",\"result\":\"Object result works\",\"usage\":{\"input_tokens\":100}}' > '$tmpdir3/obj_result.json'
+_extract_text_from_json '$tmpdir3/obj_result.json' '$tmpdir3/obj_result_out.log' ''
+# JSON object with .content field (no .result)
+echo '{\"type\":\"text\",\"content\":\"Content fallback works\"}' > '$tmpdir3/obj_content.json'
+_extract_text_from_json '$tmpdir3/obj_content.json' '$tmpdir3/obj_content_out.log' ''
+# JSON object with neither .result nor .content
+echo '{\"type\":\"unknown\",\"data\":\"something\"}' > '$tmpdir3/obj_none.json'
+_extract_text_from_json '$tmpdir3/obj_none.json' '$tmpdir3/obj_none_out.log' ''
+" 2>/dev/null
+
+if grep -q "Object result works" "$tmpdir3/obj_result_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .result from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .result from JSON object" "expected 'Object result works'"
+fi
+
+if grep -q "Content fallback works" "$tmpdir3/obj_content_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .content fallback from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .content fallback from JSON object" "expected 'Content fallback works'"
+fi
+
+if grep -q "no text result" "$tmpdir3/obj_none_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json handles JSON object with no extractable fields"
+else
+    assert_fail "_extract_text_from_json handles JSON object with no extractable fields" "expected placeholder text"
+fi
+rm -rf "$tmpdir3"
+
 # ─── Test 22: Script structure — circuit breaker, stuckness, test gate ────────
 echo ""
 echo -e "${DIM}  script structure${RESET}"
