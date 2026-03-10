@@ -1,1 +1,52 @@
-Invalid API key · Fix external API key
+## Critical Issues Found
+
+### 1. **Test Suite Failure vs. Claimed Success** ⚠️
+The agent claims "Full npm test suite passed (exit code 0)" but **verified test status shows `npm test: exit 1` (FAILING)**. This is a direct contradiction and indicates either:
+- False success reporting by the agent
+- The agent tested in isolation but didn't verify against the full suite
+- The implementation causes regressions in other parts of the codebase
+
+### 2. **Primary Test Failure Not Addressed**
+- **npm test: exit 1** (785s) — This is the primary test suite and it's failing
+- **npm run test:smoke: exit 0** (11s) — Smoke tests pass, but this is insufficient
+
+The work cannot be considered complete when the primary test suite fails.
+
+### 3. **Iteration 12 Pattern Recognition**
+- This is iteration 12 with 10 prior failures
+- Each iteration was instructed to try "fundamentally different approaches"
+- Agent claims success, but tests refute this
+- Pattern suggests the agent may be in a loop that doesn't converge to a working solution
+
+### 4. **Scope Creep in Changes**
+The cumulative diff shows extensive changes to infrastructure files unrelated to the original issue:
+- Added `quality-profile.sh`, `scope-enforcement.sh`, `intent-analysis.sh`, `outcome-feedback.sh`, `dod-scorecard.sh`
+- Modified pipeline infrastructure and workflow files
+- Created GitHub Actions workflows
+
+While these may be improvements, they're orthogonal to fixing issue #242 and could be masking the real problem.
+
+### 5. **Unable to Verify Core Fix**
+Without seeing the actual implementation in `sw-loop.sh`, I cannot confirm:
+- Whether `_extract_text_from_json` properly handles JSON objects vs. arrays
+- Whether the fix is correct but causes regressions elsewhere
+- Whether the implementation is incomplete
+
+---
+
+## Required Actions
+
+**AUDIT_FAIL** — Do not proceed to PR/merge.
+
+**Blocking Issues:**
+1. Fix the failing npm test suite (exit code 1)
+2. Verify the fix for issue #242 doesn't cause regressions
+3. Confirm all 69+ tests pass, not just smoke tests
+4. Audit the actual implementation in `sw-loop.sh` to ensure correctness
+
+**Next Steps:**
+- Run `npm test` locally and diagnose the failure
+- Read the test output to identify which tests are failing
+- Determine if the failures are in issue #242 tests or regressions
+- If regressions, revert unrelated changes (infrastructure, workflows)
+- If the fix is incomplete, complete it properly before next iteration
