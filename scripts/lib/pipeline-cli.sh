@@ -21,7 +21,7 @@ EVENTS_FILE="${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}"
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
 [[ "$(type -t _config_get_int 2>/dev/null)" == "function" ]] || _config_get_int() { echo "${3:-$2}"; }
-[[ "$(type -t file_mtime 2>/dev/null)" == "function" ]] || file_mtime() { stat -f "%m" "$1" 2>/dev/null || echo "0"; }
+[[ "$(type -t file_mtime 2>/dev/null)" == "function" ]] || file_mtime() { local _v; _v=$(stat -c '%Y' "$1" 2>/dev/null) && [[ "$_v" =~ ^[0-9]+$ ]] && echo "$_v" && return; _v=$(stat -f '%m' "$1" 2>/dev/null) && [[ "$_v" =~ ^[0-9]+$ ]] && echo "$_v" && return; echo "0"; }
 [[ "$(type -t now_epoch 2>/dev/null)" == "function" ]] || now_epoch() { date +%s; }
 
 # ─── Help ──────────────────────────────────────────────────────────
