@@ -912,28 +912,28 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 92,
-            "summary": "Defines build environment: vitest test runner, npm package manager, src/ source directory, *.test.js test pattern. Directly informs how to execute build and test stages."
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents 3 recurring test failures with root causes and fixes. Directly applicable during build stage: sw-cleanup.sh heartbeat detection issue, sw-feedback-test.sh JSON output regression, and /tmp/claude mktemp failure. Critical for avoiding known failure modes."
           },
           {
-            "file": "failures.json",
-            "relevance": 78,
-            "summary": "Captures 6 instances of sw-cleanup.sh stale heartbeat detection failure. Helps avoid repeating known test failures during build stage execution."
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project conventions essential for build stage: vitest test runner, npm package manager, src/ directory structure, *.test.js test pattern, and commonjs imports. Enables proper test execution and file discovery."
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Empty baselines object provides no actionable metrics for build stage context."
+            "relevance": 5,
+            "summary": "Empty baselines object. No relevant data for build stage context."
           },
           {
             "file": "decisions.json",
-            "relevance": 8,
-            "summary": "No recorded decisions; empty content offers no value to build stage execution."
+            "relevance": 5,
+            "summary": "Empty decisions array. No relevant data for build stage context."
           }
         ]
       },
-      "timestamp": 1773144138,
+      "timestamp": 1773146461,
       "ttl": 1800
     },
     "20f1364fb8a8775c0ee6448d6d28ff08": {
