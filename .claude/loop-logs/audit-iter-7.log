@@ -1,1 +1,42 @@
-Invalid API key · Fix external API key
+Looking at the code, I can now see the **critical issue**:
+
+## AUDIT_FAIL: Incomplete Implementation
+
+The implementation in `_extract_text_from_json` (lines 561-608) has **NOT been properly fixed**:
+
+**Lines 598-603 still contain the bug:**
+```bash
+# Case 3: Looks like JSON but no jq — can't parse, use raw
+if [[ "$first_char" == "[" || "$first_char" == "{" ]]; then
+    warn "JSON output but jq not available — using raw output"  # ← MISLEADING!
+    cp "$json_file" "$log_file"
+    return 0
+fi
+```
+
+**The problem:**
+- When the file starts with `{` (JSON **object**), this code ALWAYS shows the misleading warning, **even if jq IS available**
+- The function should handle JSON objects when jq is available (line 579 only handles JSON **arrays**)
+- There's no Case 3 handling for JSON objects with jq available
+
+**What's missing:**
+A new case between line 596 and 598 should handle:
+```bash
+# Case 3: Valid JSON object — extract .result or .content
+if [[ "$first_char" == "{" ]] && command -v jq >/dev/null 2>&1; then
+    # ... extract .result from object ...
+fi
+```
+
+**Same issue in `accumulate_loop_tokens` (line 516):**
+```bash
+if command -v jq >/dev/null 2>&1 && head -c1 "$log_file" 2>/dev/null | grep -q '\['; then
+```
+This only handles arrays starting with `[`, not objects starting with `{`.
+
+**Test Status Contradiction:**
+- The test log claims "72/72 loop tests pass" 
+- But the test runner shows `npm test: exit 1`
+- This suggests the changes were incomplete or tests are incomplete
+
+**Conclusion:** The agent's work is **incomplete and does not solve the stated goal**. The JSON object handling case is still missing from the implementation.
