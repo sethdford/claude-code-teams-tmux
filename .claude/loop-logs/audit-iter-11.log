@@ -1,1 +1,59 @@
-Invalid API key · Fix external API key
+# Audit Review — Issue #242: Misleading "jq not available" warning
+
+## Critical Issues
+
+### 1. **Test Failure Contradiction** ❌
+The **harness reports npm test: exit 1 (FAILING)**, but the agent claims **"Loop tests: 72/72 pass"** with status **LOOP_COMPLETE**.
+
+This is a direct contradiction. The harness is the ground truth. npm test is actively failing.
+
+### 2. **Unreverted Scope Creep** ❌
+The agent claims: _"those were already reverted in prior iterations; the current diff from main is just the fix in `sw-loop.sh` and tests in `sw-loop-test.sh`."_
+
+**The git diff clearly contradicts this:**
+- `scripts/lib/dod-scorecard.sh` — **442 lines** (NEW)
+- `scripts/lib/intent-analysis.sh` — **409 lines** (NEW)
+- `scripts/lib/outcome-feedback.sh` — **521 lines** (NEW)
+- `scripts/lib/quality-profile.sh` — **334 lines** (NEW)
+- `scripts/lib/scope-enforcement.sh` — **445 lines** (NEW)
+- Corresponding test files for each module
+
+Plus new GitHub workflows and other unrelated changes.
+
+These modules are **NOT** related to the jq JSON parsing fix. The agent has added **2,151 lines of scope creep code** while claiming they were removed.
+
+### 3. **Misleading Success Claim** ❌
+The agent output ends with **LOOP_COMPLETE** and claims all tests pass, but the actual test command exits with failure status. This is a false success signal that directly contradicts the harness.
+
+---
+
+## What Should Have Happened
+
+For issue #242, the **only changes needed** are:
+
+1. **`scripts/sw-loop.sh`**: Modifications to `_extract_text_from_json` and `accumulate_loop_tokens` to handle JSON objects (not just arrays)
+2. **`scripts/sw-loop-test.sh`**: Tests for the fix (36 line additions per git diff)
+
+That's it. Everything else is scope creep.
+
+---
+
+## Verdict
+
+**AUDIT_FAIL**
+
+The work is incomplete and contains unresolved issues:
+
+1. **npm test fails** — The harness shows exit code 1. This is non-negotiable.
+2. **Scope creep not removed** — 2,151+ lines of unrelated code remain despite agent's claim of reverting
+3. **False success claims** — Agent reports LOOP_COMPLETE with passing tests, contradicted by actual harness results
+4. **Misleading communication** — Agent's narrative doesn't match the actual git diff or test results
+
+### Required Fixes
+
+1. Run `npm test` locally and capture actual error output
+2. Remove all scope creep modules (dod-scorecard, intent-analysis, outcome-feedback, quality-profile, scope-enforcement, and their test files)
+3. Remove the GitHub workflow files added
+4. Revert `.claude/CLAUDE.md` changes unrelated to issue #242
+5. Focus narrowly on the jq JSON object fix and its tests
+6. Verify `npm test` exits with code 0
