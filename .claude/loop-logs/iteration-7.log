@@ -1,1 +1,14 @@
-Invalid API key · Fix external API key
+Perfect! All quality gates are now passing. Let me verify the final status:
+
+**Goal**: Fix misleading "jq not available" warning when Claude outputs JSON object instead of array
+
+**Current Status**:
+- ✅ Original issue #242 fix is implemented (commit `a23ecc9`)
+- ✅ All 102+ test suites pass (0 failures)
+- ✅ The test that previously caused rejection now passes
+- ✅ No uncommitted changes
+- ✅ Clean git history
+
+The misleading "jq not available" warning that appeared when Claude CLI output JSON objects (instead of arrays) has been resolved. The `_extract_text_from_json()` function in `sw-loop.sh` now correctly handles both JSON array and JSON object formats, extracting text from `.result` or `.content` fields appropriately, and only shows the "jq not available" warning when jq is actually unavailable.
+
+LOOP_COMPLETE
