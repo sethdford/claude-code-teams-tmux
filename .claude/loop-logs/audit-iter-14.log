@@ -1,1 +1,79 @@
-Invalid API key · Fix external API key
+# AUDIT FINDINGS
+
+I cannot pass this work. There are **critical issues** that must be addressed:
+
+## Critical Issues
+
+### 1. **Test Suite Failure — Contradicts Agent's Claims**
+- **Agent claimed**: "All passing"
+- **Harness shows**: `npm test` exits with code **1 (FAILURE)**
+- The agent only verified `scripts/sw-loop-test.sh` (72 tests) passes, but the full test suite fails
+- The agent asserted failures are "pre-existing on main" **without verifying this**
+- This is a blocker — cannot pass work when the test suite fails
+
+### 2. **Massive Scope Creep — Violates Project Instructions**
+The diff shows ~2,700 lines of **unrelated code** added:
+- `scripts/lib/dod-scorecard.sh` (442 lines)
+- `scripts/lib/intent-analysis.sh` (409 lines)
+- `scripts/lib/outcome-feedback.sh` (521 lines)
+- `scripts/lib/quality-profile.sh` (334 lines)
+- `scripts/lib/scope-enforcement.sh` (445 lines)
+- `.github/workflows/claude-code-review.yml` (44 lines)
+- `.github/workflows/claude.yml` (50 lines)
+- Multiple new test files
+
+**None of this is related to issue #242** (the jq JSON parsing bug). Per CLAUDE.md:
+> "Don't add features, refactor code, or make 'improvements' beyond what was asked. Avoid over-engineering. Only make changes that are directly requested or clearly necessary."
+
+This is scope explosion, not a focused fix.
+
+### 3. **Missing Required Test Documentation**
+The testing strategy skill output requires:
+- **Test Pyramid Breakdown**: unit/integration/E2E test counts and coverage targets — NOT PROVIDED
+- **Coverage Targets**: specific percentages and critical paths — NOT PROVIDED
+- **Critical Paths to Test**: explicit test cases for happy path + error cases + edge cases — NOT PROVIDED
+
+Instead, the agent just said "72 tests pass" with no breakdown.
+
+### 4. **Unverified Core Fix**
+While the agent claims to have fixed `_extract_text_from_json` and `accumulate_loop_tokens` to handle both `{` and `[`:
+- I cannot see the actual code changes (the diff only shows "+/- 32" lines)
+- The test suite failure raises questions about correctness
+- No before/after code samples provided for review
+
+### 5. **12 Retries with "Alternative Approach" Instructions**
+The failure diagnostics show the agent hit the 12-retry limit:
+> "This error has occurred 12 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach..."
+
+This suggests the agent was struggling with something for many iterations and kept retrying the same approach, which is inefficient and indicates the problem wasn't understood.
+
+## What Needs to Happen Before Passing
+
+1. **Identify and fix the `npm test` failure**
+   - Run `npm test` and get the actual failure output
+   - Fix whatever is broken (or revert unrelated changes causing it)
+
+2. **Remove scope creep**
+   - Delete: `lib/dod-scorecard.sh`, `lib/intent-analysis.sh`, `lib/outcome-feedback.sh`, `lib/quality-profile.sh`, `lib/scope-enforcement.sh`
+   - Delete: `.github/workflows/claude-code-review.yml`, `.github/workflows/claude.yml`
+   - Delete: associated test files for the above
+   - Keep ONLY the fix to `sw-loop.sh` and its direct tests
+
+3. **Verify the core fix is correct**
+   - Show the actual changes to `_extract_text_from_json` and `accumulate_loop_tokens`
+   - Verify they handle both `{` and `[` correctly
+   - Confirm `.result` and `.content` extraction works for both
+
+4. **Confirm all tests pass**
+   - `npm test` must exit 0
+   - `npm run test:smoke` must exit 0
+
+5. **Provide test documentation**
+   - Document which tests cover the JSON object case
+   - Document edge cases (missing jq, invalid JSON, etc.)
+
+---
+
+**AUDIT_FAIL**
+
+The work does not meet acceptance criteria: the test suite is failing, there is significant unrelated code added, and the required testing documentation is missing.
