@@ -858,6 +858,39 @@
       },
       "timestamp": 1773146004,
       "ttl": 1800
+    },
+    "c11ba86380a29bceeb59c2d23a89e9c3": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Shows concrete test failures (sw-cleanup.sh stale heartbeat detection issue) — directly informs what a pre-flight validator should detect and prevent before pipelines fail"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project structure (Node.js, vitest, source_dir, import_style, test_pattern) — essential context for designing validator checks that understand the codebase layout and test infrastructure"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Minimal project metadata (nodejs type, bootstrap source) — redundant with first patterns.json but less detailed; low additional value"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Empty decisions array — no prior architectural decisions captured; minimal relevance to validator design planning"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Empty baselines object — no performance baselines to inform what pre-flight checks should validate; minimal relevance"
+          }
+        ]
+      },
+      "timestamp": 1773146900,
+      "ttl": 1800
     }
   }
 }
