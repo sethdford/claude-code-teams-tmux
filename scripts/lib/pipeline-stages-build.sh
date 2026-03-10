@@ -495,6 +495,24 @@ ${commit_msgs}" --model haiku < /dev/null 2>/dev/null || true)
         fi
     fi
 
+    # ── Scope Enforcement: Compare planned vs actual files ──
+    if type generate_scope_report >/dev/null 2>&1; then
+        local plan_file="$ARTIFACTS_DIR/plan.md"
+        if [[ -f "$plan_file" ]]; then
+            info "Analyzing scope: comparing planned vs actual files..."
+            generate_scope_report "$plan_file" "origin/${BASE_BRANCH:-main}" "$ARTIFACTS_DIR" 2>/dev/null || true
+            if [[ -f "$ARTIFACTS_DIR/scope-report.json" ]]; then
+                local unplanned_count
+                unplanned_count=$(jq '.unplanned_files | length' "$ARTIFACTS_DIR/scope-report.json" 2>/dev/null || echo "0")
+                if [[ "$unplanned_count" -gt 0 ]]; then
+                    warn "Scope analysis: $unplanned_count unplanned file(s) changed (see scope-report.json)"
+                else
+                    info "Scope analysis: all changes are planned"
+                fi
+            fi
+        fi
+    fi
+
     log_stage "build" "Build loop completed ($commit_count commits)"
 }
 

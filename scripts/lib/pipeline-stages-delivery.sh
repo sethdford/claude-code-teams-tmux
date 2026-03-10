@@ -330,6 +330,44 @@ EOF
         fi
     fi
 
+    # ── PR Size Gate: Check against limits from quality profile ──
+    if type check_pr_size >/dev/null 2>&1; then
+        local quality_profile=".claude/quality-profile.json"
+        local max_pr_lines=500
+
+        if [[ -f "$quality_profile" ]]; then
+            max_pr_lines=$(jq -r '.quality.max_pr_lines // 500' "$quality_profile" 2>/dev/null || echo "500")
+        fi
+
+        if ! check_pr_size "origin/$BASE_BRANCH" "$max_pr_lines"; then
+            # Get actual PR stats for error message
+            local stats pr_stats insertions deletions files_changed total_lines
+            stats=$(get_pr_stats "origin/$BASE_BRANCH" 2>/dev/null || echo "{}")
+            insertions=$(echo "$stats" | jq '.insertions // 0' 2>/dev/null || echo "0")
+            deletions=$(echo "$stats" | jq '.deletions // 0' 2>/dev/null || echo "0")
+            files_changed=$(echo "$stats" | jq '.files_changed // 0' 2>/dev/null || echo "0")
+            total_lines=$((insertions + deletions))
+
+            error "PR size gate failed: ${total_lines} lines of change (max: ${max_pr_lines})"
+            error "Files changed: ${files_changed} | Insertions: +${insertions} | Deletions: -${deletions}"
+
+            # Check if scope enforcement is blocking
+            local scope_enforcement_blocks=false
+            if [[ -f "$quality_profile" ]]; then
+                scope_enforcement_blocks=$(jq -r '.scope.unplanned_files_block // false' "$quality_profile" 2>/dev/null)
+            fi
+
+            if [[ "$scope_enforcement_blocks" == "true" ]]; then
+                error "Scope enforcement is enabled — decompose into smaller PRs"
+                emit_event "pr.rejected" "issue=${ISSUE_NUMBER:-0}" "reason=oversized_pr" "lines=${total_lines}" "max=${max_pr_lines}"
+                return 1
+            else
+                warn "PR size exceeds limit (enforcing disabled) — consider splitting into smaller PRs"
+                emit_event "pr.warning" "issue=${ISSUE_NUMBER:-0}" "reason=oversized_pr" "lines=${total_lines}" "max=${max_pr_lines}"
+            fi
+        fi
+    fi
+
     # Build gh pr create args
     local pr_args=(--title "$pr_title" --body "$pr_body" --base "$BASE_BRANCH")
 

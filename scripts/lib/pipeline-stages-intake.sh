@@ -3,6 +3,10 @@
 [[ -n "${_PIPELINE_STAGES_INTAKE_LOADED:-}" ]] && return 0
 _PIPELINE_STAGES_INTAKE_LOADED=1
 
+# Load intent analysis module for acceptance criteria generation
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+source "${SCRIPT_DIR}/intent-analysis.sh" 2>/dev/null || true
+
 stage_intake() {
     CURRENT_STAGE_ID="intake"
     local project_lang
@@ -48,6 +52,18 @@ stage_intake() {
 
         # Add in-progress label
         gh_add_labels "$ISSUE_NUMBER" "pipeline/in-progress"
+
+        # 1a. Generate acceptance criteria from issue intent analysis
+        if type analyze_intent >/dev/null 2>&1; then
+            info "Analyzing issue intent and generating acceptance criteria..."
+            if analyze_intent "$GOAL" "$ISSUE_BODY" "$ISSUE_LABELS" "$ARTIFACTS_DIR" 2>/dev/null; then
+                local criteria_preview
+                criteria_preview=$(format_acceptance_criteria_for_prompt "$ARTIFACTS_DIR" 2>/dev/null | head -10 || true)
+                if [[ -n "$criteria_preview" ]]; then
+                    info "Acceptance criteria generated: ${DIM}acceptance-criteria.json${RESET}"
+                fi
+            fi
+        fi
     fi
 
     # 2. Detect task type
@@ -347,6 +363,24 @@ How to verify the implementation works.
 Checklist of completion criteria.
 "
 
+    # Inject acceptance criteria as constraints
+    if type format_acceptance_criteria_for_prompt >/dev/null 2>&1; then
+        local criteria_section
+        criteria_section=$(format_acceptance_criteria_for_prompt "$ARTIFACTS_DIR" 2>/dev/null || true)
+        if [[ -n "$criteria_section" ]]; then
+            plan_prompt="${plan_prompt}
+## Acceptance Criteria (External Constraints)
+${criteria_section}
+"
+        fi
+    fi
+
+    # Inject mandatory failure mode analysis requirement
+    if type inject_failure_mode_analysis >/dev/null 2>&1; then
+        local quality_profile_path="${PROJECT_ROOT:-.}/.claude/quality-profile.json"
+        plan_prompt=$(inject_failure_mode_analysis "$plan_prompt" "$quality_profile_path" 2>/dev/null || echo "$plan_prompt")
+    fi
+
     # Inject skill prompts — prefer AI-powered plan, fallback to adaptive, then static
     local _skill_prompts=""
     if type skill_load_from_plan >/dev/null 2>&1; then
@@ -507,6 +541,17 @@ CC_TASKS_EOF
     # ── Plan Validation Gate ──
     # Ask Claude to validate the plan before proceeding
     if command -v claude >/dev/null 2>&1 && [[ -s "$plan_file" ]]; then
+        # Pre-validate: check failure mode analysis is present and adequate
+        local failure_mode_status=""
+        if type get_failure_mode_validation_status >/dev/null 2>&1; then
+            failure_mode_status=$(get_failure_mode_validation_status "$plan_file" 2>/dev/null || echo "missing_section")
+            if [[ "$failure_mode_status" != "valid" ]]; then
+                warn "Plan missing adequate failure mode analysis (status: ${failure_mode_status})"
+                # Log this as a validation rejection reason
+                echo "missing_failure_analysis" > "$ARTIFACTS_DIR/.plan-failure-sig.txt"
+            fi
+        fi
+
         local validation_attempts=0
         local max_validation_attempts=2
         local plan_valid=false
@@ -595,7 +640,9 @@ Then explain your reasoning briefly."
             local failure_mode="unknown"
             local validation_lower
             validation_lower=$(echo "$validation_result" | tr '[:upper:]' '[:lower:]')
-            if echo "$validation_lower" | grep -qE 'requirements? unclear|goal.*vague|ambiguous|underspecified'; then
+            if echo "$validation_lower" | grep -qE 'failure mode|risk.*analysis|fail|risk'; then
+                failure_mode="missing_failure_analysis"
+            elif echo "$validation_lower" | grep -qE 'requirements? unclear|goal.*vague|ambiguous|underspecified'; then
                 failure_mode="requirements_unclear"
             elif echo "$validation_lower" | grep -qE 'insufficient detail|not specific|too high.level|missing.*steps|lacks.*detail'; then
                 failure_mode="insufficient_detail"
@@ -628,6 +675,8 @@ Then explain your reasoning briefly."
                 # Tailor regeneration prompt based on failure mode
                 local failure_guidance=""
                 case "$failure_mode" in
+                    missing_failure_analysis)
+                        failure_guidance="The validator found the failure mode analysis insufficient. The plan MUST include a Failure Mode Analysis section with at least 3 concrete failure modes specific to this codebase (not generic). For each major component, identify runtime failures, concurrency risks, scale risks, and rollback story. Reference specific architecture constraints and project technologies." ;;
                     requirements_unclear)
                         failure_guidance="The validator found the requirements unclear. Add more specific acceptance criteria, input/output examples, and concrete success metrics." ;;
                     insufficient_detail)
