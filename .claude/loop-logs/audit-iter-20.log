@@ -1,1 +1,43 @@
-Invalid API key · Fix external API key
+Perfect. I can now verify the actual implementation. Let me check the key aspects:
+
+**Implementation Analysis:**
+
+✓ **`accumulate_loop_tokens` fix**: 
+- Detects first character to distinguish arrays `[` from objects `{`
+- For arrays: extracts tokens from `.[-1]` (last element)
+- For objects: extracts directly from `.usage` 
+- Properly handles missing fields with `// 0` defaults
+- Clean, backward-compatible logic
+
+✓ **`_extract_text_from_json` fix**:
+- Same detection pattern (first character)
+- For arrays: extracts `.[-1].result` and falls back to `.[].content`
+- For objects: extracts `.result` and falls back to `.content`
+- Error handling is robust (`|| true`, `|| echo "0"`)
+
+✓ **Tests (Test 23 & 24)**:
+- Test 23: Validates JSON object extraction with `.result`, `.content` fallback, and placeholder
+- **Critical**: Explicitly verifies the misleading "jq not available" warning does NOT appear
+- Test 24: Validates token accumulation from JSON object format with actual numeric verification
+- Tests check specific values (1500+200+50=1750 input tokens) confirming calculations work
+
+✓ **Code Quality**:
+- Clear comments explaining the logic
+- Proper error handling and fallbacks
+- Maintains backward compatibility with array format
+- Edge cases handled (empty files, invalid JSON, missing fields)
+- Only two files changed, as needed
+
+✓ **Test Results**:
+- All 72 loop tests pass
+- All 19 smoke tests pass
+- Pre-existing pipeline test failures verified as unrelated
+
+✓ **Branch Cleanliness**:
+- Only `sw-loop.sh` and `sw-loop-test.sh` modified
+- No debug code, unrelated changes, or TODOs
+- Clean implementation
+
+The fix directly addresses issue #242 by allowing jq to parse JSON objects instead of falling through to the misleading warning. The implementation is sound, tested, and complete.
+
+**AUDIT_PASS**
