@@ -116,6 +116,46 @@ function renderOverviewPipelines(data: FleetState): void {
       ? ` style="animation-delay:${idx * 0.05}s"`
       : "";
 
+    // Build loop metrics widget
+    const bl = (p as any).buildLoop;
+    let buildLoopHtml = "";
+    if (bl) {
+      // Trend indicator
+      let trend = "\u2192 stable";
+      let trendCls = "trend-stable";
+      if (bl.testPassStreak >= 3) {
+        trend = "\u2191 improving";
+        trendCls = "trend-improving";
+      } else if (bl.testFailStreak >= 2 || bl.consecutiveLowProgress >= 2) {
+        trend = "\u2193 degrading";
+        trendCls = "trend-degrading";
+      }
+
+      // Test status badge
+      let testBadge = '<span class="loop-test-unknown">\u25cb not run</span>';
+      if (bl.testStatus === "passing") {
+        testBadge = `<span class="loop-test-pass">\u2713 passing (${bl.testPassStreak})</span>`;
+      } else if (bl.testStatus === "failing") {
+        testBadge = `<span class="loop-test-fail">\u2717 failing (${bl.testFailStreak})</span>`;
+      }
+
+      // Context usage bar
+      const ctxPct = Math.min(bl.contextUsagePercent || 0, 100);
+      const ctxCls = ctxPct > 80 ? "ctx-bar-critical" : ctxPct > 60 ? "ctx-bar-warning" : "ctx-bar-normal";
+
+      buildLoopHtml =
+        `<div class="build-loop-metrics">` +
+        `<div class="blm-row"><span class="blm-label">Tests</span>${testBadge}</div>` +
+        `<div class="blm-row"><span class="blm-label">Trend</span><span class="${trendCls}">${trend}</span></div>` +
+        `<div class="blm-row"><span class="blm-label">Files</span><span>${fmtNum(bl.filesChangedCount)} changed</span></div>` +
+        `<div class="blm-row"><span class="blm-label">Commits</span><span>${fmtNum(bl.totalCommits)}</span></div>` +
+        `<div class="blm-row"><span class="blm-label">Model</span><span>${escapeHtml(bl.model)}</span></div>` +
+        `<div class="blm-row"><span class="blm-label">Context</span>` +
+        `<div class="ctx-bar-track"><div class="ctx-bar-fill ${ctxCls}" style="width:${ctxPct}%"></div></div>` +
+        `<span class="ctx-pct">${ctxPct}%</span></div>` +
+        `</div>`;
+    }
+
     html +=
       `<div class="pipeline-card" data-issue="${p.issue}"${animDelay}>` +
       `<div class="pipeline-header">` +
@@ -126,6 +166,7 @@ function renderOverviewPipelines(data: FleetState): void {
       `<div class="pipeline-iter">` +
       `<span class="pipeline-iter-label">Iteration ${curIter}/${maxIter}</span>` +
       `<div class="iter-bar-track"><div class="iter-bar-fill" style="width:${iterPct}%"></div></div></div>` +
+      buildLoopHtml +
       `<div class="pipeline-meta">${metaParts.join(" <span>\u00b7</span> ")}</div>` +
       (p.worktree
         ? `<div class="pipeline-worktree">WORKTREE: ${escapeHtml(p.worktree)}</div>`

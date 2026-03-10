@@ -170,4 +170,104 @@ describe("OverviewView", () => {
     expect(activityEl).toBeTruthy();
     expect(activityEl!.innerHTML).toContain("Awaiting events");
   });
+
+  it("renders build loop metrics widget when buildLoop data present", async () => {
+    const { overviewView } = await import("./overview");
+    const data = emptyFleetState();
+    data.pipelines = [
+      {
+        issue: 99,
+        title: "Feature work",
+        stage: "build",
+        stagesDone: ["plan"],
+        elapsed_s: 600,
+        iteration: 5,
+        maxIterations: 20,
+        buildLoop: {
+          iteration: 5,
+          maxIterations: 20,
+          status: "running",
+          testStatus: "passing",
+          testPassStreak: 3,
+          testFailStreak: 0,
+          filesChangedCount: 12,
+          totalCommits: 4,
+          contextUsagePercent: 25,
+          timeElapsedS: 600,
+          consecutiveLowProgress: 0,
+          model: "opus",
+          goal: "Build feature",
+          timestamp: "2026-03-10T16:00:00Z",
+          linesWritten: 12,
+          testsPassing: true,
+        },
+      } as any,
+    ];
+    overviewView.render(data);
+    const container = document.getElementById("active-pipelines");
+    expect(container).toBeTruthy();
+    expect(container!.innerHTML).toContain("build-loop-metrics");
+    expect(container!.innerHTML).toContain("passing");
+    expect(container!.innerHTML).toContain("improving");
+    expect(container!.innerHTML).toContain("opus");
+  });
+
+  it("renders pipeline card without build loop when buildLoop is absent", async () => {
+    const { overviewView } = await import("./overview");
+    const data = emptyFleetState();
+    data.pipelines = [
+      {
+        issue: 100,
+        title: "Quick fix",
+        stage: "build",
+        stagesDone: [],
+        elapsed_s: 30,
+        iteration: 1,
+        maxIterations: 10,
+      },
+    ];
+    overviewView.render(data);
+    const container = document.getElementById("active-pipelines");
+    expect(container).toBeTruthy();
+    expect(container!.innerHTML).not.toContain("build-loop-metrics");
+    expect(container!.innerHTML).toContain("#100");
+  });
+
+  it("shows degrading trend when test fail streak is high", async () => {
+    const { overviewView } = await import("./overview");
+    const data = emptyFleetState();
+    data.pipelines = [
+      {
+        issue: 101,
+        title: "Failing build",
+        stage: "build",
+        stagesDone: [],
+        elapsed_s: 900,
+        iteration: 8,
+        maxIterations: 20,
+        buildLoop: {
+          iteration: 8,
+          maxIterations: 20,
+          status: "running",
+          testStatus: "failing",
+          testPassStreak: 0,
+          testFailStreak: 3,
+          filesChangedCount: 5,
+          totalCommits: 2,
+          contextUsagePercent: 40,
+          timeElapsedS: 900,
+          consecutiveLowProgress: 2,
+          model: "sonnet",
+          goal: "Fix tests",
+          timestamp: "2026-03-10T16:15:00Z",
+          linesWritten: 5,
+          testsPassing: false,
+        },
+      } as any,
+    ];
+    overviewView.render(data);
+    const container = document.getElementById("active-pipelines");
+    expect(container!.innerHTML).toContain("degrading");
+    expect(container!.innerHTML).toContain("failing");
+  });
 });

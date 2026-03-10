@@ -202,6 +202,7 @@ interface Pipeline {
   stagesDone: string[];
   linesWritten: number;
   testsPassing: boolean;
+  buildLoop?: BuildLoopStatus | null;
 }
 
 interface QueueItem {
@@ -1043,12 +1044,83 @@ function getCpuCores(): number {
   }
 }
 
+interface BuildLoopStatus {
+  iteration: number;
+  maxIterations: number;
+  status: string;
+  testStatus: string;
+  testPassStreak: number;
+  testFailStreak: number;
+  filesChangedCount: number;
+  totalCommits: number;
+  contextUsagePercent: number;
+  timeElapsedS: number;
+  consecutiveLowProgress: number;
+  model: string;
+  goal: string;
+  timestamp: string;
+  linesWritten: number;
+  testsPassing: boolean;
+}
+
+function readBuildLoopStatus(issue: number): BuildLoopStatus | null {
+  // Try worktree-based path first
+  const worktreeBase = findWorktreeBase(issue);
+  const candidates: string[] = [];
+  if (worktreeBase) {
+    candidates.push(join(worktreeBase, ".claude", "loop-logs", "build_loop_status.json"));
+  }
+  // Also try CWD-based path (for local/non-worktree runs)
+  candidates.push(join(process.cwd(), ".claude", "loop-logs", "build_loop_status.json"));
+
+  for (const statusFile of candidates) {
+    if (existsSync(statusFile)) {
+      try {
+        const raw = JSON.parse(readFileSync(statusFile, "utf-8"));
+        return {
+          iteration: raw.iteration ?? 0,
+          maxIterations: raw.max_iterations ?? 20,
+          status: raw.status ?? "unknown",
+          testStatus: raw.test_status ?? "unknown",
+          testPassStreak: raw.test_pass_streak ?? 0,
+          testFailStreak: raw.test_fail_streak ?? 0,
+          filesChangedCount: raw.files_changed_count ?? 0,
+          totalCommits: raw.total_commits ?? 0,
+          contextUsagePercent: raw.context_usage_percent ?? 0,
+          timeElapsedS: raw.time_elapsed_s ?? 0,
+          consecutiveLowProgress: raw.consecutive_low_progress ?? 0,
+          model: raw.model ?? "unknown",
+          goal: raw.goal ?? "",
+          timestamp: raw.timestamp ?? "",
+          linesWritten: raw.files_changed_count ?? 0,
+          testsPassing: raw.test_status === "passing",
+        };
+      } catch {
+        /* corrupt JSON — fall through to regex fallback */
+      }
+    }
+  }
+  return null;
+}
+
 function readLogIterations(issue: number): {
   iteration: number;
   maxIterations: number;
   linesWritten: number;
   testsPassing: boolean;
 } {
+  // Prefer structured build_loop_status.json
+  const structured = readBuildLoopStatus(issue);
+  if (structured) {
+    return {
+      iteration: structured.iteration,
+      maxIterations: structured.maxIterations,
+      linesWritten: structured.linesWritten,
+      testsPassing: structured.testsPassing,
+    };
+  }
+
+  // Fallback: regex scraping from log file
   const logFile = join(LOGS_DIR, `issue-${issue}.log`);
   if (!existsSync(logFile))
     return {
@@ -1132,6 +1204,7 @@ function getFleetState(): FleetState {
     for (const job of activeJobs) {
       const issue = (job.issue as number) || 0;
       const logInfo = readLogIterations(issue);
+      const buildLoop = readBuildLoopStatus(issue);
       state.pipelines.push({
         issue,
         title: (job.title as string) || "",
@@ -1143,6 +1216,7 @@ function getFleetState(): FleetState {
         stagesDone: [],
         linesWritten: logInfo.linesWritten,
         testsPassing: logInfo.testsPassing,
+        buildLoop,
       });
     }
 
@@ -5183,6 +5257,30 @@ const server = Bun.serve({
           headers: { "Content-Type": "application/json", ...CORS_HEADERS },
         });
       }
+    }
+
+    // GET /api/loop-status/:issue — Get build loop iteration progress metrics
+    if (
+      /^\/api\/loop-status\/\d+$/.test(pathname) &&
+      req.method === "GET"
+    ) {
+      const issueNum = parseInt(pathname.split("/")[3] || "0");
+      if (issueNum <= 0) {
+        return new Response(JSON.stringify({ error: "invalid_issue", message: "Issue number must be positive" }), {
+          status: 422,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      const status = readBuildLoopStatus(issueNum);
+      if (!status) {
+        return new Response(JSON.stringify({ error: "no_active_loop", message: "No active build loop found for this issue" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      return new Response(JSON.stringify(status), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
 
     // GET /api/pipeline/:issue/quality — Get quality metrics for a pipeline

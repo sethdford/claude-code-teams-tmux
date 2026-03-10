@@ -808,6 +808,209 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# BUILD LOOP STATUS TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_header "Build Loop Status"
+
+# Test: write_build_loop_status function exists in loop-progress.sh
+if grep -q 'write_build_loop_status()' "$SCRIPT_DIR/lib/loop-progress.sh"; then
+    assert_pass "write_build_loop_status function defined in loop-progress.sh"
+else
+    assert_fail "write_build_loop_status function defined in loop-progress.sh"
+fi
+
+# Test: write_build_loop_status writes valid JSON
+(
+    export LOG_DIR="$TEST_TEMP_DIR/loop-logs"
+    mkdir -p "$LOG_DIR"
+    export PROJECT_ROOT="$TEST_TEMP_DIR/repo"
+    export ITERATION=3
+    export MAX_ITERATIONS=20
+    export STATUS="running"
+    export TEST_PASSED="true"
+    export TEST_PASS_STREAK=2
+    export CONSECUTIVE_FAILURES=0
+    export TOTAL_COMMITS=5
+    export START_EPOCH=$(( $(date +%s) - 300 ))
+    export MODEL="opus"
+    export ORIGINAL_GOAL="Test goal"
+    export GOAL="Test goal"
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    write_build_loop_status 2>/dev/null
+    if [[ -f "$LOG_DIR/build_loop_status.json" ]]; then
+        if jq empty "$LOG_DIR/build_loop_status.json" 2>/dev/null; then
+            echo "VALID_JSON"
+        fi
+    fi
+) | grep -q "VALID_JSON" && assert_pass "write_build_loop_status produces valid JSON" \
+    || assert_fail "write_build_loop_status produces valid JSON"
+
+# Test: build_loop_status.json contains required fields
+(
+    export LOG_DIR="$TEST_TEMP_DIR/loop-logs-fields"
+    mkdir -p "$LOG_DIR"
+    export PROJECT_ROOT="$TEST_TEMP_DIR/repo"
+    export ITERATION=5
+    export MAX_ITERATIONS=20
+    export STATUS="running"
+    export TEST_PASSED="true"
+    export TEST_PASS_STREAK=3
+    export CONSECUTIVE_FAILURES=0
+    export TOTAL_COMMITS=2
+    export START_EPOCH=$(( $(date +%s) - 120 ))
+    export MODEL="sonnet"
+    export ORIGINAL_GOAL="Build feature"
+    export GOAL="Build feature"
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    write_build_loop_status 2>/dev/null
+    if [[ -f "$LOG_DIR/build_loop_status.json" ]]; then
+        local_ok=true
+        for field in iteration max_iterations status test_status test_pass_streak test_fail_streak files_changed_count total_commits context_usage_percent time_elapsed_s consecutive_low_progress model goal timestamp; do
+            if ! jq -e "has(\"$field\")" "$LOG_DIR/build_loop_status.json" >/dev/null 2>&1; then
+                local_ok=false
+            fi
+        done
+        if [[ "$local_ok" == "true" ]]; then
+            echo "ALL_FIELDS"
+        fi
+    fi
+) | grep -q "ALL_FIELDS" && assert_pass "build_loop_status.json contains all 14 required fields" \
+    || assert_fail "build_loop_status.json contains all 14 required fields"
+
+# Test: test_pass_streak field has correct value
+(
+    export LOG_DIR="$TEST_TEMP_DIR/loop-logs-streak"
+    mkdir -p "$LOG_DIR"
+    export PROJECT_ROOT="$TEST_TEMP_DIR/repo"
+    export ITERATION=3
+    export MAX_ITERATIONS=20
+    export STATUS="running"
+    export TEST_PASSED="true"
+    export TEST_PASS_STREAK=7
+    export CONSECUTIVE_FAILURES=0
+    export TOTAL_COMMITS=1
+    export START_EPOCH=$(date +%s)
+    export MODEL="opus"
+    export ORIGINAL_GOAL="test"
+    export GOAL="test"
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    write_build_loop_status 2>/dev/null
+    jq -r '.test_pass_streak' "$LOG_DIR/build_loop_status.json" 2>/dev/null
+) | grep -q "^7$" && assert_pass "test_pass_streak field stores correct value" \
+    || assert_fail "test_pass_streak field stores correct value"
+
+# Test: test_status reflects TEST_PASSED value
+(
+    export LOG_DIR="$TEST_TEMP_DIR/loop-logs-teststatus"
+    mkdir -p "$LOG_DIR"
+    export PROJECT_ROOT="$TEST_TEMP_DIR/repo"
+    export ITERATION=1
+    export MAX_ITERATIONS=10
+    export STATUS="running"
+    export TEST_PASSED="false"
+    export TEST_PASS_STREAK=0
+    export CONSECUTIVE_FAILURES=2
+    export TOTAL_COMMITS=0
+    export START_EPOCH=$(date +%s)
+    export MODEL="opus"
+    export ORIGINAL_GOAL="test"
+    export GOAL="test"
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    write_build_loop_status 2>/dev/null
+    jq -r '.test_status' "$LOG_DIR/build_loop_status.json" 2>/dev/null
+) | grep -q "^failing$" && assert_pass "test_status shows 'failing' when TEST_PASSED=false" \
+    || assert_fail "test_status shows 'failing' when TEST_PASSED=false"
+
+# Test: TEST_PASS_STREAK variable exists in sw-loop.sh
+if grep -q 'TEST_PASS_STREAK' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "TEST_PASS_STREAK counter defined in sw-loop.sh"
+else
+    assert_fail "TEST_PASS_STREAK counter defined in sw-loop.sh"
+fi
+
+# Test: TEST_PASS_STREAK increments on pass and resets on fail
+if grep -q 'TEST_PASS_STREAK=$(( TEST_PASS_STREAK + 1 ))' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "TEST_PASS_STREAK increments on test pass"
+else
+    assert_fail "TEST_PASS_STREAK increments on test pass"
+fi
+if grep -q 'TEST_PASS_STREAK=0' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "TEST_PASS_STREAK resets on test failure"
+else
+    assert_fail "TEST_PASS_STREAK resets on test failure"
+fi
+
+# Test: write_build_loop_status called after write_progress in main loop
+if grep -A1 'write_progress$' "$SCRIPT_DIR/sw-loop.sh" | grep -q 'write_build_loop_status'; then
+    assert_pass "write_build_loop_status called after write_progress"
+else
+    assert_fail "write_build_loop_status called after write_progress"
+fi
+
+# Test: status subcommand is handled
+if grep -q '"status"' "$SCRIPT_DIR/sw-loop.sh" && grep -q 'loop_show_status' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "status subcommand dispatches to loop_show_status"
+else
+    assert_fail "status subcommand dispatches to loop_show_status"
+fi
+
+# Test: loop_show_status supports --json flag
+if grep -q '\-\-json' "$SCRIPT_DIR/lib/loop-progress.sh"; then
+    assert_pass "loop_show_status supports --json output mode"
+else
+    assert_fail "loop_show_status supports --json output mode"
+fi
+
+# Test: loop_show_status displays trend indicators
+if grep -q 'improving' "$SCRIPT_DIR/lib/loop-progress.sh" && grep -q 'degrading' "$SCRIPT_DIR/lib/loop-progress.sh"; then
+    assert_pass "loop_show_status shows trend indicators (improving/degrading)"
+else
+    assert_fail "loop_show_status shows trend indicators (improving/degrading)"
+fi
+
+# Test: loop_show_status handles missing file gracefully
+(
+    export PROJECT_ROOT="$TEST_TEMP_DIR/empty-repo"
+    mkdir -p "$PROJECT_ROOT/.claude/loop-logs"
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    loop_show_status 2>/dev/null
+    echo "EXIT_$?"
+) | grep -q "EXIT_1" && assert_pass "loop_show_status returns 1 when no active loop" \
+    || assert_fail "loop_show_status returns 1 when no active loop"
+
+# Test: loop_show_status --json outputs valid JSON for existing status
+(
+    export PROJECT_ROOT="$TEST_TEMP_DIR/json-repo"
+    mkdir -p "$PROJECT_ROOT/.claude/loop-logs"
+    echo '{"iteration":5,"max_iterations":20,"status":"running","test_status":"passing","test_pass_streak":3,"test_fail_streak":0,"files_changed_count":10,"total_commits":4,"context_usage_percent":25,"time_elapsed_s":300,"consecutive_low_progress":0,"model":"opus","goal":"Test","timestamp":"2026-03-10T16:00:00Z"}' > "$PROJECT_ROOT/.claude/loop-logs/build_loop_status.json"
+    _LOOP_PROGRESS_LOADED=""
+    source "$SCRIPT_DIR/lib/loop-progress.sh" 2>/dev/null
+    output=$(loop_show_status --json 2>/dev/null)
+    if echo "$output" | jq empty 2>/dev/null; then
+        echo "VALID_JSON_OUTPUT"
+    fi
+) | grep -q "VALID_JSON_OUTPUT" && assert_pass "loop_show_status --json outputs valid JSON" \
+    || assert_fail "loop_show_status --json outputs valid JSON"
+
+# Test: atomic write pattern (tmp file + mv)
+if grep -q 'tmp_file.*\.tmp\.\$\$' "$SCRIPT_DIR/lib/loop-progress.sh" && \
+   grep -q 'mv.*tmp_file.*status_file' "$SCRIPT_DIR/lib/loop-progress.sh"; then
+    assert_pass "write_build_loop_status uses atomic tmp+mv write pattern"
+else
+    assert_fail "write_build_loop_status uses atomic tmp+mv write pattern"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -724,6 +724,54 @@ body::-webkit-scrollbar-thumb {
   margin-top: 6px;
 }
 
+/* ── Build Loop Metrics ──────────────────────────── */
+.build-loop-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+.blm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.blm-label {
+  color: var(--text-muted);
+  min-width: 52px;
+}
+.loop-test-pass { color: var(--green); }
+.loop-test-fail { color: var(--rose); }
+.loop-test-unknown { color: var(--text-muted); }
+.trend-improving { color: var(--green); }
+.trend-degrading { color: var(--rose); }
+.trend-stable { color: var(--text-muted); }
+.ctx-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ctx-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.ctx-bar-normal { background: var(--cyan); }
+.ctx-bar-warning { background: var(--amber); }
+.ctx-bar-critical { background: var(--rose); }
+.ctx-pct {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
 /* ── Queue Table ──────────────────────────────── */
 .queue-row {
   display: flex;

@@ -190,6 +190,14 @@ show_help() {
     echo -e "  ${DIM}Resume:      shipwright loop --resume${RESET}"
 }
 
+# ─── Subcommand: status ───────────────────────────────────────────────────────
+if [[ "${1:-}" == "status" ]]; then
+    shift
+    PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    loop_show_status "$@"
+    exit $?
+fi
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --repo)
@@ -690,6 +698,7 @@ format_duration() {
 
 ITERATION=0
 CONSECUTIVE_FAILURES=0
+TEST_PASS_STREAK=0
 TOTAL_COMMITS=0
 START_EPOCH=""
 STATUS="running"
@@ -2102,6 +2111,9 @@ run_single_agent_loop() {
 
     show_banner
 
+    # Write initial build loop status
+    write_build_loop_status || true
+
     while true; do
         # Reset environment variables at start of each iteration
         # Prevents previous iterations from affecting model selection or API keys
@@ -2115,6 +2127,7 @@ run_single_agent_loop() {
             STATUS="budget_exhausted"
             write_state
             write_progress
+            write_build_loop_status || true
             error "Budget exhausted — stopping pipeline"
             show_summary
             return 1
@@ -2196,6 +2209,7 @@ ${GOAL}"
             STATUS="error"
             write_state
             write_progress
+            write_build_loop_status || true
             error "Fatal CLI error detected — aborting loop (see iteration log)"
             show_summary
             return 1
@@ -2240,8 +2254,10 @@ ${GOAL}"
         write_error_summary
         if [[ -n "$TEST_CMD" ]]; then
             if [[ "$TEST_PASSED" == "true" ]]; then
+                TEST_PASS_STREAK=$(( TEST_PASS_STREAK + 1 ))
                 echo -e "  ${GREEN}✓${RESET} Tests: passed"
             else
+                TEST_PASS_STREAK=0
                 echo -e "  ${RED}✗${RESET} Tests: failed"
             fi
         fi
@@ -2337,6 +2353,7 @@ ${GOAL}"
                     STATUS="complete"
                     write_state
                     write_progress
+                    write_build_loop_status || true
                     show_summary
                     return 0
                     ;;
@@ -2346,6 +2363,7 @@ ${GOAL}"
                     STATUS="diverging"
                     write_state
                     write_progress
+                    write_build_loop_status || true
                     show_summary
                     return 1
                     ;;
@@ -2361,6 +2379,7 @@ ${GOAL}"
             STATUS="complete"
             write_state
             write_progress
+            write_build_loop_status || true
             show_summary
             return 0
         fi
@@ -2382,6 +2401,7 @@ $summary
 "
         write_state
         write_progress
+        write_build_loop_status || true
 
         # Emit iteration complete event for pipeline visibility
         if type emit_event >/dev/null 2>&1; then
@@ -2422,6 +2442,7 @@ HUMAN FEEDBACK (received after iteration $ITERATION): $human_msg"
             STATUS="stuck_restart"
             write_state
             write_progress
+            write_build_loop_status || true
             warn "Stuckness detected 3+ times — triggering session restart"
             break
         fi
@@ -2432,6 +2453,7 @@ HUMAN FEEDBACK (received after iteration $ITERATION): $human_msg"
     # Write final state after loop exits
     write_state
     write_progress
+    write_build_loop_status || true
     show_summary
 }
 
