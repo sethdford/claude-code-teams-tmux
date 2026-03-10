@@ -1,1 +1,98 @@
-Invalid API key · Fix external API key
+# Audit Review — Iteration 26, Issue #242
+
+## Critical Issues Found
+
+### 1. **Test Suite Failure — Claims vs Reality**
+- **Agent claim**: "All tests pass"
+- **Verified test status**: `npm test: exit 1` (FAILING, 755s)
+- **Discrepancy**: The agent only ran targeted tests, not the full suite
+- **Impact**: HIGH — We cannot merge code that breaks the test suite
+
+### 2. **Massive Unrelated Scope Creep**
+The diff shows 73,859 insertions across files that have nothing to do with issue #242:
+
+| Unrelated Changes | Lines | Purpose |
+|---|---|---|
+| `dod-scorecard.sh` | 442 | Delivery scorecard module |
+| `intent-analysis.sh` | 409 | Intent analysis module |
+| `outcome-feedback.sh` | 521 | Outcome feedback module |
+| `quality-profile.sh` | 334 | Quality profile system |
+| `scope-enforcement.sh` | 445 | Scope enforcement module |
+| 6 new test suites | ~2,700 | Tests for above modules |
+| `.github/workflows/claude-code-review.yml` | 44 | New CI workflow |
+| `.github/workflows/claude.yml` | 50 | New CI workflow |
+
+**Issue**: These are NOT required to fix issue #242. A misleading "jq not available" warning fix does NOT need comprehensive quality profiles, scope enforcement, or delivery scorecards.
+
+### 3. **24 Iterations of Unresolved Failures**
+The failure diagnosis shows the agent was stuck:
+- Iterations 2-25: 24 consecutive "unknown" classification failures
+- Strategy: "alternative_approach" repeated 24 times
+- This suggests the agent was confused about the actual problem and kept thrashing
+
+### 4. **Unverified "Pre-existing" Failures Claim**
+Agent states: "Pipeline test failures (16) are pre-existing on main"
+- We're on branch `fix/misleading-jq-not-available-warning-when-242` (not main)
+- No evidence provided that these 16 failures exist on main unchanged
+- This needs verification before claiming pre-existing status
+
+### 5. **Missing Code Inspection**
+The agent mentions the fix is in:
+- `_extract_text_from_json()` (line 590)
+- `accumulate_loop_tokens()` (line 518)
+
+But sw-loop.sh only shows `32 +/-` changes. Without seeing the actual code, I cannot verify:
+- Is the JSON object parsing correct?
+- Are both `{...}` and `[...]` truly handled?
+- Do the new tests actually verify the fix?
+
+---
+
+## What Should Have Been Done
+
+For issue #242 (misleading "jq not available" warning):
+
+1. **Minimal scope**: Modify only `scripts/sw-loop.sh`
+   - Fix `_extract_text_from_json()` to recognize `{` as valid JSON start
+   - Test with both objects and arrays
+   
+2. **Add tests**: Only to `scripts/sw-loop-test.sh`
+   - 7 assertions for the JSON object fix
+   - No new test suites or infrastructure
+   
+3. **Verify**: Run `npm test` and confirm exit 0
+   
+4. **Commit**: Single focused PR with clear message
+
+**Total scope**: ~50 lines of code change + 15 lines of tests
+
+**Actual scope**: 73,859 insertions across 109 files
+
+---
+
+## Recommendation
+
+**AUDIT_FAIL** — The work requires these fixes before it can proceed:
+
+1. **Revert all unrelated files**:
+   - Remove new library modules: `dod-scorecard.sh`, `intent-analysis.sh`, `outcome-feedback.sh`, `quality-profile.sh`, `scope-enforcement.sh`
+   - Remove new test suites for those modules
+   - Remove new GitHub workflows
+   - Revert `package.json` change (unless it's part of the issue fix)
+   - Revert `platform-hygiene.json` changes
+   - Revert `.claude/quality-profile.json` (new file)
+
+2. **Verify the actual fix**:
+   - Show the exact changes in `scripts/sw-loop.sh`
+   - Confirm both JSON object and array parsing work
+   - Confirm the "jq not available" warning only appears when jq is truly missing
+
+3. **Run full test suite**:
+   - Execute `npm test` and confirm exit 0
+   - If pre-existing failures exist on main, document them
+
+4. **Create minimal PR**:
+   - Only sw-loop.sh and sw-loop-test.sh changes
+   - Clear commit message referencing issue #242
+
+The agent's work expanded far beyond the original goal. This is classic scope creep in autonomous systems — adding "improvements" that weren't requested. Reset to the focused issue fix.
