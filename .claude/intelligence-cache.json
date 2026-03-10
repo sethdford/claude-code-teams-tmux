@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester"
+        ],
+        "confidence": 0.9,
+        "reasoning": "Task requires designing a failure mode taxonomy and adaptive recovery framework (architecture), implementing the system (builder), and validating recovery mechanisms (tester).",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773146302,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,320 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "5631268322b55959ab246b21987dc461": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 68,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Failure mode misclassification causing incorrect recovery strategy selection",
+          "Recovery strategies triggering infinite loops or masking underlying issues",
+          "Breaking existing build loop retry/restart behavior for existing users",
+          "Context exhaustion detection heuristics being too aggressive/lenient",
+          "State machine complexity and edge cases in recovery flow"
+        ],
+        "implementation_hints": [
+          "Build detection heuristics by analyzing error-summary.json patterns: context overflow keywords, test timeout patterns, dependency error signatures",
+          "Implement detection logic as a separate decision tree before recovery strategies",
+          "Use event logging to audit failure mode classification and recovery path for observability",
+          "Test each recovery strategy in isolation with synthetic failure modes before integration",
+          "Ensure recovery strategies are idempotent and document fallback behavior if recovery fails",
+          "Consider adding --dry-run flag alongside --failure-mode for safe testing"
+        ]
+      },
+      "timestamp": 1773145659,
+      "ttl": 3600
+    },
+    "9fc0fbf20e6a38b291932be9a27a718c": {
+      "result": {
+        "estimated_iterations": 12
+      },
+      "timestamp": 1773145670,
+      "ttl": 1800
+    },
+    "0c97600632db9c8b89e456afc05b4c3a": {
+      "result": {
+        "estimated_cost_usd": 0.85,
+        "estimated_iterations": 4,
+        "estimated_tokens": 54000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1773145682,
+      "ttl": 3600
+    },
+    "121a2a0b4de8580605cf5d42d3645904": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.89,
+        "secondary_domains": [
+          "reliability",
+          "error-handling",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires understanding current failure patterns in error signals, designing 5 distinct recovery strategies, implementing classification state machine, and comprehensive testing of edge cases without introducing regressions in the normal loop path"
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "systematic-debugging",
+            "adversarial-quality",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability",
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Investigate what signals exist in error-summary.json and progress.md that distinguish each failure mode, and understand why previous retry attempts failed",
+          "architecture-design": "Document the failure classification state machine and recovery strategy selection logic as an ADR so future developers understand the detection rules and recovery flow",
+          "testing-strategy": "Design isolated test cases for each failure mode (context exhaustion, infinite loop, test flakiness, dependency issue, code error) with reproducible trigger conditions",
+          "adversarial-quality": "Identify edge cases where failure detection could misclassify (e.g., legitimate iteration 95 misclassified as context exhaustion) or recovery could cause new failures",
+          "two-stage-review": "This feature touches core retry logic; use two-pass review to catch subtle state machine bugs and recovery race conditions before merge",
+          "observability": "Log failure mode classification and recovery strategy outcomes so production incidents reveal whether detection rules are working as designed",
+          "pr-quality": "Clearly document the signal detection rules and recovery flow so reviewers understand why each failure mode triggers its specific recovery",
+          "deploy-safety": "Roll out to staging daemon first to verify failure detection doesn't cause false positives and recovery strategies don't introduce regressions",
+          "validation-thoroughness": "Test real failure scenarios (actually exhausting context, creating circular test failures) to confirm recovery strategies resolve the root cause"
+        },
+        "generated_skills": [
+          {
+            "name": "failure-mode-recovery",
+            "reason": "No existing skill directly addresses failure mode classification from system signals and targeted recovery strategy selection—this is a specialized pattern matching and remediation domain",
+            "content": "## Failure Mode Detection & Adaptive Recovery\n\nWhen the build loop fails, classify the failure mode from error signals and apply mode-specific recovery instead of generic retry. This improves success rate and token efficiency.\n\n### Failure Mode Classification\n\nEach mode has distinct signals in error-summary.json and progress.md:\n\n**1. Context Exhaustion**\n- Signal: `iteration_count >= 90% of max_iterations` AND error-summary.json shows same or similar error_line across last 3+ iterations\n- Cause: Loop is converging too slowly or hitting a problem it can't solve\n- Recovery: Restart with compressed progress briefing (remove verbose logs, keep only key decisions)\n\n**2. Infinite Loop**\n- Signal: `same error_line appears in last 5+ iterations` (exact match on file:line from error-summary.json)\n- Cause: Loop is stuck in same error, making no progress\n- Recovery: Reduce max_iterations by 50%, increase restart threshold to 2 (more likely to restart)\n\n**3. Test Flakiness**\n- Signal: `different test failures in consecutive iterations` OR `test passes on retry without code changes`\n- Cause: Non-deterministic test failure, not code issue\n- Recovery: Rerun same failed test 3 times; accept if 2+ pass (statistical remedy)\n\n**4. Dependency Issue**\n- Signal: error-summary.json contains keywords: `module not found`, `failed to resolve`, `Cannot find`, `ENOENT`, `ERR!` (npm/pip/cargo errors)\n- Cause: Missing or broken dependency, not code error\n- Recovery: Reinstall dependencies (npm ci/pip install --force-reinstall), clear caches, retry loop\n\n**5. Code Error**\n- Signal: `unique error_line` (first occurrence, not repeated) or deterministic test failure\n- Cause: Legitimate code defect needing actual fix\n- Recovery: Continue normal loop iterations; human intervention may be needed if iterations exhaust\n\n### Implementation Pseudocode\n\n```bash\n# Parse signals\nerror_summary=$(cat error-summary.json | jq '.')\nerror_line=$(echo \"$error_summary\" | jq -r '.error_line')\nerror_message=$(echo \"$error_summary\" | jq -r '.error_message')\niterations=$(grep -c '^## Iteration' progress.md || echo 0)\nmax_iter=$(jq -r '.max_iterations' < progress.md || echo 100)\n\n# Classify\nif (( iterations >= max_iter * 9 / 10 )); then\n  same_errors=$(grep \"$error_line\" progress.md | tail -3 | sort | uniq | wc -l)\n  if (( same_errors == 1 )); then\n    mode=\"context_exhaustion\"\n  fi\nfi\n\nif grep \"$error_line\" progress.md | tail -5 | grep -q .; then\n  repeat_count=$(grep \"$error_line\" progress.md | tail -5 | wc -l)\n  if (( repeat_count >= 5 )); then\n    mode=\"infinite_loop\"\n  fi\nfi\n\nif echo \"$error_message\" | grep -qiE \"(module not found|failed to resolve|Cannot find|ENOENT|ERR!)\"; then\n  mode=\"dependency_issue\"\nfi\n\n# Apply recovery\ncase \"$mode\" in\n  context_exhaustion) compress_progress_briefing; restart_session ;;\n  infinite_loop) reduce_max_iterations 50; restart_session ;;\n  test_flakiness) rerun_failed_test 3; continue_loop ;;\n  dependency_issue) reinstall_deps; clear_caches; continue_loop ;;\n  *) mode=\"code_error\"; continue_loop ;;\nesac\n\n# Log for observability\nemit_event \"build_loop_recovery\" \"mode=$mode\" \"iteration=$iterations\" \"max_iterations=$max_iter\" \"error_line=$error_line\"\n```\n\n### Testing Each Mode\n\n- **Context Exhaustion**: Create progress.md with 95 iterations of same error; verify restart is triggered\n- **Infinite Loop**: Create progress.md where last 5 iterations have identical error_line; verify iteration reduction\n- **Test Flakiness**: Mock test that fails iteration 1, passes iteration 2, fails iteration 3; verify rerun recovery\n- **Dependency Issue**: Create error-summary.json with \"module not found\"; verify reinstall is triggered\n- **Code Error**: New error_line each iteration; verify loop continues without recovery\n\n### Safety Guardrails\n\n1. **State Preservation**: Always save progress.md and current git state before restart\n2. **Retry Budget**: Ensure recovery doesn't exceed total retry limit (track restarts, not just iterations)\n3. **False Positive Prevention**: Require 3+ repetitions for infinite_loop, 90% threshold for context_exhaustion\n4. **Audit Trail**: Log every classification and recovery action to events.jsonl with timestamp\n5. **Fallback**: If recovery strategy itself fails, fall back to generic retry with --max-restarts bump\n"
+          }
+        ],
+        "review_focus": [
+          "Failure mode detection accuracy: Each mode must be correctly identified without false positives that waste retries (especially context_exhaustion misclassifying legitimate slow convergence)",
+          "Recovery strategy correctness: Each recovery must actually address root cause (verify context_exhaustion uses compressed briefing, dependency_issue calls reinstall, infinite_loop reduces iterations)",
+          "State integrity: progress.md and git state are preserved before any restart; no progress loss during recovery",
+          "Signal parsing robustness: error-summary.json and progress.md parsing handles missing fields, malformed JSON, and edge cases gracefully"
+        ],
+        "risk_areas": [
+          "False positive context exhaustion detection causing unnecessary restarts that waste context windows and retries",
+          "Infinite loop detection threshold too aggressive (triggering on legitimate multi-iteration convergence) or too lenient (missing real infinite loops)",
+          "Dependency reinstall recovery succeeding but not actually fixing the underlying issue, leading to repeated restart cycles",
+          "Recovery restart logic corrupting progress.md or losing git state, breaking resume capability",
+          "New failure classification logic introducing performance regression in normal (non-failure) loop execution path"
+        ]
+      },
+      "timestamp": 1773145889,
+      "ttl": 3600
+    },
+    "713370f4ebaa1e79f247fe6e3642ee1c": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains actual failure modes, patterns, root causes, and fixes from the repo. Directly maps to the core requirement of classifying failure modes and implementing recovery strategies."
+          },
+          {
+            "file": "patterns.json (full)",
+            "relevance": 68,
+            "summary": "Project structure and conventions (vitest test runner, src/ layout, commonjs imports) inform implementation approach for failure classification within the build loop infrastructure."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Currently empty baseline metrics, but structure is relevant for tracking failure recovery success rates and adaptive tuning effectiveness post-implementation."
+          },
+          {
+            "file": "patterns.json (minimal)",
+            "relevance": 22,
+            "summary": "Redundant project type detection with less detail than the full patterns.json entry; minimal additional value for planning."
+          },
+          {
+            "file": "global.json",
+            "relevance": 18,
+            "summary": "Empty cross-repo learnings, but potentially relevant if similar failure classification patterns exist in other Shipwright repos."
+          }
+        ]
+      },
+      "timestamp": 1773145906,
+      "ttl": 1800
+    },
+    "b5a5a44cc8ebd8eea89c75e7cca60991": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains captured test failures with root causes and fixes (sw-cleanup.sh stale heartbeat detection issue). Directly relevant for classifying build loop failure modes and informing adaptive recovery strategies."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 38,
+            "summary": "Provides project structure metadata (vitest test runner, npm package manager). Minimal relevance—context for understanding test infrastructure but doesn't describe failure modes or recovery approaches."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline metrics. Not relevant to failure mode classification or adaptive recovery."
+          }
+        ]
+      },
+      "timestamp": 1773146008,
+      "ttl": 1800
+    },
+    "524cca80ed8a3f1e888c3f03309efe88": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains actual failure patterns with root causes, fixes, and classification (test_failure, unknown). Directly supports designing failure mode classification schema and recovery strategies."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Project setup conventions including test runner (vitest) and test patterns. Provides context for understanding test failure characteristics."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Project type detection (nodejs). Minimal relevance—basic project metadata, not failure-specific architecture patterns."
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty cross-repo learnings array. No actual failure patterns or recovery insights captured."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array. No prior architectural decisions captured for failure classification or recovery."
+          }
+        ]
+      },
+      "timestamp": 1773146045,
+      "ttl": 1800
+    },
+    "7c7f7d51be4eae9fdde975e118befcef": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 42,
+            "summary": "Documents observed failure patterns and root causes (e.g., sw-cleanup.sh heartbeat detection), which serve as empirical evidence of approaches that failed in practice and should be avoided in build loop failure classification"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 14,
+            "summary": "Contains project configuration metadata (Node.js, vitest, commonjs) that provides codebase context but does not address rejected design approaches or anti-patterns"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 8,
+            "summary": "Minimal project type detection data with timestamp; no relevance to design approach evaluation for build loop failure mode classification"
+          }
+        ]
+      },
+      "timestamp": 1773146060,
+      "ttl": 1800
+    },
+    "14f28e974dce029201adbd42540aef6e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains failure patterns with root causes and fixes directly relevant to failure mode classification. Shows test failures and recovery strategies needed for build loop adaptive recovery."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Project structure (vitest, node, npm) provides context for understanding test failures and designing recovery strategies appropriate to the runtime environment."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Basic project type (nodejs) detection provides minimal context about the environment where failures occur and recovery must execute."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines offer no historical data for failure classification or adaptive tuning of recovery strategies."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions log provides no prior adaptive recovery choices or classification rules to leverage."
+          }
+        ]
+      },
+      "timestamp": 1773146282,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project type (node), test runner (vitest), package manager (npm), and source conventions. Critical for build stage to execute builds correctly and understand test invocation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Documents recurring test stage failures (sw-cleanup.sh heartbeat detection issue seen 6 times). Helps build stage anticipate test failures and potential workarounds."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. Not relevant to current build context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No historical decisions to inform build stage execution."
+          }
+        ]
+      },
+      "timestamp": 1773146290,
+      "ttl": 1800
+    },
+    "a8699c77b6bda7102cb343a23bd00cfa": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1773146668,
+      "ttl": 1800
     }
   }
 }
