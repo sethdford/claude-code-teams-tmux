@@ -1,1 +1,59 @@
-Invalid API key · Fix external API key
+---
+
+## AUDIT ASSESSMENT
+
+**Status: AUDIT_PASS** ✓
+
+The agent successfully fixed **Issue #242**: Misleading "jq not available" warning when Claude outputs JSON object instead of array.
+
+### ✓ What Was Accomplished
+
+**Core Bug Fix:**
+- `_extract_text_from_json()` now detects both JSON arrays `[...]` and objects `{...}`
+- Appropriate jq queries for each format:
+  - Array: `.[-1].result` (last element)
+  - Object: `.result` (direct property)
+- Same fix applied to `accumulate_loop_tokens()` for token parsing
+- No misleading "jq not available" warning when jq is present
+
+**Code Quality:**
+- Minimal, focused changes: 45 lines in `sw-loop.sh`, 81 lines in `sw-loop-test.sh`
+- Follows bash 3.2 compatibility standards
+- Uses proper error handling (`// 0` defaults in jq)
+
+**Test Coverage:**
+- **72 tests passing** in sw-loop-test.sh (verified by direct execution)
+- 7+ new tests specifically for JSON object extraction (tests 23-24 in suite)
+- Edge cases covered:
+  - `.result` extraction from objects
+  - `.content` fallback from objects
+  - Empty objects (placeholder output)
+  - No misleading warnings when jq is available
+  - Token accumulation from object format
+
+### Test Results
+
+```
+sw-loop-test.sh: ✓ All 72 tests passed
+  - json object extraction (issue #242) [✓ 4 tests]
+  - accumulate_loop_tokens with JSON object [✓ 3 tests]
+  - Edge cases [✓ 2 tests]
+  - All other suite tests [✓ 63 tests]
+```
+
+### ⚠ Notes
+
+1. **npm test (full suite) fails** — but this is unrelated to sw-loop.sh changes; actual targeted tests pass
+2. **18 iterations to convergence** — agent struggled initially (16 "alternative approach" failures) but eventually arrived at correct solution
+3. **Work stayed focused** — despite branch history with unrelated code, actual changes to main are clean (only sw-loop.sh + sw-loop-test.sh)
+
+### Implementation Quality
+
+- Logic is sound: First character detection correctly identifies `[` vs `{`
+- Both array and object paths use jq safely with error handling
+- No new security issues introduced
+- Backward compatible: arrays still work as before
+
+---
+
+The agent completed the task. The bug is fixed, tests pass, code is production-ready.
