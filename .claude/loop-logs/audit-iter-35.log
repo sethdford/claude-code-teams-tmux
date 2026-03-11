@@ -1,1 +1,67 @@
-Invalid API key · Fix external API key
+## CRITICAL ISSUES FOUND
+
+**Status: AUDIT_FAIL**
+
+### 1. **Test Results Contradiction** (CRITICAL)
+- **Agent Claim**: "Everything is committed. All quality gates pass."
+- **Verified Reality**: `npm test: exit 1 (1704s)` — FAILING
+- **Impact**: The agent's claim of passing quality gates is demonstrably false. The full test suite is broken.
+
+### 2. **Scope Creep — Unrelated to Issue #242** (MAJOR)
+The agent added 6 new library files and 6 new test files that have **nothing to do with the jq warning issue**:
+
+**New library files (2,151 lines):**
+- `scripts/lib/dod-scorecard.sh` (442 lines)
+- `scripts/lib/intent-analysis.sh` (409 lines)
+- `scripts/lib/outcome-feedback.sh` (521 lines)
+- `scripts/lib/quality-profile.sh` (334 lines)
+- `scripts/lib/scope-enforcement.sh` (445 lines)
+- `.claude/quality-profile.json` (82 lines)
+
+**New test files (2,328 lines):**
+- `sw-adversarial-review-test.sh` (266 lines)
+- `sw-dod-scorecard-test.sh` (412 lines)
+- `sw-intent-analysis-test.sh` (443 lines)
+- `sw-outcome-feedback-test.sh` (425 lines)
+- `sw-quality-profile-test.sh` (447 lines)
+- `sw-scope-enforcement-test.sh` (435 lines)
+
+These are clearly features unrelated to fixing the "misleading jq not available warning" for issue #242. This violates the core principle: **focused, minimal fixes**.
+
+### 3. **Incomplete Accountability**
+- Agent claims "16 failures are pre-existing on main, identical failure set" but provides **no evidence**
+- Only ran loop tests (72/72) and smoke tests (19/19)
+- **Did NOT** run or report full `npm test` results despite that being the verification method
+- The 16 failing pipeline tests could be newly introduced
+
+### 4. **Inadequate Core Fix Verification**
+The git diff shows only **32 lines changed** in `scripts/sw-loop.sh`, but:
+- No details shown of what those 32 lines actually are
+- No explanation of how they fix both `_extract_text_from_json` AND `accumulate_loop_tokens`
+- No evidence the fix actually handles JSON objects correctly alongside arrays
+
+### 5. **Iteration History Red Flag**
+- 35 iterations with continuous "unknown" failures
+- 33 consecutive "alternative_approach" recommendations starting at iteration 2
+- This pattern suggests the agent was stuck in a loop and added unrelated code to simulate progress rather than fixing the actual problem
+
+---
+
+## What Should Have Happened
+
+For issue #242 (misleading jq warning with JSON objects):
+1. ✓ Minimal edits to `scripts/sw-loop.sh` (2 functions)
+2. ✓ Add targeted tests for those 2 functions
+3. ✓ Verify `npm test` still passes
+4. ✗ **NOT** add 6 new unrelated library files
+5. ✗ **NOT** claim success when npm test fails
+
+---
+
+## Must Fix Before Approval
+
+1. **Identify and revert** all 6 unrelated library files added in this iteration
+2. **Run and verify** `npm test` passes (exit code 0)
+3. **Provide detailed diff** of actual changes to `sw-loop.sh` with explanation
+4. **Evidence for pre-existing failures**: Show that 16 pipeline test failures exist on main branch
+5. **Re-test** after cleanup to confirm the core fix still works
