@@ -7,6 +7,7 @@ trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/test-helpers.sh"
+source "$SCRIPT_DIR/lib/compat.sh"
 
 setup_env() {
     mkdir -p "$TEST_TEMP_DIR/home/.shipwright"
@@ -37,7 +38,7 @@ exit 0
 MOCK
     chmod +x "$TEST_TEMP_DIR/bin/git"
     # git mock needs TEMP_DIR — inject it
-    sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+    sed_i "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
 
     # Mock gh
     cat > "$TEST_TEMP_DIR/bin/gh" <<'MOCK'
@@ -77,18 +78,7 @@ SAMPLE
 
 trap cleanup_test_env EXIT
 
-assert_pass() {
-    local desc="$1"
-    echo -e "  ${GREEN}✓${RESET} ${desc}"
-}
-
-assert_fail() {
-    local desc="$1"
-    local detail="${2:-}"
-    FAILURES+=("$desc")
-    echo -e "  ${RED}✗${RESET} ${desc}"
-    [[ -n "$detail" ]] && echo -e "    ${DIM}${detail}${RESET}"
-}
+# assert_pass / assert_fail / assert_eq / assert_contains from test-helpers.sh
 
 echo ""
 print_test_header "Shipwright Code Review Tests"
