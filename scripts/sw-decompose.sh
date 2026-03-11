@@ -805,6 +805,26 @@ cmd_schedule() {
 main() {
     local cmd="${1:-help}"
 
+    # Handle --issue N --create-subtasks syntax
+    if [[ "$cmd" == "--issue" ]]; then
+        local issue_num="${2:-}"
+        local action="${3:-}"
+        if [[ -z "$issue_num" ]]; then
+            error "Usage: sw decompose --issue <number> --create-subtasks"
+            exit 1
+        fi
+        if [[ "$action" == "--create-subtasks" ]]; then
+            cmd_decompose "$issue_num"
+            return $?
+        elif [[ -z "$action" ]]; then
+            error "Usage: sw decompose --issue <number> --create-subtasks"
+            exit 1
+        else
+            error "Unknown flag: $action (did you mean --create-subtasks?)"
+            exit 1
+        fi
+    fi
+
     case "$cmd" in
         analyze)
             cmd_analyze "${2:-}"
@@ -842,6 +862,7 @@ main() {
             echo -e "${BOLD}EXAMPLES${RESET}"
             echo -e "  ${DIM}sw decompose analyze 42${RESET}"
             echo -e "  ${DIM}sw decompose decompose 42${RESET}"
+            echo -e "  ${DIM}sw decompose --issue 42 --create-subtasks${RESET}"
             echo -e "  ${DIM}sw decompose schedule analysis.json 42${RESET}"
             echo -e "  ${DIM}sw decompose critical-path analysis.json${RESET}"
             echo -e "  ${DIM}sw decompose visualize analysis.json mermaid${RESET}"

@@ -358,6 +358,121 @@ Task: ${goal}" --model haiku < /dev/null 2>/dev/null || true)
     esac
 }
 
+# ─── Meta-Feature Detection ────────────────────────────────────────────────
+
+# detect_meta_feature — Score whether an issue targets Shipwright's own codebase
+# Uses weighted scoring: labels (fast-path), path signals (strong), keyword signals (weak)
+# Returns "true" if score >= threshold, "false" otherwise
+# Args: goal, issue_body, issue_labels
+detect_meta_feature() {
+    local goal="${1:-}"
+    local issue_body="${2:-}"
+    local issue_labels="${3:-}"
+    local score=0
+    local threshold=3
+
+    # Fast-path: label-based detection
+    local labels_lower
+    labels_lower=$(echo "$issue_labels" | tr '[:upper:]' '[:lower:]')
+    case ",$labels_lower," in
+        *,meta,*|*,self-improvement,*|*,infrastructure,*|*,shipwright,*)
+            echo "true"
+            return 0
+            ;;
+    esac
+
+    # Combine goal + body for text analysis
+    local combined
+    combined=$(printf '%s\n%s' "$goal" "$issue_body" | tr '[:upper:]' '[:lower:]')
+
+    # Strong path signals (+3 each)
+    local path
+    for path in "scripts/sw-" "scripts/lib/" "dashboard/server" ".claude/agents/" ".claude/hooks/"; do
+        if echo "$combined" | grep -qF "$path"; then
+            score=$((score + 3))
+        fi
+    done
+
+    # Medium path signals (+2 each)
+    for path in "scripts/" "dashboard/" "templates/" ".claude/" "tmux/"; do
+        if echo "$combined" | grep -qF "$path"; then
+            score=$((score + 2))
+        fi
+    done
+
+    # Keyword signals (+1 each)
+    local kw
+    for kw in "shipwright" "pipeline.*stage" "daemon.*config" "self-improvement" "meta-feature" "sw-.*\.sh"; do
+        if echo "$combined" | grep -qE "$kw"; then
+            score=$((score + 1))
+        fi
+    done
+
+    # Structural signals (+2): mentions multiple Shipwright components
+    local component_count=0
+    for kw in "pipeline" "daemon" "fleet" "memory" "intelligence" "loop" "decompose"; do
+        if echo "$combined" | grep -qF "$kw"; then
+            component_count=$((component_count + 1))
+        fi
+    done
+    if [[ "$component_count" -ge 3 ]]; then
+        score=$((score + 2))
+    fi
+
+    if [[ "$score" -ge "$threshold" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+# check_meta_feature_decomposition — Gate: block if meta-feature not decomposed
+# Returns 0 (proceed) if decomposed/subtask/no issue, 1 (block) if needs decomposition
+# Args: issue_number, issue_labels, goal, issue_body
+check_meta_feature_decomposition() {
+    local issue_number="${1:-}"
+    local issue_labels="${2:-}"
+    local goal="${3:-}"
+    local issue_body="${4:-}"
+
+    # No issue number (--goal mode) → warn but proceed
+    if [[ -z "$issue_number" ]]; then
+        return 0
+    fi
+
+    # Check if meta-feature at all
+    local is_meta
+    is_meta=$(detect_meta_feature "$goal" "$issue_body" "$issue_labels")
+    if [[ "$is_meta" != "true" ]]; then
+        return 0
+    fi
+
+    # Bypass: subtask label → this IS a decomposed child
+    local labels_lower
+    labels_lower=$(echo "$issue_labels" | tr '[:upper:]' '[:lower:]')
+    case ",$labels_lower," in
+        *,subtask,*)
+            return 0
+            ;;
+    esac
+
+    # Bypass: decomposed label → parent already split
+    case ",$labels_lower," in
+        *,decomposed,*)
+            return 0
+            ;;
+    esac
+
+    # Block: meta-feature without decomposition
+    echo "Meta-feature detected: this issue targets Shipwright's own codebase." >&2
+    echo "Large meta-features must be decomposed into focused subtasks first." >&2
+    echo "" >&2
+    echo "Run:  shipwright decompose --issue ${issue_number} --create-subtasks" >&2
+    echo "" >&2
+    echo "To bypass: add the 'subtask' or 'decomposed' label to issue #${issue_number}" >&2
+    return 1
+}
+
 template_for_type() {
     case "$1" in
         bug)          echo "bug-fix" ;;

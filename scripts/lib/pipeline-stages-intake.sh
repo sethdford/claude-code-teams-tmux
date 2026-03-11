@@ -66,6 +66,13 @@ stage_intake() {
         fi
     fi
 
+    # 1b. Meta-feature gate — block large self-referential issues without decomposition
+    if type check_meta_feature_decomposition >/dev/null 2>&1; then
+        if ! check_meta_feature_decomposition "${ISSUE_NUMBER:-}" "${ISSUE_LABELS:-}" "$GOAL" "${ISSUE_BODY:-}"; then
+            return 1
+        fi
+    fi
+
     # 2. Detect task type
     TASK_TYPE=$(detect_task_type "$GOAL")
     local suggested_template

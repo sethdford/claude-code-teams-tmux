@@ -388,4 +388,104 @@ rm -f "$PROJECT_ROOT/package.json"
 result=$(detect_test_commands)
 assert_eq "Empty project returns empty" "" "$result"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# detect_meta_feature
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "detect_meta_feature"
+
+# Label fast-path: meta label
+result=$(detect_meta_feature "some goal" "" "meta,enhancement")
+assert_eq "meta label triggers detection" "true" "$result"
+
+# Label fast-path: shipwright label
+result=$(detect_meta_feature "some goal" "" "shipwright")
+assert_eq "shipwright label triggers detection" "true" "$result"
+
+# Label fast-path: self-improvement label
+result=$(detect_meta_feature "some goal" "" "self-improvement")
+assert_eq "self-improvement label triggers detection" "true" "$result"
+
+# Label fast-path: infrastructure label
+result=$(detect_meta_feature "some goal" "" "infrastructure")
+assert_eq "infrastructure label triggers detection" "true" "$result"
+
+# Strong path signals: scripts/sw-
+result=$(detect_meta_feature "modify scripts/sw-pipeline.sh" "" "")
+assert_eq "scripts/sw- path detected" "true" "$result"
+
+# Strong path signals: scripts/lib/
+result=$(detect_meta_feature "update scripts/lib/helpers.sh" "" "")
+assert_eq "scripts/lib/ path detected" "true" "$result"
+
+# Medium path signals: dashboard/
+result=$(detect_meta_feature "refactor dashboard/ components and templates/ layout" "" "")
+assert_eq "dashboard + templates paths detected" "true" "$result"
+
+# Keyword signals alone below threshold
+result=$(detect_meta_feature "improve the shipwright tool" "" "")
+assert_eq "single keyword below threshold" "false" "$result"
+
+# Multiple keyword signals cross threshold
+result=$(detect_meta_feature "update shipwright pipeline stage and daemon config" "" "")
+assert_eq "multiple keywords cross threshold" "true" "$result"
+
+# Unrelated issue returns false
+result=$(detect_meta_feature "add user authentication to the API" "" "feature,backend")
+assert_eq "unrelated issue returns false" "false" "$result"
+
+# Body text is also analyzed
+result=$(detect_meta_feature "improve CI" "We need to update scripts/sw-daemon.sh and scripts/lib/pipeline-detection.sh" "")
+assert_eq "body text analyzed for paths" "true" "$result"
+
+# Case insensitive labels
+result=$(detect_meta_feature "some goal" "" "META,Enhancement")
+assert_eq "case insensitive label matching" "true" "$result"
+
+# Structural signal: 3+ components mentioned + keyword
+result=$(detect_meta_feature "refactor shipwright pipeline daemon and fleet components plus memory and intelligence" "" "")
+assert_eq "structural signal with 3+ components" "true" "$result"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# check_meta_feature_decomposition
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "check_meta_feature_decomposition"
+
+# No issue number → always proceed (return 0)
+check_meta_feature_decomposition "" "" "modify scripts/sw-pipeline.sh" "" 2>/dev/null
+assert_eq "no issue number proceeds" "0" "$?"
+
+# Non-meta issue → proceed
+check_meta_feature_decomposition "42" "" "add user auth" "" 2>/dev/null
+assert_eq "non-meta issue proceeds" "0" "$?"
+
+# Meta issue with subtask label → proceed
+check_meta_feature_decomposition "42" "subtask,enhancement" "modify scripts/sw-pipeline.sh" "" 2>/dev/null
+assert_eq "subtask label bypasses gate" "0" "$?"
+
+# Meta issue with decomposed label → proceed
+check_meta_feature_decomposition "42" "decomposed" "modify scripts/sw-pipeline.sh" "" 2>/dev/null
+assert_eq "decomposed label bypasses gate" "0" "$?"
+
+# Meta issue without decomposition → block (return 1)
+if check_meta_feature_decomposition "42" "enhancement" "modify scripts/sw-pipeline.sh and scripts/lib/helpers.sh" "" 2>/dev/null; then
+    assert_fail "meta issue without decomposition blocks"
+else
+    assert_pass "meta issue without decomposition blocks"
+fi
+
+# Verify error message contains decompose command
+error_output=$(check_meta_feature_decomposition "42" "enhancement" "modify scripts/sw-pipeline.sh and scripts/lib/helpers.sh" "" 2>&1 || true)
+if echo "$error_output" | grep -qF "shipwright decompose --issue 42 --create-subtasks"; then
+    assert_pass "error message contains decompose command"
+else
+    assert_fail "error message contains decompose command" "got: $error_output"
+fi
+
+# Meta issue detected via body, not goal
+if check_meta_feature_decomposition "99" "" "improve CI" "update scripts/sw-daemon.sh and scripts/lib/pipeline-detection.sh" 2>/dev/null; then
+    assert_fail "meta detection via body blocks"
+else
+    assert_pass "meta detection via body blocks"
+fi
+
 print_test_results
