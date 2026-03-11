@@ -22,6 +22,7 @@ import type {
   PipelineInfo,
   QueueItem,
   EventItem,
+  SuccessRateInfo,
 } from "../types/api";
 
 function renderStats(data: FleetState): void {
@@ -394,10 +395,108 @@ function renderMachines(data: FleetState): void {
   grid.innerHTML = html;
 }
 
+function renderSuccessRate(data: FleetState): void {
+  const sr = data.metrics?.successRate;
+  const valueEl = document.getElementById("success-rate-7d");
+  const trendEl = document.getElementById("success-rate-trend");
+  const secondaryEl = document.getElementById("success-rate-30d");
+  const failuresEl = document.getElementById("success-rate-failures");
+  const alertEl = document.getElementById("success-rate-alert");
+  const breakdownEl = document.getElementById("success-rate-breakdown");
+  const card = document.getElementById("success-rate-card");
+
+  if (!valueEl) return;
+
+  if (!sr || (sr.total_7d === 0 && sr.total_30d === 0)) {
+    valueEl.textContent = "—";
+    valueEl.className = "success-rate-value";
+    if (trendEl) trendEl.textContent = "";
+    if (secondaryEl) secondaryEl.textContent = "No data";
+    if (failuresEl) failuresEl.style.display = "none";
+    if (alertEl) alertEl.style.display = "none";
+    if (breakdownEl) breakdownEl.style.display = "none";
+    return;
+  }
+
+  // 7d rate with color
+  valueEl.textContent = sr.rate_7d + "%";
+  const colorClass =
+    sr.rate_7d > 80
+      ? "rate-green"
+      : sr.rate_7d >= 60
+        ? "rate-amber"
+        : "rate-rose";
+  valueEl.className = "success-rate-value " + colorClass;
+
+  // Trend arrow
+  if (trendEl) {
+    if (sr.trend === "up") {
+      trendEl.textContent = "\u2191";
+      trendEl.className = "success-rate-trend trend-up";
+    } else if (sr.trend === "down") {
+      trendEl.textContent = "\u2193";
+      trendEl.className = "success-rate-trend trend-down";
+    } else {
+      trendEl.textContent = "\u2192";
+      trendEl.className = "success-rate-trend trend-stable";
+    }
+  }
+
+  // 30d rate
+  if (secondaryEl) {
+    secondaryEl.textContent = "30d: " + sr.rate_30d + "%";
+  }
+
+  // Consecutive failures
+  if (failuresEl) {
+    if (sr.consecutive_failures > 0) {
+      failuresEl.textContent = sr.consecutive_failures + " consecutive fail" + (sr.consecutive_failures > 1 ? "s" : "");
+      failuresEl.style.display = "";
+    } else {
+      failuresEl.style.display = "none";
+    }
+  }
+
+  // Alert badge
+  if (alertEl) {
+    alertEl.style.display = sr.alert ? "" : "none";
+  }
+
+  // Click to toggle breakdown
+  if (card && breakdownEl && !card.dataset.listenerAttached) {
+    card.dataset.listenerAttached = "1";
+    card.addEventListener("click", () => {
+      const isHidden = breakdownEl.style.display === "none";
+      breakdownEl.style.display = isHidden ? "" : "none";
+    });
+  }
+
+  // Render breakdown
+  if (breakdownEl && sr.breakdown && sr.breakdown.length > 0) {
+    let html = "";
+    for (const b of sr.breakdown) {
+      html +=
+        '<div class="breakdown-row">' +
+        '<span class="breakdown-template">' + escapeHtml(b.template) + "</span>" +
+        '<span class="breakdown-counts">' +
+        '<span class="breakdown-pass">\u2713' + b.succeeded + "</span>" +
+        '<span class="breakdown-fail">\u2717' + b.failed + "</span>" +
+        "</span>" +
+        '<div class="breakdown-bar-track">' +
+        '<div class="breakdown-bar-fill" style="width:' + b.rate + '%"></div>' +
+        "</div>" +
+        '<span class="breakdown-rate">' + b.rate + "%</span>" +
+        "</div>";
+    }
+    breakdownEl.innerHTML = html;
+  }
+}
+
 export const overviewView: View = {
   init() {},
   render(data: FleetState) {
     renderStats(data);
+    renderSuccessRate(data);
     renderOverviewPipelines(data);
     renderQueue(data);
     renderOverviewActivity(data);

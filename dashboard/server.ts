@@ -243,6 +243,133 @@ interface TeamState {
   total_queued: number;
 }
 
+interface TemplateBreakdown {
+  template: string;
+  succeeded: number;
+  failed: number;
+  rate: number;
+}
+
+interface SuccessRateInfo {
+  rate_7d: number;
+  rate_30d: number;
+  trend: "up" | "down" | "stable";
+  total_7d: number;
+  total_30d: number;
+  succeeded_7d: number;
+  succeeded_30d: number;
+  consecutive_failures: number;
+  alert: boolean;
+  breakdown: TemplateBreakdown[];
+}
+
+function computeSuccessRate(events: DaemonEvent[]): SuccessRateInfo {
+  const now = Math.floor(Date.now() / 1000);
+  const SEVEN_DAYS = 7 * 86400;
+  const THIRTY_DAYS = 30 * 86400;
+
+  let succeeded_7d = 0;
+  let failed_7d = 0;
+  let succeeded_prev7d = 0;
+  let failed_prev7d = 0;
+  let succeeded_30d = 0;
+  let failed_30d = 0;
+
+  const templateStats: Record<string, { succeeded: number; failed: number }> = {};
+  const recentResults: Array<{ epoch: number; success: boolean }> = [];
+
+  for (const e of events) {
+    if (e.type !== "pipeline.completed") continue;
+    const epoch = typeof e.ts_epoch === "number" ? e.ts_epoch : 0;
+    if (epoch <= 0) continue;
+
+    const age = now - epoch;
+    if (age > THIRTY_DAYS) continue;
+
+    const success = e.result === "success";
+    const tpl = (e.template as string) || (e.pipeline_template as string) || "unknown";
+
+    // 30d window
+    succeeded_30d += success ? 1 : 0;
+    failed_30d += success ? 0 : 1;
+
+    // 7d window
+    if (age <= SEVEN_DAYS) {
+      succeeded_7d += success ? 1 : 0;
+      failed_7d += success ? 0 : 1;
+    }
+
+    // Previous 7d window (for trend)
+    if (age > SEVEN_DAYS && age <= SEVEN_DAYS * 2) {
+      succeeded_prev7d += success ? 1 : 0;
+      failed_prev7d += success ? 0 : 1;
+    }
+
+    // Template breakdown
+    if (!templateStats[tpl]) templateStats[tpl] = { succeeded: 0, failed: 0 };
+    templateStats[tpl].succeeded += success ? 1 : 0;
+    templateStats[tpl].failed += success ? 0 : 1;
+
+    recentResults.push({ epoch, success });
+  }
+
+  const total_7d = succeeded_7d + failed_7d;
+  const total_30d = succeeded_30d + failed_30d;
+  const rate_7d = total_7d > 0 ? Math.round((succeeded_7d / total_7d) * 100) : 0;
+  const rate_30d = total_30d > 0 ? Math.round((succeeded_30d / total_30d) * 100) : 0;
+
+  // Trend: compare current 7d rate to previous 7d rate
+  const total_prev7d = succeeded_prev7d + failed_prev7d;
+  const rate_prev7d = total_prev7d > 0 ? (succeeded_prev7d / total_prev7d) * 100 : -1;
+  let trend: "up" | "down" | "stable" = "stable";
+  if (rate_prev7d >= 0 && total_7d > 0) {
+    if (rate_7d > rate_prev7d + 5) trend = "up";
+    else if (rate_7d < rate_prev7d - 5) trend = "down";
+  }
+
+  // Consecutive failures: scan most recent events in reverse chronological order
+  recentResults.sort((a, b) => b.epoch - a.epoch);
+  let consecutive_failures = 0;
+  for (const r of recentResults) {
+    if (!r.success) consecutive_failures++;
+    else break;
+  }
+
+  // Alert: rate_7d < (rate_30d - 20) OR rate_7d === 0 with activity
+  const alert =
+    (total_7d > 0 && rate_7d < rate_30d - 20) ||
+    (rate_7d === 0 && total_7d > 0);
+
+  // Breakdown
+  const breakdown: TemplateBreakdown[] = Object.entries(templateStats).map(
+    ([template, stats]) => ({
+      template,
+      succeeded: stats.succeeded,
+      failed: stats.failed,
+      rate:
+        stats.succeeded + stats.failed > 0
+          ? Math.round(
+              (stats.succeeded / (stats.succeeded + stats.failed)) * 100,
+            )
+          : 0,
+    }),
+  );
+  breakdown.sort((a, b) => (b.succeeded + b.failed) - (a.succeeded + a.failed));
+
+  return {
+    rate_7d,
+    rate_30d,
+    trend,
+    total_7d,
+    total_30d,
+    succeeded_7d,
+    succeeded_30d,
+    consecutive_failures,
+    alert,
+    breakdown,
+  };
+}
+
 interface FleetState {
   timestamp: string;
   daemon: {
@@ -268,6 +395,7 @@ interface FleetState {
     cpuCores: number;
     completed: number;
     failed: number;
+    successRate?: SuccessRateInfo;
   };
   agents: AgentInfo[];
   machines: MachineInfo[];
@@ -1192,6 +1320,9 @@ function getFleetState(): FleetState {
   for (const p of state.pipelines) {
     if (issueStages[p.issue]) p.stagesDone = issueStages[p.issue];
   }
+
+  // Compute success rate from pipeline completion events
+  state.metrics.successRate = computeSuccessRate(events);
 
   // Add team data if any developers are connected
   if (developerRegistry.size > 0) {

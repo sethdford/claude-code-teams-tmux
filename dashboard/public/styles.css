@@ -415,7 +415,7 @@ body::-webkit-scrollbar-thumb {
 /* ── Stats Row ────────────────────────────────── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -443,6 +443,9 @@ body::-webkit-scrollbar-thumb {
 }
 .stat-card:nth-child(4) {
   animation-delay: 0.15s;
+}
+.stat-card:nth-child(5) {
+  animation-delay: 0.2s;
 }
 
 .stat-card:hover {
@@ -525,6 +528,115 @@ body::-webkit-scrollbar-thumb {
   border-radius: 2px;
   width: 0%;
   transition: width 0.6s ease;
+}
+
+/* ── Success Rate Widget ─────────────────────── */
+.success-rate-widget {
+  position: relative;
+}
+.success-rate-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.success-rate-value {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.success-rate-value.rate-green {
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.success-rate-value.rate-amber {
+  color: var(--amber);
+}
+.success-rate-value.rate-rose {
+  color: var(--rose);
+}
+.success-rate-trend {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.success-rate-trend.trend-up { color: var(--green); }
+.success-rate-trend.trend-down { color: var(--rose); }
+.success-rate-trend.trend-stable { color: var(--text-muted); }
+.success-rate-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.success-rate-30d {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.success-rate-failures {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--rose);
+  background: rgba(244, 63, 94, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.success-rate-alert {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 1rem;
+  animation: alert-pulse 2s ease-in-out infinite;
+}
+@keyframes alert-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.stat-card-success-rate {
+  cursor: pointer;
+}
+.success-rate-breakdown {
+  margin-top: 12px;
+  border-top: 1px solid var(--card-border);
+  padding-top: 8px;
+}
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+.breakdown-template {
+  flex: 1;
+  min-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.breakdown-counts {
+  display: flex;
+  gap: 6px;
+  font-size: 0.6rem;
+}
+.breakdown-pass { color: var(--green); }
+.breakdown-fail { color: var(--rose); }
+.breakdown-bar-track {
+  width: 48px;
+  height: 4px;
+  background: var(--ocean);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.breakdown-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
 /* ── Pulse Dot (status card) ──────────────────── */

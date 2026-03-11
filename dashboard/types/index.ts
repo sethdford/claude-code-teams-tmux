@@ -97,12 +97,33 @@ export interface FleetState {
     cpuCores: number;
     completed: number;
     failed: number;
+    successRate?: SuccessRateInfo;
   };
   agents: AgentInfo[];
   machines: MachineInfo[];
   cost: CostInfo;
   dora: DoraGrades;
   team?: TeamState;
+}
+
+export interface TemplateBreakdown {
+  template: string;
+  succeeded: number;
+  failed: number;
+  rate: number;
+}
+
+export interface SuccessRateInfo {
+  rate_7d: number;
+  rate_30d: number;
+  trend: "up" | "down" | "stable";
+  total_7d: number;
+  total_30d: number;
+  succeeded_7d: number;
+  succeeded_30d: number;
+  consecutive_failures: number;
+  alert: boolean;
+  breakdown: TemplateBreakdown[];
 }
 
 export interface HealthResponse {
