@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "incident-responder",
+        "secondary_roles": [
+          "devops",
+          "architect"
+        ],
+        "confidence": 0.92,
+        "reasoning": "Emergency mode for collapsed success rate requires crisis management and automatic failsafe mechanisms; DevOps handles infrastructure automation, Architect designs the failover system",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773191151,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,224 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "eae65ab48ed657abb59d2c08d7dd3e42": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "False positive emergency triggers from temporary success rate dips blocking legitimate work",
+          "Success rate calculation errors in 7-day and 3-day time window aggregation",
+          "Race conditions between running pipelines and daemon pause operations",
+          "Emergency mode state corruption or failure to properly deactivate (stuck emergency)",
+          "Dashboard emergency status display may lag behind actual state transitions"
+        ],
+        "implementation_hints": [
+          "Leverage existing DORA metrics collection (sw-dora.sh) for success rate data rather than recalculating",
+          "Implement monitor as integrated daemon polling task running every 10 minutes",
+          "Store persistent emergency state in .claude/EMERGENCY_MODE file with JSON metadata (reason, timestamp, activated_at)",
+          "Add new CLI command: shipwright emergency {status|activate|deactivate|acknowledge} for manual control",
+          "Implement graceful daemon pause that queues new issues without killing in-flight pipelines",
+          "Dashboard integration: watch EMERGENCY_MODE file, display red banner with recovery threshold (>60%)",
+          "Add hysteresis to prevent flapping: require 5 consecutive checks below threshold before activation"
+        ]
+      },
+      "timestamp": 1773190383,
+      "ttl": 3600
+    },
+    "7d9beb6e70bf14de5485bc81bb38e937": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1773190394,
+      "ttl": 1800
+    },
+    "f8b6791874a3769436f9b34535c0a638": {
+      "result": {
+        "estimated_cost_usd": 1.00,
+        "estimated_iterations": 2,
+        "estimated_tokens": 220000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1773190420,
+      "ttl": 3600
+    },
+    "ef94f84c0098d53b6539860a35ddc23d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains captured failure patterns, root causes, and fixes from test/pipeline runs. Critical for understanding what causes success rate collapse and designing appropriate emergency limits"
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 35,
+            "summary": "Project configuration (vitest, npm, commonjs) provides context about test infrastructure and build pipeline that emergency mode will interact with"
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 25,
+            "summary": "Minimal project type detection (nodejs). Low detail but confirms project language/runtime for emergency mode design considerations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Not useful for planning success rate emergency mode without actual baseline metrics"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural decisions captured to inform the emergency mode design"
+          }
+        ]
+      },
+      "timestamp": 1773190436,
+      "ttl": 1800
+    },
+    "eca939e350f49c0981152006650e460b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured failure patterns (10-12 occurrences each) including sw-cleanup.sh, sw-feedback-test.sh, and daemon interaction failures. These concrete failure patterns directly inform what constitutes a 'success rate collapse' and what conservative measures should activate in emergency mode."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 22,
+            "summary": "Documents project conventions (vitest, npm, commonjs). Relevant because plan validation may need to account for project structure and test runner specifics when determining success rate thresholds."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Currently empty but theoretically relevant—would normally track baseline metrics needed to detect when success rate 'collapses' and trigger emergency mode."
+          }
+        ]
+      },
+      "timestamp": 1773190934,
+      "ttl": 1800
+    },
+    "704ddd826b7b8078d3f22b12934e42a2": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Contains failure patterns and root causes across pipeline stages. Understanding recurring failure modes and their detection patterns informs emergency mode triggers and conservative limit activation logic."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Project type and test runner configuration (vitest, npm). Baseline context for understanding testing infrastructure that emergency mode must handle during success rate collapse."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 10,
+            "summary": "Basic project detection metadata (nodejs, bootstrap). Minimal architectural relevance but provides project context for emergency mode scope."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings structure. Low immediate relevance but framework could capture emergency mode patterns across repositories once populated."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 3,
+            "summary": "Empty baselines structure. Could track success rate metrics for emergency mode activation thresholds, but currently unpopulated."
+          }
+        ]
+      },
+      "timestamp": 1773191032,
+      "ttl": 1800
+    },
+    "171b6d78e76650be31aae0357030bac4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Documents failure patterns and root causes in pipeline stages (test failures, cleanup issues, output problems). While not directly about emergency mode design, the captured failures provide evidence of what breaks under stress and could inform anti-patterns to avoid."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 20,
+            "summary": "Provides project structure context (vitest, npm, JavaScript). Minimal relevance—gives baseline understanding of the codebase but does not address pipeline success rate or emergency mode design."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Contains empty baselines. Potentially relevant if it were populated with pipeline success rate metrics, but as-is provides no actionable insight into emergency mode design patterns."
+          }
+        ]
+      },
+      "timestamp": 1773191044,
+      "ttl": 1800
+    },
+    "9e99687b2dc1060f2bdd0d0a73f42963": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 4 recurring test failure patterns with root causes and fixes. Directly indicates what's causing pipeline test stage failures, essential for understanding success rate collapse. Most recent failure from 2026-03-10."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 48,
+            "summary": "Identifies test runner (vitest), package manager (npm), test pattern (*.test.js), and project type (node). Relevant for configuring conservative test limits and understanding what affects test execution in build stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Currently empty baselines, but would be relevant for tracking pipeline success rate metrics and establishing thresholds for emergency mode activation."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 10,
+            "summary": "Records project_type as nodejs detected from bootstrap. Minimal relevance; basic project classification already covered in first patterns.json entry."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Currently empty, but would track previous decisions about conservative limits and emergency mode. Relevant only for avoiding repeated decisions during collapse scenarios."
+          }
+        ]
+      },
+      "timestamp": 1773191132,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 4 recurring test failures with root causes and fixes. Most failures are in test stage (sw-cleanup.sh, sw-feedback-test.sh). Directly applicable to debugging and fixing build/test failures during this stage."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Provides project configuration (vitest test runner, npm package manager, JavaScript language, *.test.js pattern). Essential for understanding how to run tests and build artifacts correctly."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No relevant content for build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No relevant content for build stage context."
+          }
+        ]
+      },
+      "timestamp": 1773191140,
+      "ttl": 1800
     }
   }
 }

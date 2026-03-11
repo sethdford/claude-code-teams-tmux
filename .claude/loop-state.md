@@ -1,119 +1,125 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Pipeline Success Rate Emergency Mode - Auto-Activate Conservative Limits When Success Rate Collapses
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+# Plan: Pipeline Success Rate Emergency Mode
 
----
+## Socratic Design Refinement
 
-## Summary
+### Requirements Clarity
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Minimum viable change:** A new daemon library module that monitors rolling success rate and, when it collapses below a threshold, automatically activates conservative limits (reduced parallelism, safer template, increased retries). When success rate recovers, it auto-deactivates.
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+**Implicit requirements:**
+- Must not interfere with existing pause/resume mechanism (they serve different purposes — pause = stop everything, emergency = slow down and be cautious)
+- Must integrate with the existing poll loop cycle-based architecture
+- Must emit events for observability and dashboard visibility
+- Must persist emergency state across daemon restarts (atomic file, matching existing patterns)
+- Must be configurable and disableable
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Acceptance criteria:**
+1. When rolling success rate drops below configurable threshold (default 30%), emergency mode activates within 1-2 poll cycles
+2. Emergency mode reduces MAX_PARALLEL to MIN_WORKERS (or 1)
+3. Emergency mode forces template to "full" with compound_quality enabled
+4. Emergency mode increases MAX_RETRIES to at least 3
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Architecture Decision Record: Pipeline Success Rate Emergency Mode
 ## Context
-## Component Diagram
 ## Decision
+### Component Architecture
+### Data Flow
+## Alternatives Considered
+### Alternative 1: Inline into `daemon_check_degradation()`
+### Alternative 2: Extend `daemon_self_optimize()` (the learning system)
+### Alternative 3: New Library Module (CHOSEN) ✓
 ## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
+      "file": "failures.json",
       "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "summary": "Contains 4 recurring test failure patterns with root causes and fixes. Directly indicates what's causing pipeline test stage failures, essential for understanding success rate collapse. Most recent failure from 2026-03-10."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (first)",
+      "relevance": 48,
+      "summary": "Identifies test runner (vitest), package manager (npm), test pattern (*.test.js), and project type (node). Relevant for configuring conservative test limits and understanding what affects test execution in build stage."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "metrics.json",
+      "relevance": 12,
+      "summary": "Currently empty baselines, but would be relevant for tracking pipeline success rate metrics and establishing thresholds for emergency mode activation."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "patterns.json (second)",
+      "relevance": 10,
+      "summary": "Records project_type as nodejs detected from bootstrap. Minimal relevance; basic project classification already covered in first patterns.json entry."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 8,
+      "summary": "Currently empty, but would track previous decisions about conservative limits and emergency mode. Relevant only for avoiding repeated decisions during collapse scenarios."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Pipeline Success Rate Emergency Mode - Auto-Activate Conservative Limits When Success Rate Collapses — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Pipeline Success Rate Emergency Mode - Auto-Activate Conservative Limits When Success Rate Collapses
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Add emergency mode defaults to `config/defaults.json`
+- [ ] Task 2: Add emergency event types to `config/event-schema.json`
+- [ ] Task 3: Create `scripts/lib/daemon-emergency.sh` with core functions (check, activate, deactivate, is_active, load_state, get_ceiling)
+- [ ] Task 4: Integrate emergency ceiling into `daemon_auto_scale()` in `scripts/lib/daemon-poll.sh`
+- [ ] Task 5: Add emergency check hook into `daemon_check_degradation()` in `scripts/lib/daemon-poll-health.sh`
+- [ ] Task 6: Add periodic emergency check to poll loop in `scripts/lib/daemon-poll.sh`
+- [ ] Task 7: Source daemon-emergency.sh and add startup state loading in `scripts/sw-daemon.sh`
+- [ ] Task 8: Add `emergency` CLI subcommand to `scripts/sw-daemon.sh`
+- [ ] Task 9: Show emergency state in `scripts/sw-status.sh` dashboard
+- [ ] Task 10: Create test suite `scripts/sw-emergency-mode-test.sh` with 13 test cases
+- [ ] Task 11: Register test in `package.json`
+- [ ] Task 12: Run full test suite and fix any regressions
+- [ ] Emergency mode activates automatically when rolling success rate ≤ 30% (configurable)
+- [ ] Emergency mode reduces MAX_PARALLEL to MIN_WORKERS
+- [ ] Emergency mode forces "full" template with compound_quality
+- [ ] Emergency mode increases MAX_RETRIES to at least 3
+- [ ] Emergency mode deactivates after success rate ≥ 60% sustained for 3 consecutive checks
+- [ ] Hysteresis prevents oscillation (30% activate / 60% deactivate)
+- [ ] Emergency state persists via flag file across daemon restarts
+- [ ] Emergency state auto-expires after configurable duration (default 2h)
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-251
+- Issue: none
+- Generated: 2026-03-11T01:01:59Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-11T01:05:52Z
+last_iteration_at: 2026-03-11T01:05:52Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 

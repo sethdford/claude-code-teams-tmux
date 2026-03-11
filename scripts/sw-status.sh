@@ -461,6 +461,14 @@ if [[ -f "$STATE_FILE" ]]; then
             echo -e "  ${RED}●${RESET} ${BOLD}Stopped${RESET}"
         fi
 
+        # ── Emergency Mode Status ──
+        emg_flag="${DAEMON_DIR}/daemon-emergency.flag"
+        if [[ -f "$emg_flag" ]]; then
+            emg_activated=$(jq -r '.activated_at // "unknown"' "$emg_flag" 2>/dev/null || echo "unknown")
+            emg_success_rate=$(jq -r '.success_rate_at_activation // 0' "$emg_flag" 2>/dev/null || echo "0")
+            echo -e "  ${RED}⚠ EMERGENCY MODE ACTIVE${RESET}  ${DIM}since ${emg_activated} (success rate: ${emg_success_rate}%)${RESET}"
+        fi
+
         # ── Active Jobs ──
         if [[ "$active_count" -gt 0 ]]; then
             echo ""
