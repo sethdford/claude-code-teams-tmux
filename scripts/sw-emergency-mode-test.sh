@@ -86,7 +86,7 @@ create_test_events() {
     local i
 
     for ((i = 0; i < success_count; i++)); do
-        jq -n '{
+        jq -c '{
             "type": "pipeline.completed",
             "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
             "data": {"result": "success"}
@@ -94,7 +94,7 @@ create_test_events() {
     done
 
     for ((i = 0; i < failure_count; i++)); do
-        jq -n '{
+        jq -c '{
             "type": "pipeline.completed",
             "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
             "data": {"result": "failed"}

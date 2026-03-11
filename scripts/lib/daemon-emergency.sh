@@ -40,11 +40,9 @@ daemon_emergency_check() {
         return 1
     fi
 
-    # Read last N completed pipeline events
+    # Read last N completed pipeline events (parse JSONL directly with jq)
     local recent_events
-    recent_events=$(tail -"${EMERGENCY_ROLLING_WINDOW}" "$EVENTS_FILE" 2>/dev/null | \
-                    grep '"type":"pipeline.completed"' | \
-                    jq -s '.' 2>/dev/null) || return 1
+    recent_events=$(jq -s "[.[] | select(.type == \"pipeline.completed\")] | if length > ${EMERGENCY_ROLLING_WINDOW} then .[-${EMERGENCY_ROLLING_WINDOW}:] else . end" "$EVENTS_FILE" 2>/dev/null) || return 1
 
     if [[ -z "$recent_events" || "$recent_events" == "[]" ]]; then
         return 1
