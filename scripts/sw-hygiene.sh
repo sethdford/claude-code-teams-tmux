@@ -406,12 +406,12 @@ scan_platform_refactor() {
     findings_file=$(mktemp)
     findings_raw=$(mktemp)
     grep -rnE "hardcoded|Hardcoded|Fallback:|fallback:|TODO|FIXME|HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null > "$findings_raw" || true
+    local _f _rest _ln
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
-        ln="${ln:-0}"
-        printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
+        _f="${line%%:*}"; _rest="${line#*:}"; _ln="${_rest%%:*}"
+        _ln="${_ln:-0}"
+        printf '{"file":"%s","line":%s}\n' "${_f#$REPO_DIR/}" "$_ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
     jq -s '.' "$findings_file.raw" 2>/dev/null > "$findings_file" || echo "[]" > "$findings_file"
     local findings
@@ -421,11 +421,11 @@ scan_platform_refactor() {
     # Script sizes (lines) for hotspot detection
     local sizes_file
     sizes_file=$(mktemp)
+    local _lines
     find "$scripts_dir" -maxdepth 1 -name "*.sh" -type f 2>/dev/null | while read -r f; do
-        local lines
-        lines=$(wc -l < "$f" 2>/dev/null || true)
-        lines="${lines:-0}"
-        printf '{"script":"%s","lines":%s}\n' "$(basename "$f")" "$lines"
+        _lines=$(wc -l < "$f" 2>/dev/null || true)
+        _lines="${_lines:-0}"
+        printf '{"script":"%s","lines":%s}\n' "$(basename "$f")" "$_lines"
     done | jq -s 'sort_by(-.lines) | .[0:15]' 2>/dev/null > "$sizes_file"
     local script_sizes
     script_sizes=$(cat "$sizes_file" 2>/dev/null || echo "[]")
