@@ -136,7 +136,7 @@ compute_rolling_success_rate() {
         --argjson success_rate "$success_rate" \
         --argjson samples "$total" \
         --argjson age_hours "$age_hours" \
-        --argjson freshness_ok "${freshness_ok,,}" \
+        --argjson freshness_ok "$freshness_ok" \
         '{success_rate: $success_rate, samples: $samples, age_hours: $age_hours, freshness_ok: $freshness_ok}'
 }
 
@@ -175,7 +175,7 @@ get_constraint_level() {
     # Output JSON
     jq -n \
         --arg level "$current_level" \
-        --argjson should_defer "${should_defer,,}" \
+        --argjson should_defer "$should_defer" \
         --arg reason "$reason" \
         '{level: $level, should_defer: $should_defer, reason: $reason}'
 }
@@ -217,7 +217,7 @@ should_defer_issue() {
     esac
 
     jq -n \
-        --argjson should_defer "${should_defer,,}" \
+        --argjson should_defer "$should_defer" \
         --arg reason "$reason" \
         '{should_defer: $should_defer, reason: $reason}'
 }
@@ -375,7 +375,7 @@ analyze_success_rate_constraints() {
         --argjson enabled true \
         --argjson success_rate "$success_rate" \
         --arg constraint_level "$constraint_level" \
-        --argjson should_defer "${should_defer,,}" \
+        --argjson should_defer "$should_defer" \
         '{enabled: $enabled, success_rate: $success_rate, constraint_level: $constraint_level, should_defer: $should_defer}'
 }
 
