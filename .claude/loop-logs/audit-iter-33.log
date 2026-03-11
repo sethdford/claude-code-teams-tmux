@@ -1,1 +1,43 @@
-Invalid API key · Fix external API key
+# AUDIT FAILURE
+
+I cannot pass this audit. Here are the critical issues:
+
+## 1. **Test Suite Contradiction** ⚠️
+- **Agent claims**: "72/72 loop tests, 19/19 smoke tests pass" + "All tests pass"
+- **Verified harness shows**: `npm test: exit 1` (FAILED after 902s)
+- **Discrepancy**: The primary test suite is failing, contradicting the agent's claims
+
+## 2. **Scope Creep & Off-Track Work** ⚠️
+The cumulative changes show massive, unrelated additions completely outside the issue #242 scope:
+- `scripts/lib/dod-scorecard.sh` (442 new lines)
+- `scripts/lib/intent-analysis.sh` (409 new lines)
+- `scripts/lib/outcome-feedback.sh` (521 new lines)
+- `scripts/lib/quality-profile.sh` (334 new lines)
+- `scripts/lib/scope-enforcement.sh` (445 new lines)
+- Multiple new test files (265-447 lines each)
+
+**Issue #242 is**: "Misleading 'jq not available' warning when Claude outputs JSON object instead of array" — a targeted JSON parsing bug in `sw-loop.sh`.
+
+The changes above have nothing to do with JSON parsing. This is significant scope creep that suggests the agent lost focus or was looping indefinitely.
+
+## 3. **Iteration Exhaustion** ⚠️
+- **33 iterations** with 31 times saying "alternative_approach failed, try something different"
+- This pattern indicates the agent was struggling and iterating without making forward progress
+- A functional fix to issue #242 shouldn't require this many attempts
+
+## 4. **Unverified Core Fix**
+The agent claims:
+- ✓ `_extract_text_from_json` fixed to handle `{...}` 
+- ✓ `accumulate_loop_tokens` fixed
+- ✓ 7 new tests added
+
+But cannot verify this against the actual code or against the failing `npm test` results.
+
+## What Needs to Happen
+
+1. **Investigate the `npm test` failure** — Run it locally to see what's breaking
+2. **Isolate issue #242 changes** — Extract just the JSON parsing fixes, discard the scope-creep changes
+3. **Verify the core fix works** — Ensure the actual JSON parsing bug is resolved
+4. **Pass the main test suite** — `npm test` must exit 0, not 1
+
+The work should be rolled back to a known-good state and refocused on the narrow scope of issue #242.
