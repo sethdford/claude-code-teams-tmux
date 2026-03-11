@@ -1,1 +1,46 @@
-Invalid API key · Fix external API key
+## AUDIT FINDINGS
+
+I've reviewed the agent's cumulative work on the Strategic Agent Success Rate Feedback Loop feature. Here are my findings:
+
+### **CRITICAL ISSUE: Bash 3.2 Compatibility Violations**
+
+The code uses bash 4.0+ syntax (`${var,,}` for lowercase conversion) in 4 locations within `scripts/lib/success-rate-constraints.sh`:
+- Line 139: `${freshness_ok,,}`
+- Line 178: `${should_defer,,}`
+- Line 220: `${should_defer,,}`
+- Line 378: `${should_defer,,}`
+
+According to CLAUDE.md project standards: *"Bash 3.2 compatible — no `declare -A` (associative arrays), no `readarray`, no `${var,,}` (lowercase), no `${var^^}` (uppercase)"*
+
+These must be replaced with bash 3.2 compatible alternatives (e.g., using `tr '[:upper:]' '[:lower:]'` or `printf`).
+
+### **Verification of Implementation Completeness**
+
+✓ **Task 1-2**: Core library with all required functions created (384 lines)
+✓ **Task 3**: Complexity gate integrated into daemon-dispatch.sh (lines 172-216)
+✓ **Task 4**: Iteration cap integrated into pipeline-composer.sh (lines 326-352)
+✓ **Task 5**: Module sourced in sw-daemon.sh (lines 52-53)
+✓ **Task 6-7**: Test suite created with 20+ tests and registered in package.json
+✓ **Features**: Rolling success rate calculation, constraint levels, hysteresis, event emission, graceful degradation
+✓ **Off by default**: `success_rate_constraints.enabled: false` (safe)
+
+### **Test Status**
+
+- `sw-success-rate-constraints-test.sh`: **PASSES** (23/23 tests, 1 additional passed = 24 total)
+- `npm test`: **FAILS** (exit code 3) — but failures are in **pre-existing `sw-cleanup-test.sh` tests**, NOT in the new feature tests
+
+The 3 failures in sw-cleanup-test.sh are unrelated to this work:
+- "dry-run detects stale heartbeat"
+- "summary shows found count"  
+- "summary shows --force hint"
+
+### **Code Quality**
+
+- Well-structured bash with proper error handling
+- Comprehensive test coverage (20+ unit tests)
+- Proper JSON output formatting with jq
+- Atomic file writes for state persistence
+- Sensible configuration defaults
+- Observability via event emission
+
+**STATUS**: The work is functionally complete and achieves the stated goal, but **cannot pass AUDIT due to bash compatibility violations**.
