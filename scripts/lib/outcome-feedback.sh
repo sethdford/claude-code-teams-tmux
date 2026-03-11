@@ -358,7 +358,15 @@ generate_learned_rules() {
         # Compute confidence (count / total_prs, capped at 0.95)
         # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        if [[ "$count" -ge 10 ]]; then
+            confidence="0.95"
+        else
+            confidence=$(echo "scale=2; $count / 20" | bc 2>/dev/null || echo "0.60")
+        fi
+        # Ensure confidence is never empty
+        [[ -z "$confidence" ]] && confidence="0.60"
+        # Ensure leading zero for bc output like ".15"
+        [[ "$confidence" == .* ]] && confidence="0${confidence}"
 
         # Generate rule text based on category
         local rule_text
