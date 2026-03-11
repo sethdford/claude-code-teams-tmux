@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "pm"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Designing an adaptive feedback loop that monitors agent success metrics and constrains complexity requires system-level architecture decisions, implementation capability, and understanding of task management tradeoffs.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773192588,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,224 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "553093e356b1f5c264246bb4d77066a2": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Constraint thresholds too strict could eliminate useful suggestions",
+          "Recent failure tracking may be incomplete or stale",
+          "Success rate metrics accuracy dependency",
+          "Strategic agent prompt may not properly integrate failure context",
+          "Integration with existing metrics and memory systems compatibility"
+        ],
+        "implementation_hints": [
+          "Query success_rate_7d and success_rate_30d from existing DORA metrics or cost tracking system",
+          "Leverage failure capture from error-log.jsonl or memory system for recent failed task titles",
+          "Modify sw-strategic.sh to accept success rate parameters and failed task context in input",
+          "Implement three-tier constraint system: fast-only (<30%), prohibit-refactor (<60%), standard (>=60%)",
+          "Update strategic agent prompt with explicit instruction to analyze recent failures and suggest dissimilar patterns",
+          "Add integration tests verifying complexity constraints enforced at each threshold",
+          "Implement similarity detection between suggested tasks and recent failures to prevent repetition"
+        ]
+      },
+      "timestamp": 1773191981,
+      "ttl": 3600
+    },
+    "3b86fd9d5b82f8122cdfb2f8a94883cd": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1773191993,
+      "ttl": 1800
+    },
+    "46010b0b195aac12aa91b7daaf3c02f3": {
+      "result": {
+        "estimated_cost_usd": 1.75,
+        "estimated_iterations": 2,
+        "estimated_tokens": 72000,
+        "likely_failure_stage": "test",
+        "confidence": 76
+      },
+      "timestamp": 1773192007,
+      "ttl": 3600
+    },
+    "0518ac3fc57c6d6c6090f0ede713ac78": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains patterns on regression detection, classify_failure logic, and intelligence-driven retry behavior. Relevant to feedback loop design and success rate signal processing, though not directly addressing the feature."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 40,
+            "summary": "Documents project structure (Node, vitest, CommonJS) and conventions. Provides baseline context needed for planning the feature implementation location and approach."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 20,
+            "summary": "Confirms nodejs project type detected at bootstrap. Minimal value; largely redundant with first patterns.json entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No historical metrics to inform success rate tracking strategy or complexity constraints."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural decisions about feedback loops or agent complexity management."
+          }
+        ]
+      },
+      "timestamp": 1773192021,
+      "ttl": 1800
+    },
+    "f40be902b5e3b4085b60534912f40974": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains captured test and validation failures with root causes and fixes. Directly relevant to understanding why plan validation is failing and what patterns of failures occur, which is essential for a success rate feedback loop to identify when complexity should be constrained."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Defines project structure (Node.js, vitest, npm, commonjs). Provides baseline codebase context that could inform complexity constraints and validation rules, though not directly addressing validation failures or success metrics."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 18,
+            "summary": "Currently empty but structurally designed to capture strategic decisions. Would be relevant for recording adjustments made by the feedback loop when constraining complexity based on success rate, though no historical data is present."
+          }
+        ]
+      },
+      "timestamp": 1773192412,
+      "ttl": 1800
+    },
+    "c134c8f32581659b8fee1dd0d13c06fe": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 22,
+            "summary": "Contains feedback system test patterns and root causes (sw-feedback-test.sh regression detection). Understanding failure modes in feedback loops informs architecture design for success rate feedback systems."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 12,
+            "summary": "Project conventions (test_pattern, import_style, source_dir) can inform how feedback loop architecture integrates with existing codebase structure and test harness."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 5,
+            "summary": "Minimal metadata indicating Node.js project type. Generic, provides minimal guidance for Strategic Agent feedback loop architecture design."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "Empty decisions array provides no architectural context or prior decisions to reference for feedback loop design."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baselines object contains no performance baselines or metrics data relevant to success rate feedback loop design."
+          }
+        ]
+      },
+      "timestamp": 1773192461,
+      "ttl": 1800
+    },
+    "e4d228238a906cdc502fdb5ca0194704": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains feedback loop test failures (sw-feedback-test.sh regression detection, sw-cleanup.sh stale heartbeat detection). Directly relevant to understanding feedback mechanisms and anti-patterns in agent success rate tracking."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Documents project conventions (test_runner: vitest, language: javascript). Provides context for implementing/debugging success rate feedback solutions, though not directly related to strategic agent patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Contains empty baselines object. Potentially relevant as baselines track success rate metrics, but currently lacks data needed for strategic agent feedback loop analysis."
+          }
+        ]
+      },
+      "timestamp": 1773192470,
+      "ttl": 1800
+    },
+    "69c30efc285ff2aaad0ec25b6be993e2": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured test failures and root causes (sw-cleanup.sh dry-run issues, sw-feedback-test.sh regression detection, mktemp errors). Directly relevant for understanding where success rates drop and what complexity constraints should be enforced."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 45,
+            "summary": "Documents project conventions (vitest test runner, commonjs imports, src/ structure). Relevant for understanding the build environment and how to run tests to measure success rates."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 35,
+            "summary": "Confirms project type as Node.js from bootstrap detection. Minimal but relevant for confirming build environment assumptions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty—no prior decisions captured. Not currently relevant."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty common patterns and cross-repo learnings. Not currently relevant."
+          }
+        ]
+      },
+      "timestamp": 1773192563,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Defines project conventions essential for building: vitest test runner, npm package manager, CommonJS imports, src/ source directory. These are critical foundations for the build stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Documents 4 known test-stage failures with root causes and fixes. Critical for avoiding regression during build: sw-cleanup.sh output, sw-feedback-test.sh JSON validation, mktemp directory setup. Prevents repeating documented failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline data. Not relevant to current build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log. Not relevant to current build stage context."
+          }
+        ]
+      },
+      "timestamp": 1773192573,
+      "ttl": 1800
     }
   }
 }

@@ -1,119 +1,125 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Strategic Agent Success Rate Feedback Loop - Constrain Complexity When Success Rate is Low
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
-
----
+# Plan: Strategic Agent Success Rate Feedback Loop
 
 ## Summary
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+When the system's rolling pipeline success rate is low, automatically constrain the complexity of work attempted — cap iterations, prefer simpler templates, and defer high-complexity issues — until the success rate recovers. This prevents the system from repeatedly failing on hard work while burning budget and time.
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+---
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+## Socratic Design Refinement
+
+### Requirements Clarity
+
+**Minimum viable change**: A library module that computes rolling success rate from existing outcome data, plus integration points in the daemon spawn path and pipeline composer that use it to constrain complexity.
+
+**Implicit requirements**:
+- Must degrade gracefully when no outcome data exists (assume 100% = no constraints)
+- Must work alongside existing adaptive thresholds system (daemon-adaptive.sh)
+- Must not block ALL issues — always allow sufficiently simple work through
+- Must be configurable via daemon-config.json
+- Must emit events for observability
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Architecture Decision Record: Strategic Agent Success Rate Feedback Loop
 ## Context
-## Component Diagram
 ## Decision
+## Alternatives Considered
+### 1. Extend `daemon-adaptive.sh` (Inline Approach)
+### 2. Inline Checks in Each Consumer (Minimal Approach)
+### 3. External Scoring Service (Heavy Approach)
+## Component Diagram
 ## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Public Functions (Bash signatures)
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
+      "file": "failures.json",
       "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "summary": "Contains captured test failures and root causes (sw-cleanup.sh dry-run issues, sw-feedback-test.sh regression detection, mktemp errors). Directly relevant for understanding where success rates drop and what complexity constraints should be enforced."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (first)",
+      "relevance": 45,
+      "summary": "Documents project conventions (vitest test runner, commonjs imports, src/ structure). Relevant for understanding the build environment and how to run tests to measure success rates."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (second)",
+      "relevance": 35,
+      "summary": "Confirms project type as Node.js from bootstrap detection. Minimal but relevant for confirming build environment assumptions."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "decisions.json",
+      "relevance": 10,
+      "summary": "Empty—no prior decisions captured. Not currently relevant."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "global.json",
+      "relevance": 5,
+      "summary": "Empty common patterns and cross-repo learnings. Not currently relevant."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Strategic Agent Success Rate Feedback Loop - Constrain Complexity When Success Rate is Low — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Strategic Agent Success Rate Feedback Loop - Constrain Complexity When Success Rate is Low
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/success-rate-constraints.sh` with config loading, `compute_rolling_success_rate()`, `get_constraint_level()` with hysteresis
+- [ ] Task 2: Implement `should_defer_issue()`, `get_iteration_cap()`, `constrain_template()` in the same file
+- [ ] Task 3: Integrate complexity gate and template constraint into `scripts/lib/daemon-dispatch.sh` before pipeline spawn
+- [ ] Task 4: Integrate iteration cap into `scripts/sw-pipeline-composer.sh` in `composer_estimate_iterations()`
+- [ ] Task 5: Source the new module in `scripts/sw-daemon.sh`
+- [ ] Task 6: Create test suite `scripts/sw-success-rate-constraints-test.sh` with 17 test cases
+- [ ] Task 7: Register test suite in `package.json`
+- [ ] Task 8: Run full test suite to verify no regressions
+- [ ] Rolling success rate is computed from last N pipeline.completed events
+- [ ] When success rate < 40%, high-complexity issues (>4) are deferred, iterations capped at 10, templates downgraded aggressively
+- [ ] When success rate < 60%, moderate-complexity issues (>7) are deferred, iterations capped at 15, templates downgraded conservatively
+- [ ] When success rate recovers above 70%, all constraints relax
+- [ ] Issues with complexity <= 3 always proceed regardless of success rate
+- [ ] Hysteresis prevents rapid constraint oscillation
+- [ ] All constraint decisions emit events for observability
+- [ ] Feature is off by default (`success_rate_constraints.enabled: false`)
+- [ ] 17-test suite passes covering all logic paths
+- [ ] Existing test suites pass without regression
+- [ ] All bash 3.2 compatibility rules followed (no associative arrays, no readarray, etc.)
+- [ ] Atomic file writes for daemon-tuning.json updates
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-249
+- Issue: none
+- Generated: 2026-03-11T01:26:38Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-11T01:29:49Z
+last_iteration_at: 2026-03-11T01:29:49Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
