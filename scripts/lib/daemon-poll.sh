@@ -177,6 +177,18 @@ daemon_auto_scale() {
         computed="$FLEET_MAX_PARALLEL"
     fi
 
+    # Respect emergency mode ceiling (if active)
+    if type daemon_emergency_is_active >/dev/null 2>&1; then
+        if daemon_emergency_is_active 2>/dev/null; then
+            local emergency_ceiling
+            emergency_ceiling=$(daemon_emergency_get_ceiling 2>/dev/null || echo "$MAX_WORKERS")
+            if [[ "$emergency_ceiling" -lt "$computed" ]]; then
+                computed="$emergency_ceiling"
+                daemon_log INFO "Auto-scale: emergency mode active — capping at ${computed} (ceiling)"
+            fi
+        fi
+    fi
+
     # Clamp to min_workers
     [[ "$computed" -lt "$MIN_WORKERS" ]] && computed="$MIN_WORKERS"
 
@@ -577,6 +589,13 @@ daemon_poll_loop() {
         # Check degradation every 5 poll cycles
         if [[ $((POLL_CYCLE_COUNT % 5)) -eq 0 ]]; then
             daemon_check_degradation || daemon_log WARN "daemon_check_degradation failed — continuing"
+        fi
+
+        # Emergency mode check every 5 cycles
+        if [[ $((POLL_CYCLE_COUNT % ${EMERGENCY_CHECK_INTERVAL:-5})) -eq 0 ]]; then
+            if type daemon_emergency_check >/dev/null 2>&1; then
+                daemon_emergency_check 2>/dev/null || daemon_log WARN "daemon_emergency_check failed — continuing"
+            fi
         fi
 
         # Auto-scale every N cycles (default: 5)

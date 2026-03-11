@@ -267,6 +267,11 @@ daemon_check_degradation() {
             notify "Pipeline Degradation Alert" "$alerts" "warn"
         fi
     fi
+
+    # Trigger emergency mode check on degradation detection
+    if type daemon_emergency_check >/dev/null 2>&1; then
+        daemon_emergency_check 2>/dev/null || true
+    fi
 }
 
 # ─── Auto-Scaling ─────────────────────────────────────────────────────────

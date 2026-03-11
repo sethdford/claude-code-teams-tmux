@@ -213,6 +213,18 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "daemon.emergency_activated": {
+      "required": [],
+      "optional": ["success_rate", "threshold", "window", "failures", "total"]
+    },
+    "daemon.emergency_deactivated": {
+      "required": [],
+      "optional": ["success_rate", "threshold", "duration_s", "reason"]
+    },
+    "daemon.emergency_check": {
+      "required": [],
+      "optional": ["success_rate", "mode", "recovery_count"]
     }
   }
 }

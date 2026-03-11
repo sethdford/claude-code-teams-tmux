@@ -18,7 +18,17 @@
     "health_check_interval": 60,
     "stale_job_timeout_hours": 2,
     "branch_pattern": "shipwright/issue-{issue}",
-    "worktree_dir": ".worktrees"
+    "worktree_dir": ".worktrees",
+    "emergency": {
+      "enabled": true,
+      "activation_threshold": 30,
+      "recovery_threshold": 60,
+      "rolling_window": 10,
+      "min_samples": 5,
+      "recovery_checks": 3,
+      "max_duration_minutes": 120,
+      "check_interval_cycles": 5
+    }
   },
   "pipeline": {
     "max_iterations": 20,

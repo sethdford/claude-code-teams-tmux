@@ -47,6 +47,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/daemon-triage.sh" ]] && source "$SCRIPT_DIR/lib/daemon-triage.sh"
 # shellcheck source=lib/daemon-failure.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-failure.sh" ]] && source "$SCRIPT_DIR/lib/daemon-failure.sh"
+# shellcheck source=lib/daemon-emergency.sh
+[[ -f "$SCRIPT_DIR/lib/daemon-emergency.sh" ]] && source "$SCRIPT_DIR/lib/daemon-emergency.sh"
 # shellcheck source=lib/daemon-dispatch.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-dispatch.sh" ]] && source "$SCRIPT_DIR/lib/daemon-dispatch.sh"
 # shellcheck source=lib/daemon-patrol.sh
@@ -442,6 +444,16 @@ load_config() {
     fi
     FAST_TEST_CMD_CFG=$(jq -r '.fast_test_cmd // ""' "$config_file" 2>/dev/null || echo "")
 
+    # emergency mode settings
+    EMERGENCY_MODE_ENABLED=$(jq -r '.emergency.enabled // true' "$config_file" 2>/dev/null || echo "true")
+    EMERGENCY_ACTIVATION_THRESHOLD=$(jq -r '.emergency.activation_threshold // 30' "$config_file" 2>/dev/null || echo "30")
+    EMERGENCY_RECOVERY_THRESHOLD=$(jq -r '.emergency.recovery_threshold // 60' "$config_file" 2>/dev/null || echo "60")
+    EMERGENCY_ROLLING_WINDOW=$(jq -r '.emergency.rolling_window // 10' "$config_file" 2>/dev/null || echo "10")
+    EMERGENCY_MIN_SAMPLES=$(jq -r '.emergency.min_samples // 5' "$config_file" 2>/dev/null || echo "5")
+    EMERGENCY_RECOVERY_CHECKS=$(jq -r '.emergency.recovery_checks // 3' "$config_file" 2>/dev/null || echo "3")
+    EMERGENCY_MAX_DURATION_MINUTES=$(jq -r '.emergency.max_duration_minutes // 120' "$config_file" 2>/dev/null || echo "120")
+    EMERGENCY_CHECK_INTERVAL=$(jq -r '.emergency.check_interval_cycles // 5' "$config_file" 2>/dev/null || echo "5")
+
     # self-optimization
     SELF_OPTIMIZE=$(jq -r '.self_optimize // false' "$config_file")
     OPTIMIZE_INTERVAL=$(jq -r '.optimize_interval // '"$(type policy_get >/dev/null 2>&1 && policy_get ".daemon.optimize_interval_cycles" "10" || echo "10")"'' "$config_file")
@@ -749,6 +761,11 @@ daemon_start() {
 
     # Initialize state
     init_state
+
+    # Load emergency mode state (if flag file exists from previous run)
+    if type daemon_emergency_load_state >/dev/null 2>&1; then
+        daemon_emergency_load_state 2>/dev/null || true
+    fi
 
     # Trap signals for graceful shutdown
     trap cleanup_on_exit EXIT
@@ -1400,6 +1417,55 @@ case "$SUBCOMMAND" in
         ;;
     patrol)
         daemon_patrol "$@"
+        ;;
+    emergency)
+        # Emergency mode commands: status, activate, deactivate
+        shift 2>/dev/null || true
+        local emg_cmd="${1:-status}"
+        case "$emg_cmd" in
+            status)
+                if type daemon_emergency_is_active >/dev/null 2>&1; then
+                    if daemon_emergency_is_active 2>/dev/null; then
+                        local flag_file="$HOME/.shipwright/daemon-emergency.flag"
+                        if [[ -f "$flag_file" ]]; then
+                            echo -e "${RED}●${RESET} ${BOLD}EMERGENCY MODE ACTIVE${RESET}"
+                            echo ""
+                            jq '.' "$flag_file" 2>/dev/null | sed 's/^/  /'
+                            echo ""
+                        fi
+                    else
+                        echo -e "${GREEN}●${RESET} ${BOLD}Emergency mode inactive${RESET}"
+                    fi
+                else
+                    error "Emergency mode not available"
+                    exit 1
+                fi
+                ;;
+            activate)
+                if type daemon_emergency_activate >/dev/null 2>&1; then
+                    daemon_emergency_activate 0 0 0
+                    success "Emergency mode manually activated"
+                else
+                    error "Emergency mode not available"
+                    exit 1
+                fi
+                ;;
+            deactivate)
+                if type daemon_emergency_deactivate >/dev/null 2>&1; then
+                    daemon_emergency_deactivate 100 "manual"
+                    success "Emergency mode manually deactivated"
+                else
+                    error "Emergency mode not available"
+                    exit 1
+                fi
+                ;;
+            *)
+                error "Unknown emergency subcommand: $emg_cmd"
+                echo ""
+                echo "Usage: shipwright daemon emergency [status|activate|deactivate]"
+                exit 1
+                ;;
+        esac
         ;;
     test)
         exec "$SCRIPT_DIR/sw-daemon-test.sh" "$@"
