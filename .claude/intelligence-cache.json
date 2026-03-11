@@ -852,26 +852,26 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains 4 recurring test failures with root causes and fixes. Most failures are in test stage (sw-cleanup.sh, sw-feedback-test.sh). Directly applicable to debugging and fixing build/test failures during this stage."
+            "summary": "Contains 4 documented test stage failures including sw-cleanup.sh heartbeat detection, sw-feedback-test.sh regression detection, mktemp directory creation, and intelligence classification issues. Directly informs what breaks during build stage."
           },
           {
             "file": "patterns.json",
             "relevance": 85,
-            "summary": "Provides project configuration (vitest test runner, npm package manager, JavaScript language, *.test.js pattern). Essential for understanding how to run tests and build artifacts correctly."
+            "summary": "Defines project conventions (vitest test runner, npm package manager, commonjs imports, src/ directory) essential for understanding how to build and test in this codebase."
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object. No relevant content for build stage context."
+            "relevance": 10,
+            "summary": "Empty baselines object; no performance or build metrics captured yet. Minimal relevance to current build context."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions array. No relevant content for build stage context."
+            "summary": "Empty decisions array; no architectural or implementation decisions recorded. Not relevant to build stage execution."
           }
         ]
       },
-      "timestamp": 1773191140,
+      "timestamp": 1773193848,
       "ttl": 1800
     }
   }
