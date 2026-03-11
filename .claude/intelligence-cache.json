@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "architect",
+          "devops",
+          "tester"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Feature implementation of a new dashboard system with metrics tracking, trend analytics, and alerting—core builder work, with architect input for data model design, DevOps for alert integration, and tester for validation of calculations.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773190484,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,227 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "3516dbc7ff823e962f2071cf5baa1965": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "fast",
+        "issue_type": "frontend",
+        "key_risks": [
+          "Real-time synchronization: Widget updates must stay in sync with pipeline completion events",
+          "Success rate calculation accuracy: Correctly aggregating outcomes across templates, complexity levels, and stages",
+          "Trend calculation edge cases: Handling boundary conditions at ±5% stability threshold and comparing 7d windows correctly",
+          "Alert threshold precision: Detecting when success_rate_7d drops >20% from success_rate_30d baseline",
+          "Historical data availability: Insufficient pipeline history when feature first deployed may cause inaccurate rates"
+        ],
+        "implementation_hints": [
+          "Leverage existing WebSocket infrastructure in dashboard/server.ts for real-time updates on pipeline completion",
+          "Pre-aggregate success rates at pipeline completion time (write aggregates to database, not raw data)",
+          "Query pre-computed time-windowed aggregates (7d, 30d) rather than scanning raw pipeline history on each render",
+          "Implement trend calculation by comparing current 7d success rate to previous 7d window (not last 14d)",
+          "Test trend logic with three test suites: improving trend, degrading trend, stable trend (±5%)",
+          "Reuse Shipwright standard colors for consistency: green #4ade80 (>80%), yellow #fbbf24 (60-80%), red #f43f5e (<60%)",
+          "Track consecutive failures as counter incremented on failure, reset to 0 on success",
+          "Define 7d/30d as UTC or server-local consistently; document timezone assumption in code",
+          "Implement alert condition check in pipeline completion event handler before broadcasting update",
+          "Add edge case tests: empty history, single pipeline, 0% success, exactly 80% and 60% boundaries, exactly at 20% drop threshold"
+        ]
+      },
+      "timestamp": 1773189620,
+      "ttl": 3600
+    },
+    "4e1d2f91606e6a090a1b1b7e0da06c80": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1773189633,
+      "ttl": 1800
+    },
+    "2973f81d95c188515a760183e3ca0900": {
+      "result": {
+        "estimated_cost_usd": 125,
+        "estimated_iterations": 3,
+        "estimated_tokens": 38000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1773189644,
+      "ttl": 3600
+    },
+    "5433c6154735b31875f75f160a56be94": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (repo/project/conventions)",
+            "relevance": 90,
+            "summary": "Critical for planning: defines project structure (src/), test patterns (*.test.js), import style (commonjs). Essential for determining where to implement dashboard code and how to follow conventions."
+          },
+          {
+            "file": "patterns.json (project_type)",
+            "relevance": 65,
+            "summary": "Moderately relevant: confirms Node.js project type, useful context for technology stack decisions but less detailed than the first patterns entry."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Low relevance: provides system state context via recent test failures, but failures are unrelated to dashboard feature planning. May inform risk assessment for testing approach."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Low relevance: baselines object is empty, but could theoretically be relevant for tracking 7d/30d success rate metrics once populated."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Low relevance: currently empty decisions array. Could inform architectural choices but provides no actionable guidance for this feature planning."
+          }
+        ]
+      },
+      "timestamp": 1773189781,
+      "ttl": 1800
+    },
+    "210064d96e464fa20299e2cff5472e95": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Contains project structure conventions (src/, test patterns, import style) and tech stack (Node.js, vitest, npm) essential for understanding how to implement the dashboard feature and what validation rules apply"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Shows recent test failures and system state issues; understanding current blockers and test failures helps contextualize why plan validation might have failed or what issues the implementation needs to avoid"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Confirms Node.js project type detected at bootstrap time; provides secondary confirmation of tech stack but less detail than the first patterns entry"
+          }
+        ]
+      },
+      "timestamp": 1773190125,
+      "ttl": 1800
+    },
+    "6a0543caee39895a20833587ba2ab0b9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project structure conventions (Node.js, CommonJS imports, src/ directory, vitest testing) directly inform dashboard code placement, module organization, and test patterns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 30,
+            "summary": "Test failure patterns across various systems provide insights into common testing pitfalls and assertions to avoid in dashboard test suite design"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Minimal project type detection (nodejs) is redundant with more detailed patterns.json entry; low information density"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines structure; could inform dashboard metrics schema design but contains no actual data"
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings; could provide dashboard patterns from other projects but no data captured"
+          }
+        ]
+      },
+      "timestamp": 1773190252,
+      "ttl": 1800
+    },
+    "c8be11ead396776707b63935a5569798": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Contains project structure info (Node.js, vitest, npm, commonjs) that could inform dashboard architecture decisions, but does not address design approaches or anti-patterns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 8,
+            "summary": "Contains test failures and implementation fixes from previous work, but all relate to unrelated components (sw-cleanup.sh, sw-feedback.sh, daemon retry logic) and not dashboard design patterns"
+          },
+          {
+            "file": "global.json",
+            "relevance": 2,
+            "summary": "Empty cross-repo learnings and common patterns; no relevant content for dashboard design approaches or anti-patterns"
+          }
+        ]
+      },
+      "timestamp": 1773190262,
+      "ttl": 1800
+    },
+    "d926dc4aa9ca9834ef256a58539f3ecf": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Defines Node.js project structure (vitest test runner, src/ source dir, commonjs imports) essential for understanding build/test pipeline for the dashboard feature"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 65,
+            "summary": "Confirms Node.js project type and bootstrap metadata relevant to build stage configuration"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Shows common test failure patterns (mktemp errors, test output issues) that may recur during dashboard build/test stages"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object provides minimal context for outcome tracking"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; no relevant prior architectural decisions captured"
+          }
+        ]
+      },
+      "timestamp": 1773190462,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project configuration (vitest test runner, npm, commonjs imports, src/ structure) is essential for understanding how to build and test the codebase"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Test stage failures with documented root causes and fixes (sw-cleanup.sh, sw-feedback.sh, sw-hello-test.sh issues) directly applicable to debugging build failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Baselines metrics are empty; minimal relevance to current build context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 3,
+            "summary": "Decisions array is empty; no applicable guidance for build stage"
+          }
+        ]
+      },
+      "timestamp": 1773190470,
+      "ttl": 1800
     }
   }
 }
