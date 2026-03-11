@@ -14,6 +14,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/bootstrap.sh"
 
 [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
 
+# Fallback for _config_get_int when config.sh not available (e.g. test environments)
+[[ "$(type -t _config_get_int 2>/dev/null)" == "function" ]] || _config_get_int() { echo "${3:-$2}"; }
+
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 # ─── Parse Args ──────────────────────────────────────────────────────────────
 
