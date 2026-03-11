@@ -45,6 +45,11 @@ if [[ -f "$SCRIPT_DIR/sw-intelligence.sh" ]]; then
     INTELLIGENCE_AVAILABLE=true
 fi
 
+# ─── Source success rate constraints library ──────────────────────────────────
+if [[ -f "$SCRIPT_DIR/lib/success-rate-constraints.sh" ]]; then
+    source "$SCRIPT_DIR/lib/success-rate-constraints.sh"
+fi
+
 # ─── Default template directory ─────────────────────────────────────────────
 TEMPLATES_DIR="${REPO_DIR}/templates/pipelines"
 ARTIFACTS_DIR=".claude/pipeline-artifacts"
@@ -285,6 +290,7 @@ composer_estimate_iterations() {
     local historical_data="${2:-}"
 
     local default_iterations=20
+    local estimated_iterations=0
 
     # Try intelligence-based estimation
     if [[ "$INTELLIGENCE_AVAILABLE" == "true" ]] && \
@@ -296,26 +302,56 @@ composer_estimate_iterations() {
 
         if [[ -n "$estimate" ]] && [[ "$estimate" =~ ^[0-9]+$ ]] && \
            [[ "$estimate" -ge 1 ]] && [[ "$estimate" -le 50 ]]; then
-            echo "$estimate"
-            return 0
+            estimated_iterations=$estimate
         fi
     fi
 
     # Fallback: use complexity from analysis if available
-    if [[ -n "$issue_analysis" ]]; then
+    if [[ $estimated_iterations -eq 0 && -n "$issue_analysis" ]]; then
         local complexity=""
         complexity=$(echo "$issue_analysis" | jq -r '.complexity // empty' 2>/dev/null) || true
 
         case "${complexity}" in
-            trivial)  echo 5;  return 0 ;;
-            low)      echo 10; return 0 ;;
-            medium)   echo 15; return 0 ;;
-            high)     echo 25; return 0 ;;
-            critical) echo 35; return 0 ;;
+            trivial)  estimated_iterations=5;  ;;
+            low)      estimated_iterations=10; ;;
+            medium)   estimated_iterations=15; ;;
+            high)     estimated_iterations=25; ;;
+            critical) estimated_iterations=35; ;;
         esac
     fi
 
-    echo "$default_iterations"
+    # Use default if no estimate was made
+    [[ $estimated_iterations -eq 0 ]] && estimated_iterations=$default_iterations
+
+    # Apply success rate constraints cap (if enabled)
+    if type get_iteration_cap >/dev/null 2>&1; then
+        local constraint_analysis
+        constraint_analysis=$(analyze_success_rate_constraints 2>/dev/null || echo '{}')
+
+        if [[ -n "$constraint_analysis" ]]; then
+            local is_enabled
+            is_enabled=$(echo "$constraint_analysis" | jq -r '.enabled // false' 2>/dev/null || echo "false")
+
+            if [[ "$is_enabled" == "true" ]]; then
+                local constraint_level
+                constraint_level=$(echo "$constraint_analysis" | jq -r '.constraint_level // "none"' 2>/dev/null || echo "none")
+
+                if [[ "$constraint_level" != "none" ]]; then
+                    local cap
+                    cap=$(get_iteration_cap "$constraint_level" 2>/dev/null || echo "$default_iterations")
+
+                    if [[ -n "$cap" ]] && [[ "$cap" -ge 1 ]] && [[ "$cap" -lt "$estimated_iterations" ]]; then
+                        local sr
+                        sr=$(echo "$constraint_analysis" | jq -r '.success_rate // 100' 2>/dev/null || echo "100")
+                        warn "Iteration cap: success_rate=${sr}% (${constraint_level} constraints) — capping iterations from ${estimated_iterations} to ${cap}"
+                        estimated_iterations=$cap
+                    fi
+                fi
+            fi
+        fi
+    fi
+
+    echo "$estimated_iterations"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════

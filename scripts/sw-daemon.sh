@@ -49,6 +49,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/daemon-failure.sh" ]] && source "$SCRIPT_DIR/lib/daemon-failure.sh"
 # shellcheck source=lib/daemon-dispatch.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-dispatch.sh" ]] && source "$SCRIPT_DIR/lib/daemon-dispatch.sh"
+# shellcheck source=lib/success-rate-constraints.sh
+[[ -f "$SCRIPT_DIR/lib/success-rate-constraints.sh" ]] && source "$SCRIPT_DIR/lib/success-rate-constraints.sh"
 # shellcheck source=lib/daemon-patrol.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-patrol.sh" ]] && source "$SCRIPT_DIR/lib/daemon-patrol.sh"
 # shellcheck source=lib/daemon-poll.sh

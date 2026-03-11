@@ -16,6 +16,11 @@ EFFORT_LEVEL="${EFFORT_LEVEL:-}"
 FALLBACK_MODEL="${FALLBACK_MODEL:-sonnet}"
 NO_GITHUB="${NO_GITHUB:-false}"
 
+# Load success rate constraints library (used by complexity gate)
+if [[ -f "$SCRIPT_DIR/success-rate-constraints.sh" ]]; then
+    source "$SCRIPT_DIR/success-rate-constraints.sh"
+fi
+
 # ─── Org-Wide Repo Management ─────────────────────────────────────────────
 
 daemon_ensure_repo() {
@@ -162,6 +167,52 @@ daemon_spawn_pipeline() {
     if [[ -n "$free_space_kb" ]] && [[ "$free_space_kb" -lt 1048576 ]] 2>/dev/null; then
         daemon_log WARN "Low disk space ($(( free_space_kb / 1024 ))MB) — skipping issue #${issue_num}"
         return 1
+    fi
+
+    # ── Success rate constraints gate ──
+    if type analyze_success_rate_constraints >/dev/null 2>&1; then
+        local constraint_analysis
+        constraint_analysis=$(analyze_success_rate_constraints 2>/dev/null || echo '{}')
+
+        if [[ -n "$constraint_analysis" ]]; then
+            local is_enabled
+            is_enabled=$(echo "$constraint_analysis" | jq -r '.enabled // false' 2>/dev/null || echo "false")
+
+            if [[ "$is_enabled" == "true" ]]; then
+                local constraint_level
+                constraint_level=$(echo "$constraint_analysis" | jq -r '.constraint_level // "none"' 2>/dev/null || echo "none")
+
+                # Get issue complexity (from intelligence analysis if available, else heuristic)
+                local complexity=5
+                if [[ -n "${INTELLIGENCE_COMPLEXITY:-}" ]]; then
+                    complexity="${INTELLIGENCE_COMPLEXITY}"
+                fi
+
+                # Check if this issue should be deferred
+                local defer_check
+                defer_check=$(should_defer_issue "$complexity" "$constraint_level" 2>/dev/null || echo '{}')
+
+                if [[ -n "$defer_check" ]]; then
+                    local should_defer
+                    should_defer=$(echo "$defer_check" | jq -r '.should_defer // false' 2>/dev/null || echo "false")
+                    local defer_reason
+                    defer_reason=$(echo "$defer_check" | jq -r '.reason // "unknown"' 2>/dev/null || echo "unknown")
+
+                    if [[ "$should_defer" == "true" ]]; then
+                        local sr
+                        sr=$(echo "$constraint_analysis" | jq -r '.success_rate // 100' 2>/dev/null || echo "100")
+                        daemon_log WARN "Deferring issue #${issue_num} (complexity=${complexity}, success_rate=${sr}%, constraint=${constraint_level}) — ${defer_reason}"
+                        emit_event "constraint.issue_deferred" \
+                            "issue=$issue_num" \
+                            "complexity=$complexity" \
+                            "success_rate=$sr" \
+                            "constraint_level=$constraint_level" \
+                            "reason=$defer_reason"
+                        return 0  # Return 0 (don't error) but skip pipeline
+                    fi
+                fi
+            fi
+        fi
     fi
 
     local work_dir="" branch_name="daemon/issue-${issue_num}"
