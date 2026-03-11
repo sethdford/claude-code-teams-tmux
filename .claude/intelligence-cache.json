@@ -854,28 +854,28 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Project configuration (vitest test runner, npm, commonjs imports, src/ structure) is essential for understanding how to build and test the codebase"
+            "summary": "Contains 4 recurring test failures (13 occurrences of sw-feedback-test regression, 11 of sw-cleanup dry-run output issues) directly impacting build stage success. Most frequent failures documented with root causes and fixes."
           },
           {
-            "file": "failures.json",
-            "relevance": 82,
-            "summary": "Test stage failures with documented root causes and fixes (sw-cleanup.sh, sw-feedback.sh, sw-hello-test.sh issues) directly applicable to debugging build failures"
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Defines project structure (vitest test runner, npm package manager, commonjs imports, src/ directory) needed to configure and execute build stage correctly."
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Baselines metrics are empty; minimal relevance to current build context"
+            "summary": "Empty baselines object provides no actionable metrics for build stage optimization or comparison."
           },
           {
             "file": "decisions.json",
             "relevance": 3,
-            "summary": "Decisions array is empty; no applicable guidance for build stage"
+            "summary": "Empty decisions array contains no architectural or build-related decisions that affect stage execution."
           }
         ]
       },
-      "timestamp": 1773190470,
+      "timestamp": 1773192415,
       "ttl": 1800
     }
   }
