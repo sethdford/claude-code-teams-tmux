@@ -685,9 +685,9 @@
     },
     "3b86fd9d5b82f8122cdfb2f8a94883cd": {
       "result": {
-        "estimated_iterations": 7
+        "estimated_iterations": 6
       },
-      "timestamp": 1773191993,
+      "timestamp": 1773194541,
       "ttl": 1800
     },
     "46010b0b195aac12aa91b7daaf3c02f3": {
@@ -705,33 +705,33 @@
       "result": {
         "results": [
           {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project structure (src/, vitest, npm, commonjs imports) essential for planning where agent success-rate monitoring code will integrate and how tests will be organized"
+          },
+          {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Contains patterns on regression detection, classify_failure logic, and intelligence-driven retry behavior. Relevant to feedback loop design and success rate signal processing, though not directly addressing the feature."
+            "relevance": 48,
+            "summary": "Contains failure patterns including classify_failure not being called in daemon_on_failure and sw-feedback-test regression issues — directly relevant to designing robust failure classification and feedback loop mechanisms"
           },
           {
-            "file": "patterns.json (first)",
-            "relevance": 40,
-            "summary": "Documents project structure (Node, vitest, CommonJS) and conventions. Provides baseline context needed for planning the feature implementation location and approach."
-          },
-          {
-            "file": "patterns.json (second)",
-            "relevance": 20,
-            "summary": "Confirms nodejs project type detected at bootstrap. Minimal value; largely redundant with first patterns.json entry."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object. No historical metrics to inform success rate tracking strategy or complexity constraints."
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Basic project type metadata (nodejs, bootstrap detected) — duplicate of first patterns.json with less detail, minimal added value"
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array. No prior architectural decisions about feedback loops or agent complexity management."
+            "relevance": 12,
+            "summary": "Would capture previous architectural decisions about agent systems and feedback mechanisms, but currently empty — would be valuable if populated with past design choices"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Would provide baseline metrics on agent success rates and performance trends, but currently empty — needed for planning feedback loop thresholds"
           }
         ]
       },
-      "timestamp": 1773192021,
+      "timestamp": 1773194685,
       "ttl": 1800
     },
     "f40be902b5e3b4085b60534912f40974": {
@@ -873,6 +873,84 @@
       },
       "timestamp": 1773192573,
       "ttl": 1800
+    },
+    "7f83bf1e1a9539f4d2593472e4d32ed9": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "ai-optimization",
+          "feedback-loops",
+          "metrics-driven-design"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Constraint logic and context injection are straightforward implementation; critical risk lies in ensuring agents actually respect constraints and in avoiding over-weighting recent failures, requiring careful testing and calibration."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "build": [],
+          "review": [
+            "two-stage-review",
+            "systematic-debugging"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "agent-constraint-validation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about threshold calibration (30%/60%/80%), whether recent failures should be hard constraints or soft guidance, and how to prevent over-correction that makes the agent too conservative.",
+          "systematic-debugging": "All 10 recent strategic suggestions failed—understand root causes before implementing constraints to avoid building a system that just masks symptoms rather than improving agent decision-making.",
+          "architecture-design": "This changes how metrics flow into agent context and how agent selection logic works; needs a clear model documenting constraint behavior at each threshold level for future maintainers.",
+          "testing-strategy": "Design test scenarios covering all threshold boundaries (0%, 29%, 30%, 31%, 59%, 60%, 61%, 80%, 100%), recent failure context injection, and agent behavior validation under different success rate conditions.",
+          "two-stage-review": "Constraint logic is subtle—Pass 1 verifies correctness of threshold checks and context injection; Pass 2 ensures prompt language is unambiguous and won't be ignored or misinterpreted by the agent.",
+          "adversarial-quality": "Attack the constraint system: What if thresholds are poorly calibrated and the agent becomes paralyzed? What if recent failures are noise, not signal? What if constraints create a self-fulfilling prophecy of low success?",
+          "agent-constraint-validation": "Verify that strategic agent actually respects constraints (not just receives them in context), that suggestion complexity matches success rate, and that the feedback loop measurably improves success rate over time.",
+          "pr-quality": "PR must clearly explain the three constraint levels with examples (fast/trivial at <30%, no refactoring at <60%, all features at ≥80%) so reviewers can understand the intended agent behavior.",
+          "validation-thoroughness": "Run strategic agent at simulated success rates and confirm: (1) suggestions match complexity tier, (2) recent failed tasks are not re-suggested, (3) no false negatives (agent isn't too conservative).",
+          "observability": "Post-deploy, track: success_rate by time window, agent constraint adherence, % of suggestions matching expected complexity tier, and whether strategic improvements lead to sustained success rate gains."
+        },
+        "generated_skills": [
+          {
+            "name": "agent-constraint-validation",
+            "reason": "No existing skill covers validating that agent behavior actually changes in response to feedback constraints—this is critical because agents are non-deterministic and could theoretically ignore or downweight prompt instructions.",
+            "content": "## Agent Constraint Validation\n\nValidating that strategic agent constraints actually work requires testing at three levels:\n\n### 1. Prompt Compliance Testing\n\n- Run the strategic agent with success_rate_7d=0% and verify suggestions include only fast/trivial complexity tasks (no refactors, no architectural changes).\n- Run with success_rate_7d=50% and verify no refactoring or meta-feature suggestions.\n- Run with success_rate_7d=85% and verify all complexity levels are possible.\n- Check that recent failed task titles appear in the agent's input context (verify via agent logs/traces).\n\n### 2. Behavior Drift Detection\n\n- Collect 20 suggestion runs at each success rate tier and cluster by complexity/category.\n- Verify that complexity distribution shifts appropriately (mean complexity lower at <30% success rate).\n- Detect if agent begins ignoring constraints after N iterations (agent learns to work around them—watch for this in logs).\n\n### 3. Failure Pattern Avoidance\n\n- Seed recent failures: \"Refactor logger module (failed)\", \"Add async caching (failed)\", \"Upgrade dependencies (failed)\".\n- Run 10 strategic suggestions and verify zero overlap with recent failure titles/patterns.\n- Watch for near-misses: agent suggesting \"Refactor logging utils\" when \"Refactor logger module\" was a recent failure—may need fuzzy matching.\n\n### 4. Calibration Checks\n\n- Plot success_rate vs. average suggestion complexity across a week of runs.\n- Verify the relationship is monotonic (higher success rate → higher allowed complexity).\n- Alert if a success rate drop causes agent to over-correct (all trivial suggestions for days when rate dips briefly).\n\n### 5. Feedback Loop Health\n\n- After deploying constraints, compare next-week success_rate to baseline.\n- If success_rate improves, constraint system is working.\n- If success_rate stays flat or worsens, constraints may be too restrictive or thresholds incorrectly calibrated—revisit.\n- Track time-to-recovery: how quickly does agent suggest useful tasks again once success_rate rebounds?"
+          }
+        ],
+        "review_focus": [
+          "Constraint threshold values (30%, 60%, 80%) are defensible and not arbitrary—verify they're grounded in empirical success/failure ratios",
+          "Prompt language is unambiguous and unlikely to be ignored by the agent ('must', 'only', 'prohibited' vs. softer language)",
+          "Test coverage includes all threshold boundaries and transitions (what happens at 30.1% vs. 29.9%?)",
+          "Recent failure context is injected correctly (list of task titles, not raw error messages) and limited in size to avoid context pollution",
+          "No false negatives: constraints don't make agent too conservative and suggest only trivial tasks even at moderate success rates"
+        ],
+        "risk_areas": [
+          "Threshold calibration: if 30% and 60% are wrong, agent becomes either too conservative (all trivial) or too aggressive (constraints ignored)",
+          "Negative feedback loops: recent failures weighted too heavily could prevent agent from ever suggesting complex work again",
+          "Agent non-compliance: agent receives constraints in context but learns to ignore them (watch logs for drift over time)",
+          "Test brittleness: agent output is non-deterministic; tests may pass locally but fail in production due to model variations",
+          "Over-correction: success rate drops briefly and agent goes into 'trivial only' mode for too long, creating artificial slowdown"
+        ]
+      },
+      "timestamp": 1773194660,
+      "ttl": 3600
     }
   }
 }
