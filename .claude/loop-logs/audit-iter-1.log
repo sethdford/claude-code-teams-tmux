@@ -1,1 +1,69 @@
-Invalid API key · Fix external API key
+## Audit Results
+
+**AUDIT_PASS**
+
+### Summary
+
+The agent has successfully completed a comprehensive implementation of the Meta-Feature Detection Gate with Mandatory Decomposition requirement. The work is well-executed, thoroughly tested, and demonstrates meaningful progress toward the goal.
+
+### Key Findings
+
+**✓ Core Implementation (116 LOC added)**
+- **`detect_meta_feature()`** (scripts/lib/pipeline-detection.sh:367-427): Implements intelligent weighted scoring system
+  - Fast-path label detection (meta, self-improvement, infrastructure, shipwright labels)
+  - Strong path signals (+3): scripts/sw-, scripts/lib/, dashboard/server, .claude/agents/, .claude/hooks/
+  - Medium signals (+2): scripts/, dashboard/, templates/, .claude/, tmux/
+  - Keyword signals (+1): shipwright, pipeline, daemon, etc.
+  - Threshold: 3 points
+  - Correctly handles empty inputs and edge cases
+
+- **`check_meta_feature_decomposition()`** (lines 432-474): Gate logic
+  - Blocks with actionable error message when meta-feature detected without decomposition
+  - Proper bypass paths: "subtask" and "decomposed" labels
+  - `--goal` mode bypass (no issue number)
+  - Clear error message includes exact `shipwright decompose --issue N --create-subtasks` command
+
+**✓ Integration (7 LOC added)**
+- Wired into `stage_intake()` in pipeline-stages-intake.sh (lines 69-74)
+- Blocks pipeline execution when gate triggers (returns 1)
+- Proper error propagation
+
+**✓ CLI Enhancement (21 LOC added)**
+- sw-decompose.sh now supports `--issue N --create-subtasks` syntax (lines 808-826)
+- Routes to existing `cmd_decompose()` function
+- Good error messages for invalid usage
+
+**✓ Test Coverage (272 LOC added)**
+- **sw-meta-feature-test.sh**: 17 E2E tests, all passing
+  - Real-world meta-feature scenarios
+  - Normal issue discrimination  
+  - Gate bypass paths (subtask, decomposed labels, goal mode)
+  - Error message quality
+  - CLI integration
+  - NO_GITHUB mode compatibility
+
+- **sw-lib-pipeline-detection-test.sh**: 93 unit tests, all passing
+  - detect_test_cmd across all languages
+  - detect_meta_feature scoring logic
+  - All path signals verified
+  - Label detection (case insensitive)
+  - check_meta_feature_decomposition gate logic
+
+**✓ Acceptance Criteria Met**
+1. ✅ Detection identifies issues targeting scripts/, dashboard/, lib/, templates/, .claude/ (weighted scoring)
+2. ✅ Pipeline blocks at intake without decomposition (wired into stage_intake)
+3. ✅ Error includes exact decompose command with issue number
+4. ✅ Subtask and decomposed labels bypass gate (both tested)
+5. ✅ CLI flag `--create-subtasks` creates subtasks (routes to decompose)
+6. ✅ All new tests pass (110 tests: 17 E2E + 93 unit)
+7. ✅ No regressions (cleanup test failures pre-exist, unrelated)
+8. ✅ NO_GITHUB=true mode works (explicitly tested)
+
+**✓ Code Quality**
+- Clean, focused changes (6 files, 416 additions)
+- Proper error handling and edge case coverage
+- Consistent with codebase patterns
+- Well-commented with clear intent
+- No incomplete TODOs or placeholder code
+
+**Note on Test Failure**: The `npm test` exit code 3 is due to 3 pre-existing failures in sw-cleanup-test.sh (unrelated to heartbeat detection logic), which the agent correctly identified. This feature introduces zero new regressions—the cleanup test wasn't modified and is unaffected by the changes.
