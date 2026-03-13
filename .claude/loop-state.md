@@ -1,119 +1,187 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Template Success Rate Tracking and Intelligence-Driven Recommendation Engine
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Perfect! I've created a comprehensive implementation plan for the Template Success Rate Tracking and Intelligence-Driven Recommendation Engine. The plan is ready for your review.
 
----
+## Plan Summary
 
-## Summary
+I've analyzed the issue and created a detailed plan that includes:
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+### **Key Decision: Centralized SQLite Database** ✓
+- Reuses existing `sw-db.sh` infrastructure
+- Fast queries for dashboard and CLI
+- Proper indexing for (project_type, template) lookups
+- Atomic transactions prevent race conditions
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
-
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+### **Architecture Overview**
+- **Data Collection**: Hook into pipeline completion to record (template, project_type, success, duration, cost)
+- **Metrics Storage**: Two tables—`template_metrics` (aggregated) and `template_executions` (detailed log)
+- **Recommendation Engine**: Scoring algorithm (50% success rate, 20% speed, 20% cost, 10% recency)
+- **CLI Command**: `shipwright template recommend` with confidence scores
+- **Daemon Integration**: Auto-template selection when `auto_template: true`
+- **Dashboard Widget**: 7d/30d/90d success rate trends with sample counts
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Template Success Rate Tracking and Intelligence-Driven Recommendation Engine
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Architecture: Three-layer system built on existing infrastructure
+## Alternatives Considered
+## Implementation Plan
+### Files to create
+### Files to modify
+### Dependencies
+### Risk areas
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json",
+      "relevance": 72,
+      "summary": "Defines project structure (Node.js/vitest), source layout (src/), test patterns (*.test.js), and conventions. Critical for implementing template success rate tracking with correct test structure and imports."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "failures.json",
+      "relevance": 48,
+      "summary": "Documents recurring test failures in sw-cleanup.sh, sw-feedback-test.sh, and sw-hello-test.sh. Relevant because the feature tracks success rates—understanding known failure patterns informs baseline metrics and detection logic."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json",
+      "relevance": 16,
+      "summary": "Simple project_type detection (nodejs) with timestamp. Redundant with more detailed first patterns.json entry; minimal value for build stage implementation."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "global.json",
+      "relevance": 8,
+      "summary": "Empty cross-repo learnings array. No actionable patterns or intelligence to inform template success rate tracking implementation."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "metrics.json",
+      "relevance": 6,
+      "summary": "Empty baselines object. No baseline metrics available to establish success rate thresholds or historical context."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Template Success Rate Tracking and Intelligence-Driven Recommendation Engine — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+## Skill Guidance (backend issue, AI-selected)
+## Data Pipeline Expertise
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+Apply these data engineering patterns:
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+### Schema Design
+- Define schemas explicitly — never rely on implicit structure
+- Use migrations for all schema changes (never manual ALTER TABLE)
+- Add indexes for frequently queried columns
+- Consider denormalization for read-heavy paths
+
+### Data Integrity
+- Use transactions for multi-step operations
+- Implement idempotency keys for operations that could be retried
+- Validate data at ingestion — reject bad data early
+- Use constraints (NOT NULL, UNIQUE, FOREIGN KEY) in the database layer
+
+### Query Patterns
+- Avoid N+1 queries — use JOINs or batch loading
+- Use EXPLAIN to verify query plans for complex queries
+- Paginate large result sets — never SELECT * without LIMIT
+- Use parameterized queries — never string concatenation for SQL
+
+### Migration Safety
+- Migrations must be reversible (include rollback steps)
+- Test migrations on a copy of production data
+- Add new columns as nullable, then backfill, then add NOT NULL
+- Never drop columns in the same deploy as code changes
+
+### Backpressure & Resilience
+- Implement circuit breakers for external data sources
+- Use dead letter queues for failed processing
+- Set timeouts on all external calls
+- Monitor queue depths and processing latency
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Schema Changes**: Full migration SQL with both forward and rollback scripts, plus data backfill strategy if required
+2. **Data Flow Diagram**: Text diagram showing data ingestion → processing → output with failure points marked
+3. **Idempotency Strategy**: How the system handles duplicate requests (idempotency keys, deduplication, side-effect safety)
+4. **Rollback Plan**: Step-by-step process to revert schema changes and restore data consistency
+
+If any section is not applicable, explicitly state why it's skipped.
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-13T22:44:24Z
+last_iteration_at: 2026-03-13T22:44:24Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 

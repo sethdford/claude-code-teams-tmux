@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "optimizer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Requires designing metrics tracking system and recommendation engine architecture; builder implements, tester validates accuracy, optimizer ensures performance.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773441863,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,237 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "8de0568c64b14e6159f8dbeae401bb13": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Database migration impact on running pipelines",
+          "Recommendation algorithm inaccuracy leading to poor template suggestions",
+          "Daemon auto-selection behavior changes could mask real issues",
+          "Cold start problem for new project types without historical baseline",
+          "Statistical bias from early/unrepresentative historical data",
+          "Performance impact of recommendation queries on daemon startup"
+        ],
+        "implementation_hints": [
+          "Design schema with indexed queries on (project_type, template) for efficiency",
+          "Implement recommendation with confidence scores (low confidence → default to standard template)",
+          "Build comprehensive mock data generator for integration tests covering diverse project types",
+          "Add explicit daemon config flag for auto-selection with manual override capability",
+          "Implement recommendation caching with TTL to avoid repeated startup calculations",
+          "Dashboard widget must show sample size and statistical significance to avoid misleading small samples",
+          "Start with core metrics (success_count/failure_count/duration/cost), defer ML features to phase 2"
+        ]
+      },
+      "timestamp": 1773441202,
+      "ttl": 3600
+    },
+    "66392c9e57a26e2485b55c7398ecdaf6": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1773441210,
+      "ttl": 1800
+    },
+    "3f7c5f15cd40489fb49c237e69ba0a08": {
+      "result": {
+        "estimated_cost_usd": 1.25,
+        "estimated_iterations": 3,
+        "estimated_tokens": 28000,
+        "likely_failure_stage": "test",
+        "confidence": 62,
+        "reasoning": {
+          "complexity_factor": "7/10 requires extended design + review cycles",
+          "risk_adjustments": "6 identified risks (DB migration, algorithm accuracy, cold start, statistical bias) increase iteration count",
+          "infrastructure_type": "Database schema + recommendation algorithm requires careful integration testing",
+          "token_breakdown": {
+            "design_phase": 8000,
+            "implementation": 10000,
+            "testing_cycles": 6000,
+            "review_and_refinement": 4000
+          },
+          "success_probability_impact": "78% baseline suggests 22% rework probability; estimated 1 additional iteration"
+        }
+      },
+      "timestamp": 1773441220,
+      "ttl": 3600
+    },
+    "a9d35e546f622ce1f65d050832616c76": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Project structure (Node.js, vitest, npm, src/) is essential for planning template success rate tracking implementation and understanding testing infrastructure"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains failure patterns including template validation errors and intelligence classification issues, directly informing what template success metrics need to track and how failures relate to template reliability"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Currently empty baselines, but this is the canonical location where template success rate metrics and performance baselines would be stored and referenced"
+          },
+          {
+            "file": "global.json",
+            "relevance": 35,
+            "summary": "Stores cross-repo learnings about template patterns; relevant for understanding intelligence-driven recommendations across projects"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 25,
+            "summary": "Empty but tracks strategic decisions about template handling; relevant for documenting design decisions made during this feature planning"
+          }
+        ]
+      },
+      "timestamp": 1773441352,
+      "ttl": 1800
+    },
+    "fdd2222c9f172775ed131af491342781": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 4 recent test failures from the repo including sw-cleanup, sw-feedback, and intelligence classification issues. These directly relate to plan validation failures and show patterns in test infrastructure that would impact Template Success Rate Tracking implementation."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Documents project conventions (vitest runner, src/ directory, *.test.js pattern, commonjs imports). Essential context for implementing and validating the success rate tracking feature against existing test patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Currently empty baseline metrics, but relevant to the success rate tracking feature since baselines would be needed to measure and track template performance metrics."
+          }
+        ]
+      },
+      "timestamp": 1773441486,
+      "ttl": 1800
+    },
+    "ccd87234c90e70511b99ca7fa911fdf2": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project structure, test conventions (vitest, *.test.js), and import style (commonjs) inform architectural decisions for the recommendation engine module layout"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Confirms Node.js project type; basic context for runtime environment and tooling choices for the tracking system"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 12,
+            "summary": "Test failures in unrelated Shipwright modules (cleanup, feedback); minimal relevance to template success rate tracking design"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log; no prior architectural decisions captured for reference"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines; no performance metrics or quality baselines available for design optimization"
+          }
+        ]
+      },
+      "timestamp": 1773441518,
+      "ttl": 1800
+    },
+    "cc333ab0df55cd74a9de770abc05142d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 38,
+            "summary": "Contains 4 documented failure patterns with root causes and fixes. While not explicitly about the template tracking feature, these show anti-patterns and what went wrong in similar complex features (cleanup logic, test regression detection, directory management). Useful reference for avoiding similar implementation pitfalls."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 22,
+            "summary": "Project conventions (test_pattern, source_dir, import_style) provide implementation context. Relevant for understanding how the template tracking feature should be structured within the existing codebase conventions, though not directly about rejected design approaches."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Empty but designed to store decision logs. Could theoretically track rejected design approaches and rationale if populated, making it structurally aligned with the context even though it contains no current entries."
+          }
+        ]
+      },
+      "timestamp": 1773441531,
+      "ttl": 1800
+    },
+    "20745b94920322abf34810907a1dd5ac": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Defines project structure (Node.js/vitest), source layout (src/), test patterns (*.test.js), and conventions. Critical for implementing template success rate tracking with correct test structure and imports."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Documents recurring test failures in sw-cleanup.sh, sw-feedback-test.sh, and sw-hello-test.sh. Relevant because the feature tracks success rates—understanding known failure patterns informs baseline metrics and detection logic."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 16,
+            "summary": "Simple project_type detection (nodejs) with timestamp. Redundant with more detailed first patterns.json entry; minimal value for build stage implementation."
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Empty cross-repo learnings array. No actionable patterns or intelligence to inform template success rate tracking implementation."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 6,
+            "summary": "Empty baselines object. No baseline metrics available to establish success rate thresholds or historical context."
+          }
+        ]
+      },
+      "timestamp": 1773441842,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents 4 recurring test failures seen during build/test stages (17, 17, 2, 1 occurrences). Critical for understanding known issues that will likely re-occur during this build."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project conventions essential for build execution: test runner (vitest), test pattern (*.test.js), package manager (npm), source directory (src/). Directly informs how to run tests."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object with no data. Not relevant to current build context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array with no data. Not relevant to current build context."
+          }
+        ]
+      },
+      "timestamp": 1773441849,
+      "ttl": 1800
     }
   }
 }
