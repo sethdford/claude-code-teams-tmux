@@ -647,6 +647,159 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "8bd410546e020c7200365c89cac8ebb4": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 87,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "GitHub API authentication or token misconfiguration",
+          "Git push/PR creation failures in real environment",
+          "File system permissions or .claude directory access",
+          "Branch protection rules or required checks blocking PR"
+        ],
+        "implementation_hints": [
+          "Use $(date +%s) to generate unique timestamp for filename",
+          "Keep build stage as simple bash: echo timestamp > file, git add/commit, pipeline handles PR",
+          "Verify GitHub token has repo and workflow scopes before testing",
+          "Document the command to run locally and expected success indicators for validation"
+        ]
+      },
+      "timestamp": 1773439687,
+      "ttl": 3600
+    },
+    "7eb154149174c60d3e674fed55d1e28b": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1773439697,
+      "ttl": 1800
+    },
+    "8da61c0ad2a04e91aec78d4f36bb0783": {
+      "result": {
+        "estimated_cost_usd": 0.22,
+        "estimated_iterations": 1,
+        "estimated_tokens": 13000,
+        "likely_failure_stage": "pr",
+        "confidence": 72
+      },
+      "timestamp": 1773439722,
+      "ttl": 3600
+    },
+    "64dbcd27d00bc2858901fdfedc24590e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains 4 recurring test failures (sw-cleanup.sh heartbeat detection, sw-feedback-test.sh regression JSON output, mktemp directory creation, sw-cleanup.sh dry-run issues). These actual failures directly inform what the MVP test case must validate to ensure system health."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 78,
+            "summary": "Project structure (Node.js, vitest, npm, src/ dir, *.test.js pattern, commonjs) is essential for planning test harness design and understanding the test execution environment."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 22,
+            "summary": "Generic nodejs detection from Feb 21. Provides basic project type confirmation but less detailed than the first patterns.json; minimal additional value for MVP planning."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Contains empty baselines object. No baseline metrics available to inform performance or coverage targets for the MVP test case."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural decisions captured that would influence MVP test case design."
+          }
+        ]
+      },
+      "timestamp": 1773439735,
+      "ttl": 1800
+    },
+    "f028dd9d3641860ec8493ee2fbd3ce9c": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant: Contains 4 recurring test failure patterns with root causes (sw-cleanup.sh dry-run output, sw-feedback-test.sh JSON regression, mktemp directory, intelligence/retry logic). The 17 and 16 occurrence counts indicate critical validation failures that an MVP test case must address."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Moderately relevant: Documents the project uses vitest test runner with *.test.js pattern, commonjs imports, and src/ directory structure. Useful for understanding how to structure validation tests, but less critical than actual failure patterns."
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Minimally relevant: Currently empty (no common patterns or cross-repo learnings captured). Could theoretically provide validation patterns from other repos, but provides no actionable content."
+          }
+        ]
+      },
+      "timestamp": 1773439996,
+      "ttl": 1800
+    },
+    "0ac454aada4791ea22ae1a8da072719d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Shows recurring test failures and system health issues (sw-cleanup.sh stale heartbeat detection, sw-feedback-test.sh JSON output, mktemp directory errors). Critical for understanding what an MVP health validation test should verify."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 80,
+            "summary": "Contains project structure (Node.js/vitest), source directory conventions, test patterns (*.test.js), and import style. Directly informs architecture for designing compatible test cases."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 25,
+            "summary": "Confirms Node.js project type detected at bootstrap. Minimal additional detail compared to first patterns.json."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines structure, but indicates where system health metrics would be tracked. Could be useful for understanding what MVP test should measure."
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty common patterns and cross-repo learnings. Minimal relevance but suggests integration points for sharing health validation patterns across repos."
+          }
+        ]
+      },
+      "timestamp": 1773440034,
+      "ttl": 1800
+    },
+    "20877567bc80d59f27bb2edc66d01f77": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Documents actual test failures and anti-patterns (sw-cleanup stale heartbeat detection, regression JSON output, mktemp directory issues). Directly demonstrates rejected/failed approaches in pipeline testing that should be avoided when designing minimal viable test cases."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 35,
+            "summary": "Provides project structure conventions (vitest test runner, commonjs imports, src/ directory, test_pattern). Useful context for understanding current testing setup, but only tangentially related to system health validation approaches."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Not relevant to rejected design approaches or anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1773440046,
+      "ttl": 1800
     }
   }
 }
