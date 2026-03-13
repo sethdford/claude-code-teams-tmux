@@ -409,10 +409,12 @@ scan_platform_refactor() {
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        f="${line%%:*}"
+        rest="${line#*:}"
+        ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
-    done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
+    done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || echo "[]" > "$findings_file.raw"
     jq -s '.' "$findings_file.raw" 2>/dev/null > "$findings_file" || echo "[]" > "$findings_file"
     local findings
     findings=$(cat "$findings_file" 2>/dev/null || echo "[]")
