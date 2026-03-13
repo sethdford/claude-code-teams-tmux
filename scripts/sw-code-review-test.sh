@@ -37,7 +37,8 @@ exit 0
 MOCK
     chmod +x "$TEST_TEMP_DIR/bin/git"
     # git mock needs TEMP_DIR — inject it
-    sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+    source "$SCRIPT_DIR/lib/compat.sh"
+    sed_i "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
 
     # Mock gh
     cat > "$TEST_TEMP_DIR/bin/gh" <<'MOCK'
