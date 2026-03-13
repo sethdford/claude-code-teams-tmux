@@ -1,1 +1,49 @@
-Invalid API key · Fix external API key
+## Critical Issues Found
+
+I've completed my review of the cumulative work across both iterations. Here are the specific issues:
+
+### **CRITICAL BUG — Line 518 in `lib/proven-configs.sh`**
+
+```bash
+if (( $(echo "${replay_count:-0} >= 5" | sed 's/replay_count/$(echo "$updated_entry" | jq -r ".replay_count")/') )); then
+```
+
+**Problems:**
+1. Variable `$replay_count` is undefined in this scope
+2. The sed substitution won't work — you cannot nest command substitutions (`$(...)`) inside sed patterns
+3. The arithmetic expansion will try to evaluate malformed output
+4. This breaks the entire demotion logic for low-confidence configs
+
+**Should be:**
+```bash
+local replay_count=$(echo "$updated_entry" | jq -r '.replay_count')
+if [[ $replay_count -ge 5 ]]; then
+```
+
+### **Weak Test Suite**
+
+The test file (`sw-proven-configs-test.sh`) has major gaps:
+- **Tests 13-16 are fakes**: They unconditionally return exit code 0 without actually testing anything
+- **Missing critical test**: No test for `proven_config_track_replay()` — the function with the bug
+- **No demotion validation**: The demotion logic is never exercised
+- The suite passes only because it's not comprehensive
+
+### **Summary**
+
+**What's Working:**
+- Core capture/match/apply functions look sound
+- CLI integration is correct  
+- Pipeline integration points are set up properly
+- Architecture is well-designed
+- Bash 3.2 compatible (except for the bug)
+- Atomic writes, proper JSON handling, module guards all look good
+
+**What's Broken:**
+- The replay tracking demotion feature will crash when invoked
+- Test suite doesn't validate the critical path
+
+**Status:** The implementation is **incomplete and not production-ready** due to the critical bug on line 518, despite the agent claiming "the implementation from iteration 1 was already complete and correct."
+
+**AUDIT_FAIL**
+
+The malformed sed/arithmetic expression on line 518 must be fixed, and the test suite needs to be expanded to actually test the replay tracking and demotion logic.
