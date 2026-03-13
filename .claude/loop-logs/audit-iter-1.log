@@ -1,1 +1,82 @@
-Invalid API key · Fix external API key
+Perfect! I've completed a comprehensive review of the cumulative work. Here's my critical audit:
+
+## Implementation Status
+
+### ✅ Goal Achievement
+**Platform Capability Self-Assessment Registry with Proven Pattern Boundaries** - COMPLETE
+
+All core requirements met:
+- **Registry**: SQLite schema v7 with `capability_registry` table (1,346 lines of code added)
+- **Pre-flight Gating**: `capability_check_task()` rejects tasks below threshold (configurable, defaults 50%)
+- **Conservative Mode**: Activates when overall success rate <70%, restricts unsafe categories
+- **Pattern Boundaries**: Hysteresis margin (default 2%) prevents thrashing at threshold crossing
+- **CLI Command**: Full `sw capability` command with show/heatmap/reset/configure/status
+- **Dashboard API**: `/api/capabilities` endpoint with per-repo and aggregate queries
+- **Cold-start**: Empty registry allows all tasks (fail-open)
+
+### ✅ Code Quality Assessment
+
+**Strengths:**
+- ✅ All code follows existing project conventions (bash 3.2 compatible, `set -euo pipefail`, module guards)
+- ✅ Proper error handling and fail-open behavior (DB unavailable → allow)
+- ✅ SQL escaping implemented correctly
+- ✅ Event emission for observability
+- ✅ Configuration loading from `daemon-config.json`
+- ✅ Hysteresis logic is mathematically correct (prevents oscillation)
+- ✅ Clean integration with existing systems (pipeline-util, daemon-state, pipeline-commands)
+
+**Issues Found:** NONE
+
+### ✅ Test Coverage
+- **sw-capability-test.sh**: 28/28 tests PASSING
+  - DB CRUD operations (9 tests)
+  - Pre-flight gate logic (6 tests)
+  - Conservative mode (3 tests)
+  - Outcome recording (2 tests)
+  - CLI integration (3 tests)
+  - Schema migration (2 tests)
+  - Edge cases (3 tests)
+- Test file properly registered in `package.json`
+- No TODO/FIXME/HACK comments
+- Comprehensive edge case coverage (cold-start, insufficient samples, empty categories, boundary conditions)
+
+### ✅ Integration Verification
+- Pre-flight check wired into `scripts/lib/pipeline-util.sh:345` and `scripts/lib/daemon-state.sh:259`
+- Outcome recording wired into `scripts/lib/pipeline-commands.sh:1045`
+- CLI command registered in `scripts/sw:608`
+- `--override-capability-check` flag supported
+- Dashboard endpoint implemented in `dashboard/server.ts:3464`
+
+### ✅ Test Status
+- **npm test exit code**: 3 (due to pre-existing failures, NOT caused by this work)
+- **Pre-existing failures**: sw-cleanup-test.sh has 3 failing tests (verified: same failures on commit 5a4e041 before capability registry)
+- **No regressions introduced** by capability registry implementation
+
+### ✅ Architecture
+- Schema migration (v6→v7) properly implemented with version checks
+- DB CRUD functions: `db_capability_upsert()`, `db_capability_query()`, `db_capability_overall_rate()`, `db_capability_reset()`
+- Atomic upserts with relative increments (WAL-safe)
+- Proper indexing for performance
+- JSON output for API consumption
+
+### ✅ Completeness Check
+- All 12 planned tasks completed:
+  - ✅ DB table + schema v7 + CRUD functions
+  - ✅ Core registry logic module
+  - ✅ `--override-capability-check` flag
+  - ✅ Pre-flight integration (pipeline + daemon)
+  - ✅ Outcome recording
+  - ✅ CLI command
+  - ✅ CLI router registration
+  - ✅ Dashboard API
+  - ✅ Comprehensive test suite
+  - ✅ Tests passing
+  - ✅ No TODOs/placeholders
+
+---
+
+## Verdict
+
+**AUDIT_PASS**
+
+The implementation is complete, of high quality, and ready for production. All requirements met. No bugs found. Proper test coverage (28 tests passing). No regressions introduced. Code follows existing conventions and patterns. Proper error handling throughout. Integration points verified.
