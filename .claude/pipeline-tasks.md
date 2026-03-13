@@ -1,27 +1,29 @@
 # Pipeline Tasks — Minimal Viable Pipeline Test Case for System Health Validation
 
 ## Implementation Checklist
-- [ ] Task 1: Create `templates/pipelines/minimal.json` with intake + build stages
-- [ ] Task 2: Create `scripts/sw-minimal-test.sh` with template validation tests
-- [ ] Task 3: Add template structure validation tests (JSON validity, name, description)
-- [ ] Task 4: Add stage configuration tests (exactly 2 enabled, correct IDs)
-- [ ] Task 5: Add build config tests (max_iterations, audit, quality_gates)
-- [ ] Task 6: Add intelligence config tests (all disabled)
-- [ ] Task 7: Add defaults tests (model, agents)
-- [ ] Task 8: Add template discoverability test (find_pipeline_config resolves it)
-- [ ] Task 9: Register test in `package.json` test chain
-- [ ] Task 10: Run `sw-minimal-test.sh` and verify all tests pass
-- [ ] Task 11: Run `npm test` to verify no regressions
-- [ ] `jq empty templates/pipelines/minimal.json` exits 0
-- [ ] `bash scripts/sw-minimal-test.sh` exits 0 with 0 failures
-- [ ] Template has exactly 2 enabled stages: `intake` and `build`
-- [ ] `max_iterations` is <= 3
-- [ ] All intelligence features are disabled
-- [ ] Test is registered in `package.json` and `npm test` passes
-- [ ] No existing tests are broken by the changes
+- [ ] Create `scripts/pipeline-health.test.ts` with vitest setup
+- [ ] Research and document existing test patterns from `scripts/*-test.ts`
+- [ ] Implement mock utilities for file system, state, and config
+- [ ] Write health check 1: Pipeline initialization creates state files
+- [ ] Write health check 2: Stage execution order is correct
+- [ ] Write health check 3: Artifact generation paths are valid
+- [ ] Write health check 4: Error handling and missing dependency detection
+- [ ] Write health check 5: State object transitions are valid
+- [ ] Integrate test into package.json test suite
+- [ ] Benchmark and optimize test performance (target: < 30s)
+- [ ] Add comprehensive comments and maintenance documentation
+- [ ] Validate test catches known failure patterns (missing artifacts)
+- [ ] `scripts/pipeline-health.test.ts` created with 5 health checks
+- [ ] All health checks pass consistently
+- [ ] Code follows Shipwright conventions (set -euo pipefail, VERSION, etc.)
+- [ ] Test integrates with vitest test runner
+- [ ] `npm run test:health` passes locally
+- [ ] All 5 health checks complete successfully
+- [ ] Test execution time < 30 seconds
+- [ ] No external dependencies (network, GitHub, Claude API)
 
 ## Context
 - Pipeline: autonomous
 - Branch: ci/issue-261
 - Issue: none
-- Generated: 2026-03-13T22:13:05Z
+- Generated: 2026-03-13T22:47:08Z

@@ -1,119 +1,124 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Minimal Viable Pipeline Test Case for System Health Validation
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+# Implementation Plan: Minimal Viable Pipeline Test Case for System Health Validation
+
+## Executive Summary
+
+This plan creates a lightweight, isolated test suite that validates core pipeline health without requiring full system integration, GitHub access, or real Claude API calls. The MVP focuses on catching common failure modes (missing artifacts, state corruption, stage execution errors) that recent pipelines have surfaced.
 
 ---
 
-## Summary
+## Requirement Analysis & Answers to Design Questions
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+### Requirements Clarity
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
-
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Minimum Viable Change:**
+A single TypeScript/vitest test file (`scripts/pipeline-health.test.ts`) that validates 5 core health checks:
+1. Pipeline initialization creates required state files
+2. Stage execution flow is correct (no skipped stages)
+3. Artifact generation paths are valid
+4. Error handling gracefully catches missing dependencies
+5. State transitions maintain consistency
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Minimal Viable Pipeline Test Case for System Health Validation
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Chosen Approach: Bash Shallow Mock + Focused Scenarios
+### Component Diagram
+### Interface Contracts
+# Health Check functions (internal to test file)
+# HC1: validate_pipeline_init(test_dir) → assert state file exists with correct YAML structure
+# HC2: validate_stage_sequence(test_dir) → assert stages execute in defined order
+# HC3: validate_artifact_paths(test_dir) → assert artifacts land in .claude/pipeline-artifacts/<stage>/
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "failures.json",
+      "relevance": 92,
+      "summary": "Contains 4 test failure patterns with root causes and fixes (sw-cleanup.sh dry-run output, sw-feedback-test.sh regression JSON, /tmp/claude directory creation). Directly applicable to ensuring build stage validation and system health checks."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (first entry)",
+      "relevance": 78,
+      "summary": "Project configuration showing vitest runner, npm package manager, commonjs imports, src/ source dir, *.test.js pattern. Essential for understanding build/test execution requirements."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (second entry)",
+      "relevance": 25,
+      "summary": "Basic project type detection (nodejs, detected 2026-02-21). Minimal context compared to detailed first patterns.json entry."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baselines object. No performance or health metrics to inform build optimization."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 5,
+      "summary": "Empty decisions array. No prior architectural or implementation decisions captured."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Minimal Viable Pipeline Test Case for System Health Validation — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Minimal Viable Pipeline Test Case for System Health Validation
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Create `scripts/pipeline-health.test.ts` with vitest setup
+- [ ] Research and document existing test patterns from `scripts/*-test.ts`
+- [ ] Implement mock utilities for file system, state, and config
+- [ ] Write health check 1: Pipeline initialization creates state files
+- [ ] Write health check 2: Stage execution order is correct
+- [ ] Write health check 3: Artifact generation paths are valid
+- [ ] Write health check 4: Error handling and missing dependency detection
+- [ ] Write health check 5: State object transitions are valid
+- [ ] Integrate test into package.json test suite
+- [ ] Benchmark and optimize test performance (target: < 30s)
+- [ ] Add comprehensive comments and maintenance documentation
+- [ ] Validate test catches known failure patterns (missing artifacts)
+- [ ] `scripts/pipeline-health.test.ts` created with 5 health checks
+- [ ] All health checks pass consistently
+- [ ] Code follows Shipwright conventions (set -euo pipefail, VERSION, etc.)
+- [ ] Test integrates with vitest test runner
+- [ ] `npm run test:health` passes locally
+- [ ] All 5 health checks complete successfully
+- [ ] Test execution time < 30 seconds
+- [ ] No external dependencies (network, GitHub, Claude API)
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-261
+- Issue: none
+- Generated: 2026-03-13T22:47:08Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-13T22:50:44Z
+last_iteration_at: 2026-03-13T22:50:44Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
