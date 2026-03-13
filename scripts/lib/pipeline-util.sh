@@ -339,7 +339,24 @@ preflight_checks() {
         errors=$((errors + 1))
     fi
 
-    # 6. Disk space check (warn if < 1GB free)
+    # 6. Capability registry check
+    if [[ -f "$SCRIPT_DIR/lib/capability-registry.sh" ]]; then
+        source "$SCRIPT_DIR/lib/capability-registry.sh" 2>/dev/null || true
+        if type capability_check_task >/dev/null 2>&1; then
+            local task_type="${TASK_TYPE:-}"
+            if [[ -n "$task_type" ]]; then
+                if capability_check_task "$task_type" 2>/dev/null; then
+                    echo -e "  ${GREEN}✓${RESET} Capability check passed (${task_type})"
+                else
+                    echo -e "  ${RED}✗${RESET} Capability check failed: '${task_type}' below success threshold"
+                    echo -e "    ${DIM}Use --override-capability-check to force, or run: sw capability show${RESET}"
+                    errors=$((errors + 1))
+                fi
+            fi
+        fi
+    fi
+
+    # 7. Disk space check (warn if < 1GB free)
     local free_space_kb
     free_space_kb=$(df -k "$PROJECT_ROOT" 2>/dev/null | tail -1 | awk '{print $4}')
     if [[ -n "$free_space_kb" ]] && [[ "$free_space_kb" -lt 1048576 ]] 2>/dev/null; then

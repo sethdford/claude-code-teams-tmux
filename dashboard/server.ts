@@ -3460,6 +3460,70 @@ const server = Bun.serve({
 
     // ── SQLite DB API endpoints ─────────────────────────────────────
 
+    // REST: Capability registry
+    if (pathname === "/api/capabilities") {
+      try {
+        const repoHash = url.searchParams.get("repo_hash") || "";
+        const dbPath = `${process.env.HOME}/.shipwright/shipwright.db`;
+        const { Database } = await import("bun:sqlite");
+        const db = new Database(dbPath, { readonly: true });
+        let entries;
+        if (repoHash) {
+          entries = db
+            .query(
+              "SELECT * FROM capability_registry WHERE repo_hash = ? ORDER BY category",
+            )
+            .all(repoHash);
+        } else {
+          entries = db
+            .query("SELECT * FROM capability_registry ORDER BY repo_hash, category")
+            .all();
+        }
+        const overallRow = repoHash
+          ? db
+              .query(
+                "SELECT COALESCE(CAST(SUM(success_count) AS REAL) / NULLIF(SUM(total_runs), 0), 0) as rate FROM capability_registry WHERE repo_hash = ?",
+              )
+              .get(repoHash)
+          : db
+              .query(
+                "SELECT COALESCE(CAST(SUM(success_count) AS REAL) / NULLIF(SUM(total_runs), 0), 0) as rate FROM capability_registry",
+              )
+              .get();
+        const overallRate = (overallRow as { rate: number } | null)?.rate ?? 0;
+        const conservativeMode = overallRate < 0.7 && (entries as unknown[]).length > 0;
+        db.close();
+        return new Response(
+          JSON.stringify({
+            entries,
+            overall_rate: overallRate,
+            conservative_mode: conservativeMode,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...CORS_HEADERS,
+            },
+          },
+        );
+      } catch (e) {
+        return new Response(
+          JSON.stringify({
+            entries: [],
+            overall_rate: 0,
+            conservative_mode: false,
+            error: (e as Error).message,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...CORS_HEADERS,
+            },
+          },
+        );
+      }
+    }
+
     // REST: Events from DB with since/limit params
     if (pathname === "/api/db/events") {
       const since = parseInt(url.searchParams.get("since") || "0");

@@ -605,6 +605,9 @@ main() {
         --version|-v)
             show_version
             ;;
+        capability)
+            exec "$SCRIPT_DIR/sw-capability.sh" "$@"
+            ;;
         hello)
             exec "$SCRIPT_DIR/sw-hello.sh" "$@"
             ;;

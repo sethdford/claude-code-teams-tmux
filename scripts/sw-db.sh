@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -479,6 +479,27 @@ CREATE TABLE IF NOT EXISTS reasoning_traces (
     FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
+
+-- Capability registry: tracks success/failure rates by task category
+CREATE TABLE IF NOT EXISTS capability_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    category TEXT NOT NULL,
+    subcategory TEXT NOT NULL DEFAULT '',
+    total_runs INTEGER NOT NULL DEFAULT 0,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    success_rate REAL NOT NULL DEFAULT 0.0,
+    confidence_level TEXT NOT NULL DEFAULT 'low',
+    last_success_at TEXT,
+    last_failure_at TEXT,
+    last_gate_result TEXT,
+    updated_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(repo_hash, category, subcategory)
+);
+CREATE INDEX IF NOT EXISTS idx_capability_registry_repo ON capability_registry(repo_hash);
+CREATE INDEX IF NOT EXISTS idx_capability_registry_category ON capability_registry(category);
 SCHEMA
 }
 
@@ -651,6 +672,34 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
+    fi
+
+    # Migration from v6 → v7: capability_registry for task success/failure tracking
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        sqlite3 "$DB_FILE" "
+CREATE TABLE IF NOT EXISTS capability_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_hash TEXT NOT NULL,
+    category TEXT NOT NULL,
+    subcategory TEXT NOT NULL DEFAULT '',
+    total_runs INTEGER NOT NULL DEFAULT 0,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    success_rate REAL NOT NULL DEFAULT 0.0,
+    confidence_level TEXT NOT NULL DEFAULT 'low',
+    last_success_at TEXT,
+    last_failure_at TEXT,
+    last_gate_result TEXT,
+    updated_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(repo_hash, category, subcategory)
+);
+CREATE INDEX IF NOT EXISTS idx_capability_registry_repo ON capability_registry(repo_hash);
+CREATE INDEX IF NOT EXISTS idx_capability_registry_category ON capability_registry(category);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
     fi
 }
 
@@ -1031,6 +1080,87 @@ db_cost_today() {
     local today_epoch
     today_epoch=$(date -u -jf "%Y-%m-%dT%H:%M:%SZ" "$today_start" +%s 2>/dev/null || date -u -d "$today_start" +%s 2>/dev/null || echo "0")
     _db_query "SELECT COALESCE(ROUND(SUM(cost_usd), 4), 0) FROM cost_entries WHERE ts_epoch >= ${today_epoch};" || echo "0"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Capability Registry Functions
+# ═══════════════════════════════════════════════════════════════════════════
+
+# db_capability_upsert <repo_hash> <category> <subcategory> <success>
+# Atomic upsert using relative increments, safe under WAL.
+# success: 1 = pass, 0 = fail
+db_capability_upsert() {
+    local rh="$1" cat="$2" subcat="${3:-}" success="${4:-1}"
+    if ! db_available; then return 1; fi
+
+    rh="${rh//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    cat="${cat//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    subcat="${subcat//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+
+    local ts
+    ts="$(now_iso)"
+
+    local success_ts_update="" failure_ts_update=""
+    if [[ "$success" -eq 1 ]]; then
+        success_ts_update="last_success_at = '${ts}',"
+    else
+        failure_ts_update="last_failure_at = '${ts}',"
+    fi
+
+    _db_exec "INSERT INTO capability_registry
+        (repo_hash, category, subcategory, total_runs, success_count, failure_count, success_rate, confidence_level, last_success_at, last_failure_at, updated_at, created_at)
+        VALUES ('${rh}', '${cat}', '${subcat}', 1, ${success}, $((1 - success)), CAST(${success} AS REAL), 'low', $([ "$success" -eq 1 ] && echo "'${ts}'" || echo "NULL"), $([ "$success" -eq 0 ] && echo "'${ts}'" || echo "NULL"), '${ts}', '${ts}')
+        ON CONFLICT(repo_hash, category, subcategory) DO UPDATE SET
+            total_runs = total_runs + 1,
+            success_count = success_count + ${success},
+            failure_count = failure_count + $((1 - success)),
+            success_rate = CAST((success_count + ${success}) AS REAL) / (total_runs + 1),
+            confidence_level = CASE
+                WHEN (total_runs + 1) >= 30 THEN 'high'
+                WHEN (total_runs + 1) >= 10 THEN 'medium'
+                ELSE 'low'
+            END,
+            ${success_ts_update}
+            ${failure_ts_update}
+            updated_at = '${ts}';"
+}
+
+# db_capability_query <repo_hash> [category] — returns JSON array
+db_capability_query() {
+    local rh="$1" cat="${2:-}"
+    if ! db_available; then echo "[]"; return 0; fi
+
+    rh="${rh//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    local where="WHERE repo_hash = '${rh}'"
+    if [[ -n "$cat" ]]; then
+        cat="${cat//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+        where="${where} AND category = '${cat}'"
+    fi
+
+    local result
+    result=$(sqlite3 -json "$DB_FILE" "SELECT * FROM capability_registry ${where} ORDER BY category, subcategory;" 2>/dev/null) || true
+    echo "${result:-[]}"
+}
+
+# db_capability_overall_rate <repo_hash> — aggregate success rate (0.0–1.0)
+db_capability_overall_rate() {
+    local rh="$1"
+    if ! db_available; then echo "0"; return 0; fi
+    rh="${rh//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    _db_query "SELECT COALESCE(ROUND(CAST(SUM(success_count) AS REAL) / NULLIF(SUM(total_runs), 0), 4), 0) FROM capability_registry WHERE repo_hash = '${rh}';" || echo "0"
+}
+
+# db_capability_reset <repo_hash> [category] — admin reset
+db_capability_reset() {
+    local rh="$1" cat="${2:-}"
+    if ! db_available; then return 1; fi
+    rh="${rh//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    if [[ -n "$cat" ]]; then
+        cat="${cat//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+        _db_exec "DELETE FROM capability_registry WHERE repo_hash = '${rh}' AND category = '${cat}';"
+    else
+        _db_exec "DELETE FROM capability_registry WHERE repo_hash = '${rh}';"
+    fi
 }
 
 # db_cost_by_period <days> — returns JSON breakdown

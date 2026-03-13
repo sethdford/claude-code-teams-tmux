@@ -1041,6 +1041,13 @@ pipeline_start() {
             "$_outcome_complexity" 2>/dev/null || true
     fi
 
+    # Record capability outcome for self-assessment registry
+    if type capability_record_outcome >/dev/null 2>&1; then
+        local _cap_success=0
+        [[ "$exit_code" -eq 0 ]] && _cap_success=1
+        capability_record_outcome "${TASK_TYPE:-feature}" "" "$_cap_success" 2>/dev/null || true
+    fi
+
     # Validate cost prediction against actual (after total_cost is computed)
     if [[ -n "${PREDICTED_COST:-}" ]] && type intelligence_validate_prediction >/dev/null 2>&1; then
         intelligence_validate_prediction "cost" "$PREDICTED_COST" "$total_cost" 2>/dev/null || true
