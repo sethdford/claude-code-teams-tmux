@@ -34,6 +34,9 @@ if [[ "$(type -t emit_event 2>/dev/null)" != "function" ]]; then
   }
 fi
 
+# Fallback when config.sh not loaded
+[[ "$(type -t _config_get_int 2>/dev/null)" == "function" ]] || _config_get_int() { echo "${3:-$2}"; }
+
 # ─── Default Settings (policy overrides when config/policy.json exists) ──────
 SUBCOMMAND="${1:-help}"
 AUTO_FIX=false
@@ -409,7 +412,9 @@ scan_platform_refactor() {
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        local f="${line%%:*}"
+        local rest="${line#*:}"
+        local ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
