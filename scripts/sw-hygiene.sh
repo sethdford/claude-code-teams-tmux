@@ -390,11 +390,11 @@ scan_platform_refactor() {
     local scripts_dir="${REPO_DIR}/scripts"
 
     local hardcoded_count fallback_count todo_count fixme_count hack_count
-    hardcoded_count=$(grep -rE "hardcoded|Hardcoded|HARDCODED" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    fallback_count=$(grep -rE "Fallback:|fallback:" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    todo_count=$(grep -rE "TODO" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    fixme_count=$(grep -rE "FIXME" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
-    hack_count=$(grep -rE "HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ')
+    hardcoded_count=$(grep -rE "hardcoded|Hardcoded|HARDCODED" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    fallback_count=$(grep -rE "Fallback:|fallback:" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    todo_count=$(grep -rE "TODO" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    fixme_count=$(grep -rE "FIXME" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    hack_count=$(grep -rE "HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null | wc -l | tr -d ' ' || echo "0")
     hardcoded_count=${hardcoded_count:-0}
     fallback_count=${fallback_count:-0}
     todo_count=${todo_count:-0}
@@ -426,7 +426,7 @@ scan_platform_refactor() {
         lines=$(wc -l < "$f" 2>/dev/null || true)
         lines="${lines:-0}"
         printf '{"script":"%s","lines":%s}\n' "$(basename "$f")" "$lines"
-    done | jq -s 'sort_by(-.lines) | .[0:15]' 2>/dev/null > "$sizes_file"
+    done | jq -s 'sort_by(-.lines) | .[0:15]' 2>/dev/null > "$sizes_file" || echo "[]" > "$sizes_file"
     local script_sizes
     script_sizes=$(cat "$sizes_file" 2>/dev/null || echo "[]")
     rm -f "$sizes_file"
@@ -444,19 +444,19 @@ scan_platform_refactor() {
         --argjson hack "$hack_count" \
         --argjson findings "$findings" \
         --argjson script_sizes "$script_sizes" \
-        '{timestamp:$ts,repository:$repo,counts:{hardcoded:$hc,fallback:$fb,todo:$todo,fixme:$fixme,hack:$hack},findings_sample:$findings,script_size_hotspots:$script_sizes}' 2>/dev/null)
+        '{timestamp:$ts,repository:$repo,counts:{hardcoded:$hc,fallback:$fb,todo:$todo,fixme:$fixme,hack:$hack},findings_sample:$findings,script_size_hotspots:$script_sizes}' 2>/dev/null) || true
     if [[ -n "$report" ]]; then
         echo "$report" > "$out_file"
         success "Platform refactor scan saved to: $out_file"
         if [[ "$JSON_OUTPUT" == true ]]; then
-            echo "$report" | jq .
+            echo "$report" | jq . || true
         else
             info "  hardcoded: $hardcoded_count  fallback: $fallback_count  TODO: $todo_count  FIXME: $fixme_count  HACK/KLUDGE: $hack_count"
         fi
     else
         warn "Could not build platform-hygiene JSON (jq missing?)"
     fi
-    emit_event "hygiene_platform_refactor" "hardcoded=$hardcoded_count" "fallback=$fallback_count" "todo=$todo_count"
+    emit_event "hygiene_platform_refactor" "hardcoded=$hardcoded_count" "fallback=$fallback_count" "todo=$todo_count" || true
     return 0
 }
 
