@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -440,6 +440,7 @@ CREATE TABLE IF NOT EXISTS pipeline_outcomes (
     retry_count INTEGER DEFAULT 0,
     cost_usd REAL DEFAULT 0,
     complexity TEXT DEFAULT 'medium',
+    project_type TEXT DEFAULT NULL,
     created_at TEXT NOT NULL
 );
 
@@ -455,6 +456,7 @@ CREATE TABLE IF NOT EXISTS model_outcomes (
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_template ON pipeline_outcomes(template);
 CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_complexity ON pipeline_outcomes(complexity);
+CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_project_type ON pipeline_outcomes(project_type);
 CREATE INDEX IF NOT EXISTS idx_model_outcomes_model_stage ON model_outcomes(model, stage);
 
 -- Durable workflow checkpoints
@@ -611,6 +613,7 @@ CREATE TABLE IF NOT EXISTS pipeline_outcomes (
     retry_count INTEGER DEFAULT 0,
     cost_usd REAL DEFAULT 0,
     complexity TEXT DEFAULT 'medium',
+    project_type TEXT DEFAULT NULL,
     created_at TEXT NOT NULL
 );
 
@@ -626,6 +629,7 @@ CREATE TABLE IF NOT EXISTS model_outcomes (
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_template ON pipeline_outcomes(template);
 CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_complexity ON pipeline_outcomes(complexity);
+CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_project_type ON pipeline_outcomes(project_type);
 CREATE INDEX IF NOT EXISTS idx_model_outcomes_model_stage ON model_outcomes(model, stage);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (5, '$(now_iso)', '$(now_iso)');"
@@ -651,6 +655,17 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
+    fi
+
+    # Migration from v6 → v7: add project_type to pipeline_outcomes for template recommendation engine
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        sqlite3 "$DB_FILE" "
+ALTER TABLE pipeline_outcomes ADD COLUMN project_type TEXT DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_pipeline_outcomes_project_type ON pipeline_outcomes(project_type);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
     fi
 }
 
@@ -990,20 +1005,22 @@ db_daemon_summary() {
 # ═══════════════════════════════════════════════════════════════════════════
 
 # Record pipeline outcome for learning (Thompson sampling, optimize_tune_templates)
-# db_record_outcome <job_id> [issue] [template] [success] [duration_secs] [retries] [cost_usd] [complexity]
+# db_record_outcome <job_id> [issue] [template] [success] [duration_secs] [retries] [cost_usd] [complexity] [project_type]
 db_record_outcome() {
     local job_id="$1" issue="${2:-}" template="${3:-}" success="${4:-1}"
     local duration="${5:-0}" retries="${6:-0}" cost="${7:-0}" complexity="${8:-medium}"
+    local project_type="${9:-}"
 
     if ! db_available; then return 1; fi
 
     job_id="${job_id//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
     issue="${issue//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
     template="${template//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    project_type="${project_type//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
 
     _db_exec "INSERT OR REPLACE INTO pipeline_outcomes
-        (job_id, issue_number, template, success, duration_secs, retry_count, cost_usd, complexity, created_at)
-        VALUES ('$job_id', '$issue', '$template', $success, $duration, $retries, $cost, '$complexity', '$(now_iso)');"
+        (job_id, issue_number, template, success, duration_secs, retry_count, cost_usd, complexity, project_type, created_at)
+        VALUES ('$job_id', '$issue', '$template', $success, $duration, $retries, $cost, '$complexity', '$project_type', '$(now_iso)');"
 }
 
 # db_record_cost <input_tokens> <output_tokens> <model> <cost_usd> <stage> [issue]

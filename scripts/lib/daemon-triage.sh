@@ -418,6 +418,27 @@ select_pipeline_template() {
         fi
     fi
 
+    # ── Intelligence-driven recommendation (template success rates) ──
+    if [[ -f "$SCRIPT_DIR/lib/template-recommend.sh" ]]; then
+        source "$SCRIPT_DIR/lib/template-recommend.sh" 2>/dev/null || true
+        if type tr_recommend >/dev/null 2>&1 && db_available 2>/dev/null; then
+            local _rec_json _rec_template _rec_confidence _rec_score
+            _rec_json=$(tr_recommend "" "90" 2>/dev/null || echo "")
+            if [[ -n "$_rec_json" ]]; then
+                _rec_template=$(echo "$_rec_json" | jq -r '.recommended // ""' 2>/dev/null || echo "")
+                _rec_confidence=$(echo "$_rec_json" | jq -r '.confidence // "none"' 2>/dev/null || echo "none")
+                _rec_score=$(echo "$_rec_json" | jq -r '.score // 0' 2>/dev/null || echo "0")
+                if [[ -n "$_rec_template" && "$_rec_confidence" != "none" && "$_rec_confidence" != "low" ]]; then
+                    daemon_log INFO "Template recommend: $_rec_template (confidence=$_rec_confidence, score=$_rec_score)" >&2
+                    emit_event "daemon.template_recommended" \
+                        "template=$_rec_template" "confidence=$_rec_confidence" "score=$_rec_score"
+                    echo "$_rec_template"
+                    return
+                fi
+            fi
+        fi
+    fi
+
     # ── Learned template weights ──
     local _tw_file="${HOME}/.shipwright/optimization/template-weights.json"
     if [[ -f "$_tw_file" ]]; then
