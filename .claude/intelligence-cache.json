@@ -853,26 +853,26 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains test stage failures with root causes and fixes. Directly applicable to build stage debugging—sw-cleanup.sh, sw-feedback-test.sh, and mktemp failures are recurring issues seen 15+ times with documented remedies"
+            "summary": "Multiple documented test stage failures (sw-cleanup.sh, sw-feedback-test.sh, mktemp issues, classify_failure) directly applicable to build stage. Avoids repeating known test failures."
           },
           {
             "file": "patterns.json",
-            "relevance": 72,
-            "summary": "Project configuration metadata (vitest, npm, src/ directory, *.test.js pattern). Helps orient build stage on how to run tests and where source/test files are located"
+            "relevance": 90,
+            "summary": "Project metadata essential for build: test runner (vitest), test pattern (*.test.js), package manager (npm), source directory (src/). Needed to execute build and test correctly."
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object; no data to inform build decisions"
+            "relevance": 15,
+            "summary": "Contains performance baselines for comparison, but currently empty. Low relevance until populated with actual metrics."
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array; no prior architectural or build-stage decisions recorded"
+            "relevance": 10,
+            "summary": "Architectural decisions would inform build strategy, but currently empty. No decisions to apply."
           }
         ]
       },
-      "timestamp": 1773428411,
+      "timestamp": 1773430822,
       "ttl": 1800
     }
   }
