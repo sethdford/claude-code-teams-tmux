@@ -1,119 +1,125 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Success Pattern Capture and Proven Configuration Replay System
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+# Implementation Plan: Success Pattern Capture and Proven Configuration Replay System
 
----
+## Socratic Design Refinement
 
-## Summary
+### Requirements Clarity
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Minimum viable change**: A library that (1) captures the full configuration tuple when a pipeline succeeds, (2) looks up the most similar proven config when a new pipeline starts, and (3) applies it as the starting configuration. This closes the gap where individual parameters are tuned independently but the winning *combination* is never saved.
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+**Implicit requirements**:
+- Must not break existing adaptive/self-optimize flows — additive only
+- Must handle repos with zero history (graceful fallback to defaults)
+- Must track whether replayed configs continue to succeed (feedback loop)
+- Must respect Bash 3.2 compatibility, atomic writes, `set -euo pipefail`
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Acceptance criteria**:
+1. After a successful pipeline, a proven config entry is persisted with full config tuple + issue context
+2. `shipwright proven-configs list` shows captured configs with success rates
+3. `shipwright proven-configs match --issue N` finds the best matching config
+4. Pipeline intake consults proven configs before falling back to defaults
+5. Replay outcomes are tracked and configs with declining success are demoted
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Success Pattern Capture and Proven Configuration Replay System
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Architecture: Four-Layer Design
+### Why This Design
+## Alternatives Considered
+### Alternative A: New focused library + CLI (CHOSEN)
+### Alternative B: Extend sw-self-optimize.sh
+### Alternative C: Extend sw-adaptive.sh with multi-dimensional tuning
+## Implementation Plan
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "failures.json",
+      "relevance": 98,
+      "summary": "Core failure patterns with root causes and proven fixes (up to 16 occurrences). Directly aligns with 'Success Pattern Capture and Proven Configuration Replay System' — provides exact data to replay for build stage recovery."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
+      "file": "patterns.json (detailed)",
       "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "summary": "Complete project configuration (vitest, npm, source_dir, test_pattern). Essential for build stage to apply correct test commands and directory structure."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (minimal)",
+      "relevance": 45,
+      "summary": "Basic project_type detection (nodejs). Provides metadata but overlaps with detailed patterns.json; less actionable for build stage."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 25,
+      "summary": "Empty baselines structure. Relevant for future success metric tracking but currently provides no data to replay or act on."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "global.json",
+      "relevance": 10,
+      "summary": "Empty common patterns and cross-repo learnings. Lowest relevance; no actionable data present."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Success Pattern Capture and Proven Configuration Replay System — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Success Pattern Capture and Proven Configuration Replay System
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/proven-configs.sh` with core functions (capture, match, apply, track, prune, list, stats, scoring)
+- [ ] Task 2: Create `scripts/sw-proven-configs.sh` CLI command with subcommands (list, show, match, stats, prune, reset, help)
+- [ ] Task 3: Source `lib/proven-configs.sh` from pipeline-stages loader so it's available during pipeline execution
+- [ ] Task 4: Integrate proven config capture into `scripts/lib/pipeline-commands.sh` after successful pipeline completion
+- [ ] Task 5: Integrate proven config lookup into `scripts/lib/pipeline-stages-intake.sh` during intake stage
+- [ ] Task 6: Integrate replay outcome tracking into `scripts/lib/pipeline-commands.sh` at pipeline finalization
+- [ ] Task 7: Register `proven-configs` subcommand in `scripts/sw` CLI router
+- [ ] Task 8: Create `scripts/sw-proven-configs-test.sh` test suite with 16 test cases
+- [ ] Task 9: Register test suite in `package.json`
+- [ ] Task 10: Run test suite and fix any failures
+- [ ] `scripts/lib/proven-configs.sh` exists with all documented functions
+- [ ] `scripts/sw-proven-configs.sh` exists with all subcommands (list, show, match, stats, prune, reset, help)
+- [ ] `shipwright proven-configs help` shows usage and exits 0
+- [ ] `shipwright proven-configs list` works on empty repo (shows "no configs")
+- [ ] Successful pipeline completion creates a proven config entry in `~/.shipwright/proven-configs/<repo-hash>/configs.jsonl`
+- [ ] Pipeline intake consults proven configs and applies matching config when available
+- [ ] Replay outcomes are tracked and confidence scores updated after each replay
+- [ ] Configs with replay success rate <40% after 5+ replays are automatically demoted
+- [ ] `shipwright proven-configs prune` removes stale configs
+- [ ] Test suite has 16 test cases, all passing
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-257
+- Issue: none
+- Generated: 2026-03-13T18:56:55Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-13T19:00:21Z
+last_iteration_at: 2026-03-13T19:00:21Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 

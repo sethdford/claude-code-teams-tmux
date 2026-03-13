@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "devops",
+          "tester"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Designing a pattern capture and replay system requires architectural planning for configuration storage/indexing/retrieval; DevOps brings reproduction/deployment expertise; builder implements; tester validates replay fidelity.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773428420,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,224 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "55ca6d1ead96d22984e27bc52f46a960": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern matching algorithm false positives could recommend inappropriate configurations, wasting time or causing failures",
+          "Daemon integration complexity - auto-applying patterns at >80% confidence could interfere with normal pipeline execution if thresholds are miscalibrated",
+          "Pattern library growth and retention management - need robust cleanup to avoid unbounded memory growth",
+          "Similarity scoring algorithm requires careful tuning - wrong weights on file_patterns/template/project_type could produce poor recommendations"
+        ],
+        "implementation_hints": [
+          "Start with simple pattern matching (Jaccard similarity on changed file patterns + exact template/project_type match) before ML-based scoring",
+          "Implement high-confidence threshold conservatively and log all pattern matching decisions for debugging and iteration",
+          "Build CLI command `shipwright pattern suggest` first as a standalone tool to validate matching logic before daemon integration",
+          "Add feature flag for daemon auto-apply, start disabled and require explicit opt-in via daemon-config.json",
+          "Use existing memory system structure (schema pattern in sw-memory.sh) to minimize dependencies and complexity",
+          "Implement pattern expiry cleanup as part of daemon patrol loop to enforce 90d retention",
+          "Create A/B testing capability to measure pattern reuse impact (success rate when applied vs baseline)",
+          "Test with synthetic pattern library before integrating with real daemon to avoid breaking production pipeline runs"
+        ]
+      },
+      "timestamp": 1773427618,
+      "ttl": 3600
+    },
+    "5ad6d4df74b6eb64ca7f99914ef3724e": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1773427627,
+      "ttl": 1800
+    },
+    "a516683216ab579c5bd5c17139bcd007": {
+      "result": {
+        "estimated_cost_usd": 9.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 48000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1773427636,
+      "ttl": 3600
+    },
+    "07a257a84ac9b80394ceb4c147b6489e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Captures failure patterns with root causes, fixes, frequency (seen_count), and timestamps - essential foundation for proving which configurations work and avoiding known failures"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Detailed project configuration capture (test runner, package manager, import style, source structure, test patterns) - core data for replaying successful project setups"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Baselines structure designed for storing successful configuration metrics, currently empty but critical schema for the replay system"
+          },
+          {
+            "file": "global.json",
+            "relevance": 28,
+            "summary": "Cross-repo learnings structure supports distributed success pattern capture across repositories, but currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 22,
+            "summary": "Empty decisions array could capture proven decision patterns for replay, but not yet populated with data"
+          }
+        ]
+      },
+      "timestamp": 1773427655,
+      "ttl": 1800
+    },
+    "d83c524f085b685354368d843cf828d8": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured failure patterns with root causes and fixes. Directly supports Success Pattern Capture by documenting known failures. Most recent failures show test validation issues that likely caused plan rejection."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 70,
+            "summary": "Comprehensive project configuration with conventions (source_dir, test_pattern, import_style). Supports Proven Configuration Replay by documenting exact project structure and standards to reapply."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 40,
+            "summary": "Basic project type detection (nodejs) with bootstrap timestamp. Minimal relevance but provides project classification for configuration matching."
+          }
+        ]
+      },
+      "timestamp": 1773428227,
+      "ttl": 1800
+    },
+    "88ef68e090e2d1e47ccdd135864ba7de": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 90,
+            "summary": "Contains detailed project configuration patterns (source_dir, test_pattern, import_style, package_manager) — directly applicable to capturing and replaying proven configurations"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Failure patterns with root causes and fixes provide negative examples for architecture design — informs what successful pattern capture should avoid"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 58,
+            "summary": "Baselines structure supports performance metrics for proven configurations — foundation for evaluating success of replayed patterns"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 52,
+            "summary": "Decision capture enables understanding why configurations were chosen — critical for intelligent replay system that understands context"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 38,
+            "summary": "Minimal project type detection — less detailed than first patterns.json, limited value for comprehensive configuration replay"
+          }
+        ]
+      },
+      "timestamp": 1773428263,
+      "ttl": 1800
+    },
+    "d740097360cc2376f6b05bde1e4d60b8": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly captures rejected design approaches and anti-patterns with root causes and fixes. Includes failure categories, frequency metrics (seen_count), and proven solutions—essential for both identifying what doesn't work and building a configuration replay system based on learned fixes."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Captures successful project configuration patterns (test runner, package manager, import style, directory structure). Complements failure data by showing what works; relevant for building a proven configuration replay system with baseline configurations."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 22,
+            "summary": "Minimal project type metadata (nodejs, bootstrap source) with timestamp. Low specificity for pattern capture or replay; provides only high-level project classification without configuration details or decision context."
+          }
+        ]
+      },
+      "timestamp": 1773428274,
+      "ttl": 1800
+    },
+    "d12028fc3a9bc459df8af1e066dc67a2": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 98,
+            "summary": "Core failure patterns with root causes and proven fixes (up to 16 occurrences). Directly aligns with 'Success Pattern Capture and Proven Configuration Replay System' — provides exact data to replay for build stage recovery."
+          },
+          {
+            "file": "patterns.json (detailed)",
+            "relevance": 85,
+            "summary": "Complete project configuration (vitest, npm, source_dir, test_pattern). Essential for build stage to apply correct test commands and directory structure."
+          },
+          {
+            "file": "patterns.json (minimal)",
+            "relevance": 45,
+            "summary": "Basic project_type detection (nodejs). Provides metadata but overlaps with detailed patterns.json; less actionable for build stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Empty baselines structure. Relevant for future success metric tracking but currently provides no data to replay or act on."
+          },
+          {
+            "file": "global.json",
+            "relevance": 10,
+            "summary": "Empty common patterns and cross-repo learnings. Lowest relevance; no actionable data present."
+          }
+        ]
+      },
+      "timestamp": 1773428404,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains test stage failures with root causes and fixes. Directly applicable to build stage debugging—sw-cleanup.sh, sw-feedback-test.sh, and mktemp failures are recurring issues seen 15+ times with documented remedies"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project configuration metadata (vitest, npm, src/ directory, *.test.js pattern). Helps orient build stage on how to run tests and where source/test files are located"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object; no data to inform build decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; no prior architectural or build-stage decisions recorded"
+          }
+        ]
+      },
+      "timestamp": 1773428411,
+      "ttl": 1800
     }
   }
 }

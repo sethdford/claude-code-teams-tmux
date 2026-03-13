@@ -974,6 +974,18 @@ pipeline_start() {
         optimize_analyze_outcome "$STATE_FILE" 2>/dev/null || true
     fi
 
+    # Capture proven configuration on success
+    if [[ "${exit_code:-1}" -eq 0 ]] && type proven_config_capture >/dev/null 2>&1; then
+        proven_config_capture "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
+    fi
+
+    # Track replay outcome if a proven config was used
+    if [[ -n "${PROVEN_CONFIG_ID:-}" ]] && type proven_config_track_replay >/dev/null 2>&1; then
+        local replay_result="failure"
+        [[ "${exit_code:-1}" -eq 0 ]] && replay_result="success"
+        proven_config_track_replay "$PROVEN_CONFIG_ID" "$replay_result" 2>/dev/null || true
+    fi
+
     # Auto-learn after pipeline completion (non-blocking)
     if type optimize_tune_templates &>/dev/null; then
         (

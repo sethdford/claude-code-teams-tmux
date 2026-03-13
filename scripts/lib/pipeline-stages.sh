@@ -13,6 +13,10 @@ _SKILL_REGISTRY_SH="${SCRIPT_DIR}/lib/skill-registry.sh"
 _SKILL_MEMORY_SH="${SCRIPT_DIR}/lib/skill-memory.sh"
 [[ -f "$_SKILL_MEMORY_SH" ]] && source "$_SKILL_MEMORY_SH"
 
+# Source proven configs for success pattern capture and replay
+_PROVEN_CONFIGS_SH="${SCRIPT_DIR}/lib/proven-configs.sh"
+[[ -f "$_PROVEN_CONFIGS_SH" ]] && source "$_PROVEN_CONFIGS_SH" 2>/dev/null || true
+
 # Defaults for variables normally set by sw-pipeline.sh (safe under set -u).
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}"
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"

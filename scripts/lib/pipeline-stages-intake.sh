@@ -66,6 +66,23 @@ stage_intake() {
         fi
     fi
 
+    # 1b. Consult proven configurations for this issue type
+    if type proven_config_match >/dev/null 2>&1; then
+        local issue_type complexity proven_match
+        issue_type="${INTELLIGENCE_ISSUE_TYPE:-backend}"
+        complexity=5  # Default complexity; could be derived from issue body
+
+        proven_match=$(proven_config_match "$issue_type" "$complexity" "${ISSUE_LABELS:-}" "${GOAL:-}" 2>/dev/null) || true
+        if [[ -n "$proven_match" ]]; then
+            local pc_confidence
+            pc_confidence=$(echo "$proven_match" | jq -r '.confidence // "?"' 2>/dev/null || echo "?")
+            info "Found proven configuration (confidence: ${pc_confidence})"
+            proven_config_apply "$proven_match" 2>/dev/null || true
+            PROVEN_CONFIG_ID=$(echo "$proven_match" | jq -r '.id // ""' 2>/dev/null || echo "")
+            export PROVEN_CONFIG_ID
+        fi
+    fi
+
     # 2. Detect task type
     TASK_TYPE=$(detect_task_type "$GOAL")
     local suggested_template
