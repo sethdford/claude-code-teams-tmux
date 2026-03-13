@@ -213,6 +213,42 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "feedback_post_merge_monitor": {
+      "required": ["merge_sha"],
+      "optional": ["environment", "errors"]
+    },
+    "feedback_detect_regression": {
+      "required": ["merge_sha", "regression", "severity"],
+      "optional": []
+    },
+    "feedback_correlate": {
+      "required": ["pr", "confidence"],
+      "optional": []
+    },
+    "feedback_auto_respond": {
+      "required": ["severity", "type"],
+      "optional": []
+    },
+    "feedback_learn_from_outcome": {
+      "required": ["pr", "merge_result", "regression"],
+      "optional": []
+    },
+    "feedback_collect": {
+      "required": ["errors", "file"],
+      "optional": []
+    },
+    "feedback_issue_created": {
+      "required": ["url", "errors"],
+      "optional": []
+    },
+    "feedback_rollback": {
+      "required": ["environment", "reason", "status"],
+      "optional": []
+    },
+    "feedback_incident_learned": {
+      "required": ["cause"],
+      "optional": []
     }
   }
 }

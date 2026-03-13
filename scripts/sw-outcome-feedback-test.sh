@@ -6,9 +6,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMPBASE="${TMPDIR:-/tmp/claude}"
-TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
-MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
+TMPBASE="${TMPDIR:-/tmp}"
+mkdir -p "$TMPBASE/claude"
+TEST_DIR=$(mktemp -d "$TMPBASE/claude/sw-test-XXXXXX")
+MEMORY_TEST_ROOT="$TMPBASE/claude/sw-memory-test-$$"
 
 cleanup() {
     rm -rf "$TEST_DIR" "$MEMORY_TEST_ROOT" 2>/dev/null || true
