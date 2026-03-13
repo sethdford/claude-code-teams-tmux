@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Architect designs registry system and capability models; Builder implements it; Tester validates pattern boundaries are proven and correct",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773415240,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,323 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "5ae90da4cff127b3307d1bda6c260584": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 60,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Registry accuracy directly impacts platform behavior; poor outcome tracking creates false negatives",
+          "Overly conservative gating could block legitimate work and defeat the capability expansion goal",
+          "Inconsistent classification of pipeline outcomes across diverse task types and edge cases",
+          "Mode switching at 70% threshold creates unpredictable behavior; threshold may require significant tuning",
+          "Meta-feature risk: platform must successfully execute diverse tasks to build accurate capability registry",
+          "Integration complexity with existing pipeline state management and orchestration layer",
+          "Death spiral if registry becomes too restrictive and success rates stagnate"
+        ],
+        "implementation_hints": [
+          "Implement tracking-only phase first; validate registry accuracy before enabling gating logic",
+          "Use existing pipeline artifacts (pipeline-state.md, error-log.jsonl) as authoritative outcome source",
+          "Pre-flight check as hook (pre-pipeline-spawn) maintains loose coupling with core orchestration",
+          "Dashboard MVP: simple category heatmap (green/yellow/red) before complex visualizations",
+          "Start with 5-6 core categories (refactor, feature, bugfix, docs, test, security) before expansion",
+          "Make thresholds (50%, 70%) and confidence scoring configurable via daemon-config.json with observability",
+          "Registry schema: plan for category/subcategory evolution; design versioned schema for backward compatibility",
+          "Integration test with mock registry and synthetic pipeline outcomes before wiring to live system"
+        ]
+      },
+      "timestamp": 1773414348,
+      "ttl": 3600
+    },
+    "544abce5037b3082f759570447e85efe": {
+      "result": {
+        "estimated_iterations": 14
+      },
+      "timestamp": 1773414360,
+      "ttl": 1800
+    },
+    "d6c836c74025a394e39e3e9e54cd86a3": {
+      "result": {
+        "estimated_cost_usd": 8.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 220000,
+        "likely_failure_stage": "design",
+        "confidence": 68
+      },
+      "timestamp": 1773414374,
+      "ttl": 3600
+    },
+    "b05b648a5eae57c47497c76abcce5b0c": {
+      "result": {
+        "issue_type": "backend/infrastructure",
+        "confidence": 0.89,
+        "secondary_domains": [
+          "observability",
+          "testing",
+          "system-reliability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires schema design, state management, pipeline integration, dashboard work, auto-update logic with consistency guarantees, and integration testing. Medium-high due to distributed state and feedback loop concerns."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "api-design",
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "systematic-debugging",
+            "testing-strategy"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "observability",
+            "performance",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Registry state flow (pipeline outcome → aggregation → pre-flight decision) and integration points with pipeline intake, daemon, and dashboard need formal ADR to guide implementation.",
+          "brainstorming": "Challenge assumptions about category granularity, per-agent/per-repo success rates, consistency model, and cold-start behavior when registry is empty.",
+          "api-design": "The `--override-capability-check` flag and registry query APIs must have clear semantics (who can override, when, audit trail).",
+          "data-pipeline": "Capability registry is a metrics aggregation pipeline—collecting task outcomes, computing success rates, updating thresholds—applying standard patterns prevents data staleness bugs.",
+          "systematic-debugging": "Gating logic is failure-prone; systematic approach to implementation (not ad-hoc guards) reduces edge case bugs around threshold crossing and conservative mode.",
+          "testing-strategy": "Registry is a state machine with race conditions (concurrent updates vs. pre-flight checks); comprehensive unit tests for threshold crossing, stale reads, and atomic updates are essential.",
+          "two-stage-review": "Pass 1: review schema, API contract, state model. Pass 2: review update atomicity, pre-flight correctness, integration with existing pipeline.",
+          "adversarial-quality": "Gating system is a potential attack surface—can agents game success rates by picking easy tasks? Can override flag be abused? Think like an adversary.",
+          "security-audit": "Pre-flight checks are a guardrail—ensure they can't be circumvented, registry corruption can't cascade, and audit trail captures all capability decisions.",
+          "observability": "Registry health and operation are invisible without instrumentation—track update latency, pre-flight decision rate, threshold crossings, and success rate accuracy.",
+          "performance": "Pre-flight checks must not add latency to pipeline startup; require cached/fast-path lookup, possibly with eventual consistency.",
+          "validation-thoroughness": "Integration test must validate: registry CRUD, pre-flight rejection of low-confidence tasks, threshold crossing behavior, override flag, conservative mode activation.",
+          "pr-quality": "Complex system feature requires clear PR: schema diagram, state transition model, integration diagram, and worked examples of pre-flight rejection.",
+          "deploy-safety": "Gating system directly impacts pipeline reliability—deploy with feature flag, shadow-mode reads first (log pre-flight decisions without enforcing), then gradually enable.",
+          "product-thinking": "This system makes platform reliability guarantees to agents; design registry to communicate confidence clearly (e.g., 67% success = yellow, not safe yet) and set realistic expectations."
+        },
+        "generated_skills": [
+          {
+            "name": "capability-gating-patterns",
+            "reason": "No existing skill addresses progressive capability expansion based on reliability metrics, threshold-based decision logic, or conservative fallback modes—patterns specific to this issue.",
+            "content": "## Capability-Gating Patterns\n\nWhen a system must improve gradually and refuse work outside proven boundaries, capability gating prevents the death spiral of repeatedly attempting tasks the system can't yet handle.\n\n### Core Principles\n\n**1. Threshold-Based Expansion**\n- Define minimum success rate thresholds per task category (e.g., 50% for refactors, 75% for feature delivery).\n- Only enable a capability when success rate crosses threshold; disable if it drops below.\n- Use hysteresis (e.g., 52% to enable, 48% to disable) to prevent oscillation near boundary.\n\n**2. Conservative Mode Fallback**\n- When overall platform success rate < 70%, activate conservative mode: reject all tasks outside a \"proven-safe\" set (e.g., small bugfixes, documentation updates).\n- Conservative mode is not a failure state; it's a recovery mechanism.\n- Clearly communicate to users why a task is being rejected: \"Feature delivery at 44% success; please retry in conservative mode or wait for improvement.\"\n\n**3. Registry as Source of Truth**\n- Schema: `{ category, subcategory, success_rate, confidence_level, last_updated, sample_count }`.\n- Registry is append-only by design; outcomes flow in, aggregations update atomically.\n- Support versioning for schema evolution.\n\n**4. Pre-Flight Check Implementation**\n- Pre-flight check runs synchronously (latency budget ~10ms) before pipeline intake.\n- If check rejects a task, emit an event with reason (low success rate, conservative mode, no data) and offer override path.\n- Override should be explicit (`--override-capability-check`) and logged for audit.\n\n**5. Update Consistency**\n- Registry updates are triggered by pipeline outcome events, not polling.\n- Use atomic compare-and-swap for threshold state to avoid race conditions with concurrent pre-flight checks.\n- If a pre-flight check happens during an update, it sees either old or new state, never corrupted intermediate state.\n\n**6. Dashboard Integration**\n- Heatmap: rows = categories, columns = success %, color = confidence (green ≥75%, yellow 50-75%, red <50%).\n- Allow drill-down: click a category to see recent outcomes, trending, and decisions made.\n- Show conservative mode status prominently and reason why it was triggered.\n\n**7. Bootstrap & Cold Start**\n- On first run, registry is empty → all checks pass (optimistic until data arrives).\n- Populate registry from historical outcomes if available (e.g., from previous runs).\n- If no history, start with default thresholds and update as soon as 10 outcomes arrive (to reduce variance).\n\n### Anti-Patterns\n\n- **Brittle Thresholds**: Don't hard-code thresholds; make them configurable per category and adjustable via dashboard.\n- **Stale Data**: Don't cache pre-flight decisions for more than 1 minute; registry can change rapidly.\n- **Silent Rejection**: Always emit a reason event; users debugging why their task was rejected need clear signals.\n- **Override Abuse**: Audit all override flags; if overrides exceed 20% of decisions, alert on possible bypass.\n\n### Example: Refactor Task Gating\n\n```\nRegistry before:\n  { category: \"refactor\", success_rate: 0.45, confidence: 0.8 }\n\nOutcome: Refactor attempt succeeds\n\nRegistry after update:\n  { category: \"refactor\", success_rate: 0.47, confidence: 0.82, sample_count: 150 }\n\nNext pre-flight check for refactor:\n  success_rate 0.47 < threshold 0.50 → REJECT\n  Message: \"Refactors at 47% success. Try again when >50% or use --override-capability-check.\"\n\nWhen success_rate crosses 0.50 (after more outcomes):\n  ACCEPT (capability now proven)\n```"
+          }
+        ],
+        "review_focus": [
+          "Registry schema flexibility: Can it handle subcategories, time-windowed rates (e.g., last 7 days vs. all-time), and per-agent specialization?",
+          "Pre-flight check atomicity: Does it handle races with concurrent registry updates without reading stale state?",
+          "Conservative mode triggering: Is 70% threshold justified? Does it interact correctly with manual overrides?",
+          "Dashboard heatmap UX: Is drill-down to individual outcomes feasible? Can operators export/analyze capability trends?",
+          "Update mechanism correctness: Does registry auto-update from pipeline outcomes atomically? What if pipeline outcome event gets lost?",
+          "Threshold hysteresis: Are thresholds designed to prevent oscillation near boundaries (e.g., enabling/disabling rapidly)?"
+        ],
+        "risk_areas": [
+          "Data consistency: Registry updates race with pre-flight checks; ensure pre-flight always sees consistent state (old or new, never corrupted).",
+          "Feedback loop instability: Success rates near threshold boundaries could cause rapid enable/disable cycles; hysteresis and sample-count thresholds required.",
+          "Over-conservative bias: Conservative mode at 70% might be too strict; operators need override path and visibility into when/why it was triggered.",
+          "Registry staleness: If pipeline outcome ingestion lags, decisions based on stale rates; implement max-staleness check in pre-flight.",
+          "Bootstrap problem: How does system behave when registry is empty? Optimistic (allow all) vs. pessimistic (reject all) affects user experience.",
+          "Performance regression: Pre-flight checks must be sub-10ms; slow registry lookups could increase pipeline latency by order of magnitude.",
+          "Audit trail gaps: If override flags bypass gating, audit trail must be comprehensive; incomplete audit makes it hard to debug capability decisions post-mortem."
+        ]
+      },
+      "timestamp": 1773414471,
+      "ttl": 3600
+    },
+    "1822ba8483bd01c21f7e7eaa4c19b687": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Detailed project conventions (source_dir, test_pattern, import_style, framework stack) directly inform architecture design decisions and proven pattern boundaries"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Captured failure patterns and root causes provide critical context for architecting resilient components and avoiding known pitfalls in new registry design"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project type detection (nodejs) offers baseline context but less detailed than comprehensive patterns entry"
+          },
+          {
+            "file": "global.json",
+            "relevance": 15,
+            "summary": "Cross-repo learnings could inform proven pattern boundaries, though currently empty and thus minimally actionable"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines provide no historical metrics to inform capacity or performance boundaries for registry design"
+          }
+        ]
+      },
+      "timestamp": 1773414488,
+      "ttl": 1800
+    },
+    "d65bee2515e66108d2482fac9a95ea6a": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains captured test failures with root causes and fixes (sw-cleanup.sh, sw-feedback-test.sh, mktemp issues). Directly relevant to plan validation failures—these are concrete validation issues that must be resolved."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 65,
+            "summary": "Project structure, conventions, and framework metadata (Node, vitest, commonjs imports). Provides context for understanding platform capabilities and boundaries for self-assessment."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 28,
+            "summary": "Minimal project type detection (nodejs). Provides basic project classification but lacks detail needed for capability assessment."
+          }
+        ]
+      },
+      "timestamp": 1773414852,
+      "ttl": 1800
+    },
+    "18c74bceb2b7c24d7ddb10aab718e045": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Contains project conventions (source_dir, test_pattern, import_style) and detected framework/runtime (Node.js, vitest, CommonJS). Useful for understanding codebase structure patterns and conventions that a capability registry should align with."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 28,
+            "summary": "Documents test failures across multiple stages. Shows architectural/implementation weaknesses (stale heartbeat detection, JSON output validation, directory creation). Informs pattern boundary testing and failure modes to avoid."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Identifies project type as Node.js with bootstrap detection. Minimal metadata but confirms runtime environment for pattern boundary decisions."
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "References cross_repo_learnings and common_patterns fields but data is empty. Low value without actual captured patterns."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No decisions captured. Empty array provides no architectural guidance for registry design."
+          }
+        ]
+      },
+      "timestamp": 1773414886,
+      "ttl": 1800
+    },
+    "7c5822166ff1eb879cf028684e7b6da7": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Contains root causes and fixes for test failures, showing patterns of what has gone wrong. While not explicitly about rejected design approaches, failure patterns can inform anti-patterns to avoid."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Shows project conventions (source structure, test patterns, import style). Relevant to understanding pattern boundaries and established conventions, though not specific to rejected design approaches."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty but structurally designed to capture decisions. Would be highly relevant if populated with rejected design approach documentation, but currently contains no data."
+          }
+        ]
+      },
+      "timestamp": 1773414901,
+      "ttl": 1800
+    },
+    "880f5230f5a8771c9803ad2d978ed287": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project configuration essential for build stage: Node.js with vitest test runner, CommonJS imports, src/ directory structure, and *.test.js test patterns. Directly informs build and test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "14-15 recent test failures affecting sw-cleanup.sh and sw-feedback-test.sh. Provides patterns to avoid during build: stale heartbeat detection issues, JSON output formatting, and mktemp directory setup."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 28,
+            "summary": "Minimal bootstrap confirmation: project_type is nodejs. Redundant with detailed patterns.json but confirms detection methodology."
+          },
+          {
+            "file": "global.json",
+            "relevance": 12,
+            "summary": "Empty cross-repo learnings and common patterns. Structure exists but contains no actionable insights for this build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array. No prior architectural or implementation decisions captured to inform current build stage work."
+          }
+        ]
+      },
+      "timestamp": 1773415216,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 4 recurring test stage failures with root causes and fixes. Most relevant is sw-cleanup.sh stale heartbeat detection (14 occurrences) and sw-feedback-test.sh regression test (15 occurrences). Direct guidance on preventing test failures during build."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project configuration critical to build execution: test runner is vitest, package manager npm, test pattern *.test.js, commonjs imports. Enables correct build and test setup."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No historical metrics to inform build optimization or performance tracking."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural or execution decisions captured for the build stage."
+          }
+        ]
+      },
+      "timestamp": 1773415227,
+      "ttl": 1800
     }
   }
 }
