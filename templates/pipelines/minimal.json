@@ -1,0 +1,75 @@
+{
+  "name": "minimal",
+  "description": "System health smoke test: intake → build only (creates health-check file, commits, validates environment)",
+  "defaults": {
+    "test_cmd": "echo 'no tests'",
+    "model": "sonnet",
+    "agents": 1
+  },
+  "intelligence": {
+    "adversarial_enabled": false,
+    "architecture_enabled": false,
+    "simulation_enabled": false
+  },
+  "stages": [
+    {
+      "id": "intake",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "plan",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "build",
+      "enabled": true,
+      "gate": "auto",
+      "config": {
+        "max_iterations": 5,
+        "timeout": 600,
+        "audit": false,
+        "quality_gates": false
+      }
+    },
+    {
+      "id": "test",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "review",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "compound_quality",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "pr",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "deploy",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    },
+    {
+      "id": "validate",
+      "enabled": false,
+      "gate": "auto",
+      "config": {}
+    }
+  ]
+}

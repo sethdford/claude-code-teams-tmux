@@ -800,6 +800,126 @@
       },
       "timestamp": 1773440046,
       "ttl": 1800
+    },
+    "c642efc06229b84ada6693b04be1a754": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "testing",
+          "automation"
+        ],
+        "complexity_assessment": {
+          "score": 2,
+          "reasoning": "Explicitly designed as 'simplest possible pipeline task' requiring only file creation, git commit, and PR opening with no complex logic or business rules"
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "testing-strategy",
+            "architecture-design"
+          ],
+          "build": [
+            "smoke-test-design"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Prior pipeline failures recorded in git history; this smoke test must avoid repeating known failure patterns through methodical root-cause analysis",
+          "brainstorming": "Challenge assumptions about what 'minimal' means - which core machinery decisions are non-negotiable vs. what can be stripped?",
+          "testing-strategy": "Smoke tests differ from unit tests; apply patterns for minimal-surface-area tests that validate real machinery without mocks",
+          "architecture-design": "The `minimal.json` template becomes infrastructure precedent; document design decisions (timeout, artifact strategy, cleanup) as ADR for future smoke tests",
+          "smoke-test-design": "This issue requires specialized knowledge about designing tests that prove machinery works without complexity - how to choose observable artifacts, timeout budgets, and failure modes",
+          "adversarial-quality": "Find failure modes: what if file already exists? What if git permissions fail? What if PR creation times out? Minimize false negatives",
+          "two-stage-review": "Pass 1: verify template structure and implementation correctness; Pass 2: verify it actually validates core machinery end-to-end on real repo",
+          "pr-quality": "Template and documentation must be immediately understandable; reviewers need grasp the smoke test's purpose and success criteria in <5 minutes",
+          "validation-thoroughness": "Acceptance criteria explicitly require 'test on actual repo (not mock)' and 'smoke tests are necessary but not sufficient' - validate real environment behavior",
+          "deploy-safety": "Rolling out a new template is a controlled experiment; verify `minimal.json` works in production before making it standard",
+          "observability": "Health-check file is the success artifact; post-deploy monitoring confirms smoke test remains passing and catches regressions"
+        },
+        "generated_skills": [
+          {
+            "name": "smoke-test-design",
+            "reason": "Smoke tests for infrastructure have unique requirements (minimal scope, real environments, observable success, fast feedback) not covered by generic testing-strategy - this is critical for infrastructure health validation",
+            "content": "## Smoke Test Design for Infrastructure Validation\n\nSmoke tests prove a system's essential functions work. For pipeline infrastructure, they differ fundamentally from unit tests:\n\n### Core Design Principles\n\n**1. Minimal Surface Area**\n- Include only core machinery you're validating (file I/O, git operations, GitHub API)\n- Exclude: business logic, optional features, environment setup\n- Rationale: Smoke tests catch breakage fast; complexity hides real failures\n\n**2. Real Environment, Never Mock**\n- Use actual GitHub, actual git, actual filesystem\n- Mocks hide environment-specific failures that smoke tests exist to catch\n- This is the key difference from unit tests\n\n**3. Observable Success Artifact**\n- Create a durable proof that all machinery executed (file, commit, PR)\n- Include timestamp to enable repeated runs without cleanup between iterations\n- Success = artifact exists + contains expected data\n\n**4. Fast Feedback Loop**\n- Target: <7 min execution, <15 min timeout (leaves buffer for slowness)\n- Long smoke tests defeat the purpose (delayed discovery of breakage)\n\n**5. Reproducible Without Manual Intervention**\n- Same input → same output every run\n- Can run back-to-back without manual cleanup\n- Timestamp handles file collision problem\n\n### For This Issue: Implementation Checklist\n- [ ] `minimal.json` template has single build stage with 10 min timeout\n- [ ] Build goal creates `.claude/health-check-<ISO8601>.txt` with timestamp\n- [ ] Artifact proves: file write succeeds → git add succeeds → git commit succeeds → PR opens\n- [ ] No environment setup assumed beyond standard pipeline baseline\n- [ ] Timeout leaves 3+ minute buffer (10 min timeout, expect <7 min execution)\n- [ ] Document as smoke test in README with link from health-check flow\n- [ ] Tested on actual repo with real GitHub token (not mocked)\n- [ ] Verify: can run back-to-back 5 times without manual cleanup\n\n### Common Failure Modes to Catch\n- File already exists (use timestamp)\n- Git not initialized in build directory\n- GitHub token missing or invalid permissions\n- PR creation fails on branch protection rules\n- Build times out leaving incomplete state\n"
+          }
+        ],
+        "review_focus": [
+          "Template structure: Does `minimal.json` enable single build stage execution with correct 10-minute timeout?",
+          "Artifact design: Does health-check file + timestamp + commit + PR opening prove all core machinery?",
+          "Timestamp format: ISO8601 prevents collisions on repeated runs without manual cleanup?",
+          "Timeout buffer: 10 min timeout with <7 min expected runtime leaves adequate margin for slowness?",
+          "Real environment testing: Verified on actual repo with real GitHub token, not mocks?",
+          "Documentation clarity: New users immediately understand this is a smoke test for health validation?"
+        ],
+        "risk_areas": [
+          "File collision on repeated runs - timestamp handling must prevent overwrites",
+          "Git operations fail silently - need explicit error handling with clear failure messages",
+          "GitHub permissions inadequate - PR creation fails due to branch protection or token scopes",
+          "Timeout expires mid-operation - leaves unclear failure state, need clear timeout logic",
+          "Template works in staging but fails in production - environment-specific assumptions (SCRIPT_DIR, paths, permissions)",
+          "No cleanup between runs - subsequent runs blocked by artifacts from prior runs"
+        ]
+      },
+      "timestamp": 1773441218,
+      "ttl": 3600
+    },
+    "2fb0e04ea358db17b0b0550b34ff2347": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents 4 recent test failures in Shipwright (sw-cleanup.sh, sw-feedback-test.sh, sw-hello-test.sh) with root causes and fixes. Directly informs what system health issues must be validated and addressed in the test stage."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 90,
+            "summary": "Project configuration including test_runner (vitest), test_pattern (*.test.js), source_dir (src/), and import_style (commonjs). Essential for understanding how to structure and run tests for the pipeline test case."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 45,
+            "summary": "Basic project_type detection (nodejs). Minimal value; redundant with first patterns.json entry and provides no test-specific configuration."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No actionable data for test planning."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No actionable data for test planning."
+          }
+        ]
+      },
+      "timestamp": 1773441233,
+      "ttl": 1800
     }
   }
 }
