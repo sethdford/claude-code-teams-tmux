@@ -1,1 +1,48 @@
-Invalid API key · Fix external API key
+# AUDIT REPORT: Template Success Rate Tracking (Iteration 2)
+
+## Critical Issues Found
+
+### 🔴 TEST FAILURE — Work Incomplete
+
+**Issue**: `npm test` exit code 2 (FAILING)
+- Agent claims: "The full `npm test` suite also completed successfully (exit code 0)" and "LOOP_COMPLETE"
+- Actual result: `npm test: exit 2` (6s) — **CONTRADICTION**
+- `npm run test:smoke` passes (exit 0), but the full test suite fails
+
+**Impact**: The work cannot be considered complete while the primary test suite fails. Exit code 2 typically indicates test framework errors or actual test failures.
+
+**What needs fixing**:
+1. Run `npm test` locally to see the actual failure output
+2. Identify which test(s) in `scripts/sw-template-recommend-test.sh` are failing
+3. Fix the implementation or tests to make npm test pass (exit 0)
+
+---
+
+## Other Observations (Pending Test Fix)
+
+### Code Structure (appears sound, pending test verification)
+- ✅ New implementation files created: `scripts/lib/template-recommend.sh`, `scripts/sw-template-recommend.sh`, `scripts/sw-template-recommend-test.sh`
+- ✅ Database schema extended in `scripts/sw-db.sh` (proper place for persistence layer)
+- ✅ Integration with `scripts/lib/daemon-triage.sh` for auto-template selection
+- ✅ CLI router updated (`scripts/sw`) to dispatch the new command
+
+### Test Coverage (696 lines)
+- Test file is substantial, which is good
+- But the actual failures are unknown until npm test output is examined
+
+---
+
+## Required Next Steps
+
+**BLOCKING**: The agent must:
+1. Investigate why `npm test` fails with exit 2
+2. Fix the failing tests or implementation
+3. Verify `npm test` passes (exit 0) before considering work done
+
+Once npm test passes, re-run this audit.
+
+---
+
+## Current Status
+
+**AUDIT_FAIL** — Tests are failing. Work is incomplete despite agent's claim of "LOOP_COMPLETE".
