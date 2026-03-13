@@ -42,7 +42,7 @@ _proven_config_repo_hash() {
     fi
     local repo_root
     repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$repo_dir")
-    echo "$repo_root" | jq -Rs 'gsub("[^a-zA-Z0-9]"; "") | .[0:12]' 2>/dev/null || echo "default"
+    echo "$repo_root" | jq -Rsr 'gsub("[^a-zA-Z0-9]"; "") | .[0:12]' 2>/dev/null || echo "default"
 }
 
 # Ensure proven config directory exists
@@ -505,7 +505,7 @@ proven_config_track_replay() {
         if [[ "$this_id" == "$config_id" ]]; then
             found=1
             # Update replay counts and confidence
-            updated_entry=$(echo "$line" | jq \
+            updated_entry=$(echo "$line" | jq -c \
                 --arg result "$result" \
                 --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
                 '.replay_count += 1 |
@@ -515,14 +515,17 @@ proven_config_track_replay() {
                  (if .confidence < 0.5 then .confidence = 0.5 else . end)' 2>/dev/null)
 
             # Demote if success rate dropped below 40% after 5+ replays
-            if (( $(echo "${replay_count:-0} >= 5" | sed 's/replay_count/$(echo "$updated_entry" | jq -r ".replay_count")/') )); then
-                local confidence success_rate
-                success_rate=$(echo "$updated_entry" | jq -r '.replay_success_count' 2>/dev/null || echo "0")
-                confidence=$(echo "$updated_entry" | jq -r '.confidence' 2>/dev/null || echo "0")
-                if (( $(echo "$confidence < 0.4" | bc -l 2>/dev/null || echo "0") )); then
-                    updated_entry=$(echo "$updated_entry" | jq '. + {demoted: true}')
-                    warn "Config $config_id demoted: success rate < 40%"
-                fi
+            local replay_count success_count success_rate
+            replay_count=$(echo "$updated_entry" | jq -r '.replay_count' 2>/dev/null || echo "0")
+            success_count=$(echo "$updated_entry" | jq -r '.replay_success_count' 2>/dev/null || echo "0")
+            if [[ $replay_count -gt 0 ]]; then
+                success_rate=$(echo "scale=3; $success_count / $replay_count" | bc 2>/dev/null || echo "0")
+            else
+                success_rate="0"
+            fi
+            if [[ $replay_count -ge 5 ]] && (( $(echo "$success_rate < 0.4" | bc -l 2>/dev/null || echo "0") )); then
+                updated_entry=$(echo "$updated_entry" | jq -c '. + {demoted: true}')
+                warn "Config $config_id demoted: success rate < 40%"
             fi
 
             echo "$updated_entry" >> "$tmp_file"
