@@ -647,6 +647,84 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "fa6e4b8ac818edacdc7d56ddec80b1a2": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Detection heuristics may incorrectly identify project types or miss edge cases",
+          "Monorepos and non-standard project structures could confound detection logic",
+          "User expectations might exceed actual detection capability, requiring documentation",
+          "Adding new project types later requires code changes, not configuration-only updates",
+          "Detected template might not be optimal in all cases with complex or hybrid projects"
+        ],
+        "implementation_hints": [
+          "Prioritize detection of top 5 project types first (Node, Go, Python, Rust, Java) before expanding to 10+",
+          "Use file presence as primary signal (package.json, go.mod, etc.) and dependency inspection as secondary validation",
+          "Create reusable detection functions in a shared library for independent testability",
+          "Add --analyze flag to 'shipwright prep' to show detection confidence and reasoning",
+          "Implement integration test matrix with sample repos for each supported project type",
+          "Cache detection results in daemon-config.json to avoid re-running checks",
+          "Support --force-template flag to override auto-detection when users disagree with recommendation"
+        ]
+      },
+      "timestamp": 1773420415,
+      "ttl": 3600
+    },
+    "2f8b72972eef273c861c95d8281365d6": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1773420426,
+      "ttl": 1800
+    },
+    "5b2dcd0884e0dca3b8a45f8db15b69d1": {
+      "result": {
+        "estimated_cost_usd": 0.15,
+        "estimated_iterations": 2,
+        "estimated_tokens": 22000,
+        "likely_failure_stage": "test",
+        "confidence": 85
+      },
+      "timestamp": 1773420439,
+      "ttl": 3600
+    },
+    "19d6e4d71ba16e85b1d566aea4acd553": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Detailed project detection schema showing detected type (node), framework, test_runner (vitest), package_manager (npm), language (javascript), and conventions (source_dir, test_pattern, import_style) - directly models the structure needed for automated detection and template pre-selection"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Historical project_type detection record (nodejs detected 2026-02-21 via bootstrap) - shows prior successful detections that inform pattern matching and detection confidence scoring"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 12,
+            "summary": "Contains one entry mentioning 'Invalid template errors' related to template validation testing; other entries are unrelated operational bugs that don't inform template detection planning"
+          },
+          {
+            "file": "global.json",
+            "relevance": 3,
+            "summary": "File structure suggests cross_repo_learnings that could apply to common template patterns, but currently empty"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 1,
+            "summary": "Empty baselines file with no relevant historical metrics for project detection feature planning"
+          }
+        ]
+      },
+      "timestamp": 1773420470,
+      "ttl": 1800
     }
   }
 }
