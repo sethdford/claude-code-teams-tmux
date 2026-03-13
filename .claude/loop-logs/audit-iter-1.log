@@ -1,1 +1,42 @@
-Invalid API key · Fix external API key
+I need to critically assess this work. Let me examine the key facts:
+
+## Critical Finding: Test Failures
+
+The **test suite is FAILING** with `npm test` returning exit code 3 (6s), while the agent claims **LOOP_COMPLETE**. This is a major inconsistency and a blocker.
+
+- `npm test` (full suite): **FAILING** (exit 3)
+- `npm run test:smoke`: passing (exit 0)
+
+This indicates the new feature tests or modified tests have breaking issues.
+
+## What I Can Verify from the Diff
+
+**Positive observations:**
+- Comprehensive new test suite (696 lines for `sw-template-recommend-test.sh`)
+- Proper schema migration with v6→v7 versioning
+- Data flow appears complete (record → detect → recommend → daemon integration)
+- Uses existing infrastructure (`sw-db.sh`, `lib/project-detect.sh`)
+- 40 tests claimed (34 unit, 5 integration, 1 SQL safety)
+
+**Concerns requiring investigation:**
+1. **Why is `npm test` failing with exit code 3?** 
+   - Is it the new 40 tests? 
+   - Did changes to `sw-db.sh` break existing tests?
+   - Test harness issue?
+
+2. **Agent marked LOOP_COMPLETE despite failing tests** — this violates the feedback principle that tests must pass before marking work done.
+
+## What Needs Fixing
+
+Without seeing the actual error output, I cannot pinpoint the exact issue, but the requirements are:
+
+1. **Investigate npm test exit code 3** — Get full error output
+2. **Fix all failing tests** — Either in the new feature tests or in affected existing tests
+3. **Verify npm test passes** before work is acceptable
+4. **Re-verify npm run test:smoke still passes** after fixes
+
+---
+
+**AUDIT_FAIL**
+
+The test suite is failing. The agent reported work complete with `LOOP_COMPLETE`, but the test status contradicts this. The agent must investigate the npm test failures, fix them, and re-run the test suite to completion before this work is acceptable.
