@@ -195,8 +195,12 @@ detect_test_framework() {
 # ─── Cross-platform file modification time (epoch) ────────────────────────
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
-    local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local file="$1" _mt
+    # macOS/BSD: stat -f %m returns epoch mtime
+    # Linux: stat -f is "filesystem status" and returns garbage — try it first,
+    # but only accept a purely numeric result; otherwise fall through to -c '%Y'.
+    _mt=$(stat -f %m "$file" 2>/dev/null) && [[ "$_mt" =~ ^[0-9]+$ ]] && { echo "$_mt"; return 0; }
+    stat -c '%Y' "$file" 2>/dev/null || echo "0"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
