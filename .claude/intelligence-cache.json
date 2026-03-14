@@ -914,28 +914,28 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Critical project conventions needed for build: test_runner (vitest), package_manager (npm), test_pattern (*.test.js), source_dir (src/), and import style. Build stage must use these to execute tests and compile code correctly."
+            "summary": "Contains 5 captured test failures with root causes and fixes directly applicable to build stage—sw-cleanup.sh heartbeat detection, sw-feedback-test.sh JSON output, mktemp directory creation, and sed flag issues. Helps agent avoid known failure patterns."
           },
           {
-            "file": "failures.json",
-            "relevance": 82,
-            "summary": "Contains 5 captured failure patterns from previous build/test runs. Most failures are from test stage (sw-cleanup.sh dry-run output, sw-feedback-test.sh JSON output, mktemp /tmp/claude directory missing). These patterns help prevent recurring issues during build stage execution."
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project configuration (vitest test runner, npm, src/ source dir, *.test.js test pattern) and conventions (commonjs imports) inform what build commands to run and test discovery."
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Baseline metrics are empty; no historical performance data available to inform build optimization or resource allocation decisions."
+            "relevance": 5,
+            "summary": "Empty baselines object—no actual metrics data to inform build stage optimization or baseline comparisons."
           },
           {
             "file": "decisions.json",
-            "relevance": 8,
-            "summary": "No prior architectural or build-related decisions recorded; does not inform current build stage execution."
+            "relevance": 3,
+            "summary": "Empty decisions array—no prior architectural or implementation decisions captured to guide build stage choices."
           }
         ]
       },
-      "timestamp": 1773520884,
+      "timestamp": 1773522763,
       "ttl": 1800
     }
   }
