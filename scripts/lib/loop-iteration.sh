@@ -338,6 +338,28 @@ ${cum_stat}
         fi
     fi
 
+    # Goal achievement checkpoint injection (issue #268)
+    local checkpoint_section=""
+    if type inject_goal_checkpoint >/dev/null 2>&1; then
+        if inject_goal_checkpoint "$ITERATION" "$MAX_ITERATIONS"; then
+            # Gather context for checkpoint prompt
+            local _cp_test_status="${TEST_PASSED:-not run}"
+            if [[ "$_cp_test_status" == "true" ]]; then _cp_test_status="passing";
+            elif [[ "$_cp_test_status" == "false" ]]; then _cp_test_status="failing";
+            fi
+            local _cp_commits
+            _cp_commits="$(git -C "$PROJECT_ROOT" log --oneline -3 2>/dev/null || echo "none")"
+            local _cp_files_changed="0"
+            if [[ -n "${LOOP_START_COMMIT:-}" ]]; then
+                _cp_files_changed="$(git -C "$PROJECT_ROOT" diff --name-only "${LOOP_START_COMMIT}..HEAD" 2>/dev/null | wc -l | tr -d ' ' || echo "0")"
+            fi
+            checkpoint_section="$(build_checkpoint_prompt "${ORIGINAL_GOAL:-$GOAL}" "$ITERATION" "$MAX_ITERATIONS" "$_cp_test_status" "$_cp_commits" "$_cp_files_changed")"
+            if type emit_event >/dev/null 2>&1; then
+                emit_event "loop.goal_checkpoint_injected" "iteration=$ITERATION" "interval=${GOAL_CHECK_INTERVAL:-3}" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     cat <<PROMPT
 You are an autonomous coding agent on iteration ${ITERATION}/${MAX_ITERATIONS} of a continuous loop.
 ${resume_section}
@@ -367,6 +389,8 @@ ${dora_section:+$dora_section
 ${intelligence_section:+$intelligence_section
 }
 ${restart_section:+$restart_section
+}
+${checkpoint_section:+$checkpoint_section
 }
 ## Instructions
 1. Read the codebase and understand the current state

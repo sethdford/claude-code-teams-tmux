@@ -38,6 +38,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
+# Goal achievement verification checkpoints (issue #268)
+[[ -f "$SCRIPT_DIR/lib/loop-checkpoint.sh" ]] && source "$SCRIPT_DIR/lib/loop-checkpoint.sh"
 # Intelligent session restart with enhanced briefings and cross-session tracking
 [[ -f "$SCRIPT_DIR/lib/session-restart.sh" ]] && source "$SCRIPT_DIR/lib/session-restart.sh"
 # Context window budget monitoring (issue #209)
@@ -94,7 +96,7 @@ MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
 REPO_OVERRIDE=""
-VERSION="3.2.4"
+VERSION="3.2.5"
 
 # ─── Token Tracking ─────────────────────────────────────────────────────────
 LOOP_INPUT_TOKENS=0
@@ -163,6 +165,7 @@ show_help() {
     echo -e "  ${CYAN}--audit-agent${RESET}             Run separate auditor agent (haiku) after each iteration"
     echo -e "  ${CYAN}--quality-gates${RESET}           Enable automated quality gates before accepting completion"
     echo -e "  ${CYAN}--definition-of-done${RESET} FILE DoD checklist file — evaluated by AI against git diff"
+    echo -e "  ${CYAN}--goal-check-interval${RESET} N    Goal checkpoint every N iterations (default: 3, 0=disable)"
     echo -e "  ${CYAN}--no-auto-extend${RESET}          Disable auto-extension when max iterations reached"
     echo -e "  ${CYAN}--extension-size${RESET} N         Additional iterations per extension (default: 5)"
     echo -e "  ${CYAN}--max-extensions${RESET} N         Max number of auto-extensions (default: 3)"
@@ -258,6 +261,21 @@ while [[ $# -gt 0 ]]; do
             ;;
         --definition-of-done=*) DOD_FILE="${1#--definition-of-done=}"; shift ;;
         --quality-gates) QUALITY_GATES_ENABLED=true; shift ;;
+        --goal-check-interval)
+            _GOAL_CHECK_INTERVAL_CLI="${2:-}"
+            [[ -z "$_GOAL_CHECK_INTERVAL_CLI" ]] && { error "Missing value for --goal-check-interval"; exit 1; }
+            if [[ "$_GOAL_CHECK_INTERVAL_CLI" == "0" ]]; then
+                SW_GOAL_CHECK_ENABLED=false
+            fi
+            shift 2
+            ;;
+        --goal-check-interval=*)
+            _GOAL_CHECK_INTERVAL_CLI="${1#--goal-check-interval=}"
+            if [[ "$_GOAL_CHECK_INTERVAL_CLI" == "0" ]]; then
+                SW_GOAL_CHECK_ENABLED=false
+            fi
+            shift
+            ;;
         --no-auto-extend) AUTO_EXTEND=false; shift ;;
         --extension-size)
             EXTENSION_SIZE="${2:-}"
@@ -2089,6 +2107,11 @@ run_single_agent_loop() {
         LOOP_START_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")"
     fi
 
+    # Initialize goal achievement checkpoint system (issue #268)
+    if type init_goal_checkpoint_system >/dev/null 2>&1; then
+        init_goal_checkpoint_system
+    fi
+
     # Apply adaptive budget/model before showing banner
     apply_adaptive_budget
     MODEL="$(select_adaptive_model "build" "$MODEL")"
@@ -2354,6 +2377,18 @@ ${GOAL}"
                     warn "Build loop oscillating — consider manual review or model escalation"
                     ;;
             esac
+        fi
+
+        # Goal achievement checkpoint: detect GOAL_ACHIEVED signal (issue #268)
+        # When detected, append LOOP_COMPLETE to log so guard_completion validates it
+        if [[ "${CHECKPOINT_TRIGGERED:-false}" == "true" ]] && type parse_goal_checkpoint_response >/dev/null 2>&1; then
+            if parse_goal_checkpoint_response "$log_file"; then
+                echo -e "  ${CYAN}▸${RESET} GOAL_ACHIEVED detected at checkpoint — routing through quality gates"
+                echo "LOOP_COMPLETE" >> "$log_file"
+                if type emit_event >/dev/null 2>&1; then
+                    emit_event "loop.goal_achieved_at_checkpoint" "iteration=$ITERATION" "interval=${GOAL_CHECK_INTERVAL:-3}" 2>/dev/null || true
+                fi
+            fi
         fi
 
         # Guarded completion (replaces naive grep check)

@@ -807,6 +807,203 @@ else
     assert_fail "Mid-build test file discovery integrated"
 fi
 
+# ─── Goal Achievement Checkpoint Tests (issue #268) ─────────────────────────
+echo ""
+echo -e "${DIM}  goal achievement checkpoints${RESET}"
+
+# Test: checkpoint module exists
+if [[ -f "$SCRIPT_DIR/lib/loop-checkpoint.sh" ]]; then
+    assert_pass "loop-checkpoint.sh module exists"
+else
+    assert_fail "loop-checkpoint.sh module exists"
+fi
+
+# Test: checkpoint module is sourced in sw-loop.sh
+if grep -q 'loop-checkpoint.sh' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "loop-checkpoint.sh sourced in sw-loop.sh"
+else
+    assert_fail "loop-checkpoint.sh sourced in sw-loop.sh"
+fi
+
+# Test: module guard prevents double-sourcing
+if grep -q '_LOOP_CHECKPOINT_LOADED' "$SCRIPT_DIR/lib/loop-checkpoint.sh"; then
+    assert_pass "Module guard prevents double-sourcing"
+else
+    assert_fail "Module guard prevents double-sourcing"
+fi
+
+# Test: CLI flag --goal-check-interval is parsed
+if grep -q '\-\-goal-check-interval' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "--goal-check-interval CLI flag parsed"
+else
+    assert_fail "--goal-check-interval CLI flag parsed"
+fi
+
+# Test: --goal-check-interval appears in help text
+_help_output=$(bash "$SCRIPT_DIR/sw-loop.sh" --help 2>&1 | sed $'s/\033\[[0-9;]*m//g') && _rc=0 || _rc=$?
+if echo "$_help_output" | grep -q 'goal-check-interval'; then
+    assert_pass "--goal-check-interval shown in --help"
+else
+    assert_fail "--goal-check-interval shown in --help"
+fi
+
+# Test: init_goal_checkpoint_system is called in run_single_agent_loop
+if grep -q 'init_goal_checkpoint_system' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "init_goal_checkpoint_system called at startup"
+else
+    assert_fail "init_goal_checkpoint_system called at startup"
+fi
+
+# Test: checkpoint prompt builder includes GOAL_ACHIEVED signal instruction
+if grep -q 'GOAL_ACHIEVED' "$SCRIPT_DIR/lib/loop-checkpoint.sh"; then
+    assert_pass "Checkpoint prompt includes GOAL_ACHIEVED signal"
+else
+    assert_fail "Checkpoint prompt includes GOAL_ACHIEVED signal"
+fi
+
+# Test: GOAL_ACHIEVED detection routes through guard_completion
+if grep -q 'GOAL_ACHIEVED.*checkpoint' "$SCRIPT_DIR/sw-loop.sh" && grep -q 'LOOP_COMPLETE.*log_file' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "GOAL_ACHIEVED routes through quality gates"
+else
+    assert_fail "GOAL_ACHIEVED routes through quality gates"
+fi
+
+# Test: checkpoint event emitted
+if grep -q 'loop.goal_checkpoint_injected' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
+    assert_pass "Checkpoint injection emits event"
+else
+    assert_fail "Checkpoint injection emits event"
+fi
+
+if grep -q 'loop.goal_achieved_at_checkpoint' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Goal achieved emits event"
+else
+    assert_fail "Goal achieved emits event"
+fi
+
+# ─── Functional tests: source the module and test functions directly ────────
+
+# Source the checkpoint module for functional testing
+_config_get_int() { echo "${2:-0}"; }
+_config_get() { echo "${2:-}"; }
+source "$SCRIPT_DIR/lib/loop-checkpoint.sh" 2>/dev/null || true
+
+# Test: init_goal_checkpoint_system sets defaults
+_GOAL_CHECK_INTERVAL_CLI=""
+SW_GOAL_CHECK_INTERVAL=""
+SW_GOAL_CHECK_ENABLED=""
+_LOOP_CHECKPOINT_LOADED=""
+source "$SCRIPT_DIR/lib/loop-checkpoint.sh" 2>/dev/null || true
+init_goal_checkpoint_system
+if [[ "$GOAL_CHECK_INTERVAL" -eq 3 ]] && [[ "$GOAL_CHECK_ENABLED" == "true" ]]; then
+    assert_pass "Default config: interval=3, enabled=true"
+else
+    assert_fail "Default config: interval=3, enabled=true" "interval=$GOAL_CHECK_INTERVAL enabled=$GOAL_CHECK_ENABLED"
+fi
+
+# Test: env var override
+SW_GOAL_CHECK_INTERVAL=5
+init_goal_checkpoint_system
+if [[ "$GOAL_CHECK_INTERVAL" -eq 5 ]]; then
+    assert_pass "SW_GOAL_CHECK_INTERVAL overrides default"
+else
+    assert_fail "SW_GOAL_CHECK_INTERVAL overrides default" "got $GOAL_CHECK_INTERVAL"
+fi
+SW_GOAL_CHECK_INTERVAL=""
+
+# Test: invalid interval falls back to 3
+SW_GOAL_CHECK_INTERVAL="abc"
+init_goal_checkpoint_system
+if [[ "$GOAL_CHECK_INTERVAL" -eq 3 ]]; then
+    assert_pass "Invalid interval falls back to 3"
+else
+    assert_fail "Invalid interval falls back to 3" "got $GOAL_CHECK_INTERVAL"
+fi
+SW_GOAL_CHECK_INTERVAL=""
+
+# Test: inject_goal_checkpoint fires at multiples of interval
+GOAL_CHECK_ENABLED=true
+GOAL_CHECK_INTERVAL=3
+GOAL_CHECK_MIN_ITERATION=2
+if inject_goal_checkpoint 3 20; then
+    assert_pass "Checkpoint fires at iteration 3 (interval=3)"
+else
+    assert_fail "Checkpoint fires at iteration 3 (interval=3)"
+fi
+
+if inject_goal_checkpoint 6 20; then
+    assert_pass "Checkpoint fires at iteration 6 (interval=3)"
+else
+    assert_fail "Checkpoint fires at iteration 6 (interval=3)"
+fi
+
+# Test: checkpoint skipped before min iteration
+if inject_goal_checkpoint 1 20; then
+    assert_fail "Checkpoint skipped at iteration 1" "should not fire"
+else
+    assert_pass "Checkpoint skipped at iteration 1"
+fi
+
+# Test: checkpoint skipped at non-multiples
+if inject_goal_checkpoint 4 20; then
+    assert_fail "Checkpoint skipped at iteration 4" "should not fire"
+else
+    assert_pass "Checkpoint skipped at iteration 4"
+fi
+
+# Test: checkpoint skipped when disabled
+GOAL_CHECK_ENABLED=false
+if inject_goal_checkpoint 3 20; then
+    assert_fail "Checkpoint skipped when disabled" "should not fire"
+else
+    assert_pass "Checkpoint skipped when disabled"
+fi
+GOAL_CHECK_ENABLED=true
+
+# Test: build_checkpoint_prompt includes goal and signal instruction
+_cp_output=$(build_checkpoint_prompt "Build auth module" 6 20 "passing" "abc123 fix" "5")
+if echo "$_cp_output" | grep -q "Build auth module" && echo "$_cp_output" | grep -q "GOAL_ACHIEVED"; then
+    assert_pass "Checkpoint prompt includes goal and signal instruction"
+else
+    assert_fail "Checkpoint prompt includes goal and signal instruction"
+fi
+
+if echo "$_cp_output" | grep -q "Iteration 6/20"; then
+    assert_pass "Checkpoint prompt shows iteration count"
+else
+    assert_fail "Checkpoint prompt shows iteration count"
+fi
+
+# Test: parse_goal_checkpoint_response detects signal
+_test_log=$(mktemp)
+echo "Some output here" > "$_test_log"
+echo "GOAL_ACHIEVED" >> "$_test_log"
+if parse_goal_checkpoint_response "$_test_log"; then
+    assert_pass "GOAL_ACHIEVED signal detected in output"
+else
+    assert_fail "GOAL_ACHIEVED signal detected in output"
+fi
+
+# Test: parse_goal_checkpoint_response returns 1 when no signal
+echo "Some output without signal" > "$_test_log"
+GOAL_REACHED=false
+if parse_goal_checkpoint_response "$_test_log"; then
+    assert_fail "No false positive when signal absent" "should return 1"
+else
+    assert_pass "No false positive when signal absent"
+fi
+rm -f "$_test_log"
+
+# Test: SW_GOAL_CHECK_ENABLED=false disables system
+SW_GOAL_CHECK_ENABLED="false"
+init_goal_checkpoint_system
+if [[ "$GOAL_CHECK_ENABLED" == "false" ]]; then
+    assert_pass "SW_GOAL_CHECK_ENABLED=false disables checkpoint"
+else
+    assert_fail "SW_GOAL_CHECK_ENABLED=false disables checkpoint"
+fi
+SW_GOAL_CHECK_ENABLED=""
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════

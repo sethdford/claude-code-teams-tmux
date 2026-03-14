@@ -198,6 +198,7 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 - **Fast test mode** (`--fast-test-cmd "cmd"`): Alternates between a fast subset test and the full suite. Full test runs on iteration 1, every N iterations (`--fast-test-interval`, default 5), and the final iteration.
 - **Agent roles** (`--roles "builder,reviewer,tester"`): In multi-agent mode, assigns specialization per agent. Built-in roles: `builder`, `reviewer`, `tester`, `optimizer`, `docs`, `security`.
 - **Context exhaustion detection**: When the daemon detects a build loop failed due to iteration exhaustion (not a code error), it tags the failure as `context_exhaustion` and boosts `--max-restarts` on retry.
+- **Goal achievement checkpoints** (`--goal-check-interval N`): Injects a verification prompt every N iterations (default: 3) asking the agent to confirm whether the goal is fully achieved. If the agent outputs `GOAL_ACHIEVED`, the loop routes through quality gates and exits early, reducing iteration waste. Disable with `--goal-check-interval 0` or `SW_GOAL_CHECK_ENABLED=false`. Configurable via `loop.goal_check_interval` in `daemon-config.json`.
 
 ## Pipeline Templates
 
