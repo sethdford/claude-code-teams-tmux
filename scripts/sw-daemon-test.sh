@@ -1785,8 +1785,17 @@ test_retry_args_passed_to_spawn() {
 test_failure_classification_wired() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
-        { echo "classify_failure not called in daemon_on_failure"; return 1; }
+    local grep_output
+    grep_output=$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB 2>/dev/null || echo "")
+    if ! echo "$grep_output" | grep -q 'classify_failure'; then
+        # Debug: show what files were searched and what was found
+        if [[ -z "$grep_output" ]]; then
+            echo "classify_failure not called in daemon_on_failure (grep returned empty)"
+        else
+            echo "classify_failure not called in daemon_on_failure"
+        fi
+        return 1
+    fi
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
 }
