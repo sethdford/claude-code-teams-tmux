@@ -352,6 +352,7 @@ else
         [[ $HEARTBEATS_FOUND -gt 0 ]]  && echo -e "  ${YELLOW}○${RESET} ${HEARTBEATS_FOUND} stale heartbeat(s)"
         [[ $BRANCHES_FOUND -gt 0 ]]    && echo -e "  ${YELLOW}○${RESET} ${BRANCHES_FOUND} orphaned branch(es)"
         [[ $STATE_RESET -gt 0 ]]       && echo -e "  ${YELLOW}○${RESET} ${STATE_RESET} pipeline state file(s)"
+        echo -e "  These accumulate from crashed pipelines, interrupted agents, or completed sessions."
         echo -e "  Run ${BOLD}shipwright cleanup --force${RESET} to remove them."
     else
         success "Everything is clean. No orphaned sessions or artifacts found."

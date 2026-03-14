@@ -41,7 +41,12 @@ _to_upper() { echo "$1" | tr '[:lower:]' '[:upper:]'; }
 is_wsl()   { is_linux && [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null; }
 
 # ─── sed -i (macOS vs GNU) ────────────────────────────────────────────────
-# macOS sed requires '' after -i, GNU sed does not
+# macOS sed requires '' after -i, GNU sed does not.
+# Always use sed_i() instead of raw 'sed -i' to avoid platform errors:
+#   macOS: sed -i '' 's/...'  (requires empty string backup suffix)
+#   Linux: sed -i 's/...'     (no suffix needed)
+# Using raw 'sed -i' causes "invalid command code" on macOS or treats the
+# expression as a filename on Linux. Fix: use sed_i() from lib/compat.sh.
 sed_i() {
     if is_macos; then
         sed -i '' "$@"

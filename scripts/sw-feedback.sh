@@ -70,6 +70,11 @@ parse_error_patterns() {
     local stack_traces=""
 
     if [[ ! -f "$log_file" ]]; then
+        error "Log file not found: $log_file"
+        error "  Expected a pipeline log at this path for error pattern analysis."
+        error "  This usually means the pipeline stage didn't produce output,"
+        error "  or the log path was misconfigured in ARTIFACTS_DIR."
+        error "  Fix: Verify the pipeline ran and check ARTIFACTS_DIR=${ARTIFACTS_DIR:-unset}."
         return 1
     fi
 
@@ -242,6 +247,10 @@ feedback_detect_regression() {
 
     if [[ ! -f "$monitoring_file" ]]; then
         error "Monitoring file not found: $monitoring_file"
+        error "  This file is created by 'shipwright feedback post-merge-monitor' after a merge."
+        error "  If it's missing, the post-merge monitoring step may not have run."
+        error "  Fix: Run 'shipwright feedback post-merge-monitor <merge_sha>' first,"
+        error "       or check that ARTIFACTS_DIR ($ARTIFACTS_DIR) is correct."
         return 1
     fi
 
@@ -296,7 +305,7 @@ feedback_detect_regression() {
         }')
 
     echo "$regression_result"
-    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity"
+    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity" 2>/dev/null || true
 }
 
 # ─── Correlate regressions with changed files ───────────────────────────────────
@@ -364,7 +373,7 @@ feedback_correlate_with_changes() {
         }')
 
     echo "$correlation_result"
-    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence"
+    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence" 2>/dev/null || true
 }
 
 # ─── Auto-respond to regressions based on severity ──────────────────────────────
