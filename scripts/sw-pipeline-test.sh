@@ -10,6 +10,8 @@ trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/test-helpers.sh"
+# shellcheck source=lib/compat.sh
+[[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REAL_PIPELINE_SCRIPT="$SCRIPT_DIR/sw-pipeline.sh"
 
@@ -703,11 +705,7 @@ test_resume() {
     pipeline_config_with_stages "intake,plan" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
 
     # Rewrite status from "complete" to "interrupted" so resume will continue
-    if [[ "$(uname)" == "Darwin" ]]; then
-        sed -i '' 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
-    else
-        sed -i 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
-    fi
+    sed_i 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
 
     # Step 4: Resume — should skip intake, run plan
     invoke_pipeline resume

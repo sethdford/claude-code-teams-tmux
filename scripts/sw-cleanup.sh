@@ -263,7 +263,8 @@ if [[ -d "$HEARTBEAT_DIR" ]]; then
             if $FORCE; then
                 rm -f "$hb_file"
                 HEARTBEATS_REMOVED=$((HEARTBEATS_REMOVED + 1))
-                echo -e "  ${RED}✗${RESET} Removed: ${hb_name} ${DIM}(stale >1h)${RESET}"
+                stale_min=$(( stale_threshold / 60 ))
+                echo -e "  ${RED}✗${RESET} Removed: ${hb_name} ${DIM}(stale >${stale_min}m, threshold: cleanup.heartbeat_stale_seconds=${stale_threshold})${RESET}"
             else
                 age_min=$(( (now_e - hb_mtime) / 60 ))
                 echo -e "  ${YELLOW}○${RESET} Would remove: ${hb_name} ${DIM}(${age_min}m old)${RESET}"
@@ -341,8 +342,17 @@ if $FORCE; then
     fi
 else
     if [[ $TOTAL_FOUND -gt 0 ]]; then
-        warn "Found ${TOTAL_FOUND} items to clean. Run with ${BOLD}--force${RESET} to remove them:"
-        echo -e "  ${DIM}shipwright cleanup --force${RESET}"
+        warn "Found ${TOTAL_FOUND} item(s) to clean:"
+        # Per-category breakdown so the operator knows what was found
+        [[ $WINDOWS_FOUND -gt 0 ]]     && echo -e "  ${YELLOW}○${RESET} ${WINDOWS_FOUND} orphaned tmux window(s)"
+        [[ $TEAM_DIRS_FOUND -gt 0 ]]   && echo -e "  ${YELLOW}○${RESET} ${TEAM_DIRS_FOUND} stale team dir(s)"
+        [[ $TASK_DIRS_FOUND -gt 0 ]]   && echo -e "  ${YELLOW}○${RESET} ${TASK_DIRS_FOUND} stale task dir(s)"
+        [[ $ARTIFACTS_FOUND -gt 0 ]]   && echo -e "  ${YELLOW}○${RESET} ${ARTIFACTS_FOUND} pipeline artifact(s)"
+        [[ $CHECKPOINTS_FOUND -gt 0 ]] && echo -e "  ${YELLOW}○${RESET} ${CHECKPOINTS_FOUND} checkpoint(s)"
+        [[ $HEARTBEATS_FOUND -gt 0 ]]  && echo -e "  ${YELLOW}○${RESET} ${HEARTBEATS_FOUND} stale heartbeat(s)"
+        [[ $BRANCHES_FOUND -gt 0 ]]    && echo -e "  ${YELLOW}○${RESET} ${BRANCHES_FOUND} orphaned branch(es)"
+        [[ $STATE_RESET -gt 0 ]]       && echo -e "  ${YELLOW}○${RESET} ${STATE_RESET} pipeline state file(s)"
+        echo -e "  Run ${BOLD}shipwright cleanup --force${RESET} to remove them."
     else
         success "Everything is clean. No orphaned sessions or artifacts found."
     fi

@@ -84,9 +84,10 @@ parse_error_patterns() {
         fi
     done < "$log_file"
 
-    # Output CSV: count|types|first_stack_trace
+    # Output pipe-delimited: count|types|first_stack_trace
+    # Escape newlines in stack trace to prevent corrupting the pipe-delimited format
     local first_stack
-    first_stack=$(head -50 "$log_file" | tail -20)
+    first_stack=$(head -50 "$log_file" | tail -20 | tr '\n' ' ')
     echo "$error_count|$error_types|$first_stack"
 }
 

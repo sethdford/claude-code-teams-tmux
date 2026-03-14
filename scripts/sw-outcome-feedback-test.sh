@@ -6,7 +6,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMPBASE="${TMPDIR:-/tmp/claude}"
+TMPBASE="${TMPDIR:-/tmp}/claude"
+mkdir -p "$TMPBASE" 2>/dev/null || {
+    echo "ERROR: Cannot create temp base directory '$TMPBASE'" >&2
+    echo "  This happens when the parent directory is read-only or doesn't exist." >&2
+    echo "  Fix: export TMPDIR to a writable directory, e.g. export TMPDIR=/tmp" >&2
+    exit 1
+}
 TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
 MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
 
