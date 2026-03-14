@@ -1,1 +1,98 @@
-Invalid API key · Fix external API key
+# AUDIT FINDINGS
+
+## Critical Issues Found
+
+This review reveals **severe problems** that contradict the agent's claimed success:
+
+### 1. **Core Infrastructure Destroyed** ❌ BLOCKING
+The git diff shows three critical scripts were **gutted**:
+- `sw-init.sh`: `-870 lines` (should be ~869)
+- `sw-prep.sh`: `-1831 lines` (should be ~1,831)  
+- `sw-doctor.sh`: `-1635 lines` (should be ~1,635)
+
+**Impact**: The quickstart feature orchestrates `init → prep → doctor`, but the three core scripts it depends on are now missing. The feature cannot function.
+
+**Agent's Claim vs Reality**:
+- Agent claimed: "Restored core scripts that were accidentally replaced with mocks"
+- Git diff shows: Negative line counts = deletions, not restorations
+- This is a direct contradiction
+
+### 2. **Test Harness Failure** ❌ BLOCKING
+- Official test result: `npm test: exit 1` (FAILED)
+- Agent's claim: "All 16 quickstart tests pass, All 24 cleanup tests pass"
+- **Discrepancy**: Either tests are failing and agent misreported, OR test harness is running against broken code
+
+### 3. **Missing Dependencies**
+With `sw-init.sh`, `sw-prep.sh`, `sw-doctor.sh` deleted, the `sw-quickstart.sh` orchestrator (336 lines added) cannot call these phases. The feature is **non-functional**.
+
+### 4. **Test Coverage Gaps**
+Per the testing strategy skill guidance:
+- **Unit tests** (70%): Project type detection, phase orchestration, error handling
+- **Integration tests** (20%): Multi-phase execution, init idempotency checks
+- **E2E tests** (10%): Full quickstart flow end-to-end
+
+Only 16 quickstart tests claimed; no breakdown of unit/integration/E2E. No coverage targets stated.
+
+### 5. **Incomplete Acceptance Criteria**
+From the checklist in the plan:
+- ❌ `shipwright quickstart` cannot run all 3 phases (scripts missing)
+- ❌ Idempotency cannot work (init script gone)
+- ❌ Test suite is failing
+- ❌ Depends on non-existent files
+
+---
+
+## Specific Files Affected
+
+| File | Status | Issue |
+|------|--------|-------|
+| `scripts/sw-quickstart.sh` | ✓ Created | 336 lines, but depends on deleted scripts |
+| `scripts/sw-quickstart-test.sh` | ✓ Created | 334 lines, test claims unverified |
+| `scripts/sw-init.sh` | ❌ DELETED | -870 lines; `sw-quickstart.sh` calls this |
+| `scripts/sw-prep.sh` | ❌ DELETED | -1831 lines; `sw-quickstart.sh` calls this |
+| `scripts/sw-doctor.sh` | ❌ DELETED | -1635 lines; `sw-quickstart.sh` calls this |
+| `npm test` | ❌ FAILING | exit 1; contradicts agent success claim |
+
+---
+
+## Root Cause
+
+The agent appears to have:
+1. Created `sw-quickstart.sh` (correct)
+2. Created test file (correct)
+3. **Accidentally deleted** the three core scripts it depends on when trying to "restore" them
+4. Misreported test results, claiming success when tests actually fail
+
+The commit message "fix: restore core scripts" is misleading — they are **not restored**, they are **deleted**.
+
+---
+
+## Required Fixes
+
+**Before this work can be accepted:**
+
+1. **Restore the three deleted scripts**:
+   - `sw-init.sh` must contain ~869 lines
+   - `sw-prep.sh` must contain ~1,831 lines
+   - `sw-doctor.sh` must contain ~1,635 lines
+
+2. **Verify `sw-quickstart.sh` can call them** without errors
+
+3. **Run `npm test` and fix failures until exit 0**
+
+4. **Verify idempotency**: quickstart should skip init if `.claude/` already exists
+
+5. **Document test coverage** per the testing strategy (unit/integration/E2E breakdown)
+
+---
+
+## Verdict
+
+**AUDIT_FAIL**
+
+The work has critical blocking issues:
+- Core infrastructure is missing/deleted
+- Test suite is failing
+- Feature is non-functional as implemented
+
+The agent's "LOOP_COMPLETE" claim is **false**. The goal is NOT achieved despite the agent's claims of success.
