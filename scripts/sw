@@ -301,6 +301,19 @@ main() {
         templates)
             exec "$SCRIPT_DIR/sw-templates.sh" "$@"
             ;;
+        template)
+            # Route "template validate" to the validator
+            case "${1:-}" in
+                validate)
+                    shift
+                    exec "$SCRIPT_DIR/sw-template-validate.sh" "$@"
+                    ;;
+                *)
+                    echo "Usage: shipwright template validate <file|name|--all>"
+                    exit 1
+                    ;;
+            esac
+            ;;
         doctor)
             exec "$SCRIPT_DIR/sw-doctor.sh" "$@"
             ;;

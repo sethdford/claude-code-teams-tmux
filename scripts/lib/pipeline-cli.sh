@@ -17,6 +17,8 @@ EVENTS_FILE="${EVENTS_FILE:-$HOME/.shipwright/events.jsonl}"
 
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+# Load template validator
+[[ -f "$SCRIPT_DIR/lib/pipeline-validation.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-validation.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
@@ -236,6 +238,14 @@ load_pipeline_config() {
         echo -e "  Available templates: ${DIM}shipwright pipeline list${RESET}"
         exit 1
     }
+    # Fail-fast: validate template before execution
+    if type validate_pipeline_template >/dev/null 2>&1; then
+        if ! validate_pipeline_template "$PIPELINE_CONFIG" 2>&1; then
+            error "Pipeline template failed validation: $PIPELINE_NAME"
+            echo -e "  Fix errors above, or run: ${DIM}shipwright template validate $PIPELINE_NAME${RESET}"
+            exit 1
+        fi
+    fi
     info "Pipeline: ${BOLD}$PIPELINE_NAME${RESET} ${DIM}($PIPELINE_CONFIG)${RESET}"
     # TDD from template (overridable by --tdd)
     [[ "$(jq -r '.tdd // false' "$PIPELINE_CONFIG" 2>/dev/null)" == "true" ]] && PIPELINE_TDD=true
