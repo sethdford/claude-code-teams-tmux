@@ -647,6 +647,83 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "49e53b6a6b3bd2f0c4e51285935a583a": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 76,
+        "recommended_template": "fast",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Aggressive truncation could remove critical error context, causing silent failures in downstream stages",
+          "Token count estimation accuracy—underestimating triggers exhaustion anyway, overestimating wastes budget on unnecessary truncation",
+          "Heuristic for 'key error/success markers' may miss domain-specific signals in diverse output formats (test logs, compiler errors, deployment traces)",
+          "Integration with pipeline vitals tracking may require rework if vitals already consume significant context budget",
+          "Monitoring overhead on every stage could accumulate if output parsing is inefficient"
+        ],
+        "implementation_hints": [
+          "Implement token estimation with conservative margin (assume 3.5 chars/token for code, 4.0 for prose) and test against real tokenizer before deployment",
+          "Use jq to preserve anchors (first 20% + last 30%) and intelligently filter middle 50% by line importance (grep for ERROR, FAIL, test result lines, stack traces)",
+          "Add dry-run flag to truncation logic so stage can log what would be truncated without actually truncating, enabling tuning of heuristics",
+          "Store truncation events (output_size, truncation_point, preserved_lines) in pipeline vitals for post-run analysis and feedback loop",
+          "Make truncation thresholds configurable per stage type (build stages may need 180k, test stages 120k) to avoid one-size-fits-all penalties",
+          "Precompute common output patterns (test boilerplate, compiler warnings) and skip them in middle-50% sampling to preserve real signal"
+        ]
+      },
+      "timestamp": 1773521043,
+      "ttl": 3600
+    },
+    "e57ec6c946b645da600fe97f65844e3e": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1773521052,
+      "ttl": 1800
+    },
+    "2ac4ac0fa7ad2e31d1b6dfcf3929ed84": {
+      "result": {
+        "estimated_cost_usd": 4.25,
+        "estimated_iterations": 3,
+        "estimated_tokens": 78000,
+        "likely_failure_stage": "test",
+        "confidence": 71
+      },
+      "timestamp": 1773521062,
+      "ttl": 3600
+    },
+    "928e840fd8c71e389fdd5247e4f69427": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Contains documented failures around output handling (sw-cleanup.sh dry-run output, missing summary sections, output formatting issues). Understanding these failure patterns is directly relevant to designing a context budget monitor that must handle output truncation and summary display correctly."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 68,
+            "summary": "Project detection metadata for Shipwright (test_runner: vitest, package_manager: npm, language: javascript, source_dir: src/). Essential for understanding the codebase structure and implementation approach for the context budget monitoring feature."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 40,
+            "summary": "Confirms project_type is nodejs, providing minimal additional context about the environment. Relevance is low since it adds no new technical details beyond the first patterns entry."
+          },
+          {
+            "file": "patterns.json (third entry)",
+            "relevance": 8,
+            "summary": "Empty patterns array from 'test_repo' (not Shipwright). Minimal relevance to planning a feature for the Shipwright project itself."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Contains empty baselines object. Not relevant to current feature planning."
+          }
+        ]
+      },
+      "timestamp": 1773521078,
+      "ttl": 1800
     }
   }
 }
