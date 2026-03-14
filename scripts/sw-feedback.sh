@@ -363,7 +363,7 @@ feedback_correlate_with_changes() {
         }')
 
     echo "$correlation_result"
-    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence"
+    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence" 2>/dev/null || true
 }
 
 # ─── Auto-respond to regressions based on severity ──────────────────────────────
