@@ -93,6 +93,7 @@ show_help() {
     echo -e "  ${CYAN}shipwright${RESET} <command> [options]    ${DIM}(alias: sw)${RESET}"
     echo ""
     echo -e "${BOLD}GETTING STARTED${RESET}"
+    echo -e "  ${CYAN}quickstart${RESET}            One-command setup for any project type"
     echo -e "  ${CYAN}init${RESET}                  One-command setup — tmux, CLI, templates, hooks"
     echo -e "  ${CYAN}setup${RESET}                 Guided interactive setup"
     echo -e "  ${CYAN}doctor${RESET}                Validate your setup and check for issues"
@@ -377,6 +378,9 @@ main() {
             ;;
         setup)
             exec "$SCRIPT_DIR/sw-setup.sh" "$@"
+            ;;
+        quickstart)
+            exec "$SCRIPT_DIR/sw-quickstart.sh" "$@"
             ;;
         dashboard|dash)
             exec "$SCRIPT_DIR/sw-dashboard.sh" "$@"
