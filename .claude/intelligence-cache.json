@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "reviewer",
+        "secondary_roles": [
+          "architect",
+          "optimizer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Script complexity analysis + refactor suggestions maps to code review (quality checks) + architecture (refactor guidance) + optimization (complexity reduction).",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773519162,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -786,6 +794,179 @@
         ]
       },
       "timestamp": 1773518383,
+      "ttl": 1800
+    },
+    "6a44568a26fc0edd2799307c630d21aa": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Shows real shell script failure patterns (sed expressions, mktemp paths, JSON output, stale file detection) that are exactly the complexity issues a Script Complexity Doctor should analyze and suggest refactoring for. Contains 5 recurring failure categories with root causes and fixes—concrete examples of refactor opportunities."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 50,
+            "summary": "Project configuration (shipwright repo, Node.js, vitest test runner, CommonJS) provides context for where the Script Complexity Doctor feature will be integrated and how tests should be organized. Shows source structure conventions."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Confirms project is Node.js (detected 2026-02-21), provides minimal additional context beyond project type. Lower relevance as it lacks detailed structural patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object provides no current metrics or complexity measurements to inform the design of the doctor check feature."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "Empty decisions array contains no prior design decisions or patterns relevant to planning this feature."
+          }
+        ]
+      },
+      "timestamp": 1773518750,
+      "ttl": 1800
+    },
+    "d7b66e7f1371b7cea14233d8badc5545": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 21-20 recurring test failures with root causes and fixes (sw-cleanup.sh, sw-feedback-test.sh, mktemp issues, sed invocation bugs). Directly illustrates script complexity issues and refactoring needs that a doctor check would identify."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 65,
+            "summary": "Documents project conventions (source_dir, test_pattern, import_style) and stack (vitest, npm, JavaScript). Provides context for understanding script structure and complexity metrics."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 25,
+            "summary": "Minimal metadata identifying Node.js project type. Less specific than other entries; provides minimal context for doctor check or refactoring analysis."
+          }
+        ]
+      },
+      "timestamp": 1773518849,
+      "ttl": 1800
+    },
+    "97eb6809865a884873a392f09e23bb78": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains actual shell script failure patterns with root causes and refactor suggestions (sw-cleanup.sh, sw-feedback.sh, sed flag issues, directory management). Directly exemplifies the types of script complexity issues and fixes a Doctor Check would identify."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 48,
+            "summary": "Defines project structure conventions (source_dir, test_pattern, import_style) and build tooling (vitest, npm, commonjs). Provides context for understanding codebase architecture and refactoring scope."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 12,
+            "summary": "Minimal metadata identifying project as Node.js. Provides lightweight project type signal but limited architectural insight."
+          },
+          {
+            "file": "patterns.json (third)",
+            "relevance": 8,
+            "summary": "Empty patterns array with cache metadata. Indicates detection was run but found no patterns; minimal utility for architecture design."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings and common patterns. No actionable content for Script Complexity Doctor architecture."
+          }
+        ]
+      },
+      "timestamp": 1773518906,
+      "ttl": 1800
+    },
+    "bf570e9625ed64995cfe1d67b2bb2263": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Contains 5 script-related test failures with root causes and fixes. Shows anti-patterns like missing sed -e flags, scripts not handling directory creation, and output format issues. Directly relevant to understanding what script complexity issues and doctor check refinements should avoid."
+          },
+          {
+            "file": "patterns.json (first entry with conventions)",
+            "relevance": 25,
+            "summary": "Captures project conventions (source_dir, test_pattern, import_style) and tooling (vitest, npm, commonjs). Provides context for how design approaches should align with existing Shipwright project structure."
+          },
+          {
+            "file": "patterns.json (second entry with project_type)",
+            "relevance": 15,
+            "summary": "Minimal entry noting nodejs project type. Minimal context value compared to other memory entries, but confirms basic project classification."
+          }
+        ]
+      },
+      "timestamp": 1773518920,
+      "ttl": 1800
+    },
+    "b3760e4195c4c652dcbabaef33e78cd1": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 21-5 occurrences of script failures with root causes and fixes (sw-cleanup.sh, sw-feedback-test.sh, sw-hello-test.sh, sw-code-review-test.sh). Critical for identifying complexity issues and refactoring targets in the codebase."
+          },
+          {
+            "file": "patterns.json (first entry with conventions)",
+            "relevance": 75,
+            "summary": "Provides project structure: Node.js, vitest, npm, CommonJS imports, src/ source dir. Understanding project conventions is essential context for refactoring suggestions."
+          },
+          {
+            "file": "patterns.json (second entry - bootstrap)",
+            "relevance": 50,
+            "summary": "Confirms project_type as nodejs detected at bootstrap. Provides baseline project context, less detailed than first patterns entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Contains empty baselines object. Minimal relevance; would be useful if populated with complexity metrics or performance baselines."
+          },
+          {
+            "file": "patterns.json (third entry - empty patterns)",
+            "relevance": 10,
+            "summary": "Empty patterns array with minimal metadata. No actionable insights for script complexity analysis or refactoring."
+          }
+        ]
+      },
+      "timestamp": 1773519144,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project configuration essential for build stage: test runner (vitest), package manager (npm), source directory (src/), and test patterns (*.test.js). Directly needed to execute builds and tests correctly."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Captured test failures from recent builds showing 20-21 occurrences. Includes root causes and fixes for sw-cleanup.sh, sw-feedback.sh, mktemp, and sed issues. Provides actionable patterns to prevent build failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object; no metrics data captured. Not applicable to current build context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 3,
+            "summary": "Empty decisions array; no architectural or build-related decisions recorded. Not applicable to current build context."
+          }
+        ]
+      },
+      "timestamp": 1773519154,
       "ttl": 1800
     }
   }
