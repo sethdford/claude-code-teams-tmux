@@ -196,8 +196,8 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1" _mtime
-    # Capture each attempt separately to avoid stdout leakage on failure
-    # (GNU stat -f outputs filesystem info to stdout before erroring on bad format)
+    # Try BSD stat first, then GNU stat. Capture separately because GNU stat -f
+    # outputs filesystem info to stdout even when it fails (exit 1).
     _mtime=$(stat -f %m "$file" 2>/dev/null) && { echo "$_mtime"; return; }
     _mtime=$(stat -c '%Y' "$file" 2>/dev/null) && { echo "$_mtime"; return; }
     echo "0"
