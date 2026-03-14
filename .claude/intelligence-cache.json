@@ -866,6 +866,85 @@
       },
       "timestamp": 1773490717,
       "ttl": 3600
+    },
+    "32e56d27b577f345d9a91e784c4d37ba": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured test failure patterns from Shipwright test suite (sw-cleanup.sh, sw-feedback-test.sh, sw-code-review-test.sh). Directly relevant to understanding validation failures that would block a Pipeline Debug Mode plan."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 55,
+            "summary": "Project metadata for Shipwright repo (Node/vitest/CommonJS conventions). Provides baseline codebase structure context useful for understanding how new instrumentation features should integrate."
+          },
+          {
+            "file": "patterns.json (nodejs detection)",
+            "relevance": 20,
+            "summary": "Generic Node.js project type detection with no specific patterns. Minimal relevance to pipeline debug mode validation."
+          }
+        ]
+      },
+      "timestamp": 1773492006,
+      "ttl": 1800
+    },
+    "68a27dbc9b59bf6e2e661f8e1d6e1ed4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 70,
+            "summary": "Defines project conventions (source_dir, test_pattern, import_style) and tech stack (Node.js, vitest, npm, commonjs). Directly informs where debug mode code should live and what instrumentation patterns are compatible with the project structure."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Contains recurring test/pipeline failure patterns (sw-cleanup, sw-feedback, sw-code-review). Identifies weak points in the pipeline that would benefit from better instrumentation and verbose debugging output."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 18,
+            "summary": "Confirms project type (Node.js) detected via bootstrap. Minimal detail; lower-confidence than the first patterns.json entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Could be used to establish performance/instrumentation metrics for debug mode, but no current data."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 3,
+            "summary": "Empty decisions array. Could record architectural choices for debug mode design, but currently unpopulated."
+          }
+        ]
+      },
+      "timestamp": 1773492076,
+      "ttl": 1800
+    },
+    "c3b546210e4172071b8a8c3eeee65276": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 78,
+            "summary": "Contains documented test failures and root causes from pipeline stages (sw-cleanup, sw-feedback, test harness issues). These specific failure patterns and root causes directly inform anti-patterns to avoid when implementing Pipeline Debug Mode instrumentation."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 22,
+            "summary": "Captures project conventions (test runner: vitest, import style: commonjs) useful for understanding codebase standards, but not specific to pipeline debug mode or rejected design approaches."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object provides no actionable data relevant to pipeline debug mode anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1773492087,
+      "ttl": 1800
     }
   }
 }
