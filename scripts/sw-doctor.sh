@@ -455,6 +455,43 @@ doctor_check_script_complexity() {
 
     local scripts_dir="${SCRIPT_DIR}/."
     report_top_scripts "$scripts_dir" 1000
+
+    # Enhanced analysis with anti-pattern detection (if library available)
+    if [[ -f "$SCRIPT_DIR/lib/complexity-analyzer.sh" ]]; then
+        # shellcheck source=lib/complexity-analyzer.sh
+        source "$SCRIPT_DIR/lib/complexity-analyzer.sh"
+
+        echo -e "${CYAN}${BOLD}  Anti-Pattern Analysis${RESET}"
+        echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+        echo ""
+
+        local total_violations=0
+        local scripts_with_violations=0
+
+        while IFS= read -r script; do
+            [[ -z "$script" ]] && continue
+            [[ "$script" == *"-test.sh" ]] && continue
+
+            local violations
+            violations=$(complexity_detect_anti_patterns "$script" 2>/dev/null) || continue
+            local v_count
+            v_count=$(echo "$violations" | jq 'length' 2>/dev/null) || continue
+            v_count="${v_count:-0}"
+
+            if [[ $v_count -gt 0 ]]; then
+                total_violations=$((total_violations + v_count))
+                scripts_with_violations=$((scripts_with_violations + 1))
+            fi
+        done < <(find "$scripts_dir" -maxdepth 1 -name "sw-*.sh" -type f 2>/dev/null | sort)
+
+        if [[ $total_violations -gt 0 ]]; then
+            check_warn "Anti-patterns: $total_violations violations across $scripts_with_violations scripts"
+            echo -e "  ${DIM}Run: shipwright complexity --all for details${RESET}"
+        else
+            check_pass "Anti-patterns: no violations found"
+        fi
+        echo ""
+    fi
 }
 
 doctor_auto_fix() {

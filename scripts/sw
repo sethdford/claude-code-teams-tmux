@@ -608,6 +608,9 @@ main() {
         hello)
             exec "$SCRIPT_DIR/sw-hello.sh" "$@"
             ;;
+        complexity)
+            exec "$SCRIPT_DIR/sw-complexity.sh" "$@"
+            ;;
         *)
             error "Unknown command: ${cmd}"
             echo ""
