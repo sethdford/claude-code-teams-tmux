@@ -153,6 +153,7 @@ Shipwright orchestrates autonomous Claude Code agent teams with delivery pipelin
 
 | Command                               | Purpose                                    |
 | ------------------------------------- | ------------------------------------------ |
+| `shipwright quickstart`               | One-command setup for any project type     |
 | `shipwright init`                     | One-command tmux setup                     |
 | `shipwright setup`                    | Guided setup — prerequisites, init, doctor |
 | `shipwright prep`                     | Analyze repo and generate .claude/ configs |
