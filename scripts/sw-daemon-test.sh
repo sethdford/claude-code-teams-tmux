@@ -1783,80 +1783,11 @@ test_retry_args_passed_to_spawn() {
 }
 
 test_failure_classification_wired() {
-    local daemon_src
+    local daemon_src failure_lib
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
-        { echo "classify_failure not called in daemon_on_failure"; return 1; }
-    grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing daemon.failure_classified event"; return 1; }
-}
-
-test_api_error_extended_backoff() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    # API error backoff uses base_secs=300 in per-class exponential backoff
-    grep -q 'base_secs=300' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing API error 300s backoff (base_secs=300)"; return 1; }
-}
-
-test_preflight_auth_check() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -q 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "daemon_preflight_auth_check function not found"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'gh auth status' || \
-        { echo "Missing gh auth check"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'claude.*--print' || \
-        { echo "Missing claude auth check"; return 1; }
-    grep -B 5 'daemon_poll_issues' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'daemon_preflight_auth_check' || \
-        { echo "Auth check not wired into poll loop"; return 1; }
-}
-
-test_process_group_spawn() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -B 5 'exec.*sw-pipeline.sh' "$daemon_src" $DAEMON_LIB_GLOB | grep -q "trap '' HUP" || \
-        { echo "Missing HUP trap in spawn subshell"; return 1; }
-}
-
-test_process_tree_kill() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 30 'cleanup_on_exit()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'pkill.*-P' || \
-        { echo "Missing pkill -P in cleanup_on_exit"; return 1; }
-}
-
-test_consecutive_failure_pause() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -q 'DAEMON_CONSECUTIVE_FAILURE_CLASS=' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing DAEMON_CONSECUTIVE_FAILURE_CLASS variable"; return 1; }
-    grep -q 'DAEMON_CONSECUTIVE_FAILURE_COUNT=' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing DAEMON_CONSECUTIVE_FAILURE_COUNT variable"; return 1; }
-    # Threshold check: uses local $consecutive var set from DAEMON_CONSECUTIVE_FAILURE_COUNT
-    grep -q 'consecutive.*-ge 3' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing consecutive failure threshold of 3"; return 1; }
-    grep -q 'daemon.auto_pause.*consecutive_failures' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing auto_pause event for consecutive failures"; return 1; }
-    grep -q 'reset_failure_tracking()' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing reset_failure_tracking function"; return 1; }
-}
-
-test_retry_args_passed_to_spawn() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -q 'extra_pipeline_args=.*"$@"' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "daemon_spawn_pipeline missing extra_pipeline_args parameter"; return 1; }
-    grep -q 'pipeline_args+=.*extra_pipeline_args' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "extra_pipeline_args not merged into pipeline_args"; return 1; }
-    grep -q 'all_extra_args' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Retry logic missing all_extra_args merge"; return 1; }
-}
-
-test_failure_classification_wired() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    failure_lib="${DAEMON_LIB_DIR}/daemon-failure.sh"
+    # daemon_on_failure lives in daemon-failure.sh — search it directly
+    grep -A 50 'daemon_on_failure()' "$failure_lib" | grep -q 'classify_failure' || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
