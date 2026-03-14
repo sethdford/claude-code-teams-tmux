@@ -1,119 +1,166 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Template Schema Validator for Pre-Execution Configuration Validation
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Now I have all the context I need. Let me produce the implementation plan.
 
 ---
 
-## Summary
+## Implementation Plan: Template Schema Validator
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+### Socratic Design Analysis
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+**Minimum viable change:** A single bash script (`sw-template-validate.sh`) that validates pipeline template JSON against known constraints, plus integration into `load_pipeline_config()` for fail-fast, plus a test suite.
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Implicit requirements:** The validator must handle all 9 existing templates without false positives. It must work with composed pipelines too (the intelligence layer output). It must not break when users add custom config fields (forward-compatible).
+
+**Acceptance criteria (from issue + inferred):**
+1. `shipwright template validate <file>` exits 0 for valid, 1 for invalid with clear error messages
+2. Validates stage names against known set, gate values, timeout positivity, required fields
+3. Pipeline startup calls validator before execution (fail-fast in `load_pipeline_config`)
+4. All 9 built-in templates pass validation
+5. Test suite covers valid templates, missing fields, bad types, unknown stages, bad gates, bad ordering
+
+### Alternatives Considered
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Template Schema Validator for Pre-Execution Configuration Validation
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Architecture
+### Validation Rules
+### Valid Stage IDs
+### Valid Gate Values
+### Error Accumulation Pattern
+### Fail-Fast Integration
+### CLI Interface
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
+      "file": "patterns.json",
       "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "summary": "Project structure and conventions directly needed for build: test_runner=vitest, source_dir=src/, test_pattern=*.test.js, import_style=commonjs. Critical for writing and organizing the template schema validator."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "failures.json",
+      "relevance": 68,
+      "summary": "Recent test failures show mktemp /tmp/claude directory issues (seen 8 times in last 24h). Relevant to understand test setup constraints and potential filesystem issues during validator testing."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json",
+      "relevance": 22,
+      "summary": "Confirms Node.js project type detected on 2026-02-21. Low specificity compared to detailed patterns entry; redundant with first patterns.json which provides fuller configuration."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 8,
+      "summary": "Empty baselines object. Not relevant to current build task; no performance baselines are recorded."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 5,
+      "summary": "Empty decisions array. No architectural or implementation decisions recorded from previous work that would inform validator design."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Template Schema Validator for Pre-Execution Configuration Validation — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Template Schema Validator for Pre-Execution Configuration Validation
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/pipeline-validation.sh` with core validation logic
+- [ ] Task 2: Create `scripts/sw-template-validate.sh` CLI entry point
+- [ ] Task 3: Add `template` command routing to `scripts/sw`
+- [ ] Task 4: Integrate validator into `load_pipeline_config()` in `scripts/lib/pipeline-cli.sh`
+- [ ] Task 5: Create `scripts/sw-template-validate-test.sh` test suite
+- [ ] Task 6: Register test suite in `package.json`
+- [ ] Task 7: Run all 9 built-in templates through validator to confirm no false positives
+- [ ] Task 8: Run test suite and verify all tests pass
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
-max_iterations: 20
-status: error
+## Context
+- Pipeline: standard
+- Branch: feat/template-schema-validator-for-pre-execut-259
+- Issue: #259
+- Generated: 2026-03-14T20:36:44Z
+
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **testing-strategy**: Design comprehensive test matrix covering: valid templates (by complexity), all validation failure modes (undefined stages, invalid gates, non-positive timeouts, missing required fields), boundary conditions, unicode/special chars.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
+max_iterations: 10
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-14T20:41:37Z
+last_iteration_at: 2026-03-14T20:41:37Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
