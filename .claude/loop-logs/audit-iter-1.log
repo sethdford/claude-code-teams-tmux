@@ -1,1 +1,48 @@
-Invalid API key · Fix external API key
+## Summary
+
+Based on my audit of the cumulative work from this iteration, I've found the following:
+
+### ISSUES FOUND:
+
+**1. Doctor.sh function has a grep -c bug (lines 285)**
+
+The `analyze_script_complexity()` function in `sw-doctor.sh:285` uses:
+```bash
+func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || echo "0")
+```
+
+This is problematic because `grep -c` returns exit code 1 when no matches are found (even though it outputs "0"), causing the subshell to capture output from both `grep` AND the fallback `echo`, resulting in `0\n0` instead of just `0`.
+
+The correct pattern (used correctly in `complexity-analyzer.sh`) is:
+```bash
+func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || true)
+func_count="${func_count:-0}"
+```
+
+This causes the doctor tests to fail:
+- `analyze_script_complexity: 1000-line script` ✗
+- `analyze_script_complexity: 1800-line script` ✗  
+- `analyze_script_complexity: 2500-line script` ✗
+
+**2. Pre-existing cleanup test failures (unrelated to complexity code)**
+
+The cleanup-test.sh has 3 pre-existing failures unrelated to the complexity implementation:
+- `dry-run detects stale heartbeat` ✗
+- `summary shows found count` ✗
+- `summary shows --force hint` ✗
+
+### POSITIVE FINDINGS:
+
+✅ `sw-complexity.sh` - 386 lines, well-structured CLI with proper help text
+✅ `complexity-analyzer.sh` - 404 lines, comprehensive library with correct patterns
+✅ `sw-complexity-test.sh` - 640 lines, 55/55 tests passing
+✅ Integration with doctor.sh works (shows complexity checks in output)
+✅ Code follows project conventions (set -euo pipefail, VERSION variable, proper error handling)
+✅ Anti-pattern detection logic implemented (8 patterns detected)
+✅ Complexity metrics calculated (LOC, cyclomatic complexity, nesting depth, function count)
+
+### VERDICT:
+
+The agent made meaningful progress on the Script Complexity feature, but left a critical bug in the doctor.sh integration that prevents 3 doctor tests from passing. The fix is simple (one-line change to use the correct grep pattern).
+
+AUDIT_FAIL: Doctor test failures due to grep -c bug in sw-doctor.sh:285. The function should use `|| true` and `${var:-0}` pattern instead of `|| echo "0"`.
