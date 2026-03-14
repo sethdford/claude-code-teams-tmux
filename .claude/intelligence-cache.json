@@ -651,30 +651,29 @@
     "48e10d07029378f797b65b9de13dfc1b": {
       "result": {
         "complexity": 5,
-        "risk_level": "medium",
-        "success_probability": 82,
-        "recommended_template": "standard",
+        "risk_level": "low",
+        "success_probability": 88,
+        "recommended_template": "fast",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Performance overhead from extensive logging and frequent disk I/O operations",
-          "Incomplete instrumentation at critical decision points causing gaps in trace coverage",
-          "Debug artifacts accumulating unbounded, consuming disk space over time",
-          "Timestamp synchronization issues across subprocess boundaries and tool invocations",
-          "File system permission failures when creating or writing to debug directories",
-          "Overwhelming verbosity making debug logs harder to parse and analyze"
+          "Unbounded disk space growth from preserving full outputs",
+          "Performance impact when debug mode enabled with large artifacts",
+          "Sensitive information exposure in preserved debug output",
+          "Maintaining consistency of debug instrumentation as pipeline evolves",
+          "Complexity of tracing distributed/parallel stage execution"
         ],
         "implementation_hints": [
-          "Create centralized debug_log() function emitting structured JSON with microsecond timestamps",
-          "Use atomic writes (temp file + mv) consistent with existing artifact-save patterns",
-          "Implement retention policy or cleanup mechanism for old debug artifacts",
-          "Support environment variable override: SW_DEBUG=1 in addition to --debug flag",
-          "Consider multiple verbosity levels (--debug=minimal|standard|verbose) for scalability",
-          "Reference error-log.jsonl format and progress.md state snapshot patterns",
-          "Instrument all key decision points: template selection, model routing, retry logic, timeouts",
-          "Integrate with intelligence cache to preserve decision reasoning alongside execution trace"
+          "Add early conditional guard to skip debug code when --debug not set",
+          "Implement debug artifact rotation/compression to manage disk usage",
+          "Use structured JSON for debug-trace.log to enable post-processing",
+          "Create debug_log() and debug_snapshot() helper functions",
+          "Snapshot pipeline-state.md at each stage with ISO 8601 timestamps",
+          "Store configuration decisions (template, timeouts, model routing) in debug artifacts",
+          "Add --debug flag validation in flag parsing section of sw-pipeline.sh",
+          "Test with realistic multi-stage pipeline to validate trace accuracy"
         ]
       },
-      "timestamp": 1773476145,
+      "timestamp": 1773490691,
       "ttl": 3600
     },
     "8cfbb6c378a1a3f1219c8aac6e776ca4": {
@@ -732,87 +731,89 @@
     "f7836f98dc46b327b3c73e3d2dc3fb63": {
       "result": {
         "issue_type": "infrastructure",
-        "confidence": 0.95,
+        "confidence": 0.88,
         "secondary_domains": [
           "observability",
-          "debugging",
-          "developer-experience"
+          "documentation",
+          "testing"
         ],
         "complexity_assessment": {
           "score": 5,
-          "reasoning": "Moderate complexity - adds instrumentation to pipeline core with multiple touch points (flag handling, timestamp capture, artifact management, documentation), but mitigated by clear requirements and feature-flag isolation. Primary risk is incomplete artifact capture missing key decision points."
+          "reasoning": "Feature is primarily additive (new logging/instrumentation) rather than refactoring. Acceptance criteria are clear and straightforward. Marked as 'fast' complexity by strategic agent. Main work is integrating instrumentation across multiple pipeline stages."
         },
         "skill_plan": {
           "plan": [
             "architecture-design",
-            "brainstorming",
-            "observability"
+            "brainstorming"
           ],
           "design": [
+            "api-design",
             "architecture-design",
             "observability"
           ],
           "build": [
+            "observability",
             "performance"
           ],
           "review": [
-            "pr-quality",
-            "systematic-debugging"
+            "two-stage-review",
+            "adversarial-quality",
+            "pr-quality"
           ],
           "compound_quality": [
             "validation-thoroughness",
             "testing-strategy",
-            "adversarial-quality"
+            "security-audit"
           ],
           "pr": [
-            "pr-quality",
-            "documentation"
+            "documentation",
+            "pr-quality"
           ],
           "deploy": [
             "deploy-safety"
           ],
           "validate": [
-            "validation-thoroughness"
+            "observability"
           ],
           "monitor": [
             "observability"
           ]
         },
         "skill_rationale": {
-          "architecture-design": "Debug mode requires architectural decisions about artifact structure, log serialization format, integration with existing state management, directory hierarchy, and forward compatibility.",
-          "brainstorming": "Challenge what 'verbose instrumentation' means in practice - which decision points matter most for diagnosis, what timing granularity is useful, which intermediate states are worth preserving.",
-          "observability": "Debug mode is observability infrastructure at the pipeline level; define what signals reveal behavior, how to structure logs for queryability, and what dashboards might consume this data.",
-          "performance": "Debug logging must not create unacceptable execution overhead in normal mode; establish baseline and validate instrumentation cost stays under acceptable threshold.",
-          "pr-quality": "Debug feature is useless if developers can't understand how to use it; reviewers must verify documentation clarity, example completeness, and artifact location discoverability.",
-          "systematic-debugging": "Review should validate this implementation won't repeat root causes from any prior failed attempts; systematic validation of the solution approach.",
-          "validation-thoroughness": "Debug output must actually help diagnose real pipeline failures, not just theoretical ones; validate against actual failure scenarios where output is needed.",
-          "testing-strategy": "Comprehensive test coverage for debug flag presence/absence behavior, artifact generation, log format validation, timestamp accuracy, and content completeness across all pipeline stages.",
-          "adversarial-quality": "Test edge cases: debug mode under resource constraints, concurrent pipelines writing debug artifacts, recovery after stage failure, missing intermediate state due to early exit.",
-          "deploy-safety": "Debug mode is feature-gated but touches pipeline execution path; verify zero regression in pipeline timing and behavior when flag is absent.",
-          "documentation": "Provide clear usage examples, explain what each debug artifact contains, document artifact location and naming scheme, show how to use debug-trace.log for diagnosis."
+          "architecture-design": "Must understand current pipeline architecture (sw-pipeline.sh structure, artifact handling, stage flow) before identifying all instrumentation integration points.",
+          "brainstorming": "Challenge what 'complete instrumentation' means: Which decision points truly matter for debugging? What's the minimal viable debug log that's still actionable? How to avoid log bloat?",
+          "api-design": "Design the `--debug` flag interface: CLI signature, interaction with other flags (--effort, --template), default behavior, environment variable override (SHIPWRIGHT_DEBUG).",
+          "observability": "Design and implement logging strategy: timestamp precision (microsecond), structured log format, what to capture at decision points (template selection reasoning, timeout calculations, retry logic, model routing), how to preserve Claude output without bloating artifacts.",
+          "performance": "Ensure debug instrumentation doesn't materially slow pipeline execution—verify timestamp collection, I/O for intermediate artifacts, and structured logging don't create bottlenecks.",
+          "two-stage-review": "Pass 1: verify implementation completeness (all decision points instrumented, correct file paths, flag plumbing). Pass 2: validate debug output is genuinely useful for diagnosing real pipeline failures.",
+          "adversarial-quality": "Find edge cases that could break debug mode: debug enabled on a failing stage, debug enabled mid-pipeline retry, debug with maximum verbosity on a long-running build loop, concurrent pipelines writing to the same debug directory.",
+          "pr-quality": "PR must be immediately reviewable: clear commit message, examples of debug output, before/after comparison of what debugging looks like with/without flag.",
+          "validation-thoroughness": "Smoke tests insufficient—actually run a pipeline with `--debug`, trigger a stage failure, verify the debug artifacts make the failure clear. Repeat with a retry scenario.",
+          "testing-strategy": "Test suite must cover: flag parsing, artifact directory creation, timestamp logging on stage boundaries, decision point capture (template selection, timeout calculation, retry decision, model routing), full Claude output preservation, debug mode + failure scenarios.",
+          "security-audit": "Debug output must never leak secrets: scan captured Claude output for API keys, GitHub tokens, Anthropic API keys. Sanitize or redact sensitive data in debug logs. Verify debug artifacts respect repo permission boundaries.",
+          "deploy-safety": "Verify debug mode is safe to enable in production daemon/fleet mode without causing pipeline failures, excessive logging, or resource exhaustion. Test with auto-scaling and resource-constrained environments.",
+          "documentation": "Update CLAUDE.md with debug mode usage: when to enable, how to read debug output, where artifacts are saved, troubleshooting guide for common debug scenarios (slow stage, failed retry, model routing decision)."
         },
         "generated_skills": [],
         "review_focus": [
-          "Artifact completeness - does debug output capture all decision points (template selection, timeout calculation, retry decisions, model routing) needed for effective diagnosis?",
-          "Performance validation - quantify debug logging overhead and confirm it stays under 5% pipeline execution time increase.",
-          "Timestamp accuracy - microsecond precision is specified; verify implementation and validate usefulness vs. overhead trade-off.",
-          "Sensitive data handling - are credentials, API tokens, model scores, or other sensitive values properly redacted in debug output?",
-          "Documentation usability - are examples realistic, showing actual failure diagnosis workflow and pointing to actionable next steps?",
-          "Test coverage - does test suite validate debug mode across success and failure scenarios, verify artifact presence/content, and check flag behavior with other options?",
-          "Concurrent safety - how does debug mode behave with parallel pipelines or multiple worktrees; do artifacts collide or interfere?",
-          "Directory structure - is .claude/pipeline-artifacts/debug/ scalable and maintainable for long-running daemons accumulating many runs?"
+          "Instrumentation completeness: All decision points (template selection, timeout calculations, retry decisions, model routing) actually logged with context",
+          "Debug artifact organization: Clear, navigable structure in .claude/pipeline-artifacts/debug/ that's easy to traverse",
+          "Timestamp precision and utility: Microsecond timestamps serve actual debugging purpose (identifying bottlenecks), not just noise",
+          "Claude output preservation: Full output is captured without breaking pipeline state or creating artifacts larger than memory",
+          "Secret leakage prevention: Debug artifacts don't expose API keys, tokens, or other sensitive data",
+          "Performance impact: Debug mode adds <5% overhead to pipeline execution time",
+          "Backward compatibility: Non-debug pipelines unaffected; feature is fully opt-in"
         ],
         "risk_areas": [
-          "Debug logging performance overhead exceeding tolerance, making diagnosed pipelines significantly slower.",
-          "Incomplete artifact capture failing to include critical decision points needed for actual diagnosis.",
-          "Sensitive information (credentials, API keys, model routing decisions) leaking into debug output.",
-          "Debug documentation so unclear that developers can't effectively use the feature for troubleshooting.",
-          "Concurrent pipeline collisions or artifact corruption when multiple pipelines write debug artifacts simultaneously.",
-          "Disk space exhaustion on long-running daemons from accumulating debug artifacts without cleanup policy.",
-          "Test suite gaps leaving debug mode untested in critical failure scenarios where it's most needed."
+          "Secret exposure in debug logs: captured Claude output or decision logs could contain API keys or authentication tokens if not properly sanitized",
+          "Artifact storage explosion: verbose logging on long-running build loops could create hundreds of MB of debug files",
+          "Performance regression: microsecond timestamp collection and frequent artifact I/O could become a bottleneck",
+          "Log interpretation difficulty: too much instrumentation could make debug output overwhelming rather than actionable",
+          "Concurrent pipeline interference: two pipelines running simultaneously with --debug could have colliding artifact writes or interleaved log entries",
+          "Incomplete coverage of edge cases: debug mode untested on failing stages, retries, daemon mode, worktree isolation scenarios"
         ]
       },
-      "timestamp": 1773476269,
+      "timestamp": 1773490803,
       "ttl": 3600
     },
     "c0f00b8e31f8a3c47d64405c8f254a99": {
@@ -820,33 +821,51 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 72,
-            "summary": "Contains 5 captured failure patterns from recent pipeline runs (sw-cleanup.sh dry-run output, sw-feedback-test.sh regression detection, mktemp directory creation, sed invocation). Understanding these failure modes informs how to design verbose instrumentation to catch and display these issues more clearly in debug mode."
+            "relevance": 95,
+            "summary": "Contains 5 recorded failure patterns with root causes and fixes. Critical for planning debug instrumentation—shows what debugging information would have caught each failure (missing output, invalid JSON, mktemp failures, sed expression errors)"
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 58,
-            "summary": "Captures project conventions: source_dir='src/', test_pattern='*.test.js', import_style='commonjs', test_runner='vitest'. Relevant for planning where debug instrumentation code should live and how it should integrate with the existing test harness."
-          },
-          {
-            "file": "patterns.json (second entry)",
-            "relevance": 22,
-            "summary": "Identifies project as Node.js/JavaScript. Minimally relevant—confirms language/runtime context but provides no actionable detail for planning debug mode features."
+            "file": "patterns.json (first)",
+            "relevance": 75,
+            "summary": "Describes codebase structure (src/, *.test.js, vitest, commonjs). Relevant for understanding where/how to instrument code and how debug output should integrate with existing test patterns"
           },
           {
             "file": "metrics.json",
-            "relevance": 8,
-            "summary": "Contains only empty baselines object. Not relevant to planning debug instrumentation features."
+            "relevance": 30,
+            "summary": "Empty baselines object; represents where debug mode metrics could be captured and stored for analysis"
           },
           {
-            "file": "global.json",
-            "relevance": 5,
-            "summary": "Empty cross-repo learnings and common patterns. Not relevant to this feature planning task."
+            "file": "patterns.json (second, nodejs detection)",
+            "relevance": 20,
+            "summary": "Generic Node.js project type detection metadata; minimally relevant as it confirms project type already known from context"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array; would capture debug mode design decisions once plan is approved, but provides no current context"
           }
         ]
       },
-      "timestamp": 1773476283,
+      "timestamp": 1773490818,
       "ttl": 1800
+    },
+    "abc79e1a5e5ed791f5acedb660c05b05": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1773490707,
+      "ttl": 1800
+    },
+    "e57550bd532b8303efc3b44d7b406bd2": {
+      "result": {
+        "estimated_cost_usd": 0.15,
+        "estimated_iterations": 2,
+        "estimated_tokens": 75000,
+        "likely_failure_stage": "none",
+        "confidence": 82
+      },
+      "timestamp": 1773490717,
+      "ttl": 3600
     }
   }
 }
