@@ -4,7 +4,7 @@
 # ║                                                                          ║
 # ║  Checks prerequisites, installed files, PATH, and common issues.        ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-VERSION="3.2.4"
+VERSION="3.2.5"
 set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
@@ -263,6 +263,198 @@ doctor_fix_hooks() {
     fi
 
     echo "$result"
+}
+
+# ─── Script Complexity Analysis (Platform Self-Improvement) ────────────────
+analyze_script_complexity() {
+    local script_path="$1"
+
+    # Measure lines
+    if [[ ! -f "$script_path" ]]; then
+        echo ""
+        return 1
+    fi
+
+    local line_count
+    line_count=$(wc -l < "$script_path" 2>/dev/null || echo "0")
+    line_count="${line_count# }"  # Trim leading space
+    line_count="${line_count%% *}" # Extract just number
+
+    # Count functions: match "name() {" at start of line
+    local func_count
+    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || echo "0")
+    func_count="${func_count# }"   # Trim leading space
+    func_count="${func_count%% *}" # Extract just number
+
+    # Determine severity
+    local severity="info"
+    if [[ $line_count -gt 2000 ]]; then
+        severity="error"
+    elif [[ $line_count -gt 1500 ]]; then
+        severity="warn"
+    elif [[ $line_count -ge 1000 ]]; then
+        severity="info"
+    else
+        return 1  # Below threshold, skip
+    fi
+
+    echo "$line_count|$func_count|$severity"
+}
+
+get_severity_level() {
+    local line_count="$1"
+
+    if [[ $line_count -gt 2000 ]]; then
+        echo "error"
+    elif [[ $line_count -gt 1500 ]]; then
+        echo "warn"
+    elif [[ $line_count -ge 1000 ]]; then
+        echo "info"
+    else
+        echo "info"
+    fi
+}
+
+report_top_scripts() {
+    local scripts_dir="$1"
+    local threshold="${2:-1000}"
+
+    if [[ ! -d "$scripts_dir" ]]; then
+        check_warn "scripts directory not found: $scripts_dir"
+        return
+    fi
+
+    # Scan and analyze all scripts
+    local -a script_data
+    local script_count=0
+    local warned=0
+
+    while IFS= read -r script; do
+        [[ -z "$script" ]] && continue
+
+        # Skip test files from this count
+        [[ "$script" == *"-test.sh" ]] && continue
+
+        local analysis
+        analysis=$(analyze_script_complexity "$script" 2>/dev/null) || continue
+
+        if [[ -z "$analysis" ]]; then
+            continue
+        fi
+
+        IFS="|" read -r lines funcs severity <<< "$analysis"
+        script_data+=("$lines|$funcs|$severity|$script")
+        script_count=$((script_count + 1))
+    done < <(find "$scripts_dir" -maxdepth 1 -name "sw-*.sh" -type f 2>/dev/null | sort)
+
+    if [[ $script_count -eq 0 ]]; then
+        check_warn "No scripts found in $scripts_dir"
+        return
+    fi
+
+    # Sort by line count descending (using awk for bash 3.2 compatibility)
+    local sorted_data
+    sorted_data=$(printf '%s\n' "${script_data[@]}" | sort -rn -t'|' -k1 2>/dev/null || printf '%s\n' "${script_data[@]}")
+
+    # Display top 5
+    local top_5=0
+    local warn_count=0
+    local error_count=0
+
+    echo -e "${CYAN}${BOLD}  Top 5 Largest Scripts${RESET}"
+    echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+    echo ""
+
+    while IFS="|" read -r lines funcs severity script; do
+        [[ -z "$script" ]] && continue
+        [[ $top_5 -ge 5 ]] && break
+
+        local script_name
+        script_name=$(basename "$script")
+        local color
+        local icon
+
+        case "$severity" in
+            error)
+                color="${RED}${BOLD}"
+                icon="✗"
+                error_count=$((error_count + 1))
+                ;;
+            warn)
+                color="${YELLOW}${BOLD}"
+                icon="⚠"
+                warn_count=$((warn_count + 1))
+                ;;
+            *)
+                color="${DIM}"
+                icon="▸"
+                ;;
+        esac
+
+        printf "  ${color}%s${RESET}  %-30s  %4d lines  %2d functions\n" "$icon" "$script_name" "$lines" "$funcs"
+        top_5=$((top_5 + 1))
+    done <<< "$sorted_data"
+
+    echo ""
+    echo -e "  ${DIM}┄ Scripts between 1000-1500 lines: info (consider refactoring)${RESET}"
+    echo -e "  ${DIM}┄ Scripts between 1500-2000 lines: warn (decomposition recommended)${RESET}"
+    echo -e "  ${DIM}┄ Scripts over 2000 lines: error (high refactoring priority)${RESET}"
+    echo ""
+    echo -e "  ${DIM}Suggestion: Consider splitting large scripts into modular libraries.${RESET}"
+    echo ""
+
+    # Count all scripts by severity
+    local info_count=0
+    while IFS="|" read -r lines funcs severity script; do
+        [[ -z "$script" ]] && continue
+        case "$severity" in
+            error) error_count=$((error_count + 1)) ;;
+            warn) warn_count=$((warn_count + 1)) ;;
+            info) info_count=$((info_count + 1)) ;;
+        esac
+    done <<< "$sorted_data"
+
+    # Reset counters and report properly
+    # Count scripts at each level
+    local final_info=0
+    local final_warn=0
+    local final_error=0
+
+    while IFS="|" read -r lines funcs severity script; do
+        [[ -z "$script" ]] && continue
+        [[ $lines -lt 1000 ]] && continue
+
+        case "$severity" in
+            error) final_error=$((final_error + 1)) ;;
+            warn) final_warn=$((final_warn + 1)) ;;
+            info) final_info=$((final_info + 1)) ;;
+        esac
+    done <<< "$sorted_data"
+
+    # Report via existing helpers
+    if [[ $final_error -gt 0 ]]; then
+        check_fail "Script complexity: $final_error scripts >2000 lines (error)"
+    fi
+
+    if [[ $final_warn -gt 0 ]]; then
+        check_warn "Script complexity: $final_warn scripts 1500-2000 lines"
+    fi
+
+    if [[ $final_info -gt 0 ]]; then
+        check_pass "Script complexity: $final_info scripts 1000-1500 lines (monitor)"
+    fi
+
+    if [[ $final_error -eq 0 && $final_warn -eq 0 && $final_info -eq 0 ]]; then
+        check_pass "Script complexity: all scripts <1000 lines"
+    fi
+}
+
+doctor_check_script_complexity() {
+    echo -e "${PURPLE}${BOLD}  SCRIPT COMPLEXITY${RESET}"
+    echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+    local scripts_dir="${SCRIPT_DIR}/."
+    report_top_scripts "$scripts_dir" 1000
 }
 
 doctor_auto_fix() {
@@ -1563,6 +1755,12 @@ fi
 # ═════════════════════════════════════════════════════════════════════════════
 echo ""
 doctor_check_intelligence
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 13b. Script Complexity (Platform Self-Improvement)
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+doctor_check_script_complexity
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 14. Platform health (AGI-level self-improvement)

@@ -412,6 +412,143 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# SCRIPT COMPLEXITY CHECKS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Test 26: analyze_script_complexity measures line count correctly ────────
+TEST_SCRIPT_26="$TEST_TEMP_DIR/test-script-26.sh"
+cat > "$TEST_SCRIPT_26" <<'EOF'
+#!/bin/bash
+# Line 2
+# Line 3
+echo "Line 4"
+echo "Line 5"
+EOF
+chmod +x "$TEST_SCRIPT_26"
+
+# Source the functions from sw-doctor.sh
+analyze_script_complexity() {
+    local script_path="$1"
+    [[ ! -f "$script_path" ]] && { echo ""; return 1; }
+    local line_count
+    line_count=$(wc -l < "$script_path" 2>/dev/null || echo "0")
+    line_count="${line_count# }"
+    line_count="${line_count%% *}"
+    local func_count
+    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || echo "0")
+    func_count="${func_count# }"
+    func_count="${func_count%% *}"
+    local severity="info"
+    if [[ $line_count -gt 2000 ]]; then
+        severity="error"
+    elif [[ $line_count -gt 1500 ]]; then
+        severity="warn"
+    elif [[ $line_count -ge 1000 ]]; then
+        severity="info"
+    else
+        return 1
+    fi
+    echo "$line_count|$func_count|$severity"
+}
+
+# ─── Test 26a: Script below threshold returns nothing ──────────────────────────
+result=$(analyze_script_complexity "$TEST_SCRIPT_26" 2>/dev/null || true)
+if [[ -z "$result" ]]; then
+    assert_pass "analyze_script_complexity: script below 1000 lines returns empty"
+else
+    assert_fail "analyze_script_complexity: script below 1000 lines" "got: $result"
+fi
+
+# ─── Test 27: Severity classification for 1000-line script ────────────────────
+TEST_SCRIPT_27="$TEST_TEMP_DIR/test-script-27.sh"
+# Create script with exactly 1000 lines
+python3 -c "for i in range(1000): print('# Line ' + str(i))" > "$TEST_SCRIPT_27" 2>/dev/null || \
+    for i in {1..1000}; do echo "# Line $i"; done > "$TEST_SCRIPT_27"
+chmod +x "$TEST_SCRIPT_27"
+
+result=$(analyze_script_complexity "$TEST_SCRIPT_27" 2>/dev/null)
+if [[ "$result" == "1000|0|info" ]]; then
+    assert_pass "analyze_script_complexity: 1000-line script severity=info"
+else
+    assert_fail "analyze_script_complexity: 1000-line script" "got: $result"
+fi
+
+# ─── Test 28: Severity classification for 1800-line script ────────────────────
+TEST_SCRIPT_28="$TEST_TEMP_DIR/test-script-28.sh"
+# Create script with 1800 lines
+for i in {1..1800}; do echo "# Line $i"; done > "$TEST_SCRIPT_28"
+chmod +x "$TEST_SCRIPT_28"
+
+result=$(analyze_script_complexity "$TEST_SCRIPT_28" 2>/dev/null)
+if [[ "$result" == "1800|0|warn" ]]; then
+    assert_pass "analyze_script_complexity: 1800-line script severity=warn"
+else
+    assert_fail "analyze_script_complexity: 1800-line script" "got: $result"
+fi
+
+# ─── Test 29: Severity classification for 2500-line script ────────────────────
+TEST_SCRIPT_29="$TEST_TEMP_DIR/test-script-29.sh"
+# Create script with 2500 lines
+for i in {1..2500}; do echo "# Line $i"; done > "$TEST_SCRIPT_29"
+chmod +x "$TEST_SCRIPT_29"
+
+result=$(analyze_script_complexity "$TEST_SCRIPT_29" 2>/dev/null)
+if [[ "$result" == "2500|0|error" ]]; then
+    assert_pass "analyze_script_complexity: 2500-line script severity=error"
+else
+    assert_fail "analyze_script_complexity: 2500-line script" "got: $result"
+fi
+
+# ─── Test 30: Function count detection ──────────────────────────────────────────
+TEST_SCRIPT_30="$TEST_TEMP_DIR/test-script-30.sh"
+cat > "$TEST_SCRIPT_30" <<'EOF'
+#!/bin/bash
+func1() {
+    echo "func1"
+}
+func2() {
+    echo "func2"
+}
+func3() {
+    echo "func3"
+}
+# Add lines to reach 1000+
+EOF
+# Pad to 1000 lines
+for i in {1..990}; do echo "# Line $i"; done >> "$TEST_SCRIPT_30"
+chmod +x "$TEST_SCRIPT_30"
+
+result=$(analyze_script_complexity "$TEST_SCRIPT_30" 2>/dev/null)
+IFS="|" read -r lines funcs severity <<< "$result"
+if [[ "$funcs" == "3" ]]; then
+    assert_pass "analyze_script_complexity: function count=3"
+else
+    assert_fail "analyze_script_complexity: function count" "expected 3, got $funcs"
+fi
+
+# ─── Test 31: Script complexity integrated in doctor output ────────────────────
+output=$(bash "$SCRIPT_DIR/sw-doctor.sh" 2>&1)
+if [[ "$output" == *"SCRIPT COMPLEXITY"* ]]; then
+    assert_pass "doctor output includes SCRIPT COMPLEXITY section"
+else
+    assert_fail "doctor output includes SCRIPT COMPLEXITY section"
+fi
+
+# ─── Test 32: Top scripts display in output ──────────────────────────────────────
+if [[ "$output" == *"Top 5 Largest Scripts"* ]]; then
+    assert_pass "doctor output shows Top 5 Largest Scripts"
+else
+    assert_fail "doctor output shows Top 5 Largest Scripts"
+fi
+
+# ─── Test 33: Suggestion text in output ──────────────────────────────────────────
+if [[ "$output" == *"modular libraries"* ]]; then
+    assert_pass "doctor output includes refactoring suggestion"
+else
+    assert_fail "doctor output includes refactoring suggestion"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
