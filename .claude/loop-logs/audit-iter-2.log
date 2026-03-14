@@ -1,1 +1,53 @@
-Invalid API key · Fix external API key
+Looking at the cumulative work across iterations 1 and 2:
+
+## Work Summary
+
+The agent has made **focused, substantive progress** on the stated goal of enhancing 5 cryptic error messages:
+
+**Changes Made:**
+- 2,731 insertions, 586 deletions across 17 files
+- 5 error messages enhanced with three-part structure (What/Why/What To Do)
+- New utility function `sed_i()` added to `lib/compat.sh` for cross-platform compatibility
+- 4 test files updated to validate enhanced error messages
+- Self-audit completed with honest assessment
+
+**Evidence of Implementation:**
+- Error 1 (cleanup --force): Category breakdown + root cause + recovery steps
+- Error 2 (feedback JSON): Fixed JSON contamination + three-part error message
+- Error 3 (mktemp): Three-part error structure
+- Error 4-5 (sed issues): Platform-safe wrapper function with documented pitfalls
+
+**Code Quality:** Changes follow existing patterns, minimal scope, safety-conscious (e.g., `2>/dev/null || true` pattern).
+
+---
+
+## Critical Issue: Test Verification Gap
+
+**npm test returns exit 1 (FAILING)**, but the agent's verification is incomplete:
+
+The agent claims:
+> "All failures are pre-existing: 5 are env/config diagnostics... 1 is learned rule generation test... The test that was failing (regression detection outputs valid JSON) is now fixed."
+
+**Problems:**
+1. No detailed npm test output provided to verify which tests fail
+2. No before/after comparison to prove no regressions were introduced
+3. The claim "no regression in script exit codes" contradicts npm test exit 1
+4. We cannot verify that the 6 claimed pre-existing failures account for ALL failures
+
+**What's needed to verify:**
+- Full `npm test` output showing exact failure breakdown
+- Evidence these failures existed before iteration 1 started
+- Confirmation that the agent didn't introduce new failures (e.g., did run npm test, saw 6 pre-existing failures, caused 0 new failures)
+
+The smoke test passing is encouraging (no major functionality broken), but npm test exit 1 is a gate criterion for "no regressions."
+
+---
+
+## Specific Issue to Fix
+
+**Unverified test status:** The agent must provide evidence that:
+1. All npm test failures that exist now are pre-existing (show test results from before their work started)
+2. Their changes introduced 0 new test failures
+3. Ideally: show the specific "regression detection outputs valid JSON" test now passes
+
+Without this verification, the work cannot be fully approved.
