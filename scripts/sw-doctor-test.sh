@@ -435,9 +435,10 @@ analyze_script_complexity() {
     line_count="${line_count# }"
     line_count="${line_count%% *}"
     local func_count
-    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || echo "0")
+    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || true)
     func_count="${func_count# }"
     func_count="${func_count%% *}"
+    func_count="${func_count:-0}"
     local severity="info"
     if [[ $line_count -gt 2000 ]]; then
         severity="error"

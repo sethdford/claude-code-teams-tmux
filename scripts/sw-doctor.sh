@@ -282,9 +282,10 @@ analyze_script_complexity() {
 
     # Count functions: match "name() {" at start of line
     local func_count
-    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || echo "0")
+    func_count=$(grep -c "^[a-zA-Z_][a-zA-Z0-9_]*() {" "$script_path" 2>/dev/null || true)
     func_count="${func_count# }"   # Trim leading space
     func_count="${func_count%% *}" # Extract just number
+    func_count="${func_count:-0}"
 
     # Determine severity
     local severity="info"
