@@ -295,7 +295,7 @@ feedback_detect_regression() {
         }')
 
     echo "$regression_result"
-    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity"
+    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity" 2>/dev/null || true
 }
 
 # ─── Correlate regressions with changed files ───────────────────────────────────
