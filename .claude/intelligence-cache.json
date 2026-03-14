@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "docs-writer",
+        "secondary_roles": [
+          "builder",
+          "reviewer"
+        ],
+        "confidence": 0.72,
+        "reasoning": "Error message clarity is fundamentally a communication/UX writing task; docs-writer specializes in clarity and user-facing communication; builder implements changes; reviewer validates improvements",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773523568,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,301 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "814081e94af4517d777a48cc1277ea33": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 80,
+        "recommended_template": "fast",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Changes to error handling could suppress or inadvertently alter error propagation behavior",
+          "Incomplete identification of cryptic errors if recent logs are sparse or logs have rotated",
+          "Error message improvements might need updates across multiple script layers with interdependencies"
+        ],
+        "implementation_hints": [
+          "Use jq to parse events.jsonl and .claude/pipeline-artifacts/ to extract and categorize error signatures",
+          "Create a reusable error enhancement function with consistent format: [what] [cause hint] [fix suggestion]",
+          "Target the highest-frequency errors first; errors appearing 3+ times across 10 logs are strong candidates",
+          "Add test cases to sw-*-test.sh suites that deliberately trigger each of the 5 identified errors and verify new message text appears",
+          "Document before/after error output examples in the PR to demonstrate clarity improvements"
+        ]
+      },
+      "timestamp": 1773522912,
+      "ttl": 3600
+    },
+    "9ad1ee558f02f406c8c9814ea0093a56": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1773522922,
+      "ttl": 1800
+    },
+    "df27f0dadde8e75a08d8d53c2b441bfa": {
+      "result": {
+        "estimated_cost_usd": 0.38,
+        "estimated_iterations": 2,
+        "estimated_tokens": 42000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1773522938,
+      "ttl": 3600
+    },
+    "95869fa81629ce8e1b6ed12a4a6feaca": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.87,
+        "secondary_domains": [
+          "testing",
+          "documentation",
+          "infrastructure"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Well-scoped DX improvement (5 errors, specific scripts) but requires log analysis to identify cryptic patterns, multi-file error handler updates, comprehensive test coverage for error paths, and consistency validation across pipeline infrastructure."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "error-message-clarity",
+            "documentation"
+          ],
+          "build": [
+            "error-message-clarity",
+            "testing-strategy"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Issue explicitly references a FAILED prior attempt at error clarity—systematic 4-phase investigation ensures root analysis of why previous errors were cryptic and prevents repeating the same approach.",
+          "brainstorming": "Before enhancing error messages, challenge whether current cryptic errors are masking upstream failures and whether proposed enhancements will actually be actionable for users in real pipeline scenarios.",
+          "error-message-clarity": "Designing consistent, user-friendly error messages with root cause context and concrete next steps requires structured patterns—this skill provides the framework for that enhancement across multiple scripts.",
+          "documentation": "Acceptance criteria explicitly requires before/after examples in the PR—clear documentation guides reviewers and sets precedent for future error message improvements.",
+          "testing-strategy": "Acceptance criteria requires test validation that new error messages appear in failure scenarios—need comprehensive test coverage including edge cases where cryptic errors currently occur.",
+          "pr-quality": "Changes to error handling touch critical pipeline scripts (sw-loop.sh, sw-pipeline.sh)—PR must clearly show what error patterns changed and include concrete examples demonstrating improved clarity.",
+          "adversarial-quality": "Challenge enhanced error messages from user perspective: do they actually guide debugging? Are they still missing context in edge cases? Could they be misinterpreted?",
+          "validation-thoroughness": "Smoke tests insufficient—need real pipeline failure scenarios to validate that enhanced error messages reduce time-to-resolution and eliminate need for log file digging.",
+          "observability": "Post-deploy measurement critical—track whether new error messages reduce debugging time, support load, and confusion in production pipeline failures."
+        },
+        "generated_skills": [
+          {
+            "name": "error-message-clarity",
+            "reason": "No existing skill covers the structured design of actionable error messages, context hierarchy, or validation of error clarity from user perspective. This skill is essential for transforming cryptic errors into debugging guides.",
+            "content": "## Error Message Clarity & Actionability Framework\n\nWell-designed error messages cut debugging time in half. Poor ones waste hours. Use this framework to transform cryptic errors into user-friendly debugging guides.\n\n### The Three-Part Structure\n\nEvery enhanced error message should clearly answer:\n\n**1. What Happened (specific condition, not generic label)**\n- ❌ Bad: \"Build failed\"\n- ✅ Good: \"Convergence detector timed out waiting for LOOP_COMPLETE signal after 45 minutes in iteration 12 at line 487 of sw-loop.sh\"\n- Include: specific failure point, timing, context values\n\n**2. Why It Happened (root cause or common causes)**\n- ✅ \"This usually happens when: detector process crashed, or stage timeout was too short, or convergence stuck in infinite loop\"\n- List causes in order of likelihood\n- Omit if cause is obvious from condition\n\n**3. What To Do (concrete, testable next steps)**\n- ✅ Step 1 (diagnosis): `ps aux | grep convergence-detector` — verify process is running\n- ✅ Step 2 (state review): Check `.claude/pipeline-state.md` for last known iteration\n- ✅ Step 3 (recovery): `shipwright pipeline resume` — continue from checkpoint\n- Escalation: \"If still stuck after step 3, see troubleshooting at [wiki-link]\"\n\n### Design Rules\n\n**Clarity**\n- Start with the specific failure, then zoom out\n- Use exact file paths and line numbers when available\n- Include variable values (timeout 45m, iteration 12, status code 137)\n- Avoid jargon; explain technical terms on first use\n\n**Actionability**\n- Every error must have at least one concrete action\n- Actions must be testable (not \"debug further\" or \"investigate\")\n- Order by likelihood and diagnostic value, not alphabetically\n- Distinguish diagnosis steps (to understand) from recovery steps (to fix)\n\n**Consistency**\n- Use the same format for related errors across all scripts\n- Timeout errors always include: duration, what was being waited for, typical causes\n- Missing file errors always include: expected path, how it should have been created, verification command\n- Process exit errors always include: exit code, last log output, retry command\n\n**Parseability**\n- Preserve error codes/types for log aggregation: `ERROR_CODE=LOOP_TIMEOUT_45M`\n- Keep structured markers in consistent positions so alerts still work\n- Test that existing log parsing/alerting doesn't break\n\n### Validation Checklist\n\nBefore merging enhanced error messages:\n- [ ] Would someone unfamiliar with this code understand what went wrong?\n- [ ] Can the user perform at least one suggested next step immediately?\n- [ ] Does the error include enough state context (not overly verbose, not missing details)?\n- [ ] Are similar errors across different scripts using the same pattern?\n- [ ] Can your log aggregation/alerting systems still parse the error?\n- [ ] Does the error pinpoint the failure (line number, function, condition) not just the symptom?\n\n### Common Error Patterns & Templates\n\n**Timeout Errors:**\n```\nTimeout: [process/operation] did not complete after [duration]\nLikely cause: [most common reason], [secondary reason]\nDiagnose: [check command]\nRecover: [restart/resume command]\nDetails: Expected completion by [milestone], last progress [state]\n```\n\n**Missing File/Dependency:**\n```\n[File/dependency] not found at [path]\nExpected here because: [setup step that should have created it]\nFix: [specific install command or setup step]\nVerify: [command to confirm file exists and is valid]\n```\n\n**Process Crash/Exit:**\n```\n[Process] exited with code [N] (meaning: [interpretation])\nLast output: [last 2-3 lines of relevant log]\nTypically caused by: [list 2-3 most likely issues]\nCheck: [diagnostic command to see what went wrong]\nRetry: [command to restart]\n```\n\n**Resource Constraint (OOM, disk, timeout):**\n```\n[Resource] exhausted: [metric reached limit]\nCurrent state: [amount used], limit [max]\nUsually because: [common cause], [secondary cause]\nFix: [increase limit or optimize usage], then retry\nMonitor: [command to watch resource during next attempt]\n```\n\n### Real Examples from Shipwright\n\n**Before**: \"SCRIPT_DIR corruption breaking all pipeline runs\" ← Cryptic, no action\n**After**: \"SCRIPT_DIR environment variable is empty or corrupted. This breaks all pipeline operations because scripts cannot locate themselves. Fix: Restart your shell or run `export SCRIPT_DIR=$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)`. Verify: `echo $SCRIPT_DIR` should show the path to your scripts directory.\"\n\n**Before**: \"LOOP_COMPLETE signal not received\" ← Missing context\n**After**: \"Convergence detector stopped but did not write LOOP_COMPLETE signal after 45 minutes. This happens when: (1) detector process crashed—check `ps aux | grep convergence`, (2) detector timed out waiting for convergence—review iterations in `.claude/pipeline-state.md`, or (3) signal file couldn't be written—check disk space. Next: `shipwright pipeline resume` to continue from checkpoint. If that fails, check pipeline-state.md for last error.\"\n\n### Metrics to Track\n\nPost-deployment, measure these DX improvements:\n- Time from error message seen to problem fixed (should decrease)\n- Support/debug questions about specific errors (should decrease)\n- User success rate on first suggested action (should be >60%)\n- Cases where users needed to read source code to understand error (should be ~0%)"
+          }
+        ],
+        "review_focus": [
+          "Each of the 5 identified errors contains what-happened, likely-cause, and concrete-next-steps components",
+          "Error message formatting is consistent across sw-loop.sh, sw-pipeline.sh, and all stage scripts",
+          "Test scenarios in the test suite actually trigger the enhanced error messages (verify via test output)",
+          "Before/after examples in PR clearly demonstrate DX improvement and readability gains",
+          "Error messages remain parseable by log aggregation systems and existing alerts"
+        ],
+        "risk_areas": [
+          "Error messages become too verbose and users skip the actionable advice buried in context",
+          "New error messages are not actually emitted in failure scenarios due to gaps in error path coverage in tests",
+          "Only the 5 identified errors are enhanced, but related cryptic errors in other parts of the pipeline are missed",
+          "Inconsistent error formatting between different scripts reduces user trust in the guidance provided",
+          "External systems (logging, alerting, error aggregation) depending on specific error string formats break silently"
+        ]
+      },
+      "timestamp": 1773523105,
+      "ttl": 3600
+    },
+    "a702dc6f36dacdb8e588a2d8c28a6c8b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 captured failure patterns with root causes and fixes. Directly relevant as these appear to be the 'cryptic errors' candidates: missing --force output hints, invalid JSON output, mktemp directory errors, sed expression syntax issues, and regression detection failures. Each entry shows the error message pattern and what caused the unclear error."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 45,
+            "summary": "Provides project structure context (Node/JavaScript, vitest test runner, src/ directory). Useful for understanding where error messages originate and what patterns the refactor should follow, but not directly about error clarity."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 15,
+            "summary": "Confirms project is Node.js. Minimal value—already established in project context."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No actionable information for error message clarity planning."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior decisions to inform error message refactor strategy."
+          }
+        ]
+      },
+      "timestamp": 1773523120,
+      "ttl": 1800
+    },
+    "f8e12d7e95abc17c10decefd6bb06b9a": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains documented cryptic error patterns from previous runs (e.g., unclear sw-cleanup.sh output, mktemp path errors, sed argument confusion). Directly relevant to identifying and fixing error message clarity issues in the top 5 cryptic errors."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Project structure metadata (Node.js, vitest, commonjs conventions) provides context for understanding the codebase where error messages originate, but not directly about message clarity."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Minimal project type detection info. Low relevance; generic metadata without specific error message or clarity context."
+          }
+        ]
+      },
+      "timestamp": 1773523274,
+      "ttl": 1800
+    },
+    "6f040c04f52be24f878ce8fed7f638d8": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly relevant: contains 5 documented cryptic error patterns with root causes and fixes (sw-cleanup.sh output, sw-feedback-test.sh JSON, mktemp directory, sed -e flag issues). Perfect reference for error message clarity design."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 38,
+            "summary": "Project structure context: Node/JavaScript, vitest test runner, npm, commonjs imports, src/ dir. Useful for understanding architecture conventions when designing error message improvements."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Minimal relevance, included for completeness."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 7,
+            "summary": "Generic nodejs project detection metadata. Low relevance; no actionable pattern data."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. Not relevant to current design stage."
+          }
+        ]
+      },
+      "timestamp": 1773523312,
+      "ttl": 1800
+    },
+    "088871acb1f6038eddc6b36ae074fe63": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains actual error message patterns ('output missing: --force', 'mktemp: failed to create directory', etc.) with root causes and fixes—directly exemplifies cryptic errors and how to clarify them"
+          },
+          {
+            "file": "patterns.json (first with conventions)",
+            "relevance": 28,
+            "summary": "Provides project structure context (source dir, test patterns, import style) useful for understanding codebase conventions but not directly relevant to error message clarity"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty/no data; minimal relevance to error message clarity or anti-patterns"
+          }
+        ]
+      },
+      "timestamp": 1773523328,
+      "ttl": 1800
+    },
+    "7443fc1244796717c8f684673b2fa84e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly documents cryptic error patterns with root causes and fixes—examples include missing output hints, sed flag issues, and mktemp failures. Core resource for identifying which error messages need clarity improvements."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 35,
+            "summary": "Provides codebase structure context (Node, vitest, npm, JavaScript conventions). Useful for understanding where error messages live and how to test them, but not error-specific."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 12,
+            "summary": "Minimal project type detection metadata. Low signal for error message work—only confirms this is a Node project."
+          },
+          {
+            "file": "patterns.json (third entry)",
+            "relevance": 5,
+            "summary": "Empty patterns list with cache metadata. No actionable content for error message enhancement."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Empty baselines object. Not relevant to error message clarity task."
+          }
+        ]
+      },
+      "timestamp": 1773523542,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 recurring test failures with root causes and fixes. Most relevant: sw-cleanup.sh stale heartbeat detection (22 occurrences), sw-feedback-test.sh JSON output issue (21 occurrences), and mktemp directory creation failure (3 occurrences). Critical for understanding known failure patterns during build/test stages."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project configuration essential for build stage: vitest test runner, npm package manager, JavaScript language, src/ source directory, *.test.js test pattern, commonjs imports. Directly needed to understand how to build and test the project."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. Not relevant to current build context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. Not relevant to current build context."
+          }
+        ]
+      },
+      "timestamp": 1773523551,
+      "ttl": 1800
     }
   }
 }
