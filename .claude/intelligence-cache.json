@@ -964,26 +964,26 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Critical for build stage — contains 6 recent test failure patterns with root causes and fixes. Failures in test stage directly impact build loop iteration strategy and error recovery."
+            "summary": "Contains 7 documented test failures with root causes and fixes (sw-cleanup.sh, sw-feedback.sh, sw-hello-test.sh, sw-daemon.sh). Directly prevents repeating known build/test failures during build stage."
           },
           {
             "file": "patterns.json",
-            "relevance": 88,
-            "summary": "Essential context for build stage — defines project structure (Node/vitest/npm), test patterns (*.test.js), and import conventions needed for test execution and iteration."
+            "relevance": 85,
+            "summary": "Project configuration (node/vitest/npm), source structure (src/), test pattern (*.test.js), and import style. Essential for understanding build and test execution context."
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Not relevant — empty baselines object provides no data to inform build stage decisions."
+            "summary": "Empty baselines object—no data to inform build decisions."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Not relevant — empty decisions array provides no prior architectural or strategy decisions to guide build work."
+            "summary": "Empty decisions array—no prior decisions to guide build stage work."
           }
         ]
       },
-      "timestamp": 1773524427,
+      "timestamp": 1773526596,
       "ttl": 1800
     }
   }
