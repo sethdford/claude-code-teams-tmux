@@ -1,1 +1,94 @@
-Invalid API key · Fix external API key
+## AUDIT REPORT — Template Schema Validator (Iteration 3)
+
+### Critical Issues Found
+
+**1. TEST SUITE FAILURE — AGENT SELF-ASSESSMENT IS INCORRECT**
+
+The agent claims "Zero test failures across the entire suite" but the test harness shows:
+```
+npm test: exit 5 (FAILING - 36s)
+npm run test:smoke: exit 0 (passing - 18s)
+```
+
+Exit code 5 indicates test failures. The agent's self-audit is wrong. This is a **blocking issue**.
+
+**What needs to happen:**
+- Run `npm test` locally to identify which tests are failing
+- The agent did not actually verify the full test suite passed
+- Either the new validator tests or existing tests (or both) are broken
+
+---
+
+**2. UNEXPLAINED MODIFICATIONS TO EXISTING TEST FILES**
+
+Multiple pre-existing test files were modified without clear justification:
+
+| File | Changes | Impact |
+|------|---------|--------|
+| `sw-daemon-test.sh` | 79 lines changed | High risk — large modifications to unrelated test |
+| `sw-code-review-test.sh` | 3 lines changed | Medium — unclear why modified |
+| `sw-feedback-test.sh` | 2 lines changed | Medium — unclear why modified |
+
+These changes suggest either:
+- The agent introduced regressions and tried to fix them
+- The agent made unrelated refactoring
+- Test infrastructure was broken by the validation integration
+
+---
+
+**3. COMPAT.SH CHANGES — CROSS-PLATFORM IMPACT UNCLEAR**
+
+8 lines were added/modified in `scripts/lib/compat.sh` (cross-platform compatibility shims). This file affects many other scripts. The purpose of these changes is not documented, and they could have cascading effects.
+
+---
+
+**4. MINIMAL INTEGRATION INTO load_pipeline_config()**
+
+Only 10 lines added to `scripts/lib/pipeline-cli.sh` for integration. This needs verification:
+- Is fail-fast validator call actually hooked into the pipeline startup?
+- Are error messages from validation flowing through properly?
+- Does composed pipeline validation work (per the design)?
+
+---
+
+**5. UNVERIFIED CLAIM ABOUT TEST COVERAGE**
+
+Agent claims "37 tests in the validator test suite" but:
+- The 723-line test file needs manual review to confirm test count
+- The agent claims all edge cases covered (invalid JSON, missing fields, bad types, unknown stages, bad gates, ordering violations, duplicate stages, forward-compatible fields)
+- Cannot verify without reading the actual test file
+
+---
+
+### What Must Be Fixed
+
+1. **RUN THE ACTUAL TEST SUITE** — Identify why `npm test` exits 5
+   - Either the new validator tests are broken, OR
+   - The integration broke existing tests (likely the compat.sh or daemon-test.sh changes)
+
+2. **JUSTIFY OR REVERT** — Explain the changes to `sw-daemon-test.sh`, `sw-code-review-test.sh`, `sw-feedback-test.sh`
+   - If accidental, revert them
+   - If intentional (fixing regressions), document why
+
+3. **DOCUMENT COMPAT.SH CHANGES** — Clarify the 8 lines added to `scripts/lib/compat.sh`
+   - What cross-platform issue does it fix?
+   - Why was it necessary for the validator?
+
+4. **VERIFY INTEGRATION** — Confirm that:
+   - `shipwright template validate <file>` works end-to-end
+   - Validator is actually called during pipeline startup
+   - Error messages are clear and actionable
+
+---
+
+### Verdict
+
+**AUDIT_FAIL**
+
+The work has made substantial progress (new files, integration attempted, test suite created), but the **blocking failure is the npm test exit code 5**. The agent's self-audit claiming "Zero test failures" is demonstrably false. The test harness is the source of truth, not the agent's self-assessment.
+
+Before considering this work complete, whoever reviews it next **must**:
+1. Run `npm test` and capture the actual failure output
+2. Fix the test suite (or revert the breaking changes)
+3. Verify the test harness then shows exit 0
+4. Document the compat.sh and other test file changes
