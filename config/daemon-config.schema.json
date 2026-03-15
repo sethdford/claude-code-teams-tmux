@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Shipwright Daemon Configuration",
+  "description": "Schema for .claude/daemon-config.json — validates daemon configuration at startup",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "watch_label": {
+      "type": "string",
+      "description": "GitHub label to watch for new issues"
+    },
+    "poll_interval": {
+      "type": "integer",
+      "minimum": 5,
+      "description": "Seconds between GitHub polls"
+    },
+    "max_parallel": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64,
+      "description": "Max concurrent pipeline jobs"
+    },
+    "issue_limit": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Max issues to fetch per poll"
+    },
+    "pipeline_template": {
+      "type": "string",
+      "enum": ["fast", "standard", "full", "hotfix", "autonomous", "enterprise", "cost-aware", "deployed"],
+      "description": "Pipeline template to use"
+    },
+    "skip_gates": {
+      "type": "boolean",
+      "description": "Skip pipeline gate approvals"
+    },
+    "model": {
+      "type": "string",
+      "description": "Default Claude model for pipeline stages"
+    },
+    "effort_level": {
+      "type": "string",
+      "enum": ["", "low", "medium", "high"],
+      "description": "Global effort level override"
+    },
+    "fallback_model": {
+      "type": "string",
+      "description": "Fallback model on rate limits"
+    },
+    "base_branch": {
+      "type": "string",
+      "description": "Branch to create worktrees from"
+    },
+    "self_optimize": {
+      "type": "boolean",
+      "description": "Enable DORA-based self-optimization"
+    },
+    "auto_template": {
+      "type": "boolean",
+      "description": "Auto-select pipeline template by issue complexity"
+    },
+    "max_retries": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Max retry attempts for failed pipelines"
+    },
+    "retry_escalation": {
+      "type": "boolean",
+      "description": "Escalate model/effort on retries"
+    },
+    "max_restarts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Max session restarts for build loop"
+    },
+    "fast_test_cmd": {
+      "type": "string",
+      "description": "Fast subset test command"
+    },
+    "optimize_interval": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Poll cycles between self-optimization runs"
+    },
+    "on_success": {
+      "type": "object",
+      "properties": {
+        "remove_label": { "type": "string" },
+        "add_label": { "type": "string" },
+        "close_issue": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "on_failure": {
+      "type": "object",
+      "properties": {
+        "add_label": { "type": "string" },
+        "comment_log_lines": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "notifications": {
+      "type": "object",
+      "properties": {
+        "slack_webhook": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "stale_timeout_s": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "priority_lane": {
+      "type": "boolean",
+      "description": "Enable priority bypass queue"
+    },
+    "priority_lane_labels": {
+      "type": "string",
+      "description": "Comma-separated labels that trigger priority"
+    },
+    "priority_lane_max": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Max extra slots for priority issues"
+    },
+    "priority_labels": {
+      "type": "string",
+      "description": "Comma-separated priority label ordering"
+    },
+    "watch_mode": {
+      "type": "string",
+      "enum": ["repo", "org"],
+      "description": "Watch single repo or entire org"
+    },
+    "org": {
+      "type": "string",
+      "description": "GitHub org name for org-wide mode"
+    },
+    "repo_filter": {
+      "type": "string",
+      "description": "Regex filter for repo names in org mode"
+    },
+    "auto_scale": {
+      "type": "boolean",
+      "description": "Enable resource-aware dynamic scaling"
+    },
+    "auto_scale_interval": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Poll cycles between auto-scale checks"
+    },
+    "max_workers": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Ceiling for auto-scaler"
+    },
+    "min_workers": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Floor for auto-scaler"
+    },
+    "worker_mem_gb": {
+      "type": "number",
+      "minimum": 0.5,
+      "description": "Memory budget per worker in GB"
+    },
+    "estimated_cost_per_job_usd": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Estimated USD cost per pipeline job"
+    },
+    "intelligence": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cache_ttl_seconds": { "type": "integer", "minimum": 0 },
+        "optimization_enabled": { "type": "boolean" },
+        "prediction_enabled": { "type": "boolean" },
+        "composer_enabled": { "type": "boolean" },
+        "adversarial_enabled": { "type": "boolean" },
+        "simulation_enabled": { "type": "boolean" },
+        "architecture_enabled": { "type": "boolean" },
+        "ab_test_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "anomaly_threshold": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "patrol": {
+      "type": "object",
+      "properties": {
+        "interval": { "type": "integer", "minimum": 0 },
+        "max_issues": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string" },
+        "auto_watch": { "type": "boolean" },
+        "checks": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "alerts": {
+      "type": "object",
+      "properties": {
+        "degradation_window": { "type": "integer", "minimum": 1 },
+        "cfr_threshold": { "type": "number", "minimum": 0, "maximum": 100 },
+        "success_threshold": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": true
+    },
+    "remote": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "machines": { "type": "array", "items": { "type": "string" } },
+        "load_balance": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "template_map": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "last_optimization": {
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string" },
+        "adjustments": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

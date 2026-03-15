@@ -53,6 +53,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/daemon-patrol.sh" ]] && source "$SCRIPT_DIR/lib/daemon-patrol.sh"
 # shellcheck source=lib/daemon-poll.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-poll.sh" ]] && source "$SCRIPT_DIR/lib/daemon-poll.sh"
+# shellcheck source=lib/config-validate.sh
+[[ -f "$SCRIPT_DIR/lib/config-validate.sh" ]] && source "$SCRIPT_DIR/lib/config-validate.sh"
 
 # ─── Intelligence Engine (optional) ──────────────────────────────────────────
 # shellcheck source=sw-intelligence.sh
@@ -379,6 +381,14 @@ load_config() {
     fi
 
     info "Loading config: ${DIM}${config_file}${RESET}"
+
+    # Validate config against schema before loading values
+    if type _validate_daemon_config >/dev/null 2>&1; then
+        if ! _validate_daemon_config "$config_file"; then
+            error "Config validation failed — fix errors in $config_file or set SKIP_CONFIG_VALIDATION=true to bypass"
+            return 1
+        fi
+    fi
 
     WATCH_LABEL=$(jq -r '.watch_label // "shipwright"' "$config_file")
     POLL_INTERVAL=$(jq -r '.poll_interval // '"$(type policy_get >/dev/null 2>&1 && policy_get ".daemon.poll_interval_seconds" "60" || echo "60")"'' "$config_file")
