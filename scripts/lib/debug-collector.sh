@@ -135,11 +135,11 @@ rotate_debug_bundles() {
     bundle_list=$(find "$bundles_dir" -mindepth 1 -maxdepth 1 -type d -printf '%T@\t%p\n' 2>/dev/null | sort -rn | cut -f2)
 
     local count=0
-    while IFS= read -r bundle_dir; do
-        [[ -z "$bundle_dir" ]] && continue
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
         count=$((count + 1))
         if [[ "$count" -gt "$max_bundles" ]]; then
-            rm -rf "$bundle_dir" 2>/dev/null || true
+            rm -rf "$dir" 2>/dev/null || true
         fi
     done <<< "$bundle_list"
 }
