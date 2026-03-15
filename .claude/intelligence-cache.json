@@ -852,26 +852,26 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains 5 recurring test failures (26, 23, 5, 3, 2 occurrences) directly impacting build stage—sw-cleanup heartbeat detection, sw-feedback regression JSON, mktemp directory, sed invocation, and deploy failure detection. Critical for fixing build/test failures."
+            "summary": "Critical for build stage: documents 5 recent test failures with root causes and fixes. Directly prevents repeating known issues during test execution (sw-cleanup.sh, sw-feedback-test.sh, mktemp, sed invocation problems). Last failures seen today."
           },
           {
             "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Documents project structure (node, vitest, src/ directory), conventions (commonjs imports), and test patterns needed to execute build and test stages correctly."
+            "relevance": 90,
+            "summary": "Essential build metadata: specifies vitest as test runner, npm as package manager, test pattern *.test.js, source directory src/, and Node.js project type. Required to understand how to build and test this codebase."
           },
           {
             "file": "metrics.json",
             "relevance": 15,
-            "summary": "Empty baselines object—no metrics captured yet. Minimal relevance until metrics are populated."
+            "summary": "Minimal relevance: contains only empty baselines object with no actual performance data. Could be useful if metrics were populated but currently provides no actionable build insights."
           },
           {
             "file": "decisions.json",
             "relevance": 10,
-            "summary": "Empty decisions array—no decisions captured. Not relevant to current build stage context."
+            "summary": "Not relevant to build stage: empty decisions array with no recorded architectural or technical decisions. Would need populated entries to inform build strategy."
           }
         ]
       },
-      "timestamp": 1773561548,
+      "timestamp": 1773563578,
       "ttl": 1800
     }
   }
