@@ -89,8 +89,9 @@ test_hello_version() {
 
 # ─── Test: hello with invalid option exits non-zero ────────────────────────
 test_hello_invalid_option() {
-    "$SCRIPT_DIR/sw-hello.sh" --invalid > /dev/null 2>&1 || local exit_code=$?
-    assert_exit_code 1 "${exit_code:-1}" "hello with invalid option exits with code 1"
+    local exit_code=0
+    "$SCRIPT_DIR/sw-hello.sh" --invalid > /dev/null 2>&1 || exit_code=$?
+    assert_exit_code 1 "${exit_code}" "hello with invalid option exits with code 1"
 }
 
 # ─── Main ───────────────────────────────────────────────────────────────────

@@ -40,12 +40,16 @@ trap cleanup_test_env EXIT
 
 assert_pass() {
     local desc="$1"
+    TOTAL=$((TOTAL + 1))
+    PASS=$((PASS + 1))
     echo -e "  ${GREEN}✓${RESET} ${desc}"
 }
 
 assert_fail() {
     local desc="$1"
     local detail="${2:-}"
+    TOTAL=$((TOTAL + 1))
+    FAIL=$((FAIL + 1))
     FAILURES+=("$desc")
     echo -e "  ${RED}✗${RESET} ${desc}"
     [[ -n "$detail" ]] && echo -e "    ${DIM}${detail}${RESET}"
