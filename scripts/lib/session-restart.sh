@@ -99,6 +99,7 @@ restart_capture_state() {
 
 restart_generate_briefing() {
     local state_file="${1:-${ARTIFACTS_DIR:-${LOG_DIR}}/restart-state.json}"
+    local restart_reason="${2:-unknown}"
     local briefing_file="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-briefing.md"
     local tmp_briefing="${briefing_file}.tmp.$$"
 
@@ -107,6 +108,17 @@ restart_generate_briefing() {
         return 1
     }
 
+    # Try enhanced briefing generator if available
+    if [[ "$(type -t briefing_generate_enhanced 2>/dev/null)" == "function" ]]; then
+        if briefing_generate_enhanced "$state_file" "$restart_reason" "$briefing_file" 2>/dev/null; then
+            emit_event "session.briefing_generated" "briefing_file=$briefing_file" "iteration=$ITERATION" "enhanced=true" 2>/dev/null || true
+            echo "$briefing_file"
+            return 0
+        fi
+        # Fall back to basic briefing if enhanced generation fails
+    fi
+
+    # Fallback: Basic briefing generation (original implementation)
     # Parse state JSON
     local goal iteration max_iter test_status tests_passed tests_failed
     local modified_files recent_error restart_count
@@ -175,7 +187,7 @@ restart_generate_briefing() {
     } > "$tmp_briefing" 2>/dev/null
 
     if mv "$tmp_briefing" "$briefing_file" 2>/dev/null; then
-        emit_event "session.briefing_generated" "briefing_file=$briefing_file" "iteration=$iteration" 2>/dev/null || true
+        emit_event "session.briefing_generated" "briefing_file=$briefing_file" "iteration=$iteration" "enhanced=false" 2>/dev/null || true
         echo "$briefing_file"
         return 0
     else

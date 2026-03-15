@@ -40,6 +40,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
 # Intelligent session restart with enhanced briefings and cross-session tracking
 [[ -f "$SCRIPT_DIR/lib/session-restart.sh" ]] && source "$SCRIPT_DIR/lib/session-restart.sh"
+# Intelligent restart briefing generation (issue #273)
+[[ -f "$SCRIPT_DIR/lib/loop-restart-briefing.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart-briefing.sh"
 # Context window budget monitoring (issue #209)
 # shellcheck source=lib/context-budget.sh
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
