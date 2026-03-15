@@ -193,6 +193,12 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 ### Build Loop Capabilities
 
 - **Session restart** (`--max-restarts N`): When the loop exhausts iterations without completing, it restarts with a fresh Claude session that reads progress from `progress.md`. Git state = resume point. Default 0 (off) for manual, 3 for daemon.
+- **Intelligent restart briefing**: When restarting, generates a context-aware briefing that:
+  - **Categorizes changes** by file type (source, test, docs, config) to focus effort
+  - **Extracts error patterns** from `error-summary.json`, deduplicates across iterations, ranks by frequency
+  - **Summarizes iteration history** — what approaches were tried, outcomes, why they failed
+  - **Recommends next steps** differently based on failure mode: `stuck_loop` (new approach), `context_exhaustion` (minimize context), `tests_passing` (ship it)
+  - Stays under ~2000 tokens for briefing to preserve context budget
 - **Progress persistence**: `progress.md` written after each iteration with goal, iteration count, test status, recent commits, changed files. Fresh sessions orient from this file.
 - **Structured error feedback**: `error-summary.json` written after test failures with machine-readable error lines. Injected into the next iteration prompt as structured context.
 - **Fast test mode** (`--fast-test-cmd "cmd"`): Alternates between a fast subset test and the full suite. Full test runs on iteration 1, every N iterations (`--fast-test-interval`, default 5), and the final iteration.
