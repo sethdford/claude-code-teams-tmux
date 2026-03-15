@@ -2,39 +2,39 @@
 goal: "Refactor - Decompose sw-loop.sh into Modular lib/loop-*.sh Components
 
 ## Plan Summary
-Here is the complete implementation plan:
+## Implementation Plan Summary
 
----
+I've created a detailed implementation plan for decomposing **sw-loop.sh** (2,530 lines) into 8 modular components. The plan is saved at `/home/runner/.claude/projects/-home-runner-work-shipwright-shipwright/plan.md`
 
-# Implementation Plan: Decompose sw-loop.sh into Modular lib/loop-*.sh Components
+### Key Highlights
 
-## Brainstorming: Design Analysis
+**🎯 Goal**: Reduce main sw-loop.sh from 2,530 → <800 lines while preserving 100% behavior
 
-### Requirements Clarity
-**Minimum viable change:** Extract all functions from `sw-loop.sh` (currently 2,530 lines) into cohesive `lib/loop-*.sh` modules, leaving only CLI parsing, orchestration (`run_single_agent_loop`, `run_loop_with_restarts`, `main`), and signal handling in the main file. Target: < 800 lines in `sw-loop.sh`.
+**📦 8 New Modules to Extract**:
+1. `loop-cli.sh` — Argument parsing and help display
+2. `loop-models.sh` — Model selection (adaptive/audit)
+3. `loop-testing.sh` — Test execution and validation
+4. `loop-quality.sh` — Quality gates, audit agent, DoD checking
+5. `loop-prompt.sh` — Prompt composition for workers
+6. `loop-multi-agent.sh` — Multi-agent orchestration
+7. `loop-circuit-breaker.sh` — Budget gates and stuckness detection
+8. `loop-output.sh` — Display, formatting, summary
 
-**Implicit requirements:** Module source ordering matters (tokens.sh must load before iteration.sh since `run_claude_iteration()` calls `accumulate_loop_tokens()` and `_extract_text_from_json()`). All global variables must remain accessible.
-
-### Alternatives Considered
-
-**Approach A: Minimal extraction (5 modules)** — Only create the modules explicitly named in the issue (iteration, convergence, context, restart, error-feedback). Most already exist. Adds ~1 new module.
-- Pro: Minimal blast radius. Con: Won't hit < 800 line target — quality/audit/multi-agent code (~750 lines) stays in main file.
-
-**Approach B: Full extraction (6 new modules)** — Extract ALL remaining function groups (tokens, error-feedback, quality, git, multi-agent, display) into dedicated modules.
-- Pro: Achieves < 800 line target. Each module is independently testable. Matches pipeline/recruit refactor pattern. Con: More files, more source statements.
+**✅ Existing 8 Modules** (already extracted, 2,034 lines):
+- loop-iteration.sh, loop-convergence.sh, loop-error-feedback.sh, loop-tokens.sh, loop-restart.sh, loop-progress.sh, loop-git.sh, loop-display.sh
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Architecture Decision Record: Refactor - Decompose sw-loop.sh into Modular lib/loop-*.sh Components
+# Design: Refactor - Decompose sw-loop.sh into Modular lib/loop-*.sh Components
 ## Context
 ## Decision
-### Chosen Approach: **Approach B — Full Extraction (6 new modules)**
-### Module Responsibilities
-## Alternatives Considered
-### 1. Approach A: Minimal Extraction (5 modules)
-### 2. Approach C: Aggressive Consolidation (3 new modules)
-### 3. Approach D: Lazy Module Loading
-## Component Diagram
+### Phased approach: integrate existing modules first, then extract new ones
+### Why NOT follow the plan's 8 new modules
+### Module source order
+# ─── Foundation (no inter-module deps) ────────────────────────
+# ─── Mid-tier (depends on foundation) ────────────────────────
+# ─── High-tier (depends on mid-tier) ─────────────────────────
+### Component Diagram
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
@@ -42,28 +42,28 @@ Historical context (lessons from previous pipelines):
   "results": [
     {
       "file": "failures.json",
-      "relevance": 95,
-      "summary": "Recent test failures from shell scripts (sw-cleanup.sh, sw-feedback.sh, etc.) show common bugs in bash: sed expression handling, mktemp directory creation, JSON output validation. These patterns are directly applicable when refactoring sw-loop.sh to avoid similar pitfalls."
+      "relevance": 72,
+      "summary": "Contains actual test failure patterns from Shipwright scripts including bash/sed issues. Directly relevant to understanding test patterns and common bash scripting problems that may affect sw-loop.sh decomposition and its new modular components"
     },
     {
-      "file": "patterns.json (first entry)",
-      "relevance": 20,
-      "summary": "Describes project as Node.js/JavaScript with vitest test runner. While Shipwright is Node-based, this entry focuses on JS conventions; shell script refactoring requires different patterns and practices."
+      "file": "patterns.json",
+      "relevance": 48,
+      "summary": "Shows project structure (Node.js, vitest, npm, commonjs imports). Relevant for understanding test conventions and patterns that would apply to new test files for the modular lib/loop-*.sh components"
     },
     {
-      "file": "patterns.json (second entry)",
-      "relevance": 10,
-      "summary": "Generic project type detection indicating Node.js. Minimal actionable context for bash shell script refactoring work."
-    },
-    {
-      "file": "patterns.json (third entry)",
-      "relevance": 5,
-      "summary": "Empty patterns cache from an unrelated test repo. No relevant information for this task."
+      "file": "patterns.json",
+      "relevance": 18,
+      "summary": "Confirms Node.js project detection. Minimal relevance—only confirms project type already known from other memory entries"
     },
     {
       "file": "metrics.json",
-      "relevance": 0,
-      "summary": "Empty baselines container. No metrics or performance data relevant to refactoring."
+      "relevance": 5,
+      "summary": "Empty baselines object. Not relevant to the refactoring task"
+    },
+    {
+      "file": "decisions.json",
+      "relevance": 3,
+      "summary": "Empty decisions array. Not relevant to the refactoring task"
     }
   ]
 }
@@ -105,7 +105,8 @@ Task tracking (check off items as you complete them):
 
 ## Skill Guidance (refactor issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **testing-strategy**: New modular tests must achieve parity with existing test coverage; define test patterns for each lib/loop-*.sh component that exercise module boundaries and integration points.
+- **testing-strategy**: Design test structure that validates both module contracts (unit tests per lib/loop-*.sh) and integration behavior to catch subtle bugs from function extraction and module coupling.
+- **systematic-debugging**: If extraction reveals unexpected behavior, apply structured investigation rather than guessing—capture error signatures, trace state flow across module boundaries, identify root causes in interdependencies.
 
 ## Testing Strategy Expertise
 
@@ -154,15 +155,56 @@ Your output MUST include these sections when this skill is active:
 3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
+
+## Systematic Debugging: Root Cause Analysis
+
+A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+
+### Phase 1: Evidence Collection
+- Read the error output from the previous attempt carefully
+- Identify the EXACT line/file where the failure occurred
+- Check if the error is a symptom or the root cause
+- Look for patterns: is this a known error type?
+
+### Phase 2: Hypothesis Formation
+- List 3 possible root causes for this failure
+- For each hypothesis, identify what evidence would confirm or deny it
+- Rank hypotheses by likelihood
+
+### Phase 3: Root Cause Verification
+- Test the most likely hypothesis first
+- Read the relevant source code — don't guess
+- Check if previous artifacts (plan.md, design.md) are correct or flawed
+- If the plan was correct but execution failed, focus on execution
+- If the plan was flawed, document what was wrong
+
+### Phase 4: Targeted Fix
+- Fix the ROOT CAUSE, not the symptom
+- If the previous approach was fundamentally wrong, choose a different approach
+- If it was a minor error, make the minimal fix
+- Document what went wrong and why the new approach is better
+
+IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
+2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
+3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
+4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+
+If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 1
+iteration: 0
 max_iterations: 30
-status: error
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-03-14T22:16:50Z
-last_iteration_at: 2026-03-14T22:16:50Z
+started_at: 2026-03-15T01:12:29Z
+last_iteration_at: 2026-03-15T01:12:29Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
