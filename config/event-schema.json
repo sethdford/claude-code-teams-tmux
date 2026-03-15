@@ -4,140 +4,351 @@
   "version": "1",
   "event_types": {
     "pipeline.started": {
-      "required": ["job_id"],
-      "optional": ["issue", "goal", "template"]
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "issue",
+        "goal",
+        "template"
+      ]
     },
     "pipeline.completed": {
-      "required": ["job_id"],
-      "optional": ["duration_s", "result"]
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "duration_s",
+        "result"
+      ]
     },
     "pipeline.failed": {
-      "required": ["job_id"],
-      "optional": ["error", "stage"]
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "error",
+        "stage"
+      ]
     },
-    "stage.started": { "required": ["stage"], "optional": ["issue", "job_id"] },
+    "stage.started": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id"
+      ]
+    },
     "stage.completed": {
-      "required": ["stage"],
-      "optional": ["issue", "job_id", "duration_s", "result"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id",
+        "duration_s",
+        "result"
+      ]
     },
     "stage.failed": {
-      "required": ["stage"],
-      "optional": ["issue", "job_id", "error", "error_class", "duration_s"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id",
+        "error",
+        "error_class",
+        "duration_s"
+      ]
     },
-    "daemon.started": { "required": [], "optional": ["pid", "mode"] },
-    "daemon.stopped": { "required": [], "optional": ["reason"] },
-    "daemon.claimed": { "required": ["issue"], "optional": ["repo", "title"] },
-    "daemon.released": { "required": ["issue"], "optional": ["reason"] },
+    "daemon.started": {
+      "required": [],
+      "optional": [
+        "pid",
+        "mode"
+      ]
+    },
+    "daemon.stopped": {
+      "required": [],
+      "optional": [
+        "reason"
+      ]
+    },
+    "daemon.claimed": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "repo",
+        "title"
+      ]
+    },
+    "daemon.released": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
+    },
     "daemon.spawn": {
-      "required": ["issue"],
-      "optional": ["template", "worktree"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "template",
+        "worktree"
+      ]
     },
     "daemon.complete": {
-      "required": ["issue"],
-      "optional": ["result", "duration_s"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "result",
+        "duration_s"
+      ]
     },
     "daemon.failure": {
-      "required": ["issue"],
-      "optional": ["error", "retry_count"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "error",
+        "retry_count"
+      ]
     },
-    "loop.started": { "required": [], "optional": ["goal", "test_cmd"] },
+    "loop.started": {
+      "required": [],
+      "optional": [
+        "goal",
+        "test_cmd"
+      ]
+    },
     "loop.iteration": {
-      "required": ["iteration"],
-      "optional": ["test_result"]
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "test_result"
+      ]
     },
-    "loop.completed": { "required": [], "optional": ["iterations", "result"] },
+    "loop.completed": {
+      "required": [],
+      "optional": [
+        "iterations",
+        "result"
+      ]
+    },
     "cost.recorded": {
-      "required": ["cost_usd"],
-      "optional": ["model", "tokens_in", "tokens_out", "stage"]
+      "required": [
+        "cost_usd"
+      ],
+      "optional": [
+        "model",
+        "tokens_in",
+        "tokens_out",
+        "stage"
+      ]
     },
     "intelligence.analysis": {
-      "required": ["analysis_type"],
-      "optional": ["result", "cache_hit"]
+      "required": [
+        "analysis_type"
+      ],
+      "optional": [
+        "result",
+        "cache_hit"
+      ]
     },
     "memory.captured": {
-      "required": ["memory_type"],
-      "optional": ["pattern", "repo"]
+      "required": [
+        "memory_type"
+      ],
+      "optional": [
+        "pattern",
+        "repo"
+      ]
     },
     "quality.gate": {
-      "required": ["gate_name", "passed"],
-      "optional": ["score", "details"]
+      "required": [
+        "gate_name",
+        "passed"
+      ],
+      "optional": [
+        "score",
+        "details"
+      ]
     },
     "pr.created": {
-      "required": ["pr_number"],
-      "optional": ["title", "branch"]
+      "required": [
+        "pr_number"
+      ],
+      "optional": [
+        "title",
+        "branch"
+      ]
     },
-    "deploy.started": { "required": ["environment"], "optional": ["version"] },
+    "deploy.started": {
+      "required": [
+        "environment"
+      ],
+      "optional": [
+        "version"
+      ]
+    },
     "deploy.completed": {
-      "required": ["environment"],
-      "optional": ["version", "duration_s"]
+      "required": [
+        "environment"
+      ],
+      "optional": [
+        "version",
+        "duration_s"
+      ]
     },
     "heartbeat.write": {
-      "required": ["job_id"],
-      "optional": ["stage", "iteration"]
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "stage",
+        "iteration"
+      ]
     },
     "session.started": {
-      "required": ["session_id"],
-      "optional": ["template", "agents"]
+      "required": [
+        "session_id"
+      ],
+      "optional": [
+        "template",
+        "agents"
+      ]
     },
-    "session.ended": { "required": ["session_id"], "optional": ["duration_s"] },
+    "session.ended": {
+      "required": [
+        "session_id"
+      ],
+      "optional": [
+        "duration_s"
+      ]
+    },
     "memory.fix_outcome": {
-      "required": ["pattern"],
-      "optional": ["outcome", "repo"]
+      "required": [
+        "pattern"
+      ],
+      "optional": [
+        "outcome",
+        "repo"
+      ]
     },
     "memory.global_aggregated": {
       "required": [],
-      "optional": ["repo", "patterns_promoted"]
+      "optional": [
+        "repo",
+        "patterns_promoted"
+      ]
     },
     "memory.not_available": {
-      "required": ["path"],
-      "optional": ["action"]
+      "required": [
+        "path"
+      ],
+      "optional": [
+        "action"
+      ]
     },
     "memory.export": {
       "required": [],
-      "optional": ["repo"]
+      "optional": [
+        "repo"
+      ]
     },
     "cost.budget_unconfigured": {
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "optional": []
     },
     "scale.recommendation": {
       "required": [],
-      "optional": ["iterations", "coverage", "modules", "has_recommendations"]
+      "optional": [
+        "iterations",
+        "coverage",
+        "modules",
+        "has_recommendations"
+      ]
     },
     "pr.skipped": {
-      "required": ["issue"],
-      "optional": ["reason"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
     },
     "pr.rejected": {
-      "required": ["issue"],
-      "optional": ["reason"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
     },
     "intelligence.compose": {
       "required": [],
-      "optional": ["stage_count", "complexity"]
+      "optional": [
+        "stage_count",
+        "complexity"
+      ]
     },
     "intelligence.synthesize": {
       "required": [],
-      "optional": ["fix_count", "cause_count"]
+      "optional": [
+        "fix_count",
+        "cause_count"
+      ]
     },
     "simulation.complete": {
       "required": [],
-      "optional": ["issue", "concerns"]
+      "optional": [
+        "issue",
+        "concerns"
+      ]
     },
     "daemon.hard_limit": {
-      "required": ["issue"],
-      "optional": ["elapsed_s", "limit_s", "pid"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "elapsed_s",
+        "limit_s",
+        "pid"
+      ]
     },
     "daemon.stalled": {
-      "required": ["issue"],
-      "optional": ["no_progress", "elapsed_s", "pid"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "no_progress",
+        "elapsed_s",
+        "pid"
+      ]
     },
     "daemon.nudge": {
-      "required": ["issue"],
-      "optional": ["no_progress", "stage", "elapsed_s"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "no_progress",
+        "stage",
+        "elapsed_s"
+      ]
     },
     "daemon.stuck_kill": {
-      "required": ["issue"],
+      "required": [
+        "issue"
+      ],
       "optional": [
         "no_progress",
         "repeated_errors",
@@ -149,7 +360,10 @@
     },
     "convergence.tests_passed": {
       "required": [],
-      "optional": ["issue", "cycle"]
+      "optional": [
+        "issue",
+        "cycle"
+      ]
     },
     "vitals.snapshot": {
       "required": [],
@@ -163,56 +377,193 @@
       ]
     },
     "retry.classified": {
-      "required": ["stage"],
-      "optional": ["issue", "attempt", "error_class"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "attempt",
+        "error_class"
+      ]
     },
     "retry.escalated": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
     },
     "retry.skipped": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
     },
     "pipeline.anomaly": {
-      "required": ["stage"],
-      "optional": ["metric", "value", "severity"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "metric",
+        "value",
+        "severity"
+      ]
     },
     "pipeline.cost": {
       "required": [],
-      "optional": ["issue", "stage", "cost_usd", "model"]
+      "optional": [
+        "issue",
+        "stage",
+        "cost_usd",
+        "model"
+      ]
     },
     "pipeline.cleanup": {
       "required": [],
-      "optional": ["issue", "reason"]
+      "optional": [
+        "issue",
+        "reason"
+      ]
     },
     "pipeline.comment_failed": {
       "required": [],
-      "optional": ["issue"]
+      "optional": [
+        "issue"
+      ]
     },
     "loop.iteration_start": {
-      "required": ["iteration"],
-      "optional": ["issue", "goal"]
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "issue",
+        "goal"
+      ]
     },
     "loop.iteration_complete": {
-      "required": ["iteration"],
-      "optional": ["issue", "test_result", "duration_s"]
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "issue",
+        "test_result",
+        "duration_s"
+      ]
     },
     "loop.restart": {
       "required": [],
-      "optional": ["issue", "restart_count", "reason"]
+      "optional": [
+        "issue",
+        "restart_count",
+        "reason"
+      ]
     },
     "loop.stuckness_detected": {
       "required": [],
-      "optional": ["issue", "iteration", "reason"]
+      "optional": [
+        "issue",
+        "iteration",
+        "reason"
+      ]
     },
     "stage.skipped": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
     },
     "stage.artifact_miss": {
-      "required": ["stage"],
-      "optional": ["issue"]
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue"
+      ]
+    },
+    "feedback_detect_regression": {
+      "required": [
+        "merge_sha",
+        "regression"
+      ],
+      "optional": [
+        "severity"
+      ]
+    },
+    "feedback_post_merge_monitor": {
+      "required": [
+        "merge_sha"
+      ],
+      "optional": [
+        "environment",
+        "errors"
+      ]
+    },
+    "feedback_correlate": {
+      "required": [
+        "pr"
+      ],
+      "optional": [
+        "confidence"
+      ]
+    },
+    "feedback_auto_respond": {
+      "required": [
+        "severity"
+      ],
+      "optional": [
+        "type"
+      ]
+    },
+    "feedback_learn_from_outcome": {
+      "required": [
+        "pr"
+      ],
+      "optional": [
+        "merge_result",
+        "regression"
+      ]
+    },
+    "feedback_collect": {
+      "required": [],
+      "optional": [
+        "errors",
+        "file"
+      ]
+    },
+    "feedback_issue_created": {
+      "required": [
+        "url"
+      ],
+      "optional": [
+        "errors"
+      ]
+    },
+    "feedback_rollback": {
+      "required": [
+        "environment"
+      ],
+      "optional": [
+        "reason",
+        "status"
+      ]
+    },
+    "feedback_incident_learned": {
+      "required": [],
+      "optional": [
+        "cause"
+      ]
+    },
+    "test.event": {
+      "required": [],
+      "optional": []
     }
   }
 }
