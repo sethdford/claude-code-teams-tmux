@@ -232,7 +232,9 @@ else
 fi
 
 # ─── Test 12: Token accumulation parses JSON ────────────────────────────────
-if grep -q 'jq.*usage.input_tokens' "$SCRIPT_DIR/sw-loop.sh"; then
+# Functions may be in sw-loop.sh or in lib/loop-*.sh modules
+LOOP_FILES="$SCRIPT_DIR/sw-loop.sh $SCRIPT_DIR/lib/loop-tokens.sh $SCRIPT_DIR/lib/loop-error-feedback.sh $SCRIPT_DIR/lib/loop-git.sh $SCRIPT_DIR/lib/loop-display.sh $SCRIPT_DIR/lib/loop-quality.sh $SCRIPT_DIR/lib/loop-multi-agent.sh"
+if grep -q 'jq.*usage.input_tokens' $LOOP_FILES 2>/dev/null; then
     assert_pass "accumulate_loop_tokens parses JSON usage"
 else
     assert_fail "accumulate_loop_tokens parses JSON usage"
@@ -246,26 +248,26 @@ else
 fi
 
 # ─── Test 14: write_loop_tokens includes cost ────────────────────────────────
-if grep -q 'cost_usd' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'cost_usd' $LOOP_FILES 2>/dev/null; then
     assert_pass "write_loop_tokens includes cost_usd"
 else
     assert_fail "write_loop_tokens includes cost_usd"
 fi
 
 # ─── Test 15: _extract_text_from_json helper exists ──────────────────────────
-if grep -q '_extract_text_from_json' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q '_extract_text_from_json' $LOOP_FILES 2>/dev/null; then
     assert_pass "_extract_text_from_json helper defined"
 else
     assert_fail "_extract_text_from_json helper defined"
 fi
 
 # ─── Test 15b: validate_claude_output and check_budget_gate exist ───────────
-if grep -q 'validate_claude_output()' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'validate_claude_output()' $LOOP_FILES 2>/dev/null; then
     assert_pass "validate_claude_output helper defined"
 else
     assert_fail "validate_claude_output helper defined"
 fi
-if grep -q 'check_budget_gate()' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'check_budget_gate()' $LOOP_FILES 2>/dev/null; then
     assert_pass "check_budget_gate helper defined"
 else
     assert_fail "check_budget_gate helper defined"
@@ -283,7 +285,7 @@ echo ""
 echo -e "${DIM}  json extraction robustness${RESET}"
 # Extract the function from sw-loop.sh and test it in isolation (can't source
 # sw-loop.sh because it has no source guard — main() runs unconditionally)
-_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/lib/loop-tokens.sh" 2>/dev/null || sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
 tmpdir=$(mktemp -d)
 bash -c "
 warn() { :; }
@@ -341,7 +343,7 @@ fi
 # ─── Test 21: _extract_text_from_json — nested objects and binary ─────────────
 echo ""
 echo -e "${DIM}  json extraction edge cases${RESET}"
-_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/lib/loop-tokens.sh" 2>/dev/null || sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
 tmpdir2=$(mktemp -d)
 bash -c "
 warn() { :; }
@@ -747,14 +749,14 @@ else
 fi
 
 # Test: test-evidence JSON file written
-if grep -q 'test-evidence-iter-' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'test-evidence-iter-' $LOOP_FILES 2>/dev/null; then
     assert_pass "run_test_gate writes test-evidence JSON"
 else
     assert_fail "run_test_gate writes test-evidence JSON"
 fi
 
 # Test: audit agent reads evidence file
-if grep -q 'evidence_file.*test-evidence' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'evidence_file.*test-evidence' $LOOP_FILES 2>/dev/null; then
     assert_pass "run_audit_agent reads structured test evidence"
 else
     assert_fail "run_audit_agent reads structured test evidence"
@@ -801,7 +803,7 @@ else
 fi
 
 # Test: mid-build test discovery uses detect_created_test_files
-if grep -q 'detect_created_test_files' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -q 'detect_created_test_files' $LOOP_FILES 2>/dev/null; then
     assert_pass "Mid-build test file discovery integrated"
 else
     assert_fail "Mid-build test file discovery integrated"
