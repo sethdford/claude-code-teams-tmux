@@ -42,18 +42,7 @@ cp "$SCRIPT_DIR/sw-tmux-status.sh" "$TEST_TEMP_DIR/scripts/"
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && cp "$SCRIPT_DIR/lib/compat.sh" "$TEST_TEMP_DIR/scripts/lib/"
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && cp "$SCRIPT_DIR/lib/helpers.sh" "$TEST_TEMP_DIR/scripts/lib/"
 
-# Create mock binaries for stat/date
-mkdir -p "$TEST_TEMP_DIR/bin"
-cat > "$TEST_TEMP_DIR/bin/stat" <<'STAT_MOCK'
-#!/usr/bin/env bash
-# Mock stat for file modification time
-if [[ "${1:-}" == "-c" && "${2:-}" == "%Y" ]]; then
-    # Return MOCK_STAT_TIME if set (for testing age calculations)
-    [[ -n "${MOCK_STAT_TIME:-}" ]] && echo "$MOCK_STAT_TIME" || echo "$(($(date +%s) - 30))"
-fi
-exit 0
-STAT_MOCK
-chmod +x "$TEST_TEMP_DIR/bin/stat"
+# No mock stat needed — use real stat so actual file timestamps matter
 
 # Create test state file
 cat > "$TEST_TEMP_DIR/.claude/pipeline-state.md" <<'EOF'
@@ -81,10 +70,14 @@ for i in {4..5}; do
 done
 
 # Source the script under test
+# Set $1 to "noop" so the dispatch case falls through to * (echo "")
+# instead of running pipeline_widget at source time
 export SCRIPT_DIR="$TEST_TEMP_DIR/scripts"
 export HOME="$TEST_TEMP_DIR"
-export PATH="$TEST_TEMP_DIR/bin:$PATH"
-source "$TEST_TEMP_DIR/scripts/sw-tmux-status.sh"
+local_orig_args=("$@")
+set -- "noop"
+source "$TEST_TEMP_DIR/scripts/sw-tmux-status.sh" >/dev/null 2>&1
+set -- "${local_orig_args[@]}"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TESTS
@@ -161,7 +154,7 @@ print_test_section "Pipeline Widget"
 # Test: pipeline_widget extracts stage from state file
 test_pipeline_widget_extracts_stage() {
     local output
-    output=$(pipeline_widget)
+    output=$(cd "$TEST_TEMP_DIR" && pipeline_widget)
     # Should output tmux format string with BUILD stage
     if [[ "$output" =~ "BUILD" ]] && [[ "$output" =~ "#0066ff" ]]; then
         return 0
@@ -174,7 +167,7 @@ test_pipeline_widget_extracts_stage() {
 test_pipeline_widget_missing_state_file() {
     local output
     rm -f "$TEST_TEMP_DIR/.claude/pipeline-state.md"
-    output=$(pipeline_widget) || true
+    output=$(cd "$TEST_TEMP_DIR" && pipeline_widget) || true
     # Should return empty string
     [[ -z "$output" ]] && return 0 || { echo "Expected empty output for missing state file, got: $output"; return 1; }
 }

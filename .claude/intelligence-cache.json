@@ -676,7 +676,7 @@
       "result": {
         "estimated_iterations": 3
       },
-      "timestamp": 1773536301,
+      "timestamp": 1773538872,
       "ttl": 1800
     },
     "bfc965e55d5613fc4f5d9050c14de091": {
@@ -755,32 +755,32 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 86,
-            "summary": "Documents 5 specific test failures in core scripts (sw-cleanup.sh, sw-feedback.sh, sw-hello-test.sh, sw-code-review-test.sh) with root causes and fixes. Directly informs what test coverage gaps and improvements are needed for untested scripts."
-          },
-          {
-            "file": "patterns.json (vitest config)",
             "relevance": 85,
-            "summary": "Provides test framework (vitest), project structure conventions (src/, *.test.js pattern), and import style (commonjs). Essential context for planning test coverage implementation strategy."
+            "summary": "Contains 22+ test failure patterns across sw-cleanup.sh, sw-feedback-test.sh, sw-hello-test.sh with root causes and fixes. Directly informs what test issues to watch for when implementing test coverage for untested core scripts."
           },
           {
-            "file": "patterns.json (nodejs project type)",
-            "relevance": 42,
-            "summary": "Identifies project as Node.js/JavaScript, detected at bootstrap. Provides minimal additional context beyond what vitest config entry already covers."
+            "file": "patterns.json (first entry)",
+            "relevance": 78,
+            "summary": "Project structure: vitest runner, commonjs imports, src/ source directory, *.test.js pattern. Essential for understanding how to structure tests for the 3 untested scripts."
+          },
+          {
+            "file": "patterns.json (second entry: nodejs)",
+            "relevance": 32,
+            "summary": "Confirms Node.js project type detected at bootstrap. Low detail but provides minimal project context."
+          },
+          {
+            "file": "patterns.json (third entry: empty patterns)",
+            "relevance": 8,
+            "summary": "Generic repo metadata with empty patterns array. Minimal relevance to test coverage planning."
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Empty baseline metrics object with no actual performance or coverage data. Low relevance for test planning."
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Empty decisions array with no prior architectural or testing decisions recorded. Minimal relevance to current planning task."
+            "relevance": 5,
+            "summary": "Empty baselines object. Not relevant to test coverage planning stage."
           }
         ]
       },
-      "timestamp": 1773536415,
+      "timestamp": 1773538962,
       "ttl": 1800
     }
   }

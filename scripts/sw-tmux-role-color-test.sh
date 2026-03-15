@@ -71,6 +71,7 @@ verify_color() {
     rm -f "$TEST_TEMP_DIR/tmux-commands.log"
     MOCK_TMUX_PANE_TITLE="$title" \
     SCRIPT_DIR="$TEST_TEMP_DIR/scripts" \
+    TEST_TEMP_DIR="$TEST_TEMP_DIR" \
     PATH="$TEST_TEMP_DIR/bin:$PATH" \
     bash "$TEST_TEMP_DIR/scripts/sw-tmux-role-color.sh" >/dev/null 2>&1
 
