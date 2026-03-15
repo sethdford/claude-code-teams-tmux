@@ -396,8 +396,322 @@ test_20() {
     fi
     rm -rf "$tmpdir"
 }
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  Tests 21-32: Per-Iteration Loop Model Selection (lib/loop-model-selection.sh) ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+test_21() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    loop_model_init "default"
+    if [[ "$LOOP_MODEL_STRATEGY" == "default" ]]; then
+        pass "loop_model_init sets default strategy"
+    else
+        fail "loop_model_init sets default strategy (got: $LOOP_MODEL_STRATEGY)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_22() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    loop_model_init "aggressive"
+    if [[ "$LOOP_MODEL_STRATEGY" == "aggressive" ]]; then
+        pass "loop_model_init accepts aggressive strategy"
+    else
+        fail "loop_model_init accepts aggressive strategy (got: $LOOP_MODEL_STRATEGY)"
+    fi
+
+    # Invalid strategy should fall back to default
+    loop_model_init "invalid_strategy"
+    if [[ "$LOOP_MODEL_STRATEGY" == "default" ]]; then
+        pass "loop_model_init falls back to default on invalid"
+    else
+        fail "loop_model_init falls back to default on invalid (got: $LOOP_MODEL_STRATEGY)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_23() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    # Default strategy with 20 iterations:
+    # 1-2 → haiku, 3-16 → sonnet, 17-20 → opus
+    local m1 m2 m3 m10 m16 m17 m20
+    m1=$(loop_model_for_position 1 20 "default")
+    m2=$(loop_model_for_position 2 20 "default")
+    m3=$(loop_model_for_position 3 20 "default")
+    m10=$(loop_model_for_position 10 20 "default")
+    m16=$(loop_model_for_position 16 20 "default")
+    m17=$(loop_model_for_position 17 20 "default")
+    m20=$(loop_model_for_position 20 20 "default")
+
+    if [[ "$m1" == "haiku" && "$m2" == "haiku" ]]; then
+        pass "default routing: iter 1-2 → haiku"
+    else
+        fail "default routing: iter 1-2 → haiku (got: $m1, $m2)"
+    fi
+    if [[ "$m3" == "sonnet" && "$m10" == "sonnet" && "$m16" == "sonnet" ]]; then
+        pass "default routing: iter 3-16 → sonnet"
+    else
+        fail "default routing: iter 3-16 → sonnet (got: $m3, $m10, $m16)"
+    fi
+    if [[ "$m17" == "opus" && "$m20" == "opus" ]]; then
+        pass "default routing: iter 17-20 → opus"
+    else
+        fail "default routing: iter 17-20 → opus (got: $m17, $m20)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_24() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    # Aggressive strategy with 20 iterations:
+    # 1 → haiku, 2-14 → sonnet, 15-20 → opus
+    local m1 m2 m14 m15
+    m1=$(loop_model_for_position 1 20 "aggressive")
+    m2=$(loop_model_for_position 2 20 "aggressive")
+    m14=$(loop_model_for_position 14 20 "aggressive")
+    m15=$(loop_model_for_position 15 20 "aggressive")
+
+    if [[ "$m1" == "haiku" && "$m2" == "sonnet" && "$m14" == "sonnet" && "$m15" == "opus" ]]; then
+        pass "aggressive routing: haiku→sonnet→opus boundaries"
+    else
+        fail "aggressive routing (got: $m1, $m2, $m14, $m15)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_25() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    # Conservative strategy with 20 iterations:
+    # 1-3 → haiku, 4-18 → sonnet, 19-20 → opus
+    local m1 m3 m4 m18 m19 m20
+    m1=$(loop_model_for_position 1 20 "conservative")
+    m3=$(loop_model_for_position 3 20 "conservative")
+    m4=$(loop_model_for_position 4 20 "conservative")
+    m18=$(loop_model_for_position 18 20 "conservative")
+    m19=$(loop_model_for_position 19 20 "conservative")
+    m20=$(loop_model_for_position 20 20 "conservative")
+
+    if [[ "$m1" == "haiku" && "$m3" == "haiku" && "$m4" == "sonnet" && "$m18" == "sonnet" && "$m19" == "opus" && "$m20" == "opus" ]]; then
+        pass "conservative routing: haiku→sonnet→opus boundaries"
+    else
+        fail "conservative routing (got: $m1, $m3, $m4, $m18, $m19, $m20)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_26() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+
+    # Short loop (3 iterations) should use sonnet for all
+    local m1 m2 m3
+    m1=$(loop_model_for_position 1 3 "default")
+    m2=$(loop_model_for_position 2 3 "default")
+    m3=$(loop_model_for_position 3 3 "default")
+
+    if [[ "$m1" == "sonnet" && "$m2" == "sonnet" && "$m3" == "sonnet" ]]; then
+        pass "short loop (<=3 iters) uses sonnet for all"
+    else
+        fail "short loop (<=3 iters) uses sonnet (got: $m1, $m2, $m3)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_27() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Stuck detection: not stuck with insufficient data
+    STUCK_WINDOW=()
+    if ! loop_model_detect_stuck 50; then
+        pass "stuck detection: not stuck with 1 data point"
+    else
+        fail "stuck detection: should not be stuck with 1 data point"
+    fi
+
+    # Fill window with identical scores → stuck
+    STUCK_WINDOW=()
+    loop_model_detect_stuck 50 || true
+    loop_model_detect_stuck 52 || true
+    if loop_model_detect_stuck 51; then
+        pass "stuck detection: stuck with flat scores (50,52,51)"
+    else
+        fail "stuck detection: should be stuck with flat scores"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_28() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Not stuck with improving scores
+    STUCK_WINDOW=()
+    loop_model_detect_stuck 30 || true
+    loop_model_detect_stuck 50 || true
+    if ! loop_model_detect_stuck 70; then
+        pass "stuck detection: not stuck with improving scores"
+    else
+        fail "stuck detection: should not be stuck with improving scores (30,50,70)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_29() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Stuck escalation: sonnet → opus when stuck (iter 3/20 = sonnet tier, escalates to opus)
+    STUCK_WINDOW=(50 51)
+    local result
+    result=$(loop_model_select 3 20 52 "unknown" 0 "sonnet")
+    if [[ "$result" == "opus" ]]; then
+        pass "stuck escalation: sonnet → opus"
+    else
+        fail "stuck escalation: sonnet → opus (got: $result)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_30() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Error escalation: sonnet → opus with repeated errors and test failure
+    STUCK_WINDOW=()
+    local result
+    result=$(loop_model_select 5 20 40 "false" 4 "sonnet")
+    if [[ "$result" == "opus" ]]; then
+        pass "error escalation: sonnet → opus on persistent errors"
+    else
+        fail "error escalation: sonnet → opus (got: $result)"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_31() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Cost tracking accumulates correctly
+    loop_model_track_cost "haiku" 1000 500
+    loop_model_track_cost "sonnet" 2000 1000
+    loop_model_track_cost "opus" 3000 1500
+    loop_model_track_cost "sonnet" 4000 2000
+
+    if [[ "$LOOP_COST_HAIKU_ITERATIONS" -eq 1 && "$LOOP_COST_SONNET_ITERATIONS" -eq 2 && "$LOOP_COST_OPUS_ITERATIONS" -eq 1 ]]; then
+        pass "cost tracking: iteration counts per tier"
+    else
+        fail "cost tracking: iteration counts (h=$LOOP_COST_HAIKU_ITERATIONS s=$LOOP_COST_SONNET_ITERATIONS o=$LOOP_COST_OPUS_ITERATIONS)"
+    fi
+
+    if [[ "$LOOP_COST_HAIKU_INPUT" -eq 1000 && "$LOOP_COST_SONNET_INPUT" -eq 6000 && "$LOOP_COST_OPUS_INPUT" -eq 3000 ]]; then
+        pass "cost tracking: input tokens per tier"
+    else
+        fail "cost tracking: input tokens (h=$LOOP_COST_HAIKU_INPUT s=$LOOP_COST_SONNET_INPUT o=$LOOP_COST_OPUS_INPUT)"
+    fi
+
+    # Check JSON cost file was written
+    if [[ -f "${ARTIFACTS_DIR}/loop-model-costs.json" ]]; then
+        pass "cost tracking: JSON cost file written"
+    else
+        fail "cost tracking: JSON cost file missing"
+    fi
+    rm -rf "$tmpdir"
+}
+
+test_32() {
+    local tmpdir; tmpdir=$(mktemp -d)
+    export ARTIFACTS_DIR="$tmpdir/artifacts"
+    mkdir -p "$ARTIFACTS_DIR"
+
+    unset _LOOP_MODEL_SELECTION_LOADED
+    source "$SCRIPT_DIR/lib/loop-model-selection.sh"
+    loop_model_init
+
+    # Summary prints nothing when no data
+    local output
+    output=$(loop_model_summary 2>&1)
+    if [[ -z "$output" ]]; then
+        pass "summary: no output when no tracking data"
+    else
+        fail "summary: should be empty with no data (got: $output)"
+    fi
+
+    # Summary prints after tracking
+    loop_model_track_cost "haiku" 1000 500
+    loop_model_track_cost "sonnet" 2000 1000
+    output=$(loop_model_summary 2>&1)
+    if echo "$output" | grep -q "Model Usage" && echo "$output" | grep -q "haiku" && echo "$output" | grep -q "sonnet"; then
+        pass "summary: prints per-tier breakdown"
+    else
+        fail "summary: expected Model Usage with haiku and sonnet (got: $output)"
+    fi
+    rm -rf "$tmpdir"
+}
+
 # ─── Run all tests ─────────────────────────────────────────────────────────────
-for i in {1..20}; do
+for i in {1..32}; do
     test_$i
 done
 

@@ -54,6 +54,9 @@ fi
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
+# Per-iteration adaptive model selection (issue #274)
+# shellcheck source=lib/loop-model-selection.sh
+[[ -f "$SCRIPT_DIR/lib/loop-model-selection.sh" ]] && source "$SCRIPT_DIR/lib/loop-model-selection.sh" 2>/dev/null || true
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -543,6 +546,11 @@ accumulate_loop_tokens() {
             esac
             cost_millicents=$(echo "$cost" | awk '{printf "%.0f", $1 * 100000}' 2>/dev/null || echo "0")
             LOOP_COST_MILLICENTS=$(( ${LOOP_COST_MILLICENTS:-0} + ${cost_millicents:-0} ))
+        fi
+
+        # Per-tier cost tracking for model selection analytics
+        if type loop_model_track_cost >/dev/null 2>&1; then
+            loop_model_track_cost "${MODEL:-sonnet}" "${input_tok:-0}" "${output_tok:-0}"
         fi
     else
         # Fallback: regex-based parsing for non-JSON output
@@ -1690,6 +1698,11 @@ show_summary() {
     echo -e "  ${DIM}Logs:  $LOG_DIR/${RESET}"
     echo ""
 
+    # Per-tier model usage breakdown
+    if type loop_model_summary >/dev/null 2>&1; then
+        loop_model_summary
+    fi
+
     # Write token totals for pipeline cost tracking
     write_loop_tokens
 }
@@ -2093,6 +2106,11 @@ run_single_agent_loop() {
     apply_adaptive_budget
     MODEL="$(select_adaptive_model "build" "$MODEL")"
 
+    # Initialize per-iteration model selection (position-based + stuck detection)
+    if type loop_model_init >/dev/null 2>&1; then
+        loop_model_init
+    fi
+
     # Track applied memory fix patterns for outcome recording
     _applied_fix_pattern=""
     STUCKNESS_COUNT=0
@@ -2179,6 +2197,24 @@ ${GOAL}"
                 if [[ -f "$_test_log" ]]; then
                     memory_analyze_failure "$_test_log" "test" 2>/dev/null &
                 fi
+            fi
+        fi
+
+        # Per-iteration adaptive model selection (position-based + stuck detection)
+        if type loop_model_select >/dev/null 2>&1; then
+            local _conv_score=50
+            if [[ -f "${ARTIFACTS_DIR}/convergence-history.json" ]] && command -v jq >/dev/null 2>&1; then
+                _conv_score=$(jq -r '.[-1].score // 50' "${ARTIFACTS_DIR}/convergence-history.json" 2>/dev/null || echo "50")
+            fi
+            local _error_count=0
+            if [[ -f "${ARTIFACTS_DIR}/error-log.jsonl" ]]; then
+                _error_count=$(wc -l < "${ARTIFACTS_DIR}/error-log.jsonl" 2>/dev/null || echo "0")
+                _error_count=${_error_count// /}
+            fi
+            local _prev_model="$MODEL"
+            MODEL=$(loop_model_select "$ITERATION" "$MAX_ITERATIONS" "$_conv_score" "${TEST_PASSED:-unknown}" "$_error_count" "$MODEL")
+            if [[ "$MODEL" != "$_prev_model" ]]; then
+                info "Model: ${_prev_model} → ${MODEL} (iter ${ITERATION}/${MAX_ITERATIONS})"
             fi
         fi
 
