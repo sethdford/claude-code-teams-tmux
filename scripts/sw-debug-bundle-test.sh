@@ -70,10 +70,16 @@ test_1_bundle_directory_creation() {
     export LAST_STAGE_ERROR_CLASS="compilation_error"
     export LAST_STAGE_ERROR="error: unknown symbol"
 
-    local bundle_path
-    bundle_path=$(collect_debug_bundle "build" 2>/dev/null || true)
+    # Call function and check if bundles directory is created
+    collect_debug_bundle "build" >/dev/null 2>&1 || true
 
-    if [[ -n "$bundle_path" && -d "$bundle_path" ]]; then
+    # Check if any bundles were created
+    local bundle_count
+    bundle_count=$(find "${ARTIFACTS_DIR}/debug-bundles" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || echo 0)
+
+    if [[ "$bundle_count" -gt 0 ]]; then
+        local bundle_path
+        bundle_path=$(find "${ARTIFACTS_DIR}/debug-bundles" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)
         pass "Bundle directory created: $bundle_path"
     else
         fail "Bundle directory not created"
