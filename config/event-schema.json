@@ -213,6 +213,50 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "feedback_detect_regression": {
+      "required": ["merge_sha"],
+      "optional": ["regression", "severity"]
+    },
+    "feedback_post_merge_monitor": {
+      "required": ["merge_sha"],
+      "optional": ["environment", "errors"]
+    },
+    "feedback_correlate": {
+      "required": [],
+      "optional": ["pr", "confidence"]
+    },
+    "feedback_auto_respond": {
+      "required": [],
+      "optional": ["severity", "type"]
+    },
+    "feedback_learn_from_outcome": {
+      "required": [],
+      "optional": ["pr", "merge_result", "regression"]
+    },
+    "feedback_collect": {
+      "required": [],
+      "optional": ["errors", "file"]
+    },
+    "feedback_issue_created": {
+      "required": [],
+      "optional": ["url", "errors"]
+    },
+    "feedback_rollback": {
+      "required": ["environment"],
+      "optional": ["reason", "status"]
+    },
+    "feedback_incident_learned": {
+      "required": [],
+      "optional": ["cause"]
+    },
+    "loop.model_selected": {
+      "required": ["iteration", "model"],
+      "optional": ["reason", "cost_so_far"]
+    },
+    "loop.model_escalated": {
+      "required": ["iteration", "model"],
+      "optional": ["reason", "from_model"]
     }
   }
 }
