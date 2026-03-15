@@ -70,14 +70,14 @@ collect_debug_bundle() {
     [[ -z "$epoch" ]] && epoch="0"
     local bundle_dir="${ARTIFACTS_DIR}/debug-bundles/${stage_id}-${epoch}-$$"
 
-    # Clean up on error: ensure bundle dir is removed if we bail out
-    _cleanup_bundle() {
-        [[ -d "$bundle_dir" ]] && rm -rf "$bundle_dir" 2>/dev/null || true
-    }
-    trap _cleanup_bundle ERR
+    # DEBUG
+    echo "DEBUG_INIT: stage_id='$stage_id', epoch='$epoch', pid=$$, bundle_dir='$bundle_dir'" >&2
+
+    # Ensure bundle directory path is valid
+    [[ -z "$bundle_dir" ]] && { echo "DEBUG: bundle_dir is empty after assignment" >&2; return 1; }
 
     # Create bundle directory
-    mkdir -p "$bundle_dir" 2>/dev/null || { _cleanup_bundle; return 1; }
+    mkdir -p "$bundle_dir" 2>/dev/null || return 1
 
     # 1. Collect stage log (last 500 lines of stage output)
     _collect_stage_log "$stage_id" "$bundle_dir" || true
@@ -101,10 +101,7 @@ collect_debug_bundle() {
     _collect_error_log_tail "$bundle_dir" || true
 
     # 8. Create manifest with checksums
-    if ! _create_manifest "$bundle_dir"; then
-        _cleanup_bundle
-        return 1
-    fi
+    _create_manifest "$bundle_dir" || return 1
 
     # Rotate old bundles (keep last 10)
     rotate_debug_bundles 10 || true
@@ -116,13 +113,9 @@ collect_debug_bundle() {
         "timestamp=$(now_iso)" \
         2>/dev/null || true
 
-    # Return bundle path (only if directory was successfully created)
-    if [[ -d "$bundle_dir" ]]; then
-        echo "$bundle_dir"
-        return 0
-    else
-        return 1
-    fi
+    # Return bundle path
+    echo "BUNDLE_DIR_VALUE:$bundle_dir:" >&2
+    echo "$bundle_dir"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════
