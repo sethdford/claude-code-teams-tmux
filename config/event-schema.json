@@ -217,6 +217,22 @@
     "debug.bundle_created": {
       "required": ["stage", "bundle_path"],
       "optional": ["issue", "job_id", "artifact_count", "bundle_size_bytes", "timestamp"]
+    },
+    "feedback_detect_regression": {
+      "required": ["merge_sha"],
+      "optional": ["issue", "regression", "type", "severity", "evidence"]
+    },
+    "feedback_auto_respond": {
+      "required": ["severity"],
+      "optional": ["type"]
+    },
+    "feedback_learn_from_outcome": {
+      "required": ["pr"],
+      "optional": ["merge_result", "regression"]
+    },
+    "feedback_correlate": {
+      "required": ["pr"],
+      "optional": ["confidence"]
     }
   }
 }
