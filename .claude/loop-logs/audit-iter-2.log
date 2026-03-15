@@ -1,1 +1,56 @@
-Invalid API key · Fix external API key
+## Summary
+
+Based on my comprehensive audit of iterations 1 and 2, here are my findings:
+
+### Implementation Quality: ✓ GOOD
+
+The agent successfully implemented the core feature:
+
+1. **Complete module** (`scripts/lib/loop-model-selection.sh`, 365 lines):
+   - Position-based routing (haiku→sonnet→opus based on iteration position)
+   - Three configurable strategies (default/aggressive/conservative)
+   - Stuck detection via sliding window (no progress = escalate)
+   - Error escalation (repeated test failures = escalate)
+   - Per-tier cost tracking with JSON output
+   - Event emission for observability
+
+2. **Correct integration into `sw-loop.sh`** (36 lines):
+   - Sources the module
+   - Calls `loop_model_init()` at loop start
+   - Calls `loop_model_select()` before each iteration to update MODEL
+   - Tracks costs via `loop_model_track_cost()`
+   - Outputs summary via `loop_model_summary()`
+
+3. **Comprehensive tests**: 12 new tests (21-32) covering routing, stuck detection, escalation, and cost tracking. All 39 adaptive-model tests pass.
+
+4. **Good engineering**:
+   - Uses `set -euo pipefail`, proper guards
+   - Sanitizes numeric inputs
+   - Configuration-driven (reads `loop.model_strategy` from daemon-config.json)
+   - Proper floating-point cost math via AWK
+
+### Critical Issue: ✗ BUILD FAILS
+
+**`npm test` exits with code 2** due to a pre-existing bug in `sw-code-review-test.sh` line 40:
+
+```bash
+sed -i '' "s|\$TEST_TEMP_DIR|/tmp/sw-test-...|g" "$TEST_TEMP_DIR/bin/git"
+```
+
+This is **macOS sed syntax** (`-i ''`) which fails on GNU sed (Linux). The error is not from the agent's new code, but the agent claims "LOOP_COMPLETE" while the build is still broken. The agent should have either fixed this or explicitly noted the external blocker.
+
+### Missing Context
+
+The agent states "All 3 failing tests are now fixed" referring to iteration 1's `file_mtime()` fix, but doesn't address why `npm test` overall still fails.
+
+---
+
+## AUDIT_FAIL
+
+The core implementation is correct and the new feature works as designed. However:
+
+1. **`npm test` fails with exit code 2** — the build is broken
+2. **Agent falsely claims completion** — says "LOOP_COMPLETE" when tests are still failing
+3. **Pre-existing bug unresolved** — `sw-code-review-test.sh` sed error remains
+
+Fix the sed error in `sw-code-review-test.sh:40` to unblock the full test suite, OR clearly document why it's out of scope.
