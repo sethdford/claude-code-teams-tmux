@@ -186,6 +186,29 @@ run_stage_with_retry() {
             echo "2. Identify the ROOT CAUSE — not just the symptom"
             echo "3. If previous artifacts exist and are correct, build on them"
             echo "4. If previous artifacts are flawed, explain what's wrong before fixing"
+            echo ""
+
+            # Include debug bundle reference if available
+            local _latest_bundle
+            _latest_bundle=$(ls -td "${ARTIFACTS_DIR}/debug-bundles/${stage_id}-"* 2>/dev/null | head -1 || true)
+            if [[ -n "$_latest_bundle" && -d "$_latest_bundle" ]]; then
+                echo "### Debug Bundle"
+                echo "Full debug artifacts collected at: \`${_latest_bundle}\`"
+                echo ""
+                if [[ -f "${_latest_bundle}/error-classification.json" ]]; then
+                    echo "**Error classification:**"
+                    echo '```json'
+                    cat "${_latest_bundle}/error-classification.json" 2>/dev/null || true
+                    echo '```'
+                    echo ""
+                fi
+                if [[ -f "${_latest_bundle}/git-state.json" ]]; then
+                    echo "**Git state:**"
+                    echo '```json'
+                    cat "${_latest_bundle}/git-state.json" 2>/dev/null || true
+                    echo '```'
+                fi
+            fi
         } > "$_retry_ctx_file" 2>/dev/null || true
 
         emit_event "retry.context_written" \

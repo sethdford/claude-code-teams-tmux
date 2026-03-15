@@ -432,6 +432,21 @@ $(tail -5 "$ARTIFACTS_DIR/${stage_id}"*.log 2>/dev/null || echo 'No log availabl
             --tests-passing "false" 2>/dev/null || true
     fi
 
+    # Collect debug artifacts for failure diagnosis
+    local _bundle_path=""
+    if [[ -f "$SCRIPT_DIR/lib/debug-collector.sh" ]]; then
+        source "$SCRIPT_DIR/lib/debug-collector.sh" 2>/dev/null || true
+        if type collect_debug_bundle >/dev/null 2>&1; then
+            # Set globals that debug-collector uses
+            CURRENT_STAGE_ID="$stage_id"
+            _bundle_path=$(collect_debug_bundle "$stage_id" 2>/dev/null || true)
+            # Include bundle path in GitHub comment if available
+            if [[ -n "$_bundle_path" ]]; then
+                gh_comment_issue "$ISSUE_NUMBER" "🔍 Debug bundle available at: \`$_bundle_path\`" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     # Durable WAL: publish stage failure event
     if type publish_event >/dev/null 2>&1; then
         publish_event "stage.failed" "{\"stage\":\"${stage_id}\",\"issue\":\"${ISSUE_NUMBER:-0}\",\"timing\":\"${timing}\"}" 2>/dev/null || true
