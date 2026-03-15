@@ -1,1 +1,47 @@
-Invalid API key · Fix external API key
+## AUDIT ASSESSMENT
+
+I've reviewed the cumulative work from iteration 1. Here are the key findings:
+
+### **CRITICAL ISSUE: Incomplete Implementation**
+
+The agent **failed to register the new test suite** in `package.json`. The agent created 39 comprehensive tests in `sw-adaptive-model-test.sh` but did not add them to the "test" script in package.json. This means:
+
+- When run directly: `bash scripts/sw-adaptive-model-test.sh` → **39/39 tests pass** ✓
+- When run via npm test: The new tests are **not executed** (absent from the test command)
+- **`npm test` currently fails with exit code 3** due to pre-existing failures in `sw-cleanup-test.sh` (unrelated to this change)
+
+### **What was implemented correctly:**
+
+1. **`scripts/lib/loop-model-selection.sh`** (365 lines) - Complete module with:
+   - Position-based routing (3 strategies: default, aggressive, conservative)
+   - Sliding window stuck detection (scores within 5 points = stuck)
+   - Escalation logic (haiku→sonnet→opus) on stuck + error conditions
+   - Per-tier cost tracking with atomic JSON writes
+   - Summary function with event emission
+
+2. **Integration in `sw-loop.sh`** (36 new lines):
+   - Sourced at line 59
+   - `loop_model_init()` called at loop start
+   - `loop_model_select()` called before each iteration (reads convergence, error count, updates MODEL)
+   - `loop_model_track_cost()` called after iteration token parsing
+   - `loop_model_summary()` called at completion
+
+3. **Code Quality**:
+   - Bash 3.2 compatible (no associative arrays, proper array handling)
+   - Follows project conventions (set -euo pipefail, ERR trap, atomic writes)
+   - No TODOs/FIXMEs
+   - Proper guard variable pattern (`_LOOP_MODEL_SELECTION_LOADED`)
+   - jq optional graceful fallback
+
+### **What was NOT done:**
+
+**The test suite was not registered in package.json.** The "test" script needs to include:
+```bash
+bash scripts/sw-adaptive-model-test.sh && ...
+```
+
+This is a critical oversight because it means the CI pipeline doesn't validate the new code.
+
+---
+
+**AUDIT_FAIL** - The implementation is complete and correct, but the work is incomplete because the test suite was not registered in the CI pipeline, violating the requirement that all code changes be tested.
