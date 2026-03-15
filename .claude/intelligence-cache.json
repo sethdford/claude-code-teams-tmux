@@ -851,27 +851,27 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 95,
-            "summary": "Critical for build stage: documents 5 recent test failures with root causes and fixes. Directly prevents repeating known issues during test execution (sw-cleanup.sh, sw-feedback-test.sh, mktemp, sed invocation problems). Last failures seen today."
+            "relevance": 100,
+            "summary": "Documents 5 recent test failures with root causes and fixes. Directly applicable to build stage debugging—includes sw-cleanup.sh heartbeat detection issue (27 occurrences), sw-feedback-test.sh regression output (25 occurrences), and mktemp /tmp/claude directory issue (4+ occurrences). Essential context for fixing test failures."
           },
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Essential build metadata: specifies vitest as test runner, npm as package manager, test pattern *.test.js, source directory src/, and Node.js project type. Required to understand how to build and test this codebase."
+            "relevance": 95,
+            "summary": "Project structure metadata: vitest test runner, npm package manager, src/ directory, *.test.js pattern, commonjs imports. Critical for understanding how to configure and run the build/test stage correctly."
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Minimal relevance: contains only empty baselines object with no actual performance data. Could be useful if metrics were populated but currently provides no actionable build insights."
+            "relevance": 0,
+            "summary": "Empty baselines object—no data to apply."
           },
           {
             "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Not relevant to build stage: empty decisions array with no recorded architectural or technical decisions. Would need populated entries to inform build strategy."
+            "relevance": 0,
+            "summary": "Empty decisions array—no data to apply."
           }
         ]
       },
-      "timestamp": 1773563578,
+      "timestamp": 1773566310,
       "ttl": 1800
     }
   }
