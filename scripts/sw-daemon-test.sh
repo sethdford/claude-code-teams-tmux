@@ -1786,9 +1786,10 @@ test_retry_args_passed_to_spawn() {
 }
 
 test_failure_classification_wired() {
-    local daemon_src
+    local daemon_src _context
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    _context=$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB 2>/dev/null || true)
+    echo "$_context" | grep -q 'classify_failure' || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
@@ -1843,26 +1844,6 @@ test_consecutive_failure_pause() {
         { echo "Missing auto_pause event for consecutive failures"; return 1; }
     grep -q 'reset_failure_tracking()' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing reset_failure_tracking function"; return 1; }
-}
-
-test_retry_args_passed_to_spawn() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -q 'extra_pipeline_args=.*"$@"' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "daemon_spawn_pipeline missing extra_pipeline_args parameter"; return 1; }
-    grep -q 'pipeline_args+=.*extra_pipeline_args' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "extra_pipeline_args not merged into pipeline_args"; return 1; }
-    grep -q 'all_extra_args' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Retry logic missing all_extra_args merge"; return 1; }
-}
-
-test_failure_classification_wired() {
-    local daemon_src
-    daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
-        { echo "classify_failure not called in daemon_on_failure"; return 1; }
-    grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
-        { echo "Missing daemon.failure_classified event"; return 1; }
 }
 
 # ──────────────────────────────────────────────────────────────────────────────

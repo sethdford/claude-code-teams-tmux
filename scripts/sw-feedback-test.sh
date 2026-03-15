@@ -192,7 +192,7 @@ echo ""
 echo -e "  ${CYAN}regression detection${RESET}"
 # Create a clean monitoring file (no errors)
 echo '{"merge_sha":"abc1234", "errors_detected":0, "deployment_status":"success"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
-output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>/dev/null)
 if echo "$output" | jq . >/dev/null 2>&1; then
     assert_pass "regression detection outputs valid JSON"
     regression=$(echo "$output")
@@ -204,7 +204,7 @@ fi
 # ─── Test 16: regression detection with deployment failure ────────────────────
 # Create monitoring file with deployment failure
 echo '{"merge_sha":"def5678", "errors_detected":0, "deployment_status":"failed"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
-output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>/dev/null)
 regression=$(echo "$output")
 assert_json_key "deploy failure detects regression" "$regression" ".regression" "true"
 assert_json_key "deploy failure is P0" "$regression" ".severity" "P0"
@@ -213,7 +213,7 @@ assert_json_key "deploy failure type" "$regression" ".type" "deploy_failure"
 # ─── Test 17: regression detection with error spike ────────────────────────────
 # Create monitoring file with many errors
 echo '{"merge_sha":"ghi9012", "errors_detected":10, "deployment_status":"success"}' > "$ARTIFACTS_DIR/post-merge-monitoring.json"
-output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>/dev/null)
 regression=$(echo "$output")
 assert_json_key "error spike detects regression" "$regression" ".regression" "true"
 assert_json_key "error spike is P1" "$regression" ".severity" "P1"
@@ -222,7 +222,7 @@ assert_json_key "error spike type" "$regression" ".type" "error_spike"
 # ─── Test 18: correlate with changes ──────────────────────────────────────────
 echo ""
 echo -e "  ${CYAN}correlate with changes${RESET}"
-output=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 42 2>&1)
+output=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 42 2>/dev/null)
 if echo "$output" | jq . >/dev/null 2>&1; then
     assert_pass "correlate outputs valid JSON"
     correlation=$(echo "$output")
@@ -286,11 +286,11 @@ bash "$SCRIPT_DIR/sw-feedback.sh" post-merge "workflow123" "production" "3" "1" 
 [[ -f "$ARTIFACTS_DIR/post-merge-monitoring.json" ]] && assert_pass "workflow: monitoring complete" || assert_fail "workflow: monitoring complete"
 
 # 2. Detect regression
-regression_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>&1)
+regression_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" regressions "$ARTIFACTS_DIR/post-merge-monitoring.json" 2>/dev/null)
 echo "$regression_json" | jq . >/dev/null 2>&1 && assert_pass "workflow: regression detection valid" || assert_fail "workflow: regression detection valid"
 
 # 3. Correlate changes
-correlation_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 55 2>&1)
+correlation_json=$(bash "$SCRIPT_DIR/sw-feedback.sh" correlate 55 2>/dev/null)
 echo "$correlation_json" | jq . >/dev/null 2>&1 && assert_pass "workflow: correlation valid" || assert_fail "workflow: correlation valid"
 
 # 4. Record outcome
