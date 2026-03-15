@@ -959,28 +959,28 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 92,
-            "summary": "Project metadata (vitest, npm, Node.js, commonjs) and build conventions are fundamental to build stage execution. Directly informs test command selection and source directory structure."
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains captured test failures with root causes and fixes. Highly relevant as build stage depends on test success; these patterns show recurring failures to avoid."
           },
           {
-            "file": "failures.json",
-            "relevance": 86,
-            "summary": "Recent test-stage failures with root causes and fixes. Most relevant: sw-cleanup.sh heartbeat detection issue (seen 26 times, last 2026-03-15) and regression detection JSON output problem (seen 23 times). Prevents repeating known failures during current build."
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project configuration (test_runner: vitest, package_manager: npm, source: src/). Provides baseline understanding of build environment and test setup."
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Contains empty baselines object. Potentially relevant for performance comparison but no actual baseline data available to guide build optimization."
+            "relevance": 10,
+            "summary": "Empty baselines object. No actionable metrics to inform build stage decisions."
           },
           {
             "file": "decisions.json",
-            "relevance": 8,
-            "summary": "Empty decisions array. Could inform architectural constraints on build stage but contains no captured data."
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior build stage decisions captured."
           }
         ]
       },
-      "timestamp": 1773562378,
+      "timestamp": 1773564731,
       "ttl": 1800
     }
   }
