@@ -70,11 +70,8 @@ collect_debug_bundle() {
     [[ -z "$epoch" ]] && epoch="0"
     local bundle_dir="${ARTIFACTS_DIR}/debug-bundles/${stage_id}-${epoch}-$$"
 
-    # DEBUG
-    echo "DEBUG_INIT: stage_id='$stage_id', epoch='$epoch', pid=$$, bundle_dir='$bundle_dir'" >&2
-
     # Ensure bundle directory path is valid
-    [[ -z "$bundle_dir" ]] && { echo "DEBUG: bundle_dir is empty after assignment" >&2; return 1; }
+    [[ -z "$bundle_dir" ]] && return 1
 
     # Create bundle directory
     mkdir -p "$bundle_dir" 2>/dev/null || return 1
@@ -113,9 +110,13 @@ collect_debug_bundle() {
         "timestamp=$(now_iso)" \
         2>/dev/null || true
 
-    # Return bundle path
-    echo "BUNDLE_DIR_VALUE:$bundle_dir:" >&2
-    echo "$bundle_dir"
+    # Return bundle path - write to temp file to work around scoping issues
+    if [[ -d "$bundle_dir" ]]; then
+        printf "%s" "$bundle_dir" > "${bundle_dir}/.path"
+        cat "${bundle_dir}/.path"
+        return 0
+    fi
+    return 1
 }
 
 # ═════════════════════════════════════════════════════════════════════════════
