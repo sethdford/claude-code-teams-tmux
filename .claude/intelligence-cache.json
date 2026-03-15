@@ -652,24 +652,23 @@
       "result": {
         "complexity": 3,
         "risk_level": "low",
-        "success_probability": 85,
+        "success_probability": 88,
         "recommended_template": "fast",
         "issue_type": "testing",
         "key_risks": [
-          "Unclear CI coverage reporting integration — need to verify how 100% metric is measured and reported",
-          "tmux and tracker-github require mocking or careful isolation; limited existing test examples for these modules",
-          "Test flakiness risk for integration points (tmux session creation, tracker API mocking)"
+          "Scripts may have edge cases or complex behavior not immediately obvious from reading",
+          "New test suites must integrate properly with existing test harness and CI pipeline",
+          "Coverage metrics may require manual updates if not automatically calculated"
         ],
         "implementation_hints": [
-          "Reference sw-tmux-test.sh (746 lines) and sw-tracker-test.sh (534 lines) as comprehensive templates for the new test suites",
-          "Follow established harness pattern: mock binaries in temp dir, PASS/FAIL counters, ERR traps, colored output",
-          "Start with sw-tmux-role-color.sh (81 lines) — smallest script, lowest friction to understand test pattern",
-          "For tmux tests, consider mocking tmux binary or testing shell functions in isolation to avoid session side-effects",
-          "Verify npm test and/or CI pipeline already includes coverage reporting; register new test suites in package.json if needed",
-          "Use `shipwright prep` to confirm test harness setup in the target repo"
+          "Study existing test suites (sw-tmux-test.sh, sw-tracker-test.sh) to understand established patterns",
+          "Read target scripts to identify all functions, edge cases, and error conditions to test",
+          "Use established test harness with PASS/FAIL counters and ERR traps matching 102 existing suites",
+          "Test both success paths and failure/error handling for comprehensive coverage",
+          "Verify new test suites are registered in package.json and run in CI automatically"
         ]
       },
-      "timestamp": 1773536291,
+      "timestamp": 1773555720,
       "ttl": 3600
     },
     "f294cb1ad159c911ba54f89128d72fdf": {
@@ -781,6 +780,57 @@
         ]
       },
       "timestamp": 1773538962,
+      "ttl": 1800
+    },
+    "e341e06f1ab73257cb976fd41fde8cf7": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1773555726,
+      "ttl": 1800
+    },
+    "471bd99e5736af3cd6b749b0a463659e": {
+      "result": {
+        "estimated_cost_usd": 0.04,
+        "estimated_iterations": 2,
+        "estimated_tokens": 11500,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1773555737,
+      "ttl": 3600
+    },
+    "dd29990abc6c490b86fed48ca422151f": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 documented test failure patterns in core scripts (sw-cleanup.sh, sw-feedback-test.sh, sw-code-review-test.sh) with root causes and fixes. Directly relevant to planning test coverage completion for untested core scripts."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Shows project uses vitest test runner, *.test.js pattern, and commonjs imports. Understanding test conventions and framework is essential for planning new test coverage work."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 40,
+            "summary": "Confirms Node.js project type detected at bootstrap. Provides basic project context but less specific than the first patterns.json entry."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object provides no actionable data for test coverage planning."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array provides no historical decision context relevant to test coverage planning."
+          }
+        ]
+      },
+      "timestamp": 1773555752,
       "ttl": 1800
     }
   }
