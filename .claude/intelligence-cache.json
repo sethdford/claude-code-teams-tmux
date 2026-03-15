@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "architect",
+          "tester"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Feature implementation of intelligent test output summarization and failure prioritization requires core development (builder) with architectural design for the system (architect) and test failure expertise (tester)",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773563554,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,304 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "4ec01941750e029dbceb260b80c7d416": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Test output format variations across frameworks (Jest, pytest, Go test, etc.) may require adaptive parsing",
+          "Categorization logic may misclassify errors or miss edge cases, requiring iterative refinement",
+          "Performance degradation with very large outputs (1000+ lines) if parsing is inefficient",
+          "Integration with sw-loop.sh must preserve existing loop behavior and not cause regressions"
+        ],
+        "implementation_hints": [
+          "Use modular parsing functions in lib/loop-test-summarizer.sh for each error category (syntax, logic, integration)",
+          "Leverage existing shell utilities (grep, jq, awk) with test scenarios (10/50/100 error mocks) before complex logic",
+          "Implement clustering first with exact error message matching, then add fuzzy matching for related failures",
+          "Add focused prompt generation that surfaces top 3-5 failures with suggested fix order based on dependency analysis",
+          "Integrate at the test failure point in sw-loop.sh where error-summary.json is written, ensuring context efficiency",
+          "Create comprehensive test suite matching the three specified scenarios to validate accuracy and performance"
+        ]
+      },
+      "timestamp": 1773562904,
+      "ttl": 3600
+    },
+    "4e1f1a608fce5f826e83c6dd851b0e2c": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1773562914,
+      "ttl": 1800
+    },
+    "6ee93ec636ce6f6e501102257d18e81f": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 3,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "build",
+        "confidence": 76
+      },
+      "timestamp": 1773562926,
+      "ttl": 3600
+    },
+    "c92ab21746e588bab928b4dd0540a0cf": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "infrastructure",
+          "performance"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Moderate complexity: requires robust test output parsing, intelligent error categorization with heuristics, failure clustering logic, and integration into existing loop. Not algorithmically complex but needs careful design to avoid false categorizations that would misdirect agent effort."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "build": [
+            "testing-strategy",
+            "performance"
+          ],
+          "review": [
+            "testing-strategy",
+            "adversarial-quality",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "testing-strategy"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "testing-strategy": "This issue is fundamentally about improving test failure analysis and prioritization; testing-strategy provides patterns for test categorization, mock output generation, and validation of the summarizer across diverse test frameworks.",
+          "systematic-debugging": "The issue context mentions 'a previous attempt FAILED'—this framework prevents blindly retrying the same approach and establishes proper investigation phases for understanding why earlier attempts didn't work.",
+          "brainstorming": "Challenge assumptions about what 'critical' failures are, whether blocking-dependency heuristics are correct, and how clustering should handle interdependent failures before committing to implementation.",
+          "architecture-design": "The summarizer is a new library integrated into sw-loop.sh's prompt composition—an ADR will clarify interface contract, error handling strategy, and how categorized output flows through the loop.",
+          "performance": "This feature's entire purpose is context optimization (preventing token waste with focused summaries); performance skill ensures the summarizer itself is fast enough that overhead doesn't defeat the goal.",
+          "adversarial-quality": "Test output parsing is fragile—adversarial thinking surfaces: What if errors have circular dependencies? What if test output is malformed or contains escape sequences? What if failures from different frameworks clash in clustering?",
+          "two-stage-review": "Complex feature with cascading consequences (incorrect prioritization can misdirect build loop effort); two-pass review ensures implementation correctness first, then validates integration doesn't break existing loop behavior.",
+          "pr-quality": "The categorization rules and prioritization heuristics need clear documentation in the PR so reviewers understand *why* failures are grouped/ranked a certain way."
+        },
+        "generated_skills": [
+          {
+            "name": "error-triage-and-presentation",
+            "reason": "No existing skill specifically addresses intelligent error categorization, impact-based prioritization, and focused communication—this gap is critical for the issue's core requirement of generating smart focused prompts from noisy output.",
+            "content": "## Error Triage & Intelligent Presentation\n\nWhen dealing with high-volume error output, successful systems triage by impact and communicate only what matters most. Apply these patterns:\n\n### Categorization Framework\n**Syntax/Parse Errors** (highest priority): Block downstream tests—fix first.\n**Logic Errors** (high priority): Test intent failures—critical path code.\n**Edge Case Failures** (medium): Boundary condition tests—lower risk if skipped temporarily.\n**Integration Failures** (medium): Multi-component interaction—may be cascading from logic errors.\n**Environmental Failures** (lowest): Setup/teardown, missing test fixtures—often false negatives.\n\n### Impact Prioritization\n1. **Blocking analysis**: Errors that prevent other tests from running (e.g., initialization failures) rank above isolated test failures.\n2. **Dependency chains**: If test A fails due to test B's side effect, fix B first—flag the dependency in output.\n3. **Failure clustering**: Group by root cause, not symptom. \"5 auth failures → 1 bug\" vs. \"5 separate issues.\"\n\n### Focused Prompt Generation\nAfter triage, generate structured output for decision-making:\n- Top 3-5 critical failures with root causes\n- Suggested fix order (respecting dependencies)\n- Grouped failures (\"cluster of 7 timeout errors\") vs. listing all 7\n- Brief context: \"Test A blocks B, C, D; fix A first\"\n\n### Implementation Guidance\n- Use regex-based pattern matching for error signature extraction (syntax error locations, assertion failures, stack traces).\n- Build a failure dependency graph—if error X prevents test Y from running, mark it as a blocker.\n- Cluster by error message similarity (fuzzy matching) or inferred root cause (shared module, configuration).\n- Cap output to 50-100 lines for context efficiency—summarize beyond that.\n- Preserve line numbers and stack traces for human debugging when needed.\n\n### Testing\nMock scenarios: 10 errors (simple), 50 errors (medium noise), 100+ errors (stress test). Validate that priorities make sense and clustering reduces cognitive load."
+          }
+        ],
+        "review_focus": [
+          "Test output parsing robustness across different test frameworks (npm, pytest, go test, bash)—does it handle edge cases like nested output, color codes, unicode?",
+          "Categorization accuracy: Are error categories appropriate and does the classifier correctly assign failures?",
+          "Clustering heuristics: Does the algorithm group related failures correctly without false grouping?",
+          "Blocking-dependency detection: Can it correctly identify which failures block others?",
+          "Performance: Does the summarizer run fast enough that its overhead is negligible compared to the context savings?",
+          "Integration with sw-loop.sh: Does the summarizer cleanly hook into prompt composition without breaking existing loop logic?",
+          "Documentation quality: Are categorization rules, prioritization heuristics, and assumptions clearly documented?"
+        ],
+        "risk_areas": [
+          "False categorization of critical failures—misidentifying an isolated failure as blocking could waste agent effort on wrong priority.",
+          "Test framework compatibility—different frameworks emit output in different formats; parsing must be robust enough to handle unknown formats gracefully.",
+          "Over-clustering: Grouping unrelated failures together could hide important signal; need validation that clusters are meaningful.",
+          "Prompt token overhead: The summarizer itself must be efficient; if it generates excessive output, it defeats the context-saving goal.",
+          "Integration breakage: Inserting logic into sw-loop.sh's tight loop could introduce latency or state management bugs.",
+          "Dependency analysis correctness: Incorrectly inferring that error A blocks B could lead to wrong fix ordering."
+        ]
+      },
+      "timestamp": 1773562997,
+      "ttl": 3600
+    },
+    "d5166ec21b07cabaea100aa7d89ef827": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly relevant: contains documented failure patterns with root causes, categories, and fixes. Essential for understanding what failures the intelligent summarization system must prioritize and how to classify them."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 48,
+            "summary": "Moderately relevant: defines project structure (Node/Vitest/npm), test patterns, and conventions. Provides context for understanding the build loop test environment and output format."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 22,
+            "summary": "Minimally relevant: identifies project type as nodejs. Provides only high-level context without specific guidance for the feature."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Not relevant: contains only empty baselines object with no actionable data for failure prioritization or summarization."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Not relevant: empty decisions array provides no context for the feature planning."
+          }
+        ]
+      },
+      "timestamp": 1773563010,
+      "ttl": 1800
+    },
+    "cf55dca16600eac8d9f02955f0391fb4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant: contains categorized test failures with root causes, fixes, and priority metrics (seen_count). Provides the exact data structure needed for intelligent summarization and failure prioritization in build loop output."
+          },
+          {
+            "file": "patterns.json (repo: sethdford/shipwright)",
+            "relevance": 35,
+            "summary": "Moderately relevant: describes project conventions (test_pattern, import_style) and structure that could inform how to parse and process build loop test failures."
+          },
+          {
+            "file": "patterns.json (project_type: nodejs)",
+            "relevance": 20,
+            "summary": "Minimally relevant: generic project type detection. Provides basic context that this is a Node.js project but lacks specifics needed for the task."
+          }
+        ]
+      },
+      "timestamp": 1773563279,
+      "ttl": 1800
+    },
+    "aeffa381e6072fde8df1d833dea9b156": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant — contains 26+ observed test failures with root causes, categorization (test_failure, config), and prioritization patterns. Shows intelligent failure summarization patterns (detection, reporting, hints) that inform the Build Loop architecture design."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 40,
+            "summary": "Moderately relevant — documents project conventions (test_pattern: *.test.js, test_runner: vitest, commonjs imports). Informs test output format expectations and parser architecture for summarization."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Low relevance — empty baselines object. Could be relevant if populated with test performance baselines for intelligent prioritization, but currently provides no actionable data."
+          },
+          {
+            "file": "patterns.json (second entry, project type bootstrap)",
+            "relevance": 5,
+            "summary": "Minimal relevance — only confirms Node.js project type, which is already derivable from first patterns.json entry. No architectural insights."
+          },
+          {
+            "file": "patterns.json (third entry, test_repo)",
+            "relevance": 2,
+            "summary": "Not relevant — empty patterns array from unrelated test_repo, no learnings applicable to Shipwright build loop architecture."
+          }
+        ]
+      },
+      "timestamp": 1773563339,
+      "ttl": 1800
+    },
+    "65518955e28ac71259619e2443db1cda": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 detailed test failure patterns with root causes and fixes (sw-cleanup.sh dry-run output, sw-feedback.sh JSON regression, mktemp directory issues, sed expression escaping, heartbeat detection). Directly addresses failure detection, summarization patterns, and anti-patterns in test output handling."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 32,
+            "summary": "Documents project structure: Node.js, vitest test runner, commonjs imports, src/ source directory. Provides baseline context for understanding test output format and runner conventions relevant to build loop test output analysis."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 8,
+            "summary": "Minimal metadata showing nodejs project type detected on 2026-02-21. Low relevance—provides only detection timestamp without actionable patterns or anti-pattern information."
+          }
+        ]
+      },
+      "timestamp": 1773563353,
+      "ttl": 1800
+    },
+    "6f282cbff05f7810c6b062411717491b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains actual test failure patterns, root causes, categorization, and frequency metrics — directly relevant data for building intelligent test output summarization and failure prioritization system"
+          },
+          {
+            "file": "patterns.json (first entry with project metadata)",
+            "relevance": 75,
+            "summary": "Defines project structure (vitest test runner, npm, src/ directory, commonjs imports) which is essential context for parsing and understanding test output format"
+          },
+          {
+            "file": "patterns.json (second entry with project_type: nodejs)",
+            "relevance": 30,
+            "summary": "Minimal nodejs project type detection; provides basic project classification but less actionable detail than full project metadata"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Contains empty baselines object; not applicable to current build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Contains empty decisions array; no prior decision context to inform feature development"
+          }
+        ]
+      },
+      "timestamp": 1773563537,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "5 documented test failures with high frequency (23-26 occurrences). sw-cleanup.sh and sw-feedback-test.sh issues are critical for build stage success. These failures will recur without fixes."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project conventions essential for build stage: Vitest runner, *.test.js pattern, npm package manager, src/ directory structure, and CommonJS imports. Necessary for test execution and file discovery."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline metrics object. No performance data to guide build optimizations or regressions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 2,
+            "summary": "Empty decisions array. No prior build stage decisions or context to reference."
+          }
+        ]
+      },
+      "timestamp": 1773563546,
+      "ttl": 1800
     }
   }
 }
