@@ -30,9 +30,19 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "optimizer",
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.9,
+        "reasoning": "Designing adaptive model selection with escalation criteria requires architectural decisions; builder implements, optimizer fine-tunes selection heuristics, tester validates escalation scenarios, reviewer ensures quality.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773537037,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -650,30 +660,33 @@
     },
     "760054936242b8ec3e411af4dbbbed7c": {
       "result": {
-        "complexity": 6,
+        "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "cost-aware",
+        "success_probability": 78,
+        "recommended_template": "standard",
         "issue_type": "performance",
         "key_risks": [
-          "Stuck detection heuristic may incorrectly identify stagnation; convergence score unreliability across different project types could trigger premature escalation",
-          "Aggressive escalation logic negates cost savings if triggered too frequently; needs tuning per codebase",
-          "Integration with sw-loop.sh iteration state tracking is critical; state consistency bugs could break model routing or cause escalation loops",
-          "max_iterations must be known upfront to calculate final-20% boundary; dynamic loops or restart sessions complicate calculation",
-          "Configuration defaults (loop_model_strategy) may not generalize across fast vs. complex codebases"
+          "Stuck detection false positives/negatives - convergence scoring may not reliably identify truly blocked state",
+          "Model escalation could cause cost explosion if aggressive strategy is misconfigured",
+          "Integration bugs with loop iteration tracking - off-by-one errors in N-20% threshold calculation",
+          "Convergence score dependency - feature reliability depends on accuracy of existing convergence detection",
+          "Edge case handling for short loops (iterations < 5) where N-20% logic breaks down",
+          "Context window loss on mid-loop escalation if previous iterations' state isn't properly preserved"
         ],
         "implementation_hints": [
-          "Query convergence score from pipeline vitals system at each iteration boundary to detect stuck state reliably",
-          "Calculate iteration percentage dynamically: (current_iter / max_iter) to determine tier; validate max_iter is set",
-          "Implement stuck detection as 3-iteration moving average on convergence delta, not point comparison; add hysteresis to avoid flapping",
-          "Add --debug-model-selection flag to sw-loop.sh for audit trail of model selection decisions per iteration",
-          "Ensure backwards compatibility: if max_iter unavailable, fall back to simple iteration-count routing without escalation",
-          "Cost tracking: emit cost deltas per model tier in loop output so users can tune loop_model_strategy empirically",
-          "Test matrix: synthetic convergence scores + real runs + session restarts (which reset iteration counter)",
-          "Document that escalation is per-loop instance, not per-restart; clarify behavior when loop restarts mid-strategy"
+          "Study sw-model-router.sh and existing cost tracking patterns before designing lib/loop-model-selection.sh",
+          "Extract convergence scoring logic to understand what constitutes 'no progress' for stuck detection",
+          "Implement routing as pure functions to enable thorough unit testing with mock convergence data",
+          "Use rolling 3-iteration window for stuck detection rather than checking individual iterations",
+          "Handle edge case where total_iterations < 5 by adjusting final 20% threshold appropriately",
+          "Make escalation idempotent to prevent cascading escalations within same iteration",
+          "Add verbose debug logging for model selection decisions to diagnose miscalibration",
+          "Cache model selection per iteration to avoid recalculating when loop handler is invoked multiple times",
+          "Validate config.loop_model_strategy against allowed values with sensible default fallback",
+          "Test escalation trigger with mock convergence scores showing flat/negative trends"
         ]
       },
-      "timestamp": 1773526437,
+      "timestamp": 1773536280,
       "ttl": 3600
     },
     "42085f1da31d313367272da0336cc41d": {
@@ -719,37 +732,37 @@
     },
     "74d8fe538ef801389ab84064b0c67dba": {
       "result": {
-        "issue_type": "backend",
-        "confidence": 0.88,
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
         "secondary_domains": [
-          "performance",
           "cost-optimization",
-          "infrastructure"
+          "performance",
+          "testing"
         ],
         "complexity_assessment": {
           "score": 6,
-          "reasoning": "Clear requirements with well-defined integration points (sw-loop.sh, sw-model-router.sh, daemon-config.json), but subtle heuristics (stuck detection) and precision requirements (cost tracking) elevate complexity above straightforward refactoring."
+          "reasoning": "Standard complexity: routing logic is well-scoped, but requires careful integration with loop iteration tracking, stuck detection based on convergence scores, and multi-tier cost tracking. Backward compatibility with existing loop behavior is critical."
         },
         "skill_plan": {
           "plan": [
             "architecture-design",
-            "performance"
+            "cost-optimized-model-selection"
           ],
           "design": [
-            "api-design",
-            "architecture-design"
+            "architecture-design",
+            "cost-optimized-model-selection"
           ],
           "build": [
-            "performance",
             "cost-optimized-model-selection"
           ],
           "review": [
-            "pr-quality",
-            "performance"
+            "architecture-design",
+            "adversarial-quality"
           ],
           "compound_quality": [
+            "adversarial-quality",
             "testing-strategy",
-            "validation-thoroughness"
+            "observability"
           ],
           "pr": [
             "pr-quality",
@@ -766,74 +779,227 @@
           ]
         },
         "skill_rationale": {
-          "architecture-design": "Build loop model routing introduces new integration points between loop iteration logic, model selection, and configuration; an ADR establishes why this pattern was chosen and how it scales as new model tiers emerge.",
-          "performance": "Cost-effectiveness is the core goal; decisions about escalation thresholds, iteration windows, and tier ordering must be grounded in cost/quality trade-off analysis rather than guesswork.",
-          "api-design": "The new lib/loop-model-selection.sh function must have a clean contract (input: iteration count, convergence metrics; output: model name + cost tier); clear signatures prevent integration bugs.",
-          "cost-optimized-model-selection": "This issue requires specialized patterns for per-iteration routing, cost accounting, and escalation heuristics not covered by generic performance skills; a focused skill captures these patterns for reuse across cost-optimization features.",
-          "pr-quality": "Model routing logic is algorithmic and easy to misread; PR must include decision tables, cost examples, and escalation scenarios so reviewers can verify correctness without running the code.",
-          "testing-strategy": "Routing logic and stuck detection require scenario-based testing (stuck after 3 iterations, partial progress, no progress); cost tracking must be validated against a mock cost oracle.",
-          "validation-thoroughness": "Unit tests are insufficient; must validate that actual loop iterations respect the routing decisions, escalation triggers fire at the right time, and cost tracking matches real model usage.",
-          "documentation": "CLAUDE.md Build Loop Capabilities section must document the new routing strategy, configuration examples (loop_model_strategy: default/aggressive/conservative), and troubleshooting (e.g., 'why did it escalate early?').",
-          "deploy-safety": "Configuration changes to daemon-config.json affect all running loops; rollout must be staged, with feature flags to enable/disable new routing per-daemon to catch issues before full deployment.",
-          "observability": "Post-deploy monitoring must track cost per model tier within loops, escalation frequency, and stuck-detection false-positive rates so the strategy can be tuned based on real production behavior."
+          "cost-optimized-model-selection": "Core skill for implementing per-iteration model routing algorithm, stuck detection escalation logic, and cost tracking per model tier—directly addresses the issue's acceptance criteria.",
+          "architecture-design": "Design the integration points with sw-loop.sh (iteration tracking), sw-model-router.sh (model selection), and daemon-config.json (strategy configuration) to avoid conflicts and ensure maintainability.",
+          "adversarial-quality": "Probe edge cases in stuck detection (3-iteration window sensitivity), routing boundaries (final 20% threshold), and escalation triggers to prevent cost overruns or under-powering decisions.",
+          "testing-strategy": "Create comprehensive test suite covering routing logic across loop sizes, stuck detection false positives/negatives, cost tracking per model tier, and configuration variations (default/aggressive/conservative).",
+          "pr-quality": "Synthesize changes to sw-loop.sh, lib/loop-model-selection.sh, sw-model-router.sh, and daemon-config.json into a reviewable PR that clearly shows the routing algorithm and integration points.",
+          "documentation": "Update CLAUDE.md under 'Build Loop Capabilities' and 'Cost Intelligence' sections with new routing strategy, configuration schema, and cost tracking behavior for future agents.",
+          "deploy-safety": "Verify new routing doesn't break existing pipeline runs with default configuration; test backward compatibility with daemon-config.json lacking the new loop_model_strategy field.",
+          "observability": "Add cost tracking metrics per model tier within loop iterations; track escalation triggers and stuck detection false positives in real daemon runs to validate assumptions.",
+          "validation-thoroughness": "Run actual build loop end-to-end with new routing against a multi-iteration task; verify cost savings match predictions and no regressions in final code quality vs. baseline."
         },
-        "generated_skills": [
-          {
-            "name": "cost-optimized-model-selection",
-            "reason": "Generic performance skills don't capture the specialized patterns required for per-iteration model routing: cost accounting, escalation heuristics, and convergence-based decision-making within a long-running loop.",
-            "content": "## Cost-Optimized Model Selection Patterns\n\nWhen implementing cost-aware model routing in agent loops, follow these patterns:\n\n### 1. Per-Iteration Routing Decision Table\n\nDefine routing as a function of iteration count and total iterations, not just arbitrary logic. Example:\n\n```\nIteration  | % of Loop | Model  | Rationale\n1-2        | 0-20%     | haiku  | Planning + initial draft (fast feedback)\n3 to N-20% | 20-80%    | sonnet | Main development work (good balance)\nFinal 20%  | 80-100%   | opus   | Edge cases + bug fixes (most capable)\n```\n\nStore in configuration as `loop_model_strategy` (e.g., \"default\", \"aggressive\", \"conservative\") rather than hardcoding, allowing tuning without code changes.\n\n### 2. Cost Accounting Within the Loop\n\nTrack cost at two levels:\n- **Per-tier**: Count tokens + cost for each model tier; write to a structured log (JSON) after each iteration\n- **Per-loop**: Aggregate tier costs into a loop-level cost summary in the loop completion artifact\n\nThis enables post-hoc analysis: \"Haiku iterations cost $0.02, Sonnet cost $0.15, Opus cost $0.30; total $0.47 for this loop.\"\n\n### 3. Stuck Detection & Escalation\n\nImplement as a heuristic scoring function:\n1. Track convergence score from the loop's existing progress metrics (test pass rate, error count, etc.)\n2. Detect no progress if the score hasn't improved for N consecutive iterations (default N=3)\n3. Escalate to the next model tier: haiku→sonnet, sonnet→opus\n4. Log escalations with reason (iteration count + convergence score) for debugging\n\nRisk: False positives (escalate when not stuck) waste budget. Tune the window size and score threshold based on production data.\n\n### 4. Graceful Fallback\n\nIf escalation tries to use a model that hits rate limits or is unavailable, fall back to the current tier (don't fail the loop). Log the fallback attempt.\n\n### 5. Configuration Schema\n\nAdd to daemon-config.json under a `loop` object:\n\n```json\n{\n  \"loop\": {\n    \"model_strategy\": \"default\",\n    \"stuck_detection_window\": 3,\n    \"cost_tracking_enabled\": true\n  }\n}\n```\n\nEnable cost tracking by default; allow opt-out for cost-sensitive environments.\n\n### 6. Integration with Existing Model Router\n\nsw-model-router.sh handles global model selection (which model for which stage). This feature is more granular: which model for which iteration within the build stage. Call sw-model-router.sh with a new flag `--loop-tier` to get the model name for the current tier, allowing the two systems to compose cleanly.\n\n### 7. Test Coverage\n\n- **Unit tests**: Routing function returns correct model for (iteration_count, total_iterations, strategy) tuple\n- **Integration tests**: Loop respects routing decisions; cost is tracked correctly\n- **Scenario tests**: Stuck detection fires at the right time; false positives are rare\n\n### 8. Observability\n\nEmit structured events (via the event bus) for each routing decision and escalation:\n- Event type: `loop_model_selected` or `loop_model_escalated`\n- Payload: iteration, model, reason, cost_so_far\n\nThis enables dashboards to show \"cost per model tier\" and detect runaway escalations."
-          }
-        ],
+        "generated_skills": [],
         "review_focus": [
-          "Cost tracking precision: Every model call must be accounted for; missing or duplicated costs invalidate the entire routing strategy",
-          "Stuck detection sensitivity: Does 3-iteration window catch real stuck states without false positives? Verify with test scenarios where progress is slow but real",
-          "Configuration defaults: Are loop_model_strategy values sensible? Will 'default' strategy deliver acceptable cost savings for typical build loops?",
-          "Integration correctness: Does the new function call sw-model-router.sh correctly? Are iteration counts and convergence scores passed accurately?",
-          "Error handling: What happens if escalation tries to use a model that hits rate limits? Does the loop degrade gracefully or fail?",
-          "Backward compatibility: Do existing daemon-config.json files work with the new code (defaults must be sensible)?"
+          "Stuck detection reliability: Is 3-iteration window appropriate for all task types? Should it be configurable?",
+          "Routing boundaries: Does final-20%-uses-Opus scale correctly for loops with 5 iterations vs 50 iterations?",
+          "Convergence score integration: How does loop pass it to model selection logic? What if convergence score is unavailable?",
+          "Backward compatibility: Loops in old daemon-config.json (no loop_model_strategy) must work with sensible defaults.",
+          "Cost tracking accuracy: Per-model-tier tracking must not be lost across loop restarts or session handoffs.",
+          "Configuration schema: daemon-config.json must document default/aggressive/conservative strategies and their implications.",
+          "Integration seams: Verify sw-loop.sh calls new lib/loop-model-selection.sh at right points; no double-wrapping with sw-model-router.sh."
         ],
         "risk_areas": [
-          "Cost accuracy: If cost tracking undercounts, decisions will be wrong and budget will be wasted; implement with independent verification (mock cost oracle in tests)",
-          "Stuck detection false positives: Escalating too early burns budget; tune the detection window based on production data from initial rollout",
-          "Integration failures at iteration boundaries: Loop must cleanly pass convergence score and iteration count to routing function; off-by-one errors will cause misrouting",
-          "Rate limit thrashing: If escalation to Opus hits rate limits and falls back to Sonnet repeatedly, the loop will thrash; add exponential backoff or fallback caching",
-          "Configuration drift: Operators may tune loop_model_strategy independently per daemon; without observability, the impact of different strategies will be invisible"
+          "Stuck detection false positives leading to unnecessary escalation and cost overruns on slow-but-progressing tasks",
+          "Routing threshold (final 20%) miscalculation on small loops (5 iterations = 1 iteration at Opus may be too early)",
+          "Convergence score reliability varies by task type (coding vs tests vs refactor); escalation may fire at wrong time",
+          "Cost tracking loss if loop restarts mid-iteration or session is suspended, leading to inaccurate cost reports",
+          "Existing daemon-config.json missing loop_model_strategy field; silent fallback to wrong defaults could break cost model",
+          "Conflict with per-stage model routing in sw-model-router.sh (both trying to select model) causing double-wrapping or override bugs"
         ]
       },
-      "timestamp": 1773526605,
+      "timestamp": 1773536455,
       "ttl": 3600
     },
     "0565b68fe30c073f66ef1e8b128b417e": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Failure patterns capture common test/deployment failures. Critical for designing auto-escalation triggers—understanding what fails helps plan when and how to escalate models."
-          },
-          {
             "file": "patterns.json (first entry)",
-            "relevance": 65,
-            "summary": "Project structure metadata (vitest, npm, commonjs). Provides context for planning test execution and model selection strategies specific to this Node.js codebase."
+            "relevance": 88,
+            "summary": "Project tech stack (Node.js, vitest, npm, src/ structure, CommonJS) is essential for planning implementation approach and test strategy for the adaptive model feature"
           },
           {
-            "file": "patterns.json (second entry - nodejs)",
-            "relevance": 35,
-            "summary": "Basic project type detection. Minimal detail—confirms Node.js environment but less actionable than the detailed patterns entry above."
+            "file": "failures.json",
+            "relevance": 52,
+            "summary": "Recurring test failures and patterns (esp. sw-feedback-test.sh regression detection issues) inform design decisions around error handling and test reliability for the new feature"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 18,
+            "summary": "Confirms Node.js project type but redundant with first patterns entry; minimal added value for planning"
+          },
+          {
+            "file": "patterns.json (third entry)",
+            "relevance": 5,
+            "summary": "Empty patterns list; only indicates extraction metadata but no actionable insights for planning"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 3,
+            "summary": "Baseline metrics are empty; not relevant to feature planning at this stage"
+          }
+        ]
+      },
+      "timestamp": 1773536472,
+      "ttl": 1800
+    },
+    "bd4ca2864d765d3f2d3923b5f7e12578": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1773536292,
+      "ttl": 1800
+    },
+    "11126453ef647f64ca59705169fe8e51": {
+      "result": {
+        "estimated_cost_usd": 72,
+        "estimated_iterations": 2,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 71
+      },
+      "timestamp": 1773536300,
+      "ttl": 3600
+    },
+    "7cae3b04c1853aabdf0aee349d7e7027": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 captured test failures with root causes and fixes. Directly relevant since 'validation failures' in plan rejection context almost certainly refers to test failures that would prevent plan acceptance."
+          },
+          {
+            "file": "patterns.json (first: comprehensive)",
+            "relevance": 58,
+            "summary": "Complete project patterns showing test_runner (vitest), conventions, and source structure. Essential context for understanding how the build loop feature should integrate with test infrastructure."
+          },
+          {
+            "file": "patterns.json (second: basic)",
+            "relevance": 22,
+            "summary": "Minimal project type detection. Provides basic Node.js context but is redundant compared to the comprehensive patterns entry."
+          }
+        ]
+      },
+      "timestamp": 1773536702,
+      "ttl": 1800
+    },
+    "8e37421ae747392f84cd843626c88ef6": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry with project/conventions)",
+            "relevance": 45,
+            "summary": "Defines project structure, test runner (vitest), and import conventions. Relevant for understanding how to integrate adaptive model selection logic into the existing test and build infrastructure."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 28,
+            "summary": "Contains test failure patterns and root causes. Entries related to 'classify_failure' and regression detection in daemon/feedback loops provide indirect guidance on adaptive escalation decision points."
+          },
+          {
+            "file": "patterns.json (second entry, nodejs detection)",
+            "relevance": 12,
+            "summary": "Confirms this is a Node.js project detected via bootstrap. Minimal context but establishes language/runtime for architecture decisions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Contains empty baselines. Would be relevant if populated with model cost/latency metrics needed to drive adaptive selection, but currently provides no actionable data."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Contains empty decisions array. Could capture adaptive model selection decisions (e.g., when to escalate models) but currently empty."
+          }
+        ]
+      },
+      "timestamp": 1773536818,
+      "ttl": 1800
+    },
+    "a51db6ee8495b0393092a515f2078ea3": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Contains captured test failure patterns and root causes. While not specifically about adaptive model selection, these failures show anti-patterns in the codebase (sed expressions, file handling, JSON output) that could inform rejected design approaches."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 18,
+            "summary": "Documents project conventions (vitest, npm, commonjs). Low relevance but provides baseline context about the codebase structure and testing infrastructure that the build loop adaptive model selection operates within."
+          },
+          {
+            "file": "patterns.json (nodejs type)",
+            "relevance": 8,
+            "summary": "Minimal project detection metadata. Negligible relevance; only confirms this is a Node.js project without insights into rejected design approaches for adaptive model selection."
+          }
+        ]
+      },
+      "timestamp": 1773536829,
+      "ttl": 1800
+    },
+    "05bbdc6501ab88c7040820dc4271f407": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Contains 5 documented failure patterns from previous builds (cleanup, feedback tests, mktemp, sed issues) with root causes. Critical for understanding when/how to escalate model selection and what types of failures recur."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project configuration (Node.js, vitest, CommonJS imports, .test.js pattern) defines the test environment and command structure needed to inform per-iteration model selection decisions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 18,
+            "summary": "Would track previous model escalation decisions and auto-escalation triggers to inform future iterations, but currently empty. High potential value if populated."
           },
           {
             "file": "metrics.json",
             "relevance": 15,
-            "summary": "Empty baselines—no historical performance data available yet to inform adaptive routing decisions."
+            "summary": "Would provide baseline performance metrics for comparing model effectiveness across iterations, but currently empty. Relevant for escalation threshold decisions."
           },
           {
-            "file": "decisions.json",
-            "relevance": 10,
-            "summary": "No prior architectural decisions captured. Could be useful once populated with prior model routing or escalation policy decisions."
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Would contain cross-repo patterns about model selection and escalation strategies, but is currently empty. Could be relevant if populated with insights from parallel builds."
           }
         ]
       },
-      "timestamp": 1773526619,
+      "timestamp": 1773537018,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents 5 active test failures with root causes and fixes. Directly informs build/test stage troubleshooting—failures span sw-cleanup.sh, sw-feedback.sh, and sed invocation issues. Most actionable context."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Project baseline: vitest test runner, *.test.js pattern, commonjs imports, src/ source dir. Essential for understanding build environment and test execution setup."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline metrics—not relevant to current build context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array—not relevant to current build context."
+          }
+        ]
+      },
+      "timestamp": 1773537027,
       "ttl": 1800
     }
   }
