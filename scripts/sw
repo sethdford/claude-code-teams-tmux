@@ -357,6 +357,9 @@ main() {
         incident)
             exec "$SCRIPT_DIR/sw-incident.sh" "$@"
             ;;
+        debug-bundle)
+            exec "$SCRIPT_DIR/sw-debug-bundle.sh" "$@"
+            ;;
         db)
             exec "$SCRIPT_DIR/sw-db.sh" "$@"
             ;;
