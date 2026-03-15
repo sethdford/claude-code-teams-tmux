@@ -1,1 +1,85 @@
-Invalid API key · Fix external API key
+Now I have the full picture. Let me create a comprehensive audit report:
+
+## AUDIT SUMMARY: FAILING IMPLEMENTATION
+
+The agent made significant progress on the Pipeline Failure Debug Artifact Auto-Collector feature, creating ~1,600 lines of new code across multiple files. However, there is **one critical blocking bug** that causes test failures and makes the feature non-functional.
+
+### Critical Issues
+
+**1. Variable Name Collision Bug (BLOCKS ENTIRE FEATURE)**
+- **File**: `scripts/lib/debug-collector.sh`, line 138
+- **Severity**: CRITICAL
+- **Problem**: The `rotate_debug_bundles()` function declares `bundle_dir` in its while loop WITHOUT the `local` keyword:
+  ```bash
+  while IFS= read -r bundle_dir; do  # NO 'local' keyword!
+  ```
+  This overwrites the `bundle_dir` variable from the parent scope in `collect_debug_bundle()`.
+- **Impact**: After calling `rotate_debug_bundles()`, the `bundle_dir` variable in `collect_debug_bundle()` becomes empty (set to the last line read, or empty). The function then fails the directory existence check on line 114 and returns 1, producing no output.
+- **Evidence**: Debug trace shows bundle directory exists after mkdir but is empty after calling rotate_debug_bundles
+- **Fix**: Change line 138 to: `while IFS= read -r _bundle_dir; do` and update references inside the loop (or add `local` before `bundle_dir`)
+
+**2. Test Suite Completely Failing**
+- **File**: `scripts/sw-debug-bundle-test.sh`
+- **Status**: 1 test passes, 2+ fail
+- **Root Cause**: Caused by bug #1 above
+- **Evidence**: `npm test` exit code 3 (tests failed)
+
+### Secondary Issues
+
+**3. Subshell Variable Scoping Issue in `_collect_environment()`**
+- **File**: `scripts/lib/debug-collector.sh`, lines 307-316
+- **Severity**: MEDIUM (may cause incorrect output)
+- **Problem**: The code pipes `env | grep ...` into a while loop:
+  ```bash
+  env | grep -v -iE "..." | while IFS='=' read -r key val; do
+      if [[ "$first" -eq 0 ]]; then printf ','; fi
+      first=0
+  done
+  ```
+  The while loop runs in a subshell due to the pipe, so variable assignments like `first=0` don't persist. However, the JSON output is written inside the loop, so the actual output might be correct. This is sloppy code that could cause issues.
+
+**4. Incomplete Integration**
+- **Status**: Integration is partially implemented but not tested
+- **File**: `scripts/lib/pipeline-state.sh`, line 442
+- **Issue**: The integration code is there but won't work until the core bug is fixed
+
+### Code Quality Issues
+
+**5. Fragile Return Value Pattern**
+- Lines 114-119 use a workaround: write to a temp file and read it back
+- This is unnecessary and fragile. Standard: `echo "$bundle_dir"` or use command substitution properly
+- Not a blocking issue but indicates design confusion
+
+**6. Missing Error Context**
+- Error messages don't show why bundle collection failed
+- Functions fail silently with `|| true` making debugging hard
+
+### Positive Aspects
+
+✓ Comprehensive artifact collection implementation (stage log, environment, git state, error classification, etc.)  
+✓ Secret filtering in environment variables (TOKEN, SECRET, KEY, PASSWORD filters)  
+✓ CLI wrapper script is well-structured (`sw-debug-bundle.sh`)  
+✓ Test infrastructure is in place (517 lines of tests)  
+✓ Event schema integration done  
+✓ Package.json registration done  
+✓ Integration points identified in pipeline-state.sh  
+
+### Verification
+
+The bundle IS being created (verified manually):
+```
+✓ environment.json (secret-filtered)
+✓ git-state.json  
+✓ error-classification.json
+✓ stage.log
+✓ pipeline-state.md
+✓ manifest.json (valid JSON with file checksums)
+```
+
+But the function returns 1 with no output due to the variable collision bug.
+
+---
+
+**AUDIT_FAIL**
+
+The feature is incomplete due to a critical variable scoping bug that prevents the core `collect_debug_bundle()` function from returning its value. While the artifact collection logic is sound and comprehensive, the return value mechanism is broken due to variable name collision in the `rotate_debug_bundles()` helper. This must be fixed before the feature is usable.
