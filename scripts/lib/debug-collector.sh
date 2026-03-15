@@ -66,7 +66,8 @@ collect_debug_bundle() {
 
     # Create bundle directory with epoch timestamp + PID (unique per invocation)
     local epoch
-    epoch=$(now_epoch)
+    epoch=$(now_epoch 2>/dev/null) || epoch=$(date +%s 2>/dev/null) || epoch="0"
+    [[ -z "$epoch" ]] && epoch="0"
     local bundle_dir="${ARTIFACTS_DIR}/debug-bundles/${stage_id}-${epoch}-$$"
 
     # Clean up on error: ensure bundle dir is removed if we bail out
@@ -115,8 +116,13 @@ collect_debug_bundle() {
         "timestamp=$(now_iso)" \
         2>/dev/null || true
 
-    # Return bundle path
-    echo "$bundle_dir"
+    # Return bundle path (only if directory was successfully created)
+    if [[ -d "$bundle_dir" ]]; then
+        echo "$bundle_dir"
+        return 0
+    else
+        return 1
+    fi
 }
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -375,35 +381,44 @@ _create_manifest() {
     local manifest_file="${bundle_dir}/manifest.json"
     local tmp_file="${manifest_file}.tmp.$$"
 
-    # Count files and calculate total size
-    local file_count=0
-    local total_size=0
+    # Build files array separately to avoid subshell issues
+    local files_json="["
+    local first=1
 
+    # Count files (excluding manifest.json itself)
+    local file_count=0
+    file_count=$(find "$bundle_dir" -maxdepth 1 -type f ! -name "manifest.json" 2>/dev/null | wc -l || echo 0)
+
+    # List files and build JSON (without subshell pipe to preserve variables)
+    while IFS= read -r filepath; do
+        [[ -z "$filepath" ]] && continue
+        local filename
+        filename=$(basename "$filepath")
+
+        if [[ "$first" -eq 0 ]]; then
+            files_json="${files_json},"
+        fi
+        first=0
+
+        local size
+        size=$(stat -f%z "$filepath" 2>/dev/null || stat -c%s "$filepath" 2>/dev/null || echo 0)
+        local sha256
+        sha256=$(sha256sum "$filepath" 2>/dev/null | cut -d' ' -f1 || echo "")
+
+        files_json="${files_json}{\"name\":\"$(basename "$filepath")\",\"size_bytes\":${size},\"sha256\":\"${sha256}\"}"
+    done < <(find "$bundle_dir" -maxdepth 1 -type f ! -name "manifest.json" 2>/dev/null || true)
+
+    files_json="${files_json}]"
+
+    local total_size
+    total_size=$(du -sb "$bundle_dir" 2>/dev/null | cut -f1 || echo 0)
+
+    # Write manifest
     {
         printf '{'
-        printf '"file_count":%d,' "$(ls -1 "$bundle_dir" | wc -l)"
-        printf '"total_size_bytes":%d,' "$(du -sb "$bundle_dir" 2>/dev/null | cut -f1 || echo 0)"
-        printf '"files":['
-
-        local first=1
-        ls -1 "$bundle_dir" | while read -r filename; do
-            [[ "$filename" == "manifest.json" ]] && continue
-            local filepath="${bundle_dir}/${filename}"
-            [[ ! -f "$filepath" ]] && continue
-
-            if [[ "$first" -eq 0 ]]; then
-                printf ','
-            fi
-            first=0
-
-            local size
-            size=$(stat -f%z "$filepath" 2>/dev/null || stat -c%s "$filepath" 2>/dev/null || echo 0)
-            local sha256
-            sha256=$(sha256sum "$filepath" 2>/dev/null | cut -d' ' -f1 || echo "")
-
-            printf '{"name":"%s","size_bytes":%d,"sha256":"%s"}' "$filename" "$size" "$sha256"
-        done || true
-        printf ']'
+        printf '"file_count":%d,' "$file_count"
+        printf '"total_size_bytes":%d,' "$total_size"
+        printf '"files":%s' "$files_json"
         printf '}\n'
     } > "$tmp_file" 2>/dev/null || return 1
     mv "$tmp_file" "$manifest_file" 2>/dev/null || return 1

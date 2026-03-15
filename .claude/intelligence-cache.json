@@ -30,9 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "devops",
+        "secondary_roles": [
+          "incident-responder",
+          "builder"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Pipeline failure debugging requires CI/CD automation expertise (DevOps primary), combined with root cause analysis skills (incident-responder secondary) and implementation (builder secondary)",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773561559,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +655,224 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "8da00e7eca1eb4a15db48c1cbc42690a": {
+      "result": {
+        "complexity": 3,
+        "risk_level": "low",
+        "success_probability": 87,
+        "recommended_template": "fast",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Disk space accumulation from repeated bundles without retention policy",
+          "Environment variable exposure (ANTHROPIC_API_KEY could be in env vars)",
+          "Race conditions if multiple pipelines fail simultaneously",
+          "Permission issues accessing tmux pane logs when daemon runs headless",
+          "Timing issues if artifacts haven't been flushed to disk at failure point"
+        ],
+        "implementation_hints": [
+          "Hook failure collection into sw-pipeline.sh's error handler and abort path",
+          "Use 'tmux capture-pane -p -S -200' to safely extract last 200 lines from each pane",
+          "Create timestamped directory atomically with mkdir -p to avoid race conditions",
+          "Filter env vars with 'env | grep -E '^(SW_|ANTHROPIC_|GITHUB_)' to avoid credential leakage",
+          "Add .gitignore rule for failure-bundles/ to prevent accidental commits",
+          "Implement retention policy (cleanup bundles older than N days) to prevent disk bloat",
+          "Test with intentional failure: run a pipeline, corrupt pipeline-state.md, trigger abort"
+        ]
+      },
+      "timestamp": 1773560829,
+      "ttl": 3600
+    },
+    "a77a1bb7ccd8023fd7b5a12d7809b49d": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1773560838,
+      "ttl": 1800
+    },
+    "78c90fab870c309b7728e37566ff9ac0": {
+      "result": {
+        "estimated_cost_usd": 0.22,
+        "estimated_iterations": 2,
+        "estimated_tokens": 9500,
+        "likely_failure_stage": "test",
+        "confidence": 74
+      },
+      "timestamp": 1773560847,
+      "ttl": 3600
+    },
+    "f00aee8bf6f7aaed4b2355ab71222595": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Core reference for planning artifact collection. Shows actual failure patterns (test failures, config errors, sed invocation issues) with root causes. Directly informs what debug artifacts should be auto-collected (test output, config state, error context) to accelerate failure diagnosis."
+          },
+          {
+            "file": "patterns.json (first entry - project structure)",
+            "relevance": 78,
+            "summary": "Defines project conventions (vitest test runner, src/ source dir, *.test.js pattern, commonjs imports). Essential for planning where and how to integrate artifact collector into the existing codebase and test infrastructure."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Currently empty but relevant to planning. Will track artifact collection success rates, coverage, and timing once populated. Could establish baselines for diagnostic completeness."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Currently empty but relevant scope. Plan should document decisions about: which artifact types to collect, retention policy, storage location, and triggering conditions—these should be captured here."
+          },
+          {
+            "file": "patterns.json (second entry - minimal)",
+            "relevance": 12,
+            "summary": "Basic project type confirmation (nodejs). Lower relevance than first patterns.json; minimal detail for planning purposes."
+          }
+        ]
+      },
+      "timestamp": 1773560865,
+      "ttl": 1800
+    },
+    "37405c731e5731ae9d4480c960b6694f": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains documented pipeline test failures with patterns, root causes, fixes, and frequency metrics. Directly applicable to auto-collecting failure artifacts and understanding recurring pipeline issues in the repo."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 48,
+            "summary": "Defines project configuration (nodejs, vitest, npm, source structure). Relevant for understanding the testing environment and how to properly collect and validate pipeline artifacts."
+          },
+          {
+            "file": "patterns.json (second)",
+            "relevance": 12,
+            "summary": "Generic nodejs project detection metadata with empty patterns. Minimally relevant—only provides detection timestamp and source, no actionable failure or artifact collection information."
+          }
+        ]
+      },
+      "timestamp": 1773561360,
+      "ttl": 1800
+    },
+    "16248616b9aa27ce1ee0e7350c0cea5f": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Captures the exact schema and patterns for pipeline failures (stage, pattern, root_cause, fix, seen_count, last_seen, category). This is the core data structure the artifact auto-collector must ingest and organize."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 38,
+            "summary": "Documents project conventions (test_pattern, import_style, source_dir) and tech stack (vitest, npm, commonjs). Relevant for understanding where and how to collect artifacts in this specific project."
+          },
+          {
+            "file": "patterns.json (second entry - nodejs detection)",
+            "relevance": 16,
+            "summary": "Confirms project type (nodejs) detected at bootstrap. Minimally relevant for initial artifact collector setup but lacks detail."
+          },
+          {
+            "file": "patterns.json (third entry - cache metadata)",
+            "relevance": 8,
+            "summary": "Empty patterns array with cache metadata only. Not relevant to designing failure artifact collection architecture."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. Not relevant to failure debug artifact collection design."
+          }
+        ]
+      },
+      "timestamp": 1773561444,
+      "ttl": 1800
+    },
+    "f1dcee27b0409f93ac4f19ab5715a6c6": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains actual pipeline failure patterns with root causes and fixes. Directly informs what an artifact auto-collector should capture and which design approaches fail (e.g., missing output detection, invalid JSON, directory creation issues)."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 18,
+            "summary": "Project structure and test runner context (vitest, commonjs). Minimal relevance—provides environment details but not design anti-patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No relevant information for design anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1773561458,
+      "ttl": 1800
+    },
+    "643b0c77cddc43706bbe4b134caa3a73": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 98,
+            "summary": "Core failure artifact data with 5 documented failure patterns, root causes, fixes, and metadata (stage, seen_count, timestamps). Directly matches the artifact collector's purpose of capturing pipeline failures."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 72,
+            "summary": "Project configuration (node/vitest/npm, src/ directory, commonjs imports, test pattern) provides context for build stage execution and test invocation conventions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Empty baseline structure; potentially relevant as a target schema for collecting build/test metrics, but currently contains no useful data."
+          },
+          {
+            "file": "patterns.json (second entry, minimal)",
+            "relevance": 22,
+            "summary": "Basic nodejs project type with detection timestamp; redundant with first patterns.json and provides minimal context beyond project language."
+          },
+          {
+            "file": "patterns.json (third entry, test_repo)",
+            "relevance": 12,
+            "summary": "Empty patterns from external test_repo with cache metadata; minimal relevance to this repo's build stage context."
+          }
+        ]
+      },
+      "timestamp": 1773561539,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 recurring test failures (26, 23, 5, 3, 2 occurrences) directly impacting build stage—sw-cleanup heartbeat detection, sw-feedback regression JSON, mktemp directory, sed invocation, and deploy failure detection. Critical for fixing build/test failures."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Documents project structure (node, vitest, src/ directory), conventions (commonjs imports), and test patterns needed to execute build and test stages correctly."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object—no metrics captured yet. Minimal relevance until metrics are populated."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array—no decisions captured. Not relevant to current build stage context."
+          }
+        ]
+      },
+      "timestamp": 1773561548,
+      "ttl": 1800
     }
   }
 }

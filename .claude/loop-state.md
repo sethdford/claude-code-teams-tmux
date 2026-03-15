@@ -1,119 +1,125 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Pipeline Failure Debug Artifact Auto-Collector
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+# Pipeline Failure Debug Artifact Auto-Collector — Implementation Plan
 
----
+## Socratic Design Refinement
 
-## Summary
+### Requirements Clarity
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Minimum viable change:** A single library module (`scripts/lib/debug-collector.sh`) that, when a pipeline stage fails, automatically gathers all relevant debug artifacts into a structured bundle (`$ARTIFACTS_DIR/debug-bundles/<stage>-<epoch>-<pid>/`). This bundle is then referenced in the GitHub failure comment and retry context so that agents and humans can diagnose failures without manually hunting for logs.
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+**Implicit requirements:**
+- Must not slow down the failure path (collection must be fast, <2s)
+- Must not break existing retry/checkpoint/memory flows
+- Must work in worktree isolation (parallel pipelines)
+- Must respect `$NO_GITHUB` for local mode
+- Must be Bash 3.2 compatible (no associative arrays, no `readarray`)
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Acceptance criteria (self-defined):**
+1. On any stage failure, a debug bundle directory is created containing: stage log, error classification, environment snapshot, git state, pipeline state, recent events, and error-log.jsonl tail
+2. The bundle path is included in the GitHub issue comment on failure
+3. The bundle is referenced in `.retry-context-<stage>.md` for retry agents
+4. A `shipwright debug-bundle` CLI command lists/shows/exports bundles
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Architecture Decision Record: Pipeline Failure Debug Artifact Auto-Collector
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+## Alternatives Considered
+### 1. Event-Driven Async Collection (Rejected)
+### 2. Extend error-log.jsonl with Richer Context (Rejected)
+### 3. Per-Attempt Bundles in Retry Loop (Rejected)
+## Component Decomposition
+### 1. Debug Collector Library (`scripts/lib/debug-collector.sh`)
+### 2. Pipeline Failure Integration (`scripts/lib/pipeline-state.sh`)
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "failures.json",
+      "relevance": 98,
+      "summary": "Core failure artifact data with 5 documented failure patterns, root causes, fixes, and metadata (stage, seen_count, timestamps). Directly matches the artifact collector's purpose of capturing pipeline failures."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (first entry)",
+      "relevance": 72,
+      "summary": "Project configuration (node/vitest/npm, src/ directory, commonjs imports, test pattern) provides context for build stage execution and test invocation conventions."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "metrics.json",
+      "relevance": 28,
+      "summary": "Empty baseline structure; potentially relevant as a target schema for collecting build/test metrics, but currently contains no useful data."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "patterns.json (second entry, minimal)",
+      "relevance": 22,
+      "summary": "Basic nodejs project type with detection timestamp; redundant with first patterns.json and provides minimal context beyond project language."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "patterns.json (third entry, test_repo)",
+      "relevance": 12,
+      "summary": "Empty patterns from external test_repo with cache metadata; minimal relevance to this repo's build stage context."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Pipeline Failure Debug Artifact Auto-Collector — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Pipeline Failure Debug Artifact Auto-Collector
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/debug-collector.sh` with `collect_debug_bundle()`, `rotate_debug_bundles()`, `list_debug_bundles()`, `show_debug_bundle()`, `export_debug_bundle()`
+- [ ] Task 2: Create `scripts/sw-debug-bundle.sh` CLI command with `list`, `show`, `export`, `clean`, `last` subcommands (depends on Task 1)
+- [ ] Task 3: Modify `scripts/lib/pipeline-state.sh` — call `collect_debug_bundle()` from `mark_stage_failed()` and include bundle path in GitHub failure comment (depends on Task 1)
+- [ ] Task 4: Modify `scripts/lib/pipeline-execution.sh` — reference debug bundle in retry context file (depends on Task 1)
+- [ ] Task 5: Register `debug-bundle` subcommand in `scripts/sw` CLI router (depends on Task 2)
+- [ ] Task 6: Register `debug.bundle_created` event type in `config/event-schema.json`
+- [ ] Task 7: Create `scripts/sw-debug-bundle-test.sh` test suite with 12 test cases (depends on Tasks 1-6)
+- [ ] Task 8: Register test suite in `package.json` (depends on Task 7)
+- [ ] Task 9: Run test suite and fix any failures
+- [ ] Task 10: Run existing pipeline tests to verify no regressions
+- [ ] `collect_debug_bundle()` creates a complete bundle on every stage failure
+- [ ] Bundle contains: stage log, error classification, environment (secrets filtered), git state, pipeline state, recent events, error log tail, manifest
+- [ ] Bundles are auto-rotated (max 10 by default)
+- [ ] GitHub failure comment includes bundle path
+- [ ] Retry context file includes bundle contents for agent consumption
+- [ ] `shipwright debug-bundle list|show|export|clean|last` CLI works
+- [ ] `debug.bundle_created` event emitted and schema-registered
+- [ ] Test suite passes with 12+ test cases
+- [ ] Existing pipeline tests pass (no regressions)
+- [ ] All scripts use `set -euo pipefail`, Bash 3.2 compatible, VERSION synced
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-278
+- Issue: none
+- Generated: 2026-03-15T07:55:47Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-15T07:59:20Z
+last_iteration_at: 2026-03-15T07:59:20Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
