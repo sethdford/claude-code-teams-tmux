@@ -51,6 +51,9 @@ fi
 # Test execution optimization (issue #200)
 # shellcheck source=lib/test-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/test-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/test-optimizer.sh" 2>/dev/null || true
+
+# shellcheck source=lib/loop-test-summarizer.sh
+[[ -f "$SCRIPT_DIR/lib/loop-test-summarizer.sh" ]] && source "$SCRIPT_DIR/lib/loop-test-summarizer.sh" 2>/dev/null || true
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
@@ -2238,6 +2241,20 @@ ${GOAL}"
         # Test gate
         run_test_gate
         write_error_summary
+
+        # Intelligent test summary (clusters, categorizes, prioritizes errors)
+        if type summarize_test_output >/dev/null 2>&1 && [[ "${TEST_PASSED:-}" == "false" ]]; then
+            local test_log_for_summary="${TEST_LOG_FILE:-$LOG_DIR/tests-iter-${ITERATION}.log}"
+            local raw_test_output=""
+            if [[ -f "$test_log_for_summary" ]]; then
+                raw_test_output="$(cat "$test_log_for_summary" 2>/dev/null || true)"
+            elif [[ -n "${TEST_OUTPUT:-}" ]]; then
+                raw_test_output="$TEST_OUTPUT"
+            fi
+            if [[ -n "$raw_test_output" ]]; then
+                summarize_test_output "$raw_test_output" "$LOG_DIR" "$ITERATION" >/dev/null 2>&1 || true
+            fi
+        fi
         if [[ -n "$TEST_CMD" ]]; then
             if [[ "$TEST_PASSED" == "true" ]]; then
                 echo -e "  ${GREEN}✓${RESET} Tests: passed"

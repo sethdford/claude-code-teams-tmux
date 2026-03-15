@@ -102,10 +102,22 @@ compose_prompt() {
 $TEST_OUTPUT"
     fi
 
-    # Structured error context (machine-readable)
+    # Structured error context — prefer intelligent summary, fall back to basic
     local error_summary_section=""
+    local test_summary_json="$LOG_DIR/test-summary.json"
     local error_json="$LOG_DIR/error-summary.json"
-    if [[ -f "$error_json" ]]; then
+
+    if [[ -f "$test_summary_json" ]] && command -v jq >/dev/null 2>&1; then
+        # Intelligent summary available — use focused prompt from summarizer
+        local focused
+        focused=$(jq -r '.focused_prompt // empty' "$test_summary_json" 2>/dev/null || true)
+        if [[ -n "$focused" ]]; then
+            error_summary_section="$focused"
+        fi
+    fi
+
+    # Fallback to basic error-summary.json if no intelligent summary
+    if [[ -z "$error_summary_section" ]] && [[ -f "$error_json" ]]; then
         local err_count err_lines
         err_count=$(jq -r '.error_count // 0' "$error_json" 2>/dev/null || echo "0")
         err_lines=$(jq -r '.error_lines[]? // empty' "$error_json" 2>/dev/null | head -10 || true)

@@ -198,6 +198,7 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 - **Fast test mode** (`--fast-test-cmd "cmd"`): Alternates between a fast subset test and the full suite. Full test runs on iteration 1, every N iterations (`--fast-test-interval`, default 5), and the final iteration.
 - **Agent roles** (`--roles "builder,reviewer,tester"`): In multi-agent mode, assigns specialization per agent. Built-in roles: `builder`, `reviewer`, `tester`, `optimizer`, `docs`, `security`.
 - **Context exhaustion detection**: When the daemon detects a build loop failed due to iteration exhaustion (not a code error), it tags the failure as `context_exhaustion` and boosts `--max-restarts` on retry.
+- **Intelligent test summarization**: `test-summary.json` written after test failures with clustered, categorized, and prioritized error analysis. Errors are grouped by file + category (e.g., "5 assertion failures in auth module" instead of 5 separate lines), sorted by fix priority (syntax > runtime > type > dependency > assertion > integration), and injected as a focused prompt with top clusters and fix suggestions. Falls back gracefully to basic `error-summary.json` when unavailable.
 
 ## Pipeline Templates
 
