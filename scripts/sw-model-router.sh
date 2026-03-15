@@ -695,7 +695,7 @@ chain_execute() {
     local execution_id
     execution_id=$(date +%s)-$(od -An -N4 -tx4 /dev/urandom 2>/dev/null | tr -d ' ' | cut -c1-6 || echo "000000")
 
-    local chain_output
+    local chain_output=""
     local confidence_threshold
     confidence_threshold=$(jq -r '.confidence_threshold // 50' "$CHAIN_CONFIG_FILE")
 
