@@ -647,6 +647,189 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "551977e42c6bf77b4573de6c5f885b30": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 80,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "False positive aborts on non-identical errors causing premature loop termination",
+          "Signature hash collision between different error types or changing error paths",
+          "Threshold configuration (3 iterations) may not generalize across different codebases and test patterns",
+          "Existing loop behavior regression if abort logic interferes with convergence detection or recovery logic",
+          "Error message instability (timestamps, working directories, paths) causing signature mismatches"
+        ],
+        "implementation_hints": [
+          "Extract error signature from test output: hash(normalized_error_message + file_path + line_number)",
+          "Maintain rolling window of last 3-5 consecutive iteration error signatures in loop state",
+          "Add abort_on_repeated_failure (default: true) and repetition_threshold (default: 3) to daemon-config.json schema",
+          "Integrate abort check in sw-loop.sh after each test failure, before retry decision",
+          "Store signature chain in progress.md or loop metadata for visibility and debugging",
+          "Normalize error messages: strip timestamps, absolute paths, and volatile details before hashing",
+          "Test edge cases: empty test output, multiline errors, stderr vs stdout separation, line number changes",
+          "Coordinate abort conditions with existing convergence detector to avoid conflicting exit signals"
+        ]
+      },
+      "timestamp": 1773552220,
+      "ttl": 3600
+    },
+    "8e00cdae01a2e5dc34a3ec74439d7aa5": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1773552230,
+      "ttl": 1800
+    },
+    "5141aaee65e44a8bba3418125bd5f5b5": {
+      "result": {
+        "estimated_cost_usd": 3.45,
+        "estimated_iterations": 3,
+        "estimated_tokens": 78000,
+        "likely_failure_stage": "test",
+        "confidence": 78,
+        "cost_breakdown": {
+          "plan_design": 0.85,
+          "build_iterations": 1.80,
+          "test": 0.50,
+          "review": 0.30
+        },
+        "iteration_breakdown": [
+          {
+            "iteration": 1,
+            "tokens": 22000,
+            "focus": "Core abort detection in sw-loop.sh, error signature hashing, config schema"
+          },
+          {
+            "iteration": 2,
+            "tokens": 26000,
+            "focus": "Edge case handling: multiline errors, path normalization, signature collision tests"
+          },
+          {
+            "iteration": 3,
+            "tokens": 18000,
+            "focus": "Convergence detector coordination, regression testing, daemon-config.json integration"
+          }
+        ],
+        "risk_factors": [
+          "error_signature_collision_risk: medium",
+          "regression_with_convergence_detector: medium-high",
+          "test_pattern_generalization: medium"
+        ]
+      },
+      "timestamp": 1773552241,
+      "ttl": 3600
+    },
+    "4031833c23f1ac8238bbf6e396df6134": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "testing",
+          "observability",
+          "performance"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Medium complexity. Requires error signature extraction, iteration state tracking across loop cycles, and careful convergence detection logic. Well-scoped with clear acceptance criteria, but risky decision-making (when to abort) needs thorough validation."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "build": [],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness"
+          ],
+          "pr": [],
+          "deploy": [],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Investigate how the current build loop tracks state across iterations and where convergence detection should be injected to avoid repeating prior implementation failures.",
+          "brainstorming": "Challenge assumptions about what constitutes 'identical' error signatures (hash collision risk?) and whether 3 repetitions is the right threshold or if context refresh could recover.",
+          "architecture-design": "Document the convergence detection strategy, signature hashing approach, and integration points with loop state management—this is a significant behavioral change requiring an ADR.",
+          "testing-strategy": "Design test harness to validate abort triggers correctly on repeated failures without consuming real iterations; include tests for threshold counting and edge cases.",
+          "two-stage-review": "Pass 1: Verify abort logic is sound and won't incorrectly terminate on transient errors. Pass 2: Check configuration options are properly exposed and backward-compatible.",
+          "adversarial-quality": "Attack from chaos angle—can error signatures accidentally collide? Can a malformed test output cause false positives? What happens if the same line number but different error aborts prematurely?",
+          "pr-quality": "Write a PR that clearly explains the signature extraction algorithm, the 3-iteration threshold rationale, config schema, and measured impact on iteration reduction.",
+          "validation-thoroughness": "Validate not just unit tests but actual loop behavior with real test failures; measure iteration counts before/after and confirm 30%+ reduction on unrecoverable errors.",
+          "observability": "Post-deploy monitoring to detect premature aborts (false positives) and measure actual iteration reduction in production; alert if abort rate exceeds threshold."
+        },
+        "generated_skills": [
+          {
+            "name": "convergence-detection",
+            "reason": "Available skills don't cover build loop convergence detection algorithms, error signature hashing strategies, or the decision logic for when to abort vs. retry—all critical to this issue's correctness.",
+            "content": "## Convergence Detection & Build Loop Abort Logic\n\n### Error Signature Extraction\n\nExtract a stable hash from test output to detect repeated failures:\n\n1. **Parse test output** for error lines (stack traces, assertion failures, syntax errors)\n2. **Normalize**: Strip line numbers and timestamps; preserve file path and error category\n3. **Hash**: `sha256(error_message + file_path + error_category)` ensures consistency\n4. **Collision risk**: Test that similar but distinct errors (e.g., different assertion messages on same line) produce different hashes\n\n### Convergence Detection Algorithm\n\n- Track signatures in a circular buffer of the last N iterations (N = 5 recommended)\n- On each test failure, extract signature and compare against buffer\n- **Abort condition**: 3+ **consecutive identical signatures** = unrecoverable error\n- **Don't abort on**: Single failures, transient errors (flaky tests), or signature variation\n- **State location**: Write signatures to `error-summary.json` with timestamps; read on loop resume\n\n### Configuration Schema\n\n```json\n{\n  \"convergence_detection\": {\n    \"enabled\": true,\n    \"repetition_threshold\": 3,\n    \"signature_buffer_size\": 5,\n    \"ignore_flaky_patterns\": [\"timeout\", \"network\", \"connection_reset\"]\n  }\n}\n```\n\n### Abort Reason Format\n\nWhen aborting, write to `.claude/error-summary.json`:\n\n```json\n{\n  \"abort_reason\": \"Convergence detected: identical error signature across 3 consecutive iterations\",\n  \"error_signature\": \"<sha256_hash>\",\n  \"error_category\": \"SyntaxError\",\n  \"first_occurrence_iteration\": 2,\n  \"final_occurrence_iteration\": 4,\n  \"sample_error_message\": \"...\",\n  \"sample_file\": \"src/component.tsx:42\"\n}\n```\n\n### Testing Convergence Logic\n\n- Mock test failures with identical signatures on iterations 2, 3, 4 → abort on iteration 4\n- Mock failures with changing signatures → don't abort\n- Mock failures with only 2 repetitions → don't abort\n- Verify signature extraction handles multiline stack traces correctly\n- Test that `--max-iterations` is honored even if convergence would allow continuation"
+          }
+        ],
+        "review_focus": [
+          "Signature extraction algorithm: Does it correctly normalize errors to prevent false positives from cosmetic differences?",
+          "Consecutive iteration counting: Is the off-by-one logic correct? (3 *identical* = abort, 2 identical = continue)",
+          "Configuration backward compatibility: Existing configs without `convergence_detection` should work unchanged",
+          "Abort message clarity: Does error-summary.json provide enough detail for a restart to understand why the loop stopped?",
+          "Integration with session restart: When loop resumes with fresh session, can it read abort reason and avoid repeating the same pattern?"
+        ],
+        "risk_areas": [
+          "False positives: Signature collision or overly broad normalization could abort on transient/fixable errors",
+          "Off-by-one errors: Counting logic for 'consecutive' must be precise; test iteration 2,3,4 (abort) vs 2,4,5 (no abort)",
+          "Context loss on early abort: Aborting discards remaining iterations that might recover if session is restarted with fresh context",
+          "Flaky test false negatives: Legitimate flaky tests misclassified as convergent failures; test ignore patterns",
+          "Performance: Hash computation on large test outputs; ensure it doesn't slow down loop iteration"
+        ]
+      },
+      "timestamp": 1773552413,
+      "ttl": 3600
+    },
+    "417bbbe589aa7edbd8cb406c37b37a4c": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant: contains test failure patterns with repetition counts (seen_count up to 25), which is exactly the signal needed to detect repeated identical test failures and trigger early abort"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 70,
+            "summary": "Project structure metadata (vitest test runner, *.test.js pattern, npm/nodejs) needed to understand where and how to integrate the early abort logic into the test pipeline"
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 35,
+            "summary": "Identifies project as nodejs type, providing basic context but less detailed than the first patterns.json entry"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Could be relevant for tracking performance metrics of the abort feature (e.g., time saved by early termination), but currently empty"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Could document architectural decisions about the abort implementation, but currently empty with no prior decisions captured"
+          }
+        ]
+      },
+      "timestamp": 1773552426,
+      "ttl": 1800
     }
   }
 }
