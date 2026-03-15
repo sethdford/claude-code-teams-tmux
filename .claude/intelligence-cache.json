@@ -30,9 +30,16 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "tester"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Simple feature implementation (add --version flag to sw CLI) is core development work; builder handles code changes, tester validates smoke test.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1773558375,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +654,219 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "aa9578b755546d0e338428cd7bdc204b": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 92,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Version retrieval failure if package.json unavailable",
+          "Argument parsing breaks existing command routing",
+          "Test coverage insufficient for edge cases"
+        ],
+        "implementation_hints": [
+          "Extract version from package.json early in sw script",
+          "Add flag check before subcommand delegation",
+          "Test with both 'shipwright' and 'sw' aliases",
+          "Verify existing commands unaffected"
+        ]
+      },
+      "timestamp": 1773558035,
+      "ttl": 3600
+    },
+    "6529a7023a4a4a2a6e8f3c9cb7e7676e": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1773558041,
+      "ttl": 1800
+    },
+    "4a97579d0c1574d38421d7de7edb4713": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 1,
+        "estimated_tokens": 21500,
+        "likely_failure_stage": "test",
+        "confidence": 87
+      },
+      "timestamp": 1773558048,
+      "ttl": 3600
+    },
+    "96f2fb25ff415e651c44d405de14be75": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Shows project is Node.js with npm/vitest, source in src/, test pattern *.test.js, and commonjs imports—directly informs how to structure and test the --version flag implementation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Contains 5 known test failures including sw-hello-test.sh mktemp issues and CLI test patterns—relevant to understand existing test fragility and patterns when adding new CLI functionality"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Confirms Node.js project type detected at bootstrap—minimal additional value over the detailed patterns.json but confirms project classification"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 5,
+            "summary": "References test_repo, not shipwright—not applicable to current context"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 0,
+            "summary": "Empty baselines object—no relevant data for planning this feature"
+          }
+        ]
+      },
+      "timestamp": 1773558067,
+      "ttl": 1800
+    },
+    "09e337278e660a729a0b2a7f04fa8931": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains 5 documented test failures with patterns, root causes, and fixes. Directly relevant to understanding why plan validation failed — includes failures in sw-cleanup.sh, sw-feedback-test.sh, mktemp, and sed invocations that could block smoke test execution."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 68,
+            "summary": "Project metadata showing test_runner: vitest, language: javascript, import_style: commonjs, and test_pattern conventions. Relevant for understanding the codebase structure and how tests are executed, which informs why validation might fail."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Empty decisions array. Minimal relevance — has the structure to capture decisions but contains no historical decision data that would explain plan rejection rationale."
+          }
+        ]
+      },
+      "timestamp": 1773558223,
+      "ttl": 1800
+    },
+    "e8fd4b28aba47f06f3d803c94055bed8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains concrete project structure conventions (src/ directory, test patterns, commonjs imports, language) directly applicable to architecture design for new features"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Captures common failure patterns in sw subcommands and test infrastructure; patterns like mktemp failures and sed expression issues could inform defensive design choices"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Confirms nodejs project type detected at bootstrap; provides baseline project classification for architecture decisions"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 10,
+            "summary": "Minimal project metadata with empty patterns array; confirms cache TTL configuration but provides no actionable architecture guidance"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 0,
+            "summary": "No baseline data available; empty metrics provide no historical context for design decisions"
+          }
+        ]
+      },
+      "timestamp": 1773558259,
+      "ttl": 1800
+    },
+    "d1495ab72b1d48aed557c11ef1ca3add": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains 25 documented test failures from the Shipwright project with root causes and fixes. Directly reveals anti-patterns in test implementation (shell script issues, test assertion mismatches, missing output formatting) that are highly relevant for avoiding similar pitfalls when adding a version flag feature."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 60,
+            "summary": "Documents project conventions including test patterns (*.test.js), import style (commonjs), and source directory structure. Relevant for understanding how to properly structure tests and implementation for the new feature to align with project standards."
+          },
+          {
+            "file": "patterns.json (second entry)",
+            "relevance": 15,
+            "summary": "Minimal metadata indicating Node.js project type detected on 2026-02-21. Generic project information with low actionable value for avoiding anti-patterns in a specific feature implementation."
+          }
+        ]
+      },
+      "timestamp": 1773558269,
+      "ttl": 1800
+    },
+    "28f35f7c20d39eab466685fbecf9edaa": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project structure metadata: Node.js with vitest test runner, npm package manager, src/ source directory, commonjs imports. Essential for understanding implementation approach for adding version flag."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Documented test failure patterns from previous builds. Includes sed invocation issues and test output format mismatches that could inform test design and help avoid similar regressions when adding new features."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 12,
+            "summary": "Confirms project_type as nodejs. Redundant with first patterns.json entry; minimal additional value."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 5,
+            "summary": "Shows test_repo with empty patterns and cache metadata. Not relevant to shipwright/shipwright repository context."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 2,
+            "summary": "Contains empty baselines object. No actionable data for this build stage."
+          }
+        ]
+      },
+      "timestamp": 1773558356,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 recurring test failures with root causes and fixes — directly applicable to fixing build stage failures (sw-cleanup.sh dry-run output, sw-feedback-test.sh JSON, mktemp, sed syntax, heartbeat detection). Last failures seen within hours."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Documents build environment: test runner (vitest), package manager (npm), import style (commonjs), source directory structure. Foundational for understanding how tests are executed during build."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No build performance metrics or historical data to inform optimization."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No build-related decisions recorded."
+          }
+        ]
+      },
+      "timestamp": 1773558365,
+      "ttl": 1800
     }
   }
 }
