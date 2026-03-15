@@ -409,7 +409,10 @@ scan_platform_refactor() {
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        local f rest ln
+        f="${line%%:*}"
+        rest="${line#*:}"
+        ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
