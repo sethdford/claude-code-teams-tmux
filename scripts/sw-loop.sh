@@ -877,6 +877,8 @@ run_loop_with_restarts() {
         TEST_PASSED=""
         TEST_OUTPUT=""
         TEST_LOG_FILE=""
+        VELOCITY_HISTORY=""
+        ITERATION_LINES_CHANGED=0
         # Reset GOAL to original — prevent unbounded growth from memory/human injections
         GOAL="$ORIGINAL_GOAL"
 

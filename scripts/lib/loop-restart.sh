@@ -12,6 +12,11 @@ initialize_state() {
     START_EPOCH="$(now_epoch)"
     STATUS="running"
     LOG_ENTRIES=""
+    TEST_PASSED=""
+    TEST_OUTPUT=""
+    TEST_LOG_FILE=""
+    VELOCITY_HISTORY=""
+    ITERATION_LINES_CHANGED=0
 
     # Record starting commit for cumulative diff in quality gates
     LOOP_START_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")"
