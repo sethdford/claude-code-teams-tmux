@@ -100,8 +100,10 @@ collect_debug_bundle() {
     # 8. Create manifest with checksums
     _create_manifest "$bundle_dir" || return 1
 
-    # Rotate old bundles (keep last 10)
-    rotate_debug_bundles 10 || true
+    # Rotate old bundles only when count exceeds threshold (keep last 10, rotate at 15)
+    local bundle_count
+    bundle_count=$(find "${ARTIFACTS_DIR}/debug-bundles" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || echo 0)
+    [[ "$bundle_count" -gt 15 ]] && rotate_debug_bundles 10 || true
 
     # Emit observability event
     emit_event "debug.bundle_created" \
