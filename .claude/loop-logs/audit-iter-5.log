@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+Based on my comprehensive audit of the cumulative work, I've found a critical issue:
+
+## AUDIT ISSUES FOUND
+
+### Issue 1: **Test Suite Hanging (Critical)**
+The `npm test` command hangs on `sw-loop-test.sh`. While the new test `sw-loop-restart-briefing-test.sh` itself passes (11/11 tests), it blocks the full test suite from completing. The hang occurs during one of the sw-loop integration tests after printing "loop behavior: iterations on test failure".
+
+**Impact**: npm test exit code 1 (timeout)  
+**Root cause**: Pre-existing sw-loop-test.sh infrastructure issue (not directly caused by new changes)
+
+---
+
+### Issue 2: **False Claim of Completion**
+The agent claimed "LOOP_COMPLETE" and "all tests pass" but:
+- `npm test` times out (fails)
+- Only the isolated new test suite passes individually
+- The agent's audits also hang
+
+This is a serious discrepancy between the agent's claim and reality.
+
+---
+
+## What Works ✓
+
+1. **New Module Implementation**: `scripts/lib/loop-restart-briefing.sh` 
+   - 370 lines of well-structured code
+   - 5 public functions properly implemented
+   - Module guard pattern correct
+   - No syntax errors
+
+2. **New Test Suite**: `scripts/sw-loop-restart-briefing-test.sh`
+   - 318 lines, all 11 tests pass individually ✓
+   - Tests categorize changes, extract error patterns, summarize iterations, recommend next steps
+   - Token budget validation included
+
+3. **Integration Points**:
+   - `sw-loop.sh` updated correctly to source new module (line 44)
+   - `session-restart.sh` modified appropriately
+   - `package.json` registered with test entry
+
+4. **Documentation**: Updated `.claude/CLAUDE.md` with intelligent restart briefing details
+
+---
+
+## What Needs Fixing ✗
+
+**CRITICAL**: The sw-loop-test.sh hang needs investigation and resolution before this can be considered complete. The new code itself is sound, but the test infrastructure issue prevents npm test from passing.
+
+---
+
+AUDIT_FAIL
