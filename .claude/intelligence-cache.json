@@ -961,26 +961,26 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains captured test failures with root causes and fixes. Highly relevant as build stage depends on test success; these patterns show recurring failures to avoid."
+            "summary": "Critical for build stage—contains 5 captured test failures with documented root causes and fixes (mktemp /tmp/claude issue, sed -e flag missing, sw-cleanup.sh dry-run output, sw-feedback.sh JSON regression). Directly prevents repeating these failures during test execution."
           },
           {
             "file": "patterns.json",
             "relevance": 65,
-            "summary": "Project configuration (test_runner: vitest, package_manager: npm, source: src/). Provides baseline understanding of build environment and test setup."
+            "summary": "Project structure and conventions (vitest runner, npm, src/ directory, commonjs imports, *.test.js pattern). Useful for understanding the build environment and test invocation strategy."
           },
           {
             "file": "metrics.json",
-            "relevance": 10,
-            "summary": "Empty baselines object. No actionable metrics to inform build stage decisions."
+            "relevance": 5,
+            "summary": "Empty baselines object—contains no useful data for build stage context."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decisions array. No prior build stage decisions captured."
+            "summary": "Empty decisions array—contains no useful data for build stage context."
           }
         ]
       },
-      "timestamp": 1773564731,
+      "timestamp": 1773567071,
       "ttl": 1800
     }
   }
