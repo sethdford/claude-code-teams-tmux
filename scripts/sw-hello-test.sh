@@ -2,7 +2,7 @@
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  sw-hello-test.sh — Hello Command Test Suite                             ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PASS=0
@@ -89,8 +89,11 @@ test_hello_version() {
 
 # ─── Test: hello with invalid option exits non-zero ────────────────────────
 test_hello_invalid_option() {
-    local exit_code=0
-    "$SCRIPT_DIR/sw-hello.sh" --invalid > /dev/null 2>&1 || exit_code=$?
+    local exit_code
+    set +e
+    "$SCRIPT_DIR/sw-hello.sh" --invalid > /dev/null 2>&1
+    exit_code=$?
+    set -e
     assert_exit_code 1 "${exit_code}" "hello with invalid option exits with code 1"
 }
 
