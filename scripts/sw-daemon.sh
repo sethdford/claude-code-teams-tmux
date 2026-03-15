@@ -99,8 +99,10 @@ format_duration() {
 
 # ─── Event Log Rotation ─────────────────────────────────────────────────────
 rotate_event_log() {
-    local max_size=$((50 * 1024 * 1024))  # 50MB
-    local max_rotations=3
+    local max_size
+    max_size=$(policy_get ".daemon.timeouts.event_log_max_bytes" "52428800")
+    local max_rotations
+    max_rotations=$(policy_get ".daemon.timeouts.event_log_max_rotations" "3")
 
     # Rotate events.jsonl if too large
     if [[ -f "$EVENTS_FILE" ]]; then
@@ -151,8 +153,12 @@ daemon_github_context() {
 # Retries gh commands up to 3 times with exponential backoff (1s, 3s, 9s).
 # Detects rate-limit (403/429) and transient errors. Returns the gh exit code.
 gh_retry() {
-    local max_retries=3
-    local backoff=1
+    local max_retries
+    max_retries=$(policy_get ".daemon.timeouts.gh_retry_max_attempts" "3")
+    local backoff
+    backoff=$(policy_get ".daemon.timeouts.gh_retry_initial_backoff_s" "1")
+    local _backoff_mult
+    _backoff_mult=$(policy_get ".daemon.timeouts.gh_retry_backoff_multiplier" "3")
     local attempt=0
     local exit_code=0
 
@@ -174,7 +180,7 @@ gh_retry() {
 
         if [[ $attempt -lt $max_retries ]]; then
             sleep "$backoff"
-            backoff=$((backoff * 3))
+            backoff=$((backoff * _backoff_mult))
         fi
     done
 
@@ -631,8 +637,10 @@ cleanup_on_exit() {
                 fi
             done <<< "$child_pids"
             if [[ $killed -gt 0 ]]; then
-                daemon_log INFO "Sent SIGTERM to ${killed} pipeline process(es) — waiting 5s"
-                sleep 5
+                local _sigterm_grace
+                _sigterm_grace=$(policy_get ".daemon.timeouts.sigterm_grace_s" "5")
+                daemon_log INFO "Sent SIGTERM to ${killed} pipeline process(es) — waiting ${_sigterm_grace}s"
+                sleep "$_sigterm_grace"
                 # Force-kill any that didn't exit
                 while IFS= read -r cpid; do
                     [[ -z "$cpid" ]] && continue
@@ -785,7 +793,8 @@ daemon_start() {
     # Enter poll loop with watchdog self-restart on unexpected exit
     local _watchdog_restarts=0
     local _watchdog_max=${WATCHDOG_MAX_RESTARTS:-5}
-    local _watchdog_backoff=5
+    local _watchdog_backoff
+    _watchdog_backoff=$(policy_get ".daemon.timeouts.watchdog_initial_backoff_s" "5")
 
     while true; do
         daemon_poll_loop || true  # poll_loop only returns on shutdown or crash
@@ -809,7 +818,9 @@ daemon_start() {
 
         sleep "$_watchdog_backoff" || true
         _watchdog_backoff=$((_watchdog_backoff * 2))
-        [[ "$_watchdog_backoff" -gt 300 ]] && _watchdog_backoff=300
+        local _watchdog_cap
+        _watchdog_cap=$(policy_get ".daemon.timeouts.watchdog_max_backoff_s" "300")
+        [[ "$_watchdog_backoff" -gt "$_watchdog_cap" ]] && _watchdog_backoff="$_watchdog_cap"
 
         # Re-validate state before restarting
         if [[ -f "$STATE_FILE" ]]; then
@@ -850,17 +861,23 @@ daemon_stop() {
     # Touch shutdown flag for graceful exit
     touch "$SHUTDOWN_FLAG"
 
-    # Wait for graceful shutdown (up to 30s)
+    # Wait for graceful shutdown
+    local _shutdown_grace
+    _shutdown_grace=$(policy_get ".daemon.timeouts.shutdown_grace_s" "30")
+    local _shutdown_poll
+    _shutdown_poll=$(policy_get ".daemon.timeouts.shutdown_poll_s" "1")
     local wait_secs=0
-    while kill -0 "$pid" 2>/dev/null && [[ $wait_secs -lt 30 ]]; do
-        sleep 1
+    while kill -0 "$pid" 2>/dev/null && [[ $wait_secs -lt $_shutdown_grace ]]; do
+        sleep "$_shutdown_poll"
         wait_secs=$((wait_secs + 1))
     done
 
     if kill -0 "$pid" 2>/dev/null; then
         warn "Daemon didn't stop gracefully — sending SIGTERM"
         kill "$pid" 2>/dev/null || true
-        sleep 2
+        local _sigterm_wait
+        _sigterm_wait=$(policy_get ".daemon.timeouts.shutdown_sigterm_wait_s" "2")
+        sleep "$_sigterm_wait"
         if kill -0 "$pid" 2>/dev/null; then
             warn "Sending SIGKILL"
             kill -9 "$pid" 2>/dev/null || true

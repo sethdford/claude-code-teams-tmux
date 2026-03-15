@@ -182,7 +182,24 @@
         "optimize_interval_cycles": { "type": "integer", "minimum": 1 },
         "stale_reaper_interval_cycles": { "type": "integer", "minimum": 1 },
         "stale_timeout_multiplier": { "type": "integer", "minimum": 1 },
-        "stale_state_hours": { "type": "integer", "minimum": 1 }
+        "stale_state_hours": { "type": "integer", "minimum": 1 },
+        "timeouts": {
+          "type": "object",
+          "properties": {
+            "gh_retry_max_attempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "gh_retry_initial_backoff_s": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "gh_retry_backoff_multiplier": { "type": "integer", "minimum": 2, "maximum": 10 },
+            "sigterm_grace_s": { "type": "integer", "minimum": 1, "maximum": 60 },
+            "shutdown_grace_s": { "type": "integer", "minimum": 5, "maximum": 300 },
+            "shutdown_poll_s": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "shutdown_sigterm_wait_s": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "watchdog_initial_backoff_s": { "type": "integer", "minimum": 1, "maximum": 60 },
+            "watchdog_max_backoff_s": { "type": "integer", "minimum": 30, "maximum": 3600 },
+            "event_log_max_bytes": { "type": "integer", "minimum": 1048576 },
+            "event_log_max_rotations": { "type": "integer", "minimum": 1, "maximum": 10 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },

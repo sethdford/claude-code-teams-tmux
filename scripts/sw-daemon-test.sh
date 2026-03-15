@@ -94,6 +94,9 @@ source_daemon_functions() {
     # dora_grade, daemon_health_check, daemon_check_degradation, daemon_log,
     # atomic_write_state, notify
 
+    # Source policy.sh so policy_get is available for timeout tests
+    [[ -f "$SCRIPT_DIR/lib/policy.sh" ]] && source "$SCRIPT_DIR/lib/policy.sh"
+
     # Simple helpers we redefine directly (faster + safer than sourcing whole script)
     now_iso() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
     now_epoch() { date +%s; }
@@ -1862,6 +1865,111 @@ test_failure_classification_wired() {
         { echo "Missing daemon.failure_classified event"; return 1; }
 }
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Policy-based daemon timeout configuration tests
+# ──────────────────────────────────────────────────────────────────────────────
+test_daemon_timeouts_in_policy() {
+    # Verify config/policy.json contains daemon.timeouts section with all 11 keys
+    local policy_file="$SCRIPT_DIR/../config/policy.json"
+    [[ -f "$policy_file" ]] || { echo "policy.json not found"; return 1; }
+    local keys
+    keys=$(jq -r '.daemon.timeouts | keys[]' "$policy_file" 2>/dev/null)
+    local count
+    count=$(echo "$keys" | wc -l | tr -d ' ')
+    assert_equals "11" "$count" "daemon.timeouts has 11 keys"
+}
+
+test_daemon_timeouts_defaults_match() {
+    # Verify the defaults in policy.json match the original hardcoded values
+    local policy_file="$SCRIPT_DIR/../config/policy.json"
+    [[ -f "$policy_file" ]] || { echo "policy.json not found"; return 1; }
+    assert_equals "3" "$(jq -r '.daemon.timeouts.gh_retry_max_attempts' "$policy_file")" "gh_retry_max_attempts default" &&
+    assert_equals "1" "$(jq -r '.daemon.timeouts.gh_retry_initial_backoff_s' "$policy_file")" "gh_retry_initial_backoff_s default" &&
+    assert_equals "3" "$(jq -r '.daemon.timeouts.gh_retry_backoff_multiplier' "$policy_file")" "gh_retry_backoff_multiplier default" &&
+    assert_equals "5" "$(jq -r '.daemon.timeouts.sigterm_grace_s' "$policy_file")" "sigterm_grace_s default" &&
+    assert_equals "30" "$(jq -r '.daemon.timeouts.shutdown_grace_s' "$policy_file")" "shutdown_grace_s default" &&
+    assert_equals "1" "$(jq -r '.daemon.timeouts.shutdown_poll_s' "$policy_file")" "shutdown_poll_s default" &&
+    assert_equals "2" "$(jq -r '.daemon.timeouts.shutdown_sigterm_wait_s' "$policy_file")" "shutdown_sigterm_wait_s default" &&
+    assert_equals "5" "$(jq -r '.daemon.timeouts.watchdog_initial_backoff_s' "$policy_file")" "watchdog_initial_backoff_s default" &&
+    assert_equals "300" "$(jq -r '.daemon.timeouts.watchdog_max_backoff_s' "$policy_file")" "watchdog_max_backoff_s default" &&
+    assert_equals "52428800" "$(jq -r '.daemon.timeouts.event_log_max_bytes' "$policy_file")" "event_log_max_bytes default" &&
+    assert_equals "3" "$(jq -r '.daemon.timeouts.event_log_max_rotations' "$policy_file")" "event_log_max_rotations default"
+}
+
+test_daemon_timeouts_policy_get_fallback() {
+    # When policy.json has no daemon.timeouts, policy_get returns the fallback
+    local saved_policy="${_POLICY_FILE:-}"
+    _POLICY_FILE="/nonexistent/policy.json"
+    local val
+    val=$(policy_get ".daemon.timeouts.gh_retry_max_attempts" "3")
+    assert_equals "3" "$val" "fallback when no policy file" &&
+    val=$(policy_get ".daemon.timeouts.shutdown_grace_s" "30")
+    assert_equals "30" "$val" "fallback for shutdown_grace_s"
+    _POLICY_FILE="$saved_policy"
+}
+
+test_daemon_timeouts_custom_values() {
+    # When policy.json has custom values, policy_get returns them
+    local tmp_policy
+    tmp_policy=$(mktemp "${TMPDIR:-/tmp}/policy-test.XXXXXX.json")
+    cat > "$tmp_policy" <<'POLICY'
+{
+  "version": "2",
+  "daemon": {
+    "timeouts": {
+      "gh_retry_max_attempts": 5,
+      "shutdown_grace_s": 60,
+      "watchdog_max_backoff_s": 600
+    }
+  }
+}
+POLICY
+    local saved_policy="${_POLICY_FILE:-}"
+    _POLICY_FILE="$tmp_policy"
+    local val
+    val=$(policy_get ".daemon.timeouts.gh_retry_max_attempts" "3")
+    assert_equals "5" "$val" "custom gh_retry_max_attempts" &&
+    val=$(policy_get ".daemon.timeouts.shutdown_grace_s" "30")
+    assert_equals "60" "$val" "custom shutdown_grace_s" &&
+    val=$(policy_get ".daemon.timeouts.watchdog_max_backoff_s" "300")
+    assert_equals "600" "$val" "custom watchdog_max_backoff_s" &&
+    # Missing key falls back to default
+    val=$(policy_get ".daemon.timeouts.sigterm_grace_s" "5")
+    assert_equals "5" "$val" "missing key falls back to default"
+    _POLICY_FILE="$saved_policy"
+    rm -f "$tmp_policy"
+}
+
+test_daemon_timeout_script_uses_policy_get() {
+    # Verify sw-daemon.sh calls policy_get for all 11 timeout values
+    local daemon_src="$SCRIPT_DIR/sw-daemon.sh"
+    grep -q 'policy_get ".daemon.timeouts.gh_retry_max_attempts"' "$daemon_src" || { echo "Missing gh_retry_max_attempts"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.gh_retry_initial_backoff_s"' "$daemon_src" || { echo "Missing gh_retry_initial_backoff_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.gh_retry_backoff_multiplier"' "$daemon_src" || { echo "Missing gh_retry_backoff_multiplier"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.sigterm_grace_s"' "$daemon_src" || { echo "Missing sigterm_grace_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.shutdown_grace_s"' "$daemon_src" || { echo "Missing shutdown_grace_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.shutdown_poll_s"' "$daemon_src" || { echo "Missing shutdown_poll_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.shutdown_sigterm_wait_s"' "$daemon_src" || { echo "Missing shutdown_sigterm_wait_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.watchdog_initial_backoff_s"' "$daemon_src" || { echo "Missing watchdog_initial_backoff_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.watchdog_max_backoff_s"' "$daemon_src" || { echo "Missing watchdog_max_backoff_s"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.event_log_max_bytes"' "$daemon_src" || { echo "Missing event_log_max_bytes"; return 1; }
+    grep -q 'policy_get ".daemon.timeouts.event_log_max_rotations"' "$daemon_src" || { echo "Missing event_log_max_rotations"; return 1; }
+}
+
+test_daemon_timeouts_schema_validation() {
+    # Verify policy.json passes schema validation (jq parse check)
+    local policy_file="$SCRIPT_DIR/../config/policy.json"
+    local schema_file="$SCRIPT_DIR/../config/policy.schema.json"
+    jq empty "$policy_file" 2>/dev/null || { echo "policy.json is invalid JSON"; return 1; }
+    jq empty "$schema_file" 2>/dev/null || { echo "policy.schema.json is invalid JSON"; return 1; }
+    # Verify schema has daemon.timeouts properties
+    local schema_keys
+    schema_keys=$(jq -r '.properties.daemon.properties.timeouts.properties | keys[]' "$schema_file" 2>/dev/null)
+    local count
+    count=$(echo "$schema_keys" | wc -l | tr -d ' ')
+    assert_equals "11" "$count" "schema has 11 timeout properties"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1947,6 +2055,12 @@ main() {
         "test_consecutive_failure_pause:Intelligence: Consecutive failure auto-pause (3 threshold)"
         "test_retry_args_passed_to_spawn:Intelligence: Retry escalation args passed to spawn"
         "test_failure_classification_wired:Intelligence: classify_failure wired into retry logic"
+        "test_daemon_timeouts_in_policy:Policy: daemon.timeouts section has all 11 keys"
+        "test_daemon_timeouts_defaults_match:Policy: daemon.timeouts defaults match original hardcoded values"
+        "test_daemon_timeouts_policy_get_fallback:Policy: daemon.timeouts fallback when policy file missing"
+        "test_daemon_timeouts_custom_values:Policy: daemon.timeouts custom values override defaults"
+        "test_daemon_timeout_script_uses_policy_get:Policy: sw-daemon.sh uses policy_get for all 11 timeouts"
+        "test_daemon_timeouts_schema_validation:Policy: schema validates daemon.timeouts section"
     )
 
     for entry in "${tests[@]}"; do

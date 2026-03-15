@@ -173,7 +173,20 @@
     "optimize_interval_cycles": 10,
     "stale_reaper_interval_cycles": 10,
     "stale_timeout_multiplier": 2,
-    "stale_state_hours": 2
+    "stale_state_hours": 2,
+    "timeouts": {
+      "gh_retry_max_attempts": 3,
+      "gh_retry_initial_backoff_s": 1,
+      "gh_retry_backoff_multiplier": 3,
+      "sigterm_grace_s": 5,
+      "shutdown_grace_s": 30,
+      "shutdown_poll_s": 1,
+      "shutdown_sigterm_wait_s": 2,
+      "watchdog_initial_backoff_s": 5,
+      "watchdog_max_backoff_s": 300,
+      "event_log_max_bytes": 52428800,
+      "event_log_max_rotations": 3
+    }
   },
   "pipeline": {
     "max_iterations_default": 10,
