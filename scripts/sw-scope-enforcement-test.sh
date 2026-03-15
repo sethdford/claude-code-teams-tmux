@@ -19,7 +19,7 @@ RESET_COLOR="\033[0m"
 # Test counters
 PASS=0
 FAIL=0
-TEST_DIR="/private/tmp/claude-501/scope-test-$$"
+TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/scope-test-XXXXXX")"
 
 # Cleanup on exit
 cleanup() {
