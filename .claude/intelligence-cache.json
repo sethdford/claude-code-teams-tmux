@@ -650,30 +650,30 @@
     },
     "551977e42c6bf77b4573de6c5f885b30": {
       "result": {
-        "complexity": 6,
+        "complexity": 5,
         "risk_level": "medium",
-        "success_probability": 80,
+        "success_probability": 82,
         "recommended_template": "standard",
         "issue_type": "testing",
         "key_risks": [
-          "False positive aborts on non-identical errors causing premature loop termination",
-          "Signature hash collision between different error types or changing error paths",
-          "Threshold configuration (3 iterations) may not generalize across different codebases and test patterns",
-          "Existing loop behavior regression if abort logic interferes with convergence detection or recovery logic",
-          "Error message instability (timestamps, working directories, paths) causing signature mismatches"
+          "Premature loop termination from false positive error signature matching",
+          "Breaking existing loop behavior if abort threshold is too aggressive",
+          "Inconsistent error extraction across diverse test frameworks (Jest, pytest, Go, Cargo, etc.)",
+          "Regression in iteration tracking when abort interacts with max_iterations or max_restarts",
+          "Edge case: handling multiline errors, escaped characters, and file path variations in signatures"
         ],
         "implementation_hints": [
-          "Extract error signature from test output: hash(normalized_error_message + file_path + line_number)",
-          "Maintain rolling window of last 3-5 consecutive iteration error signatures in loop state",
-          "Add abort_on_repeated_failure (default: true) and repetition_threshold (default: 3) to daemon-config.json schema",
-          "Integrate abort check in sw-loop.sh after each test failure, before retry decision",
-          "Store signature chain in progress.md or loop metadata for visibility and debugging",
-          "Normalize error messages: strip timestamps, absolute paths, and volatile details before hashing",
-          "Test edge cases: empty test output, multiline errors, stderr vs stdout separation, line number changes",
-          "Coordinate abort conditions with existing convergence detector to avoid conflicting exit signals"
+          "Use deterministic error signature hashing: normalize whitespace, canonicalize file paths, extract line numbers consistently",
+          "Track consecutive error signatures in loop state (progress.md) for observability and debugging",
+          "Make abort decision logic testable via mockable error injection in test suite",
+          "Extract errors robustly from multiple test frameworks by parsing stderr/stdout patterns",
+          "Write comprehensive abort metadata to error-summary.json including signature chain, iteration count, and pattern analysis",
+          "Add abort metrics to loop-convergence.jsonl: frequency, iteration savings, abort reason distribution",
+          "Set safe defaults in daemon-config.json: abort_on_repeated_failure=true, repetition_threshold=3",
+          "Validate in test suite with synthetic failures: syntax errors, missing dependencies, infinite loops, logical errors"
         ]
       },
-      "timestamp": 1773552220,
+      "timestamp": 1773567952,
       "ttl": 3600
     },
     "8e00cdae01a2e5dc34a3ec74439d7aa5": {
@@ -803,33 +803,51 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 95,
-            "summary": "Directly relevant: contains test failure patterns with repetition counts (seen_count up to 25), which is exactly the signal needed to detect repeated identical test failures and trigger early abort"
+            "relevance": 99,
+            "summary": "Core data structure showing repeated test failures with seen_count, last_seen timestamps, and patterns. Directly models what the early abort feature needs to detect and track."
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 70,
-            "summary": "Project structure metadata (vitest test runner, *.test.js pattern, npm/nodejs) needed to understand where and how to integrate the early abort logic into the test pipeline"
+            "file": "patterns.json (first)",
+            "relevance": 38,
+            "summary": "Project metadata (test_runner: vitest, test_pattern: *.test.js) helps understand how to identify and classify test failures in this codebase."
           },
           {
-            "file": "patterns.json (second entry)",
-            "relevance": 35,
-            "summary": "Identifies project as nodejs type, providing basic context but less detailed than the first patterns.json entry"
+            "file": "patterns.json (second)",
+            "relevance": 12,
+            "summary": "Basic project type detection (nodejs) provides minimal context about the build environment."
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Could be relevant for tracking performance metrics of the abort feature (e.g., time saved by early termination), but currently empty"
+            "relevance": 3,
+            "summary": "Empty baselines object; not applicable to planning abort logic."
           },
           {
             "file": "decisions.json",
-            "relevance": 10,
-            "summary": "Could document architectural decisions about the abort implementation, but currently empty with no prior decisions captured"
+            "relevance": 3,
+            "summary": "Empty decisions array; no prior architectural decisions captured."
           }
         ]
       },
-      "timestamp": 1773552426,
+      "timestamp": 1773567989,
       "ttl": 1800
+    },
+    "f52bc50a4648e274dc3e4bbf2a503254": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1773567962,
+      "ttl": 1800
+    },
+    "5f8e77c43d6eb60583735122c2814f3e": {
+      "result": {
+        "estimated_cost_usd": 6.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 12500,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1773567977,
+      "ttl": 3600
     }
   }
 }
