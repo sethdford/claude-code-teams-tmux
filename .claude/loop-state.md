@@ -1,119 +1,170 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Build Loop Stuck Detection and Emergency Abort System
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Implementation plan written to `.claude/pipeline-artifacts/plan.md`.
 
----
+**Summary of the plan:**
 
-## Summary
+**Problem:** Build loops can burn all 20 iterations when agents make zero forward progress. The existing `detect_stuckness()` triggers soft recovery (session restart), but there's no hard abort for truly idle loops.
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**Solution:** Add `detect_zero_progress()` to `lib/loop-convergence.sh` — a focused function checking 3 signals per iteration:
+1. No new git commits
+2. Test pass/fail status unchanged  
+3. No file modifications (via portable `git diff --stat HEAD` fingerprint)
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+If all 3 fire for 3 consecutive iterations (configurable via `--zero-progress-threshold`), the loop aborts immediately with `STATUS="stuck_zero_progress"` and message "STUCK - no forward progress detected".
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Files:** 3 modified (`lib/loop-convergence.sh`, `sw-loop.sh`, `sw-loop-test.sh`), 1 created (`docs/BUILD-LOOP.md`). ~80 lines new production code, ~80 lines tests. 12 tasks total.
+
+**Key design decision:** Separate function (not merged into existing 7-signal stuckness detection) because they serve different purposes — `detect_stuckness()` = "try harder" (soft), `detect_zero_progress()` = "nothing is happening" (hard abort).
+ count. If it hits 3, abort immediately with `STATUS="stuck_zero_progress"`.
+
+**Implicit requirements:**
+- Must not interfere with existing `detect_stuckness()` (which triggers session restarts)
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Build Loop Stuck Detection and Emergency Abort System
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### Three Signals (all must fire simultaneously)
+### Abort Threshold
+### Grace Period
+### Counter Reset
+### Integration Point
+### Observability
+## Component Diagram
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "failures.json",
+      "relevance": 90,
+      "summary": "Documents 32+ test failure patterns including stale heartbeat detection, mktemp issues, and JSON output problems. Critical for detecting stuck builds and understanding failure signatures that trigger emergency abort."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "patterns.json (nodejs project conventions)",
+      "relevance": 48,
+      "summary": "Specifies test runner (vitest), test pattern (*.test.js), and import style (commonjs). Essential for configuring build loop detection logic and understanding how tests execute."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json (nodejs project type)",
+      "relevance": 18,
+      "summary": "Confirms project is Node.js type. Useful for build stage setup but less specific than conventions data."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baselines object. Not applicable to current context."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 5,
+      "summary": "Empty decisions array. No relevant content for build loop stuck detection."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Build Loop Stuck Detection and Emergency Abort System — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Build Loop Stuck Detection and Emergency Abort System
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Add `detect_zero_progress()` function to `scripts/lib/loop-convergence.sh`
+- [ ] Task 2: Add `_file_mtime_fingerprint()` and `_file_mtime_monitored()` helpers
+- [ ] Task 3: Integrate zero-progress check in `sw-loop.sh` main loop (after ~line 2375)
+- [ ] Task 4: Initialize `ZERO_PROGRESS_COUNT` at loop start in `sw-loop.sh`
+- [ ] Task 5: Add `--zero-progress-threshold` CLI flag to argument parser
+- [ ] Task 6: Add `--zero-progress-threshold` to help text
+- [ ] Task 7: Add 7 structural tests to `sw-loop-test.sh`
+- [ ] Task 8: Add E2E mock test (zero-progress agent triggers abort) to `sw-loop-test.sh`
+- [ ] Task 9: Add counter-reset structural test to `sw-loop-test.sh`
+- [ ] Task 10: Create `docs/BUILD-LOOP.md` with stuck detection documentation
+- [ ] Task 11: Run `sw-loop-test.sh` and verify all tests pass
+- [ ] Task 12: Run `sw-convergence-test.sh` to verify no regressions
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: standard
+- Branch: ci/build-loop-stuck-detection-and-emergency-284
+- Issue: #284
+- Generated: 2026-03-20T21:43:42Z
+
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **testing-strategy**: Implement with testability first: state snapshots must be reproducible, mock stuck scenarios deterministically, and validate both detection accuracy and abort side effects
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-20T21:49:09Z
+last_iteration_at: 2026-03-20T21:49:09Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
