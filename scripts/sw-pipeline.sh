@@ -219,6 +219,9 @@ BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-2}"
 TDD_ENABLED=false
 PIPELINE_TDD=false
 
+# Pre-flight scope validation (disable via --skip-preflight or config)
+SKIP_PREFLIGHT_SCOPE=false
+
 # ─── Argument Parsing (BEFORE other setup) ─────────────────────────────────
 SUBCOMMAND="${1:-help}"
 shift 2>/dev/null || true

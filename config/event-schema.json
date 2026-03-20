@@ -206,6 +206,14 @@
       "required": [],
       "optional": ["issue", "iteration", "reason"]
     },
+    "pipeline.preflight_scope_passed": {
+      "required": ["issue"],
+      "optional": ["est_files", "complexity", "body_lines"]
+    },
+    "pipeline.preflight_scope_rejected": {
+      "required": ["issue"],
+      "optional": ["est_files", "complexity", "body_lines", "violations"]
+    },
     "stage.skipped": {
       "required": ["stage"],
       "optional": ["issue", "reason"]

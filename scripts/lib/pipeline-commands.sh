@@ -538,6 +538,23 @@ pipeline_start() {
     # Initialize GitHub integration
     gh_init
 
+    # Pre-flight scope validation (guard: only if lib exists and not skipped)
+    if [[ "${SKIP_PREFLIGHT_SCOPE:-false}" != "true" ]] && [[ -f "$SCRIPT_DIR/lib/preflight-scope.sh" ]]; then
+        source "$SCRIPT_DIR/lib/preflight-scope.sh"
+        if [[ -n "$ISSUE_NUMBER" ]]; then
+            # Fetch issue body/labels if not already available
+            local _pf_body="${ISSUE_BODY:-}"
+            local _pf_labels="${ISSUE_LABELS:-}"
+            if [[ -z "$_pf_body" ]] && [[ "$GH_AVAILABLE" == "true" ]] && [[ "${NO_GITHUB:-false}" != "true" ]]; then
+                _pf_body=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body' 2>/dev/null) || _pf_body=""
+                _pf_labels=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '[.labels[].name] | join(",")' 2>/dev/null) || _pf_labels=""
+            fi
+            if ! preflight_scope_validate "$ISSUE_NUMBER" "$_pf_body" "$_pf_labels"; then
+                exit 2
+            fi
+        fi
+    fi
+
     load_pipeline_config
 
     # Checkpoint resume: when --resume is passed, try DB first, then file-based

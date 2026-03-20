@@ -64,6 +64,7 @@ show_help() {
     echo -e "  ${DIM}--max-iterations <n>${RESET}       Override max build loop iterations"
     echo -e "  ${DIM}--max-restarts <n>${RESET}         Max session restarts in build loop"
     echo -e "  ${DIM}--fast-test-cmd <cmd>${RESET}      Fast/subset test for build loop"
+    echo -e "  ${DIM}--skip-preflight${RESET}           Skip pre-flight scope validation"
     echo -e "  ${DIM}--tdd${RESET}                     Test-first: generate tests before implementation"
     echo -e "  ${DIM}--completed-stages \"a,b\"${RESET}   Skip these stages (CI resume)"
     echo ""
@@ -156,6 +157,7 @@ parse_args() {
                 shift 2 ;;
 
             --fast-test-cmd) FAST_TEST_CMD_OVERRIDE="$2"; shift 2 ;;
+            --skip-preflight) SKIP_PREFLIGHT_SCOPE=true; shift ;;
             --tdd)         TDD_ENABLED=true; shift ;;
             --effort)
                 EFFORT_LEVEL_OVERRIDE="${2:-}"
