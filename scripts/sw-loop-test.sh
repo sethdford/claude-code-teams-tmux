@@ -808,6 +808,75 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ZERO-PROGRESS DETECTION & EMERGENCY ABORT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Test: detect_zero_progress() function exists in lib/loop-convergence.sh
+if grep -q 'detect_zero_progress()' "$SCRIPT_DIR/lib/loop-convergence.sh"; then
+    assert_pass "detect_zero_progress() function exists"
+else
+    assert_fail "detect_zero_progress() function exists"
+fi
+
+# Test: ZERO_PROGRESS_COUNT variable initialized in sw-loop.sh
+if grep -q 'ZERO_PROGRESS_COUNT=0' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "ZERO_PROGRESS_COUNT initialized"
+else
+    assert_fail "ZERO_PROGRESS_COUNT initialized"
+fi
+
+# Test: stuck_zero_progress status triggers loop exit
+if grep -q 'stuck_zero_progress' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "stuck_zero_progress status in sw-loop.sh"
+else
+    assert_fail "stuck_zero_progress status in sw-loop.sh"
+fi
+
+# Test: loop.emergency_abort event emitted on abort
+if grep -q 'loop.emergency_abort' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "loop.emergency_abort event emitted"
+else
+    assert_fail "loop.emergency_abort event emitted"
+fi
+
+# Test: ZERO_PROGRESS_LOG populated for diagnostics
+if grep -q 'ZERO_PROGRESS_LOG' "$SCRIPT_DIR/lib/loop-convergence.sh"; then
+    assert_pass "ZERO_PROGRESS_LOG exists for logging"
+else
+    assert_fail "ZERO_PROGRESS_LOG exists for logging"
+fi
+
+# Test: --zero-progress-threshold flag in argument parser
+if grep -q 'zero-progress-threshold' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "--zero-progress-threshold flag in arg parser"
+else
+    assert_fail "--zero-progress-threshold flag in arg parser"
+fi
+
+# Test: All 3 signals checked (commits, test status, file fingerprint)
+if grep -q 'rev-list --count HEAD' "$SCRIPT_DIR/lib/loop-convergence.sh" \
+   && grep -q '_LAST_TEST_STATUS' "$SCRIPT_DIR/lib/loop-convergence.sh" \
+   && grep -q '_file_mtime_fingerprint' "$SCRIPT_DIR/lib/loop-convergence.sh"; then
+    assert_pass "All 3 signals checked (commits, test status, file fingerprint)"
+else
+    assert_fail "All 3 signals checked (commits, test status, file fingerprint)"
+fi
+
+# Test: Counter resets to 0 when progress detected
+if grep -q 'ZERO_PROGRESS_COUNT=0' "$SCRIPT_DIR/lib/loop-convergence.sh"; then
+    assert_pass "Counter resets to 0 on progress"
+else
+    assert_fail "Counter resets to 0 on progress"
+fi
+
+# Test: loop.zero_progress event emitted per-iteration
+if grep -q 'loop.zero_progress' "$SCRIPT_DIR/lib/loop-convergence.sh"; then
+    assert_pass "loop.zero_progress event emitted per-iteration"
+else
+    assert_fail "loop.zero_progress event emitted per-iteration"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

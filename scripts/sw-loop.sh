@@ -91,6 +91,7 @@ RESUME=false
 VERBOSE=false
 MAX_ITERATIONS_EXPLICIT=false
 MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
+ZERO_PROGRESS_THRESHOLD=$(_config_get_int "loop.zero_progress_threshold" 3 2>/dev/null || echo 3)
 SESSION_RESTART=false
 RESTART_COUNT=0
 REPO_OVERRIDE=""
@@ -155,6 +156,7 @@ show_help() {
     echo -e "  ${CYAN}--max-turns${RESET} N             Max API turns per Claude session"
     echo -e "  ${CYAN}--resume${RESET}                  Resume from existing .claude/loop-state.md"
     echo -e "  ${CYAN}--max-restarts${RESET} N          Max session restarts on exhaustion (default: 0)"
+    echo -e "  ${CYAN}--zero-progress-threshold${RESET} N Consecutive idle iterations before hard abort (default: 3)"
     echo -e "  ${CYAN}--verbose${RESET}                 Show full Claude output (default: summary)"
     echo -e "  ${CYAN}--help${RESET}                    Show this help"
     echo ""
@@ -295,6 +297,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-restarts=*) MAX_RESTARTS="${1#--max-restarts=}"; shift ;;
+        --zero-progress-threshold)
+            ZERO_PROGRESS_THRESHOLD="${2:-}"
+            [[ -z "$ZERO_PROGRESS_THRESHOLD" ]] && { error "Missing value for --zero-progress-threshold"; exit 1; }
+            shift 2
+            ;;
+        --zero-progress-threshold=*) ZERO_PROGRESS_THRESHOLD="${1#--zero-progress-threshold=}"; shift ;;
         --roles)
             AGENT_ROLES="${2:-}"
             [[ -z "$AGENT_ROLES" ]] && { error "Missing value for --roles"; exit 1; }
@@ -360,6 +368,10 @@ if ! [[ "$FAST_TEST_INTERVAL" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "$MAX_RESTARTS" =~ ^[0-9]+$ ]]; then
     error "--max-restarts must be a non-negative integer (got: $MAX_RESTARTS)"
+    exit 1
+fi
+if ! [[ "$ZERO_PROGRESS_THRESHOLD" =~ ^[0-9]+$ ]] || [[ "$ZERO_PROGRESS_THRESHOLD" -lt 2 ]]; then
+    error "--zero-progress-threshold must be an integer >= 2 (got: $ZERO_PROGRESS_THRESHOLD)"
     exit 1
 fi
 
@@ -2096,6 +2108,7 @@ run_single_agent_loop() {
     # Track applied memory fix patterns for outcome recording
     _applied_fix_pattern=""
     STUCKNESS_COUNT=0
+    ZERO_PROGRESS_COUNT=0
     STUCKNESS_TRACKING_FILE="$LOG_DIR/stuckness-tracking.txt"
     : > "$STUCKNESS_TRACKING_FILE" 2>/dev/null || true
     : > "${LOG_DIR}/strategy-attempts.txt" 2>/dev/null || true
@@ -2372,6 +2385,23 @@ ${GOAL}"
         else
             CONSECUTIVE_FAILURES=$(( CONSECUTIVE_FAILURES + 1 ))
             echo -e "  ${YELLOW}⚠${RESET} Low progress (${CONSECUTIVE_FAILURES}/${CIRCUIT_BREAKER_THRESHOLD} before circuit breaker)"
+        fi
+
+        # Zero-progress emergency abort
+        if detect_zero_progress; then
+            if [[ "${ZERO_PROGRESS_COUNT:-0}" -ge "${ZERO_PROGRESS_THRESHOLD:-3}" ]]; then
+                STATUS="stuck_zero_progress"
+                write_state
+                write_progress
+                error "STUCK - no forward progress detected for ${ZERO_PROGRESS_COUNT} consecutive iterations"
+                info "${ZERO_PROGRESS_LOG:-}"
+                if type emit_event >/dev/null 2>&1; then
+                    emit_event "loop.emergency_abort" \
+                        "iteration=$ITERATION" "reason=zero_progress" "consecutive=$ZERO_PROGRESS_COUNT"
+                fi
+                show_summary
+                return 1
+            fi
         fi
 
         # Extract summary and update state

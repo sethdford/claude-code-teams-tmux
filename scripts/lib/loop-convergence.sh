@@ -335,3 +335,108 @@ STUCK_SECTION
 
     return 1
 }
+
+# ─── Zero-Progress Detection (Hard Abort) ─────────────────────────────────────
+# Separate from detect_stuckness() which triggers soft recovery (session restart).
+# This detects when NOTHING AT ALL is happening and triggers a hard abort.
+# Three signals must ALL fire simultaneously for ZERO_PROGRESS_THRESHOLD consecutive
+# iterations before the abort triggers.
+
+# Globals managed by detect_zero_progress:
+_LAST_COMMIT_COUNT=""
+_LAST_TEST_STATUS=""
+_LAST_FILE_FINGERPRINT=""
+ZERO_PROGRESS_COUNT="${ZERO_PROGRESS_COUNT:-0}"
+ZERO_PROGRESS_THRESHOLD="${ZERO_PROGRESS_THRESHOLD:-3}"
+ZERO_PROGRESS_LOG=""
+
+_file_mtime_fingerprint() {
+    # Portable working-tree fingerprint using git diff --stat HEAD
+    local fingerprint
+    fingerprint=$(git -C "${PROJECT_ROOT:-.}" diff --stat HEAD 2>/dev/null \
+        | (md5sum 2>/dev/null || md5 -q 2>/dev/null || echo "none") \
+        | cut -d' ' -f1)
+    echo "${fingerprint:-none}"
+}
+
+_file_mtime_monitored() {
+    # List top 20 git-tracked files for diagnostic logging
+    git -C "${PROJECT_ROOT:-.}" ls-files 2>/dev/null | head -20
+}
+
+detect_zero_progress() {
+    local iteration="${ITERATION:-0}"
+
+    # Collect current state
+    local current_commit_count current_test_status current_fingerprint
+    current_commit_count=$(git -C "${PROJECT_ROOT:-.}" rev-list --count HEAD 2>/dev/null || echo "0")
+    current_test_status="${TEST_PASSED:-unknown}"
+    current_fingerprint=$(_file_mtime_fingerprint)
+
+    # Build log of what we're monitoring
+    local monitored_files
+    monitored_files=$(_file_mtime_monitored)
+    ZERO_PROGRESS_LOG="Monitored: commits=${current_commit_count}, test_status=${current_test_status}, fingerprint=${current_fingerprint}
+Files tracked (top 20):
+${monitored_files}"
+
+    # Grace period: iterations 1-2, just record baseline
+    if [[ "$iteration" -lt 3 ]]; then
+        _LAST_COMMIT_COUNT="$current_commit_count"
+        _LAST_TEST_STATUS="$current_test_status"
+        _LAST_FILE_FINGERPRINT="$current_fingerprint"
+        return 1  # Not stuck (grace period)
+    fi
+
+    # First call after grace period with no baseline yet — record and skip
+    if [[ -z "$_LAST_COMMIT_COUNT" ]]; then
+        _LAST_COMMIT_COUNT="$current_commit_count"
+        _LAST_TEST_STATUS="$current_test_status"
+        _LAST_FILE_FINGERPRINT="$current_fingerprint"
+        return 1
+    fi
+
+    # Check 3 signals
+    local signal_count=0
+
+    # Signal 1: No new commits
+    if [[ "$current_commit_count" == "$_LAST_COMMIT_COUNT" ]]; then
+        signal_count=$((signal_count + 1))
+    fi
+
+    # Signal 2: Test status unchanged
+    if [[ "$current_test_status" == "$_LAST_TEST_STATUS" ]]; then
+        signal_count=$((signal_count + 1))
+    fi
+
+    # Signal 3: Working tree unchanged (guard against two "none" values matching)
+    if [[ "$current_fingerprint" == "$_LAST_FILE_FINGERPRINT" ]] && [[ "$current_fingerprint" != "none" ]]; then
+        signal_count=$((signal_count + 1))
+    fi
+
+    # Update state for next iteration
+    _LAST_COMMIT_COUNT="$current_commit_count"
+    _LAST_TEST_STATUS="$current_test_status"
+    _LAST_FILE_FINGERPRINT="$current_fingerprint"
+
+    # Decision: ALL 3 signals must fire
+    if [[ "$signal_count" -ge 3 ]]; then
+        ZERO_PROGRESS_COUNT=$((ZERO_PROGRESS_COUNT + 1))
+        if type emit_event >/dev/null 2>&1; then
+            emit_event "loop.zero_progress" \
+                "iteration=$iteration" \
+                "consecutive=$ZERO_PROGRESS_COUNT" \
+                "commit_count=$current_commit_count" \
+                "test_status=$current_test_status" \
+                "file_fingerprint=$current_fingerprint"
+        fi
+        if type warn >/dev/null 2>&1; then
+            warn "Zero progress detected (${ZERO_PROGRESS_COUNT}/${ZERO_PROGRESS_THRESHOLD}): no commits, no test change, no file changes"
+        fi
+        return 0  # Zero progress detected
+    fi
+
+    # Any signal cleared — reset counter
+    ZERO_PROGRESS_COUNT=0
+    return 1
+}
