@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.9,
+        "reasoning": "Task requires upfront system design (scope metrics, hard limits, validation rules, pipeline integration) followed by implementation and validation.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1774014174,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,261 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "1b7e325332884aa66353da3d31f6d31b": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Scope estimation accuracy - heuristics may be too aggressive or lenient",
+          "Intelligence module graceful degradation when unavailable",
+          "Configuration defaults may frustrate users if mistuned",
+          "Auto-rejection without actionable decomposition guidance reduces adoption",
+          "Performance impact of complexity scoring on daemon loop",
+          "Test duration estimation reliability from issue metadata"
+        ],
+        "implementation_hints": [
+          "Implement scope estimation with simple heuristics first (parse issue body for file mentions, keyword analysis)",
+          "Integrate gracefully with sw-intelligence.sh complexity scoring with fallback to basic scoring",
+          "Create detailed rejection messages with concrete decomposition suggestions (split by feature, split by team)",
+          "Add --skip-scope-validation flag for admin overrides and special cases",
+          "Log all validation decisions to error-log.jsonl for tuning and observability",
+          "Test with diverse issues: vague descriptions, over-detailed, typical scope, edge cases",
+          "Mirror daemon-config.json pattern for new max_files_changed, max_test_duration_seconds, max_complexity_score keys"
+        ]
+      },
+      "timestamp": 1774013273,
+      "ttl": 3600
+    },
+    "00d8fe1130c841a7dd7246ff7bd70ed0": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1774013284,
+      "ttl": 1800
+    },
+    "df843a03fee48abeb74d5150da5a3ff6": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 2,
+        "estimated_tokens": 13500,
+        "likely_failure_stage": "test",
+        "confidence": 68,
+        "breakdown": {
+          "intake_cost": 0.001,
+          "plan_cost": 0.022,
+          "build_iterations": [
+            {
+              "iteration": 1,
+              "cost": 0.095,
+              "tokens": 3200
+            },
+            {
+              "iteration": 2,
+              "cost": 0.095,
+              "tokens": 3200
+            }
+          ],
+          "test_cost": 0.09,
+          "review_cost": 0.085,
+          "pr_cost": 0.004,
+          "total_tokens_per_iteration": 3500,
+          "model_routing": {
+            "intake": "haiku",
+            "plan": "sonnet",
+            "build": "sonnet",
+            "test": "sonnet",
+            "review": "sonnet",
+            "pr": "haiku"
+          }
+        },
+        "risk_factors": [
+          "Scope estimation heuristics may require tuning via failed test runs",
+          "Integration with sw-intelligence.sh adds dependency uncertainty",
+          "Configuration defaults validation (max_files_changed, max_complexity_score) likely needs iteration",
+          "Graceful degradation when intelligence module unavailable increases test paths"
+        ],
+        "success_probability": 78,
+        "recommendation": "Run with standard template; allocate 2-3 iterations for heuristic refinement; prioritize test coverage for scope validation edge cases"
+      },
+      "timestamp": 1774013296,
+      "ttl": 3600
+    },
+    "ac913432b7ff17e8b73d846343538b86": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure info (src/, test patterns, CommonJS) helps plan where to implement scope validator and how to write tests for it"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Test failure patterns show how validators and auto-rejection work in existing scripts; sw-cleanup.sh dry-run and validation patterns may inform design"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Node.js project type detection confirms tech stack for planning implementation approach"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baseline data; minimal utility for feature planning"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "No prior decisions captured; not applicable to scope validator planning"
+          }
+        ]
+      },
+      "timestamp": 1774013316,
+      "ttl": 1800
+    },
+    "ee7aff8c22c6cab2be2cd14d2579cecd": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Contains captured failure patterns, root causes, and fixes. While not specifically about scope validation, the failure analysis framework could inform understanding of validation rejection patterns and debugging validation failures."
+          },
+          {
+            "file": "patterns.json (first entry with project details)",
+            "relevance": 35,
+            "summary": "Contains project conventions, structure, and build configuration. These conventions could inform how scope validation rules are defined and enforced within this codebase."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Currently empty but structured to capture decisions. Would be relevant for tracking past scope validator decisions and auto-reject thresholds if populated."
+          }
+        ]
+      },
+      "timestamp": 1774013851,
+      "ttl": 1800
+    },
+    "8c4bf27c76cbf8eb39d464945918dc0e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 25,
+            "summary": "Project conventions (commonjs, test pattern, source structure) provide foundation for architecture decisions, but generic to any design task"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Confirms Node.js project type, minimal context for tooling/framework selection in validator design"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 5,
+            "summary": "Contains codebase failure patterns and root causes, but none relate to issue scope validation or hard limits"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 5,
+            "summary": "Empty patterns cache, provides no actionable architecture context"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 0,
+            "summary": "Empty baselines, no relevant metrics for validator architecture design"
+          }
+        ]
+      },
+      "timestamp": 1774013883,
+      "ttl": 1800
+    },
+    "64142b2df414be4f5f58a6a90e7304b4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 15,
+            "summary": "Contains root cause analysis and fix patterns, but focuses on test/implementation failures (heartbeat detection, sed syntax) rather than design anti-patterns for scope validation"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 5,
+            "summary": "Project metadata (vitest, commonjs conventions) has no bearing on issue scope validator design or anti-patterns"
+          },
+          {
+            "file": "global.json",
+            "relevance": 2,
+            "summary": "Empty cross-repo learnings; no captured patterns relevant to scope validation or pre-flight validator design"
+          }
+        ]
+      },
+      "timestamp": 1774013895,
+      "ttl": 1800
+    },
+    "7db27460988ce87d61728db5f65f8755": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project configuration (vitest runner, src/ directory, commonjs imports) essential for build stage setup and test execution"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Captured test failures including mktemp directory issues and sed invocation errors that may occur during build/test phases"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Node.js project type detection provides basic framework classification for build context"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines; not applicable to current build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions log; no prior architectural decisions captured for this feature"
+          }
+        ]
+      },
+      "timestamp": 1774014151,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Test failures with root causes and fixes directly applicable to build stage. Contains 28 instances of sw-cleanup.sh dry-run output issues, mktemp directory problems, and test assertion failures that will be encountered during test execution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project conventions essential for build stage: test_runner=vitest, package_manager=npm, test_pattern=*.test.js. Build stage needs these to properly execute tests and compilation steps."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object provides no actionable data for the build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 3,
+            "summary": "Empty decisions array contains no relevant information for build stage execution."
+          }
+        ]
+      },
+      "timestamp": 1774014161,
+      "ttl": 1800
     }
   }
 }

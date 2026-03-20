@@ -1,119 +1,125 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Issue Scope Hard Limit Pre-Flight Validator with Auto-Reject
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+The implementation plan has been written to `.claude/pipeline-artifacts/plan.md`.
 
----
+**Summary of the plan:**
 
-## Summary
+**Approach chosen:** Add scope validation to `pipeline_start()` in `pipeline-commands.sh` after `gh_init` — catches both daemon and CLI runs with minimal blast radius.
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+**New files (2):**
+- `scripts/lib/preflight-scope.sh` — Core library with 4 functions: file count estimation, complexity estimation, scope validation, and rejection handler
+- `scripts/sw-preflight-scope-test.sh` — 18 test cases
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+**Modified files (6):**
+- `scripts/lib/pipeline-commands.sh` — Scope validation call after `gh_init`
+- `scripts/lib/pipeline-cli.sh` — `--skip-preflight` flag
+- `scripts/sw-pipeline.sh` — `SKIP_PREFLIGHT_SCOPE=false` default
+- `config/policy.json` — `preflight_scope` defaults (max 15 files, max 8/10 complexity, max 500 body lines)
+- `config/event-schema.json` — 2 new event types
+- `package.json` — Test registration
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+**Key design decisions:**
+- File-existence guard (`[[ -f preflight-scope.sh ]]`) means deleting the lib file disables the feature — safe rollback
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Issue Scope Hard Limit Pre-Flight Validator with Auto-Reject
 ## Context
-## Component Diagram
 ## Decision
+## Component Diagram
 ## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+## Data Flow
+## Error Boundaries
+## Alternatives Considered
+### 1. Validation in daemon-dispatch.sh (before pipeline spawn)
+### 2. New pipeline stage "preflight-validate" before intake
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json",
+      "relevance": 90,
+      "summary": "Project configuration (vitest runner, src/ directory, commonjs imports) essential for build stage setup and test execution"
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "failures.json",
+      "relevance": 60,
+      "summary": "Captured test failures including mktemp directory issues and sed invocation errors that may occur during build/test phases"
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "patterns.json",
+      "relevance": 40,
+      "summary": "Node.js project type detection provides basic framework classification for build context"
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "metrics.json",
+      "relevance": 5,
+      "summary": "Empty baselines; not applicable to current build stage"
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "decisions.json",
+      "relevance": 5,
+      "summary": "Empty decisions log; no prior architectural decisions captured for this feature"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Issue Scope Hard Limit Pre-Flight Validator with Auto-Reject — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Issue Scope Hard Limit Pre-Flight Validator with Auto-Reject
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/preflight-scope.sh` with estimation and validation functions
+- [ ] Task 2: Add `SKIP_PREFLIGHT_SCOPE=false` default in `sw-pipeline.sh` and `--skip-preflight` flag in `pipeline-cli.sh`
+- [ ] Task 3: Integrate scope validation call into `pipeline_start()` in `pipeline-commands.sh` after `gh_init`
+- [ ] Task 4: Add `preflight_scope` section to `config/policy.json` with default limits
+- [ ] Task 5: Register new event types in `config/event-schema.json`
+- [ ] Task 6: Create `scripts/sw-preflight-scope-test.sh` test suite with 18 test cases
+- [ ] Task 7: Register test suite in `package.json`
+- [ ] Task 8: Run test suite and verify all tests pass
+- [ ] `preflight_scope_validate()` correctly rejects issues exceeding any configured limit
+- [ ] `preflight_scope_validate()` correctly passes issues within all limits
+- [ ] Rejection produces valid JSON in `preflight-rejection.json`
+- [ ] Rejection comments on GitHub issue with decomposition guidance (when NO_GITHUB not set)
+- [ ] Rejection adds `preflight-rejected` label and removes watch label
+- [ ] All limits configurable via `daemon-config.json` or `policy.json`
+- [ ] Setting any limit to 0 disables that specific check
+- [ ] Setting `enabled: false` disables all scope checks
+- [ ] `--skip-preflight` flag bypasses scope validation
+- [ ] Events emitted for both pass and reject outcomes
+- [ ] Test suite has >= 14 tests with 100% pass rate
+- [ ] Existing pipeline tests continue to pass
 
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-283
+- Issue: none
+- Generated: 2026-03-20T13:37:10Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-03-20T13:42:55Z
+last_iteration_at: 2026-03-20T13:42:55Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
