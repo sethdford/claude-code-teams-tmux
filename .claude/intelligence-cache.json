@@ -647,6 +647,268 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "c14157aeaab2177702f98a09b895e5ff": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Overly restrictive defaults blocking legitimate pipelines",
+          "Dependency detection across heterogeneous package managers (npm/pip/go/cargo)",
+          "GitHub API integration failing in offline/local mode",
+          "Performance regression exceeding 60-second validation target"
+        ],
+        "implementation_hints": [
+          "Create modular, independently testable check functions for git/deps/env/github",
+          "Implement JSON configuration with clear defaults, disabled-by-default for optional checks",
+          "Run checks in parallel where possible to stay under 60-second target",
+          "Provide structured error objects with actionable remediation steps",
+          "Add --skip-preflight escape hatch for emergency/development use"
+        ]
+      },
+      "timestamp": 1774614605,
+      "ttl": 3600
+    },
+    "3214ed957351c8c72f36306adbb6489b": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1774614615,
+      "ttl": 1800
+    },
+    "f59e4b1c2503b679e98c2757116aca57": {
+      "result": {
+        "estimated_cost_usd": 7.50,
+        "estimated_iterations": 2,
+        "estimated_tokens": 28000,
+        "likely_failure_stage": "build",
+        "confidence": 75,
+        "breakdown": {
+          "intake": 0.20,
+          "plan": 0.50,
+          "design": 1.20,
+          "build": 2.80,
+          "test": 1.60,
+          "review": 0.80,
+          "pr": 0.40
+        },
+        "risk_factors": {
+          "dependency_detection_complexity": "medium",
+          "github_api_fallback_required": true,
+          "parallel_check_optimization_needed": true,
+          "test_coverage_critical": true
+        },
+        "notes": "Infrastructure work with clear implementation hints and low risk. Two iterations expected: first for modular check functions, second for edge cases in heterogeneous package manager detection. Build stage carries highest risk due to multi-platform dependency resolution. Cost estimate assumes standard Claude models (haiku for intake/test/pr, sonnet for design/build/review)."
+      },
+      "timestamp": 1774614625,
+      "ttl": 3600
+    },
+    "67cd262b7d560be08641d8d2403b24ba": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "testing",
+          "devops",
+          "reliability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires designing a validation hierarchy that balances speed (<60s) with coverage, implementing multiple check types with proper abort signals, comprehensive failure-mode testing, and secure credential handling - moderate technical complexity with high strategic impact"
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "security-audit"
+          ],
+          "build": [
+            "testing-strategy",
+            "performance"
+          ],
+          "review": [
+            "systematic-debugging",
+            "adversarial-quality",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Pre-flight validation requires an ADR documenting the check hierarchy (Tier 1/2/3), abort signal design, and dependency ordering - future maintainers need a map for extending checks safely",
+          "brainstorming": "Challenge whether all 5 check types are necessary, validate the cost-savings hypothesis with math, identify edge cases (partial installs, stale tokens) that could cause false positives",
+          "systematic-debugging": "Review abort decision logic exhaustively - incorrect abort decisions (false positive) are worse than slow builds; verify every decision path is correct",
+          "api-design": "The `.claude/pre-flight-checks.json` config schema must be intuitive, discoverable, and extensible without creating complexity that defeats the validation purpose",
+          "security-audit": "GitHub token validation and env var checks must never expose credentials in error logs, abort messages, or configuration - this is a security boundary",
+          "testing-strategy": "Each check (git, npm, smoke test, env vars, GitHub) must be unit-testable in isolation with mocked dependencies - design for full coverage of success + all failure paths",
+          "performance": "Pre-flight is wasted if it takes 5 minutes - must complete in <60s or it becomes the bottleneck; identify parallelizable checks and fast-fail opportunities",
+          "adversarial-quality": "Find edge cases pre-flight will face: corrupted Git repo, npm partially installed, env vars set to empty strings, GitHub rate-limited, stale dependencies - test these actively",
+          "two-stage-review": "Pass 1: verify all acceptance criteria checks are implemented and ordered correctly; Pass 2: verify abort messages provide actionable remediation that users can actually execute",
+          "validation-thoroughness": "Smoke tests passing is insufficient - test actual abort behavior under realistic failure conditions (dirty Git, missing deps, real network delays) not just mocked success paths",
+          "observability": "Monitor pre-flight abort rates by check type, time-to-abort distribution, and correlation with downstream pipeline success - quantify actual cost savings achieved",
+          "pr-quality": "Explain the validation tier design, why checks are ordered as they are, how to add new checks, and how the <60s budget is allocated - help reviewers understand the architecture",
+          "deploy-safety": "Pre-flight runs on every pipeline - treat this deployment as an experiment; verify no regressions in pipeline success rate after rollout (shouldn't abort valid pipelines)"
+        },
+        "generated_skills": [
+          {
+            "name": "pre-flight-validation-design",
+            "reason": "No existing skill addresses the specific challenge of designing fast, safe validation hierarchies for pipeline abort signals: balancing <60s performance with coverage, ensuring abort messages are actionable (not generic), handling partial failures (partial npm install), and avoiding false positives that block legitimate work",
+            "content": "## Pre-Flight Validation Design\n\nPre-flight validation must catch common failures quickly without becoming a bottleneck or causing false positives. Use these patterns to design checks:\n\n### Validation Hierarchy: Tier 1→2→3\n\n**Tier 1 (Must pass, <10s total)**: Core assumptions—pipeline cannot proceed without these\n- Git working tree clean OR unstaged changes are expected (configurable)\n- On expected branch (main/develop, configurable)\n- `package.json` or `requirements.txt` or `go.mod` exists (language-specific)\n- Required environment variables set (not empty; list in pre-flight-checks.json)\n\nAbort immediately on any Tier 1 failure—don't run Tier 2 or 3.\n\n**Tier 2 (Dependency health, 10-30s)**: Tools must be available and working\n- `npm ci` / `pip install` / `go mod download` succeeds (language-specific)\n- GitHub token valid (one API call: `gh api /user`, skipped if not needed)\n- Node/Python/Go version meets minimum (read from .nvmrc/.python-version/go.mod)\n\n**Tier 3 (Functional health, 30-60s)**: Code is actually buildable\n- Smoke test suite passes (fastest subset, e.g., `npm test -- --testNamePattern=smoke`)\n- Build succeeds (compile/bundle without warnings if possible)\n\n### Abort Signal: Three-Part Structure\n\nWhen a check fails, emit:\n\n```\n❌ Pre-flight validation FAILED\n\nCheck: {{tier}}.{{check_name}}\nReason: {{specific error from the check itself}}\nImpact: Pipeline cannot enter {{next_stage}}\n\nFix this:\n  {{exact command 1}}\n  {{exact command 2}}\n  \nThen retry:\n  shipwright pipeline start --issue {{issue_number}}\n```\n\nExample for missing npm dependencies:\n```\n❌ Pre-flight validation FAILED\n\nCheck: tier2.dependencies.npm\nReason: npm ci exited 1. Error log:\n  npm ERR! code ERESOLVE\n  npm ERR! Could not resolve dependency...\nImpact: Pipeline cannot enter build—code will not compile\n\nFix this:\n  rm -rf node_modules\n  npm cache clean --force\n  npm ci\n  \nThen retry:\n  shipwright pipeline start --issue 312\n```\n\n### Configuration Schema: .claude/pre-flight-checks.json\n\n```json\n{\n  \"enabled\": true,\n  \"timeout_seconds\": 60,\n  \"fail_fast\": true,\n  \"tier1\": {\n    \"git_clean\": true,\n    \"git_branch\": \"main|develop|\\*\",\n    \"git_allow_untracked\": false,\n    \"required_files\": [\"package.json\"],\n    \"required_env_vars\": [\"GITHUB_TOKEN\"],\n    \"env_vars_not_empty\": true\n  },\n  \"tier2\": {\n    \"dependencies_npm\": true,\n    \"dependencies_pip\": false,\n    \"dependencies_go\": false,\n    \"github_token_valid\": true,\n    \"version_checks\": {\n      \"node_min\": \"18.0.0\"\n    }\n  },\n  \"tier3\": {\n    \"smoke_test_cmd\": \"npm test -- --testNamePattern=smoke\",\n    \"build_cmd\": \"npm run build\"\n  }\n}\n```\n\nNever embed credentials. Reference env vars only. Checks resolve based on file presence (skip npm checks if no package.json).\n\n### Testing Each Check Type\n\nFor git, npm, env vars, smoke test, and GitHub token:\n1. **Success path**: Check passes, validation continues\n2. **Failure path**: Check fails, abort message is clear + actionable\n3. **Edge cases**:\n   - Git: dirty but expected (untracked files OK?), detached HEAD\n   - npm: partial install (missing node_modules), lock file mismatch\n   - env vars: set but empty string vs. unset (both should fail)\n   - Smoke test: first test hangs (timeout working?)\n   - GitHub: token expired, rate-limited, wrong scope\n\nTest wall-clock time on reference hardware; verify <60s even with network latency.\n\n### Cost Savings Quantification\n\nPre-flight saves money by:\n1. Failing in <1 minute vs. 30+ minutes in build loop\n2. Preventing iterations on infrastructure problems (dependencies, env)\n3. Reducing rework when code can't even compile\n\nInstrument and measure:\n- Abort rate per check (which checks catch most failures?)\n- Time distribution (do we hit 60s limit?)\n- Pipeline success rate before/after (do pre-flight aborts improve downstream success?)\n- Cost saved = (avg build cost) × (abort rate) × (time_fraction saved)\n"
+          }
+        ],
+        "review_focus": [
+          "Abort logic correctness: every failure path produces a specific root cause + actionable remediation command",
+          "Performance validation: measure actual wall-clock execution time on target hardware, verify <60s even with network delays",
+          "Acceptance criteria coverage: all 5 check types implemented (git, deps, smoke, env, github), ordered for fast fail",
+          "Configuration robustness: .claude/pre-flight-checks.json handles language detection (npm vs pip vs go), doesn't hardcode paths",
+          "Security boundary: no credential exposure in error messages, logs, or if check itself fails",
+          "Test completeness: unit tests for each check success + all realistic failure modes (partial installs, token expiry, git corruption)"
+        ],
+        "risk_areas": [
+          "Pre-flight checks themselves become the bottleneck if not optimized for parallelization and early termination—must reliably stay <60s",
+          "False positives (abort when pipeline could succeed) damage trust—dirty git detection must be configurable for legitimate work",
+          "Generic or unclear error messages fail to help users fix root cause, leading to abandonment instead of retry",
+          "Missing critical checks (e.g., build system health) reduce effectiveness and create false confidence",
+          "Configuration complexity that requires documentation leads to misconfiguration and defeats simplicity goal",
+          "Credential leaks in error messages, logs, or HTTP responses when validating GitHub tokens—this is a security boundary"
+        ]
+      },
+      "timestamp": 1774614726,
+      "ttl": 3600
+    },
+    "edb553f260c19ca14d7295c2998081b3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure: Node.js, vitest test runner, npm, commonjs imports, src/ source directory. Essential baseline for understanding where pre-flight validation hooks integrate."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Six captured test failures with root causes (sed variable expansion, mktemp directory creation, JSON validation). These patterns inform what validation checks the pre-flight suite should catch."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 28,
+            "summary": "Minimal project type detection (nodejs, bootstrap source). Confirms tech stack but minimal detail compared to other project patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object. No historical performance data available for cost-saving analysis."
+          },
+          {
+            "file": "global.json",
+            "relevance": 8,
+            "summary": "Empty common patterns and cross-repo learnings. No shared patterns to leverage for the pre-flight validation design."
+          }
+        ]
+      },
+      "timestamp": 1774614739,
+      "ttl": 1800
+    },
+    "11b144d7ab746ac8f257af3c4fc125ab": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 6 documented test failure patterns including JSON parsing failures (quality-profile.json), sed variable expansion issues, and mktemp directory creation bugs. The quality-profile.json validation failure is directly relevant to plan validation — likely root cause of rejection."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 68,
+            "summary": "Project conventions and test setup (vitest, CommonJS, *.test.js pattern) inform what the Pre-Flight Validation Suite should validate. Understanding source/test structure is necessary for designing validation logic."
+          },
+          {
+            "file": "patterns.json (nodejs detection)",
+            "relevance": 22,
+            "summary": "Confirms Node.js project type. Minimal context value — general project metadata without specific failure or validation context."
+          }
+        ]
+      },
+      "timestamp": 1774615187,
+      "ttl": 1800
+    },
+    "39d516a9943cb8b27ed1707b2061025b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Contains 6 failure patterns from test stage including sed quoting, mktemp parent dir creation, JSON validation issues, and dry-run output problems. Directly informs what the pre-flight validation suite should detect and abort early to prevent these costly failures."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright conventions)",
+            "relevance": 78,
+            "summary": "Project uses Node.js, vitest, commonjs imports, src/ directory. Design must align with these conventions for pre-flight checks (e.g., checking test file patterns, import styles, directory structure)."
+          },
+          {
+            "file": "patterns.json (nodejs bootstrap)",
+            "relevance": 45,
+            "summary": "Confirms Node.js project type detected at bootstrap time. Minimal additional detail beyond the full conventions entry above."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 25,
+            "summary": "Currently empty but would contain prior architectural decisions about validation strategy, cost thresholds, or abort conditions relevant to design if populated."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baseline metrics. Could inform cost optimization strategy for smart abort if baselines were populated, but currently provides no actionable data."
+          }
+        ]
+      },
+      "timestamp": 1774615257,
+      "ttl": 1800
+    },
+    "e02584f771dfb49a3ba5fe0b4e89859d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Contains repeated failure patterns with root causes and fixes. While focused on test/implementation failures rather than design approaches, documents lessons learned about anti-patterns (sed quoting issues, temp directory handling, JSON validation). Could inform design decisions for validation suite."
+          },
+          {
+            "file": "patterns.json (project structure)",
+            "relevance": 18,
+            "summary": "Shows project conventions (vitest, commonjs, source layout). Provides context for how validation suite should integrate with existing codebase patterns, but does not directly address design approaches or anti-patterns."
+          },
+          {
+            "file": "patterns.json (project type detection)",
+            "relevance": 8,
+            "summary": "Basic project type metadata (nodejs). Minimally relevant for understanding architectural constraints, but no direct relevance to design approaches or anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1774615267,
+      "ttl": 1800
     }
   }
 }
