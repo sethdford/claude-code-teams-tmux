@@ -3,29 +3,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, causing 3 tests to fail on missing 'agent-1', 'Found', and '--force' strings",
-      "fix": "Update sw-cleanup.sh to include stale heartbeat detection in dry-run output and add summary line showing 'Found N items' with '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh heartbeat detection and dry-run summary output does not match expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh heartbeat detection to output the heartbeat agent name and ensure dry-run summary prints 'Found N item(s)' with '--force' hint when items are detected",
       "seen_count": 1,
-      "last_seen": "2026-03-29T05:30:18Z",
+      "last_seen": "2026-03-29T05:26:00Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command in sw-code-review-test.sh uses a file path as a sed expression instead of inline substitution syntax",
-      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to use inline `-e` flag or pipe input correctly: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` with proper quoting",
+      "root_cause": "All tests passed successfully — no actual failure detected in the log output",
+      "fix": "Review pipeline exit code detection; the stage may have exited non-zero for a reason not shown in these last 200 lines",
       "seen_count": 1,
-      "last_seen": "2026-03-29T05:36:54Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Uses set -euo pipefail",
-      "root_cause": "sw-cost-test.sh dashboard CONTEXT EFFICIENCY tests fail because the cost dashboard finds no matching loop.context_efficiency events in the empty test environment",
-      "fix": "Seed a mock loop.context_efficiency event in the test's temp events.jsonl before running the dashboard render assertions",
-      "seen_count": 1,
-      "last_seen": "2026-03-29T05:43:22Z",
-      "category": "test_failure"
+      "last_seen": "2026-03-29T05:52:53Z",
+      "category": "unknown"
     }
   ]
 }
