@@ -1,0 +1,59 @@
+{
+  "patterns": [
+    {
+      "id": "f4af3e2a8276951b3c332022c8331d835dca7f862e28fddf03541a5f168d8913",
+      "goal": "Fix bug",
+      "issue_type": "bug",
+      "complexity": 60,
+      "approach": "loop: iteration 3 — post-audit cleanup;loop: iteration 3 — autonomous progress;fix: correct bc syntax in outcome-feedback confidence calculation;loop: iteration 2 — post-audit cleanup;loop: iteration 2 — autonomous progress;fix: use /tmp instead of /tmp/claude in outcome-feedback test;fix: add mi...",
+      "iterations": 3,
+      "duration_s": 45,
+      "files_changed": [
+        ".claude/intelligence-cache.json",
+        ".claude/loop-logs/audit-iter-3.log",
+        ".claude/loop-logs/iteration-3.log",
+        ".claude/loop-logs/tests-iter-3.log",
+        ".claude/loop-state.md",
+        "scripts/lib/outcome-feedback.sh"
+      ],
+      "file_patterns": [
+        ".claude/*.json .claude/loop-logs/*.log .claude/*.md scripts/lib/*.sh"
+      ],
+      "test_strategy": "npm test",
+      "template": "standard",
+      "commit_count": 6,
+      "cost_usd": 2.50,
+      "captured_at": "2026-03-29T01:52:45Z",
+      "seen_count": 1,
+      "injection_count": 0,
+      "success_after_injection": 0
+    },
+    {
+      "id": "0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a",
+      "goal": "Add authentication feature",
+      "issue_type": "feature",
+      "complexity": 65,
+      "approach": "loop: iteration 4 — post-audit cleanup;loop: iteration 4 — autonomous progress;test: replace success pattern smoke tests with comprehensive functional tests;loop: iteration 3 — post-audit cleanup;loop: iteration 3 — autonomous progress;fix: correct bc syntax in outcome-feedback confidence calcula...",
+      "iterations": 3,
+      "duration_s": 150,
+      "files_changed": [
+        ".claude/loop-logs/audit-iter-4.log",
+        ".claude/loop-logs/iteration-4.log",
+        ".claude/loop-logs/tests-iter-4.log",
+        ".claude/loop-state.md",
+        "scripts/sw-memory-success-test.sh"
+      ],
+      "file_patterns": [
+        ".claude/loop-logs/*.log .claude/*.md scripts/*.sh"
+      ],
+      "test_strategy": "npm test",
+      "template": "standard",
+      "commit_count": 5,
+      "cost_usd": 2.5,
+      "captured_at": "2026-03-29T02:20:18Z",
+      "seen_count": 1,
+      "injection_count": 0,
+      "success_after_injection": 0
+    }
+  ]
+}

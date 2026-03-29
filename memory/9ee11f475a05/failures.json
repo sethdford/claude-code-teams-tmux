@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run mode does not output stale heartbeat details, 'Found' count summary, or '--force' hint when items are detected",
       "fix": "Update sw-cleanup.sh to print detected heartbeat agent names, a 'Found N items' summary line, and a 'Run with --force' hint in dry-run mode",
       "seen_count": 23,
-      "last_seen": "2026-03-29T01:24:53Z",
+      "last_seen": "2026-03-29T01:18:43Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command uses a literal file path argument instead of an inline expression — missing -e flag or quoting issue causing sed to interpret the substitution as a filename",
       "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to use `-e` flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` and ensure the variable is properly quoted with double quotes",
-      "seen_count": 21,
-      "last_seen": "2026-03-29T01:40:18Z",
+      "seen_count": 24,
+      "last_seen": "2026-03-29T02:37:11Z",
       "category": "test_failure"
     },
     {
@@ -48,11 +48,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sed command references TEST_TEMP_DIR variable as a filename instead of using -e flag for inline expression",
-      "fix": "Change `sed s|$TEST_TEMP_DIR|...|g` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` or ensure the -e flag precedes the expression",
-      "seen_count": 3,
-      "last_seen": "2026-03-28T20:02:47Z",
-      "category": "test_failure"
+      "root_cause": "All test suites shown passed with no failures; the log ends mid-output at sw-hello-test.sh with no actual failure indicated",
+      "fix": "Check the complete log output after sw-hello-test.sh to identify the actual failing test suite and error",
+      "seen_count": 4,
+      "last_seen": "2026-03-29T01:35:26Z",
+      "category": "unknown"
     }
   ]
 }
