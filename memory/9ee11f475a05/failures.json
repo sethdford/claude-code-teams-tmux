@@ -3,20 +3,35 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and dry-run summary output does not match expected strings 'agent-1', 'Found', and '--force'",
-      "fix": "Update sw-cleanup.sh heartbeat detection to output the heartbeat agent name and ensure dry-run summary prints 'Found N item(s)' with '--force' hint when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-03-29T07:04:02Z",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
+      "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
+      "seen_count": 1,
+      "last_seen": "2026-03-29T05:23:04Z",
+      "mitigation_attempts": 0,
+      "mitigation_success_count": 0,
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format don't match what the tests expect",
-      "fix": "Fix heartbeat detection to output the agent name and add 'Found' count and '--force' hint to the dry-run summary in sw-cleanup.sh",
-      "seen_count": 2,
-      "last_seen": "2026-03-29T07:10:50Z",
+      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being passed as the sed script argument, causing sed to treat the literal string as a file path",
+      "fix": "ensure TEST_TEMP_DIR is exported or properly quoted so it expands inside the sed expression, or use a different substitution approach",
+      "seen_count": 3,
+      "last_seen": "2026-03-29T05:49:42Z",
+      "mitigation_attempts": 0,
+      "mitigation_success_count": 0,
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
+      "root_cause": "Test suite reports 0 failures but the log shows passing tests including 'deploy failure detects regression' — the test stage itself passed successfully",
+      "fix": "No fix needed; all tests passed including the regression detection tests",
+      "seen_count": 1,
+      "last_seen": "2026-03-29T06:09:02Z",
+      "mitigation_attempts": 0,
+      "mitigation_success_count": 0,
+      "category": "unknown"
     }
   ]
 }
