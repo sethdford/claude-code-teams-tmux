@@ -662,6 +662,101 @@ _memory_aggregate_global() {
     fi
 }
 
+# memory_ingest_fleet_patterns
+# Reads fleet.pattern.success events from events.jsonl, deduplicates by pattern_hash,
+# and stores in global.json .fleet_patterns[] with cross_repo_success_count tracking.
+# Uses a single jq call for batch processing (no per-event bash loop).
+memory_ingest_fleet_patterns() {
+    local events_file="${HOME}/.shipwright/events.jsonl"
+    [[ -f "$events_file" ]] || return 0
+
+    ensure_memory_dir
+    local global_file="$GLOBAL_MEMORY"
+
+    # Initialize global.json if missing
+    if [[ ! -f "$global_file" ]]; then
+        echo '{"common_patterns":[],"cross_repo_learnings":[],"fleet_patterns":[]}' > "$global_file"
+    fi
+
+    # Ensure fleet_patterns key exists
+    local has_key
+    has_key=$(jq 'has("fleet_patterns")' "$global_file" 2>/dev/null || echo "false")
+    if [[ "$has_key" != "true" ]]; then
+        local _tmp
+        _tmp=$(mktemp "${global_file}.tmp.XXXXXX")
+        jq '. + {"fleet_patterns":[]}' "$global_file" > "$_tmp" 2>/dev/null && mv "$_tmp" "$global_file" || rm -f "$_tmp"
+    fi
+
+    # Read fleet pattern events from last 7 days
+    local cutoff_epoch
+    cutoff_epoch=$(( $(date +%s) - 604800 ))
+    local cutoff_iso
+    cutoff_iso=$(date -u -d "@$cutoff_epoch" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -r "$cutoff_epoch" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "1970-01-01T00:00:00Z")
+
+    # Extract fleet pattern events as JSON array (grep for speed, jq -s for batch)
+    local events_json
+    events_json=$(grep '"fleet\.pattern\.success"' "$events_file" 2>/dev/null \
+        | jq -sc --arg cutoff "$cutoff_iso" '[.[] | select(.type == "fleet.pattern.success" and .ts >= $cutoff)]' 2>/dev/null || echo "[]")
+    [[ "$events_json" == "[]" || -z "$events_json" ]] && return 0
+
+    # Merge events into global.json in a single jq call
+    local now_ts
+    now_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    local updated_global
+    updated_global=$(jq --argjson events "$events_json" --arg now "$now_ts" '
+        .fleet_patterns as $existing |
+        ($events | reduce .[] as $ev ($existing // [];
+            ($ev.pattern_hash // "") as $hash |
+            ($ev.source_repo // "") as $repo |
+            if ($hash == "" or $repo == "") then . else
+                (map(select(.pattern_hash == $hash)) | first) as $found |
+                if $found == null then
+                    # New pattern — insert
+                    . + [{
+                        pattern_hash: $hash,
+                        source_repo: $repo,
+                        goal: ($ev.goal // ""),
+                        approach: ($ev.approach // ""),
+                        template: ($ev.template // ""),
+                        test_strategy: ($ev.test_strategy // ""),
+                        complexity: (($ev.complexity // "0") | tonumber),
+                        avg_duration_s: (($ev.duration_s // "0") | tonumber),
+                        cross_repo_success_count: 1,
+                        repos_succeeded: [$repo],
+                        first_seen: $now,
+                        last_seen: $now,
+                        adopted_count: 0
+                    }]
+                elif ($found.repos_succeeded | map(select(. == $repo)) | length) == 0 then
+                    # Existing pattern, new repo — increment count
+                    map(if .pattern_hash == $hash then
+                        .cross_repo_success_count += 1 |
+                        .last_seen = $now |
+                        .avg_duration_s = ((.avg_duration_s + (($ev.duration_s // "0") | tonumber)) / 2) |
+                        if (.repos_succeeded | length) < 20 then .repos_succeeded += [$repo] else . end
+                    else . end)
+                else
+                    # Same repo, same pattern — update last_seen only
+                    map(if .pattern_hash == $hash then .last_seen = $now else . end)
+                end
+            end
+        )) as $merged |
+        .fleet_patterns = ($merged | sort_by(-.cross_repo_success_count) | .[:200])
+    ' "$global_file" 2>/dev/null)
+
+    [[ -z "$updated_global" ]] && return 0
+
+    # Atomic write
+    local tmp_file
+    tmp_file=$(mktemp "${global_file}.tmp.XXXXXX")
+    echo "$updated_global" > "$tmp_file" && mv "$tmp_file" "$global_file" || rm -f "$tmp_file"
+
+    local pattern_count
+    pattern_count=$(echo "$updated_global" | jq '.fleet_patterns | length' 2>/dev/null || echo "0")
+    [[ "${pattern_count:-0}" -gt 0 ]] && emit_event "memory.fleet_patterns_ingested" "count=${pattern_count}"
+}
+
 # memory_finalize_pipeline <state_file> <artifacts_dir>
 # Single call that closes multiple feedback loops at pipeline completion
 memory_finalize_pipeline() {
@@ -677,6 +772,9 @@ memory_finalize_pipeline() {
 
     # Step 3: Aggregate high-frequency patterns to global memory
     _memory_aggregate_global 2>/dev/null || true
+
+    # Step 4: Ingest fleet-wide success patterns from event bus
+    memory_ingest_fleet_patterns 2>/dev/null || true
 }
 
 # memory_analyze_failure <log_file> <stage>
@@ -1048,6 +1146,19 @@ memory_inject_context() {
             if [[ -f "$mem_dir/patterns.json" ]]; then
                 jq -r '.known_issues // [] | .[] | "- \(.)"' "$mem_dir/patterns.json" 2>/dev/null || true
             fi
+
+            # Fleet-proven patterns for planning context
+            if [[ -f "$GLOBAL_MEMORY" ]]; then
+                local fleet_plan_patterns
+                fleet_plan_patterns=$(jq -r '(.fleet_patterns // []) | map(select(.cross_repo_success_count > 3)) | sort_by(-.cross_repo_success_count) | .[:3][] |
+                    "- \(.goal[0:120]) → template: \(.template), \(.cross_repo_success_count) repos succeeded"' \
+                    "$GLOBAL_MEMORY" 2>/dev/null || true)
+                if [[ -n "$fleet_plan_patterns" ]]; then
+                    echo ""
+                    echo "## Fleet-Proven Approaches"
+                    echo "$fleet_plan_patterns"
+                fi
+            fi
             ;;
 
         build)
@@ -1096,6 +1207,19 @@ memory_inject_context() {
                 local test_runner
                 test_runner=$(jq -r '.project.test_runner // ""' "$mem_dir/patterns.json" 2>/dev/null)
                 [[ -n "$test_runner" ]] && echo "- Test runner: ${test_runner}"
+            fi
+
+            # Fleet-proven patterns (cross-repo success count > 3)
+            if [[ -f "$GLOBAL_MEMORY" ]]; then
+                local fleet_proven
+                fleet_proven=$(jq -r '(.fleet_patterns // []) | map(select(.cross_repo_success_count > 3)) | sort_by(-.cross_repo_success_count) | .[:5][] |
+                    "- \(.goal[0:120]) (proven in \(.cross_repo_success_count) repos, template: \(.template), approach: \(.approach))"' \
+                    "$GLOBAL_MEMORY" 2>/dev/null || true)
+                if [[ -n "$fleet_proven" ]]; then
+                    echo ""
+                    echo "## Fleet-Proven Patterns (cross-repo validated)"
+                    echo "$fleet_proven"
+                fi
             fi
             ;;
 

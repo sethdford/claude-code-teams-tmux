@@ -2762,6 +2762,33 @@ const server = Bun.serve({
       });
     }
 
+    // REST: fleet learning stats (cross-repo success pattern broadcasting)
+    if (pathname === "/api/fleet/learning-stats") {
+      try {
+        const globalPath = join(HOME, ".shipwright", "memory", "global.json");
+        const emptyStats = { total_patterns: 0, patterns_shared: 0, patterns_adopted: 0, success_lift_pct: 0, top_patterns: [] };
+        if (!existsSync(globalPath)) {
+          return new Response(JSON.stringify(emptyStats), {
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          });
+        }
+        const globalData = JSON.parse(readFileSync(globalPath, "utf-8"));
+        const fleetPatterns: any[] = globalData.fleet_patterns || [];
+        const total = fleetPatterns.length;
+        const shared = fleetPatterns.filter((p: any) => (p.cross_repo_success_count || 0) > 1).length;
+        const adopted = fleetPatterns.filter((p: any) => (p.adopted_count || 0) > 0).length;
+        const liftPct = total > 0 ? Math.round((shared * 100) / total) : 0;
+        const topPatterns = [...fleetPatterns].sort((a: any, b: any) => (b.cross_repo_success_count || 0) - (a.cross_repo_success_count || 0)).slice(0, 10);
+        return new Response(JSON.stringify({ total_patterns: total, patterns_shared: shared, patterns_adopted: adopted, success_lift_pct: liftPct, top_patterns: topPatterns }), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      } catch {
+        return new Response(JSON.stringify({ total_patterns: 0, patterns_shared: 0, patterns_adopted: 0, success_lift_pct: 0, top_patterns: [] }), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+    }
+
     // REST: pipeline detail for a specific issue (only exact /api/pipeline/:num)
     if (/^\/api\/pipeline\/\d+$/.test(pathname)) {
       const issueNum = parseInt(pathname.split("/")[3] || "0");

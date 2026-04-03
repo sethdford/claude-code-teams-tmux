@@ -831,6 +831,26 @@ pipeline_start() {
             memory_update_metrics "iterations" "$((SELF_HEAL_COUNT + 1))" 2>/dev/null || true
         fi
 
+        # Broadcast success pattern to fleet event bus (only in fleet mode)
+        local _fleet_cfg="${PROJECT_ROOT:-.}/.claude/fleet-config.json"
+        if [[ -f "$_fleet_cfg" ]]; then
+            local _repo_name _pattern_hash _test_strategy _files_changed
+            _repo_name=$(git -C "${PROJECT_ROOT:-.}" remote get-url origin 2>/dev/null | sed 's|.*github.com[:/]||;s|\.git$||' || basename "${PROJECT_ROOT:-.}")
+            _pattern_hash=$(printf '%s' "${GOAL:-}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 ]//g;s/  */ /g;s/^ *//;s/ *$//' | sha256sum 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+            _test_strategy=$(jq -r '.project.test_runner // "unknown"' "${HOME}/.shipwright/memory/$(echo "${PROJECT_ROOT:-.}" | sed 's|/|_|g')/patterns.json" 2>/dev/null || echo "unknown")
+            _files_changed=$(git -C "${PROJECT_ROOT:-.}" diff --name-only HEAD~1 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+            emit_event "fleet.pattern.success" \
+                "source_repo=${_repo_name}" \
+                "goal=${GOAL:-unknown}" \
+                "approach=${PIPELINE_STAGES_PASSED:-unknown}" \
+                "template=${PIPELINE_NAME:-unknown}" \
+                "complexity=${INTELLIGENCE_COMPLEXITY:-0}" \
+                "duration_s=${total_dur_s:-0}" \
+                "files_changed=${_files_changed}" \
+                "test_strategy=${_test_strategy}" \
+                "pattern_hash=${_pattern_hash}"
+        fi
+
         # Record positive fix outcome if self-healing succeeded
         if [[ "$SELF_HEAL_COUNT" -gt 0 && -x "$SCRIPT_DIR/sw-memory.sh" ]]; then
             local _success_sig

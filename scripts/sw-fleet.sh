@@ -113,6 +113,7 @@ show_help() {
     echo -e "  ${CYAN}status${RESET}                             Show fleet dashboard"
     echo -e "  ${CYAN}metrics${RESET}  [--period N] [--json]     Aggregate DORA metrics across repos"
     echo -e "  ${CYAN}discover${RESET} --org <name> [options]    Auto-discover repos from GitHub org"
+    echo -e "  ${CYAN}patterns${RESET} [--top N] [--json]          Show fleet-wide success patterns"
     echo -e "  ${CYAN}init${RESET}                               Generate fleet-config.json"
     echo -e "  ${CYAN}help${RESET}                               Show this help"
     echo ""
@@ -126,6 +127,8 @@ show_help() {
     echo -e "  ${DIM}shipwright fleet start --config my-fleet.json${RESET}   # Custom config"
     echo -e "  ${DIM}shipwright fleet status${RESET}                         # Fleet dashboard"
     echo -e "  ${DIM}shipwright fleet metrics --period 30${RESET}            # 30-day aggregate"
+    echo -e "  ${DIM}shipwright fleet patterns --top 5${RESET}              # Top 5 success patterns"
+    echo -e "  ${DIM}shipwright fleet patterns --json${RESET}               # JSON output"
     echo -e "  ${DIM}shipwright fleet stop${RESET}                           # Stop everything"
     echo ""
     echo -e "${BOLD}CONFIG FILE${RESET}  ${DIM}(.claude/fleet-config.json)${RESET}"
@@ -1342,6 +1345,78 @@ fleet_init() {
     echo -e "  ${CYAN}shipwright fleet start${RESET}"
 }
 
+# ─── Fleet Patterns Display ────────────────────────────────────────────────
+
+fleet_patterns_show() {
+    local top_n=10
+    local json_output=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --top)   top_n="${2:-10}"; shift 2 ;;
+            --top=*) top_n="${1#--top=}"; shift ;;
+            --json)  json_output=true; shift ;;
+            *)       shift ;;
+        esac
+    done
+
+    local global_file="${HOME}/.shipwright/memory/global.json"
+    if [[ ! -f "$global_file" ]]; then
+        if [[ "$json_output" == "true" ]]; then
+            echo '{"total_patterns":0,"patterns_shared":0,"patterns_adopted":0,"success_lift_pct":0,"top_patterns":[]}'
+        else
+            info "No fleet patterns found yet. Patterns are captured after successful pipeline runs in fleet mode."
+        fi
+        return 0
+    fi
+
+    local fleet_data
+    fleet_data=$(jq -r '.fleet_patterns // []' "$global_file" 2>/dev/null || echo "[]")
+    local total
+    total=$(echo "$fleet_data" | jq 'length' 2>/dev/null || echo "0")
+
+    if [[ "$total" -eq 0 ]]; then
+        if [[ "$json_output" == "true" ]]; then
+            echo '{"total_patterns":0,"patterns_shared":0,"patterns_adopted":0,"success_lift_pct":0,"top_patterns":[]}'
+        else
+            info "No fleet patterns found yet. Patterns are captured after successful pipeline runs in fleet mode."
+        fi
+        return 0
+    fi
+
+    local shared adopted
+    shared=$(echo "$fleet_data" | jq '[.[] | select(.cross_repo_success_count > 1)] | length' 2>/dev/null || echo "0")
+    adopted=$(echo "$fleet_data" | jq '[.[] | select(.adopted_count > 0)] | length' 2>/dev/null || echo "0")
+    local lift_pct=0
+    [[ "$total" -gt 0 ]] && lift_pct=$(( (shared * 100) / total ))
+
+    if [[ "$json_output" == "true" ]]; then
+        echo "$fleet_data" | jq --argjson t "$total" --argjson s "$shared" --argjson a "$adopted" \
+            --argjson l "$lift_pct" --argjson n "$top_n" \
+            '{total_patterns: $t, patterns_shared: $s, patterns_adopted: $a, success_lift_pct: $l,
+              top_patterns: (sort_by(-.cross_repo_success_count) | .[:$n])}' 2>/dev/null
+        return 0
+    fi
+
+    echo ""
+    echo -e "${PURPLE:-}${BOLD:-}━━━ Fleet Success Patterns ━━━${RESET:-}"
+    echo ""
+    echo -e "  Total patterns:  ${BOLD:-}${total}${RESET:-}"
+    echo -e "  Shared (>1 repo): ${BOLD:-}${shared}${RESET:-}"
+    echo -e "  Adopted:          ${BOLD:-}${adopted}${RESET:-}"
+    echo -e "  Success lift:     ${BOLD:-}${lift_pct}%${RESET:-}"
+    echo ""
+    echo -e "${BOLD:-}Top ${top_n} Patterns${RESET:-}"
+    echo ""
+
+    echo "$fleet_data" | jq -r --argjson n "$top_n" \
+        'sort_by(-.cross_repo_success_count) | .[:$n] | to_entries[] |
+         "\(.key + 1). [\(.value.cross_repo_success_count) repos] \(.value.goal[0:80])\n   Template: \(.value.template)  Approach: \(.value.approach)\n   Repos: \(.value.repos_succeeded | join(", "))\n"' \
+        2>/dev/null || echo "  (no patterns to display)"
+
+    echo ""
+}
+
 # ─── Command Router ─────────────────────────────────────────────────────────
 
 case "$SUBCOMMAND" in
@@ -1356,6 +1431,9 @@ case "$SUBCOMMAND" in
         ;;
     metrics)
         fleet_metrics
+        ;;
+    patterns)
+        fleet_patterns_show "$@"
         ;;
     discover)
         # Delegate to fleet-discover script

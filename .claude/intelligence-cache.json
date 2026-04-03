@@ -30,9 +30,16 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Fleet-wide pattern broadcasting requires system design for cross-repo coordination, real-time learning infrastructure, and scalability patterns before implementation",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775241606,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +654,307 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "29b96c5381f688491311703f8522726c": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Event bus reliability and pattern event deduplication at scale",
+          "Cross-repo pattern overapplication - patterns from different contexts conflicting",
+          "Memory accumulation without pattern retention/cleanup policies",
+          "Fleet mode event ordering and eventual consistency across repos",
+          "Pattern matching false positives reducing solution quality"
+        ],
+        "implementation_hints": [
+          "Add pattern deduplication by hash (same solution from different repos = single pattern)",
+          "Include repo context metadata (language, framework, problem category) in pattern events for intelligent matching",
+          "Implement pattern freshness scoring - recent multi-repo patterns prioritized over old single-repo patterns",
+          "Start with conservative cross_repo_success_count threshold (3+) to avoid false pattern application",
+          "Add pattern source audit trail for traceability and debugging cross-repo failures",
+          "Design memory cleanup to age out rarely-adopted patterns after 30 days",
+          "Test event pub/sub with simulated fleet of 5-10 concurrent repos to catch ordering bugs"
+        ]
+      },
+      "timestamp": 1775240672,
+      "ttl": 3600
+    },
+    "7eaf2596f40ad004a17db26d42d82073": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1775240681,
+      "ttl": 1800
+    },
+    "5eb6105e878fd5f5540d350007a9b82a": {
+      "result": {
+        "estimated_cost_usd": 6.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 18500,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1775240690,
+      "ttl": 3600
+    },
+    "39bca393be763b0a70e8f49a309115e3": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "observability",
+          "architecture",
+          "distributed-systems"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Labeled 'fast', but involves distributed event coordination across repos. Straightforward pub/sub pattern, but requires careful thought around event ordering, idempotency, and memory system integration."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "design": [
+            "api-design",
+            "observability"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "architecture-design"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Event bus integration with fleet orchestration and memory system must avoid coupling; ADR needed for cross-repo pattern broadcasting design decisions.",
+          "data-pipeline": "Fleet pattern broadcasting is fundamentally a data flow (event → enrichment → memory storage → adoption); requires thoughtful schema, buffering, and replay semantics.",
+          "api-design": "Event schema, pattern query interface, and CLI contract (fleet patterns --top 10) must scale cleanly as fleet grows; need clear versioning strategy.",
+          "observability": "Production monitoring of fleet learning: are events flowing? Are patterns being matched? Are cross-repo metrics accurate?",
+          "testing-strategy": "Acceptance criteria explicitly requires test suite validating event pub/sub and cross-repo pattern application; distributed system concurrency requires thorough test scenarios.",
+          "pr-quality": "Changes touch sw-fleet.sh, sw-memory.sh, dashboard, CLI; reviewer needs clear narrative of how these systems interact without drowning in detail.",
+          "adversarial-quality": "Distributed event systems fail silently: event loss, duplication, reordering, memory saturation from bad patterns. Must think like chaos engineer about failure modes.",
+          "deploy-safety": "Fleet-wide event bus is a critical infrastructure change; requires phased rollout with event buffer verification before full fleet adoption.",
+          "validation-thoroughness": "Must validate cross-repo pattern adoption actually works end-to-end in fleet: publish pattern in repo A, verify pattern is learned and applied in repos B/C/D."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Event delivery guarantees: What happens to events if event bus fills or goes down? Is there backlog/buffering?",
+          "Pattern matching correctness: Does the cross_repo_success_count > 3 threshold work across eventual consistency? Any race conditions?",
+          "Memory system integration: How are patterns indexed and retrieved? Will memory system become bottleneck as fleet grows?",
+          "Idempotency: Can duplicate events cause duplicate patterns or inflated success counts?",
+          "Event ordering: Concurrent events from multiple repos — does order matter? Any state corruption risk?",
+          "Dashboard accuracy: Are fleet learning stats (patterns shared, adopted, success lift) computed correctly?",
+          "Backward compatibility: Does memory schema change break existing memory files or recovery?"
+        ],
+        "risk_areas": [
+          "Event bus reliability: If event delivery isn't durable, fleet loses cross-repo learning; could silently stop broadcasting",
+          "Memory scalability: Unbounded pattern accumulation could grow memory file to GB+ sizes; need retention/dedup policy",
+          "Pattern explosion: Without limits on pattern count or age, could accumulate dead patterns that create false matches",
+          "Cross-repo interference: Bad pattern from one repo could corrupt another repo's pipeline; need pattern validation/quarantine",
+          "Distributed consensus: If repos see different versions of 'best patterns', could cause fork in fleet behavior",
+          "Event ordering: Patterns published concurrently might not be applied in dependency order (pattern B depends on pattern A applied first)"
+        ]
+      },
+      "timestamp": 1775240811,
+      "ttl": 3600
+    },
+    "f79e6a721910458b5e6166ed1608f098": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains full success pattern data with goals, approaches, iterations, files changed, test strategies, costs, and injection counts. Directly models what will be broadcasted fleet-wide."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Captures failure patterns with root causes, fixes, mitigation attempts, and effectiveness rates. Critical for filtering out anti-patterns and understanding what not to broadcast."
+          },
+          {
+            "file": "global.json",
+            "relevance": 68,
+            "summary": "Designed to hold cross_repo_learnings at fleet level. Though currently empty, its structure directly maps to the real-time cross-repo learning goal of this feature."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "First entry provides project conventions and structure (test runner, import style, source layout). Useful context for understanding how patterns should be contextualized per repo type."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 35,
+            "summary": "Contains architecture rules that may constrain how success patterns are broadcast and applied across the fleet (e.g., dependency direction, naming conventions)."
+          }
+        ]
+      },
+      "timestamp": 1775240827,
+      "ttl": 1800
+    },
+    "987ce277f09672901596f9b862db439e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (comprehensive with f4af3e2a... and 0bcf0637...)",
+            "relevance": 85,
+            "summary": "Captures core success pattern structure with iterations, complexity scores, file patterns, test strategies, and cost data—directly relevant to understanding what patterns should be broadcasted fleet-wide"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh, template errors, deploy regression)",
+            "relevance": 72,
+            "summary": "Shows test stage validation failures with detailed root causes and fixes. Relevant to understanding why plan validation might be failing and what error patterns to detect in cross-repo validation"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright conventions)",
+            "relevance": 58,
+            "summary": "Defines project structure conventions (source_dir, test_pattern, import_style) and project metadata. Relevant context for cross-repo learning and pattern detection across different repo types"
+          }
+        ]
+      },
+      "timestamp": 1775241190,
+      "ttl": 1800
+    },
+    "175becbe36ecd8d6581007ca77073fb4": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a + f4af3e2a8276951b3c332022c8331d835dca7f862e28fddf03541a5f168d8913)",
+            "relevance": 95,
+            "summary": "Contains captured success patterns with goal, approach, iterations, files_changed, complexity, template, and cost metadata. This is the core data structure for what will be broadcast fleet-wide in real-time cross-repo learning."
+          },
+          {
+            "file": "global.json",
+            "relevance": 82,
+            "summary": "Contains cross_repo_learnings field which directly aligns with the feature's real-time cross-repo learning goal. This is where fleet-wide patterns would be aggregated and indexed."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 75,
+            "summary": "Provides architecture rules that inform pattern design. The pattern broadcasting system will need to respect/enforce similar architectural constraints across repos."
+          },
+          {
+            "file": "failures.json (variable initialization, reference errors)",
+            "relevance": 70,
+            "summary": "Shows systematic failure patterns with root causes and fixes. Success pattern broadcasting should learn from failure patterns to avoid recurring issues across the fleet."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright with conventions)",
+            "relevance": 65,
+            "summary": "Captures project conventions (source_dir, test_pattern, import_style) and project metadata. Fleet-wide broadcasting must normalize patterns across different repo structures and configurations."
+          }
+        ]
+      },
+      "timestamp": 1775241293,
+      "ttl": 1800
+    },
+    "2de288afa5b6d12f158cb8c841730263": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 100,
+            "summary": "Contains 'cross_repo_learnings' field directly relevant to fleet-wide pattern broadcasting and cross-repository learning infrastructure"
+          },
+          {
+            "file": "success-patterns.json (detailed)",
+            "relevance": 85,
+            "summary": "Documents successful approaches with iteration counts, file patterns, and test strategies; shows what works across repos and identifies patterns suitable for fleet-wide broadcasting"
+          },
+          {
+            "file": "failures.json (stage/root_cause/fix)",
+            "relevance": 80,
+            "summary": "Captures anti-patterns through root cause analysis and mitigation attempts; identifies what approaches failed (e.g., heartbeat detection, sed variable expansion) to avoid repeating across fleet"
+          }
+        ]
+      },
+      "timestamp": 1775241304,
+      "ttl": 1800
+    },
+    "e7d678d312336ac96408d3c889b0e39b": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Contains 2 captured success patterns with actual build iterations, durations, test strategies (npm test), and file patterns. Directly relevant to Fleet-Wide Success Pattern Broadcasting feature—provides real examples of patterns to broadcast."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Build stage failures showing 'cannot read property of undefined' (100% fix effectiveness) and 'referenceerror is not defined' (66% fix effectiveness) with proven mitigation strategies. Helps prevent common build-time errors."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Test stage failures from sw-cleanup.sh and sed commands that affect build execution. Provides context on known issues encountered in recent pipeline runs affecting test execution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project conventions showing nodejs setup with vitest, npm, commonjs imports, src/ structure. Essential for understanding how to execute build and test steps correctly in this repository."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Simplified failure pattern showing 'cannot read property' initialization issue with 100% fix effectiveness rate. Concise preventive guidance applicable to build stage debugging."
+          }
+        ]
+      },
+      "timestamp": 1775241583,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure (Node/vitest/npm), source directory, test pattern, and import style are essential for build stage to know how to execute tests and compile"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Shows successful build loop patterns (iterations, test strategy using npm test, file change patterns) that inform optimal build approach and iteration expectations"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Test-stage failures (sed variable expansion, heartbeat detection) reveal common pitfalls to avoid during build execution and test harness setup"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Empty baselines but could contain performance or timing data relevant to build optimization if populated"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array; not currently applicable to build stage context"
+          }
+        ]
+      },
+      "timestamp": 1775241599,
+      "ttl": 1800
     }
   }
 }
