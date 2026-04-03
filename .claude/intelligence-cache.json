@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "incident-responder",
+          "tester"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Task requires designing intelligent failure detection, memory persistence, and automated fix injection—core architectural work. Builder implements, incident-responder provides failure mitigation expertise, tester validates.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775242029,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,349 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "290083b2f7f99d4dd3fc8ae2c5963e95": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 76,
+        "recommended_template": "full",
+        "issue_type": "testing",
+        "key_risks": [
+          "False positive pattern matches could hide real bugs and mask root causes",
+          "Memory data quality/inconsistency could inject incorrect or stale fixes",
+          "Success rate threshold (80%) is arbitrary and may not correlate with actual reliability",
+          "Injection point timing in sw-loop.sh could introduce race conditions or state corruption",
+          "Mitigation hit rate metrics could be misleading without proper deduplication",
+          "Existing memory format may lack sufficient context for reliable pattern matching"
+        ],
+        "implementation_hints": [
+          "Implement exact error signature matching before attempting fuzzy matching",
+          "Track mitigation attempt vs success separately to validate feature's own effectiveness",
+          "Add dry-run mode showing what would be injected without modifying loop context",
+          "Use statistical confidence (multiple successful instances + age-weighted scoring) instead of single 80% threshold",
+          "Implement audit trail in error-summary.json for every injection with rollback capability",
+          "Start with conservative rollout (inject in 25% of cases) and measure real impact before full deployment",
+          "Add memory entry age/staleness factor to reduce injection of outdated fixes",
+          "Implement circuit breaker: disable mitigation if injected fixes fail more than N consecutive times",
+          "Validate pattern matching against 100+ historical error signatures before enabling in daemon",
+          "Dashboard should show confidence scores and why each fix was/wasn't selected"
+        ]
+      },
+      "timestamp": 1775240696,
+      "ttl": 3600
+    },
+    "1210c235b05980b53f867186315608fe": {
+      "result": {
+        "estimated_iterations": 14
+      },
+      "timestamp": 1775240707,
+      "ttl": 1800
+    },
+    "75ea50b5af2855e19e88549cc8af3794": {
+      "result": {
+        "estimated_cost_usd": 10.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 92000,
+        "likely_failure_stage": "test",
+        "confidence": 68,
+        "reasoning": {
+          "cost_basis": "Complexity 7 + full pipeline + 4 iterations (pattern matching validation, memory injection testing, circuit breaker logic, confidence scoring)",
+          "iteration_breakdown": [
+            "1: Core memory injection + pattern matching implementation",
+            "2: Error signature validation and deduplication logic",
+            "3: Confidence scoring and staleness factors",
+            "4: Circuit breaker and rollback capability testing"
+          ],
+          "token_estimate_breakdown": {
+            "design_stage": 8500,
+            "build_stage": 18000,
+            "test_stage": 22500,
+            "review_stage": 16000,
+            "quality_stage": 14000,
+            "pr_stage": 13000
+          },
+          "risk_factors": [
+            "Pattern matching false positives could mask real bugs",
+            "Memory data quality inconsistency",
+            "Race conditions in sw-loop.sh injection point",
+            "80% threshold arbitrariness"
+          ],
+          "mitigation_complexity_premium": "15% added to baseline due to safety-critical memory system changes"
+        }
+      },
+      "timestamp": 1775240716,
+      "ttl": 3600
+    },
+    "808a6f44fff86fa099db345193ec1855": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "testing",
+          "observability",
+          "reliability"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Mitigation engine requires careful pattern matching logic, integration with core loop harness, memory schema extension, and risk management around fix injection safety. Moderate complexity but high criticality."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "observability"
+          ],
+          "build": [
+            "systematic-debugging"
+          ],
+          "review": [
+            "pr-quality",
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Pattern matching and fix injection are failure-prone; if initial implementation doesn't match failure signatures correctly, systematic investigation prevents blind retry cycles.",
+          "architecture-design": "Mitigation engine touches core loop harness (sw-loop.sh); need an ADR documenting pattern matching strategy, fix prioritization, memory schema extension, and integration points to prevent future regressions.",
+          "brainstorming": "Challenge assumptions: Why 80% success rate threshold? How are failure signatures extracted and stored? Could semantic matching reduce false negatives vs. regex-only? Should fixes be applied eagerly or conservatively?",
+          "data-pipeline": "Fix injection is fundamentally data transformation: error-summary.json → pattern matching → memory lookup → context composition; apply data pipeline patterns for robustness.",
+          "observability": "Post-deploy: track mitigation hit rate, false-positive signals, success lift per failure type, pattern match latency; alert if metrics diverge from staging validation.",
+          "pr-quality": "Complex feature touching core daemon loop; PR must explain mitigation detection logic, fix eligibility criteria, and dashboard additions clearly enough for reviewers to spot edge cases.",
+          "two-stage-review": "Pass 1: Verify pattern matching robustness and fix eligibility logic. Pass 2: Verify integration safety (context injection), memory schema compatibility, and test coverage.",
+          "adversarial-quality": "Find ways the mitigation engine fails: Can a malformed error-summary.json cause pattern matching to hang? Can injected fixes cause new failures (recursive loops)? What if two patterns match the same error?",
+          "validation-thoroughness": "Smoke tests prove pattern matching works; real validation runs daemon mode with synthetic failures, measures actual success rate lift, verifies mitigation metrics are accurate.",
+          "testing-strategy": "Comprehensive coverage: unit tests for pattern matching (false positives/negatives), fix injection context isolation, memory schema queries; integration tests for loop harness integration; scenario tests for edge cases (recursive failures, conflicting patterns).",
+          "deploy-safety": "Mitigation engine changes core loop behavior; deploy in stages with kill-switch (disable pattern matching, fallback to baseline loop), monitoring for success rate degradation."
+        },
+        "generated_skills": [
+          {
+            "name": "memory-driven-remediation",
+            "reason": "Automated fix injection from memory is a novel architectural pattern combining pattern detection + remediation; existing skills don't cover the specific safety/correctness concerns around auto-applying fixes.",
+            "content": "## Memory-Driven Auto-Remediation Pattern\n\nWhen building systems that detect failure patterns and auto-inject fixes, follow these principles:\n\n### Pattern Matching Design\n- **Signature specificity**: Extract error signatures with enough specificity to avoid false matches, but general enough to apply across similar contexts. Test both: what % of errors does the pattern match? Of matched errors, how many did the fix solve?\n- **Semantic vs. regex**: Consider regex matching on error messages vs. semantic matching (stack trace structure, error type). Regex is faster but fragile; semantic is robust but adds latency. Measure both in staging.\n- **Recency weighting**: Recent patterns (from last 100 builds) have higher priority than historical patterns; failure modes shift as code evolves.\n\n### Fix Eligibility & Safety\n- **Success threshold**: >80% is aggressive; validate in staging that false positives don't outweigh true fixes. Track precision (fix actually helped / injected count) separately from recall.\n- **Context isolation**: A fix proven in context A (e.g., Node test failure) may not apply in context B (Python integration test). Store fix metadata: file patterns, failure types, test categories it applies to.\n- **Injection safety**: Inject fix *suggestions* into loop context, not auto-apply to code. Let the agent decide whether to use it. Track agent acceptance rate separately from fix success rate.\n\n### Metrics & Observability\n- **Mitigation hit rate**: % of failures matched by patterns. High hit rate = good pattern coverage; low = incomplete patterns.\n- **Success lift**: Actual success rate improvement. If baseline is 77%, measure whether mitigation engine drives it to 85%. Account for confounding factors (code quality improvements, env changes).\n- **False positives**: Injected fixes that made things worse. Track separately; signal systemic issues with pattern matching or fix quality.\n- **Pattern ROI**: Some patterns may match rarely; disable patterns with <5% hit rate after 100 builds to reduce noise.\n\n### Failure Mode Recovery\n- **Recursive loops**: If injected fix causes new failure matching another pattern, that fix could loop infinitely. Detect: track injected fix history per iteration, reject fixes if they cause regression.\n- **Pattern conflicts**: If two patterns match, prioritize by recency and success rate. Document tie-breaking logic.\n- **Graceful degradation**: If pattern matching hangs (malformed error-summary.json), timeout and continue without mitigation. Never block the loop.\n\n### Testing Strategy\n- Unit: pattern matching on synthetic error signatures (edge cases: truncated stack traces, locale-dependent messages, multiline errors).\n- Integration: loop harness integration + fix injection context isolation.\n- Scenario: recursive failures, conflicting patterns, fix causing new errors.\n- Staging validation: run with both mitigation enabled and disabled, measure both success rate and false-positive rate."
+          }
+        ],
+        "review_focus": [
+          "Pattern matching robustness: What failure signatures are captured? Are patterns too specific (miss variants) or too general (false positives)? Test with edge cases (truncated stack traces, locale-dependent messages).",
+          "Fix eligibility criteria: Why 80% success threshold? Should it be tuned per failure type? How is success measured (test pass, reduced iteration count, no regression)?",
+          "Context injection safety: Verify injected fixes don't poison context for unrelated failures or cause new failures (recursive injection loops). Test fix application in different contexts (unit vs. integration vs. e2e).",
+          "Memory schema migration: Are existing memory entries backwards-compatible with new mitigation_success_count/mitigation_attempts fields? How does the system handle partial data?",
+          "Dashboard metric accuracy: Are hit rate and success lift calculated correctly? Account for confounding variables (code changes, environment shifts). Validate metrics match actual build outcomes.",
+          "Loop integration correctness: Does compose_prompt receive injected fixes in the right order? Is mitigation detection fast enough to not degrade loop latency (measure <100ms overhead)?"
+        ],
+        "risk_areas": [
+          "Pattern matching false positives causing wrong fix injection and cascading failures",
+          "Pattern matching performance regression if signatures are complex or memory dataset grows large",
+          "Recursive failure loops where injected fix matches another pattern and causes new failures",
+          "Memory schema breaking existing entries or creating data consistency issues",
+          "Dashboard metrics diverging from actual behavior (hit rate vs. success lift mismatch)",
+          "Fix context isolation failures where a fix proven in one scenario causes regression in another",
+          "80% success threshold being too aggressive, causing low-confidence fixes to be injected and hurt overall success rate"
+        ]
+      },
+      "timestamp": 1775240809,
+      "ttl": 3600
+    },
+    "35ea8ceb088ef1f80e067db447ccc34e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains 2 fully-documented successful patterns (bug fix, feature) with iterations, duration, files changed, test strategy, costs—essential for understanding what effective solutions look like for the memory-driven fix injection system"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Contains 3 test-stage failures with root causes and fixes (stale heartbeat detection, sed variable expansion, deploy regression detection)—directly shows failure patterns that need capture and mitigation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Contains detailed build-stage failure patterns ('cannot read property' and 'referenceerror') with mitigation attempt tracking, success counts, and effectiveness rates—demonstrates the metrics needed for auto-mitigation decision-making"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Shows a build failure pattern ('cannot read property of undefined') with 100% fix effectiveness across 4 mitigation attempts—exemplifies high-confidence patterns suitable for automatic remediation injection"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Documents Shipwright repo structure (src/, vitest, commonjs)—provides project conventions and file patterns needed to implement the memory-driven system within this specific codebase"
+          }
+        ]
+      },
+      "timestamp": 1775240826,
+      "ttl": 1800
+    },
+    "3bc88c19adac2d09346a3b4b77419b15": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "First failures entry contains actual failure patterns with root causes and fixes (sw-cleanup.sh stale heartbeat detection, sed variable expansion, deploy regression detection). These are precisely the failure signatures an auto-mitigation engine would capture and learn from."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Fifth failures entry shows detailed mitigation tracking with 'mitigation_attempts', 'mitigation_success_count', and 'fix_effectiveness_rate' fields. Demonstrates the metrics structure needed to measure whether auto-mitigation fixes actually resolve issues (e.g., 100% effectiveness on uninitialized variable patterns)."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "First success-patterns entry contains completed approaches with iteration counts, files changed, and test strategies. Shows what working solutions look like (e.g., bc syntax fixes, /tmp path corrections) which inform the engine's fix recommendations and injection strategies."
+          }
+        ]
+      },
+      "timestamp": 1775241631,
+      "ttl": 1800
+    },
+    "d612712f351de135bd6cdd63ca8ac095": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first)",
+            "relevance": 95,
+            "summary": "Contains real failure patterns with stage, root_cause, fix, mitigation_attempts, and success_count — core data structure for failure capture that the engine must process"
+          },
+          {
+            "file": "failures.json (second - 'cannot read property')",
+            "relevance": 92,
+            "summary": "Shows proven mitigation success: same pattern seen 5 times, fix applied 4 times with 100% effectiveness — exemplifies the fix-injection workflow the engine automates"
+          },
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 90,
+            "summary": "Captures successful fixes with injection_count and success_after_injection metrics, file patterns changed, iterations needed, and cost — provides training data for predictive injection"
+          },
+          {
+            "file": "failures.json (fifth - 'cannot read property' and 'referenceerror')",
+            "relevance": 87,
+            "summary": "Multiple patterns with fix_effectiveness_rate (100% and 66%), times_fix_suggested/applied/resolved metrics — shows the metrics engine needs to track for pattern scoring"
+          },
+          {
+            "file": "failures.json (third - 'EONENT')",
+            "relevance": 85,
+            "summary": "Simple, proven pattern (npm install with 95% effectiveness) — example of common build failure that justifies memory-driven auto-mitigation"
+          }
+        ]
+      },
+      "timestamp": 1775241724,
+      "ttl": 1800
+    },
+    "b0eccabd1b33b225bdb8d1b447da45ff": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains rich mitigation patterns with effectiveness tracking: 'cannot read property' (100% success, 4/4 applied), 'referenceerror' (66% success, 2/3 applied). Directly shows how FPAME should track fix effectiveness rates, attempt counts, and success metrics across multiple failure patterns."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Real-world test failures from sw-cleanup.sh and sed with mitigation_attempts/success_count fields. Shows practical failure capture with root causes and fixes, demonstrating how FPAME should inject mitigation context into actual pipeline failures."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Captures successful patterns with injection_count and success_after_injection fields. Directly demonstrates memory-driven fix injection lifecycle: how patterns are recorded, when fixes are suggested, and whether injection improved outcomes."
+          }
+        ]
+      },
+      "timestamp": 1775241744,
+      "ttl": 1800
+    },
+    "9c0e360b3b3e45336bb649bd1e5900f5": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Contains concrete successful patterns from loop iterations with proven fixes (bc syntax, /tmp substitution, test cleanup). Direct memory of what worked in build stage—essential for injection into current build."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Captures test stage failures with root causes (sw-cleanup dry-run mode, sed variable expansion, regression detection) and fixes. Directly applicable to mitigating similar build/test failures."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Build stage failures with proven mitigation effectiveness: variable initialization (100% success rate, 4/4 applied), missing dependencies (95% effectiveness). High-confidence patterns for auto-mitigation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Build stage failure patterns with detailed mitigation tracking: uninitialized variables (100% effectiveness) and reference errors (66% effectiveness). Provides decision data for fix selection."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 78,
+            "summary": "Minimal but high-confidence pattern: 'cannot read property' errors with 100% fix effectiveness rate (initialize variable). Lightweight entry useful for quick failure matching during build."
+          }
+        ]
+      },
+      "timestamp": 1775242004,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project structure (Node/vitest), test runner, test pattern (*.test.js), source dir (src/), and package manager (npm). Essential for understanding how to run builds and tests."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two successful build patterns showing test strategy (npm test), iteration counts (3 iterations), typical duration (45-150s), and file patterns changed. Demonstrates what has worked before in the build stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Test stage failures including sed variable expansion issues and dry-run detection problems. Relevant for avoiding known failure modes during the current build."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Empty baselines object. No actionable metrics for build stage context."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural decisions captured."
+          }
+        ]
+      },
+      "timestamp": 1775242015,
+      "ttl": 1800
     }
   }
 }
