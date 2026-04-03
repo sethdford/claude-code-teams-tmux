@@ -327,6 +327,9 @@ main() {
         prep)
             exec "$SCRIPT_DIR/sw-prep.sh" "$@"
             ;;
+        starter-kit|sk)
+            exec "$SCRIPT_DIR/sw-starter-kit.sh" "$@"
+            ;;
         hygiene)
             exec "$SCRIPT_DIR/sw-hygiene.sh" "$@"
             ;;
