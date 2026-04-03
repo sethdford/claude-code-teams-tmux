@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.88,
+        "reasoning": "Feature requires system design of checkpoint strategy, recovery mechanism, and state persistence architecture before implementation; builder/tester/reviewer handle execution and validation.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775241928,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,351 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "b27a3feb4114d4b4e69fdbbb4dbcc2a8": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Checkpoint state corruption during partial writes or crash mid-action",
+          "Restore logic may fail to properly reconstruct agent context and file state",
+          "Performance degradation from frequent checkpoint writes during tight loops",
+          "Edge cases: restoring mid-test execution, partial file writes, incomplete error analysis",
+          "Complexity of maintaining checkpoint schema across agent updates"
+        ],
+        "implementation_hints": [
+          "Define checkpoint schema: iteration number, step number, timestamp, file diffs, test results, error context, agent state snapshot",
+          "Use atomic writes for all checkpoints (temp file → mv) to prevent corruption",
+          "Implement delta/incremental checkpointing to avoid duplicating full file state on every step",
+          "Add cryptographic hash validation on restore to detect corrupted checkpoints",
+          "Model checkpoint format on existing progress.md mechanism—reuse that pattern",
+          "Measure checkpoint write latency; profile if >100ms to avoid loop slowdown",
+          "Add comprehensive logging (timestamp, action type, checkpoint ID) for debugging restore failures",
+          "Integration test: mock a context exhaustion at step N/iteration M, verify full state recovery"
+        ]
+      },
+      "timestamp": 1775240749,
+      "ttl": 3600
+    },
+    "d6e89da64bbe7c4d458a5d8807916f9f": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1775240760,
+      "ttl": 1800
+    },
+    "b329b850833a4aef136f4def6b51ed81": {
+      "result": {
+        "estimated_cost_usd": 11.75,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 32500,
+        "likely_failure_stage": "test",
+        "confidence": 72,
+        "breakdown": {
+          "intake": {
+            "cost": 0.25,
+            "tokens": 2100
+          },
+          "plan": {
+            "cost": 1.40,
+            "tokens": 8300
+          },
+          "build_iter_1": {
+            "cost": 2.10,
+            "tokens": 4200
+          },
+          "build_iter_2": {
+            "cost": 1.95,
+            "tokens": 4100
+          },
+          "test_iter_1": {
+            "cost": 1.80,
+            "tokens": 3800
+          },
+          "test_iter_2": {
+            "cost": 1.50,
+            "tokens": 2500
+          },
+          "review": {
+            "cost": 1.35,
+            "tokens": 6000
+          },
+          "pr": {
+            "cost": 0.40,
+            "tokens": 1500
+          }
+        },
+        "rationale": "Complexity 7 with checkpoint state management edge cases (restore logic failures, partial writes, schema evolution). Standard template gates at plan/review/PR. Build loop likely to iterate 2-3 times debugging atomic write safety and hash validation. Test stage highest risk (edge case: mid-test restore). 75% success probability implies ~33% retry tax. Estimate 32.5k tokens from design reasoning (plan), multi-iteration debugging (build), comprehensive edge-case testing (test stage)."
+      },
+      "timestamp": 1775240772,
+      "ttl": 3600
+    },
+    "4f8532f36c2201d8dad8741ecf00fe05": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.91,
+        "secondary_domains": [
+          "infrastructure",
+          "reliability",
+          "performance"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires modifying critical build loop state management with atomic checkpoint/recovery semantics, file I/O coordination, and extensive integration testing. Risk of breaking loop restarts if state restoration is incorrect."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design",
+            "checkpoint-recovery-design"
+          ],
+          "build": [],
+          "review": [
+            "two-stage-review",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "observability",
+            "performance"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about what constitutes a 'meaningful action' worthy of checkpointing—is every file edit one, or only successful compilations? This shapes the checkpoint frequency and storage overhead.",
+          "systematic-debugging": "The build loop is complex infrastructure; previous checkpoint attempts may have failed silently or caused regressions—investigate root causes before extending the system.",
+          "architecture-design": "Fine-grained checkpointing changes the loop's recovery semantics fundamentally; an ADR will document the chosen strategy (full vs. incremental state, storage format, recovery guarantees) for future maintainers.",
+          "checkpoint-recovery-design": "Specialized guidance on state serialization, atomic writes, recovery ordering, and cost/latency trade-offs specific to multi-agent session restart scenarios.",
+          "two-stage-review": "Checkpoint/recovery logic is easy to break; requires Pass 1 (correctness: does recovered state match pre-crash state?) then Pass 2 (performance: does checkpointing slow the loop?).",
+          "security-audit": "Checkpoint files contain agent reasoning, file diffs, and test output; verify no sensitive data leaks, and ensure recovery cannot be exploited to skip validation checks.",
+          "testing-strategy": "The AC explicitly requires an integration test that triggers restart mid-iteration; this demands careful test setup (controlled context exhaustion) and measurement (verify '>50% wasted iteration reduction').",
+          "observability": "Checkpoint save/restore latency and success rates must be visible in logs and metrics; production rollout will reveal if checkpointing is actually improving loop efficiency or introducing bottlenecks.",
+          "performance": "Checkpointing after every file edit could add significant I/O overhead; must measure checkpoint write latency and adjust frequency if loop throughput degrades.",
+          "pr-quality": "This change affects the core loop behavior; the PR must explain what state is checkpointed, when, and how recovery restores it—reviewers need a clear mental model.",
+          "deploy-safety": "Rolling out loop changes requires canary deployment (enable for 10% of builds first); monitor checkpoint failure rates and loop restart success before full rollout.",
+          "validation-thoroughness": "Integration test passes ≠ real improvement; must measure iteration count before/after checkpointing on identical builds to prove '>50% reduction' in wasted work post-restart."
+        },
+        "generated_skills": [
+          {
+            "name": "checkpoint-recovery-design",
+            "reason": "Existing skills don't cover the specialized requirements of state serialization, atomic checkpoint writes, recovery ordering, and cost/latency trade-offs in multi-agent session restart scenarios.",
+            "content": "## Checkpoint & Recovery Design for Build Loops\n\n### State Serialization\n- **What to checkpoint**: Agent context (loop iteration count, recent commits, changed files), test results (pass/fail, error summaries), and reasoning state (what was tried, what failed)\n- **What NOT to checkpoint**: Full Claude session state (too large); rely on git history + progress.md for the big picture\n- **Format**: JSON for readability (jq-queryable) vs. binary for size—use JSON for now; compress if storage grows\n- **Storage location**: `.claude/pipeline-artifacts/checkpoints/<iteration>_<step>.json` for easy recovery ordering\n\n### Atomicity & Crash Safety\n- **Atomic writes**: Always write to temp file, then `mv` to final path (never direct append)\n- **Partial failure recovery**: If checkpoint write fails mid-iteration, the loop must gracefully degrade to last successful full-iteration checkpoint (not partial/corrupted state)\n- **Disk full**: Implement cleanup (keep last 5 checkpoints per iteration) to prevent storage exhaustion\n\n### Recovery Semantics\n- **On restart, find the most recent checkpoint** using `ls -tr` + `tail -1`\n- **Restore in order**: (1) git state from last committed checkpoint, (2) agent reasoning/context, (3) test results, (4) known failures (avoid retrying same fix)\n- **Skip recovered work**: Don't re-run tests that were checkpointed as PASSED; only re-run FAILED tests if fix was attempted\n- **Validation**: Checksum each checkpoint; skip if corrupted and fall back to previous\n\n### Performance Trade-offs\n- **Frequency**: Checkpoint after file edit (significant change), test run (outcome), and error analysis (new insight). Not after every line of thinking.\n- **Latency budget**: Checkpoint write should be <100ms; if jq serialization takes >100ms, consider async writes or compression\n- **Measured impact**: Log checkpoint write time; alert if checkpoint overhead exceeds 5% of loop iteration time\n\n### Integration Points\n1. **Loop harness** (`sw-loop.sh`): Inject checkpoint calls after EditFile, after test completion, after error summarization\n2. **Session restart** (`sw-session-restart.sh`): On restart, read most recent checkpoint and inject it into restart briefing\n3. **Progress.md**: Update to include \"Checkpoint N.M\" line so humans know where recovery happened\n4. **Convergence detector**: If loop is stuck, checkpoint frequency increases; if looping, clear old checkpoints to reclaim space\n\n### Testing Checklist\n- Checkpoint write succeeds and is parseable JSON\n- Recovery from checkpoint restores correct file state (git verify)\n- Recovered reasoning prevents duplicate work (grep for \"already tried\")\n- Corrupted checkpoint is skipped, fallback succeeds\n- Loop completes faster with checkpoint recovery than without (measure wall-clock time)\n- Disk space is bounded (old checkpoints cleaned up)"
+          }
+        ],
+        "review_focus": [
+          "Correctness of checkpoint serialization: does recovered state exactly match pre-crash state? (git diff verification)",
+          "Atomicity of writes: are checkpoint files ever left in a corrupted/partial state if the process crashes mid-write?",
+          "Recovery ordering: are dependencies between checkpoint components (git state, reasoning, test results) restored in the correct order?",
+          "Performance overhead: does checkpoint I/O degrade loop throughput measurably?",
+          "Integration correctness: does checkpoint injection into loop logic break existing tests or introduce race conditions?",
+          "Measured improvement: does the actual iteration count reduction on restart match or exceed the '>50% improvement' AC target?"
+        ],
+        "risk_areas": [
+          "Corrupted checkpoint files could cause loop restarts to fail or recover incorrect state, breaking the reliability improvement",
+          "Over-aggressive checkpoint frequency (every action) could slow the loop significantly, defeating the performance goal",
+          "Incomplete state serialization could omit critical reasoning/test results, causing recovered sessions to re-attempt already-failed fixes",
+          "Recovery logic bugs (wrong checkpoint ordering, missing dependencies) could cause infinite loops or incorrect behavior that only surfaces in production",
+          "Disk space exhaustion if old checkpoints aren't cleaned up, potentially stopping builds with 'disk full' errors"
+        ]
+      },
+      "timestamp": 1775240944,
+      "ttl": 3600
+    },
+    "02b91af64cc878959b3fe3c0b10e9fa0": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains detailed patterns for build loop iterations with state management (loop-state.md), multi-iteration recovery, and test-driven iteration completion. Directly relevant to designing fine-grained recovery mechanisms."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Documents failure in sw-cleanup.sh stale heartbeat detection and summary output, plus sed variable expansion issues. Relevant for understanding state tracking patterns and recovery hints needed in checkpointing."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 50,
+            "summary": "Establishes project conventions: Node.js with vitest, CommonJS imports, test pattern. Necessary context for planning implementation approach and test strategy."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Shows build-stage failures with JavaScript variable initialization issues (uninitialized before use, missing declarations). Informs checkpoint recovery strategy for maintaining variable state across iterations."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Confirms Node.js project type detected at bootstrap. Low-level context confirmation for planning stage alignment with existing detection mechanisms."
+          }
+        ]
+      },
+      "timestamp": 1775240961,
+      "ttl": 1800
+    },
+    "f698e6ef6dd8d6a2dcac602199b15f95": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Documents sw-cleanup.sh heartbeat detection, dry-run mode, and stale file tracking issues. Directly relevant to state checkpointing infrastructure and fine-grained recovery mechanisms that track agent state via heartbeat files."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Shows successful bug fix using 3-iteration loop pattern (iterations via loop harness). Provides evidence of multi-iteration loop strategies that are foundational to incremental checkpointing within build loops."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Shows variable initialization and scope issues (100% fix effectiveness rate). Relevant because checkpoint state recovery must initialize variables correctly when resuming from saved state."
+          }
+        ]
+      },
+      "timestamp": 1775241553,
+      "ttl": 1800
+    },
+    "8bd2ed77c0774565c001fb650cc597e2": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 95,
+            "summary": "Shows loop iteration patterns with explicit state checkpoint files (.claude/loop-state.md), loop logs, and recovery across iterations—directly demonstrates incremental state tracking and fine-grained recovery in build loops"
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 78,
+            "summary": "Documents state detection and recovery patterns (sw-cleanup.sh, stale heartbeat detection, dry-run mode)—relevant to checkpoint validation and recovery mechanism design"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 52,
+            "summary": "Establishes Node.js project conventions (test runner, package manager, source layout) needed to design build loop checkpointing for this codebase"
+          },
+          {
+            "file": "failures.json (third entry with build-stage variable failures)",
+            "relevance": 45,
+            "summary": "Shows variable initialization and scope failures in build stage—informs checkpoint design around state preservation and initialization guarantees"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 38,
+            "summary": "Generic architecture rules framework—provides foundation for documenting checkpoint layer rules and fine-grained recovery boundaries"
+          }
+        ]
+      },
+      "timestamp": 1775241602,
+      "ttl": 1800
+    },
+    "1ce87baa3f75e7fb878a7a64e84a36bc": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Direct build loop execution patterns: shows 3-iteration loop cycles with post-audit cleanup, autonomous progress phases, and test strategies (npm test). Demonstrates successful loop iteration patterns relevant to checkpointing state between iterations."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Contains test stage failures related to stale state detection (heartbeat files), sed variable expansion issues, and deploy regression detection. Relevant to recovery mechanisms and state cleanup concerns in incremental checkpointing."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 48,
+            "summary": "Shows completed 3-iteration bug fix pattern with standard template and npm test strategy, though lacks detailed approach and file change tracking. Relevant as a secondary reference for multi-iteration success patterns."
+          }
+        ]
+      },
+      "timestamp": 1775241614,
+      "ttl": 1800
+    },
+    "28c2850def803274ee5c73107ee60eef": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 92,
+            "summary": "Captures multi-iteration build loop patterns with state persistence (.claude/loop-state.md), recovery from failed iterations, and checkpoint-like behavior across 3+ iterations. Directly applicable to incremental state checkpointing implementation."
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 78,
+            "summary": "Documents state detection and recovery challenges (stale heartbeat files, dry-run mode, summary output), directly relevant to fine-grained recovery mechanisms and state validation in checkpoint systems."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 65,
+            "summary": "Project conventions including test strategy (vitest, npm test), source structure (src/), and import style provide foundational context for implementing build stage features like checkpointing."
+          },
+          {
+            "file": "failures.json (second entry)",
+            "relevance": 48,
+            "summary": "Variable initialization and undefined reference errors in build stage demonstrate common pitfalls that could affect checkpoint state management and recovery logic."
+          },
+          {
+            "file": "success-patterns.json (second entry)",
+            "relevance": 42,
+            "summary": "Shows bug-fix iteration pattern with npm test strategy and 3-iteration complexity, though sparse details. Demonstrates iteration-based recovery approach applicable to checkpoint recovery phases."
+          }
+        ]
+      },
+      "timestamp": 1775241907,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains 2 past successful builds showing iteration counts (3 each), test strategy (npm test), file patterns (.claude/loop-logs/*.log scripts/lib/*.sh), and approaches for bug fixes and features. Directly guides build stage strategy and expectations."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Project configuration (vitest test runner, npm package manager, src/ source dir, *.test.js pattern, commonjs imports) is essential for build stage setup and test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "3 failure patterns from previous test runs (sed variable expansion, sw-cleanup.sh dry-run mode, detection issues). Helps avoid repeating test failures during this build stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Contains only empty baselines object. No actual baseline metrics yet to guide build decisions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array. No prior architectural or implementation decisions captured to inform the build stage."
+          }
+        ]
+      },
+      "timestamp": 1775241917,
+      "ttl": 1800
     }
   }
 }
