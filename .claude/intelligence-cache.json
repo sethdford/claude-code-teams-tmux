@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "devops",
+        "secondary_roles": [
+          "architect",
+          "builder",
+          "tester"
+        ],
+        "confidence": 0.82,
+        "reasoning": "Reliability dashboard + auto-rollback is fundamentally an operational concern requiring DevOps expertise in monitoring/deployment, with architect for system design, builder for implementation, and tester for validating recovery scenarios.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775242013,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,349 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "c1d5d7db916d905a16cb34914b097409": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 70,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Config rollback oscillation if threshold too sensitive or logic flawed",
+          "Metrics collection overhead slowing daemon if not optimized",
+          "False negatives in rollback trigger with 5-run window missing gradual degradation",
+          "Dashboard staleness from real-time aggregation bottleneck",
+          "Database schema migration complexity and backward compatibility",
+          "P50/P95 percentile accuracy with small sample sizes"
+        ],
+        "implementation_hints": [
+          "Extend sw-db.sh with stage_metrics table and SQL aggregation functions first",
+          "Add metric collection hooks to existing pipeline stage tracking (already instrumented)",
+          "Use SQLite window functions for efficient percentile calculation",
+          "Implement config versioning keeping last 5 known-good states, not just one",
+          "Add dry-run mode to validate rollback before applying in production",
+          "Use exponential backoff in rollback detection to avoid thrashing on noise",
+          "Async dashboard updates via event bus to prevent daemon blocking",
+          "Create synthetic degradation test suite (inject failures, validate rollback triggers correctly)",
+          "Add telemetry to track rollback effectiveness and false positives"
+        ]
+      },
+      "timestamp": 1775240726,
+      "ttl": 3600
+    },
+    "f0d750451a24bf57975df9b82bc08f2a": {
+      "result": {
+        "estimated_iterations": 20
+      },
+      "timestamp": 1775240738,
+      "ttl": 1800
+    },
+    "3fcaeca294806df5ca972183bbea3b9e": {
+      "result": {
+        "estimated_cost_usd": 0.32,
+        "estimated_iterations": 6,
+        "estimated_tokens": 105000,
+        "likely_failure_stage": "test",
+        "confidence": 72,
+        "breakdown": {
+          "cost_by_stage": {
+            "intake": 0.01,
+            "plan": 0.04,
+            "design": 0.06,
+            "build": 0.12,
+            "test": 0.05,
+            "review": 0.03,
+            "compound_quality": 0.01
+          },
+          "token_distribution": {
+            "plan": 8000,
+            "design": 12000,
+            "build_iterations": 42000,
+            "test": 18000,
+            "review": 12000,
+            "quality": 8000,
+            "infrastructure_testing": 5000
+          },
+          "risk_factors": {
+            "high_risk_multiplier": 1.15,
+            "rollback_complexity_penalty": 1.20,
+            "metrics_collection_overhead": 1.10,
+            "database_migration_risk": 1.12
+          }
+        },
+        "notes": "Infrastructure work with self-optimization adds 20-25% complexity tax. Database schema changes and metric aggregation require careful validation. Synthetic test suite development adds 2-3 extra iterations. 70% success rate implies ~1.4x cost on first attempt."
+      },
+      "timestamp": 1775240751,
+      "ttl": 3600
+    },
+    "07233a7efee3f2a132d44080a51f0726": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "database",
+          "observability",
+          "reliability",
+          "automation"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Multi-system integration (database metrics, daemon spawn logic, CLI, dashboard) with safety-critical rollback automation; well-scoped but requires careful metric aggregation, threshold detection, and rollback state management"
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "api-design"
+          ],
+          "build": [
+            "performance"
+          ],
+          "review": [
+            "two-stage-review",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about what constitutes a >10% degradation, when to measure (per run vs rolling window), and whether the last-known-good config could itself be stale or corrupted",
+          "architecture-design": "Document the metric flow (collection → aggregation → daemon decision) and design how rollback integrates into spawn logic without blocking worker availability",
+          "data-pipeline": "Design efficient metric aggregation queries to compute per-stage success_rate and percentiles (p50, p95) over rolling 5-run windows without full table scans",
+          "api-design": "Design the `shipwright stage-health` CLI interface and dashboard REST endpoints to expose health trends in actionable forms for operators",
+          "performance": "Ensure metric lookups and aggregations don't increase daemon spawn latency, and optimize database indices for health queries",
+          "two-stage-review": "Pass 1: Verify metric accuracy (success_rate calculation, percentile logic) and aggregation window correctness; Pass 2: Scrutinize rollback trigger conditions to prevent oscillation or false positives",
+          "security-audit": "Validate that rollback logic can't be exploited to revert legitimate improvements, ensure config atomicity prevents partial rollbacks from leaving corrupt state, and audit access controls on config restore",
+          "adversarial-quality": "Test failure modes: transient metric spikes triggering false rollbacks, rollback itself failing and triggering another rollback, last-known-good config corruption, stale metrics leading to wrong decisions",
+          "testing-strategy": "Build comprehensive test suites for: metric insertion and aggregation correctness, rollback trigger logic at 5-10% thresholds, daemon integration without blocking spawn, and CLI output validation",
+          "pr-quality": "Structure PR to isolate database schema changes, rollback detection logic, daemon integration, and dashboard features so each component can be independently verified",
+          "deploy-safety": "Plan phased rollout: enable metric tracking first, validate data collection matches reality, stage test rollbacks on staging environment, then enable automatic rollback in production with alerting",
+          "validation-thoroughness": "Verify collected metrics match actual pipeline behavior (spot-check success_rate vs real failures), test rollback actually restores performance, validate dashboard trends against raw database",
+          "observability": "Monitor the monitoring system itself: track metric collection latency, rollback frequency and causes, detect rollback oscillation patterns, and alert if dashboard query performance degrades"
+        },
+        "generated_skills": [
+          {
+            "name": "config-rollback-safety",
+            "reason": "Automatic rollback of infrastructure config is safety-critical and requires specific patterns for threshold detection, state management, cooldown logic, partial rollback scenarios, and failure cascades that no existing skill addresses",
+            "content": "## Config Rollback Safety Patterns\n\nAutomatic rollback systems prevent operators from unknowingly deploying configs that degrade reliability. But rollback itself can fail, creating cascading problems. Use these patterns to build safe, debuggable rollback logic.\n\n### Threshold & Detection\n- **Measure relative change, not absolute value**: Trigger on >10% *relative drop* in success_rate (e.g., 99% → 89%, or 50% → 45% both trigger), not a fixed threshold. Avoids false positives in naturally low-success stages.\n- **Rolling window aggregation**: Average metrics over N recent runs (e.g., 5) to filter single transient spikes. Store both current and previous window to compute the delta.\n- **Cooldown period**: After rollback fires, disable rollback for 2+ hours to prevent thrashing if the new config needs time to stabilize.\n- **Pre-alarm threshold**: Log warnings at 5% degradation so operators notice drift before automatic action.\n\n### Last-Known-Good State\n- **Atomic snapshots**: When creating a candidate for rollback, capture: (config content, timestamp, current success_rate, metric samples from this period). Store atomically.\n- **Prevent ping-pong**: Track which configs were rolled back and when; add them to a 24-hour blocklist to avoid re-enabling them immediately.\n- **Lineage audit log**: Keep a 30-day immutable log of all config changes and rollbacks with reasons.\n\n### Rollback Execution\n- **File atomicity**: Write new config to temp file, validate schema, then atomic rename to active location. Never partial writes.\n- **Partial rollback support**: If only one stage (e.g., `build`) is degraded, roll back only that stage's config subset, not the entire pipeline config. Requires modular config design.\n- **Verify-after wait**: After rollback, don't assume immediate recovery. Wait 5 runs and re-check success_rate before declaring rollback successful.\n\n### Failure Recovery\n- **Bounded rollback depth**: Allow rollback of rollback only once (revert to the previous known-good). Prevents infinite recursion if rollback itself is broken.\n- **Manual override**: Provide `--disable-auto-rollback` flag for operators to investigate manually when system is misbehaving.\n- **Rollback failure alerting**: If rollback is triggered but fails (e.g., last-known-good is corrupted), immediately alert and fall back to read-only mode.\n\n### Validation & Sanity Checks\n- **Config schema validation**: Before restoring a rolled-back config, validate it against the schema (not corrupted, all required fields present).\n- **Metrics sanity check**: After rollback, verify that new metric samples follow the same statistical pattern as the last-good period (detect data anomalies or collection failures).\n- **Staging pre-validation**: Test the entire rollback mechanism (detection, execution, recovery) on staging before enabling in production.\n\n### Observability\n- **Structured rollback events**: Log to machine-readable format: trigger reason, config version diff, before/after success_rate, latency of rollback execution, operator notified.\n- **Dashboard visualization**: Plot success_rate trend line with rollback markers (vertical lines with reason), and show detection threshold bands.\n- **Oscillation detection**: Alert if 3+ rollbacks occur within 1 hour (system thrashing). Page on-call for manual investigation."
+          }
+        ],
+        "review_focus": [
+          "Metric aggregation correctness—verify success_rate and percentile calculations match real pipeline behavior; spot-check against raw logs",
+          "Rollback trigger logic—ensure the >10% relative-change detection is correct and won't trigger on false positives (e.g., stages naturally have lower success rates)",
+          "Daemon integration safety—confirm rollback check doesn't block spawn on each poll cycle and gracefully handles missing/stale metrics",
+          "Config state atomicity—validate that both full and partial rollback operations are atomic and can't leave corrupted state",
+          "Last-known-good validity—ensure the stored last-good config is schema-valid and can actually be restored without errors",
+          "Database schema—verify indices support efficient metric aggregation queries; confirm locking strategy won't deadlock daemon polls"
+        ],
+        "risk_areas": [
+          "Rollback oscillation: if rollback itself doesn't improve metrics immediately, could trigger another rollback within the cooldown period",
+          "Metric staleness: if metric collection lags behind actual impact, rollback decision could be based on data from before the config change took effect",
+          "Metric accuracy: miscalculated success_rate or percentiles could trigger false positives, eroding confidence in the system",
+          "Last-known-good corruption: if the stored rollback target config becomes corrupted, restore could make things worse than the bad config",
+          "Daemon spawn blocking: rollback check in spawn logic must be non-blocking; any latency multiplied across many workers could slow all deployments",
+          "Partial rollback complexity: rolling back individual stage configs while keeping others introduces subtle coupling and state management complexity"
+        ]
+      },
+      "timestamp": 1775240933,
+      "ttl": 3600
+    },
+    "119b71a5994b119ad7f19304451ab099": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Contains test stage failures including sw-cleanup (stale heartbeat detection), template validation errors, and deploy regression detection — directly applicable to planning a reliability dashboard and config rollback mechanism"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows past feature delivery patterns with complexity scoring (60-65), iteration counts (3-4), and duration metrics — useful for estimating scope and approach for the reliability dashboard feature"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 68,
+            "summary": "Captures project conventions: vitest test runner, npm package manager, CommonJS imports, src/ directory structure — essential for planning implementation details and testing strategy"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Documents common build-stage failures (uninitialized variables, undefined references) with 100% fix effectiveness — informs planning of error handling and rollback validation in the dashboard"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 35,
+            "summary": "Contains architecture rules and enforcement patterns — provides context for designing the dashboard to respect existing system constraints and dependency boundaries"
+          }
+        ]
+      },
+      "timestamp": 1775240951,
+      "ttl": 1800
+    },
+    "85b183615a57c7f4cbe3ba4afc0f83c0": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 85,
+            "summary": "Contains 3 specific test stage failures including sw-cleanup.sh stale heartbeat detection and sed variable expansion issues. These represent actual validation failures in the Shipwright repo test suite, directly informative for understanding what causes plan validation to reject."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Shows 2 successful patterns with 60-65 complexity using standard template and 3 iterations. Provides evidence of what successful plans look like in this repo for similar-complexity features, useful for comparison against rejected plan approach."
+          },
+          {
+            "file": "failures.json (second/fifth entry)",
+            "relevance": 70,
+            "summary": "Documents build stage failures for undefined variables with 100% and 66% fix effectiveness rates. Shows common error patterns that could be caught during plan validation, with proven mitigation strategies."
+          }
+        ]
+      },
+      "timestamp": 1775241734,
+      "ttl": 1800
+    },
+    "72d3cb0367233a72479cc170e31b4e5e": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Contains explicit architecture rules that directly inform design patterns for reliability dashboard and constraint enforcement"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 80,
+            "summary": "Captures project conventions (Node/JS/vitest/npm/commonjs) essential for designing architecture patterns compatible with existing codebase"
+          },
+          {
+            "file": "failures.json (variable initialization patterns)",
+            "relevance": 75,
+            "summary": "Documents recurring failure patterns (uninitialized variables, undefined references, missing declarations) that inform reliability design and config validation"
+          },
+          {
+            "file": "success-patterns.json (2 patterns: bug fix, auth feature)",
+            "relevance": 65,
+            "summary": "Shows successful iteration patterns, file change patterns, and test strategies that can inform reliable dashboard architecture and rollback mechanisms"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh, sed, deploy regression)",
+            "relevance": 55,
+            "summary": "Specific test failures from Shipwright codebase reveal failure modes in cleanup/state detection logic relevant to config rollback design"
+          }
+        ]
+      },
+      "timestamp": 1775241777,
+      "ttl": 1800
+    },
+    "46a197baa1f354309d95f12fc75c9cc3": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Contains stage-specific failure patterns (test, deploy) with root causes and fixes. Most relevant to reliability dashboard monitoring and identifying when config rollback should trigger, though entries are not specific to dashboard design."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "Shows successful multi-iteration completion patterns and test strategies. Relevant for understanding how to structure reliable pipelines, though not directly addressing dashboard design or rollback mechanics."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 20,
+            "summary": "Contains generic project structure (Node.js conventions, test patterns). Minimal relevance—applicable to implementation details but not to reliability dashboard design or config rollback anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1775241793,
+      "ttl": 1800
+    },
+    "125b0aff5b6b47fbd912df4d0ef305e2": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (fifth entry)",
+            "relevance": 95,
+            "summary": "JS-specific build failures with 100% fix effectiveness rate for 'cannot read property of undefined' and 66% for missing variable declarations. Directly applicable to catch issues during build stage for JS dashboard project."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 90,
+            "summary": "Project structure metadata: Node.js, vitest test runner, npm package manager, CommonJS imports. Essential context for building and testing this feature in the correct environment."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 85,
+            "summary": "Recent success pattern showing 3-iteration build, npm test strategy, and files changed patterns. Provides template for expected build cycle and test execution for feature work."
+          },
+          {
+            "file": "failures.json (second entry)",
+            "relevance": 80,
+            "summary": "JavaScript build-stage failures: undefined property access (100% fix rate) and ReferenceError issues (66% fix rate). Gives specific patterns to watch for during dashboard development."
+          },
+          {
+            "file": "failures.json (third entry)",
+            "relevance": 75,
+            "summary": "ENOENT/missing dependency installation failure with 95% fix effectiveness. Critical for reliability—missing npm install is a common build blocker that should be automated."
+          }
+        ]
+      },
+      "timestamp": 1775241992,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Essential project metadata for build stage: test runner (vitest), package manager (npm), language (JavaScript), test file pattern (*.test.js), and source directory structure. Directly needed to set up and execute builds."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two previous successful builds show proven test strategy (npm test), iteration counts (3), typical durations (45-150s), and file change patterns. Provides baseline expectations and build configurations that worked."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Three test-stage failures document root causes in shell script testing (variable expansion, dry-run mode detection). Relevant for anticipating similar test failures and avoiding regression patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Contains only empty baselines object; provides no actionable metrics or performance data for the build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array with no recorded architectural or strategic decisions; not relevant to immediate build execution."
+          }
+        ]
+      },
+      "timestamp": 1775242003,
+      "ttl": 1800
     }
   }
 }

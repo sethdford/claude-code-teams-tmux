@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
