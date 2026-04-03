@@ -47,6 +47,10 @@ fi
 # shellcheck source=lib/memory-effectiveness.sh
 [[ -f "$SCRIPT_DIR/lib/memory-effectiveness.sh" ]] && source "$SCRIPT_DIR/lib/memory-effectiveness.sh"
 
+# ─── Success Pattern Library ───────────────────────────────────────────────
+# shellcheck source=lib/success-patterns.sh
+[[ -f "$SCRIPT_DIR/lib/success-patterns.sh" ]] && source "$SCRIPT_DIR/lib/success-patterns.sh"
+
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
@@ -262,10 +266,11 @@ ensure_memory_dir() {
     mkdir -p "$dir"
 
     # Initialize empty JSON files if they don't exist
-    [[ -f "$dir/patterns.json" ]]  || echo '{}' > "$dir/patterns.json"
-    [[ -f "$dir/failures.json" ]]  || echo '{"failures":[]}' > "$dir/failures.json"
-    [[ -f "$dir/decisions.json" ]] || echo '{"decisions":[]}' > "$dir/decisions.json"
-    [[ -f "$dir/metrics.json" ]]   || echo '{"baselines":{}}' > "$dir/metrics.json"
+    [[ -f "$dir/patterns.json" ]]         || echo '{}' > "$dir/patterns.json"
+    [[ -f "$dir/failures.json" ]]         || echo '{"failures":[]}' > "$dir/failures.json"
+    [[ -f "$dir/decisions.json" ]]        || echo '{"decisions":[]}' > "$dir/decisions.json"
+    [[ -f "$dir/metrics.json" ]]          || echo '{"baselines":{}}' > "$dir/metrics.json"
+    [[ -f "$dir/success-patterns.json" ]] || echo '{"patterns":[]}' > "$dir/success-patterns.json"
 
     # Initialize global memory if missing
     mkdir -p "$MEMORY_ROOT"
@@ -675,7 +680,16 @@ memory_finalize_pipeline() {
     # Step 2: Process error log into failures.json
     memory_capture_failure_from_log "$artifacts_dir" 2>/dev/null || true
 
-    # Step 3: Aggregate high-frequency patterns to global memory
+    # Step 3: Capture success patterns (only on successful completion)
+    local pipeline_status
+    pipeline_status=$(sed -n 's/^status: *//p' "$state_file" | head -1 || echo "")
+    if [[ "$pipeline_status" == "complete" ]]; then
+        if type success_pattern_capture >/dev/null 2>&1; then
+            success_pattern_capture "$state_file" "$artifacts_dir" "$(repo_memory_dir)" 2>/dev/null || true
+        fi
+    fi
+
+    # Step 4: Aggregate high-frequency patterns to global memory
     _memory_aggregate_global 2>/dev/null || true
 }
 
@@ -1096,6 +1110,23 @@ memory_inject_context() {
                 local test_runner
                 test_runner=$(jq -r '.project.test_runner // ""' "$mem_dir/patterns.json" 2>/dev/null)
                 [[ -n "$test_runner" ]] && echo "- Test runner: ${test_runner}"
+            fi
+
+            echo ""
+            echo "## Success Patterns for Similar Issues"
+            if type success_pattern_inject >/dev/null 2>&1; then
+                local sp_goal="${CURRENT_GOAL:-}"
+                local sp_type="${ISSUE_TYPE:-feature}"
+                local sp_complexity="${ISSUE_COMPLEXITY:-50}"
+                local sp_injection
+                sp_injection=$(success_pattern_inject "$sp_goal" "$sp_type" "$sp_complexity" "$mem_dir" 2>/dev/null || echo "")
+                if [[ -n "$sp_injection" ]]; then
+                    echo "$sp_injection"
+                else
+                    echo "- No success patterns captured yet for similar issues."
+                fi
+            else
+                echo "- Success pattern module not loaded."
             fi
             ;;
 
