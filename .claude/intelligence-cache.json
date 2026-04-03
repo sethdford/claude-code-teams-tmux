@@ -647,6 +647,172 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "9cecfbb0678f9202257512c802aeb82a": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 70,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Integration complexity between 5+ independent modules with varying interfaces",
+          "Data consistency and state management across sequential pipeline stages",
+          "Performance overhead from orchestrating multiple synchronous operations",
+          "Backward compatibility with existing intelligence module consumers",
+          "Establishing reliable baseline metrics for success measurement"
+        ],
+        "implementation_hints": [
+          "Start with data flow mapping: define unified context structure passed between stages",
+          "Implement orchestration as a state machine in sw-intelligence.sh with clear transitions",
+          "Create adapter layer for each existing module to standardize input/output contracts",
+          "Add comprehensive logging/tracing at each stage for debugging integration issues",
+          "Establish baseline performance/success metrics before refactoring existing modules",
+          "Implement incremental rollout: integrate one module at a time with integration tests",
+          "Consider message queue/pub-sub pattern if synchronous chaining becomes bottleneck"
+        ]
+      },
+      "timestamp": 1775240695,
+      "ttl": 3600
+    },
+    "a23f3803f4dd334c6c3bf4bbb810e2b1": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1775240703,
+      "ttl": 1800
+    },
+    "8cf01d6b9d7ef9858a8f44a95552e630": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 5,
+        "estimated_tokens": 520000,
+        "likely_failure_stage": "compound_quality",
+        "confidence": 72
+      },
+      "timestamp": 1775240710,
+      "ttl": 3600
+    },
+    "f41ddef6e8b55e847bdf9bffc2f06c95": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "infrastructure",
+          "system-integration",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 8,
+          "reasoning": "Full-stack orchestration of 5+ independent intelligence systems with data flow dependencies, unified reporting, and measured outcomes. Requires careful design of data contracts and validation that improvements actually materialize."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "systematic-debugging"
+          ],
+          "review": [
+            "two-stage-review",
+            "pr-quality",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability",
+            "performance"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about orchestration sequencing (is score→compose→predict→route always the right order?) and failure modes (what if components disagree on complexity?) before committing to architecture.",
+          "architecture-design": "Document the orchestration contract, data flow diagram, and decision tree as an ADR so future changes to individual components don't break the system.",
+          "data-pipeline": "Design enrichment semantics: what data does scorer emit that composer consumes? How do you pass predictor insights to router? This is fundamentally a data engineering problem.",
+          "systematic-debugging": "Prior intelligence components exist; learn from any issues encountered during their development to avoid repeating mistakes in the orchestration layer.",
+          "two-stage-review": "Pass 1 reviews orchestration design and data contracts; Pass 2 validates implementation correctness and that enrichment actually flows through the pipeline.",
+          "pr-quality": "Explain the orchestration sequence visually and in prose so reviewers quickly understand why each component feeds into the next.",
+          "adversarial-quality": "Find failure modes: scorer timeouts, composer selecting wrong template, predictor anomalies, router cost miscalculations. What breaks the pipeline?",
+          "validation-thoroughness": "Acceptance criteria requires measured improvement in success rate and cost vs baseline—go beyond unit tests; run A/B comparison on real pipeline runs.",
+          "observability": "Orchestrator needs to emit rich signals: scorer decision + confidence, composer rationale, predictor score, router model choice, and final unified report. Critical for diagnosing why pipeline chose a certain path.",
+          "performance": "Validate cost efficiency gains per acceptance criteria—measure token usage before/after orchestration and confirm it reduces costs per successful run.",
+          "deploy-safety": "Orchestrator change is not backward compatible if old pipelines send unrecognized data; validate forward/backward compatibility and feature flag the orchestration rollout."
+        },
+        "generated_skills": [
+          {
+            "name": "orchestration-integration-testing",
+            "reason": "No existing skill covers testing orchestration layers where data flows between multiple dependent systems. This issue requires validating data enrichment, error propagation, and unified reporting—patterns not covered by generic testing or validation skills.",
+            "content": "## Orchestration Integration Testing\n\nOrchestration layers couple previously independent systems through data flow. Testing requires a different mindset than component unit tests.\n\n### Test Structure\n\n**Happy Path**: Trace a mock pipeline start through all 5 stages (score → compose → predict → route → monitor). Assert each stage receives enriched context from the prior stage. Example: verify that composer receives scorer's complexity assessment in its input payload.\n\n**Data Enrichment**: For each stage, write a test that \"removes\" its enrichment and asserts downstream stages degrade predictably. If predictor receives no risk score, does router still function? If composer receives no complexity, does it default correctly?\n\n**Failure Isolation**: One component fails (e.g., predictor times out). Assert:\n- Orchestrator detects the failure (checkpoint)\n- Gracefully degrades: downstream stages skip or use cached data\n- Pipeline continues (not cascading failure)\n- Unified report documents which stages were unavailable\n\n**Unified Report Validation**: Assert the final intelligence report contains contributions from all active stages. Use a JSON schema validator. Check that metrics aggregate correctly (total cost estimate = router estimate + baseline, not duplication).\n\n**Measurement Baseline**: Before orchestration kicks in, record pipeline outcomes (success rate, cost, MTTR). After orchestration, A/B test on 20+ runs and assert statistical improvement. Use `shipwright memory show` to check baseline was captured.\n\n### Patterns\n\n- **Mock individual stages** but wire real data contracts between them (use actual JSON payloads, not mock objects).\n- **Use scenario data** (real pipeline complexity distributions, observed risk scores) to drive tests.\n- **Test timing**: Does orchestrator add < 5s latency per pipeline start? Measure P95 time for full orchestration sequence.\n- **Test cardinality**: What happens with 100+ pipelines running orchestration simultaneously? Shared cache contention?\n\n### Fail-Fast Checks\n\n- Unified report is not empty and contains >= 1 enrichment from orchestration (else orchestrator is a no-op)\n- Data contracts are validated (e.g., scorer output schema matches composer input schema)\n- Backward compatibility: old pipelines can run without orchestrator (graceful disable)\n"
+          }
+        ],
+        "review_focus": [
+          "Data contract validation between scorer → composer → predictor → router: does each stage's output match the next stage's input schema?",
+          "Unified intelligence report structure: how is it aggregated? Are metrics deduplicated (e.g., cost estimate not counted twice)?",
+          "Orchestration sequencing correctness: is score → compose → predict → route → monitor actually optimal, or should any stages run in parallel?",
+          "Error handling: if one stage fails (e.g., predictor times out), does orchestration gracefully degrade or cascade-fail?",
+          "Measurement and A/B testing: how was baseline established? Is improvement statistically significant (20+ runs, p < 0.05)?"
+        ],
+        "risk_areas": [
+          "Data enrichment is not actually flowing: orchestrator runs all stages but downstream stages don't consume upstream output, making orchestration a no-op.",
+          "Tight coupling: adding a new intelligence stage later requires changing orchestrator, not just plugging in a new component.",
+          "Cost regression: orchestration adds latency/compute overhead that offsets gains from better model routing.",
+          "Measurement bias: improvement might be an artifact of sample selection, not orchestration quality (ensure blind comparison).",
+          "Circular data dependency: if router emits cost data that predictor consumes, and predictor influences router, could create unstable feedback loops."
+        ]
+      },
+      "timestamp": 1775240877,
+      "ttl": 3600
+    },
+    "d00d2f9bf35a9ce876ac6834d77e6320": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains real delivery metrics from completed features: iterations needed (3-4), duration (45-150s), files changed patterns, test strategies (npm test), template used (standard), and cost tracking. Directly informs how to estimate and plan the intelligence layer feature complexity, iteration strategy, and testing approach."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Defines project conventions: source_dir=src/, test_pattern=*.test.js, commonjs imports, vitest test runner, npm package manager. Critical for planning the intelligence layer implementation to align with existing patterns and established development practices."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Documents specific shell script test failures (sw-cleanup.sh heartbeat detection, sed variable expansion issues) and their root causes. Relevant to avoid similar pitfalls when implementing and testing the intelligence layer scripts."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 70,
+            "summary": "Contains architecture rules (rule1, rule2, rule3) that must be enforced. Planning the full-stack integration requires understanding existing architectural constraints and boundaries."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Captures common JavaScript build failures (undefined variables, missing declarations) with 100% fix effectiveness. Helps plan defensive coding practices and error handling for the intelligence layer implementation."
+          }
+        ]
+      },
+      "timestamp": 1775240894,
+      "ttl": 1800
     }
   }
 }
