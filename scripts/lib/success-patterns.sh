@@ -124,16 +124,14 @@ success_pattern_capture() {
     fi
 
     # Get duration from state if available
-    local duration_s=0
-    if sed -n 's/^duration_s: *//p' "$state_file" | head -1 &>/dev/null; then
-        duration_s=$(sed -n 's/^duration_s: *//p' "$state_file" | head -1 || echo "0")
-    fi
+    local duration_s
+    duration_s=$(sed -n 's/^duration_s: *//p' "$state_file" | head -1 || echo "0")
+    [[ -z "$duration_s" ]] && duration_s="0"
 
     # Get cost from state if available
-    local cost_usd="0"
-    if sed -n 's/^cost_usd: *//p' "$state_file" | head -1 &>/dev/null; then
-        cost_usd=$(sed -n 's/^cost_usd: *//p' "$state_file" | head -1 || echo "0")
-    fi
+    local cost_usd
+    cost_usd=$(sed -n 's/^cost_usd: *//p' "$state_file" | head -1 || echo "0")
+    [[ -z "$cost_usd" ]] && cost_usd="0"
 
     # Build approach from artifacts - collect recent loop iterations
     local approach=""
