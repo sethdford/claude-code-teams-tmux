@@ -4,35 +4,43 @@
       "result": {
         "results": [
           {
-            "file": "metrics.json",
-            "relevance": 85,
-            "summary": "Contains baseline metrics for build duration (8506s) and test duration (1365s) from previous iteration. Directly applicable for understanding performance targets and optimization opportunities in the current build stage."
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Directly relevant: contains 10+ failure patterns from previous pipeline runs including mock claude artifacts, jq parse errors, fork resource exhaustion, and test stage failures. Critical for understanding what may break during current build execution."
           },
           {
-            "file": "failures.json",
-            "relevance": 72,
-            "summary": "Documents 11 failure patterns from recent test runs, with root causes and fixes. Most relevant: mock claude binary issues with artifact writing (plan.md, review.md) and jq parse errors from invalid JSON. These patterns will likely recur if test execution optimization introduces changes to artifact handling or stage output."
+            "file": "metrics.json",
+            "relevance": 85,
+            "summary": "Provides baseline metrics for build duration (8506s), test duration (1365s), iteration count, and cost. Essential for detecting anomalies and understanding expected performance in current build."
           },
           {
             "file": "patterns.json",
-            "relevance": 48,
-            "summary": "Project conventions (Node.js, vitest, npm, commonjs) provide context for what the build stage needs to support and test. Less critical than metrics/failures but useful for understanding the build target environment."
+            "relevance": 68,
+            "summary": "Describes project structure (Node/vitest/npm/CommonJS). Moderately relevant as it informs how the build will execute and what test commands to expect."
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Empty decision log. No captured decisions relevant to build stage context."
+            "summary": "Empty object; contains no actionable information for build stage."
           }
         ]
       },
-      "timestamp": 1775326765,
+      "timestamp": 1775329399,
       "ttl": 1800
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.95,
+        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1775326858,
+      "timestamp": 1775316059,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -263,7 +271,7 @@
           }
         }
       ],
-      "timestamp": 1775326594,
+      "timestamp": 1775315648,
       "ttl": 1800
     },
     "fdbb7bc340414cf938cecd4b790fa9e2": {
@@ -511,30 +519,9 @@
     },
     "11ffba2b88316a6c59084d13f4733627": {
       "result": {
-        "results": [
-          {
-            "file": "metrics.json",
-            "relevance": 95,
-            "summary": "Directly tracks build_duration_s and test_duration_s, essential for understanding build stage performance baselines and optimization opportunities"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 75,
-            "summary": "Records previous build failures to help prevent regression and identify common build issues, even though currently empty"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 50,
-            "summary": "May contain past build-related architectural decisions that could inform current build stage approach, though currently empty"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 40,
-            "summary": "Would identify recurring build patterns for optimization strategy, though currently empty"
-          }
-        ]
+        "raw_response": "Mock claude: unrecognized prompt context\nPrompt first 100 chars: "
       },
-      "timestamp": 1772897205,
+      "timestamp": 1775313359,
       "ttl": 1800
     },
     "efc27fd08f5baa0fe3a75dc8b3b9f177": {
@@ -648,849 +635,740 @@
       "timestamp": 1772936833,
       "ttl": 3600
     },
-    "34fdbc0693cc860c23a531f79a009bc3": {
+    "a9a94e94f905582be50cb3cf446a19a2": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 95,
+        "recommended_template": "fast",
+        "issue_type": "frontend",
+        "key_risks": [
+          "version string location consistency",
+          "version undefined gracefully"
+        ],
+        "implementation_hints": [
+          "read VERSION variable from sw-hello.sh header",
+          "append version to existing hello message output",
+          "verify version matches package.json for consistency",
+          "test command displays correctly"
+        ]
+      },
+      "timestamp": 1775305204,
+      "ttl": 3600
+    },
+    "5c2142d59405c490de28e903464010e1": {
       "result": {
         "complexity": 7,
         "risk_level": "medium",
         "success_probability": 78,
         "recommended_template": "standard",
-        "issue_type": "testing",
+        "issue_type": "backend",
         "key_risks": [
-          "Incomplete shared state detection could introduce race conditions in parallel test execution",
-          "Misclassifying critical vs flaky failures may mask real issues or cause premature abort",
-          "Parallelization overhead could negate benefits on systems with limited CPU cores",
-          "Git diff analysis may miss indirect dependencies and transitively affected modules",
-          "Integration complexity with existing fast-test-cmd modes, metrics dashboard, and pipeline state"
+          "bandit_report function interface or availability uncertainty",
+          "status dashboard performance impact from computing statistics",
+          "styling consistency across different bandit stat scenarios",
+          "edge cases with missing/incomplete bandit history",
+          "integration with potentially new bandit-selector.sh module"
         ],
         "implementation_hints": [
-          "Start with static analysis (AST parsing) for shared state detection, validate with empirical test runs",
-          "Use work-stealing queue or load-balanced worker pool for safe parallel execution",
-          "Build test dependency graph as intermediate artifact to validate parallelization safety",
-          "Implement gradual rollout: validate on CI before enabling in daemon, track metrics continuously",
-          "Leverage existing test framework parallelization (pytest -n, vitest --run) rather than custom orchestration",
-          "Add comprehensive structured logging to distinguish race conditions from other failure modes",
-          "Include fallback to sequential execution if parallel mode shows instability or time regression"
+          "Verify bandit_report exists in bandit-selector.sh and document its output format",
+          "Extract and review existing status dashboard sections for styling patterns to match",
+          "Start with a single status section stub, test integration, then add formatting",
+          "Test with zero bandit history, partial history, and complete statistics",
+          "Consider caching bandit_report output to avoid recalculation on every status call",
+          "Add test cases for each model/stage combination and exploration rate display"
         ]
       },
-      "timestamp": 1775323018,
+      "timestamp": 1775305208,
       "ttl": 3600
     },
-    "feb66caa8523cfff6d372818c9c03206": {
+    "0a16bbd251d5f1140f620bc88133912e": {
       "result": {
-        "estimated_iterations": 9
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "performance",
+        "key_risks": [
+          "Data format incompatibility between 4 existing RL scripts (reward-aggregator, bandit-selector, policy-learner, rl-optimizer)",
+          "Edge case handling when RL data is missing, incomplete, or malformed",
+          "Performance impact if RL data storage grows large over time",
+          "Integration complexity - ensuring new sections fit naturally into existing cost show output",
+          "Test coverage - 8+ test scenarios needed for various RL data states"
+        ],
+        "implementation_hints": [
+          "Audit data storage format and export interfaces of all 4 RL modules before implementation",
+          "Define canonical RL metrics data structure in shared library to ensure consistency",
+          "Implement graceful degradation: show 'Not yet available' or '--' when RL sections lack data",
+          "Add caching layer to avoid re-reading/re-computing RL stats on every cost show invocation",
+          "Create test fixtures for complete RL data, partial data (missing episodes), and empty states",
+          "Format output using existing color/box-drawing patterns from other cost show sections",
+          "Consider lazy-loading RL sections or adding --include-rl flag to keep default cost show fast",
+          "Validate data integrity before display (check reward trend has ≤10 entries, policy has success rates, etc.)"
+        ]
       },
-      "timestamp": 1775325623,
+      "timestamp": 1775305211,
+      "ttl": 3600
+    },
+    "865396163e606b0a3a0205bafa2b93f2": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1775305224,
       "ttl": 1800
     },
-    "73f5a2675527b77148d798ecbc7d1bdc": {
+    "bf0cbd28256afcc383414a73df48fe74": {
       "result": {
-        "estimated_cost_usd": 3.18,
-        "estimated_iterations": 2,
-        "estimated_tokens": 285000,
-        "likely_failure_stage": "test",
-        "confidence": 72
+        "estimated_iterations": 5
       },
-      "timestamp": 1775323042,
+      "timestamp": 1775305226,
+      "ttl": 1800
+    },
+    "d821053356969eac356aa90fa364f0d2": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1775305228,
+      "ttl": 1800
+    },
+    "9c32f8c68d31f1840374e1afa1a1a835": {
+      "result": {
+        "estimated_cost_usd": 0.08,
+        "estimated_iterations": 1,
+        "estimated_tokens": 4200,
+        "likely_failure_stage": "none",
+        "confidence": 93,
+        "breakdown": {
+          "intake_stage": {
+            "tokens": 600,
+            "cost_usd": 0.01,
+            "duration_seconds": 15
+          },
+          "build_stage": {
+            "tokens": 1800,
+            "cost_usd": 0.03,
+            "duration_seconds": 45
+          },
+          "test_stage": {
+            "tokens": 900,
+            "cost_usd": 0.02,
+            "duration_seconds": 30
+          },
+          "pr_stage": {
+            "tokens": 900,
+            "cost_usd": 0.02,
+            "duration_seconds": 45
+          }
+        },
+        "risk_factors": {
+          "version_consistency_check": "low_risk",
+          "bash_compatibility": "none",
+          "testing_complexity": "trivial"
+        },
+        "success_probability_by_stage": {
+          "intake": 100,
+          "build": 99,
+          "test": 97,
+          "pr": 100
+        }
+      },
+      "timestamp": 1775305238,
       "ttl": 3600
     },
-    "5c7c5ecaa7548300283a3d4092b356a9": {
+    "b9a99d970b9b56329ca8bd15382dc2db": {
       "result": {
+        "estimated_cost_usd": 2.75,
+        "estimated_iterations": 2,
+        "estimated_tokens": 185000,
+        "likely_failure_stage": "build",
+        "confidence": 68
+      },
+      "timestamp": 1775305241,
+      "ttl": 3600
+    },
+    "b3b29917cc8b94253261cf73c0b00543": {
+      "result": {
+        "estimated_cost_usd": 14.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 85000,
+        "likely_failure_stage": "test",
+        "confidence": 77
+      },
+      "timestamp": 1775305244,
+      "ttl": 3600
+    },
+    "f275a7b36faf7dc249ba6860d45ef1d4": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 94,
+        "recommended_template": "fast",
         "issue_type": "testing",
+        "key_risks": [
+          "package.json path resolution in different working directories",
+          "jq parsing failure on malformed package.json (though unlikely)",
+          "test brittleness if version string format changes"
+        ],
+        "implementation_hints": [
+          "Use jq to parse package.json safely: jq -r '.version' package.json",
+          "Store version in variable at script start, reuse for output and test",
+          "Format output as 'Shipwright vX.Y.Z' using string interpolation",
+          "Add test case matching existing patterns in sw-hello-test.sh",
+          "Test should verify both version extraction and output format"
+        ]
+      },
+      "timestamp": 1775305291,
+      "ttl": 3600
+    },
+    "e14ae6bd6c209044afe4927e2da9fe1e": {
+      "result": {
+        "estimated_iterations": 1
+      },
+      "timestamp": 1775305307,
+      "ttl": 1800
+    },
+    "80a4b3f50a16d62acaf9a372bb998806": {
+      "result": {
+        "estimated_cost_usd": 0.04,
+        "estimated_iterations": 1,
+        "estimated_tokens": 5200,
+        "likely_failure_stage": "none",
+        "confidence": 92
+      },
+      "timestamp": 1775305323,
+      "ttl": 3600
+    },
+    "cc4099e8e2cf51a3faad5c929541aa8f": {
+      "result": {
+        "issue_type": "backend",
         "confidence": 0.95,
         "secondary_domains": [
-          "performance",
-          "infrastructure"
+          "testing",
+          "shell-scripting"
         ],
         "complexity_assessment": {
-          "score": 6,
-          "reasoning": "Moderate complexity: requires test suite analysis (shared state detection), git diff analysis, parallel scheduling, and distinction between critical/flaky failures. Integration with fast-test and full modes adds coordination overhead."
+          "score": 2,
+          "reasoning": "Straightforward feature: read version from package.json, format output, add unit test. No architecture changes, no dependencies to manage."
         },
         "skill_plan": {
-          "plan": [
-            "testing-strategy",
-            "performance"
-          ],
+          "plan": [],
           "design": [
-            "testing-strategy",
-            "performance",
-            "architecture-design"
+            "api-design"
           ],
           "build": [
-            "performance",
             "testing-strategy"
           ],
           "review": [
-            "testing-strategy",
             "two-stage-review",
             "pr-quality"
           ],
           "compound_quality": [
-            "adversarial-quality",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "api-design": "Validates that the version output format ('Shipwright vX.Y.Z') is the right UX choice and matches the project's conventions for version display.",
+          "testing-strategy": "Ensures the test adequately covers version reading, formatting, and edge cases (missing package.json, malformed JSON) within the shell script test harness.",
+          "two-stage-review": "Shell script changes require careful review for bash 3.2 compatibility (Shipwright requirement), proper JSON parsing without external tools if possible, and alignment with existing sw-hello patterns.",
+          "pr-quality": "Ensures the PR clearly documents the version-reading approach, test coverage, and any assumptions about package.json location/format.",
+          "validation-thoroughness": "Confirms the feature works end-to-end: version reads correctly, displays in expected format, and the test passes in isolation and in the full sw-hello-test.sh suite."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "JSON parsing approach in bash (use jq vs. grep/sed fallback for Bash 3.2 compat)",
+          "Error handling: what happens if package.json is missing or malformed",
+          "Test coverage: happy path, missing file, invalid JSON, empty version field",
+          "Integration with existing sw-hello.sh patterns and help output",
+          "Version format matches documented API ('Shipwright vX.Y.Z')"
+        ],
+        "risk_areas": [
+          "Bash 3.2 compatibility for JSON parsing (project requires Bash 3.2, no modern jq features)",
+          "Hardcoded path to package.json vs. discovering it dynamically from repo root",
+          "Test file location and registration in test-main.c / package.json test script"
+        ]
+      },
+      "timestamp": 1775305357,
+      "ttl": 3600
+    },
+    "98a95c53b4f5265b141659e62dc52328": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project uses vitest test runner, npm package manager, JavaScript language, and src/ source directory. Essential for understanding how to write the test for version display."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Shows baseline build duration of 147s for similar tasks. Useful for understanding typical build speed expectations for a simple feature."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Confirms Node.js project type. Less specific than the vitest patterns entry but provides general project context."
+          },
+          {
+            "file": "global.json",
+            "relevance": 5,
+            "summary": "Empty cross-repo learnings. Not applicable to this isolated feature task."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 3,
+            "summary": "Contains test infrastructure failures (mock claude, artifact generation, resource exhaustion). Not relevant to implementing sw-hello version display feature."
+          }
+        ]
+      },
+      "timestamp": 1775305410,
+      "ttl": 1800
+    },
+    "4c84ebe5eab4c424f6836533f409080d": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 95,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Bash 3.2 compatibility for JSON parsing (must use jq, not native JSON)",
+          "Version string format consistency between package.json and display output",
+          "Edge case: missing or malformed package.json"
+        ],
+        "implementation_hints": [
+          "Use jq -r '.version' < package.json to safely extract version from root directory",
+          "Display format: echo 'Shipwright v<version>' to match existing CLI conventions",
+          "Verify from project root since scripts/sw-hello.sh will be invoked from various directories",
+          "Add test cases: version displays correctly, format matches 'Shipwright vX.Y.Z', value matches package.json",
+          "Reference existing sw-hello-test.sh (108 lines) for test harness pattern"
+        ]
+      },
+      "timestamp": 1775305539,
+      "ttl": 3600
+    },
+    "0a08160da82efc33c777d1e923bb117e": {
+      "result": {
+        "estimated_iterations": 1
+      },
+      "timestamp": 1775305552,
+      "ttl": 1800
+    },
+    "fc1a77d1228a3f72d005270a7baa510f": {
+      "result": {
+        "estimated_cost_usd": 0.18,
+        "estimated_iterations": 1,
+        "estimated_tokens": 3800,
+        "likely_failure_stage": "none",
+        "confidence": 92
+      },
+      "timestamp": 1775305561,
+      "ttl": 3600
+    },
+    "df543e32ca7f0c36c7b851aeeecd24bf": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "cli-tooling"
+        ],
+        "complexity_assessment": {
+          "score": 2,
+          "reasoning": "Trivial feature: read package.json with jq, format output string, add test. No architectural decisions, security concerns, or deployment risk."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "brainstorming"
+          ],
+          "design": [],
+          "build": [],
+          "review": [
+            "pr-quality",
+            "testing-strategy"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "testing-strategy": "Define explicit test cases for happy path (version displays as 'Shipwright vX.Y.Z') and edge cases (missing package.json, corrupted JSON, missing version field) to prevent regressions.",
+          "brainstorming": "Quick edge case brainstorm (5 min): What if package.json path is wrong? Should missing version be an error or fallback? How should the command fail gracefully?",
+          "pr-quality": "Verify bash script follows Shipwright conventions: Bash 3.2 compatible, set -euo pipefail, use jq for safe JSON parsing, VERSION variable at script top, atomic writes.",
+          "validation-thoroughness": "Smoke test that sw-hello command outputs correctly, test suite passes, and errors are handled without crashing the script.",
+          "deploy-safety": "Verify change doesn't break existing sw-hello functionality, CI passes, and version display is always present (not silently empty)."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Test coverage: happy path (version displays) + edge cases (missing/malformed package.json, missing version field)",
+          "Bash 3.2 compatibility: no associative arrays, readarray, or ${var,,} patterns",
+          "JSON parsing: must use jq (not string interpolation) to avoid injection/parsing bugs",
+          "Error handling: what should happen if package.json is missing? Silent fallback or explicit error?",
+          "Version variable consistency: ensure VERSION at top of script matches package.json version"
+        ],
+        "risk_areas": [
+          "Hardcoded package.json path might be wrong relative to script location—use $SCRIPT_DIR or relative path from repo root",
+          "jq command failure (missing jq, invalid JSON) needs graceful error message, not cryptic jq errors",
+          "Existing sw-hello-test.sh tests must still pass—new test must follow existing harness patterns (PASS/FAIL counters, ERR traps)"
+        ]
+      },
+      "timestamp": 1775305605,
+      "ttl": 3600
+    },
+    "1a888f94abd6fd5c51095e70ba8393c9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Most recent project detection (2026-04-04) shows test_runner: vitest, test_pattern: *.test.js, import_style: commonjs — directly relevant for writing the hello command test and understanding project conventions"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Baseline metrics from 2026-03-09 (build: 147s, test: 1s) provide expectations for build/test duration in this stage, though not specific to the hello command feature"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Test failures from 2026-03-09 are mostly about mock claude artifacts and pipeline infrastructure (plan.md, review.md), not directly relevant to the simple hello command feature but worth noting for test harness awareness"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 15,
+            "summary": "Generic Node.js project type detection from 2026-02-21 — less specific than the more recent patterns.json entry"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Older metrics baseline from 2026-02-21 with minimal relevance to current build stage — superseded by more recent 2026-03-09 baseline"
+          }
+        ]
+      },
+      "timestamp": 1775305644,
+      "ttl": 1800
+    },
+    "7a540313b30d2579d9c6fbc487a4670a": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 95,
+        "recommended_template": "fast",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Breaking change if other scripts parse sw-hello output",
+          "Version mismatch between package.json and runtime if not kept in sync",
+          "File path issues reading package.json from different working directories"
+        ],
+        "implementation_hints": [
+          "Use jq to safely extract .version from package.json",
+          "Resolve package.json path relative to script location using $(dirname \"$0\")",
+          "Handle missing or malformed package.json gracefully with fallback message",
+          "Update sw-hello-test.sh to verify version format matches 'Shipwright vX.Y.Z'",
+          "Consider caching version in an environment variable to avoid repeated file I/O"
+        ]
+      },
+      "timestamp": 1775305809,
+      "ttl": 3600
+    },
+    "0d78a288afab7c838208b4bf24bc10c5": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1775305826,
+      "ttl": 1800
+    },
+    "43f9d8a33e91faaaabcec78ac67fecf0": {
+      "result": {
+        "estimated_cost_usd": 0.32,
+        "estimated_iterations": 1,
+        "estimated_tokens": 5800,
+        "likely_failure_stage": "none",
+        "confidence": 88
+      },
+      "timestamp": 1775305837,
+      "ttl": 3600
+    },
+    "be44504abefdfb7813789f79a787193e": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.8,
+        "secondary_domains": [
+          "testing",
+          "cli"
+        ],
+        "complexity_assessment": {
+          "score": 3,
+          "reasoning": "Small, well-scoped CLI feature: read package.json, format output, add test. No architectural decisions needed. Primary risk is error handling for edge cases (missing/malformed JSON)."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy"
+          ],
+          "design": [],
+          "build": [],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
             "testing-strategy"
           ],
           "pr": [
-            "pr-quality",
-            "validation-thoroughness"
-          ],
-          "validate": [
-            "validation-thoroughness",
-            "performance"
+            "pr-quality"
           ],
           "deploy": [],
-          "monitor": [
-            "observability"
-          ]
+          "validate": [],
+          "monitor": []
         },
         "skill_rationale": {
-          "testing-strategy": "Core expertise needed to design test suite scanning, detect parallelizable test files, analyze git diff for affected modules, and coordinate execution strategy.",
-          "performance": "Critical for achieving the 90min → 60min duration target; required to design scheduling, CPU core utilization, and measure actual throughput gains.",
-          "architecture-design": "Ensures parallelization layer integrates cleanly with existing pipeline architecture (fast-test-cmd, full suite modes, dashboard).",
-          "adversarial-quality": "Must stress-test parallelization logic for hidden shared state, test ordering dependencies, and race conditions that manual detection might miss.",
-          "two-stage-review": "Complex test infrastructure changes deserve staged review: first-pass on parallelization detection algorithm, second-pass on integration and metrics.",
-          "pr-quality": "PR must clearly document parallelization assumptions, detection heuristics, and fast-fail policy to be reviewable.",
-          "validation-thoroughness": "Requires proof that time savings materialize in practice, not just in theory; needs both micro-benchmarks and end-to-end pipeline measurements.",
-          "observability": "Dashboard must surface parallel execution metrics (cores used, actual vs theoretical speedup, affected-test accuracy) so wins are visible and regressions are caught."
+          "testing-strategy": "Plan and validate test approach for reading package.json and verifying output format matches 'Shipwright vX.Y.Z' specification",
+          "two-stage-review": "Ensure the implementation correctly resolves package.json path, handles parsing errors, and follows Shipwright CLI conventions",
+          "adversarial-quality": "Systematically identify edge cases: missing package.json, malformed JSON, non-semver versions, relative path resolution across different invocation contexts",
+          "pr-quality": "Ensure PR includes test coverage, follows Bash 3.2 compatibility standards (per CLAUDE.md), and clearly documents the change"
         },
         "generated_skills": [
           {
-            "name": "test-parallelization-detection",
-            "reason": "No existing skill covers the specific challenge of detecting which test files can safely run in parallel by analyzing shared state (temp files, global variables, database access). This requires domain expertise in test infrastructure patterns.",
-            "content": "## Test Parallelization Detection & Coordination\n\n### Problem\nTest parallelization is dangerous: undetected shared state (temp files, global state, database connections) causes race conditions and flaky failures. This skill provides a systematic approach to detect parallelizable test suites and coordinate their execution safely.\n\n### Shared State Detection Heuristics\n\n**Static Analysis (file scanning):**\n- Scan test file imports for singleton patterns (db connections, file handles, global state modules)\n- Detect hardcoded file paths (temp dirs) and network ports — tests using fixed resources conflict\n- Check for `beforeAll`/`afterAll` hooks that modify global state\n- Identify test files importing shared fixtures/setup modules\n\n**Dynamic Analysis (test execution):**\n- Run test suite with `--detectOpenHandles` (Node.js) or equivalent to catch file/port leaks\n- Track temp directory usage per test file — any overlap = unsafe to parallelize\n- Monitor for test isolation violations (tests passing in isolation but failing when run together)\n\n**Safety Levels:**\n- **Green (parallelizable)**: No shared state detected, no fixture conflicts, passes isolation tests\n- **Yellow (conditional)**: Shared fixtures but isolated datasets, parallel execution with coordination (e.g., separate DB schemas)\n- **Red (sequential)**: Database transaction rollback, process spawning, hardware resource contention — must run serially\n\n### Affected-Test Detection via Git Diff\n\n**Module Dependency Tracking:**\n1. Build module-to-test mapping (which tests exercise which modules)\n2. On each commit, run `git diff --name-only HEAD~1` to identify changed modules\n3. Find all tests that import/test those modules\n4. Prioritize affected tests first in execution order (fail-fast on functionality regression)\n5. Cache mapping per commit to avoid re-scanning on retries\n\n**False Negatives to Handle:**\n- Integration tests that cross module boundaries (require broader analysis)\n- Tests that exercise shared utilities or base classes (conservative: mark as affected if any parent module changed)\n- Dynamic imports and string-based test discovery (fallback: scan test code for patterns)\n\n### Parallel Execution Coordination\n\n**Scheduler:**\n- Detect CPU core count, default to `cores - 1` (reserve 1 for OS)\n- Group parallelizable tests into batches, run batches in parallel\n- Within each batch, respect test file order (some test runners depend on execution order)\n- Run non-parallelizable (red) tests serially, either before or after parallel batches (configurable)\n\n**Fast-Fail Policy:**\n- Critical failures: assertion errors, uncaught exceptions → abort immediately\n- Flaky failures: timeout, process exit, known-flaky markers → retry up to N times before aborting\n- Aggregate results across parallel workers before reporting\n- Time tracking: measure wall-clock time for each batch, report parallelization efficiency (theoretical vs actual speedup)\n\n### Dashboard Integration\n\n- Display parallel execution summary: N tests in M workers, X% speedup\n- Visualize test dependency graph (which tests block which)\n- Alert on shared-state violations (test passed alone, failed in parallel)\n- Trend: parallelization efficiency over time (detect regressions where new tests add serial bottlenecks)\n\n### Key Decisions for This Issue\n\n1. **Minimum Parallelization Threshold**: What's the smallest safe granularity? (per file, per suite, per test?)\n2. **Flaky Detection**: How many retries before marking as critical failure? (recommend 3)\n3. **Shared-State Confidence**: Are heuristics sufficient, or require explicit opt-in per test file?\n4. **Fast-Fail Behavior**: Abort on first critical failure globally, or let all workers finish for faster feedback iteration?\n5. **Fallback**: If parallelization detection is uncertain, run serial — safety over speed."
+            "name": "cli-version-management",
+            "reason": "Existing skills don't cover the specific pattern of reading versions from package.json in shell scripts, version string formatting standards, and error handling for version sources — common in CLI tools but distinct from general testing/review",
+            "content": "## CLI Version Management: Package.json Integration\n\n**Pattern**: Read version from package.json, format for display, handle edge cases.\n\n### Version Source Resolution\n- **Canonical source**: Always read from `package.json` at repo root or script-relative location\n- **Path resolution**: Use `$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)` to find script dir, then traverse up to repo root (where package.json lives)\n- **Validation**: Verify JSON is valid before parsing; provide actionable error if missing/corrupt\n\n### Version Extraction & Formatting\n- **Parser**: Use `jq '.version' package.json` (safer than regex or sed)\n- **Format standard**: `Shipwright vX.Y.Z` (prefix + space + v + semver)\n- **Validation**: Warn if version doesn't match semver (x.y.z pattern); don't fail, but log warning\n\n### Error Handling\n- Missing file: `error \"package.json not found at <path>\"` → exit 1\n- Invalid JSON: Catch jq error → `error \"package.json is malformed\"` → exit 1\n- Missing version field: `error \"version field missing in package.json\"` → exit 1\n\n### Testing Pattern\n- **Unit test**: Create temp package.json with known version, invoke command, assert exact output\n- **Isolation**: Don't depend on real package.json; create fixtures for each test case\n- **Edge cases**: test missing file, malformed JSON, missing version field, non-semver version\n- **Bash 3.2 safe**: Use `$()` not `<()`, no `readarray`, no `declare -A`\n\n### CLI Display\n- **Standard output**: Version string only (e.g., `Shipwright v1.2.3`), no extra whitespace or formatting\n- **Exit code**: 0 on success, 1 on error\n- **Integration**: `sw hello` should output version alongside any other greeting output\n"
           }
         ],
         "review_focus": [
-          "Shared state detection algorithm accuracy — does it flag all parallelization hazards without false positives?",
-          "Git diff analysis for affected tests — does it correctly map changed modules to affected test files?",
-          "Fast-fail distinction between critical and flaky failures — is the heuristic sound?",
-          "Parallelization overhead — does coordination cost exceed the speedup gains?",
-          "Backward compatibility with fast-test-cmd and full suite modes — no regressions in existing test behavior",
-          "Dashboard metrics visibility — are speedup gains and parallelization details displayed clearly?",
-          "CPU core detection and platform compatibility — works on macOS, Linux, CI environments"
+          "Test coverage: unit test with mocked package.json, edge cases (missing file, malformed JSON, missing version field)",
+          "Version string format: exact match of 'Shipwright vX.Y.Z' specification",
+          "Path resolution: correctly finds package.json from script location across different working directories",
+          "Error handling: graceful failure with clear messages if package.json is missing or corrupted",
+          "Bash 3.2 compliance: no Bash 4+ features, proper quoting, pipefail safety"
         ],
         "risk_areas": [
-          "Over-parallelization causing race conditions and flaky test failures if shared state detection misses edge cases",
-          "Affected-test detection missing changed functionality (e.g., integration across modules, dynamic imports)",
-          "Fast-fail aborting too aggressively on non-critical failures, hiding legitimate bugs",
-          "Performance overhead of parallelization coordination outweighing actual speedup (especially on small test suites)",
-          "Incompatibility with test frameworks that expect serial execution or have global state assumptions",
-          "Difficulty reproducing failures when parallel execution order is non-deterministic"
+          "package.json path resolution: script may be invoked from different directories; must reliably find repo root",
+          "JSON parsing robustness: malformed or missing version field should be caught cleanly",
+          "Test isolation: test must not depend on actual package.json; should use fixture or mock",
+          "Version format validation: non-semver versions in package.json should be handled without breaking display"
         ]
       },
-      "timestamp": 1775323242,
+      "timestamp": 1775305877,
       "ttl": 3600
     },
-    "ab258007c7e6d7691de2b60538c5d1d1": {
+    "ed22a5485d6539e0afb36ed1132e6798": {
       "result": {
         "results": [
-          {
-            "file": "metrics.json",
-            "relevance": 95,
-            "summary": "Current test execution baseline (1365s for test_duration, 8506s for build) from 2026-04-04 — directly shows the performance we're optimizing. Essential context for planning parallel/affected-first execution."
-          },
-          {
-            "file": "failures.json",
-            "relevance": 75,
-            "summary": "Captured test failure patterns (59 occurrences of mock claude artifact writing failures) reveal test infrastructure pain points. Understanding failure modes informs planning for fast-fail strategy and test harness robustness."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 70,
-            "summary": "Project uses vitest (test_runner), npm/node environment. Vitest has native parallel execution support — this is critical context for planning parallel test strategy."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 35,
-            "summary": "Historical baseline from 2026-02-21 (147s build, 1s test) shows trend data, but values appear outdated/unrealistic compared to current baseline."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 20,
-            "summary": "Older project type detection (nodejs, Feb 21) — superseded by more detailed pattern data from today."
-          }
-        ]
-      },
-      "timestamp": 1775325938,
-      "ttl": 1800
-    },
-    "cd2119855f0bc4fc15c413be81c463a9": {
-      "result": {
-        "results": [
-          {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains 11+ documented test failures from recent runs (last seen 2026-04-04), including mock artifact missing errors, JSON parsing failures, and stage execution issues — these are the root causes blocking plan validation"
-          },
-          {
-            "file": "metrics.json (2026-04-04T18:04:40Z)",
-            "relevance": 85,
-            "summary": "Current baseline metrics show test execution takes 1365s; this is the performance target for the test optimization plan (parallel, affected-first, fast-fail strategies)"
-          },
-          {
-            "file": "patterns.json (with project/conventions)",
-            "relevance": 60,
-            "summary": "Describes project structure (Node.js, vitest, npm, CommonJS) — essential context for designing test execution optimization strategies"
-          }
-        ]
-      },
-      "timestamp": 1775326280,
-      "ttl": 1800
-    },
-    "850bca604d9f74c08b4f4679b4cfacae": {
-      "result": {
-        "results": [
-          {
-            "file": "metrics.json",
-            "relevance": 95,
-            "summary": "Most recent baseline (2026-04-04 18:04:40) showing test_duration_s: 1365 — critical current state for setting optimization targets for parallel/affected-first/fast-fail design"
-          },
           {
             "file": "patterns.json",
             "relevance": 85,
-            "summary": "Project structure: Node.js, vitest test runner, npm package manager — essential for designing test execution architecture and parallel execution strategy"
+            "summary": "Defines project conventions: vitest test runner, npm package manager, test_pattern *.test.js, source_dir src/, commonjs imports — directly relevant for writing new tests for the version display feature"
           },
           {
             "file": "metrics.json",
             "relevance": 55,
-            "summary": "Earlier baseline (2026-02-21) with test_duration_s: 1 — historical comparison point, lower relevance than current metrics but shows test speed variations"
+            "summary": "Recent baseline metrics (2026-03-09) showing build_duration_s: 17827, test_duration_s: 1575 — provides performance context for the build stage and typical test execution time"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Simpler project type confirmation (nodejs, detected 2026-02-21) — validates project classification but less actionable than the conventions entry above"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 30,
+            "summary": "Older baseline (2026-02-21) with build_duration_s: 147, test_duration_s: 1 — historical reference point, less relevant than recent metrics"
           },
           {
             "file": "failures.json",
-            "relevance": 35,
-            "summary": "Test failure patterns (mock issues, resource exhaustion) — marginally relevant for understanding test execution bottlenecks, but mostly about test infrastructure rather than architecture design"
-          },
-          {
-            "file": "global.json",
             "relevance": 10,
-            "summary": "Empty cross-repo learnings — low relevance, contains no actionable patterns for this design task"
+            "summary": "Pipeline and mock binary test failures from Shipwright itself — not relevant to sw-hello version display feature implementation"
           }
         ]
       },
-      "timestamp": 1775326310,
+      "timestamp": 1775305945,
       "ttl": 1800
     },
-    "30c2cf7571062d8a3303184931f232b4": {
+    "6d1efba7ef480f42873a2eced48f4907": {
       "result": {
-        "results": [
-          {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Contains 11 concrete test failure patterns with root causes and anti-patterns directly relevant to test execution optimization: resource exhaustion from parallel subprocess spawning (fork failures), artifact management issues, mock harness problems, and JSON parsing errors during stage execution. These are exact design pitfalls to avoid when implementing parallel, affected-first, fast-fail strategies."
-          },
-          {
-            "file": "metrics.json (2026-04-04T18:04:40Z)",
-            "relevance": 60,
-            "summary": "Current performance baseline from design stage start (build: 8506s, test: 1365s) provides context for what the optimization should improve. Shows raw numbers that motivated the parallel/affected-first/fast-fail approach."
-          },
-          {
-            "file": "patterns.json (nodejs/vitest)",
-            "relevance": 28,
-            "summary": "Project metadata (vitest test runner, Node.js, commonjs imports) provides context for which test execution patterns and tools are relevant to the target environment."
-          }
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 95,
+        "recommended_template": "fast",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Regression in existing array-based JSON extraction if conditional logic is incorrect",
+          "Need to test both JSON array and object formats to ensure both work post-fix"
+        ],
+        "implementation_hints": [
+          "Add conditional logic in Case 2 to handle both '[' and '{' prefixes before jq call",
+          "Use different jq queries: '.[-1].result // empty' for arrays, '.result // empty' for objects",
+          "Update warning message in Case 3 to distinguish between 'jq unavailable' vs 'unexpected JSON format'",
+          "Add test cases to sw-loop-test.sh covering both JSON array and object output formats"
         ]
       },
-      "timestamp": 1775326329,
+      "timestamp": 1775315849,
+      "ttl": 3600
+    },
+    "d61f8ad981ce4ea5a15f66ea9d8c4ab3": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1775315912,
       "ttl": 1800
     },
-    "799125a66b358e6d660e4b2d73f7fa9c": {
+    "3becd989b739b08e4c5caf6ea9f5bc18": {
+      "result": {
+        "estimated_cost_usd": 0.11,
+        "estimated_iterations": 1,
+        "estimated_tokens": 28000,
+        "likely_failure_stage": "none",
+        "confidence": 88
+      },
+      "timestamp": 1775315921,
+      "ttl": 3600
+    },
+    "acadd5bfac2bbb57117b4f0a1191f3a1": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "observability",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Simple logic fix with high visibility risk — touches critical loop output parsing that affects all pipeline runs; requires careful edge-case handling and clear testing"
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "api-design"
+          ],
+          "build": [],
+          "review": [
+            "systematic-debugging",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Root cause is already identified, but implementation must verify actual behavior of both JSON array and object outputs to prevent introducing new blind spots",
+          "brainstorming": "Design decision between Option A (handle both formats) vs Option B (fix warning only) requires reasoning about maintainability, performance, and correctness tradeoffs",
+          "api-design": "Fix must clarify the contract of `_extract_text_from_json` — what JSON formats should it accept? What should extraction semantics be for objects vs arrays?",
+          "two-stage-review": "Critical parsing path used on every loop run — two-pass review catches edge cases in jq queries and error handling before merging",
+          "adversarial-quality": "What happens with malformed JSON? What if jq is actually unavailable? What if Claude outputs nested structures? All must be handled gracefully",
+          "validation-thoroughness": "Fix must be tested with both JSON array and object outputs from real Claude to prevent regression; stress test with large outputs",
+          "pr-quality": "PR must clearly explain why the warning was misleading and document the chosen fix with examples of both formats handled"
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "jq query correctness for both object extraction (`.result`) and array extraction (`.[-1].result`)",
+          "Fallback behavior when jq parsing fails or returns empty — does raw output make sense as fallback?",
+          "Error handling: ensure failure modes are clear and don't mask real jq absence vs format mismatch",
+          "Performance: does adding jq object handling introduce any overhead on large JSON outputs?",
+          "Test coverage: does the loop test suite cover both array and object outputs from Claude?"
+        ],
+        "risk_areas": [
+          "Changing extraction logic (Option A) could break edge cases where the `.result` field structure differs between arrays and objects",
+          "False fix: if we only improve the warning message (Option B), the underlying parsing limitation remains and could confuse future developers",
+          "Missing the real issue: ensure the fix addresses whether Claude's JSON object output is intentional or should be normalized to arrays on the Claude side",
+          "Regression risk in pipeline reliability: this parsing happens on every loop iteration, so breakage would immediately surface in production"
+        ]
+      },
+      "timestamp": 1775315976,
+      "ttl": 3600
+    },
+    "ef0b36fe2bd216411f2cec73e6dfb01b": {
       "result": {
         "results": [
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains 11 documented test failures from recent builds (2026-03-07 to 2026-04-04), including mock artifact issues, JSON parsing errors, and resource exhaustion — critical context for understanding current test blockers during the build stage."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 92,
-            "summary": "Latest baseline metrics (2026-04-04) showing build_duration_s: 8506, test_duration_s: 1365 — provides essential benchmarks for measuring the impact of test execution optimization."
+            "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
           },
           {
             "file": "patterns.json",
-            "relevance": 78,
-            "summary": "Project detection showing node type with vitest test runner — directly relevant to selecting and optimizing test execution strategy for parallel, affected-first execution."
+            "relevance": 40,
+            "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+          },
+          {
+            "file": "global.json",
+            "relevance": 0,
+            "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+          }
+        ]
+      },
+      "timestamp": 1775316025,
+      "ttl": 1800
+    },
+    "18041bddbd866a937839d898ec5d2c60": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 11 documented failure patterns directly related to jq parse errors, invalid JSON output from mock claude, and JSON format mismatches (object vs array). Multiple entries specifically mention 'Unmatched }' and 'jq parse error' which directly match issue #242's root cause."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Documents this as a Node.js project with vitest test runner and commonjs imports. Relevant for understanding the test harness structure and how mock binaries output JSON."
           },
           {
             "file": "metrics.json",
             "relevance": 35,
-            "summary": "Legacy baseline (2026-02-21) with build_duration_s: 147, test_duration_s: 1 — historical reference point for comparison, but superseded by current metrics."
+            "summary": "Most recent baseline metrics (2026-04-04) show build/test durations and iteration counts. Minimal relevance but provides current project health snapshot for context."
           },
           {
             "file": "global.json",
             "relevance": 15,
-            "summary": "Empty common patterns and cross-repo learnings — provides minimal context for current optimization work."
+            "summary": "Cross-repo learnings container (currently empty). Could contain jq/JSON patterns if populated, but no actionable content."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Decision log (empty). Could track architectural decisions about JSON handling, but contains no relevant entries."
           }
         ]
       },
-      "timestamp": 1775326752,
+      "timestamp": 1775327044,
       "ttl": 1800
-    },
-    "8b655a6ed786a44792b4d512c3eda13c": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Event tracking completeness: fingerprints may not capture all config variations",
-          "Pattern false positives: noisy success events trigger template proposals for anomalies",
-          "Fingerprint collision risk: normalized config hashing loses important distinctions",
-          "Missing interactive approval UX spec: dashboard/CLI approval flow underspecified",
-          "Template quality validation: no acceptance criteria for when proposed template should be promoted"
-        ],
-        "implementation_hints": [
-          "Reuse existing success_events tracking from sw-db.sh with TTL window enforcement",
-          "Fingerprint algorithm: jq-normalize pipeline config JSON then SHA-256 hash to avoid collision/drift",
-          "Start with exact fingerprint matching (P(same_config) >= 0.95) before ML-based similarity matching",
-          "Batch storage: aggregate fingerprint counts in ~/.shipwright/template-proposals.json updated every 6 hours",
-          "CLI: shipwright templates propose (list candidates) and shipwright templates promote <name> (move to templates/)",
-          "Annotate generated template with source metadata: issue IDs, success_count, avg_cost, date_range",
-          "Integration test: mock 5 successful runs with identical overrides, verify template proposal generated with correct stats"
-        ]
-      },
-      "timestamp": 1775326347,
-      "ttl": 3600
-    },
-    "676ce0f8050c09508abc25512eb4402b": {
-      "result": {
-        "complexity": 5,
-        "risk_level": "low",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "refactor",
-        "key_risks": [
-          "Bash script parsing edge cases (variable expansion in source paths, non-existent files, conditional sourcing)",
-          "Circular dependency false positives from dynamic sourcing patterns",
-          "Graph visualization performance with large codebase (121+ scripts)",
-          "Determining actionable refactor suggestions vs acceptable coupling patterns"
-        ],
-        "implementation_hints": [
-          "Use grep with careful regex to handle source/. patterns, but validate parsed paths exist before adding to graph",
-          "Implement cycle detection via DFS with explicit node visiting state to avoid transitive edge confusion",
-          "Focus implementation on high-coupling hotspots (>10 in-degree) first, add lower-coupled nodes iteratively",
-          "Store graph in JSON format that other tools can query (enables future analysis tools)",
-          "Test parser against Shipwright's own 121+ scripts as ground truth reference set"
-        ]
-      },
-      "timestamp": 1775326394,
-      "ttl": 3600
-    },
-    "ab54a867fe53a86bfc9d1280d33ab19e": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 75,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Overly conservative cost/success predictions blocking valid work",
-          "Prediction accuracy <30% threshold makes feature unusable",
-          "Integration brittleness with intelligence cache updates",
-          "User approval fatigue if predictions constantly wrong",
-          "Learning system bias from non-random approval decisions"
-        ],
-        "implementation_hints": [
-          "Build heuristic cost model first (iteration_count * avg_stage_cost), add ML later",
-          "Query memory system for similar issues to establish baseline success rates",
-          "Make daemon policy thresholds configurable via .claude/policy.json",
-          "Log prediction vs actual to enable model calibration over time",
-          "Add --force flag to bypass approval for trusted automation",
-          "Test with historical pipeline runs to measure retrospective accuracy",
-          "Consider multi-tier approval: soft warning (60-70% prob) vs hard block (<40%)",
-          "Integrate with existing cost.sh attribution engine to avoid duplication"
-        ]
-      },
-      "timestamp": 1775326445,
-      "ttl": 3600
-    },
-    "ed89ea6027a6cdc10daa8c023bca765c": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "low",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "False positive regression detection on transient success rate drops",
-          "3-run detection window may be too slow for urgent failures",
-          "Incomplete rollback leaving orphaned state in intelligence cache",
-          "Race conditions if intelligence layer writes during rollback",
-          "Distinguishing legitimate success rate variance from real regression"
-        ],
-        "implementation_hints": [
-          "Build health-baseline.json as rolling 7d/24h window using existing cost.json pattern",
-          "Implement regression detection before rollback to test detection accuracy in isolation",
-          "Use file-based snapshots (cp -r) for rollback, not git, to avoid merge complexity",
-          "Integration test: simulate drop from 80% → 55% over 3 runs, verify files reverted",
-          "Emit event via existing event bus (sw-eventbus.sh) for visibility",
-          "Log rollback decisions to rollback-log.jsonl with before/after metrics for audit trail",
-          "Coordinate with sw-adaptive.sh to know which files are 'auto-generated adaptive state'",
-          "Consider 3-run window might need tuning based on pipeline frequency in production"
-        ]
-      },
-      "timestamp": 1775326493,
-      "ttl": 3600
-    },
-    "db00ebd5c40df4db2944f824ceef7314": {
-      "result": {
-        "complexity": 5,
-        "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "False positives breaking valid setups due to overly strict validation",
-          "Framework-specific dry-run modes varying significantly across languages",
-          "Difficulty auto-detecting which tools are truly required vs optional",
-          "Missing support for less common package managers or build systems",
-          "Harmless warnings mistaken for actionable failures"
-        ],
-        "implementation_hints": [
-          "Reuse validation patterns from #237 startup validator to stay consistent",
-          "Create framework detectors for npm/pip/go/cargo with language-specific logic",
-          "Use permissive defaults: warn instead of fail for tools not in explicit config",
-          "Test dry-run modes thoroughly (npm ci --dry-run, pip install --dry-run, go build -n, etc.)",
-          "Structure validation report with clear remediation steps for each failure",
-          "Document required vs optional checks in CLAUDE.md for maintainability"
-        ]
-      },
-      "timestamp": 1775326544,
-      "ttl": 3600
-    },
-    "56254fa4e52db312db0e282985359a1a": {
-      "result": {
-        "complexity": 5,
-        "risk_level": "low",
-        "success_probability": 82,
-        "recommended_template": "fast",
-        "issue_type": "documentation",
-        "key_risks": [
-          "Framework detection heuristics may miss edge cases (monorepos, custom layouts, polyrepo)",
-          "Generated test commands may not work correctly across project variations and CI configurations",
-          "Scope creep: supporting edge frameworks beyond the initial 5 (Go, Python, Node, Rust, etc.)",
-          "Generated CLAUDE.md templates may not reflect actual best practices for specific project types",
-          "Maintenance burden: templates require updates as frameworks evolve and new patterns emerge",
-          "Configuration validation: generated configs may have latent bugs not caught by static analysis"
-        ],
-        "implementation_hints": [
-          "Reuse file pattern detection logic from existing sw-prep.sh as foundation",
-          "Start with Go and Node.js only, expand to Python/Rust/Java in follow-up issues",
-          "Create framework plugin architecture in .claude/framework-templates/ for maintainability",
-          "Test generated configs against 10+ real-world repos per framework before launch",
-          "Build test command patterns from successful pipeline runs in memory system",
-          "Make templates composable: base + framework-specific + project-size overrides",
-          "Add confidence threshold for framework detection; fall back to wizard if detection < 70%",
-          "Provide escape hatch: always allow manual template override via --template flag",
-          "Measure impact: track adoption rate and success rate of generated configs vs manual"
-        ]
-      },
-      "timestamp": 1775326595,
-      "ttl": 3600
-    },
-    "e16f8b31e34662a05af62256649f1a80": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 75,
-        "recommended_template": "standard",
-        "issue_type": "refactor",
-        "key_risks": [
-          "Incomplete pattern migration leaving some fallbacks hardcoded",
-          "Schema validation missing edge cases or config combinations",
-          "Operator migration guide inadequate for custom configurations",
-          "Startup validation performance impact with large configs",
-          "Backwards compatibility issues with existing policy.json"
-        ],
-        "implementation_hints": [
-          "Use audit results from #340 to identify and prioritize 20 patterns",
-          "Design JSON schema first with explicit defaults before implementation",
-          "Implement validation layer with clear error messages on missing required config",
-          "Test both complete configs and intentionally incomplete configs",
-          "Create automated migration helper to convert existing hardcoded values",
-          "Document each migrated pattern with original rationale and new config location"
-        ]
-      },
-      "timestamp": 1775326645,
-      "ttl": 3600
-    },
-    "a57b5f288ce44d587ad536584136ad08": {
-      "result": {
-        "complexity": 5,
-        "risk_level": "low",
-        "success_probability": 82,
-        "recommended_template": "fast",
-        "issue_type": "performance",
-        "key_risks": [
-          "Historical data scarcity on new installations (need baseline for P50/P95 percentiles)",
-          "Database query performance when aggregating thousands of pipeline runs",
-          "Dashboard rendering lag with large trend datasets",
-          "Integration complexity with adaptive timeout engine feedback loop"
-        ],
-        "implementation_hints": [
-          "Extend sw-db.sh schema with stage_duration_ms, stage_name, pipeline_run_id columns",
-          "Pre-calculate P50/P95 percentiles nightly to avoid runtime cost",
-          "Bootstrap with synthetic baseline data (e.g., 100th percentile of observed durations) until sufficient history exists",
-          "Use existing dashboard/server.ts WebSocket layer for real-time stage-duration-trends widget",
-          "Cache percentile calculations in intelligence-cache.json with TTL to reduce compute",
-          "Define retention policy (e.g., keep last 500 runs per stage, archive older data)",
-          "Weekly report can leverage existing scheduled task infrastructure (sw-loop pattern)",
-          "Export format to adaptive timeout engine should match cost.json structure for consistency"
-        ]
-      },
-      "timestamp": 1775326692,
-      "ttl": 3600
-    },
-    "40f63ef81b62c00d0cc07677b813cf9b": {
-      "result": {
-        "complexity": 7,
-        "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
-        "issue_type": "testing",
-        "key_risks": [
-          "Statistical methods may produce false positives (marking stable tests as flaky) or false negatives (missing actual flakiness)",
-          "Risk of quarantining legitimate failures that appear flaky by coincidence in small sample sizes",
-          "Integration complexity with build loop—must ensure quarantined tests don't silently hide real bugs",
-          "Defining statistical significance threshold (e.g., how many runs, what pass rate) is non-trivial across different test types",
-          "Dashboard scalability if project has thousands of tests; visualizing flakiness trends per test"
-        ],
-        "implementation_hints": [
-          "Begin with simple pass/fail rate tracking (past N runs) before implementing statistical tests",
-          "Use binomial test or chi-squared for statistical significance; document threshold choice (e.g., p<0.05)",
-          "Implement quarantine as separate test suite (e.g., .flaky tests/) isolated from blocking gates; visualize in UI first",
-          "Add structured logging (JSON) for every flaky decision: test name, pass rate, runs sampled, statistical p-value, reason",
-          "Seed with historical pipeline data to validate approach—find known flaky tests first, then run detection on clean data",
-          "Create early dashboard with per-test flakiness rate, trend sparklines, and quarantine status; catch UI/DX gaps before full integration",
-          "Test with intentionally flaky tests (random delays, network calls) before deploying to production pipeline",
-          "Plan rollout: non-blocking mode first (log only, no quarantine), then optional quarantine (config flag), then default on"
-        ]
-      },
-      "timestamp": 1775326741,
-      "ttl": 3600
-    },
-    "c9c52b41bcb1e8f60ccd1c4cdc72b9d4": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Cost attribution accuracy across stages and iterations",
-          "Database schema migration impact on existing pipelines",
-          "Forecasting model accuracy with limited historical data",
-          "Dashboard query performance at scale",
-          "Integration complexity with existing cost tracking system"
-        ],
-        "implementation_hints": [
-          "Design cost_attributions schema with proper indexing on issue_id and stage",
-          "Implement cost attribution tracking first as foundation for dashboard and forecasting",
-          "Use existing dashboard infrastructure to minimize UI complexity",
-          "Build forecasting using linear regression on historical cost trends by template and complexity",
-          "Add comprehensive tests for cost calculation accuracy before merging",
-          "Consider data migration strategy for backfilling historical costs if needed"
-        ]
-      },
-      "timestamp": 1775326791,
-      "ttl": 3600
-    },
-    "2561f931a94a79d052d5ca53e406ad83": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "refactor",
-        "key_risks": [
-          "Incomplete migration of all 20+ hardcoded values across three scripts",
-          "Breaking existing pipelines if policy defaults don't match original hardcoded values",
-          "Override precedence ambiguity (policy.json vs policy-overrides.json precedence)",
-          "Schema validation performance impact on every pipeline run",
-          "Backward compatibility for existing pipeline runs without policy.json"
-        ],
-        "implementation_hints": [
-          "Catalog all hardcoded values in sw-pipeline.sh, sw-loop.sh, sw-daemon.sh before creating schema",
-          "Implement clear precedence: defaults → policy.json → policy-overrides.json",
-          "Use jq for schema validation (already in tooling)",
-          "Add fallback/defaults to ensure pipelines work when policy.json is missing",
-          "Consider CLI commands: shipwright policy get/set/validate for safe policy management",
-          "Test matrix: missing policy.json, partial config, invalid schema, override conflicts",
-          "Document override system with examples of intelligence layer use cases"
-        ]
-      },
-      "timestamp": 1775326839,
-      "ttl": 3600
-    },
-    "29b96c5381f688491311703f8522726c": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Event bus reliability - patterns could be lost, duplicated, or out-of-order in distributed system",
-          "Memory pollution - incorrect patterns from one repo could degrade success rate in other repos",
-          "Circular learning - patterns could feed back to originating repo and cause oscillation",
-          "Pattern over-generalization - solution for repo A may not apply to repo B (different language, framework, domain)",
-          "Performance degradation - pattern events could flood event bus if too frequent or unfiltered",
-          "Cross-repo contamination - applying patterns without adequate validation could introduce regressions"
-        ],
-        "implementation_hints": [
-          "Define pattern event schema upfront with versioning for breaking changes",
-          "Implement pattern deduplication and circular dependency detection before pub/sub",
-          "Add pattern validation layer that checks success rate in source repo and framework/language compatibility before broadcast",
-          "Filter pattern application by relevance scoring - only apply patterns matching issue type, complexity band, and file patterns",
-          "Use pattern success metrics from source repo (success_count > 3) as hard requirement before other repos adopt",
-          "Add pattern metadata tagging: source_repo, source_issue, languages, frameworks, success_rate, timestamp for filtering",
-          "Implement pattern quarantine for low-confidence patterns - test in isolation before broad application",
-          "Build dashboard filtering/search to let operators understand pattern flow and detect poisoned patterns"
-        ]
-      },
-      "timestamp": 1775326888,
-      "ttl": 3600
-    },
-    "c1d5d7db916d905a16cb34914b097409": {
-      "result": {
-        "complexity": 7,
-        "risk_level": "high",
-        "success_probability": 70,
-        "recommended_template": "standard",
-        "issue_type": "backend",
-        "key_risks": [
-          "Rollback logic edge cases: false positive/negative threshold triggers could block valid configs or accept harmful ones",
-          "Config state management: concurrent pipeline runs may see stale config state during rollback decision",
-          "Metric aggregation window (5 runs): appropriate period depends on stage duration and is not one-size-fits-all",
-          "10% success rate drop threshold may be too aggressive for noisy stages or too lenient for critical stages",
-          "Database schema migration impact on existing pipelines and cost tracking accuracy",
-          "Cascading failures: automatic rollback could mask underlying issues and prevent root cause fixes"
-        ],
-        "implementation_hints": [
-          "Start with sw-db.sh schema design: review existing pattern for metrics tables, add indexes on (stage, timestamp) for range queries",
-          "Implement config versioning before rollback: track which config.json hash was active per pipeline, enable point-in-time restore",
-          "Metric aggregation: define window as last N runs (not time-based) to avoid cross-stage duration mismatches",
-          "Rollback trigger logic should be in a separate function for testability, with dry-run mode for safety",
-          "Dashboard: reuse sw-pipeline-vitals.sh patterns for 7/30/90 day aggregations instead of duplicating logic",
-          "Stage-specific thresholds: consider P0-critical stages (deploy, review) deserve stricter thresholds than P6 stages",
-          "CLI command sw-daemon.sh --check-rollback-triggers should run pre-spawn, not block actual spawn (non-fatal check)",
-          "Test suite: generate synthetic failure patterns (5 consecutive 0% success, then recovery) to validate trigger logic",
-          "Gradual rollout: disable rollback by default, enable per-stage via feature flag in daemon-config.json"
-        ]
-      },
-      "timestamp": 1775326942,
-      "ttl": 3600
-    },
-    "9dd6788afa5bd4fce264c7a433ba632c": {
-      "result": {
-        "complexity": 8,
-        "risk_level": "low",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "refactor",
-        "key_risks": [
-          "Incomplete pattern detection in codebase scan (missing ~20% of fallbacks)",
-          "Misclassification of fallback patterns (acceptable vs technical debt boundary)",
-          "Eliminating fallbacks breaks functionality that depends on graceful degradation",
-          "Scope creep from filed issues exceeds team capacity (>10 high-priority fixes)",
-          "External service changes/outages that were original fallback reason recur after elimination"
-        ],
-        "implementation_hints": [
-          "Grep for common fallback patterns: fallback|default|catch|except|try|recover|compromise|override|skip and build inventory with file:line references",
-          "Cross-reference with git blame to understand when fallbacks were added and what problem they solved",
-          "Use pipeline intelligence engine to score each fallback by risk (hidden bugs) vs benefit (graceful degradation)",
-          "File 5-10 issues in priority order, include: current fallback behavior, root cause, proposed fix, test strategy for each",
-          "Add fallback_count metric to platform health dashboard with trend tracking (goal: 67 → <54 within 90 days)"
-        ]
-      },
-      "timestamp": 1775326954,
-      "ttl": 3600
-    },
-    "e0cd4f0363b18f6e77ca3e75e91952d2": {
-      "result": {
-        "complexity": 7,
-        "risk_level": "medium",
-        "success_probability": 72,
-        "recommended_template": "standard",
-        "issue_type": "testing",
-        "key_risks": [
-          "Pattern noise injection degrading success rates if similarity scoring is poor",
-          "A/B test statistical contamination from confounding variables",
-          "Pattern overfitting to specific contexts that don't generalize",
-          "Memory system scalability as pattern library grows",
-          "Dashboard performance with large pattern visualizations"
-        ],
-        "implementation_hints": [
-          "Implement pattern capture hook first, A/B testing framework second, injection third",
-          "Establish baseline success rate before injecting any patterns",
-          "Use confidence thresholds to filter low-relevance pattern suggestions",
-          "Index patterns by issue type AND complexity to avoid false matches",
-          "Start with top 5-10 patterns per category to avoid overwhelming agent prompts",
-          "Add pattern origin/success_rate metadata for transparency and debugging",
-          "Integrate with existing memory system rather than building parallel storage",
-          "Measure pattern relevance via A/B test before calling feature 'successful'"
-        ]
-      },
-      "timestamp": 1775326990,
-      "ttl": 3600
-    },
-    "b27a3feb4114d4b4e69fdbbb4dbcc2a8": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "full",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "State restoration bugs could cause lost work or inconsistent recovery",
-          "Checkpoint format incompatibilities across restarts",
-          "Edge case failures during checkpoint writes (disk full, permission errors)",
-          "Measuring accuracy of >50% improvement claim with realistic test scenarios",
-          "Interaction with context exhaustion during checkpoint operations"
-        ],
-        "implementation_hints": [
-          "Store checkpoints as JSON in .claude/pipeline-artifacts/checkpoints/ with iteration/step identifiers",
-          "Include file modifications, test results, agent reasoning, and full context state in each checkpoint",
-          "Design checkpoint format with versioning for backward compatibility",
-          "Test recovery from mid-action failures: interrupted file edit, test run timeout, error analysis cutoff",
-          "Add metrics tracking: checkpoint size, recovery time, actual wasted iteration reduction",
-          "Consider disk space implications and implement checkpoint pruning/rotation policy"
-        ]
-      },
-      "timestamp": 1775327002,
-      "ttl": 3600
-    },
-    "49cd5b127eb71a720dcf472b9886bfbc": {
-      "result": {
-        "complexity": 7,
-        "risk_level": "medium",
-        "success_probability": 75,
-        "recommended_template": "standard",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Metric accuracy: complexity scores may not correlate with actual resource needs",
-          "Integration complexity: requires coordination with pipeline composer and model router",
-          "Performance: static analysis could be slow on large codebases",
-          "Cache invalidation: TTL tuning on intelligence-cache.json",
-          "Metric selection: unclear if chosen metrics (cyclomatic, coupling, churn) are optimal predictors"
-        ],
-        "implementation_hints": [
-          "Reuse existing AST parsing utilities or adopt established complexity libraries (eslint-plugin-complexity for JS, radon for Python)",
-          "Implement metrics collection incrementally: start with cyclomatic complexity alone, add coupling/churn in follow-ups",
-          "Design cache structure to store per-file scores with granular TTL (allow selective invalidation on file change)",
-          "Create comprehensive test suite with real codebases: simple (single file), medium (multi-file module), complex (monorepo with cross-module dependencies)",
-          "Defer model router integration until basic scoring is validated against historical pipeline data",
-          "Add confidence scoring to metrics (e.g., cyclomatic_complexity_confidence: 0.85) to handle edge cases"
-        ]
-      },
-      "timestamp": 1775327037,
-      "ttl": 3600
-    },
-    "6a351e7c898ea8f0718cd2e28336d7ed": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 76,
-        "recommended_template": "fast",
-        "issue_type": "infrastructure",
-        "key_risks": [
-          "Cost projection accuracy depends on sufficient historical pipeline data and requires backfilling initial estimates",
-          "Template recommendation logic must handle diverse project profiles without over-fitting to training data",
-          "User experience of 4-6 question wizard will drive adoption; poor UX negates DX benefit",
-          "Integration complexity with existing pipeline start command and argument parsing",
-          "Risk tolerance and budget tolerance parameters are subjective; need clear definitions"
-        ],
-        "implementation_hints": [
-          "Leverage project detection from issue #313 to pre-populate wizard responses, reducing user input",
-          "Store template recommendations alongside actual outcomes (duration, cost, success rate) in memory system for continuous learning",
-          "Use intelligence cache statistics (P50/P95 from historical runs) for cost/duration projections; start with Conservative (P95) estimates until confidence builds",
-          "Design --auto mode to compose recommendations from project type + default risk tolerance, falling back gracefully when history is sparse",
-          "Create mock test data with synthetic project profiles (monorepo, microservices, ML, docs-only, etc.) to validate recommendation logic without real pipelines",
-          "Include confidence intervals in projections (e.g., 'cost: $5.20 ± $2.10') so users understand uncertainty vs precision"
-        ]
-      },
-      "timestamp": 1775327050,
-      "ttl": 3600
-    },
-    "194fa94063970ed6d721d1695016bb08": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 78,
-        "recommended_template": "standard",
-        "issue_type": "refactor",
-        "key_risks": [
-          "Breaking existing functionality in a 2118-line refactor despite claimed 'no functional changes'",
-          "Module boundary misidentification - functions may have hidden dependencies or complex call graphs",
-          "Circular or tangled dependencies between memory modules if architecture not well-planned",
-          "Integration bugs at router layer when modules interact",
-          "Existing tests may not cover all edge cases in module interactions"
-        ],
-        "implementation_hints": [
-          "Create detailed dependency graph of sw-memory.sh functions before refactoring - identify call chains and data flow",
-          "Implement modules incrementally (one at a time) with isolated testing before full integration",
-          "Use wrapper/adapter pattern in router to guarantee 100% backward-compatible API",
-          "Add module-level unit tests first, then integration tests with router",
-          "Document module contracts clearly: input/output signatures, dependencies, error handling",
-          "Consider shared utilities/constants - avoid duplication but prevent circular imports"
-        ]
-      },
-      "timestamp": 1775327087,
-      "ttl": 3600
-    },
-    "4605e24e74fce9dfc2a6a3045c202db5": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 75,
-        "recommended_template": "standard",
-        "issue_type": "testing",
-        "key_risks": [
-          "Over-aggressive noise filtering may discard context needed by agent",
-          "Test framework output formats vary significantly; parsing gaps will persist",
-          "Measurement baseline requires historical data; initial effectiveness unclear",
-          "Integration with loop iteration system may require refactoring existing context injection",
-          "Different test frameworks (pytest, jest, go test, cargo) need separate parsers"
-        ],
-        "implementation_hints": [
-          "Build plugin architecture for test-framework-specific error parsers (start with jest, add others incrementally)",
-          "Use regex patterns for common error signatures (assertion failures, import errors, timeouts, panics)",
-          "Create error-summary.json schema with: file, line, error_type, message, context_excerpt, suggested_direction",
-          "Generate before/after metrics from sw-loop-test.sh: track iterations-to-fix, error repeats, false positives",
-          "Integration test: mock test output from real failure scenarios, verify structured JSON quality and noise reduction",
-          "Inject error context into loop iteration prompt at high priority to guide agent focus"
-        ]
-      },
-      "timestamp": 1775327098,
-      "ttl": 3600
-    },
-    "5b0d9f2ff1c2ff7768f45755088c751f": {
-      "result": {
-        "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 80,
-        "recommended_template": "standard",
-        "issue_type": "frontend",
-        "key_risks": [
-          "WebSocket performance degradation with 10s update cadence at scale",
-          "Cost projection inaccuracy with sparse/missing historical data",
-          "P50/P95 statistical validity with small sample sizes",
-          "Race conditions between cost tracking and budget threshold checks",
-          "Dashboard unresponsiveness under rapid real-time updates",
-          "Edge cases in stage duration aggregation across heterogeneous pipeline configs"
-        ],
-        "implementation_hints": [
-          "Isolate ETA/cost calculation logic into testable service module before integrating with dashboard",
-          "Use rolling window of last 10 runs for cost baselines; discard ancient outliers",
-          "Cache P50/P95 percentiles with TTL instead of recalculating on every WebSocket tick",
-          "Project cost with confidence intervals (point estimates mislead users); show uncertainty",
-          "Add feature flag for WebSocket cadence (10s ideal, 30s fallback if performance degrades)",
-          "Mock 10+ historical pipeline runs in dashboard E2E tests to validate ETA accuracy",
-          "Stage progress bar should fail gracefully if duration data unavailable (show spinner instead)",
-          "Rate-limit /api/progress/:pipelineId endpoint (max 1 req/2s per client) to prevent flood attacks"
-        ]
-      },
-      "timestamp": 1775327145,
-      "ttl": 3600
     }
   }
 }
