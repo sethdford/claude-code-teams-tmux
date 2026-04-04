@@ -4,35 +4,30 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 98,
-            "summary": "Contains 11 detailed test failure patterns with root causes and fixes directly relevant to build/test stage execution, including mock artifacts, JSON parsing issues, and resource exhaustion problems that would block the build"
+            "file": "metrics.json",
+            "relevance": 95,
+            "summary": "Contains baseline build/test durations (17827s build, 1575s test) and iteration counts. Critical context for test execution optimization work — provides performance baselines to measure improvements against."
           },
           {
-            "file": "metrics.json",
-            "relevance": 92,
-            "summary": "Baseline metrics for build_duration_s (17827s) and test_duration_s (1575s) provide performance context for the build stage, essential for understanding expected iteration time and cost"
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Documents resource exhaustion patterns (fork failures, process limits) and mock-related test failures. Highly relevant to test parallelization optimization — shows known constraints and failure modes that could block parallel test execution."
           },
           {
             "file": "patterns.json",
-            "relevance": 58,
-            "summary": "Project detection (Node.js, vitest, npm) helps understand how the build stage should execute tests and what commands to invoke, though less critical than actual failure patterns"
-          },
-          {
-            "file": "decisions.json",
-            "relevance": 2,
-            "summary": "Empty decisions log, provides no actionable context for build stage execution"
+            "relevance": 68,
+            "summary": "Shows project is Node.js/JavaScript with vitest test runner, commonjs imports, src/ structure. Essential context for understanding how to optimize test execution for this specific project architecture."
           }
         ]
       },
-      "timestamp": 1773214027,
+      "timestamp": 1775324201,
       "ttl": 1800
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
         "raw_response": "Mock claude response"
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775322911,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -263,7 +258,7 @@
           }
         }
       ],
-      "timestamp": 1775321381,
+      "timestamp": 1775324023,
       "ttl": 1800
     },
     "fdbb7bc340414cf938cecd4b790fa9e2": {
@@ -647,6 +642,282 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "34fdbc0693cc860c23a531f79a009bc3": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Incomplete shared state detection could introduce race conditions in parallel test execution",
+          "Misclassifying critical vs flaky failures may mask real issues or cause premature abort",
+          "Parallelization overhead could negate benefits on systems with limited CPU cores",
+          "Git diff analysis may miss indirect dependencies and transitively affected modules",
+          "Integration complexity with existing fast-test-cmd modes, metrics dashboard, and pipeline state"
+        ],
+        "implementation_hints": [
+          "Start with static analysis (AST parsing) for shared state detection, validate with empirical test runs",
+          "Use work-stealing queue or load-balanced worker pool for safe parallel execution",
+          "Build test dependency graph as intermediate artifact to validate parallelization safety",
+          "Implement gradual rollout: validate on CI before enabling in daemon, track metrics continuously",
+          "Leverage existing test framework parallelization (pytest -n, vitest --run) rather than custom orchestration",
+          "Add comprehensive structured logging to distinguish race conditions from other failure modes",
+          "Include fallback to sequential execution if parallel mode shows instability or time regression"
+        ]
+      },
+      "timestamp": 1775323018,
+      "ttl": 3600
+    },
+    "feb66caa8523cfff6d372818c9c03206": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1775323029,
+      "ttl": 1800
+    },
+    "73f5a2675527b77148d798ecbc7d1bdc": {
+      "result": {
+        "estimated_cost_usd": 3.18,
+        "estimated_iterations": 2,
+        "estimated_tokens": 285000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1775323042,
+      "ttl": 3600
+    },
+    "5c7c5ecaa7548300283a3d4092b356a9": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "performance",
+          "infrastructure"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Moderate complexity: requires test suite analysis (shared state detection), git diff analysis, parallel scheduling, and distinction between critical/flaky failures. Integration with fast-test and full modes adds coordination overhead."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "performance"
+          ],
+          "design": [
+            "testing-strategy",
+            "performance",
+            "architecture-design"
+          ],
+          "build": [
+            "performance",
+            "testing-strategy"
+          ],
+          "review": [
+            "testing-strategy",
+            "two-stage-review",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality",
+            "validation-thoroughness"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "performance"
+          ],
+          "deploy": [],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "testing-strategy": "Core expertise needed to design test suite scanning, detect parallelizable test files, analyze git diff for affected modules, and coordinate execution strategy.",
+          "performance": "Critical for achieving the 90min → 60min duration target; required to design scheduling, CPU core utilization, and measure actual throughput gains.",
+          "architecture-design": "Ensures parallelization layer integrates cleanly with existing pipeline architecture (fast-test-cmd, full suite modes, dashboard).",
+          "adversarial-quality": "Must stress-test parallelization logic for hidden shared state, test ordering dependencies, and race conditions that manual detection might miss.",
+          "two-stage-review": "Complex test infrastructure changes deserve staged review: first-pass on parallelization detection algorithm, second-pass on integration and metrics.",
+          "pr-quality": "PR must clearly document parallelization assumptions, detection heuristics, and fast-fail policy to be reviewable.",
+          "validation-thoroughness": "Requires proof that time savings materialize in practice, not just in theory; needs both micro-benchmarks and end-to-end pipeline measurements.",
+          "observability": "Dashboard must surface parallel execution metrics (cores used, actual vs theoretical speedup, affected-test accuracy) so wins are visible and regressions are caught."
+        },
+        "generated_skills": [
+          {
+            "name": "test-parallelization-detection",
+            "reason": "No existing skill covers the specific challenge of detecting which test files can safely run in parallel by analyzing shared state (temp files, global variables, database access). This requires domain expertise in test infrastructure patterns.",
+            "content": "## Test Parallelization Detection & Coordination\n\n### Problem\nTest parallelization is dangerous: undetected shared state (temp files, global state, database connections) causes race conditions and flaky failures. This skill provides a systematic approach to detect parallelizable test suites and coordinate their execution safely.\n\n### Shared State Detection Heuristics\n\n**Static Analysis (file scanning):**\n- Scan test file imports for singleton patterns (db connections, file handles, global state modules)\n- Detect hardcoded file paths (temp dirs) and network ports — tests using fixed resources conflict\n- Check for `beforeAll`/`afterAll` hooks that modify global state\n- Identify test files importing shared fixtures/setup modules\n\n**Dynamic Analysis (test execution):**\n- Run test suite with `--detectOpenHandles` (Node.js) or equivalent to catch file/port leaks\n- Track temp directory usage per test file — any overlap = unsafe to parallelize\n- Monitor for test isolation violations (tests passing in isolation but failing when run together)\n\n**Safety Levels:**\n- **Green (parallelizable)**: No shared state detected, no fixture conflicts, passes isolation tests\n- **Yellow (conditional)**: Shared fixtures but isolated datasets, parallel execution with coordination (e.g., separate DB schemas)\n- **Red (sequential)**: Database transaction rollback, process spawning, hardware resource contention — must run serially\n\n### Affected-Test Detection via Git Diff\n\n**Module Dependency Tracking:**\n1. Build module-to-test mapping (which tests exercise which modules)\n2. On each commit, run `git diff --name-only HEAD~1` to identify changed modules\n3. Find all tests that import/test those modules\n4. Prioritize affected tests first in execution order (fail-fast on functionality regression)\n5. Cache mapping per commit to avoid re-scanning on retries\n\n**False Negatives to Handle:**\n- Integration tests that cross module boundaries (require broader analysis)\n- Tests that exercise shared utilities or base classes (conservative: mark as affected if any parent module changed)\n- Dynamic imports and string-based test discovery (fallback: scan test code for patterns)\n\n### Parallel Execution Coordination\n\n**Scheduler:**\n- Detect CPU core count, default to `cores - 1` (reserve 1 for OS)\n- Group parallelizable tests into batches, run batches in parallel\n- Within each batch, respect test file order (some test runners depend on execution order)\n- Run non-parallelizable (red) tests serially, either before or after parallel batches (configurable)\n\n**Fast-Fail Policy:**\n- Critical failures: assertion errors, uncaught exceptions → abort immediately\n- Flaky failures: timeout, process exit, known-flaky markers → retry up to N times before aborting\n- Aggregate results across parallel workers before reporting\n- Time tracking: measure wall-clock time for each batch, report parallelization efficiency (theoretical vs actual speedup)\n\n### Dashboard Integration\n\n- Display parallel execution summary: N tests in M workers, X% speedup\n- Visualize test dependency graph (which tests block which)\n- Alert on shared-state violations (test passed alone, failed in parallel)\n- Trend: parallelization efficiency over time (detect regressions where new tests add serial bottlenecks)\n\n### Key Decisions for This Issue\n\n1. **Minimum Parallelization Threshold**: What's the smallest safe granularity? (per file, per suite, per test?)\n2. **Flaky Detection**: How many retries before marking as critical failure? (recommend 3)\n3. **Shared-State Confidence**: Are heuristics sufficient, or require explicit opt-in per test file?\n4. **Fast-Fail Behavior**: Abort on first critical failure globally, or let all workers finish for faster feedback iteration?\n5. **Fallback**: If parallelization detection is uncertain, run serial — safety over speed."
+          }
+        ],
+        "review_focus": [
+          "Shared state detection algorithm accuracy — does it flag all parallelization hazards without false positives?",
+          "Git diff analysis for affected tests — does it correctly map changed modules to affected test files?",
+          "Fast-fail distinction between critical and flaky failures — is the heuristic sound?",
+          "Parallelization overhead — does coordination cost exceed the speedup gains?",
+          "Backward compatibility with fast-test-cmd and full suite modes — no regressions in existing test behavior",
+          "Dashboard metrics visibility — are speedup gains and parallelization details displayed clearly?",
+          "CPU core detection and platform compatibility — works on macOS, Linux, CI environments"
+        ],
+        "risk_areas": [
+          "Over-parallelization causing race conditions and flaky test failures if shared state detection misses edge cases",
+          "Affected-test detection missing changed functionality (e.g., integration across modules, dynamic imports)",
+          "Fast-fail aborting too aggressively on non-critical failures, hiding legitimate bugs",
+          "Performance overhead of parallelization coordination outweighing actual speedup (especially on small test suites)",
+          "Incompatibility with test frameworks that expect serial execution or have global state assumptions",
+          "Difficulty reproducing failures when parallel execution order is non-deterministic"
+        ]
+      },
+      "timestamp": 1775323242,
+      "ttl": 3600
+    },
+    "ab258007c7e6d7691de2b60538c5d1d1": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json",
+            "relevance": 95,
+            "summary": "Current baseline shows test_duration_s: 1575 (updated 2026-03-09). This is the exact metric being optimized; critical for measuring parallel, affected-first, fast-fail improvements."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Project uses Node.js + vitest test runner. Essential for planning test execution optimizations specific to vitest's capabilities (parallel execution, reporter flags, filtering)."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 52,
+            "summary": "Recent test failures show mock artifact and JSON parsing issues. Understanding failure modes informs fast-fail strategy and test isolation considerations for optimization."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Historical baseline (147s build, 1s test from 2026-02-21) provides data point for older project state; less relevant than current metrics but shows project evolution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 22,
+            "summary": "Earlier project detection (2026-02-21) confirms Node.js; superseded by more recent patterns.json with vitest detail."
+          }
+        ]
+      },
+      "timestamp": 1775323410,
+      "ttl": 1800
+    },
+    "cd2119855f0bc4fc15c413be81c463a9": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains detailed test failure patterns directly related to plan/review stage artifact writing, mock claude binary JSON output, and jq parse errors — these are the root causes blocking plan validation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Records baseline metrics from 2026-03-09 (test_duration_s: 1575, iterations: 1) showing test performance data relevant to understanding test execution optimization impact"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Most recent project structure snapshot (2026-04-04) showing vitest test runner and nodejs project type — provides context for test execution optimization target environment"
+          }
+        ]
+      },
+      "timestamp": 1775323668,
+      "ttl": 1800
+    },
+    "850bca604d9f74c08b4f4679b4cfacae": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Critical for test optimization design. Contains 11 failure patterns including resource exhaustion (fork failures), process management issues, and artifact generation problems—all directly relevant to designing parallel test execution and fast-fail mechanisms."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 85,
+            "summary": "Baseline performance data (build: 17827s, test: 1575s, last updated 2026-03-09). Essential for understanding current test execution duration and establishing optimization targets for parallel/affected-first strategies."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project structure metadata (vitest test runner, npm, commonjs imports, test pattern *.test.js). Directly informs design of test discovery and execution strategies for the optimization architecture."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Secondary baseline (build: 147s, test: 1s, last updated 2026-02-21). Provides historical comparison point, though newer metrics (1575s) are more relevant. Useful for trend analysis."
+          },
+          {
+            "file": "global.json",
+            "relevance": 35,
+            "summary": "Contains empty cross-repo learnings array. Minimal relevance but could become valuable as cross-project patterns are captured during optimization implementation."
+          }
+        ]
+      },
+      "timestamp": 1775323705,
+      "ttl": 1800
+    },
+    "30c2cf7571062d8a3303184931f232b4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents 12 test failure patterns including fork resource exhaustion (directly blocking test parallelism), mock claude artifact generation issues, and flaky test patterns. Directly informs what needs fixing to enable parallel test execution and fast-fail optimization."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline metrics show test_duration_s: 1575 (last updated 2026-03-09). Provides performance baseline that test optimization goal should improve, useful for measuring parallelism gains."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 42,
+            "summary": "Project structure detection (Node.js, vitest, commonjs). Minimal relevance but provides context for how test execution optimization should work with the specific test runner and language."
+          }
+        ]
+      },
+      "timestamp": 1775323720,
+      "ttl": 1800
+    },
+    "799125a66b358e6d660e4b2d73f7fa9c": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json",
+            "relevance": 95,
+            "summary": "Current baseline metrics (test_duration_s: 1575, build_duration_s: 17827, updated 2026-03-09) — essential reference point for measuring test execution optimization improvements"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Known test execution failure patterns (mock claude artifacts, jq parse errors, resource exhaustion) — directly relevant to understanding current test execution bottlenecks and potential issues with parallel execution"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 68,
+            "summary": "Project structure and conventions (test_runner: vitest, language: javascript, test_pattern: *.test.js) — identifies vitest as the test harness, critical for designing parallel/affected-first optimization strategy"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 42,
+            "summary": "Historical baseline (test_duration_s: 1, build_duration_s: 147, from 2026-02-21) — shows prior optimization context, though much smaller scope than current metrics"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 38,
+            "summary": "Detailed project conventions (source_dir, import_style, commonjs) — provides context for how test files are structured and imported, relevant for affected-first dependency analysis"
+          }
+        ]
+      },
+      "timestamp": 1775324187,
+      "ttl": 1800
     }
   }
 }
