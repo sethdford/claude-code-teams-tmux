@@ -48,6 +48,9 @@ fi
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
+# Autonomous error recovery with model escalation
+# shellcheck source=lib/auto-recovery.sh
+[[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
 # Test execution optimization (issue #200)
 # shellcheck source=lib/test-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/test-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/test-optimizer.sh" 2>/dev/null || true
@@ -2368,6 +2371,10 @@ ${GOAL}"
         # Check progress (circuit breaker)
         if check_progress; then
             CONSECUTIVE_FAILURES=0
+            # Reset auto-recovery state on progress (tests passing, code advancing)
+            if type recovery_reset >/dev/null 2>&1; then
+                recovery_reset
+            fi
             echo -e "  ${GREEN}✓${RESET} Progress detected — continuing"
         else
             CONSECUTIVE_FAILURES=$(( CONSECUTIVE_FAILURES + 1 ))

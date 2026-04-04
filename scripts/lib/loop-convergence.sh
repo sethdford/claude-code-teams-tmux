@@ -3,6 +3,11 @@
 [[ -n "${_LOOP_CONVERGENCE_LOADED:-}" ]] && return 0
 _LOOP_CONVERGENCE_LOADED=1
 
+# ─── Auto-Recovery Integration ───────────────────────────────────────────────
+# Source the autonomous recovery system for pre-circuit-breaker recovery attempts.
+_CONVERGENCE_SCRIPT_DIR="${_CONVERGENCE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+[[ -f "${_CONVERGENCE_SCRIPT_DIR}/auto-recovery.sh" ]] && source "${_CONVERGENCE_SCRIPT_DIR}/auto-recovery.sh"
+
 # ─── Convergence Detection ────────────────────────────────────────────────────
 
 track_iteration_velocity() {
@@ -82,8 +87,16 @@ check_circuit_breaker() {
         fi
     fi
 
-    # Fallback: static threshold circuit breaker
+    # ─── Auto-Recovery: attempt fix before aborting ────────────────────────
     if [[ "$CONSECUTIVE_FAILURES" -ge "$CIRCUIT_BREAKER_THRESHOLD" ]]; then
+        if type recovery_before_circuit_breaker >/dev/null 2>&1; then
+            local error_log="${ARTIFACTS_DIR:-${PROJECT_ROOT:-.}/.claude/pipeline-artifacts}/error-log.jsonl"
+            if recovery_before_circuit_breaker "$error_log" "${PROJECT_ROOT:-.}" "${TEST_CMD:-}"; then
+                info "Auto-recovery succeeded — resetting circuit breaker"
+                CONSECUTIVE_FAILURES=0
+                return 0
+            fi
+        fi
         error "Circuit breaker tripped: ${CIRCUIT_BREAKER_THRESHOLD} consecutive iterations with no meaningful progress."
         STATUS="circuit_breaker"
         return 1

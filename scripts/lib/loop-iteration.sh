@@ -338,9 +338,22 @@ ${cum_stat}
         fi
     fi
 
+    # Auto-recovery hint injection (from auto-recovery.sh)
+    local recovery_section=""
+    if [[ -n "${RECOVERY_HINT:-}" ]]; then
+        recovery_section="## Auto-Recovery Guidance
+${RECOVERY_HINT}
+"
+    fi
+    if [[ -n "${RECOVERY_ESCALATED_MODEL:-}" ]]; then
+        MODEL="${RECOVERY_ESCALATED_MODEL}"
+        info "Model escalated to: ${MODEL} (auto-recovery)"
+    fi
+
     cat <<PROMPT
 You are an autonomous coding agent on iteration ${ITERATION}/${MAX_ITERATIONS} of a continuous loop.
 ${resume_section}
+${recovery_section}
 ## Your Goal
 ${GOAL}
 

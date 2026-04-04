@@ -178,6 +178,18 @@ stage_build() {
     local enriched_goal
     enriched_goal=$(_pipeline_compact_goal "$GOAL" "$plan_file" "$design_file")
 
+    # Dark factory: inject spec context into build goal
+    local spec_file="${ARTIFACTS_DIR}/spec.json"
+    if [[ -f "$spec_file" ]] && type spec_to_prompt >/dev/null 2>&1; then
+        local spec_prompt
+        spec_prompt=$(spec_to_prompt "$spec_file" 2>/dev/null || true)
+        if [[ -n "$spec_prompt" ]]; then
+            enriched_goal="${enriched_goal}
+
+${spec_prompt}"
+        fi
+    fi
+
     # TDD: when test_first ran, tell build to make existing tests pass
     if [[ "${TDD_ENABLED:-false}" == "true" || "${PIPELINE_TDD:-}" == "true" ]]; then
         enriched_goal="${enriched_goal}
@@ -544,8 +556,32 @@ stage_test() {
 
     if [[ "$test_exit" -eq 0 ]]; then
         success "Tests passed"
+
+        # Dark factory: holdout validation — run sealed tests the agent never saw
+        if type holdout_validate >/dev/null 2>&1; then
+            HOLDOUT_DIR="${ARTIFACTS_DIR}/test-holdout"
+            if [[ -f "${HOLDOUT_DIR}/manifest.json" ]]; then
+                if holdout_validate "." "$test_cmd" 2>/dev/null; then
+                    success "Holdout validation passed (agent code works on unseen tests)"
+                else
+                    warn "Holdout validation failed — agent may have overfit to visible tests"
+                    holdout_reveal 2>/dev/null || true
+                    # Don't fail the stage — holdout is advisory for now
+                    emit_event "test.holdout_failed" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=test" 2>/dev/null || true
+                fi
+            fi
+        fi
     else
         error "Tests failed (exit code: $test_exit)"
+
+        # Dark factory: build causal graph on test failure for root-cause analysis
+        if type causal_build_graph >/dev/null 2>&1; then
+            CAUSAL_GRAPH_FILE="${ARTIFACTS_DIR}/causal-graph.json"
+            causal_build_graph "." 2>/dev/null || true
+        fi
+
         # Extract most relevant error section (assertion failures, stack traces)
         local relevant_output=""
         relevant_output=$(grep -A5 -E 'FAIL|AssertionError|Expected.*but.*got|Error:|panic:|assert' "$test_log" 2>/dev/null | tail -40 || true)

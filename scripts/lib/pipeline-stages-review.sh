@@ -86,6 +86,28 @@ Focus areas:
 Be thorough and adversarial. Only accept exceptional code without issues.
 "
 
+    # Dark factory: inject spec compliance check into review
+    local spec_file="${ARTIFACTS_DIR}/spec.json"
+    if [[ -f "$spec_file" ]] && type spec_diff >/dev/null 2>&1; then
+        SPEC_DIR="${ARTIFACTS_DIR}/specs"
+        local compliance_report
+        compliance_report=$(spec_diff "$spec_file" "${PROJECT_ROOT:-.}" 2>/dev/null || true)
+        if [[ -n "$compliance_report" && -f "$compliance_report" ]]; then
+            local verdict
+            verdict=$(jq -r '.verdict // "unknown"' "$compliance_report" 2>/dev/null || echo "unknown")
+            if [[ "$verdict" == "review_needed" ]]; then
+                local unmod_files
+                unmod_files=$(jq -r '.file_coverage.unmodified_files[]?' "$compliance_report" 2>/dev/null | head -5 || true)
+                review_prompt+="
+## Spec Compliance Warning
+The specification expected changes to files that were NOT modified:
+${unmod_files}
+Check if these files should have been changed to meet the spec goals.
+"
+            fi
+        fi
+    fi
+
     # Inject quality profile standards (never-ship, always-require, focus areas)
     local quality_profile="${PROJECT_ROOT}/.claude/quality-profile.json"
     if [[ -f "$quality_profile" ]]; then

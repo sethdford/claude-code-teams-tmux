@@ -13,6 +13,11 @@ _SKILL_REGISTRY_SH="${SCRIPT_DIR}/lib/skill-registry.sh"
 _SKILL_MEMORY_SH="${SCRIPT_DIR}/lib/skill-memory.sh"
 [[ -f "$_SKILL_MEMORY_SH" ]] && source "$_SKILL_MEMORY_SH"
 
+# Source dark factory modules (test holdout, spec-driven, causal graph)
+[[ -f "$SCRIPT_DIR/lib/test-holdout.sh" ]] && source "$SCRIPT_DIR/lib/test-holdout.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/spec-driven.sh" ]] && source "$SCRIPT_DIR/lib/spec-driven.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/causal-graph.sh" ]] && source "$SCRIPT_DIR/lib/causal-graph.sh" 2>/dev/null || true
+
 # Defaults for variables normally set by sw-pipeline.sh (safe under set -u).
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}"
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"

@@ -126,6 +126,26 @@ stage_intake() {
         fi
     fi
 
+    # 8. Generate structured specification (dark factory: spec-driven development)
+    if type spec_generate >/dev/null 2>&1; then
+        SPEC_DIR="${ARTIFACTS_DIR}/specs"
+        local spec_file
+        spec_file=$(spec_generate "$GOAL" "${ISSUE_BODY:-}" "${ISSUE_NUMBER:-}" "" "$project_lang" 2>/dev/null) || true
+        if [[ -n "$spec_file" && -f "$spec_file" ]]; then
+            info "Spec generated: ${DIM}$(basename "$spec_file")${RESET}"
+            save_artifact "spec.json" "$(cat "$spec_file")" || true
+        fi
+    fi
+
+    # 9. Partition tests for holdout validation (dark factory: test-as-holdout)
+    if type holdout_partition >/dev/null 2>&1; then
+        HOLDOUT_DIR="${ARTIFACTS_DIR}/test-holdout"
+        if holdout_partition "." "$project_lang" 2>/dev/null; then
+            holdout_seal "." 2>/dev/null || true
+            info "Test holdout: ${HOLDOUT_VISIBLE_COUNT:-0} visible, ${HOLDOUT_SEALED_COUNT:-0} sealed"
+        fi
+    fi
+
     log_stage "intake" "Goal: $GOAL
 Type: $TASK_TYPE → template: $suggested_template
 Branch: $GIT_BRANCH
