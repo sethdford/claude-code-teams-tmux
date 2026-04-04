@@ -154,6 +154,10 @@ export const fetchPatrol = () =>
   );
 export const fetchHeatmap = () =>
   request<HeatmapData>("/api/metrics/failure-heatmap").catch(() => null);
+export const fetchSuccessPatterns = () =>
+  request<{ patterns: InsightsData["successPatterns"]; stats: { total: number; by_type: Record<string, number> } }>(
+    "/api/memory/success-patterns",
+  ).catch(() => ({ patterns: [], stats: { total: 0, by_type: {} } }));
 
 // Artifacts
 export const fetchArtifact = (issue: number | string, type: string) =>

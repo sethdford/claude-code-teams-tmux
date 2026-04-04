@@ -12,6 +12,7 @@ import type {
   Decision,
   PatrolFinding,
   HeatmapData,
+  SuccessPattern,
 } from "../types/api";
 
 function fetchInsightsData(): void {
@@ -32,8 +33,9 @@ function fetchInsightsData(): void {
     patrol: null,
     heatmap: null,
     globalLearnings: null,
+    successPatterns: null,
   };
-  let pending = 5;
+  let pending = 6;
 
   function checkDone() {
     pending--;
@@ -88,6 +90,15 @@ function fetchInsightsData(): void {
       results.globalLearnings = [];
     })
     .then(checkDone);
+  api
+    .fetchSuccessPatterns()
+    .then((d) => {
+      results.successPatterns = d.patterns || [];
+    })
+    .catch(() => {
+      results.successPatterns = [];
+    })
+    .then(checkDone);
 }
 
 function renderInsightsTab(data: InsightsData): void {
@@ -98,6 +109,9 @@ function renderInsightsTab(data: InsightsData): void {
   html +=
     `<div class="insights-section"><div class="section-header"><h3>${icon("lightbulb", 18)} Failure Patterns</h3></div>` +
     `<div id="failure-patterns-content">${renderFailurePatterns(data.patterns || [])}</div></div>`;
+  html +=
+    `<div class="insights-section"><div class="section-header"><h3>${icon("check-circle", 18)} Success Patterns</h3></div>` +
+    `<div id="success-patterns-content">${renderSuccessPatterns(data.successPatterns || [])}</div></div>`;
   html +=
     `<div class="insights-section"><div class="section-header"><h3>${icon("shield-alert", 18)} Patrol Findings</h3></div>` +
     `<div id="patrol-findings-content">${renderPatrolFindings(data.patrol || [])}</div></div>`;
@@ -173,6 +187,30 @@ function renderFailurePatterns(patterns: FailurePattern[]): string {
     if (p.fix || p.suggested_fix)
       html += `<div class="pattern-detail pattern-fix"><span class="pattern-label">Fix:</span> ${escapeHtml(p.fix || p.suggested_fix || "")}</div>`;
     html += "</div>";
+  }
+  return html;
+}
+
+function renderSuccessPatterns(patterns: SuccessPattern[]): string {
+  if (!patterns.length)
+    return '<div class="empty-state"><p>No success patterns captured yet</p></div>';
+  const sorted = [...patterns].sort(
+    (a, b) => (b.seen_count || 1) - (a.seen_count || 1),
+  );
+  let html = "";
+  for (const p of sorted.slice(0, 10)) {
+    const typeLabel = (p.issue_type || "unknown").toUpperCase();
+    html +=
+      `<div class="pattern-card"><div class="pattern-card-header">` +
+      `<span class="pattern-desc">${escapeHtml(p.goal || "")}</span>` +
+      `<span class="pattern-freq-badge">${typeLabel} &middot; ${p.seen_count || 1}x</span></div>`;
+    if (p.approach)
+      html += `<div class="pattern-detail"><span class="pattern-label">Approach:</span> ${escapeHtml(p.approach.slice(0, 200))}</div>`;
+    html += `<div class="pattern-detail">`;
+    if (p.iterations) html += `<span class="pattern-label">Iterations:</span> ${p.iterations} `;
+    if (p.files_changed) html += `<span class="pattern-label">Files:</span> ${p.files_changed.length} `;
+    if (p.test_strategy) html += `<span class="pattern-label">Tests:</span> ${escapeHtml(p.test_strategy)}`;
+    html += `</div></div>`;
   }
   return html;
 }

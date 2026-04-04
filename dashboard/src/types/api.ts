@@ -213,12 +213,29 @@ export interface JoinToken {
   token?: string;
 }
 
+export interface SuccessPattern {
+  id?: string;
+  goal?: string;
+  issue_type?: string;
+  complexity?: number;
+  iterations?: number;
+  files_changed?: string[];
+  file_patterns?: string;
+  test_strategy?: string;
+  approach?: string;
+  duration_s?: number;
+  cost_usd?: number;
+  seen_count?: number;
+  captured_at?: string;
+}
+
 export interface InsightsData {
   patterns: FailurePattern[] | null;
   decisions: Decision[] | null;
   patrol: PatrolFinding[] | null;
   heatmap: HeatmapData | null;
   globalLearnings: Array<Record<string, unknown>> | null;
+  successPatterns: SuccessPattern[] | null;
 }
 
 export interface FailurePattern {
