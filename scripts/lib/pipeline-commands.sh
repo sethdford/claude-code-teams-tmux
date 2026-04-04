@@ -74,7 +74,7 @@ pipeline_post_completion_cleanup() {
     if [[ -f "$STATE_FILE" ]]; then
         # Reset status to idle (preserves the file for reference but unblocks new runs)
         local tmp_state
-        tmp_state=$(mktemp) || { warn "mktemp failed for state reset"; return 1; }
+        tmp_state=$(mktemp "${TMPDIR:-/tmp}/sw-state.XXXXXX") || { warn "mktemp failed for state reset"; return 0; }
         # shellcheck disable=SC2064  # intentional expansion at definition time
         trap "rm -f '$tmp_state'" RETURN
         sed 's/^status: .*/status: idle/' "$STATE_FILE" > "$tmp_state" 2>/dev/null || true

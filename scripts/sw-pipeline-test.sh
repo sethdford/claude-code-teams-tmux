@@ -395,8 +395,10 @@ invoke_pipeline() {
     PIPELINE_EXIT=0
 
     # Invoke the REAL pipeline script as a subprocess
+    # Unset env vars that leak from parent daemon/pipeline context
     PIPELINE_OUTPUT=$(
         cd "$TEST_TEMP_DIR/project"
+        unset PIPELINE_TEMPLATE PIPELINE_USER_SPECIFIED
         PATH="$TEST_TEMP_DIR/bin:$PATH" \
         bash "$TEST_TEMP_DIR/scripts/sw-pipeline.sh" "$subcommand" "$@" 2>&1
     ) || PIPELINE_EXIT=$?

@@ -343,10 +343,10 @@ verify_stage_artifacts() {
 STAGE_EFFECTIVENESS_FILE="${HOME}/.shipwright/stage-effectiveness.jsonl"
 record_stage_effectiveness() {
     local stage_id="$1" outcome="${2:-failed}"
-    mkdir -p "${HOME}/.shipwright"
-    echo "{\"stage\":\"$stage_id\",\"outcome\":\"$outcome\",\"ts\":\"$(now_iso)\"}" >> "${STAGE_EFFECTIVENESS_FILE}"
+    mkdir -p "${HOME}/.shipwright" 2>/dev/null || true
+    { echo "{\"stage\":\"$stage_id\",\"outcome\":\"$outcome\",\"ts\":\"$(now_iso)\"}" >> "${STAGE_EFFECTIVENESS_FILE}"; } 2>/dev/null || true
     # Keep last 100 entries
-    tail -100 "${STAGE_EFFECTIVENESS_FILE}" > "${STAGE_EFFECTIVENESS_FILE}.tmp" 2>/dev/null && mv "${STAGE_EFFECTIVENESS_FILE}.tmp" "${STAGE_EFFECTIVENESS_FILE}" 2>/dev/null || true
+    { tail -100 "${STAGE_EFFECTIVENESS_FILE}" > "${STAGE_EFFECTIVENESS_FILE}.tmp" && mv "${STAGE_EFFECTIVENESS_FILE}.tmp" "${STAGE_EFFECTIVENESS_FILE}"; } 2>/dev/null || true
 }
 get_stage_self_awareness_hint() {
     local stage_id="$1"

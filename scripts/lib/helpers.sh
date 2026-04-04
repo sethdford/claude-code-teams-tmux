@@ -83,10 +83,16 @@ emit_event() {
             json_fields="${json_fields},\"${key}\":\"${val}\""
         fi
     done
-    mkdir -p "${HOME}/.shipwright" 2>/dev/null || { echo "WARN: emit_event cannot create ~/.shipwright" >&2; return 1; }
+    mkdir -p "${HOME}/.shipwright" 2>/dev/null || true
     local _event_line="{\"ts\":\"$(now_iso)\",\"ts_epoch\":$(now_epoch),\"type\":\"${event_type}\"${json_fields}}"
     # Use flock to prevent concurrent write corruption
-    local _lock_file="${EVENTS_FILE}.lock"
+    # Lock file uses TMPDIR as fallback so sandbox-restricted envs don't block event logging
+    local _lock_file
+    if [[ -w "$(dirname "${EVENTS_FILE}")" ]] 2>/dev/null; then
+        _lock_file="${EVENTS_FILE}.lock"
+    else
+        _lock_file="${TMPDIR:-/tmp}/sw-events-$$.lock"
+    fi
     (
         if command -v flock >/dev/null 2>&1; then
             if ! flock -w 2 200 2>/dev/null; then
@@ -94,7 +100,7 @@ emit_event() {
             fi
         fi
         echo "$_event_line" >> "$EVENTS_FILE"
-    ) 200>"$_lock_file"
+    ) 200>"$_lock_file" 2>/dev/null || true
 
     # Schema validation — auto-detect config repo from BASH_SOURCE location
     local _schema_dir="${_CONFIG_REPO_DIR:-}"
@@ -177,7 +183,7 @@ rotate_jsonl() {
     current_lines=$(wc -l < "$file" 2>/dev/null | tr -d ' ')
     if [[ "$current_lines" -gt "$max_lines" ]]; then
         local tmp_rotate
-        tmp_rotate=$(mktemp)
+        tmp_rotate=$(mktemp "${TMPDIR:-/tmp}/sw-rotate.XXXXXX") || return 0
         tail -n "$max_lines" "$file" > "$tmp_rotate" && mv "$tmp_rotate" "$file" || rm -f "$tmp_rotate"
     fi
 }
