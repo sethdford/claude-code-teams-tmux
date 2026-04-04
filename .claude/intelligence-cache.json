@@ -660,28 +660,29 @@
     "56254fa4e52db312db0e282985359a1a": {
       "result": {
         "complexity": 6,
-        "risk_level": "low",
-        "success_probability": 80,
+        "risk_level": "medium",
+        "success_probability": 78,
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Framework detection heuristics may miss edge cases or produce false positives",
-          "Generated CLAUDE.md conventions might not match actual project patterns",
-          "Test command generation could fail on non-standard project structures",
-          "Pipeline template recommendations may not suit all project complexities",
-          "High maintenance burden as framework ecosystem evolves"
+          "Framework detection accuracy for monorepos and mixed-language projects",
+          "Generated CLAUDE.md templates may require manual tweaks for non-standard project layouts",
+          "Maintenance burden keeping framework-specific conventions current as ecosystems evolve",
+          "Initial framework coverage gaps limiting adoption for less-common languages",
+          "Generated pipeline template recommendations may underperform on atypical project structures"
         ],
         "implementation_hints": [
-          "Start with top 5 frameworks (Node, Python, Go, Rust, Java) before expanding",
-          "Use package manager metadata files (go.mod, package.json, pyproject.toml) as primary detection signals",
-          "Create a detection priority/scoring system with fallback to generic template",
-          "Build integration tests for each framework type with real test projects",
-          "Phase 1: Config generation (Shipwright files, test commands); Phase 2: Issue templates",
-          "Provide manual override flags for users with non-standard project layouts",
-          "Generate documentation comparing before/after setup times to demonstrate value"
+          "Modularize framework detectors in separate files (detector-go.sh, detector-python.sh, etc.) for easy extension",
+          "Start with 5 most popular frameworks (Node, Python, Go, Rust, Java) to prove concept before expanding",
+          "Leverage existing test command patterns from popular CI/CD tools (pytest, npm test, go test) as source of truth",
+          "Generate CLAUDE.md as fillable templates rather than rigid configs to accommodate project-specific needs",
+          "Create validation test suite that runs generator against real open-source projects to catch detection edge cases",
+          "Store framework metadata (build tools, test patterns, quality gates) in JSON files for easy updates without code changes",
+          "Integrate as enhancement to existing `shipwright prep` rather than new command to preserve discoverability",
+          "Document detection logic and priority order when multiple frameworks detected (useful for monorepos)"
         ]
       },
-      "timestamp": 1775240647,
+      "timestamp": 1775263399,
       "ttl": 3600
     },
     "a16e3ab5810d05e92c15b1eea1765292": {
@@ -707,109 +708,118 @@
         "issue_type": "infrastructure",
         "confidence": 0.88,
         "secondary_domains": [
-          "documentation",
           "devops",
-          "tooling"
+          "framework-expertise",
+          "configuration-generation"
         ],
         "complexity_assessment": {
-          "score": 5,
-          "reasoning": "Framework detection via file matching is straightforward; config generation is template-driven; primary complexity is ensuring detection accuracy across 5+ frameworks and covering edge cases like monorepos, hybrid stacks, and atypical layouts."
+          "score": 6,
+          "reasoning": "Requires multi-framework detection logic, template engineering, recommendation heuristics, and comprehensive testing across 5+ language ecosystems. Medium complexity masked by 'fast' label."
         },
         "skill_plan": {
           "plan": [
             "brainstorming",
-            "product-thinking"
-          ],
-          "design": [
+            "product-thinking",
             "architecture-design"
           ],
-          "build": [
+          "design": [
+            "architecture-design",
             "framework-detection-best-practices"
+          ],
+          "build": [
+            "framework-detection-best-practices",
+            "testing-strategy"
           ],
           "review": [
             "pr-quality",
-            "security-audit"
+            "security-audit",
+            "adversarial-quality"
           ],
           "compound_quality": [
             "adversarial-quality",
-            "testing-strategy"
+            "validation-thoroughness"
           ],
           "pr": [
             "pr-quality"
           ],
-          "deploy": [],
+          "deploy": [
+            "deploy-safety"
+          ],
           "validate": [
             "validation-thoroughness"
           ],
           "monitor": []
         },
         "skill_rationale": {
-          "brainstorming": "Challenge the 'zero-touch' assumption: how do we handle monorepos, hybrid stacks (Node+Go), minimal projects, or nonstandard layouts without generating garbage configs?",
-          "product-thinking": "This feature targets new users discovering Shipwright; design from their perspective—what information is genuinely helpful vs. overwhelming? What setup friction remains after generation?",
-          "architecture-design": "Document the detection algorithm, config composition rules, and how framework-specific conventions layer into a unified system—future maintainers need a map for adding new frameworks.",
-          "framework-detection-best-practices": "Implement robust file-based detection for Go, Python, Node, Rust, etc. with fallback strategies and confidence scoring; detection failures directly break the user experience.",
-          "pr-quality": "Generated configs and CLAUDE.md templates must be immediately actionable for first-time Shipwright users; include before/after examples for 3+ frameworks so reviewers can verify correctness.",
-          "security-audit": "Generated CLAUDE.md and example issues must never suggest insecure patterns (hardcoded secrets, weak test practices, CI anti-patterns); config generation itself is an attack surface.",
-          "adversarial-quality": "Find detection edge cases: monorepos, hybrid projects, minimal stubs, outdated framework versions, missing standard files—expose ways detection fails and lock in fixes with tests.",
-          "testing-strategy": "Framework detection needs comprehensive fixture coverage (5+ projects per framework: minimal, standard, monorepo, outdated, atypical); config generation must have integration tests verifying generated commands execute.",
-          "validation-thoroughness": "Generated configs must work end-to-end: spin up real test projects using generated CLAUDE.md, run pipelines, verify templates actually solve the onboarding friction they promise."
+          "brainstorming": "Challenge whether 'zero-touch' is achievable across frameworks with vastly different conventions (Go modules vs npm workspaces) and identify real edge cases before building.",
+          "product-thinking": "Generators that don't match developer mental models create frustration—validate that detected frameworks and recommended templates match actual project intent and reduce setup time.",
+          "architecture-design": "Design the detection algorithm (file fingerprinting, precedence rules for mono-repos) and template structure so it's maintainable as new frameworks and Shipwright features emerge.",
+          "framework-detection-best-practices": "Framework detection is the reliability linchpin—poor detection cascades to broken generated configs, making this the highest-ROI focus area for both design and build.",
+          "testing-strategy": "Detection logic with 5+ frameworks and mono-repo edge cases demands exhaustive test matrix (happy path per framework, conflicts, missing files, corrupted files).",
+          "pr-quality": "Generated configs and templates are the deliverable—reviewers must understand detection heuristics, template choices, and how to validate across frameworks.",
+          "security-audit": "Generated CLAUDE.md and pipeline configs could inadvertently grant broad permissions, expose secrets in test commands, or create unsafe CI/CD patterns—security review essential.",
+          "adversarial-quality": "Attack detection (package.json + go.mod, monorepo with multiple package managers) and template quality (what if generated test command fails? what if template recommends deprecated patterns?).",
+          "validation-thoroughness": "Generated configs are only valuable if they work—validate with real projects (clone, install, build, test) across all 5 frameworks and document actual setup time gains.",
+          "deploy-safety": "Configuration generation is low-risk but shipping untested templates is high-impact—gate deployment on successful validation runs across representative projects per framework."
         },
         "generated_skills": [
           {
             "name": "framework-detection-best-practices",
-            "reason": "No existing skill covers framework detection patterns, file parsing strategies, confidence scoring, fallback logic, or how to structure detection for maintainability across multiple language ecosystems—this is a novel system that needs explicit guidance.",
-            "content": "## Framework Detection Best Practices\n\nFramework detection is the foundation of zero-touch config generation. Poor detection means generated configs fail, destroying user trust at the critical onboarding moment.\n\n### Detection Strategy\n\n**Tier 1: Primary Markers (High Confidence)**\n- Language-specific manifests: `go.mod`, `package.json`, `pyproject.toml`, `Cargo.toml`, `pom.xml`, `build.gradle`\n- Parse and validate content (never assume format without verification)\n- Single manifest = reliable detection\n\n**Tier 2: Secondary Markers (Medium Confidence)**\n- CI/CD configs: `.github/workflows/*.yml`, `.gitlab-ci.yml`, `azure-pipelines.yml` (reveal test frameworks, build patterns)\n- Build scripts: `Makefile`, `build.sh`, `Justfile`, `tox.ini` (expose test tooling)\n- Tool configs: `.eslintrc.json`, `.pylintrc`, `clippy.toml` (indicate linting/quality tools)\n\n**Tier 3: Fallback (Low Confidence)**\n- Source file extensions: `*.go`, `*.py`, `*.rs`, `*.ts` (only if no manifest found)\n- Treat as \"best guess\" and include confidence in output\n\n### Edge Cases & Handling\n\n**Monorepos**\n- Scan all directories for manifests, not just root\n- Return structured result: `{root: Generic, workspaces: [{path: \"api\", framework: \"Go\"}, {path: \"web\", framework: \"Node\"}]}`\n- Generate per-workspace configs or unified multi-workspace config\n\n**Hybrid Stacks**\n- Multiple manifests = prioritize by specificity (manifest > CI config > build script)\n- Return primary + secondaries: primary used for config, secondaries inform cross-framework recommendations\n\n**Minimal/Atypical Projects**\n- No manifest found? Ask user or default to generic template\n- Include confidence score in result: `{framework: \"unknown\", confidence: 0.0, detected: [], recommendation: \"Please specify framework\"}`\n\n### Implementation Checklist\n\n- [ ] Parse manifests correctly (Go mods are text, JSON must validate, Python requires ast, TOML is strict format)\n- [ ] Fixture tests: 5+ real projects per framework (minimal, standard, monorepo, outdated versions, atypical layout)\n- [ ] Integration tests: generate config for fixture → run setup → verify no errors\n- [ ] Edge case tests: missing files, multi-framework, no CI, renamed manifests\n- [ ] Confidence scoring: return `{framework, confidence: 0.0-1.0}` so caller can decide if prompting needed\n- [ ] Document detection logic per framework (what files = what conclusion)\n\n### Testing Framework Fixture Examples\n\n**Go:** `go.mod` with `go` directive, `go.sum`, `cmd/main.go`\n**Python:** `pyproject.toml` with `[project]` section, `requirements.txt`, `setup.py`\n**Node:** `package.json` with `{\"type\": \"module\"}` or `{\"engines\": {\"node\"}}`, `npm-shrinkwrap.json`\n**Rust:** `Cargo.toml` with `[package]`, `Cargo.lock`, `src/main.rs` or `src/lib.rs`\n\n### Avoid\n\n- Magic strings: don't hardcode \"lodash\" or \"pytest\" checks—parse dependency sections correctly\n- Ignoring nested projects: monorepos have multiple manifests at different depths\n- Assuming framework without validation: check that manifest actually parses\n- Overconfidence: if detection is ambiguous, say so\n"
+            "reason": "Framework detection is the foundation of zero-touch config generation and deserves focused, actionable guidance on detection patterns, precedence rules, mono-repo handling, and fallback behavior. No existing skill covers the specific challenge of reliably identifying Go, Python, Node, Rust, and other frameworks from file artifacts.",
+            "content": "## Framework Detection & Config Generation Best Practices\n\n### Detection Strategy\n\n**File Fingerprinting (Precedence Order)**\n1. Read target directory and all immediate subdirectories (don't recurse deeply—stops mono-repo false positives)\n2. Check for framework indicators in this order:\n   - `go.mod` → Go\n   - `Cargo.toml` → Rust\n   - `pyproject.toml`, `setup.py`, `requirements.txt` → Python\n   - `package.json` → Node.js\n   - `Gemfile` → Ruby\n   - `pom.xml`, `build.gradle` → Java\n3. Return the FIRST match found. If multiple frameworks detected, log a warning and use precedence.\n\n### Mono-Repo Handling\n\nIf `package.json` + `go.mod` both present:\n- Check if `go.mod` is in a subdirectory (e.g., `api/go.mod`) → treat as mixed\n- Check `package.json` for `workspaces` or `lerna` config → Node mono-repo\n- Recommend `template: standard` (can handle multiple frameworks) or ask user to run in each subdirectory\n- Avoid recommending framework-specific templates (e.g., Go-only) when evidence of mixed stacks exists\n\n### Fallback Behavior\n\nIf no framework detected:\n- Check for `Makefile`, `justfile`, `tox.ini`, `.github/workflows` → generic build\n- Check directory size and file count (< 100 files = small, 100-1000 = medium, > 1000 = large)\n- Default to `template: standard` with generic test command `npm test || make test || python -m pytest`\n- Log detection failure as a structured event for later analysis\n\n### Edge Cases to Handle\n\n1. **Empty/Minimal Repos**: No build files detected. Recommend `template: fast` (skip intensive checks).\n2. **Vendored Dependencies**: Large `node_modules/` or `vendor/` dirs don't indicate framework—ignore them.\n3. **Sub-repositories**: If `.git` found in subdirectory, treat each as independent project.\n4. **Lock Files Only** (`package-lock.json` without `package.json`): Corrupted state—warn and default.\n5. **Version Constraints**: Don't reject based on Node/Python version files (`.node-version`, `.python-version`)—frameworks are version-agnostic.\n\n### Test Command Generation\n\nFor each framework, map to standard commands:\n- **Go**: `go test ./...` (with `-race` for async code)\n- **Rust**: `cargo test`\n- **Python**: `python -m pytest` (or detect `tox.ini` → `tox`, `setup.cfg` → `pytest`)\n- **Node**: `npm test` (fallback: `node_modules/.bin/mocha` or `yarn test`)\n- **Ruby**: `bundle exec rspec` or `rake test`\n\nIf no test framework detected, create a stub: `echo 'No tests found'` (pass, don't fail).\n\n### Quality Checks Per Framework\n\nAdd framework-native linting/formatting to generated quality profile:\n- **Go**: `gofmt`, `golangci-lint`\n- **Rust**: `rustfmt`, `clippy`\n- **Python**: `black`, `pylint`, `mypy`\n- **Node**: `eslint`, `prettier`\n\n### Template Recommendation Algorithm\n\n```\nif has_github_actions_workflow:\n    complexity_score = 3  // CI already defined, lower risk\nelif file_count > 1000 or language == \"Rust\":\n    complexity_score = 7  // Large or systems language\nelif has_multiple_frameworks:\n    complexity_score = 6  // Mixed stacks need careful handling\nelse:\n    complexity_score = 4  // Baseline\n\nif complexity_score > 6:\n    recommend: \"full\"\nelif has_github_actions_workflow:\n    recommend: \"fast\"\nelse:\n    recommend: \"standard\"\n```\n\n### Validation Pattern\n\nAfter generating config, emit these checks:\n1. Test command runs without error in temp clone\n2. Linter rules are actually installed (e.g., `eslint` present in `devDependencies`)\n3. Quality profile tools are in `PATH` or `node_modules/`\n4. CLAUDE.md doesn't reference non-existent scripts\n\nLog all failures as structured events—they surface patterns (e.g., \"Python projects missing pytest in devDeps\").\n\n### Documentation Pattern\n\nGenerated CLAUDE.md should include:\n- Framework-specific build/test commands\n- Typical file layout (where to find tests, config files)\n- Linting/formatting conventions\n- Known CI configs (GitHub Actions workflows detected)\n- Recommended tools (debugger, profiler) per framework\n\nKeep the generated section within 150 lines—reference external docs for details."
           }
         ],
         "review_focus": [
-          "Framework detection accuracy: verify all 5+ frameworks detected correctly across minimal, standard, monorepo, outdated, and atypical project layouts",
-          "Generated test commands: spot-check that test commands for Go (`go test`), Python (`pytest`/`unittest`), Node (`npm test`), Rust (`cargo test`) actually execute without errors on generated configs",
-          "CLAUDE.md template quality: ensure generated templates follow Shipwright conventions, are actionable for first-time users, and don't suggest anti-patterns",
-          "Security: verify generated configs don't hardcode secrets, don't suggest insecure CI/test practices, and example issues follow secure coding patterns",
-          "Documentation completeness: before/after setup time data for all 5 frameworks, clear detection algorithm docs so maintainers can add new frameworks"
+          "Framework detection accuracy—does it correctly identify mixed stacks (Node + Go), mono-repos, and edge cases (only lock files, corrupted states)?",
+          "Test command generation—are commands framework-idiomatic and will they actually work, or do they assume tooling installed globally?",
+          "Template recommendation logic—is the heuristic (file count, complexity score) defensible, or are there counter-intuitive recommendations?",
+          "Quality profile generation—are linting tools actually used in the wild for each framework, or are we recommending dead tools?",
+          "Generated CLAUDE.md quality—does it match project reality (e.g., does it recommend `npm test` if `package.json` has no test script)?",
+          "Example issues generated—are they actionable and realistic for each framework, or generic boilerplate?"
         ],
         "risk_areas": [
-          "Monorepo or hybrid-stack detection fails, leaving users with generic config that doesn't fit their project—defeats the zero-touch onboarding goal",
-          "Generated test commands are incompatible with framework versions or project layouts—new users run `shipwright prep`, get broken test commands in CLAUDE.md, pipelines fail immediately",
-          "CLAUDE.md templates contain outdated tool names (pytest vs unittest), wrong performance tuning, or Shipwright anti-patterns—new users learn bad practices",
-          "Example issues are framework-agnostic boilerplate with wrong test commands—more friction, not less",
-          "Security: generated configs accidentally expose secrets in example dotenv files, suggest storing API keys in CLAUDE.md, or include insecure CI patterns"
+          "False negatives in detection (mono-repo with Node + Go, only lock file present) → generated config fails silently, frustrating users",
+          "False positives in framework precedence (e.g., detecting old `go.mod` in archived subdirectory) → wrong template recommended",
+          "Generated test commands that fail due to missing tooling (e.g., `eslint` not in devDeps) → setup appears broken",
+          "Template recommendations that don't match project complexity (small Go CLI gets 'full' template, large Node app gets 'fast') → pipeline underperforms or over-gates",
+          "Generated CLAUDE.md with stale framework conventions (e.g., old Python tooling) → maintainers ignore or manually override",
+          "Documentation claims setup time improvement that doesn't materialize (before/after metric becomes misleading if base case was already optimized)"
         ]
       },
-      "timestamp": 1775240776,
+      "timestamp": 1775263496,
       "ttl": 3600
     },
     "18a3443263105a38ef64882ff1e0af9a": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry with vitest/commonjs/npm)",
-            "relevance": 95,
-            "summary": "Directly relevant — demonstrates framework detection pattern (source_dir, test_runner, package_manager, import_style, language). Essential reference for implementing framework detection logic in the starter kit generator."
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Contains actual project framework detection (Node, vitest, conventions, source_dir, import_style) - directly applicable to planning framework-detection logic and best-practice template structure"
           },
           {
-            "file": "patterns.json (third entry with project_type: nodejs)",
+            "file": "success-patterns.json",
             "relevance": 85,
-            "summary": "Framework detection example showing detected_at and source bootstrap. Useful for understanding how framework detection is captured and could inform the detection methodology for the starter kit generator."
+            "summary": "Shows successful feature planning metrics (complexity 60-65, standard template, 3 iterations, test strategies) - informs approach for planning starter kit generator itself and expected effort/complexity"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Demonstrates framework auto-detection mechanism (project_type: nodejs) - relevant to understanding how framework detection should work in starter kit generator"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "JavaScript build/test failures (undefined variables, missing declarations) - identifies pitfalls to prevent in best-practice templates and generated code"
           },
           {
             "file": "architecture.json",
-            "relevance": 60,
-            "summary": "Contains architecture rules (rule1, rule2, rule3) that inform best-practice enforcement. Relevant for defining and validating templates against architectural constraints in generated starter kits."
-          },
-          {
-            "file": "success-patterns.json (first entry with authentication feature)",
-            "relevance": 50,
-            "summary": "Shows successful feature implementation using standard template with 3 iterations. Provides baseline for complexity estimation and approach patterns for multi-iteration feature work like a starter kit generator."
-          },
-          {
-            "file": "failures.json (with variable initialization patterns)",
-            "relevance": 35,
-            "summary": "Common initialization and reference errors with high fix effectiveness (100%). Useful for understanding edge cases and validation rules to include in starter kit templates to prevent common mistakes."
+            "relevance": 45,
+            "summary": "Contains architecture rules - provides precedent for enforcing best practices through templated rules and conventions"
           }
         ]
       },
-      "timestamp": 1775240792,
+      "timestamp": 1775263515,
       "ttl": 1800
     },
     "1226845bc3df460c9d01ad2893184a69": {
@@ -956,6 +966,56 @@
       },
       "timestamp": 1775241539,
       "ttl": 1800
+    },
+    "45297a61707d341bbcfa1b7ef01c99f3": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1775263407,
+      "ttl": 1800
+    },
+    "b2a2148d76290302dfef1a6e6a43c17a": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 145000,
+        "likely_failure_stage": "test",
+        "confidence": 72,
+        "breakdown": {
+          "intake": {
+            "tokens": 5000,
+            "cost": 0.15
+          },
+          "plan": {
+            "tokens": 18000,
+            "cost": 0.54
+          },
+          "build": {
+            "tokens": 75000,
+            "cost": 2.25,
+            "iteration_count": 2
+          },
+          "test": {
+            "tokens": 35000,
+            "cost": 1.05,
+            "iteration_count": 1
+          },
+          "review": {
+            "tokens": 12000,
+            "cost": 0.36
+          }
+        },
+        "risk_factors": {
+          "framework_detection_accuracy": "high",
+          "monorepo_complexity": "medium",
+          "template_generation_edge_cases": "high",
+          "maintenance_burden": "medium"
+        },
+        "retry_probability": 0.22,
+        "estimated_total_with_retry": 5.40
+      },
+      "timestamp": 1775263416,
+      "ttl": 3600
     }
   }
 }
