@@ -963,33 +963,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Project configuration (vitest, npm, src/ layout, commonjs imports) is essential for build stage to run tests correctly and understand codebase structure"
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Documents test stage failures with root causes (cleanup dry-run issues, sed variable expansion, missing mock events) and fixes. Critical for build stage to avoid/mitigate these failures."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 72,
-            "summary": "Historical successful builds show test strategy (npm test), typical file patterns (.claude/*, scripts/*), iteration patterns, and duration baselines useful for build planning"
+            "relevance": 85,
+            "summary": "Shows two successful builds with test strategy (npm test), iteration counts (3 iterations typical), file change patterns, and duration baseline (45-150s). Provides build approach templates."
           },
           {
-            "file": "failures.json",
-            "relevance": 58,
-            "summary": "Previous test stage failures document common issues (variable expansion, dry-run detection) that should be avoided or mitigated during build iterations"
+            "file": "patterns.json",
+            "relevance": 76,
+            "summary": "Defines project structure (Node.js, vitest, npm, commonjs, src/ directory). Essential for understanding how to execute build and test commands in this context."
           },
           {
             "file": "metrics.json",
-            "relevance": 12,
-            "summary": "Empty baselines entry; no historical metrics to inform build decisions"
+            "relevance": 8,
+            "summary": "Empty baselines object. No data to inform build stage decisions or provide performance targets."
           },
           {
             "file": "decisions.json",
-            "relevance": 8,
-            "summary": "Empty decisions list; no prior architectural choices documented for this build context"
+            "relevance": 5,
+            "summary": "Empty decisions array. No prior architectural or approach decisions to apply to current build stage."
           }
         ]
       },
-      "timestamp": 1775264171,
+      "timestamp": 1775266121,
       "ttl": 1800
     },
     "afe497096cbb223a50834da939fb1d73": {
