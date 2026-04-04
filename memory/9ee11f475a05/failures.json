@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
       "seen_count": 2,
-      "last_seen": "2026-04-04T01:17:23Z",
+      "last_seen": "2026-04-04T01:19:54Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -25,21 +25,12 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output changed or broke — dry-run no longer lists heartbeat files by agent name or outputs 'Found'/'--force' hint text",
-      "fix": "Check sw-cleanup.sh heartbeat detection logic and summary output section to ensure stale heartbeat files are listed with agent names and the summary prints 'Found N items' and '--force' hint",
+      "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N items' summary with '--force hint'",
+      "fix": "Fix sw-cleanup.sh to scan heartbeat directory for stale files and output the count summary with '--force' hint during dry-run",
       "seen_count": 1,
       "last_seen": "2026-03-29T06:09:02Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "FAIL: 0",
-      "root_cause": "sed command uses single quotes around substitution pattern, so $TEST_TEMP_DIR is not expanded and sed treats the s|...|...|g expression as a filename",
-      "fix": "Change single quotes to double quotes in the sed invocation: sed \"s|$TEST_TEMP_DIR|...|g\" so the variable is expanded before sed runs",
-      "seen_count": 1,
-      "last_seen": "2026-04-04T01:23:19Z",
       "category": "test_failure"
     }
   ]
