@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
       "seen_count": 6,
-      "last_seen": "2026-04-04T19:53:27Z",
+      "last_seen": "2026-04-04T20:06:02Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -16,8 +16,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being passed as the sed script argument, causing sed to treat the literal string as a file path",
       "fix": "ensure TEST_TEMP_DIR is exported or properly quoted so it expands inside the sed expression, or use a different substitution approach",
-      "seen_count": 5,
-      "last_seen": "2026-04-04T18:52:53Z",
+      "seen_count": 6,
+      "last_seen": "2026-04-04T20:10:36Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -36,8 +36,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Uses set -euo pipefail",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, tests expect 'agent-1', 'Found', and '--force' strings that are no longer emitted",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a summary line containing 'Found N' and '--force' hint in dry-run mode",
+      "root_cause": "sed command receives a literal sed script string as a file path argument instead of using -e flag",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in the code-review test script",
       "seen_count": 1,
       "last_seen": "2026-04-04T18:57:36Z",
       "category": "test_failure"
