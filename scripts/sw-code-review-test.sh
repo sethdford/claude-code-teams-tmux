@@ -21,11 +21,11 @@ setup_env() {
     fi
 
     # Mock git
-    cat > "$TEST_TEMP_DIR/bin/git" <<'MOCK'
+    cat > "$TEST_TEMP_DIR/bin/git" <<MOCK
 #!/usr/bin/env bash
-case "${1:-}" in
+case "\${1:-}" in
     rev-parse)
-        case "${2:-}" in
+        case "\${2:-}" in
             --show-toplevel) echo "$TEST_TEMP_DIR/repo" ;;
             *) echo "/tmp/mock-repo" ;;
         esac
@@ -36,8 +36,6 @@ esac
 exit 0
 MOCK
     chmod +x "$TEST_TEMP_DIR/bin/git"
-    # git mock needs TEMP_DIR — inject it
-    sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
 
     # Mock gh
     cat > "$TEST_TEMP_DIR/bin/gh" <<'MOCK'

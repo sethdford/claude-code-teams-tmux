@@ -6,7 +6,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMPBASE="${TMPDIR:-/tmp/claude}"
+TMPBASE="${TMPDIR:-/tmp}"
+mkdir -p "$TMPBASE"
 TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
 MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
 
