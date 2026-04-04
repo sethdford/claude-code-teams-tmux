@@ -74,8 +74,8 @@ else
     assert_eq "policy.json exists" "exists" "missing"
 fi
 
-# Test: all required top-level keys present
-for key in daemon pipeline quality strategic sweep hygiene recruit; do
+# Test: all required top-level keys present (including new sections)
+for key in daemon pipeline quality strategic sweep hygiene recruit loop decision; do
     val=$(jq -r ".$key // \"missing\"" "$REPO_DIR/config/policy.json" 2>/dev/null)
     if [[ "$val" != "missing" && "$val" != "null" ]]; then
         assert_eq "policy has .$key section" "present" "present"
@@ -272,6 +272,206 @@ got=$(REPO_DIR="$tmp4/norepo" HOME="$tmp4/home" SCRIPT_DIR="$SCRIPT_DIR" bash -c
 assert_eq "policy_get falls back to HOME policy.json" "30" "$got"
 
 rm -rf "$tmp4"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 7: policy_validate passes on valid policy
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}policy_validate Function${RESET}"
+
+tmp5=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$REPO_DIR" SCRIPT_DIR="$SCRIPT_DIR" bash -c '
+  unset POLICY_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/policy.sh"
+  policy_validate "'"$REPO_DIR"'/config/policy.json" 2>&1
+  echo "EXIT:$?"
+')
+exit_code=$(echo "$got" | grep "EXIT:" | sed 's/EXIT://')
+assert_eq "policy_validate passes on real policy.json" "0" "${exit_code:-1}"
+
+# Test: policy_validate catches out-of-range value
+cat > "$tmp5/bad-policy.json" <<'POLICY'
+{
+  "version": "2",
+  "daemon": {"poll_interval_seconds": -1},
+  "pipeline": {"coverage_threshold_percent": 200},
+  "quality": {"coverage_threshold": 50}
+}
+POLICY
+
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$REPO_DIR" SCRIPT_DIR="$SCRIPT_DIR" bash -c '
+  unset POLICY_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/policy.sh"
+  output=$(policy_validate "'"$tmp5"'/bad-policy.json" 2>&1)
+  rc=$?
+  echo "$output"
+  echo "EXIT:$rc"
+')
+exit_code=$(echo "$got" | grep "EXIT:" | sed 's/EXIT://')
+assert_eq "policy_validate fails on bad values" "2" "${exit_code:-0}"
+assert_contains "policy_validate reports poll_interval violation" "poll_interval_seconds" "$got"
+assert_contains "policy_validate reports coverage violation" "coverage_threshold_percent" "$got"
+
+# Test: policy_validate catches missing sections
+cat > "$tmp5/missing-policy.json" <<'POLICY'
+{"version": "2"}
+POLICY
+
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$REPO_DIR" SCRIPT_DIR="$SCRIPT_DIR" bash -c '
+  unset POLICY_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/policy.sh"
+  output=$(policy_validate "'"$tmp5"'/missing-policy.json" 2>&1)
+  rc=$?
+  echo "$output"
+  echo "EXIT:$rc"
+')
+exit_code=$(echo "$got" | grep "EXIT:" | sed 's/EXIT://')
+if [[ "${exit_code:-0}" -gt 0 ]]; then
+    assert_eq "policy_validate fails on missing sections" "fail" "fail"
+else
+    assert_eq "policy_validate fails on missing sections" "fail" "pass"
+fi
+assert_contains "policy_validate reports missing daemon" "missing .daemon" "$got"
+
+rm -rf "$tmp5"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 8: config.sh override precedence chain
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Override Precedence Chain${RESET}"
+
+tmp6=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp6/config" "$tmp6/.claude"
+
+# Base policy: loop.max_iterations = 20
+cat > "$tmp6/config/policy.json" <<'POLICY'
+{"loop": {"max_iterations": 20}, "daemon": {}, "pipeline": {}, "quality": {}}
+POLICY
+
+# Override: loop.max_iterations = 30
+cat > "$tmp6/.claude/policy-overrides.json" <<'OVERRIDE'
+{"loop": {"max_iterations": 30}}
+OVERRIDE
+
+# Defaults
+cat > "$tmp6/config/defaults.json" <<'DEFAULTS'
+{"loop": {"max_iterations": 15}}
+DEFAULTS
+
+# Test: override wins over base policy
+# shellcheck disable=SC2097,SC2098
+got=$(cd "$tmp6" && bash -c '
+  unset _SW_CONFIG_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/config.sh"
+  _config_get_int "loop.max_iterations" 10
+')
+assert_eq "policy-overrides.json wins over policy.json" "30" "$got"
+
+# Test: env var wins over everything
+# shellcheck disable=SC2097,SC2098
+got=$(cd "$tmp6" && SHIPWRIGHT_LOOP_MAX_ITERATIONS=50 bash -c '
+  unset _SW_CONFIG_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/config.sh"
+  _config_get_int "loop.max_iterations" 10
+')
+assert_eq "env var wins over all config files" "50" "$got"
+
+# Test: without override file, base policy wins
+rm "$tmp6/.claude/policy-overrides.json"
+# shellcheck disable=SC2097,SC2098
+got=$(cd "$tmp6" && bash -c '
+  unset _SW_CONFIG_LOADED 2>/dev/null
+  source "'"$SCRIPT_DIR"'/lib/config.sh"
+  _config_get_int "loop.max_iterations" 10
+')
+assert_eq "base policy used when no overrides" "20" "$got"
+
+rm -rf "$tmp6"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 9: loop section values in real policy.json
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Loop Section Values${RESET}"
+
+real_max_iter=$(jq -r '.loop.max_iterations // "missing"' "$REPO_DIR/config/policy.json")
+assert_eq "loop.max_iterations = 20" "20" "$real_max_iter"
+
+real_ext_size=$(jq -r '.loop.extension_size // "missing"' "$REPO_DIR/config/policy.json")
+assert_eq "loop.extension_size = 5" "5" "$real_ext_size"
+
+real_cb_thresh=$(jq -r '.loop.circuit_breaker_threshold // "missing"' "$REPO_DIR/config/policy.json")
+assert_eq "loop.circuit_breaker_threshold = 3" "3" "$real_cb_thresh"
+
+real_ctx_budget=$(jq -r '.loop.context_budget_chars // "missing"' "$REPO_DIR/config/policy.json")
+assert_eq "loop.context_budget_chars = 200000" "200000" "$real_ctx_budget"
+
+real_test_timeout=$(jq -r '.loop.test_timeout // "missing"' "$REPO_DIR/config/policy.json")
+assert_eq "loop.test_timeout = 900" "900" "$real_test_timeout"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 10: schema has loop and decision sections
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Schema Completeness${RESET}"
+
+schema_keys=$(jq -r '.properties | keys[]' "$REPO_DIR/config/policy.schema.json" 2>/dev/null)
+assert_contains "schema defines loop section" "loop" "$schema_keys"
+assert_contains "schema defines decision section" "decision" "$schema_keys"
+assert_contains "schema defines daemon section" "daemon" "$schema_keys"
+
+# Verify loop schema has key properties
+loop_props=$(jq -r '.properties.loop.properties | keys[]' "$REPO_DIR/config/policy.schema.json" 2>/dev/null)
+assert_contains "loop schema has max_iterations" "max_iterations" "$loop_props"
+assert_contains "loop schema has circuit_breaker_threshold" "circuit_breaker_threshold" "$loop_props"
+assert_contains "loop schema has context_budget_chars" "context_budget_chars" "$loop_props"
+
+# Verify daemon schema has patrol sub-object
+patrol_props=$(jq -r '.properties.daemon.properties.patrol.properties | keys[]' "$REPO_DIR/config/policy.schema.json" 2>/dev/null || true)
+assert_contains "daemon schema has patrol.interval_seconds" "interval_seconds" "$patrol_props"
+
+# Verify pipeline schema has build_test_retries
+pipeline_props=$(jq -r '.properties.pipeline.properties | keys[]' "$REPO_DIR/config/policy.schema.json" 2>/dev/null)
+assert_contains "pipeline schema has build_test_retries" "build_test_retries" "$pipeline_props"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 11: suggest-overrides dry-run with mock adaptive data
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Adaptive Suggest-Overrides${RESET}"
+
+tmp7=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp7/.shipwright" "$tmp7/.claude"
+
+# Create mock adaptive-models.json with high-confidence data
+cat > "$tmp7/.shipwright/adaptive-models.json" <<'MODELS'
+{
+  "timeout.build": {"value": 450, "sample_count": 25},
+  "iterations": {"value": 15, "sample_count": 30},
+  "quality_threshold": {"value": 75, "sample_count": 50},
+  "timeout.test": {"value": 5, "sample_count": 25}
+}
+MODELS
+
+# Run suggest-overrides in dry-run mode
+# shellcheck disable=SC2097,SC2098
+got=$(cd "$tmp7" && HOME="$tmp7" bash -c '
+  source "'"$SCRIPT_DIR"'/lib/compat.sh" 2>/dev/null || true
+  source "'"$SCRIPT_DIR"'/sw-adaptive.sh" 2>/dev/null || true
+  MODELS_FILE="'"$tmp7"'/.shipwright/adaptive-models.json"
+  cmd_suggest_overrides --dry-run --min-samples 20 2>&1
+' 2>&1 || true)
+assert_contains "suggest-overrides reports dry-run" "Dry run" "$got"
+
+# Test rejection of out-of-bounds value (timeout.test = 5, min is 60)
+# The value 5 should be rejected as out of bounds for daemon.stage_timeouts.test (min 60)
+assert_contains "suggest-overrides rejects out-of-bounds" "Rejected" "$got"
+
+rm -rf "$tmp7"
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # config.sh — Centralized configuration reader for Shipwright
-# Precedence: SHIPWRIGHT_* env var > daemon-config.json > policy.json > defaults.json
+# Precedence: SHIPWRIGHT_* env var > daemon-config.json > policy-overrides.json > policy.json > defaults.json
 # Usage: source "$SCRIPT_DIR/lib/config.sh"
 #        val=$(_config_get "daemon.poll_interval")
 [[ -n "${_SW_CONFIG_LOADED:-}" ]] && return 0
@@ -12,11 +12,13 @@ _CONFIG_REPO_DIR="$(cd "$_CONFIG_SCRIPT_DIR/../.." 2>/dev/null && pwd || echo ""
 _DEFAULTS_FILE="${_CONFIG_REPO_DIR}/config/defaults.json"
 _POLICY_FILE="${_CONFIG_REPO_DIR}/config/policy.json"
 _DAEMON_CONFIG_FILE=".claude/daemon-config.json"
+_POLICY_OVERRIDES_FILE=".claude/policy-overrides.json"
 
-# Resolve daemon config relative to git root or cwd
+# Resolve daemon config and policy overrides relative to git root or cwd
 if [[ ! -f "$_DAEMON_CONFIG_FILE" ]]; then
     local_root="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
     _DAEMON_CONFIG_FILE="${local_root}/.claude/daemon-config.json"
+    _POLICY_OVERRIDES_FILE="${local_root}/.claude/policy-overrides.json"
 fi
 
 # _config_get "section.key" [default]
@@ -46,7 +48,17 @@ _config_get() {
         fi
     fi
 
-    # 3. Check policy.json
+    # 3. Check policy-overrides.json (adaptive/operator overrides)
+    if [[ -f "$_POLICY_OVERRIDES_FILE" ]]; then
+        local val
+        val=$(jq -r "${jq_path} // \"\"" "$_POLICY_OVERRIDES_FILE" 2>/dev/null || echo "")
+        if [[ -n "$val" && "$val" != "null" ]]; then
+            echo "$val"
+            return 0
+        fi
+    fi
+
+    # 4. Check policy.json
     if [[ -f "$_POLICY_FILE" ]]; then
         local val
         val=$(jq -r "${jq_path} // \"\"" "$_POLICY_FILE" 2>/dev/null || echo "")
@@ -56,7 +68,7 @@ _config_get() {
         fi
     fi
 
-    # 4. Check defaults.json
+    # 5. Check defaults.json
     if [[ -f "$_DEFAULTS_FILE" ]]; then
         local val
         val=$(jq -r "${jq_path} // \"\"" "$_DEFAULTS_FILE" 2>/dev/null || echo "")
@@ -66,7 +78,7 @@ _config_get() {
         fi
     fi
 
-    # 5. Return fallback
+    # 6. Return fallback
     echo "$fallback"
 }
 

@@ -182,7 +182,27 @@
         "optimize_interval_cycles": { "type": "integer", "minimum": 1 },
         "stale_reaper_interval_cycles": { "type": "integer", "minimum": 1 },
         "stale_timeout_multiplier": { "type": "integer", "minimum": 1 },
-        "stale_state_hours": { "type": "integer", "minimum": 1 }
+        "stale_state_hours": { "type": "integer", "minimum": 1 },
+        "max_parallel": { "type": "integer", "minimum": 1 },
+        "max_workers": { "type": "integer", "minimum": 1 },
+        "min_workers": { "type": "integer", "minimum": 1 },
+        "watchdog_max_restarts": { "type": "integer", "minimum": 1 },
+        "graceful_shutdown_seconds": { "type": "integer", "minimum": 5 },
+        "progress_hard_limit_seconds": { "type": "integer", "minimum": 600 },
+        "health_stale_timeout": { "type": "integer", "minimum": 60 },
+        "max_retries": { "type": "integer", "minimum": 0 },
+        "estimated_cost_per_job_usd": { "type": "number", "minimum": 0 },
+        "patrol": {
+          "type": "object",
+          "description": "Patrol cycle tunables for daemon background tasks.",
+          "properties": {
+            "interval_seconds": { "type": "integer", "minimum": 60 },
+            "max_issues": { "type": "integer", "minimum": 1 },
+            "failures_threshold": { "type": "integer", "minimum": 1 },
+            "retry_threshold": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
@@ -210,6 +230,11 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100
+        },
+        "build_test_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
         }
       },
       "additionalProperties": false
@@ -303,6 +328,51 @@
           "minimum": 0,
           "maximum": 100
         }
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "description": "Autonomous decision engine configuration.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cycle_interval_seconds": { "type": "integer", "minimum": 1 },
+        "tiers_file": { "type": "string" },
+        "outcome_learning_enabled": { "type": "boolean" },
+        "outcome_min_samples": { "type": "integer", "minimum": 1 },
+        "dedup_window_days": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "loop": {
+      "type": "object",
+      "description": "Continuous agent loop harness tunables. Controls iteration limits, circuit breakers, context budget, and convergence detection.",
+      "properties": {
+        "max_iterations": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "fast_test_interval": { "type": "integer", "minimum": 1 },
+        "extension_size": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "max_extensions": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "circuit_breaker_threshold": { "type": "integer", "minimum": 1 },
+        "min_progress_lines": { "type": "integer", "minimum": 0 },
+        "context_budget_chars": { "type": "integer", "minimum": 10000 },
+        "claude_timeout": { "type": "integer", "minimum": 60 },
+        "fallback_model": {
+          "type": "string",
+          "enum": ["sonnet", "haiku", "opus"]
+        },
+        "max_restarts": { "type": "integer", "minimum": 0 },
+        "test_timeout": { "type": "integer", "minimum": 10 },
+        "convergence_threshold": { "type": "integer", "minimum": 1 },
+        "convergence_window": { "type": "integer", "minimum": 2 },
+        "convergence_stall_limit": { "type": "integer", "minimum": 1 },
+        "progress_md_enabled": { "type": "boolean" },
+        "error_summary_enabled": { "type": "boolean" },
+        "sleep_between_iterations": { "type": "integer", "minimum": 0 },
+        "multi_agent_sleep": { "type": "integer", "minimum": 0 },
+        "context_trim_memory_chars": { "type": "integer", "minimum": 0 },
+        "context_trim_git_entries": { "type": "integer", "minimum": 0 },
+        "context_trim_hotspot_files": { "type": "integer", "minimum": 0 },
+        "context_trim_test_lines": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     }

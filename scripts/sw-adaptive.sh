@@ -861,6 +861,9 @@ ${BOLD}SUBCOMMANDS${RESET}
   ${CYAN}reset${RESET} [--metric METRIC]
     Clear learned data (all, or specific metric)
 
+  ${CYAN}suggest-overrides${RESET} [--min-samples N] [--dry-run] [--output FILE]
+    Promote high-confidence adaptive values to .claude/policy-overrides.json
+
   ${CYAN}help${RESET}
     Show this help message
 
@@ -898,6 +901,124 @@ ${BOLD}STATISTICS${RESET}
 EOF
 }
 
+# ─── Suggest Overrides: promote high-confidence adaptive values to policy ─────
+cmd_suggest_overrides() {
+    local min_samples=20
+    local overrides_file=".claude/policy-overrides.json"
+    local lock_file="${overrides_file}.lock"
+    local dry_run=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --min-samples) min_samples="$2"; shift 2 ;;
+            --dry-run)     dry_run=true; shift ;;
+            --output)      overrides_file="$2"; shift 2 ;;
+            *)             shift ;;
+        esac
+    done
+
+    # Resolve overrides path relative to git root
+    local git_root
+    git_root="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+    overrides_file="${git_root}/${overrides_file}"
+    lock_file="${overrides_file}.lock"
+
+    if [[ ! -f "$MODELS_FILE" ]]; then
+        info "No adaptive data available (${MODELS_FILE} not found)"
+        return 0
+    fi
+
+    # Mapping from adaptive metric keys to policy dotpaths with min/max bounds
+    # Format: adaptive_key|policy_dotpath|min|max
+    local mappings=(
+        "timeout.build|daemon.stage_timeouts.build|60|3600"
+        "timeout.test|daemon.stage_timeouts.test|60|3600"
+        "timeout.review|daemon.stage_timeouts.review|60|3600"
+        "timeout.plan|daemon.stage_timeouts.plan|60|3600"
+        "timeout.design|daemon.stage_timeouts.design|60|3600"
+        "iterations|loop.max_iterations|1|100"
+        "quality_threshold|quality.gate_score_threshold|0|100"
+        "coverage_min|quality.coverage_threshold|0|100"
+        "poll_interval|daemon.poll_interval_seconds|1|3600"
+    )
+
+    local overrides="{}"
+    local count=0
+    local rejected=0
+    local sample_counts="{}"
+
+    local mapping
+    for mapping in "${mappings[@]}"; do
+        local akey ppath pmin pmax
+        IFS='|' read -r akey ppath pmin pmax <<< "$mapping"
+
+        # Extract value and sample count from adaptive models
+        local val samples
+        val=$(jq -r --arg k "$akey" '.[$k].value // empty' "$MODELS_FILE" 2>/dev/null || true)
+        samples=$(jq -r --arg k "$akey" '.[$k].sample_count // 0' "$MODELS_FILE" 2>/dev/null || true)
+
+        [[ -z "$val" ]] && continue
+        [[ "${samples:-0}" -lt "$min_samples" ]] && continue
+
+        # Validate against schema bounds
+        local int_val
+        int_val=$(printf '%.0f' "$val" 2>/dev/null || echo "$val")
+        if [[ $(echo "$int_val < $pmin" | bc -l 2>/dev/null || echo 0) -eq 1 ]] || \
+           [[ $(echo "$int_val > $pmax" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+            warn "Rejected: ${ppath} = ${int_val} (out of bounds ${pmin}-${pmax}, samples=${samples})"
+            rejected=$((rejected + 1))
+            continue
+        fi
+
+        # Build nested JSON path from dotpath
+        overrides=$(echo "$overrides" | jq --arg path "$ppath" --argjson val "$int_val" '
+            ($path | split(".")) as $parts |
+            if ($parts | length) == 2 then
+                .[$parts[0]][$parts[1]] = $val
+            elif ($parts | length) == 3 then
+                .[$parts[0]][$parts[1]][$parts[2]] = $val
+            else . end
+        ' 2>/dev/null || echo "$overrides")
+
+        sample_counts=$(echo "$sample_counts" | jq --arg k "$ppath" --argjson s "${samples}" '.[$k] = $s')
+        count=$((count + 1))
+    done
+
+    if [[ "$count" -eq 0 ]]; then
+        info "No values meet confidence threshold (min_samples=${min_samples})"
+        [[ "$rejected" -gt 0 ]] && warn "${rejected} value(s) rejected (out of bounds)"
+        return 0
+    fi
+
+    # Add _meta block
+    local ts
+    ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    overrides=$(echo "$overrides" | jq --arg ts "$ts" --argjson sc "$sample_counts" \
+        '. + {"_meta": {"generated_by": "adaptive", "timestamp": $ts, "sample_counts": $sc}}')
+
+    if [[ "$dry_run" == "true" ]]; then
+        info "Dry run — would write ${count} override(s) to ${overrides_file}:"
+        echo "$overrides" | jq .
+        return 0
+    fi
+
+    # Atomic write with flock guard
+    mkdir -p "$(dirname "$overrides_file")"
+    local tmp_file="${overrides_file}.tmp.$$"
+
+    (
+        if command -v flock >/dev/null 2>&1; then
+            flock -w 10 200 || { error "Could not acquire lock on overrides file"; exit 1; }
+        fi
+        echo "$overrides" | jq . > "$tmp_file"
+        mv "$tmp_file" "$overrides_file"
+    ) 200>"$lock_file"
+
+    success "Wrote ${count} adaptive override(s) to ${overrides_file}"
+    [[ "$rejected" -gt 0 ]] && warn "${rejected} value(s) rejected (out of bounds)"
+    rm -f "$lock_file"
+}
+
 # ─── Main Entry Point ────────────────────────────────────────────────────────
 main() {
     local cmd="${1:-help}"
@@ -921,6 +1042,9 @@ main() {
             ;;
         reset)
             cmd_reset "$@"
+            ;;
+        suggest-overrides)
+            cmd_suggest_overrides "$@"
             ;;
         help)
             cmd_help

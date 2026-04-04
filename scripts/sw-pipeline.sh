@@ -213,7 +213,7 @@ TOTAL_INPUT_TOKENS=0
 TOTAL_OUTPUT_TOKENS=0
 
 # Build-test retry limit (configurable via --self-heal)
-BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-2}"
+BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-$(_config_get_int "pipeline.build_test_retries" 2 2>/dev/null || echo 2)}"
 
 # TDD mode flag (enable via --tdd or pipeline template)
 TDD_ENABLED=false

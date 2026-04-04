@@ -15,7 +15,7 @@ STATE_FILE="${STATE_FILE:-$STATE_DIR/pipeline-state.md}"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-$STATE_DIR/pipeline-artifacts}"
 
 # Variables referenced by execution functions (set by sw-pipeline.sh, defaults here for safety)
-BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-2}"
+BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-$(_config_get_int "pipeline.build_test_retries" 2 2>/dev/null || echo 2)}"
 SELF_HEAL_COUNT="${SELF_HEAL_COUNT:-0}"
 STASHED_CHANGES="${STASHED_CHANGES:-false}"
 NOTIFICATION_ENABLED="${NOTIFICATION_ENABLED:-false}"

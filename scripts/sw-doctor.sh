@@ -1594,6 +1594,105 @@ else
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
+# Policy Validation
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${BOLD}  Policy & Schema${RESET}"
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+_POLICY_JSON="${REPO_ROOT}/config/policy.json"
+_POLICY_SCHEMA="${REPO_ROOT}/config/policy.schema.json"
+_POLICY_OVERRIDES="${REPO_ROOT}/.claude/policy-overrides.json"
+
+if [[ -f "$_POLICY_JSON" ]]; then
+    if jq empty "$_POLICY_JSON" 2>/dev/null; then
+        check_pass "config/policy.json: valid JSON"
+    else
+        check_fail "config/policy.json: invalid JSON"
+    fi
+
+    # Check required sections
+    _missing_sections=""
+    for _sect in daemon pipeline quality; do
+        if ! jq -e ".${_sect}" "$_POLICY_JSON" >/dev/null 2>&1; then
+            _missing_sections="${_missing_sections} ${_sect}"
+        fi
+    done
+    if [[ -z "$_missing_sections" ]]; then
+        check_pass "policy.json: all required sections present (daemon, pipeline, quality)"
+    else
+        check_fail "policy.json: missing sections:${_missing_sections}"
+    fi
+
+    # Check loop section (new)
+    if jq -e ".loop" "$_POLICY_JSON" >/dev/null 2>&1; then
+        check_pass "policy.json: loop section present"
+    else
+        check_warn "policy.json: loop section missing — hardcoded defaults will be used"
+    fi
+
+    # Run policy_validate if available
+    if [[ "$(type -t policy_validate 2>/dev/null)" == "function" ]]; then
+        _pv_output=$(policy_validate "$_POLICY_JSON" 2>&1)
+        if [[ $? -eq 0 ]]; then
+            check_pass "policy_validate: all constraints satisfied"
+        else
+            check_fail "policy_validate: constraint violations found"
+            echo "$_pv_output" | while IFS= read -r _line; do
+                [[ -n "$_line" ]] && echo -e "    ${RED}${_line}${RESET}"
+            done
+        fi
+    else
+        # Source policy.sh if not already loaded
+        if [[ -f "${REPO_ROOT}/scripts/lib/policy.sh" ]]; then
+            source "${REPO_ROOT}/scripts/lib/policy.sh"
+            if [[ "$(type -t policy_validate 2>/dev/null)" == "function" ]]; then
+                _pv_output=$(policy_validate "$_POLICY_JSON" 2>&1)
+                if [[ $? -eq 0 ]]; then
+                    check_pass "policy_validate: all constraints satisfied"
+                else
+                    check_fail "policy_validate: constraint violations found"
+                    echo "$_pv_output" | while IFS= read -r _line; do
+                        [[ -n "$_line" ]] && echo -e "    ${RED}${_line}${RESET}"
+                    done
+                fi
+            fi
+        fi
+    fi
+else
+    check_warn "config/policy.json not found — policy system inactive"
+fi
+
+# Check schema file
+if [[ -f "$_POLICY_SCHEMA" ]]; then
+    if jq empty "$_POLICY_SCHEMA" 2>/dev/null; then
+        check_pass "config/policy.schema.json: valid JSON"
+        # Verify key sections exist in schema
+        _schema_sections=$(jq -r '.properties | keys[]' "$_POLICY_SCHEMA" 2>/dev/null || true)
+        if echo "$_schema_sections" | grep -q "loop" && echo "$_schema_sections" | grep -q "decision"; then
+            check_pass "policy schema: loop and decision sections defined"
+        else
+            check_warn "policy schema: missing loop or decision section definitions"
+        fi
+    else
+        check_fail "config/policy.schema.json: invalid JSON"
+    fi
+else
+    check_warn "config/policy.schema.json not found"
+fi
+
+# Check policy overrides (if present)
+if [[ -f "$_POLICY_OVERRIDES" ]]; then
+    if jq empty "$_POLICY_OVERRIDES" 2>/dev/null; then
+        _meta=$(jq -r '._meta.generated_by // "unknown"' "$_POLICY_OVERRIDES" 2>/dev/null || true)
+        _ts=$(jq -r '._meta.timestamp // "unknown"' "$_POLICY_OVERRIDES" 2>/dev/null || true)
+        check_pass "policy-overrides.json: valid (source=${_meta}, updated=${_ts})"
+    else
+        check_fail "policy-overrides.json: invalid JSON"
+    fi
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # Auto-fix (if enabled)
 # ═════════════════════════════════════════════════════════════════════════════
 if [[ "$DOCTOR_FIX_MODE" == "true" ]]; then

@@ -173,7 +173,22 @@
     "optimize_interval_cycles": 10,
     "stale_reaper_interval_cycles": 10,
     "stale_timeout_multiplier": 2,
-    "stale_state_hours": 2
+    "stale_state_hours": 2,
+    "max_parallel": 4,
+    "max_workers": 8,
+    "min_workers": 1,
+    "watchdog_max_restarts": 5,
+    "graceful_shutdown_seconds": 30,
+    "progress_hard_limit_seconds": 21600,
+    "health_stale_timeout": 300,
+    "max_retries": 2,
+    "estimated_cost_per_job_usd": 5.0,
+    "patrol": {
+      "interval_seconds": 3600,
+      "max_issues": 10,
+      "failures_threshold": 3,
+      "retry_threshold": 3
+    }
   },
   "pipeline": {
     "max_iterations_default": 10,
@@ -181,7 +196,8 @@
     "coverage_threshold_percent": 60,
     "quality_gate_score_threshold": 70,
     "memory_baseline_fallback_percent": 20,
-    "memory_inject_fallback_percent": 30
+    "memory_inject_fallback_percent": 30,
+    "build_test_retries": 2
   },
   "quality": {
     "coverage_threshold": 60,
@@ -222,6 +238,30 @@
     "default_model": "sonnet",
     "promote_threshold_tasks": 10,
     "promote_threshold_success_rate": 85
+  },
+  "loop": {
+    "max_iterations": 20,
+    "fast_test_interval": 5,
+    "extension_size": 5,
+    "max_extensions": 3,
+    "circuit_breaker_threshold": 3,
+    "min_progress_lines": 5,
+    "context_budget_chars": 200000,
+    "claude_timeout": 1800,
+    "fallback_model": "sonnet",
+    "max_restarts": 0,
+    "test_timeout": 900,
+    "convergence_threshold": 3,
+    "convergence_window": 5,
+    "convergence_stall_limit": 3,
+    "progress_md_enabled": true,
+    "error_summary_enabled": true,
+    "sleep_between_iterations": 2,
+    "multi_agent_sleep": 5,
+    "context_trim_memory_chars": 20000,
+    "context_trim_git_entries": 10,
+    "context_trim_hotspot_files": 5,
+    "context_trim_test_lines": 50
   },
   "decision": {
     "enabled": true,

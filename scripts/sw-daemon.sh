@@ -229,19 +229,19 @@ AUTO_SCALE_INTERVAL=5
 if type policy_get >/dev/null 2>&1; then
     AUTO_SCALE_INTERVAL=$(policy_get ".daemon.auto_scale_interval_cycles" "5")
 fi
-MAX_WORKERS=8
-MIN_WORKERS=1
+MAX_WORKERS=$(_config_get_int "daemon.max_workers" 8 2>/dev/null || echo 8)
+MIN_WORKERS=$(_config_get_int "daemon.min_workers" 1 2>/dev/null || echo 1)
 WORKER_MEM_GB=4
-EST_COST_PER_JOB=5.0
+EST_COST_PER_JOB=$(_config_get "daemon.estimated_cost_per_job_usd" "5.0" 2>/dev/null || echo "5.0")
 FLEET_MAX_PARALLEL=""
 
-# Patrol defaults (overridden by daemon-config.json or env)
-PATROL_INTERVAL="${PATROL_INTERVAL:-3600}"
-PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-5}"
+# Patrol defaults (overridden by daemon-config.json, policy-overrides, policy, or env)
+PATROL_INTERVAL=$(_config_get_int "daemon.patrol.interval_seconds" 3600 2>/dev/null || echo 3600)
+PATROL_MAX_ISSUES=$(_config_get_int "daemon.patrol.max_issues" 5 2>/dev/null || echo 5)
 PATROL_LABEL="${PATROL_LABEL:-auto-patrol}"
 PATROL_DRY_RUN=false
 PATROL_AUTO_WATCH=false
-PATROL_FAILURES_THRESHOLD=3
+PATROL_FAILURES_THRESHOLD=$(_config_get_int "daemon.patrol.failures_threshold" 3 2>/dev/null || echo 3)
 PATROL_DORA_ENABLED=true
 PATROL_UNTESTED_ENABLED=true
 PATROL_RETRY_ENABLED=true
@@ -784,7 +784,8 @@ daemon_start() {
 
     # Enter poll loop with watchdog self-restart on unexpected exit
     local _watchdog_restarts=0
-    local _watchdog_max=${WATCHDOG_MAX_RESTARTS:-5}
+    local _watchdog_max
+    _watchdog_max=$(_config_get_int "daemon.watchdog_max_restarts" 5 2>/dev/null || echo 5)
     local _watchdog_backoff=5
 
     while true; do
