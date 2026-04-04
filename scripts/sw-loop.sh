@@ -54,6 +54,8 @@ fi
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
+# shellcheck source=lib/auto-mitigation.sh
+[[ -f "$SCRIPT_DIR/lib/auto-mitigation.sh" ]] && source "$SCRIPT_DIR/lib/auto-mitigation.sh" 2>/dev/null || true
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -2162,15 +2164,27 @@ ${_diagnosis}"
             fi
             [[ -z "$_last_error" ]] && _last_error=$(echo "${TEST_OUTPUT:-}" | head -3 | tr '\n' ' ')
             local _fix_suggestion=""
-            if type memory_closed_loop_inject >/dev/null 2>&1 && [[ -n "${_last_error:-}" ]]; then
+            # Use auto-mitigation engine (multi-match, scored) if available, fall back to single-match
+            if type mitigation_query_fixes >/dev/null 2>&1 && [[ -n "${_last_error:-}" ]]; then
+                local _mitigation_matches
+                _mitigation_matches=$(mitigation_query_fixes "$_last_error" "build" 3 2>/dev/null) || _mitigation_matches="[]"
+                local _match_count
+                _match_count=$(echo "$_mitigation_matches" | jq 'length' 2>/dev/null || echo "0")
+                if [[ "$_match_count" -gt 0 ]]; then
+                    _fix_suggestion=$(mitigation_format "$_mitigation_matches" "prompt" 2>/dev/null) || true
+                fi
+            fi
+            # Fallback to legacy single-match injection
+            if [[ -z "${_fix_suggestion:-}" ]] && type memory_closed_loop_inject >/dev/null 2>&1 && [[ -n "${_last_error:-}" ]]; then
                 _fix_suggestion=$(memory_closed_loop_inject "$_last_error" 2>/dev/null) || true
             fi
             if [[ -n "${_fix_suggestion:-}" ]]; then
                 _applied_fix_pattern="${_last_error}"
-                GOAL="KNOWN FIX (from past success): ${_fix_suggestion}
+                GOAL="KNOWN FIX (from past success):
+${_fix_suggestion}
 
 ${GOAL}"
-                info "Memory fix injected: ${_fix_suggestion:0:80}"
+                info "Mitigation fix injected (${_match_count:-1} matches)"
             fi
 
             # Analyze failure via Claude (background, non-blocking) for richer root_cause/fix in memory
@@ -2246,14 +2260,14 @@ ${GOAL}"
             fi
         fi
 
-        # Track fix outcome for memory effectiveness
+        # Track fix outcome for memory effectiveness (prefer mitigation engine for dual-write)
         if [[ -n "${_applied_fix_pattern:-}" ]]; then
-            if type memory_record_fix_outcome >/dev/null 2>&1; then
-                if [[ "${TEST_PASSED:-}" == "true" ]]; then
-                    memory_record_fix_outcome "$_applied_fix_pattern" "true" "true" 2>/dev/null || true
-                else
-                    memory_record_fix_outcome "$_applied_fix_pattern" "true" "false" 2>/dev/null || true
-                fi
+            local _fix_resolved="false"
+            [[ "${TEST_PASSED:-}" == "true" ]] && _fix_resolved="true"
+            if type mitigation_track_outcome >/dev/null 2>&1; then
+                mitigation_track_outcome "$_applied_fix_pattern" "true" "$_fix_resolved" "${PIPELINE_ID:-unknown}" 2>/dev/null || true
+            elif type memory_record_fix_outcome >/dev/null 2>&1; then
+                memory_record_fix_outcome "$_applied_fix_pattern" "true" "$_fix_resolved" 2>/dev/null || true
             fi
             _applied_fix_pattern=""
         fi

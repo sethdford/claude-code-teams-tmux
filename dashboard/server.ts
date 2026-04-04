@@ -3835,6 +3835,81 @@ const server = Bun.serve({
       });
     }
 
+    // REST: Mitigation engine — active mitigations with effectiveness data
+    if (pathname === "/api/memory/mitigations") {
+      const allPatterns = readMemoryFiles("failures.json") as Array<
+        Record<string, unknown>
+      >;
+      const mitigations = allPatterns
+        .filter(
+          (p) =>
+            p.fix &&
+            (p.fix as string).length > 0 &&
+            ((p.times_fix_suggested as number) || 0) > 0,
+        )
+        .map((p) => ({
+          pattern: ((p.pattern as string) || "").slice(0, 100),
+          fix: (p.fix as string) || "",
+          category: (p.category as string) || "unknown",
+          effectiveness: (p.fix_effectiveness_rate as number) || 0,
+          seen_count: (p.seen_count as number) || 0,
+          times_suggested: (p.times_fix_suggested as number) || 0,
+          times_applied: (p.times_fix_applied as number) || 0,
+          times_resolved: (p.times_fix_resolved as number) || 0,
+          last_seen: (p.last_seen as string) || "",
+          stage: (p.stage as string) || "",
+        }))
+        .sort(
+          (a, b) =>
+            b.effectiveness - a.effectiveness ||
+            b.times_suggested - a.times_suggested,
+        );
+      return new Response(JSON.stringify({ mitigations }), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+
+    // REST: Mitigation stats — aggregate effectiveness metrics
+    if (pathname === "/api/memory/mitigations/stats") {
+      const allPatterns = readMemoryFiles("failures.json") as Array<
+        Record<string, unknown>
+      >;
+      let totalInjections = 0;
+      let totalApplied = 0;
+      let totalResolved = 0;
+      let staleCount = 0;
+      for (const p of allPatterns) {
+        totalInjections += (p.times_fix_suggested as number) || 0;
+        totalApplied += (p.times_fix_applied as number) || 0;
+        totalResolved += (p.times_fix_resolved as number) || 0;
+        if (
+          ((p.fix_effectiveness_rate as number) || 0) < 20 &&
+          ((p.seen_count as number) || 0) >= 5
+        ) {
+          staleCount++;
+        }
+      }
+      const resolutionRate =
+        totalApplied > 0
+          ? Math.round((totalResolved / totalApplied) * 100)
+          : 0;
+      return new Response(
+        JSON.stringify({
+          total_injections: totalInjections,
+          total_applied: totalApplied,
+          total_resolved: totalResolved,
+          resolution_rate: resolutionRate,
+          stale_count: staleCount,
+          pattern_count: allPatterns.filter(
+            (p) => p.fix && (p.fix as string).length > 0,
+          ).length,
+        }),
+        {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        },
+      );
+    }
+
     // REST: Memory decisions
     if (pathname === "/api/memory/decisions") {
       const decisions = readMemoryFiles("decisions.json");

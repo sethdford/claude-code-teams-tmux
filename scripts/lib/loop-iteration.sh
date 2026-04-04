@@ -133,6 +133,12 @@ Fix these specific errors. Each line above is one distinct error from the test o
         memory_section="$("$SCRIPT_DIR/sw-memory.sh" inject build 2>/dev/null || true)"
     fi
 
+    # Proactive mitigation injection (high-confidence fixes before errors occur)
+    local mitigation_section=""
+    if type mitigation_proactive_inject >/dev/null 2>&1; then
+        mitigation_section="$(mitigation_proactive_inject "build" "${GOAL:-}" 2>/dev/null || true)"
+    fi
+
     # Cross-pipeline discovery injection (learnings from other pipeline runs)
     local discovery_section=""
     if type inject_discoveries >/dev/null 2>&1; then
@@ -358,6 +364,8 @@ ${error_summary_section:+$error_summary_section
 }
 ${memory_section:+## Memory Context
 $memory_section
+}
+${mitigation_section:+$mitigation_section
 }
 ${discovery_section:+## Cross-Pipeline Learnings
 $discovery_section
