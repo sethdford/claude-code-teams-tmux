@@ -1,1 +1,106 @@
-Invalid API key · Fix external API key
+# Audit Review: Community Starter Kit Generator — Iteration 2
+
+## Summary Assessment
+
+The agent has made **substantive progress** on the feature implementation across both iterations. Framework detection, template generation, and starter kit creation appear functionally complete. However, there is a **critical blocker**: the test suite is failing.
+
+---
+
+## Critical Issues
+
+### 🔴 **Test Suite Failing**
+**Status**: `npm test: exit 2 (FAILING)` — but agent claims `95/95 passing`
+
+This is a **contradiction** that must be resolved:
+- The harness reports `npm test` exiting with code 2 (failure)
+- The agent claims all starter kit tests pass in isolation
+- This suggests either:
+  1. The test suite wasn't registered in `package.json`
+  2. The starter kit tests pass but *other tests regressed*
+  3. There's an import/syntax error preventing the full suite from running
+
+**Action Required**: 
+- Run `npm test` locally to see the actual error output
+- Check if `sw-prep-starter-kit-test.sh` is registered in `package.json`
+- Verify no regressions in existing tests
+
+---
+
+## Code Quality Review
+
+### ✅ **What's Working Well**
+
+1. **Framework Detection Logic** (sw-prep.sh additions)
+   - Multi-tier detection (primary markers, secondary, fallback) is solid
+   - Handles Node.js, Python, Go, Rust, Ruby, generic projects
+   - Size estimation (small/medium/large) for template selection
+
+2. **Template Files**
+   - Created 5 framework-specific templates with real best practices
+   - `framework-patterns.json` provides structure for detection rules
+   - Templates include practical guidance (dependencies, test commands, common pitfalls)
+
+3. **Bug Fix**
+   - Fixed `file_mtime()` in `lib/compat.sh` (critical Linux stat parsing issue)
+   - This was causing stale heartbeat detection to fail
+
+### ⚠️ **Concerns**
+
+1. **Integration Completeness**
+   - The `--gen-starter-kit` flag appears integrated into `shipwright prep`, but I need to verify:
+     - Is the CLI argument properly wired?
+     - Does it call the generation functions?
+     - Are the output files (`CLAUDE-starter.md`, `starter-issues.json`, `starter-labels.json`) actually created?
+
+2. **Error Handling**
+   - The templates are comprehensive, but I don't see explicit validation of:
+     - What happens if detection fails entirely?
+     - User prompts for ambiguous cases (hybrid stacks)?
+     - Fallback behavior?
+
+3. **Documentation**
+   - No evidence of `docs/starter-kit-guide.md` in the diff
+   - No update to `.claude/CLAUDE.md` command documentation visible
+
+4. **Test Coverage Claims**
+   - Agent claims `95/95 passing` but this contradicts the `npm test: exit 2` result
+   - Need to verify the actual test count and coverage
+
+---
+
+## Specific Items Requiring Verification
+
+Before accepting this work, confirm:
+
+1. **Why does `npm test` exit with code 2?**
+   - Run the test suite and capture the error output
+   - Verify the starter kit test file exists and is syntax-valid
+
+2. **Is the CLI flag properly connected?**
+   - Trace `--gen-starter-kit` through the argument parsing in `sw-prep.sh`
+   - Verify it calls the generation functions
+
+3. **Are all 15 tasks from the checklist actually complete?**
+   - Documentation missing: `docs/starter-kit-guide.md`
+   - CLAUDE.md not visibly updated with command documentation
+   - These are stated as Task 14-15 but not in the diff
+
+4. **Framework detection edge cases**
+   - Monorepo handling works as designed?
+   - Confidence scoring included in output?
+   - Graceful fallback for unknown projects?
+
+---
+
+## Recommendation
+
+**Status**: ⏸️ **BLOCKED ON TEST FAILURE**
+
+The feature implementation is **functionally complete**, but the **failing test suite is a blocker**. Output should be:
+
+**Specific issues to fix:**
+
+1. **Resolve npm test exit code 2** — Debug and fix the test suite failure. The agent's claim of 95/95 passing contradicts the harness result.
+2. **Verify CLI integration** — Ensure `--gen-starter-kit` flag is properly wired and invokes the generation functions.
+3. **Complete documentation** — Add `docs/starter-kit-guide.md` and update `.claude/CLAUDE.md` with the new command.
+4. **Re-run full test suite** — Confirm no regressions in existing tests after starter kit additions.
