@@ -512,7 +512,8 @@ build_claude_flags() {
         flags+=("--effort" "$EFFORT_LEVEL")
     fi
 
-    if [[ -n "${FALLBACK_MODEL:-}" ]]; then
+    # Only add fallback-model if it differs from primary (Claude CLI rejects same model)
+    if [[ -n "${FALLBACK_MODEL:-}" ]] && [[ "${FALLBACK_MODEL}" != "$MODEL" ]]; then
         flags+=("--fallback-model" "$FALLBACK_MODEL")
     fi
 

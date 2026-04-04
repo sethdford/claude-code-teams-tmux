@@ -28,13 +28,10 @@ _pipeline_claude_flags() {
     local effort="${EFFORT_LEVEL_OVERRIDE:-$(_stage_effort_level "$stage")}"
     flags+=("--effort" "$effort")
 
-    # Fallback model
-    if [[ -n "${FALLBACK_MODEL_OVERRIDE:-}" ]]; then
-        flags+=("--fallback-model" "$FALLBACK_MODEL_OVERRIDE")
-    elif [[ -n "${PIPELINE_FALLBACK_MODEL:-}" ]]; then
-        flags+=("--fallback-model" "$PIPELINE_FALLBACK_MODEL")
-    else
-        flags+=("--fallback-model" "sonnet")
+    # Fallback model — only add if explicitly configured and different from primary
+    local _fallback="${FALLBACK_MODEL_OVERRIDE:-${PIPELINE_FALLBACK_MODEL:-}}"
+    if [[ -n "$_fallback" ]] && [[ "$_fallback" != "$model" ]]; then
+        flags+=("--fallback-model" "$_fallback")
     fi
 
     echo "${flags[*]}"
