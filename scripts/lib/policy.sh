@@ -13,17 +13,33 @@ _POLICY_FILE=""
 [[ -n "$_POLICY_REPO_DIR" && -f "$_POLICY_REPO_DIR/config/policy.json" ]] && _POLICY_FILE="$_POLICY_REPO_DIR/config/policy.json"
 [[ -f "${HOME}/.shipwright/policy.json" ]] && _POLICY_FILE="${HOME}/.shipwright/policy.json"
 
+# Overrides file — written by sw-adaptive.sh, takes precedence over policy.json
+_POLICY_OVERRIDES_FILE=""
+if [[ -n "$_POLICY_REPO_DIR" && -f "$_POLICY_REPO_DIR/.claude/policy-overrides.json" ]]; then
+    _POLICY_OVERRIDES_FILE="$_POLICY_REPO_DIR/.claude/policy-overrides.json"
+fi
+
 # Export a single helper: policy_get <json_path> [default]
 # e.g. policy_get ".daemon.poll_interval_seconds" 60
+# Precedence: policy-overrides.json → policy.json → default
 policy_get() {
     local path="$1"
     local default="${2:-}"
-    if [[ -z "$_POLICY_FILE" || ! -f "$_POLICY_FILE" ]]; then
-        echo "$default"
-        return 0
+    local val=""
+
+    # 1. Check overrides first
+    if [[ -n "$_POLICY_OVERRIDES_FILE" && -f "$_POLICY_OVERRIDES_FILE" ]]; then
+        val=$(jq -r "${path} // \"\"" "$_POLICY_OVERRIDES_FILE" 2>/dev/null || true)
     fi
-    local val
-    val=$(jq -r "${path} // \"\"" "$_POLICY_FILE" 2>/dev/null)
+
+    # 2. Fall back to base policy
+    if [[ -z "$val" || "$val" == "null" ]]; then
+        if [[ -n "$_POLICY_FILE" && -f "$_POLICY_FILE" ]]; then
+            val=$(jq -r "${path} // \"\"" "$_POLICY_FILE" 2>/dev/null || true)
+        fi
+    fi
+
+    # 3. Fall back to default
     if [[ -z "$val" || "$val" == "null" ]]; then
         echo "$default"
     else
