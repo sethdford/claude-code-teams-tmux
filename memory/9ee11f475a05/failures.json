@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
-      "seen_count": 2,
-      "last_seen": "2026-04-04T01:13:43Z",
+      "seen_count": 3,
+      "last_seen": "2026-04-04T07:08:06Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -25,8 +25,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being used as a filename argument",
-      "fix": "quote the sed expression correctly so the variable substitution happens in the shell before sed receives it, e.g. use sed \"s|$TEST_TEMP_DIR|...|g\" instead of passing the unexpanded string as a file path",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format does not match what tests expect (missing 'agent-1', 'Found', '--force' strings)",
+      "fix": "Update sw-cleanup.sh heartbeat detection to output the agent name and update summary to print 'Found N items' with '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-03-29T06:09:02Z",
       "mitigation_attempts": 0,
