@@ -17,6 +17,11 @@ _SKILL_MEMORY_SH="${SCRIPT_DIR}/lib/skill-memory.sh"
 [[ -f "$SCRIPT_DIR/lib/test-holdout.sh" ]] && source "$SCRIPT_DIR/lib/test-holdout.sh" 2>/dev/null || true
 [[ -f "$SCRIPT_DIR/lib/spec-driven.sh" ]] && source "$SCRIPT_DIR/lib/spec-driven.sh" 2>/dev/null || true
 [[ -f "$SCRIPT_DIR/lib/causal-graph.sh" ]] && source "$SCRIPT_DIR/lib/causal-graph.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/constitutional.sh" ]] && source "$SCRIPT_DIR/lib/constitutional.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/formal-spec.sh" ]] && source "$SCRIPT_DIR/lib/formal-spec.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/mutation-executor.sh" ]] && source "$SCRIPT_DIR/lib/mutation-executor.sh" 2>/dev/null || true
+# Cross-session reinforcement learning optimizer (Phase 7)
+[[ -f "$SCRIPT_DIR/lib/rl-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/rl-optimizer.sh" 2>/dev/null || true
 
 # Defaults for variables normally set by sw-pipeline.sh (safe under set -u).
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}"

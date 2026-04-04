@@ -216,6 +216,24 @@ ${conventions}
         fi
     fi
 
+    # ── Constitutional AI: deterministic principle-based checks ──
+    if type constitutional_load >/dev/null 2>&1; then
+        if constitutional_load 2>/dev/null; then
+            local constitution_violations
+            constitution_violations=$(constitutional_self_critique "$BASE_BRANCH" 2>/dev/null) || true
+            constitution_violations="${constitution_violations:-0}"
+            if [[ "$constitution_violations" -gt 0 ]]; then
+                local constitution_prompt
+                constitution_prompt=$(constitutional_inject_prompt "" "high" 2>/dev/null || true)
+                if [[ -n "$constitution_prompt" ]]; then
+                    review_prompt+="
+${constitution_prompt}
+"
+                fi
+            fi
+        fi
+    fi
+
     # Inject CODEOWNERS focus areas for review
     if [[ "${NO_GITHUB:-}" != "true" ]] && type gh_codeowners >/dev/null 2>&1; then
         local review_owners
@@ -402,6 +420,38 @@ If all requirements are met, write: \"Spec compliance: PASS — all planned task
         success "Review clean"
     fi
 
+    # ── Dark factory: formal spec verification ──
+    if type formal_spec_extract >/dev/null 2>&1; then
+        local _spec_file="${ARTIFACTS_DIR}/formal-specs.json"
+        local _spec_report="${ARTIFACTS_DIR}/formal-spec-report.json"
+        local diff_files_for_spec
+        diff_files_for_spec=$(_safe_base_diff --name-only 2>/dev/null || true)
+        if [[ -n "$diff_files_for_spec" ]]; then
+            formal_spec_extract "${PROJECT_ROOT:-.}" "$_spec_file" >/dev/null 2>&1 || true
+            if [[ -f "$_spec_file" ]]; then
+                local _spec_count
+                _spec_count=$(jq -r '.count // 0' "$_spec_file" 2>/dev/null || echo "0")
+                if [[ "$_spec_count" -gt 0 ]]; then
+                    formal_spec_verify "$_spec_file" "${PROJECT_ROOT:-.}" "$_spec_report" >/dev/null 2>&1 || true
+                    if [[ -f "$_spec_report" ]]; then
+                        local _spec_violations _spec_pct
+                        _spec_violations=$(jq -r '.violations // 0' "$_spec_report" 2>/dev/null || echo "0")
+                        _spec_pct=$(jq -r '.compliance_pct // 100' "$_spec_report" 2>/dev/null || echo "100")
+                        if [[ "$_spec_violations" -gt 0 ]]; then
+                            warn "Formal spec verification: ${_spec_violations} violation(s), ${_spec_pct}% compliance"
+                        else
+                            success "Formal spec verification: ${_spec_pct}% compliance"
+                        fi
+                        emit_event "review.formal_spec" \
+                            "issue=${ISSUE_NUMBER:-0}" \
+                            "violations=$_spec_violations" \
+                            "compliance_pct=$_spec_pct" 2>/dev/null || true
+                    fi
+                fi
+            fi
+        fi
+    fi
+
     # ── Oversight gate: pipeline review/quality stages block on verdict ──
     if [[ -x "$SCRIPT_DIR/sw-oversight.sh" ]] && [[ "${SKIP_GATES:-false}" != "true" ]]; then
         local reject_reason=""
@@ -498,6 +548,186 @@ ${review_summary}
     fi
 
     log_stage "review" "AI review complete ($total_issues issues: $critical_count critical, $bug_count bugs, $warning_count suggestions)"
+}
+
+# ─── Spec Verification Stage (dark factory: spec-driven development) ────────
+# Runs between review and compound_quality. Verifies implementation against
+# the spec by checking each acceptance criterion.
+stage_spec_verification() {
+    CURRENT_STAGE_ID="spec_verification"
+
+    # Check if spec-driven is disabled
+    if [[ "${SPEC_DRIVEN_ENABLED:-true}" == "false" ]]; then
+        info "Spec-driven development disabled — skipping spec verification"
+        return 0
+    fi
+
+    local spec_file="${ARTIFACTS_DIR}/spec.json"
+
+    if [[ ! -f "$spec_file" ]]; then
+        info "No spec found — skipping spec verification"
+        log_stage "spec_verification" "Skipped: no spec available"
+        return 0
+    fi
+
+    info "Verifying implementation against specification..."
+
+    local criteria_count
+    criteria_count=$(jq '.acceptance_criteria | length' "$spec_file" 2>/dev/null || echo "0")
+
+    if [[ "$criteria_count" -eq 0 ]]; then
+        warn "Spec has no acceptance criteria — skipping verification"
+        log_stage "spec_verification" "Skipped: no acceptance criteria in spec"
+        return 0
+    fi
+
+    # Build verification results
+    local verified=0
+    local unverified=0
+    local manual_review=0
+    local results_json="["
+    local first=true
+    local idx=0
+
+    while [[ "$idx" -lt "$criteria_count" ]]; do
+        local criterion verification_method testable
+        criterion=$(jq -r --argjson i "$idx" '.acceptance_criteria[$i].criterion // ""' "$spec_file" 2>/dev/null)
+        verification_method=$(jq -r --argjson i "$idx" '.acceptance_criteria[$i].verification_method // "manual"' "$spec_file" 2>/dev/null)
+        testable=$(jq -r --argjson i "$idx" '.acceptance_criteria[$i].testable // false' "$spec_file" 2>/dev/null)
+
+        local status="unverified"
+        local evidence=""
+
+        case "$verification_method" in
+            unit_test|integration_test)
+                # Check if tests exist and pass by looking at test results
+                local test_results="${ARTIFACTS_DIR}/test-results.log"
+                if [[ -f "$test_results" ]]; then
+                    # If test results exist and contain no failures, mark as verified
+                    local test_failures
+                    test_failures=$(grep -ciE 'fail|error|FAIL' "$test_results" 2>/dev/null || true)
+                    test_failures="${test_failures:-0}"
+                    if [[ "$test_failures" -eq 0 ]]; then
+                        status="verified"
+                        evidence="Tests passed (no failures in test-results.log)"
+                        verified=$((verified + 1))
+                    else
+                        status="unverified"
+                        evidence="Test failures detected in test-results.log"
+                        unverified=$((unverified + 1))
+                    fi
+                else
+                    status="unverified"
+                    evidence="No test results found"
+                    unverified=$((unverified + 1))
+                fi
+                ;;
+            static_analysis)
+                # Check if constitutional checker ran and passed
+                local const_report="${ARTIFACTS_DIR}/constitutional-audit.json"
+                if [[ -f "$const_report" ]]; then
+                    local violations
+                    violations=$(jq '.total_violations // 0' "$const_report" 2>/dev/null || echo "0")
+                    if [[ "$violations" -eq 0 ]]; then
+                        status="verified"
+                        evidence="Constitutional audit passed (0 violations)"
+                        verified=$((verified + 1))
+                    else
+                        status="unverified"
+                        evidence="Constitutional audit found $violations violations"
+                        unverified=$((unverified + 1))
+                    fi
+                else
+                    status="unverified"
+                    evidence="No static analysis results found"
+                    unverified=$((unverified + 1))
+                fi
+                ;;
+            manual)
+                status="manual_review"
+                evidence="Requires human review"
+                manual_review=$((manual_review + 1))
+                ;;
+            *)
+                status="unverified"
+                evidence="Unknown verification method: $verification_method"
+                unverified=$((unverified + 1))
+                ;;
+        esac
+
+        # Build JSON result entry
+        local escaped_criterion escaped_evidence
+        escaped_criterion=$(printf '%s' "$criterion" | jq -Rs . 2>/dev/null || echo "\"$criterion\"")
+        escaped_evidence=$(printf '%s' "$evidence" | jq -Rs . 2>/dev/null || echo "\"$evidence\"")
+
+        if $first; then
+            first=false
+        else
+            results_json="${results_json},"
+        fi
+        results_json="${results_json}{\"criterion\":${escaped_criterion},\"verification_method\":\"${verification_method}\",\"status\":\"${status}\",\"evidence\":${escaped_evidence}}"
+
+        idx=$((idx + 1))
+    done
+    results_json="${results_json}]"
+
+    # Compute compliance score
+    local total_checkable=$((verified + unverified))
+    local compliance_score=0
+    if [[ "$total_checkable" -gt 0 ]]; then
+        compliance_score=$((verified * 100 / total_checkable))
+    elif [[ "$manual_review" -gt 0 && "$unverified" -eq 0 ]]; then
+        # All criteria are manual — treat as 100% machine compliance
+        compliance_score=100
+    fi
+
+    # Generate verification report
+    local report_file="${ARTIFACTS_DIR}/spec-verification-report.json"
+    cat > "$report_file" <<REPORTEOF
+{
+  "spec_file": "${spec_file}",
+  "verified_at": "$(now_iso)",
+  "summary": {
+    "total_criteria": ${criteria_count},
+    "verified": ${verified},
+    "unverified": ${unverified},
+    "manual_review": ${manual_review},
+    "compliance_score": ${compliance_score}
+  },
+  "results": ${results_json}
+}
+REPORTEOF
+
+    # Pretty-print if jq available
+    if command -v jq >/dev/null 2>&1; then
+        local pp
+        pp=$(jq '.' "$report_file" 2>/dev/null) || true
+        if [[ -n "$pp" ]]; then
+            echo "$pp" > "$report_file"
+        fi
+    fi
+
+    save_artifact "spec-verification-report.json" "$(cat "$report_file")" || true
+
+    # Report results
+    if [[ "$compliance_score" -lt 80 ]]; then
+        warn "Spec compliance: ${compliance_score}% (${verified}/${total_checkable} verified) — below 80% threshold"
+    else
+        success "Spec compliance: ${compliance_score}% (${verified}/${total_checkable} verified)"
+    fi
+
+    if [[ "$manual_review" -gt 0 ]]; then
+        info "${manual_review} criteria flagged for manual review"
+    fi
+
+    emit_event "spec_verification.completed" \
+        "issue=${ISSUE_NUMBER:-0}" \
+        "compliance=${compliance_score}" \
+        "verified=${verified}" \
+        "unverified=${unverified}" \
+        "manual=${manual_review}"
+
+    log_stage "spec_verification" "Compliance: ${compliance_score}% — ${verified} verified, ${unverified} unverified, ${manual_review} manual"
 }
 
 # ─── Compound Quality (fallback) ────────────────────────────────────────────

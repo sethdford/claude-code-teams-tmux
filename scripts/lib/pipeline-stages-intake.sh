@@ -154,6 +154,131 @@ Test cmd: ${TEST_CMD:-none detected}
 Issue type: ${INTELLIGENCE_ISSUE_TYPE:-backend}"
 }
 
+# ─── Spec Generation Stage (dark factory: spec-driven development) ──────────
+# Runs between intake and plan. Enhances auto-generated spec with Claude,
+# adding missing acceptance criteria, edge cases, security requirements,
+# and affected files estimation.
+stage_spec_generation() {
+    CURRENT_STAGE_ID="spec_generation"
+
+    # Check if spec-driven is disabled via env or daemon config
+    if [[ "${SPEC_DRIVEN_ENABLED:-true}" == "false" ]]; then
+        info "Spec-driven development disabled — skipping spec generation"
+        return 0
+    fi
+
+    local spec_file="${ARTIFACTS_DIR}/spec.json"
+
+    # If no spec was generated at intake, generate a basic one now
+    if [[ ! -f "$spec_file" ]]; then
+        if type spec_generate >/dev/null 2>&1 && [[ -n "${GOAL:-}" ]]; then
+            local project_lang
+            project_lang=$(detect_project_lang 2>/dev/null || echo "unknown")
+            SPEC_DIR="${ARTIFACTS_DIR}/specs"
+            local generated
+            generated=$(spec_generate "$GOAL" "${ISSUE_BODY:-}" "${ISSUE_NUMBER:-}" "" "$project_lang" 2>/dev/null) || true
+            if [[ -n "$generated" && -f "$generated" ]]; then
+                save_artifact "spec.json" "$(cat "$generated")" || true
+                spec_file="${ARTIFACTS_DIR}/spec.json"
+            fi
+        fi
+    fi
+
+    if [[ ! -f "$spec_file" ]]; then
+        warn "No spec available — skipping spec generation enhancement"
+        log_stage "spec_generation" "Skipped: no spec available"
+        return 0
+    fi
+
+    # Enhance spec with Claude if available
+    if command -v claude >/dev/null 2>&1; then
+        info "Enhancing specification with AI analysis..."
+
+        local current_spec
+        current_spec=$(cat "$spec_file")
+
+        local enhance_prompt="You are a specification analyst. Given the following auto-generated specification and issue context, enhance it by:
+
+1. Adding missing acceptance criteria (each must have 'criterion', 'testable' (bool), and 'verification_method' fields)
+2. Adding edge cases (each must have 'scenario' and 'expected_behavior' fields)
+3. Adding security requirements (list of strings)
+4. Estimating affected files (list of file path strings)
+
+Return ONLY valid JSON matching the same schema as the input spec. Do not add commentary.
+
+## Current Spec
+${current_spec}
+
+## Issue Context
+Goal: ${GOAL:-}
+Body: ${ISSUE_BODY:-}
+Labels: ${ISSUE_LABELS:-}
+"
+
+        local enhanced_spec=""
+        local spec_model="${MODEL:-sonnet}"
+        enhanced_spec=$(claude -p "$enhance_prompt" --model "$spec_model" --output-format json 2>/dev/null) || true
+
+        if [[ -n "$enhanced_spec" ]]; then
+            # Validate the enhanced spec is valid JSON with required fields
+            if echo "$enhanced_spec" | jq -e '.version and .title and .goals' >/dev/null 2>&1; then
+                # Preserve metadata from original, update timestamp
+                enhanced_spec=$(echo "$enhanced_spec" | jq --arg ts "$(now_iso)" '
+                    .metadata.enhanced_at = $ts |
+                    .metadata.enhanced = true
+                ' 2>/dev/null) || enhanced_spec=""
+
+                if [[ -n "$enhanced_spec" ]]; then
+                    save_artifact "spec.json" "$enhanced_spec" || true
+                    success "Spec enhanced with AI analysis"
+                fi
+            else
+                warn "AI-enhanced spec failed validation — keeping original"
+            fi
+        else
+            info "Claude unavailable or returned empty — keeping original spec"
+        fi
+    else
+        info "Claude CLI not available — keeping original spec"
+    fi
+
+    # Validate final spec
+    if type spec_validate >/dev/null 2>&1; then
+        if ! spec_validate "$spec_file" 2>/dev/null; then
+            warn "Spec validation failed after enhancement"
+            # Retry: regenerate from scratch if validation failed
+            if type spec_generate >/dev/null 2>&1 && [[ -n "${GOAL:-}" ]]; then
+                info "Retrying spec generation from scratch..."
+                local project_lang
+                project_lang=$(detect_project_lang 2>/dev/null || echo "unknown")
+                SPEC_DIR="${ARTIFACTS_DIR}/specs"
+                local regen
+                regen=$(spec_generate "$GOAL" "${ISSUE_BODY:-}" "${ISSUE_NUMBER:-}" "" "$project_lang" 2>/dev/null) || true
+                if [[ -n "$regen" && -f "$regen" ]]; then
+                    save_artifact "spec.json" "$(cat "$regen")" || true
+                    success "Spec regenerated successfully"
+                fi
+            fi
+        fi
+    fi
+
+    # Count spec richness for logging
+    local criteria_count edge_count security_count affected_count
+    criteria_count=$(jq '.acceptance_criteria | length' "$spec_file" 2>/dev/null || echo "0")
+    edge_count=$(jq '.edge_cases | length' "$spec_file" 2>/dev/null || echo "0")
+    security_count=$(jq '.security_requirements | length' "$spec_file" 2>/dev/null || echo "0")
+    affected_count=$(jq '.affected_files | length' "$spec_file" 2>/dev/null || echo "0")
+
+    emit_event "spec_generation.completed" \
+        "issue=${ISSUE_NUMBER:-0}" \
+        "criteria=$criteria_count" \
+        "edge_cases=$edge_count" \
+        "security=$security_count" \
+        "affected_files=$affected_count"
+
+    log_stage "spec_generation" "Spec: ${criteria_count} criteria, ${edge_count} edge cases, ${security_count} security reqs, ${affected_count} affected files"
+}
+
 stage_plan() {
     CURRENT_STAGE_ID="plan"
     # Consume retry context if this is a retry attempt

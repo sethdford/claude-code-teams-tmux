@@ -824,6 +824,12 @@ pipeline_start() {
         if [[ -x "$SCRIPT_DIR/sw-memory.sh" ]]; then
             bash "$SCRIPT_DIR/sw-memory.sh" capture "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
         fi
+        # Record RL episode for cross-session learning (Phase 7)
+        if type rl_record_from_pipeline >/dev/null 2>&1; then
+            rl_record_from_pipeline true "$((SELF_HEAL_COUNT + 1))" "${total_cost:-0}" \
+                "${INTELLIGENCE_LANGUAGE:-}" "${INTELLIGENCE_COMPLEXITY:-}" \
+                "${INTELLIGENCE_ISSUE_TYPE:-}" "[]" "[]" 2>/dev/null || true
+        fi
         # Update memory baselines with successful run metrics
         if type memory_update_metrics >/dev/null 2>&1; then
             memory_update_metrics "build_duration_s" "${total_dur_s:-0}" 2>/dev/null || true
@@ -869,6 +875,13 @@ pipeline_start() {
         # Auto-ingest pipeline outcome into recruit profiles
         if [[ -x "$SCRIPT_DIR/sw-recruit.sh" ]]; then
             bash "$SCRIPT_DIR/sw-recruit.sh" ingest-pipeline 1 2>/dev/null || true
+        fi
+
+        # Record RL episode for cross-session learning (Phase 7 — failure case)
+        if type rl_record_from_pipeline >/dev/null 2>&1; then
+            rl_record_from_pipeline false "$((SELF_HEAL_COUNT + 1))" "${total_cost:-0}" \
+                "${INTELLIGENCE_LANGUAGE:-}" "${INTELLIGENCE_COMPLEXITY:-}" \
+                "${INTELLIGENCE_ISSUE_TYPE:-}" "[]" "[]" 2>/dev/null || true
         fi
 
         # Capture failure learnings to memory

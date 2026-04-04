@@ -1,0 +1,130 @@
+{
+  "version": "1.0",
+  "description": "Constitutional principles for autonomous code self-critique",
+  "principles": {
+    "security": [
+      {
+        "id": "SEC-001",
+        "rule": "No hardcoded secrets, API keys, or passwords",
+        "severity": "critical",
+        "check": "grep -nE '(password|api_key|secret_key|api_secret|auth_token)\\s*=\\s*[\"'\"'\"']' {file}"
+      },
+      {
+        "id": "SEC-002",
+        "rule": "All user inputs must be validated before use",
+        "severity": "critical"
+      },
+      {
+        "id": "SEC-003",
+        "rule": "No eval() or exec() with dynamic content",
+        "severity": "critical",
+        "check": "grep -nE '\\beval\\b.*\\$|\\bexec\\b.*\\$' {file}"
+      },
+      {
+        "id": "SEC-004",
+        "rule": "No SQL string concatenation — use parameterized queries",
+        "severity": "high"
+      },
+      {
+        "id": "SEC-005",
+        "rule": "No shell injection via unquoted variables in commands",
+        "severity": "critical",
+        "check": "grep -nE '\\$\\{?[A-Za-z_]+\\}?[^\"'\"'\"']' {file}"
+      }
+    ],
+    "error_handling": [
+      {
+        "id": "ERR-001",
+        "rule": "No empty catch blocks — all errors must be handled or re-thrown",
+        "severity": "high",
+        "check": "grep -nE 'catch\\s*\\([^)]*\\)\\s*\\{\\s*\\}' {file}"
+      },
+      {
+        "id": "ERR-002",
+        "rule": "Error messages must be descriptive — no generic 'Error occurred'",
+        "severity": "medium",
+        "check": "grep -niE '(error occurred|something went wrong|an error happened)' {file}"
+      },
+      {
+        "id": "ERR-003",
+        "rule": "Return values from commands must be checked",
+        "severity": "high"
+      },
+      {
+        "id": "ERR-004",
+        "rule": "No silent failures — failed operations must log or propagate errors",
+        "severity": "medium"
+      }
+    ],
+    "quality": [
+      {
+        "id": "QUA-001",
+        "rule": "Functions should be under 100 lines",
+        "severity": "medium"
+      },
+      {
+        "id": "QUA-002",
+        "rule": "No TODO/FIXME/HACK comments in production code",
+        "severity": "low",
+        "check": "grep -nE '(TODO|FIXME|HACK|XXX)' {file}"
+      },
+      {
+        "id": "QUA-003",
+        "rule": "No magic numbers — use named constants",
+        "severity": "low"
+      },
+      {
+        "id": "QUA-004",
+        "rule": "No duplicate code blocks over 10 lines",
+        "severity": "medium"
+      },
+      {
+        "id": "QUA-005",
+        "rule": "No console.log or print statements left in production code",
+        "severity": "low",
+        "check": "grep -nE '\\bconsole\\.log\\b|\\bprint\\(' {file}"
+      }
+    ],
+    "testing": [
+      {
+        "id": "TST-001",
+        "rule": "New functions must have corresponding tests",
+        "severity": "high"
+      },
+      {
+        "id": "TST-002",
+        "rule": "Tests must cover error and edge cases, not just happy path",
+        "severity": "medium"
+      },
+      {
+        "id": "TST-003",
+        "rule": "No test-only code in production files",
+        "severity": "medium",
+        "check": "grep -nE '(if.*TEST|ifdef.*TEST|IS_TEST)' {file}"
+      },
+      {
+        "id": "TST-004",
+        "rule": "Test assertions must be specific — no assertTrue(result) without message",
+        "severity": "low"
+      }
+    ],
+    "performance": [
+      {
+        "id": "PRF-001",
+        "rule": "All database queries must have .limit() or LIMIT clause",
+        "severity": "high"
+      },
+      {
+        "id": "PRF-002",
+        "rule": "No unbounded loops over external data",
+        "severity": "medium"
+      },
+      {
+        "id": "PRF-003",
+        "rule": "Avoid synchronous file I/O in hot paths",
+        "severity": "medium",
+        "check": "grep -nE 'readFileSync|writeFileSync' {file}"
+      }
+    ]
+  }
+}

@@ -338,6 +338,18 @@ ${cum_stat}
         fi
     fi
 
+    # Process reward context injection (from process-reward.sh)
+    local reward_section=""
+    if type process_reward_inject_context >/dev/null 2>&1; then
+        reward_section="$(process_reward_inject_context 2>/dev/null || true)"
+    fi
+
+    # RL optimizer context injection (from rl-optimizer.sh, Phase 7)
+    local rl_section=""
+    if type rl_compose_prompt_section >/dev/null 2>&1; then
+        rl_section="$(rl_compose_prompt_section 2>/dev/null || true)"
+    fi
+
     # Auto-recovery hint injection (from auto-recovery.sh)
     local recovery_section=""
     if [[ -n "${RECOVERY_HINT:-}" ]]; then
@@ -374,6 +386,10 @@ $memory_section
 }
 ${discovery_section:+## Cross-Pipeline Learnings
 $discovery_section
+}
+${reward_section:+$reward_section
+}
+${rl_section:+$rl_section
 }
 ${dora_section:+$dora_section
 }

@@ -57,6 +57,12 @@ fi
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
+# Process reward model for per-step iteration scoring (Phase 3)
+# shellcheck source=lib/process-reward.sh
+[[ -f "$SCRIPT_DIR/lib/process-reward.sh" ]] && source "$SCRIPT_DIR/lib/process-reward.sh" 2>/dev/null || true
+# Cross-session reinforcement learning optimizer (Phase 7)
+# shellcheck source=lib/rl-optimizer.sh
+[[ -f "$SCRIPT_DIR/lib/rl-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/rl-optimizer.sh" 2>/dev/null || true
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }

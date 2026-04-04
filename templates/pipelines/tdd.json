@@ -11,6 +11,12 @@
   "stages": [
     { "id": "intake", "enabled": true, "gate": "auto", "config": {} },
     {
+      "id": "spec_generation",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
+    {
       "id": "plan",
       "enabled": true,
       "gate": "approve",
@@ -35,6 +41,12 @@
       "config": { "coverage_min": 80 }
     },
     { "id": "review", "enabled": true, "gate": "approve", "config": {} },
+    {
+      "id": "spec_verification",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
     {
       "id": "compound_quality",
       "enabled": true,

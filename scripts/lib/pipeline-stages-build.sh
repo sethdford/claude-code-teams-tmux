@@ -573,6 +573,40 @@ stage_test() {
                 fi
             fi
         fi
+
+        # Dark factory: mutation testing — verify test effectiveness
+        if type mutation_generate >/dev/null 2>&1; then
+            local _mut_dir="${ARTIFACTS_DIR}/mutations"
+            mkdir -p "$_mut_dir" 2>/dev/null || true
+            local _changed_files
+            _changed_files=$(git diff --name-only HEAD~1 2>/dev/null | head -10 || true)
+            local _mut_total=0
+            while IFS= read -r _mut_file; do
+                [[ -z "$_mut_file" || ! -f "$_mut_file" ]] && continue
+                local _mc
+                _mc=$(mutation_generate "$_mut_file" "$_mut_dir" 2>/dev/null || echo "0")
+                _mut_total=$((_mut_total + _mc))
+            done <<< "$_changed_files"
+            if [[ "$_mut_total" -gt 0 ]]; then
+                info "Mutation testing: $_mut_total mutants generated, executing..."
+                local _mut_result
+                _mut_result=$(mutation_execute "$_mut_dir" "$test_cmd" "${PROJECT_ROOT:-.}" 2>/dev/null || echo '{}')
+                local _mut_killed _mut_survived
+                _mut_killed=$(echo "$_mut_result" | jq -r '.killed // 0' 2>/dev/null || echo "0")
+                _mut_survived=$(echo "$_mut_result" | jq -r '.survived // 0' 2>/dev/null || echo "0")
+                mutation_report "$_mut_dir" "${ARTIFACTS_DIR}/mutation-report.json" >/dev/null 2>&1 || true
+                if [[ "$_mut_survived" -gt 0 ]]; then
+                    warn "Mutation testing: $_mut_killed killed, $_mut_survived survived (weak tests detected)"
+                else
+                    success "Mutation testing: $_mut_killed/$_mut_total mutants killed"
+                fi
+                emit_event "test.mutation_complete" \
+                    "issue=${ISSUE_NUMBER:-0}" \
+                    "killed=$_mut_killed" \
+                    "survived=$_mut_survived" \
+                    "total=$_mut_total" 2>/dev/null || true
+            fi
+        fi
     else
         error "Tests failed (exit code: $test_exit)"
 

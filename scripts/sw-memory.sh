@@ -2053,6 +2053,122 @@ show_help() {
     echo -e "  ${DIM}shipwright memory inject build${RESET}                    # Get context for build stage"
 }
 
+# ─── Weighted Search (RL integration) ──────────────────────────────────────
+
+# Search memory with recency + success weighting.
+# Args: $1=query, $2=memory_dir (optional), $3=max_results (default 5)
+# Returns JSON array of results with recency_weight applied.
+memory_search_weighted() {
+    local query="${1:-}"
+    local memory_dir="${2:-}"
+    local max_results="${3:-5}"
+
+    if [[ -z "$memory_dir" ]] && type repo_memory_dir >/dev/null 2>&1; then
+        memory_dir="$(repo_memory_dir)"
+    fi
+    memory_dir="${memory_dir:-$HOME/.shipwright/memory}"
+
+    if [[ ! -d "$memory_dir" ]]; then
+        echo "[]"
+        return 0
+    fi
+
+    # Get base ranked results
+    local base_results
+    base_results="$(memory_ranked_search "$query" "$memory_dir" "$max_results" 2>/dev/null || echo "[]")"
+
+    if [[ "$base_results" == "[]" ]] || [[ -z "$base_results" ]]; then
+        echo "[]"
+        return 0
+    fi
+
+    # Apply recency weighting: boost results from files modified recently
+    local now_epoch
+    now_epoch="$(date +%s)"
+
+    echo "$base_results" | jq --argjson now "$now_epoch" '
+        [.[] | . + {
+            recency_weight: (
+                if .timestamp then
+                    (($now - (.timestamp // $now)) / 86400) as $age |
+                    if $age <= 7 then 1.5
+                    elif $age <= 30 then 1.0
+                    elif $age <= 90 then 0.7
+                    else 0.4 end
+                else 0.8 end
+            )
+        }] |
+        [.[] | .combined_score = ((.relevance // 50) * .recency_weight)] |
+        sort_by(-.combined_score)
+    ' 2>/dev/null || echo "$base_results"
+}
+
+# Reduce weight of memory entries older than threshold.
+# Args: $1=days_threshold (default 30), $2=memory_dir (optional)
+memory_decay_old() {
+    local days_threshold="${1:-30}"
+    local memory_dir="${2:-}"
+
+    if [[ -z "$memory_dir" ]] && type repo_memory_dir >/dev/null 2>&1; then
+        memory_dir="$(repo_memory_dir)"
+    fi
+    memory_dir="${memory_dir:-$HOME/.shipwright/memory}"
+
+    if [[ ! -d "$memory_dir" ]]; then
+        return 0
+    fi
+
+    local now_epoch decayed_count
+    now_epoch="$(date +%s)"
+    decayed_count=0
+    local threshold_epoch
+    threshold_epoch=$(( now_epoch - (days_threshold * 86400) ))
+
+    # Process failure patterns file if it exists
+    local failures_file="${memory_dir}/failures.json"
+    if [[ -f "$failures_file" ]]; then
+        local tmp
+        tmp="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/mem-decay-$$.tmp")"
+        jq --argjson threshold "$threshold_epoch" --argjson half "$days_threshold" '
+            if type == "array" then
+                [.[] | if (.timestamp // 0) < $threshold then
+                    .weight = ((.weight // 1) * 0.5 | if . < 0.1 then 0.1 else . end)
+                else . end]
+            else . end
+        ' "$failures_file" > "$tmp" 2>/dev/null
+        if [[ -s "$tmp" ]]; then
+            mv "$tmp" "$failures_file"
+            decayed_count=$((decayed_count + 1))
+        else
+            rm -f "$tmp"
+        fi
+    fi
+
+    # Process decisions file if it exists
+    local decisions_file="${memory_dir}/decisions.json"
+    if [[ -f "$decisions_file" ]]; then
+        local tmp
+        tmp="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/mem-decay2-$$.tmp")"
+        jq --argjson threshold "$threshold_epoch" '
+            if type == "array" then
+                [.[] | if (.timestamp // 0) < $threshold then
+                    .weight = ((.weight // 1) * 0.5 | if . < 0.1 then 0.1 else . end)
+                else . end]
+            else . end
+        ' "$decisions_file" > "$tmp" 2>/dev/null
+        if [[ -s "$tmp" ]]; then
+            mv "$tmp" "$decisions_file"
+            decayed_count=$((decayed_count + 1))
+        else
+            rm -f "$tmp"
+        fi
+    fi
+
+    if [[ "$decayed_count" -gt 0 ]]; then
+        emit_event "memory.decay_applied" "files=$decayed_count" "threshold_days=$days_threshold"
+    fi
+}
+
 # ─── Command Router ─────────────────────────────────────────────────────────
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
@@ -2101,6 +2217,12 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
             ;;
         fix-outcome)
             memory_record_fix_outcome "$@"
+            ;;
+        search-weighted)
+            memory_search_weighted "$@"
+            ;;
+        decay)
+            memory_decay_old "$@"
             ;;
         ab-report)
             cmd_memory_ab_report "$@"
