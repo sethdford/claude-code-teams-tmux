@@ -197,14 +197,17 @@ fi
 
 # Functional test: write mock events and verify dashboard parses them
 mkdir -p "$TEST_TEMP_DIR/home/.shipwright"
-cat > "$TEST_TEMP_DIR/home/.shipwright/events.jsonl" <<'EVTEOF'
-{"ts":"2026-02-27T10:00:00Z","type":"loop.context_efficiency","iteration":"1","raw_prompt_chars":"200000","trimmed_prompt_chars":"180000","trim_ratio":"10.0","budget_utilization":"100.0","budget_chars":"180000","job_id":"test-1"}
-{"ts":"2026-02-27T10:01:00Z","type":"loop.context_efficiency","iteration":"2","raw_prompt_chars":"150000","trimmed_prompt_chars":"150000","trim_ratio":"0.0","budget_utilization":"83.3","budget_chars":"180000","job_id":"test-1"}
+# Use dynamic dates so tests don't go stale
+_today=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
+_today_epoch=$(date +%s)
+cat > "$TEST_TEMP_DIR/home/.shipwright/events.jsonl" <<EVTEOF
+{"ts":"${_today}","type":"loop.context_efficiency","iteration":"1","raw_prompt_chars":"200000","trimmed_prompt_chars":"180000","trim_ratio":"10.0","budget_utilization":"100.0","budget_chars":"180000","job_id":"test-1"}
+{"ts":"${_today}","type":"loop.context_efficiency","iteration":"2","raw_prompt_chars":"150000","trimmed_prompt_chars":"150000","trim_ratio":"0.0","budget_utilization":"83.3","budget_chars":"180000","job_id":"test-1"}
 EVTEOF
 
 # Also need cost data for the dashboard to run
-cat > "$TEST_TEMP_DIR/home/.shipwright/costs.json" <<'COSTEOF'
-{"entries":[{"ts":"2026-02-27T10:00:00Z","ts_epoch":1772125200,"input_tokens":50000,"output_tokens":10000,"cost_usd":1.50,"model":"opus","stage":"build","issue":"1"}],"summary":{}}
+cat > "$TEST_TEMP_DIR/home/.shipwright/costs.json" <<COSTEOF
+{"entries":[{"ts":"${_today}","ts_epoch":${_today_epoch},"input_tokens":50000,"output_tokens":10000,"cost_usd":1.50,"model":"opus","stage":"build","issue":"1"}],"summary":{}}
 COSTEOF
 cat > "$TEST_TEMP_DIR/home/.shipwright/budget.json" <<'BUDEOF'
 {"daily_budget_usd":0,"enabled":false}
