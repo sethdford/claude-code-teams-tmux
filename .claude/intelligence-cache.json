@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "devops"
+        ],
+        "confidence": 0.95,
+        "reasoning": "Orchestration engine design requires architectural expertise for full-stack integration; builder implements, tester validates, DevOps handles deployment infrastructure",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775265019,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -654,25 +663,26 @@
         "risk_level": "high",
         "success_probability": 70,
         "recommended_template": "full",
-        "issue_type": "infrastructure",
+        "issue_type": "backend",
         "key_risks": [
-          "Integration complexity between 5+ independent modules with varying interfaces",
-          "Data consistency and state management across sequential pipeline stages",
-          "Performance overhead from orchestrating multiple synchronous operations",
-          "Backward compatibility with existing intelligence module consumers",
-          "Establishing reliable baseline metrics for success measurement"
+          "Integration complexity: coordinating 5+ independent components with tight coupling requirements",
+          "Performance regression: orchestration layer overhead could negate efficiency gains",
+          "Baseline measurement validity: accurate cost/success rate comparison requires clean historical data",
+          "Data flow consistency: downstream stages depend on upstream data enrichment quality",
+          "Feedback loop instability: decision errors early in pipeline compound through later stages"
         ],
         "implementation_hints": [
-          "Start with data flow mapping: define unified context structure passed between stages",
-          "Implement orchestration as a state machine in sw-intelligence.sh with clear transitions",
-          "Create adapter layer for each existing module to standardize input/output contracts",
-          "Add comprehensive logging/tracing at each stage for debugging integration issues",
-          "Establish baseline performance/success metrics before refactoring existing modules",
-          "Implement incremental rollout: integrate one module at a time with integration tests",
-          "Consider message queue/pub-sub pattern if synchronous chaining becomes bottleneck"
+          "Document data contract between orchestration stages (schema-first design)",
+          "Implement baseline metrics capture before adding orchestration logic",
+          "Build a state machine or DAG executor for stage coordination",
+          "Add comprehensive event logging at each orchestration boundary",
+          "Create unified intelligence report schema as integration contract",
+          "Mock component interactions before integrating real modules",
+          "Measure orchestration overhead separately from component costs",
+          "Design graceful degradation: orchestrator should work if any component fails"
         ]
       },
-      "timestamp": 1775240695,
+      "timestamp": 1775263440,
       "ttl": 3600
     },
     "a23f3803f4dd334c6c3bf4bbb810e2b1": {
@@ -696,44 +706,50 @@
     "f41ddef6e8b55e847bdf9bffc2f06c95": {
       "result": {
         "issue_type": "backend",
-        "confidence": 0.94,
+        "confidence": 0.85,
         "secondary_domains": [
-          "infrastructure",
-          "system-integration",
+          "system-design",
+          "performance-optimization",
           "observability"
         ],
         "complexity_assessment": {
-          "score": 8,
-          "reasoning": "Full-stack orchestration of 5+ independent intelligence systems with data flow dependencies, unified reporting, and measured outcomes. Requires careful design of data contracts and validation that improvements actually materialize."
+          "score": 7,
+          "reasoning": "Full complexity orchestration problem: must coordinate 5 independent intelligence modules, design data flow contracts, implement unified reporting, establish measurement baselines, and document architecture—typical enterprise integration challenge."
         },
         "skill_plan": {
           "plan": [
-            "brainstorming",
             "architecture-design",
+            "brainstorming",
             "data-pipeline"
           ],
           "design": [
             "architecture-design",
-            "data-pipeline"
+            "data-pipeline",
+            "api-design",
+            "observability"
           ],
           "build": [
-            "systematic-debugging"
-          ],
-          "review": [
-            "two-stage-review",
-            "pr-quality",
-            "adversarial-quality"
-          ],
-          "compound_quality": [
-            "validation-thoroughness",
-            "observability",
+            "systematic-debugging",
             "performance"
           ],
+          "review": [
+            "security-audit",
+            "pr-quality",
+            "architecture-design"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "testing-strategy",
+            "validation-thoroughness",
+            "orchestration-integration-testing"
+          ],
           "pr": [
-            "pr-quality"
+            "pr-quality",
+            "documentation"
           ],
           "deploy": [
-            "deploy-safety"
+            "deploy-safety",
+            "observability"
           ],
           "validate": [
             "validation-thoroughness",
@@ -744,41 +760,47 @@
           ]
         },
         "skill_rationale": {
-          "brainstorming": "Challenge assumptions about orchestration sequencing (is score→compose→predict→route always the right order?) and failure modes (what if components disagree on complexity?) before committing to architecture.",
-          "architecture-design": "Document the orchestration contract, data flow diagram, and decision tree as an ADR so future changes to individual components don't break the system.",
-          "data-pipeline": "Design enrichment semantics: what data does scorer emit that composer consumes? How do you pass predictor insights to router? This is fundamentally a data engineering problem.",
-          "systematic-debugging": "Prior intelligence components exist; learn from any issues encountered during their development to avoid repeating mistakes in the orchestration layer.",
-          "two-stage-review": "Pass 1 reviews orchestration design and data contracts; Pass 2 validates implementation correctness and that enrichment actually flows through the pipeline.",
-          "pr-quality": "Explain the orchestration sequence visually and in prose so reviewers quickly understand why each component feeds into the next.",
-          "adversarial-quality": "Find failure modes: scorer timeouts, composer selecting wrong template, predictor anomalies, router cost miscalculations. What breaks the pipeline?",
-          "validation-thoroughness": "Acceptance criteria requires measured improvement in success rate and cost vs baseline—go beyond unit tests; run A/B comparison on real pipeline runs.",
-          "observability": "Orchestrator needs to emit rich signals: scorer decision + confidence, composer rationale, predictor score, router model choice, and final unified report. Critical for diagnosing why pipeline chose a certain path.",
-          "performance": "Validate cost efficiency gains per acceptance criteria—measure token usage before/after orchestration and confirm it reduces costs per successful run.",
-          "deploy-safety": "Orchestrator change is not backward compatible if old pipelines send unrecognized data; validate forward/backward compatibility and feature flag the orchestration rollout."
+          "architecture-design": "Orchestrator is the glue layer; need an ADR documenting module coordination, data contracts, and decision flow that future maintainers can reference.",
+          "brainstorming": "Challenge assumptions about orchestration order—must score→compose→predict→route→monitor be sequential, or can stages run in parallel? What if a module is unavailable?",
+          "data-pipeline": "This is fundamentally a data engineering problem: five modules feed each other enriched context; need clear schemas for inputs/outputs at each stage.",
+          "api-design": "Modules must have clean contracts; orchestrator consumes outputs (complexity scores, risk estimates, model selections) that must be versioned and validated.",
+          "observability": "Orchestrator coordinates decisions that directly impact all pipelines; must emit structured logs/metrics about which path was chosen and why.",
+          "systematic-debugging": "Previous attempt at this stage FAILED—investigate what the failure was before repeating; don't re-implement the same orchestration pattern.",
+          "performance": "Orchestrator runs on every pipeline start; adding 30s overhead would block thousands of runs; must measure and optimize latency per module.",
+          "security-audit": "Intelligence decisions influence model selection and resource allocation; malicious input (e.g., crafted issue complexity) could trigger expensive models or bypass limits.",
+          "pr-quality": "Multi-module orchestration is hard to understand in diffs; PR must include decision tree, data flow diagram, and example trace through all 5 stages.",
+          "documentation": "Acceptance criteria explicitly require decision tree and data flow diagram; these must live in repo (not just PR description) for future intelligence work.",
+          "adversarial-quality": "Test failure modes: What if complexity scorer returns infinity? What if predictor disagrees with composer? What if one module blocks on I/O during a pipeline run?",
+          "testing-strategy": "Can't just unit-test modules in isolation; need integration tests that verify the *sequence* and *data contracts* between them.",
+          "validation-thoroughness": "Real pipeline runs will expose orchestration bugs that staging tests miss; validate on live issues before declaring success.",
+          "orchestration-integration-testing": "Orchestrators couple independent systems; standard testing misses coordination failures (e.g., composer receives stale scores, or predictor runs before scores ready).",
+          "deploy-safety": "Orchestrator changes affect all pipelines; must roll out with feature flag, verify on canary issues before full rollout."
         },
         "generated_skills": [
           {
             "name": "orchestration-integration-testing",
-            "reason": "No existing skill covers testing orchestration layers where data flows between multiple dependent systems. This issue requires validating data enrichment, error propagation, and unified reporting—patterns not covered by generic testing or validation skills.",
-            "content": "## Orchestration Integration Testing\n\nOrchestration layers couple previously independent systems through data flow. Testing requires a different mindset than component unit tests.\n\n### Test Structure\n\n**Happy Path**: Trace a mock pipeline start through all 5 stages (score → compose → predict → route → monitor). Assert each stage receives enriched context from the prior stage. Example: verify that composer receives scorer's complexity assessment in its input payload.\n\n**Data Enrichment**: For each stage, write a test that \"removes\" its enrichment and asserts downstream stages degrade predictably. If predictor receives no risk score, does router still function? If composer receives no complexity, does it default correctly?\n\n**Failure Isolation**: One component fails (e.g., predictor times out). Assert:\n- Orchestrator detects the failure (checkpoint)\n- Gracefully degrades: downstream stages skip or use cached data\n- Pipeline continues (not cascading failure)\n- Unified report documents which stages were unavailable\n\n**Unified Report Validation**: Assert the final intelligence report contains contributions from all active stages. Use a JSON schema validator. Check that metrics aggregate correctly (total cost estimate = router estimate + baseline, not duplication).\n\n**Measurement Baseline**: Before orchestration kicks in, record pipeline outcomes (success rate, cost, MTTR). After orchestration, A/B test on 20+ runs and assert statistical improvement. Use `shipwright memory show` to check baseline was captured.\n\n### Patterns\n\n- **Mock individual stages** but wire real data contracts between them (use actual JSON payloads, not mock objects).\n- **Use scenario data** (real pipeline complexity distributions, observed risk scores) to drive tests.\n- **Test timing**: Does orchestrator add < 5s latency per pipeline start? Measure P95 time for full orchestration sequence.\n- **Test cardinality**: What happens with 100+ pipelines running orchestration simultaneously? Shared cache contention?\n\n### Fail-Fast Checks\n\n- Unified report is not empty and contains >= 1 enrichment from orchestration (else orchestrator is a no-op)\n- Data contracts are validated (e.g., scorer output schema matches composer input schema)\n- Backward compatibility: old pipelines can run without orchestrator (graceful disable)\n"
+            "reason": "Orchestration layers couple previously independent systems through data flow; standard unit testing misses coordination failures, data contract violations, and sequencing bugs unique to orchestrators. No existing skill addresses testing multi-stage data pipelines where each stage depends on outputs of prior stages.",
+            "content": "## Orchestration Integration Testing\n\nOrchestrators couple independent modules through data contracts and sequencing. Failures are not about individual module bugs but about coordination—wrong order, data format mismatch, cascading timeouts, or state consistency across stages.\n\n### Testing Mindset Shift\n\n**Not**: \"Does the complexity scorer work?\" (unit test—covered elsewhere)\n**Yes**: \"Does the orchestrator correctly pass complexity score to the composer, and does composer reject it if malformed?\"\n\n### Test Categories\n\n1. **Data Contract Tests** — Verify each stage consumes the prior stage's output correctly\n   - Mock each module with hardcoded outputs (e.g., complexity score = 7.5)\n   - Verify orchestrator passes it to next stage\n   - Mutate outputs (score = -1, empty JSON, null) and verify rejection or fallback\n\n2. **Sequencing Tests** — Verify stages run in correct order\n   - Insert unique side effects per stage (write to temp file with stage name)\n   - Verify file contents match expected sequence\n   - Test that out-of-order execution fails\n\n3. **Cascading Failure Tests** — What if one module fails?\n   - Mock complexity scorer to timeout\n   - Verify orchestrator either retries, falls back, or aborts gracefully\n   - Ensure failure of module N doesn't corrupt state for module N+1\n\n4. **Data Enrichment Tests** — Verify each stage actually enriches context\n   - Start with baseline context (issue description)\n   - After scorer: context should include complexity metrics\n   - After predictor: context should include risk estimates\n   - Verify no stage drops data from prior stages\n\n5. **Performance Tests** — Measure orchestrator overhead\n   - Time orchestrator with all modules mocked (instant returns)\n   - Measure per-stage latency\n   - Alert if total overhead > SLA (e.g., 5 seconds)\n\n6. **Chaos Tests** — Inject realistic failures\n   - Module returns 10 seconds late (network timeout simulation)\n   - Module returns malformed JSON (parser edge case)\n   - Module returns contradictory data (e.g., high complexity + low effort estimate)\n   - Verify orchestrator handles without deadlock or data loss\n\n### Test Harness Pattern\n\n```bash\ntest_orchestrator_sequence() {\n  # Mock all modules\n  mock_complexity_scorer() { echo '{\"score\": 7}'; touch /tmp/stage-1; }\n  mock_composer() { cat /tmp/stage-1; echo '{\"template\": \"full\"}' >> /tmp/stage-2; }\n  \n  # Run orchestrator\n  orchestrate | head -1  # Should see stage-1 before stage-2 effects\n  \n  # Verify sequence\n  [ -f /tmp/stage-1 ] && [ -f /tmp/stage-2 ] || fail \"Stages did not run\"\n  grep -q 'stage-1' /tmp/stage-2 || fail \"Data enrichment lost\"\n}\n```\n\n### Validation Checklist\n\n- ✅ All 5 stages run in documented order\n- ✅ Each stage receives previous stage's output\n- ✅ Output format is valid JSON (schema compliance)\n- ✅ No data loss between stages (enrichment verified)\n- ✅ Timeout on one module doesn't block others\n- ✅ Orchestrator latency < SLA\n- ✅ Unified report contains outputs from all stages\n- ✅ Measurements (success rate, cost) are reproducible"
           }
         ],
         "review_focus": [
-          "Data contract validation between scorer → composer → predictor → router: does each stage's output match the next stage's input schema?",
-          "Unified intelligence report structure: how is it aggregated? Are metrics deduplicated (e.g., cost estimate not counted twice)?",
-          "Orchestration sequencing correctness: is score → compose → predict → route → monitor actually optimal, or should any stages run in parallel?",
-          "Error handling: if one stage fails (e.g., predictor times out), does orchestration gracefully degrade or cascade-fail?",
-          "Measurement and A/B testing: how was baseline established? Is improvement statistically significant (20+ runs, p < 0.05)?"
+          "Data contracts between modules: What is each stage's output schema? Does orchestrator validate inputs?",
+          "Fallback behavior: If complexity scorer fails, does orchestrator skip it or abort the pipeline?",
+          "Performance: Orchestrator overhead per stage measured in milliseconds (should be negligible).",
+          "Measurement methodology: How are 'success rate' and 'cost efficiency' improvements defined and measured against baseline?",
+          "Backward compatibility: Can orchestrator be disabled/bypassed if needed during rollout?",
+          "Error handling: Does the orchestrator gracefully degrade if one intelligence module is unavailable?"
         ],
         "risk_areas": [
-          "Data enrichment is not actually flowing: orchestrator runs all stages but downstream stages don't consume upstream output, making orchestration a no-op.",
-          "Tight coupling: adding a new intelligence stage later requires changing orchestrator, not just plugging in a new component.",
-          "Cost regression: orchestration adds latency/compute overhead that offsets gains from better model routing.",
-          "Measurement bias: improvement might be an artifact of sample selection, not orchestration quality (ensure blind comparison).",
-          "Circular data dependency: if router emits cost data that predictor consumes, and predictor influences router, could create unstable feedback loops."
+          "Data contract fragility: If a module changes output format, orchestrator silently consumes bad data or crashes—need schema versioning.",
+          "Cascading latency: Orchestrator runs on every pipeline start; 5 sequential calls to slow modules could add 10+ seconds to all pipelines.",
+          "Measurement artifacts: Improvements might be regression—orchestrator could amplify bias in complexity scorer or model router rather than improve decisions.",
+          "Module interdependencies: Tight coupling between modules makes future changes risky; one module's refactor could break orchestrator's data flow.",
+          "Silent failures: If predictor disagrees with composer, orchestrator might pick wrong path without alerting operators.",
+          "Backward incompatibility: Existing pipelines expecting old intelligence behavior might behave differently under orchestrator; feature flag required."
         ]
       },
-      "timestamp": 1775240877,
+      "timestamp": 1775263619,
       "ttl": 3600
     },
     "d00d2f9bf35a9ce876ac6834d77e6320": {
@@ -813,6 +835,295 @@
       },
       "timestamp": 1775240894,
       "ttl": 1800
+    },
+    "124940c185ce745e2888637da5029ff7": {
+      "result": {
+        "estimated_iterations": 11
+      },
+      "timestamp": 1775263448,
+      "ttl": 1800
+    },
+    "78fae320f3440472757c172ba3ca6757": {
+      "result": {
+        "estimated_cost_usd": 4.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1775263461,
+      "ttl": 3600
+    },
+    "73f84a339b7c5f82baab074d1725f3ec": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Directly relevant — contains existing architecture rules that define constraints and patterns the intelligence layer must enforce and integrate with"
+          },
+          {
+            "file": "patterns.json (first/detailed with conventions)",
+            "relevance": 85,
+            "summary": "Project structure, source conventions, test patterns, and import style are foundational for designing the intelligence layer's file organization and module interfaces"
+          },
+          {
+            "file": "success-patterns.json (first with detailed approach)",
+            "relevance": 80,
+            "summary": "Proven multi-iteration approaches in this codebase (loop-based development, file patterns, iteration strategies) inform how to structure the intelligence layer for iterative improvement"
+          },
+          {
+            "file": "decisions.json (first)",
+            "relevance": 65,
+            "summary": "Would capture prior architectural decisions and trade-offs — critical for ensuring intelligence layer design aligns with existing decisions (currently empty but right artifact type)"
+          },
+          {
+            "file": "failures.json (first/detailed with sw-cleanup and sed patterns)",
+            "relevance": 60,
+            "summary": "Common failure patterns in test stages and shell scripting inform what edge cases and failure modes the intelligence layer should handle and monitor"
+          }
+        ]
+      },
+      "timestamp": 1775263638,
+      "ttl": 1800
+    },
+    "caae5e54b9002c1fdb5daaff7b4c979a": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry with sw-cleanup.sh)",
+            "relevance": 85,
+            "summary": "Contains recent test-stage failures with specific root causes and fixes. Directly addresses validation issues like dry-run mode detection and variable expansion—common failure modes that would trigger plan rejection."
+          },
+          {
+            "file": "failures.json (second entry with 5 seen_count)",
+            "relevance": 72,
+            "summary": "Build-stage failures showing 'cannot read property .* of undefined' pattern with 100% mitigation effectiveness. Demonstrates how uninitialized variables cause failures—a validation blocker for Intelligence Layer integration."
+          },
+          {
+            "file": "success-patterns.json (first entry with bug fix pattern)",
+            "relevance": 61,
+            "summary": "Shows successful delivery pattern: 3 iterations, standard template, npm test strategy. Provides baseline context for what 'correct' iterations look like, useful for understanding why validation diverged from this pattern."
+          }
+        ]
+      },
+      "timestamp": 1775264060,
+      "ttl": 1800
+    },
+    "f9a99cf0f83dcc125593e4714dfffe8b": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 75,
+            "summary": "Contains explicit architecture rules (rule1, rule2, rule3) directly applicable to designing architecture patterns for the Intelligence Layer"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 65,
+            "summary": "Defines project conventions (source_dir, test_pattern, import_style, package_manager) and Node.js/JavaScript stack that shapes Intelligence Layer architecture decisions"
+          },
+          {
+            "file": "success-patterns.json (loop/audit patterns)",
+            "relevance": 45,
+            "summary": "Documents successful approaches to complex features (bug fixes, feature additions) with iteration strategies and file patterns that inform orchestration engine design"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh stale heartbeat detection)",
+            "relevance": 35,
+            "summary": "Captures test-stage failures related to heartbeat detection and state management, informing robustness requirements for the orchestration engine"
+          },
+          {
+            "file": "failures.json (variable initialization issues)",
+            "relevance": 22,
+            "summary": "Documents common build-stage JavaScript errors (undefined properties, missing declarations) that should be prevented by architectural guardrails"
+          }
+        ]
+      },
+      "timestamp": 1775264660,
+      "ttl": 1800
+    },
+    "354f337afeac47470804caa85f7a1c51": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains specific failure patterns and root causes from test/build stages (sw-cleanup.sh issues, sed variable expansion, uninitialized variables). These represent concrete anti-patterns encountered during implementation—exactly what to avoid when designing the Intelligence Layer integration."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 72,
+            "summary": "Encodes architectural rules (rule1, rule2, rule3) that likely represent design constraints and rejected patterns. These rules are foundational to what design approaches should or should not follow in the full-stack integration."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 68,
+            "summary": "Documents successful iteration patterns (3-iteration bug fix, 3-iteration feature addition) with file change patterns and test strategies. Understanding successful approaches provides inverse insight into rejected design paths—shows what worked, allowing inference of what didn't."
+          }
+        ]
+      },
+      "timestamp": 1775264674,
+      "ttl": 1800
+    },
+    "a26d8b459bc65f28d02083c5ecb2b35a": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "First entry shows successful patterns from previous builds including intelligence-cache.json and loop-state.md modifications (core to intelligence layer), 3 iterations with npm test strategy, standard template, and cost/duration data directly applicable to this build stage"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "First entry defines actual project structure: Node.js, vitest test runner, npm package manager, CommonJS imports, src/ source directory — essential configuration for building and testing the intelligence layer"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Second entry captures common JavaScript build failures ('cannot read property undefined', 'referenceerror not defined') with effectiveness rates (100% and 66%), providing proven mitigation strategies for the build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Third entry shows npm install missing dependency issue (95% effectiveness rate) — critical prerequisite that blocks builds, likely to be encountered when building this Node.js project"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Third entry confirms nodejs project type detected at bootstrap, validating that Node.js toolchain and conventions apply to this build"
+          }
+        ]
+      },
+      "timestamp": 1775264997,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Critical for build stage: defines project type (node), test runner (vitest), package manager (npm), source directory, and import style. Build stage needs this to execute correct build/test commands."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Highly relevant: shows two successful delivery patterns with npm test strategy, iteration counts (3), and file patterns changed. Demonstrates proven test strategies and iteration patterns for similar complexity."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Relevant: captures test-stage failures (cleanup.sh output detection, sed variable expansion issues). Understanding failure patterns helps build stage avoid regressions and common pitfalls."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 35,
+            "summary": "Minimal relevance: baselines object is empty, so provides no performance or build timing data. Could be useful once populated with build metrics."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 25,
+            "summary": "Lowest relevance: decisions array is empty. No architectural or implementation decisions recorded to guide build-stage choices."
+          }
+        ]
+      },
+      "timestamp": 1775265008,
+      "ttl": 1800
+    },
+    "54d2525526ed042d1d70aa6b516dd573": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 60,
+        "recommended_template": "full",
+        "key_risks": [
+          "complexity"
+        ],
+        "implementation_hints": [
+          "review code"
+        ],
+        "stages": [
+          {
+            "id": "build",
+            "enabled": true,
+            "model": "opus",
+            "config": {}
+          },
+          {
+            "id": "test",
+            "enabled": true,
+            "model": "sonnet",
+            "config": {}
+          }
+        ],
+        "rationale": "complex issue"
+      },
+      "timestamp": 1775265333,
+      "ttl": 3600
+    },
+    "bf496d3b32b4d87e6e2fa9868780e8a1": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 60,
+        "recommended_template": "full",
+        "key_risks": [
+          "complexity"
+        ],
+        "implementation_hints": [
+          "review code"
+        ],
+        "stages": [
+          {
+            "id": "build",
+            "enabled": true,
+            "model": "opus",
+            "config": {}
+          },
+          {
+            "id": "test",
+            "enabled": true,
+            "model": "sonnet",
+            "config": {}
+          }
+        ],
+        "rationale": "complex issue"
+      },
+      "timestamp": 1775265333,
+      "ttl": 3600
+    },
+    "63eeb885fc1f49da0c359343a1840c01": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 60,
+        "recommended_template": "full",
+        "key_risks": [
+          "complexity"
+        ],
+        "implementation_hints": [
+          "review code"
+        ],
+        "stages": [
+          {
+            "id": "build",
+            "enabled": true,
+            "model": "opus",
+            "config": {}
+          },
+          {
+            "id": "test",
+            "enabled": true,
+            "model": "sonnet",
+            "config": {}
+          }
+        ],
+        "rationale": "complex issue"
+      },
+      "timestamp": 1775265335,
+      "ttl": 3600
     }
   }
 }
