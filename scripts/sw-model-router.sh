@@ -51,25 +51,55 @@ CHAIN_EXECUTION_LOG="${OPTIMIZATION_DIR}/chain-executions.jsonl"
 # Resolve which config file to use (set by _resolve_routing_config)
 MODEL_ROUTING_CONFIG=""
 
-# ─── Model Costs (per million tokens) ───────────────────────────────────────
-HAIKU_INPUT_COST="0.80"
-HAIKU_OUTPUT_COST="4.00"
-SONNET_INPUT_COST="3.00"
-SONNET_OUTPUT_COST="15.00"
-OPUS_INPUT_COST="15.00"
-OPUS_OUTPUT_COST="75.00"
+# ─── Model Costs (per million tokens, config-driven) ──────────────────────
+# Read from ~/.shipwright/pricing.json if exists, otherwise use defaults
+_load_pricing() {
+    local pricing_file="${HOME}/.shipwright/pricing.json"
+    if [[ -f "$pricing_file" ]]; then
+        HAIKU_INPUT_COST=$(jq -r '.haiku.input // "0.80"' "$pricing_file" 2>/dev/null || echo "0.80")
+        HAIKU_OUTPUT_COST=$(jq -r '.haiku.output // "4.00"' "$pricing_file" 2>/dev/null || echo "4.00")
+        SONNET_INPUT_COST=$(jq -r '.sonnet.input // "3.00"' "$pricing_file" 2>/dev/null || echo "3.00")
+        SONNET_OUTPUT_COST=$(jq -r '.sonnet.output // "15.00"' "$pricing_file" 2>/dev/null || echo "15.00")
+        OPUS_INPUT_COST=$(jq -r '.opus.input // "15.00"' "$pricing_file" 2>/dev/null || echo "15.00")
+        OPUS_OUTPUT_COST=$(jq -r '.opus.output // "75.00"' "$pricing_file" 2>/dev/null || echo "75.00")
+    else
+        HAIKU_INPUT_COST="0.80"
+        HAIKU_OUTPUT_COST="4.00"
+        SONNET_INPUT_COST="3.00"
+        SONNET_OUTPUT_COST="15.00"
+        OPUS_INPUT_COST="15.00"
+        OPUS_OUTPUT_COST="75.00"
+    fi
+}
+_load_pricing
 
-# ─── Default Routing Rules ──────────────────────────────────────────────────
-# Stages that default to haiku (low complexity, fast)
+# ─── Default Routing Rules (config-driven) ────────────────────────────────
+# Read from daemon-config model_routing.stages if configured
+_load_routing_rules() {
+    local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+    if [[ -f "$cfg" ]]; then
+        local h s o
+        h=$(jq -r '.model_routing.haiku_stages // empty' "$cfg" 2>/dev/null || true)
+        s=$(jq -r '.model_routing.sonnet_stages // empty' "$cfg" 2>/dev/null || true)
+        o=$(jq -r '.model_routing.opus_stages // empty' "$cfg" 2>/dev/null || true)
+        [[ -n "$h" && "$h" != "null" ]] && HAIKU_STAGES="$h"
+        [[ -n "$s" && "$s" != "null" ]] && SONNET_STAGES="$s"
+        [[ -n "$o" && "$o" != "null" ]] && OPUS_STAGES="$o"
+    fi
+}
 HAIKU_STAGES="intake|monitor"
-# Stages that default to sonnet (medium complexity)
 SONNET_STAGES="test|review"
-# Stages that default to opus (high complexity, needs deep thinking)
 OPUS_STAGES="plan|design|build|compound_quality"
+_load_routing_rules 2>/dev/null || true
 
-# ─── Complexity Thresholds ──────────────────────────────────────────────────
-COMPLEXITY_LOW=30          # Below this: use sonnet
-COMPLEXITY_HIGH=80         # Above this: use opus
+# ─── Complexity Thresholds (config-driven) ────────────────────────────────
+if type _smart_int >/dev/null 2>&1; then
+    COMPLEXITY_LOW=$(_smart_int "model_routing.complexity_low" 30)
+    COMPLEXITY_HIGH=$(_smart_int "model_routing.complexity_high" 80)
+else
+    COMPLEXITY_LOW=30
+    COMPLEXITY_HIGH=80
+fi
 
 # ─── Resolve Routing Config Path ────────────────────────────────────────────
 # Priority: optimization (self-optimize writes) > legacy > create in optimization

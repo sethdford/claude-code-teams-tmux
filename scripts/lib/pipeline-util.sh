@@ -440,7 +440,7 @@ classify_error() {
 Error output:
 $(echo "$log_tail" | tail -20)
 
-Reply with ONLY the classification word, nothing else." --model haiku < /dev/null 2>/dev/null || true)
+Reply with ONLY the classification word, nothing else." --model "$(_smart_model classification haiku)" < /dev/null 2>/dev/null || true)
         ai_class=$(echo "$ai_class" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
         case "$ai_class" in
             infrastructure|configuration|logic) classification="$ai_class" ;;

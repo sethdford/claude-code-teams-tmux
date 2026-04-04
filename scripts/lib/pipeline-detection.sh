@@ -206,7 +206,7 @@ detect_project_lang() {
             local ai_lang
             ai_lang=$(claude --print --output-format text -p "Based on these config files in a project root, what is the primary language/framework? Reply with ONE word (e.g., typescript, python, rust, go, java, ruby, nodejs):
 
-Files: ${config_files}" --model haiku < /dev/null 2>/dev/null || true)
+Files: ${config_files}" --model "$(_smart_model detection haiku)" < /dev/null 2>/dev/null || true)
             ai_lang=$(echo "$ai_lang" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
             case "$ai_lang" in
                 typescript|python|rust|go|java|ruby|nodejs|react|nextjs|kotlin|swift|elixir|scala)
@@ -325,7 +325,7 @@ detect_task_type() {
 
 Categories: bug, refactor, testing, security, docs, devops, migration, architecture, feature
 
-Task: ${goal}" --model haiku < /dev/null 2>/dev/null || true)
+Task: ${goal}" --model "$(_smart_model classification haiku)" < /dev/null 2>/dev/null || true)
         if [[ -n "$ai_result" ]]; then
             local ai_type ai_conf
             ai_type=$(echo "$ai_result" | head -1 | cut -d'|' -f1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')

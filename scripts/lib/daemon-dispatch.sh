@@ -148,7 +148,7 @@ daemon_spawn_pipeline() {
                 overall_risk=$(echo "$risk_result" | jq -r '.overall_risk // 50' 2>/dev/null || echo "50")
                 if [[ "$overall_risk" -gt 80 ]]; then
                     daemon_log WARN "HIGH RISK (${overall_risk}%) predicted for issue #${issue_num} — upgrading model"
-                    export CLAUDE_MODEL="opus"
+                    export CLAUDE_MODEL="$(_smart_model high_risk opus)"
                 elif [[ "$overall_risk" -lt 30 ]]; then
                     daemon_log INFO "LOW RISK (${overall_risk}%) predicted for issue #${issue_num}"
                 fi

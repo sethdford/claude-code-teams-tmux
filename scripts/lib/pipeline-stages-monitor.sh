@@ -59,7 +59,7 @@ PR: $(cat "$ARTIFACTS_DIR/pr-url.txt" 2>/dev/null || echo 'unknown')" 2>/dev/nul
                 break
             fi
             attempts=$((attempts + 1))
-            [[ $attempts -lt 5 ]] && { info "Retry ${attempts}/5..."; sleep 10; }
+            [[ $attempts -lt 5 ]] && { info "Retry ${attempts}/5..."; sleep "$(_exponential_backoff "$attempts" 5 60)"; }
         done
         if [[ $attempts -ge 5 ]]; then
             error "Health check failed after 5 attempts"

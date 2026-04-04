@@ -860,7 +860,7 @@ stage_deploy() {
                     local canary_healthy=0
                     local _chk
                     for _chk in 1 2 3; do
-                        sleep 10
+                        sleep "$(_exponential_backoff "$_chk" 5 30)"
                         local _status
                         _status=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "0")
                         if [[ "$_status" -ge 200 && "$_status" -lt 400 ]]; then
@@ -895,7 +895,7 @@ stage_deploy() {
                     local bg_healthy=0
                     local _chk
                     for _chk in 1 2 3; do
-                        sleep 5
+                        sleep "$(_exponential_backoff "$_chk" 3 20)"
                         local _status
                         _status=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "0")
                         [[ "$_status" -ge 200 && "$_status" -lt 400 ]] && bg_healthy=$((bg_healthy + 1))

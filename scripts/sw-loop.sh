@@ -114,15 +114,20 @@ LOOP_INPUT_TOKENS=0
 LOOP_OUTPUT_TOKENS=0
 LOOP_COST_MILLICENTS=0
 
-# ─── Flexible Iteration Defaults ────────────────────────────────────────────
-AUTO_EXTEND=true          # Auto-extend iterations when work is incomplete
-EXTENSION_SIZE=5          # Additional iterations per extension
-MAX_EXTENSIONS=3          # Max number of extensions (hard cap safety net)
-EXTENSION_COUNT=0         # Current number of extensions applied
+# ─── Flexible Iteration Defaults (all config-driven) ───────────────────────
+AUTO_EXTEND=true
+EXTENSION_SIZE=$(_smart_int "loop.extension_size" 5)
+MAX_EXTENSIONS=$(_smart_int "loop.max_extensions" 3)
+EXTENSION_COUNT=0
 
-# ─── Circuit Breaker Defaults ──────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
-MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+# ─── Circuit Breaker Defaults (config-driven) ─────────────────────────────
+CIRCUIT_BREAKER_THRESHOLD=$(_smart_int "loop.circuit_breaker_threshold" 3)
+MIN_PROGRESS_LINES=$(_smart_int "loop.min_progress_lines" 5)
+
+# ─── Context Exhaustion Recovery ────────────────────────────────────────────────
+CONTEXT_EXHAUSTION_PATTERNS="context.length.exceeded|maximum context length|context_length_exceeded|prompt is too long"
+CONTEXT_RESTART_COUNT=0
+CONTEXT_RESTART_LIMIT=$(_smart_int "loop.context_restart_limit" 2)
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
@@ -141,7 +146,7 @@ CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-200000}"  # Max prompt chars befor
 
 # ─── Claude CLI Flags ─────────────────────────────────────────────────────────
 EFFORT_LEVEL="${SW_EFFORT_LEVEL:-}"
-FALLBACK_MODEL="${SW_FALLBACK_MODEL:-sonnet}"
+FALLBACK_MODEL="${SW_FALLBACK_MODEL:-}"  # Empty = no fallback flag (intelligent default)
 
 # ─── Parse Arguments ──────────────────────────────────────────────────────────
 show_help() {
@@ -2090,6 +2095,8 @@ run_single_agent_loop() {
         # Restart: state already reset by run_loop_with_restarts, skip init
         # Restore environment variables for clean iteration state
         [[ -n "$SAVED_CLAUDE_MODEL" ]] && export CLAUDE_MODEL="$SAVED_CLAUDE_MODEL"
+        # Reset context exhaustion counter for this session (it tracks restarts WITHIN a single session)
+        CONTEXT_RESTART_COUNT=0
         info "Session restart ${RESTART_COUNT}/${MAX_RESTARTS} — fresh context, reading progress"
     elif $RESUME; then
         resume_state
@@ -2217,6 +2224,32 @@ ${GOAL}"
             error "Fatal CLI error detected — aborting loop (see iteration log)"
             show_summary
             return 1
+        fi
+
+        # Detect context exhaustion and trigger intelligent restart
+        local log_content=""
+        [[ -f "$log_file" ]] && log_content=$(cat "$log_file" 2>/dev/null || true)
+        local stderr_file="${LOG_DIR}/iteration-${ITERATION}.stderr"
+        local stderr_content=""
+        [[ -f "$stderr_file" ]] && stderr_content=$(cat "$stderr_file" 2>/dev/null || true)
+
+        if echo "${log_content}${stderr_content}" | grep -qiE "$CONTEXT_EXHAUSTION_PATTERNS" 2>/dev/null; then
+            if [[ "${CONTEXT_RESTART_COUNT:-0}" -lt "${CONTEXT_RESTART_LIMIT:-2}" ]]; then
+                CONTEXT_RESTART_COUNT=$(( CONTEXT_RESTART_COUNT + 1 ))
+                STATUS="context_exhaustion_restart"
+                write_state
+                write_progress
+                warn "Context exhaustion detected (iteration $ITERATION) — triggering intelligent restart ($CONTEXT_RESTART_COUNT/$CONTEXT_RESTART_LIMIT)"
+                if type emit_event >/dev/null 2>&1; then
+                    emit_event "loop.context_exhaustion" "iteration=$ITERATION" "restart_count=$CONTEXT_RESTART_COUNT" "max_restarts=$MAX_RESTARTS"
+                fi
+                break
+            else
+                warn "Context exhaustion detected but restart limit ($CONTEXT_RESTART_LIMIT) reached"
+                STATUS="context_exhaustion_fatal"
+                write_state
+                write_progress
+            fi
         fi
 
         # Mid-loop memory refresh — re-query with current error context after iteration 3
@@ -2477,6 +2510,52 @@ run_loop_with_restarts() {
         if [[ "$STATUS" == "complete" ]]; then
             return 0
         fi
+
+        # Context exhaustion: treat as restart, not failure (unless restart limit hit)
+        if [[ "$STATUS" == "context_exhaustion_restart" ]]; then
+            if [[ "$CONTEXT_RESTART_COUNT" -lt "$CONTEXT_RESTART_LIMIT" ]]; then
+                RESTART_COUNT=$(( RESTART_COUNT + 1 ))
+                if type emit_event >/dev/null 2>&1; then
+                    emit_event "loop.restart" "restart=$RESTART_COUNT" "reason=context_exhaustion" "context_restart=$CONTEXT_RESTART_COUNT" "iteration=$ITERATION"
+                fi
+                info "Context exhaustion auto-recovery: restart $RESTART_COUNT/$MAX_RESTARTS (context restart $CONTEXT_RESTART_COUNT/$CONTEXT_RESTART_LIMIT)"
+
+                # Capture comprehensive state and generate briefing before restart
+                if type restart_before_restart >/dev/null 2>&1; then
+                    restart_before_restart || warn "Failed to prepare restart briefing (continuing anyway)"
+                fi
+
+                # Reset iteration-level state for fresh session
+                SESSION_RESTART=true
+                ITERATION=0
+                CONSECUTIVE_FAILURES=0
+                EXTENSION_COUNT=0
+                STUCKNESS_COUNT=0
+                STATUS="running"
+                LOG_ENTRIES=""
+                TEST_PASSED=""
+                TEST_OUTPUT=""
+                TEST_LOG_FILE=""
+                GOAL="$ORIGINAL_GOAL"
+
+                # Archive old artifacts
+                local restart_archive="$LOG_DIR/restart-${RESTART_COUNT}"
+                mkdir -p "$restart_archive"
+                for old_log in "$LOG_DIR"/iteration-*.log "$LOG_DIR"/tests-iter-*.log; do
+                    [[ -f "$old_log" ]] && mv "$old_log" "$restart_archive/" 2>/dev/null || true
+                done
+                [[ -f "$LOG_DIR/progress.md" ]] && cp "$LOG_DIR/progress.md" "$restart_archive/progress.md" 2>/dev/null || true
+                [[ -f "$LOG_DIR/error-summary.json" ]] && cp "$LOG_DIR/error-summary.json" "$restart_archive/" 2>/dev/null || true
+
+                write_state
+                sleep "$(_config_get_int "loop.sleep_between_iterations" 2 2>/dev/null || echo 2)"
+                continue
+            else
+                warn "Context exhaustion limit reached — failing build"
+                return "$loop_exit"
+            fi
+        fi
+
         if [[ "$MAX_RESTARTS" -le 0 ]]; then
             return "$loop_exit"
         fi
@@ -2484,9 +2563,11 @@ run_loop_with_restarts() {
             warn "Max restarts ($MAX_RESTARTS) reached — stopping"
             return "$loop_exit"
         fi
-        # Hard cap safety net
-        if [[ "$RESTART_COUNT" -ge 5 ]]; then
-            warn "Hard restart cap (5) reached — stopping"
+        # Hard cap safety net (configurable)
+        local _hard_cap
+        _hard_cap=$(_smart_int "loop.hard_restart_cap" 5)
+        if [[ "$RESTART_COUNT" -ge "$_hard_cap" ]]; then
+            warn "Hard restart cap ($_hard_cap) reached — stopping"
             return "$loop_exit"
         fi
 

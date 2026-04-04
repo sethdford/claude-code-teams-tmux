@@ -578,7 +578,7 @@ ${_skill_prompts}
     local _plan_flags
     _plan_flags="$(_pipeline_claude_flags "plan" "$plan_model")"
     # shellcheck disable=SC2086
-    claude --print $_plan_flags --max-turns 25 --dangerously-skip-permissions \
+    claude --print $_plan_flags --max-turns "$(_smart_int "max_turns.pipeline_stage" 25)" --dangerously-skip-permissions \
         "$plan_prompt" < /dev/null > "$plan_file" 2>"$_token_log" || true
     parse_claude_tokens "$_token_log"
 
@@ -854,7 +854,7 @@ Fix these issues in the new plan."
                 local _regen_flags
                 _regen_flags="$(_pipeline_claude_flags "plan" "$plan_model")"
                 # shellcheck disable=SC2086
-                claude --print $_regen_flags --max-turns 25 \
+                claude --print $_regen_flags --max-turns "$(_smart_int "max_turns.pipeline_stage" 25)" \
                     "$regen_prompt" < /dev/null > "$plan_file" 2>"$_token_log" || true
                 parse_claude_tokens "$_token_log"
 
@@ -1061,7 +1061,7 @@ ${_skill_prompts}
     local _design_flags
     _design_flags="$(_pipeline_claude_flags "design" "$design_model")"
     # shellcheck disable=SC2086
-    claude --print $_design_flags --max-turns 25 --dangerously-skip-permissions \
+    claude --print $_design_flags --max-turns "$(_smart_int "max_turns.pipeline_stage" 25)" --dangerously-skip-permissions \
         "$design_prompt" < /dev/null > "$design_file" 2>"$_token_log" || true
     parse_claude_tokens "$_token_log"
 

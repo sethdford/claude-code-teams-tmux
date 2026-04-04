@@ -750,7 +750,7 @@ run_pipeline() {
                 if [[ "$use_recommended" == "true" ]]; then
                     export CLAUDE_MODEL="$recommended_model"
                 else
-                    export CLAUDE_MODEL="opus"
+                    export CLAUDE_MODEL="$(_smart_model default sonnet)"
                 fi
 
                 emit_event "intelligence.model_ab" \

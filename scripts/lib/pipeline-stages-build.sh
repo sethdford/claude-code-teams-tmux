@@ -6,6 +6,12 @@ _PIPELINE_STAGES_BUILD_LOADED=1
 # Map pipeline stage to effort level (when no explicit --effort override)
 _stage_effort_level() {
     local stage="$1"
+    # Use _smart_effort if available (reads from daemon-config.json → defaults)
+    if type _smart_effort >/dev/null 2>&1; then
+        _smart_effort "$stage"
+        return
+    fi
+    # Fallback if compat.sh not loaded
     case "$stage" in
         intake)              echo "low" ;;
         plan|design)         echo "high" ;;
@@ -500,7 +506,7 @@ ${_skill_prompts}
         quality_score=$(claude --print --output-format text -p "Rate the quality of these git commit messages on a scale of 0-100. Consider: focus (one thing per commit), clarity (describes the why), atomicity (small logical units). Reply with ONLY a number 0-100.
 
 Commit messages:
-${commit_msgs}" --model haiku < /dev/null 2>/dev/null || true)
+${commit_msgs}" --model "$(_smart_model commit_quality haiku)" < /dev/null 2>/dev/null || true)
         quality_score=$(echo "$quality_score" | grep -oE '^[0-9]+' | head -1 || true)
         if [[ -n "$quality_score" ]]; then
             emit_event "build.commit_quality" \
@@ -515,12 +521,13 @@ ${commit_msgs}" --model haiku < /dev/null 2>/dev/null || true)
         fi
     fi
 
-    # ── Scope Enforcement: Compare planned vs actual files ──
+    # ── Scope Enforcement: Compare planned vs actual files (best-effort) ──
     if type generate_scope_report >/dev/null 2>&1; then
         local plan_file="$ARTIFACTS_DIR/plan.md"
         if [[ -f "$plan_file" ]]; then
             info "Analyzing scope: comparing planned vs actual files..."
-            generate_scope_report "$plan_file" "origin/${BASE_BRANCH:-main}" "$ARTIFACTS_DIR" 2>/dev/null || true
+            # Run in subshell to prevent set -e propagation
+            (generate_scope_report "$plan_file" "origin/${BASE_BRANCH:-main}" "$ARTIFACTS_DIR" 2>/dev/null) || true
             if [[ -f "$ARTIFACTS_DIR/scope-report.json" ]]; then
                 local unplanned_count
                 unplanned_count=$(jq '.unplanned_files | length' "$ARTIFACTS_DIR/scope-report.json" 2>/dev/null || echo "0")

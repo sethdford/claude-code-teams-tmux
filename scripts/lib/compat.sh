@@ -281,3 +281,129 @@ compute_md5() {
         md5 -q "$file" 2>/dev/null || md5sum "$file" 2>/dev/null | awk '{print $1}'
     fi
 }
+
+# ─── Intelligent Model Selection ──────────────────────────────────────────
+# _smart_model <purpose> [default]
+# Returns model name from config chain: env var → daemon-config.json → default
+# Purpose: "classification", "detection", "validation", "commit_quality",
+#          "default", or any custom key under model_routing.{purpose}
+_smart_model() {
+    local purpose="${1:-default}" default="${2:-haiku}"
+
+    # 1. Environment override (e.g., SW_MODEL_CLASSIFICATION=sonnet)
+    local env_key
+    env_key="SW_MODEL_$(echo "$purpose" | tr '[:lower:]' '[:upper:]')"
+    local env_val=""
+    eval 'env_val="${'"$env_key"':-}"' 2>/dev/null || true
+    if [[ -n "$env_val" ]]; then
+        echo "$env_val"
+        return
+    fi
+
+    # 2. Daemon config: model_routing.{purpose}
+    local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+    if [[ -f "$cfg" ]]; then
+        local cfg_val
+        cfg_val=$(jq -r --arg p "$purpose" '.model_routing[$p] // empty' "$cfg" 2>/dev/null || true)
+        if [[ -n "$cfg_val" && "$cfg_val" != "null" ]]; then
+            echo "$cfg_val"
+            return
+        fi
+    fi
+
+    # 3. User-level config: ~/.shipwright/model-routing.json
+    local user_cfg="${HOME}/.shipwright/model-routing.json"
+    if [[ -f "$user_cfg" ]]; then
+        local user_val
+        user_val=$(jq -r --arg p "$purpose" '.[$p] // empty' "$user_cfg" 2>/dev/null || true)
+        if [[ -n "$user_val" && "$user_val" != "null" ]]; then
+            echo "$user_val"
+            return
+        fi
+    fi
+
+    # 4. Default
+    echo "$default"
+}
+
+# _smart_int <config_key> <default>
+# Read int from daemon-config with env override and default fallback
+_smart_int() {
+    local key="$1" default="$2"
+
+    # Env override: config.key.path → SW_KEY_PATH
+    local env_key
+    env_key="SW_$(echo "$key" | tr '[:lower:].' '[:upper:]_')"
+    local env_val=""
+    eval 'env_val="${'"$env_key"':-}"' 2>/dev/null || true
+    if [[ -n "$env_val" ]]; then
+        echo "$env_val"
+        return
+    fi
+
+    # Daemon config
+    local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+    if [[ -f "$cfg" ]]; then
+        local cfg_val
+        cfg_val=$(jq -r --arg k "$key" 'getpath($k | split(".")) // empty' "$cfg" 2>/dev/null || true)
+        if [[ -n "$cfg_val" && "$cfg_val" != "null" ]]; then
+            echo "$cfg_val"
+            return
+        fi
+    fi
+
+    echo "$default"
+}
+
+# _smart_effort <stage>
+# Read effort level from config, with per-stage defaults
+_smart_effort() {
+    local stage="$1"
+
+    # 1. Explicit override
+    if [[ -n "${EFFORT_LEVEL_OVERRIDE:-}" ]]; then
+        echo "$EFFORT_LEVEL_OVERRIDE"
+        return
+    fi
+
+    # 2. Config: effort_levels.{stage}
+    local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+    if [[ -f "$cfg" ]]; then
+        local cfg_val
+        cfg_val=$(jq -r --arg s "$stage" '.effort_levels[$s] // empty' "$cfg" 2>/dev/null || true)
+        if [[ -n "$cfg_val" && "$cfg_val" != "null" ]]; then
+            echo "$cfg_val"
+            return
+        fi
+    fi
+
+    # 3. Intelligent defaults (same as before, but now overridable)
+    case "$stage" in
+        intake)              echo "low" ;;
+        plan|design)         echo "high" ;;
+        build|test)          echo "medium" ;;
+        review|compound_quality) echo "high" ;;
+        pr|merge)            echo "low" ;;
+        deploy|validate|monitor) echo "medium" ;;
+        *)                   echo "medium" ;;
+    esac
+}
+
+# _exponential_backoff <attempt> [base_seconds] [max_seconds]
+# Returns sleep duration with jitter for retry loops
+_exponential_backoff() {
+    local attempt="${1:-1}" base="${2:-2}" max="${3:-60}"
+    local delay=$base
+    local i=1
+    while [ "$i" -lt "$attempt" ]; do
+        delay=$((delay * 2))
+        i=$((i + 1))
+    done
+    # Cap at max
+    [ "$delay" -gt "$max" ] && delay=$max
+    # Add jitter: ±25%
+    local jitter=$(( (RANDOM % (delay / 2 + 1)) - delay / 4 ))
+    delay=$((delay + jitter))
+    [ "$delay" -lt 1 ] && delay=1
+    echo "$delay"
+}

@@ -323,7 +323,7 @@ ${_skill_prompts}
     local _review_flags
     _review_flags="$(_pipeline_claude_flags "review" "$review_model")"
     # shellcheck disable=SC2206
-    review_args+=($_review_flags --max-turns 25 --dangerously-skip-permissions)
+    review_args+=($_review_flags --max-turns "$(_smart_int "max_turns.pipeline_stage" 25)" --dangerously-skip-permissions)
 
     # ── Two-Stage Review: Pass 1 (Spec Compliance) ──
     local _two_stage=false

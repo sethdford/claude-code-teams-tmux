@@ -425,7 +425,7 @@ quality_check_api_compat() {
         if [[ -n "$spec_git_diff" ]]; then
             semantic_diff=$(claude --print --output-format text -p "Analyze this API spec diff for breaking changes. List: removed endpoints, changed parameters, altered response schemas, auth changes. Be concise.
 
-${spec_git_diff}" --model haiku < /dev/null 2>/dev/null || true)
+${spec_git_diff}" --model "$(_smart_model validation haiku)" < /dev/null 2>/dev/null || true)
         fi
     fi
 

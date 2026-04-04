@@ -111,7 +111,7 @@ TMPL
 # Usage: pipeline_config_with_stages "intake,plan,build"
 pipeline_config_with_stages() {
     local enabled_csv="$1"
-    local all_stages=("intake" "plan" "build" "test" "review" "compound_quality" "pr" "deploy" "validate")
+    local all_stages=("intake" "spec_generation" "plan" "design" "build" "test" "review" "spec_verification" "compound_quality" "pr" "merge" "deploy" "validate" "monitor")
     local json='{ "name": "test-custom", "description": "Custom test pipeline",'
     json+=' "defaults": { "test_cmd": "echo all-tests-passed", "model": "opus", "agents": 1 },'
     json+=' "stages": ['
@@ -136,9 +136,9 @@ create_mock_claude() {
 prompt=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --print|--output-format) shift ;;
-        --model|--max-turns)     shift 2 ;;
-        -p)                      shift 2 ;;
+        --print|--output-format|--dangerously-skip-permissions|--verbose) shift ;;
+        --model|--max-turns|--effort|--fallback-model|-p) shift 2 ;;
+        -*)                      shift ;;  # Skip unknown flags
         *)                       prompt="$1"; shift ;;
     esac
 done
