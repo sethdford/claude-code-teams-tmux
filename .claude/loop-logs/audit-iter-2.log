@@ -1,1 +1,31 @@
-Invalid API key · Fix external API key
+## AUDIT_FAIL
+
+The implementation has a critical issue that causes `npm test` to fail with exit code 2. While the agent's primary work (failure pattern auto-mitigation engine) is complete and well-implemented, there's a significant integration problem:
+
+### Issues Found:
+
+1. **npm test fails (exit code 2)** — `sed: can't read s|$TEST_TEMP_DIR|/tmp/sw-test-auto.*|g: No such file or directory` in sw-code-review-test.sh line 40
+
+2. **Incomplete cross-platform sed fix** — The agent added `sed_i()` helper to `scripts/lib/compat.sh` (good design) but failed to update all callers:
+   - `scripts/sw-code-review-test.sh:40` — uses `sed -i ''` directly
+   - `scripts/sw-code-review.sh` — uses `sed -i ''` directly
+   - `scripts/sw-pipeline-test.sh` — uses `sed -i ''` directly
+   - `scripts/sw-hygiene.sh` — uses fallback chain
+   - These should all source compat.sh and call `sed_i()` instead
+
+3. **Misleading completion claim** — Agent claims "All tests pass. 35/35 tests passing in sw-auto-mitigation-test.sh" but this is only the custom test suite. The authoritative `npm test` command fails. The agent ran its custom test script and assumed success without running the full test harness.
+
+### What Works Well:
+
+✓ Failure pattern auto-mitigation engine (480 lines, 35 tests passing)  
+✓ Integration into sw-loop.sh and compose_prompt  
+✓ Dashboard API endpoints  
+✓ Test suite for the engine itself  
+✓ Code quality and bash 3.2 compatibility
+
+### What Must Be Fixed:
+
+1. Update `sw-code-review-test.sh:40` to use `sed_i()` helper (source compat.sh first)
+2. Update `sw-code-review.sh` sed -i '' to use `sed_i()`
+3. Update `sw-pipeline-test.sh` sed -i '' to use `sed_i()`
+4. Verify `npm test` passes (exit code 0) before considering complete
