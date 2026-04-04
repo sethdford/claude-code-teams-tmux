@@ -297,6 +297,18 @@ stage_plan() {
 
     info "Generating implementation plan..."
 
+    # Dark factory: inject RL approach suggestions based on past episodes
+    if type rl_suggest_approach >/dev/null 2>&1; then
+        local _rl_lang="${INTELLIGENCE_LANGUAGE:-unknown}"
+        local _rl_complexity="${INTELLIGENCE_COMPLEXITY:-medium}"
+        local _rl_type="${INTELLIGENCE_ISSUE_TYPE:-feature}"
+        local _rl_suggestions
+        _rl_suggestions=$(rl_suggest_approach "$_rl_lang" "$_rl_type" "$_rl_complexity" 2>/dev/null || true)
+        if [[ -n "$_rl_suggestions" ]]; then
+            info "RL suggests: $(echo "$_rl_suggestions" | head -1)"
+        fi
+    fi
+
     # ── Gather context bundle (if context engine available) ──
     local context_script="${SCRIPT_DIR}/sw-context.sh"
     if [[ -x "$context_script" ]]; then

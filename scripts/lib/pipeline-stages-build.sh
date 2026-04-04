@@ -190,6 +190,17 @@ ${spec_prompt}"
         fi
     fi
 
+    # Dark factory: inject formal spec constraints into build goal
+    if type formal_spec_inject >/dev/null 2>&1; then
+        local _formal_context
+        _formal_context=$(formal_spec_inject "${PROJECT_ROOT:-.}" 2>/dev/null || true)
+        if [[ -n "$_formal_context" ]]; then
+            enriched_goal="${enriched_goal}
+
+${_formal_context}"
+        fi
+    fi
+
     # TDD: when test_first ran, tell build to make existing tests pass
     if [[ "${TDD_ENABLED:-false}" == "true" || "${PIPELINE_TDD:-}" == "true" ]]; then
         enriched_goal="${enriched_goal}
@@ -610,10 +621,25 @@ stage_test() {
     else
         error "Tests failed (exit code: $test_exit)"
 
-        # Dark factory: build causal graph on test failure for root-cause analysis
+        # Dark factory: build causal graph and trace failure chain
         if type causal_build_graph >/dev/null 2>&1; then
             CAUSAL_GRAPH_FILE="${ARTIFACTS_DIR}/causal-graph.json"
             causal_build_graph "." 2>/dev/null || true
+            # Trace the failure to root cause
+            if type causal_trace_failure >/dev/null 2>&1; then
+                local _failing_tests
+                _failing_tests=$(grep -l 'FAIL\|Error\|assert' "$test_log" 2>/dev/null | head -1 || true)
+                if [[ -n "$_failing_tests" ]]; then
+                    causal_trace_failure "$_failing_tests" "." 2>/dev/null || true
+                fi
+            fi
+            # Suggest fix based on causal trace
+            if type causal_suggest_fix >/dev/null 2>&1; then
+                local _trace_file="${CAUSAL_GRAPH_FILE%.json}-trace.json"
+                if [[ -f "$_trace_file" ]]; then
+                    causal_suggest_fix "$_trace_file" 2>/dev/null || true
+                fi
+            fi
         fi
 
         # Extract most relevant error section (assertion failures, stack traces)

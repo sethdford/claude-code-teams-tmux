@@ -2200,6 +2200,11 @@ ${GOAL}"
         # Record iteration data for stuckness detection (diff hash, error hash, exit code)
         record_iteration_stuckness_data "$exit_code"
 
+        # Dark factory: score this iteration with process reward model
+        if type process_reward_score_iteration >/dev/null 2>&1; then
+            process_reward_score_iteration "$PROJECT_ROOT" "${TEST_OUTPUT:-}" "$ITERATION" 2>/dev/null || true
+        fi
+
         # Detect fatal CLI errors (API key, auth, network) — abort immediately
         if check_fatal_error "$log_file" "$exit_code"; then
             STATUS="error"
@@ -2252,6 +2257,15 @@ ${GOAL}"
                 echo -e "  ${GREEN}✓${RESET} Tests: passed"
             else
                 echo -e "  ${RED}✗${RESET} Tests: failed"
+            fi
+        fi
+
+        # Dark factory: update RL weights based on test outcome
+        if type rl_update_weights >/dev/null 2>&1; then
+            if [[ "${TEST_PASSED:-}" == "true" ]]; then
+                rl_update_weights "success" 2>/dev/null || true
+            elif [[ "${TEST_PASSED:-}" == "false" ]]; then
+                rl_update_weights "failure" 2>/dev/null || true
             fi
         fi
 
