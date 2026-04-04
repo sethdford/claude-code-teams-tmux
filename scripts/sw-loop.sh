@@ -63,6 +63,10 @@ fi
 # Cross-session reinforcement learning optimizer (Phase 7)
 # shellcheck source=lib/rl-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/rl-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/rl-optimizer.sh" 2>/dev/null || true
+# Autoresearch RL modules (Phase 8): reward aggregation, bandit selection, policy learning
+[[ -f "$SCRIPT_DIR/lib/reward-aggregator.sh" ]] && source "$SCRIPT_DIR/lib/reward-aggregator.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/bandit-selector.sh" ]] && source "$SCRIPT_DIR/lib/bandit-selector.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/policy-learner.sh" ]] && source "$SCRIPT_DIR/lib/policy-learner.sh" 2>/dev/null || true
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }

@@ -830,6 +830,16 @@ pipeline_start() {
                 "${INTELLIGENCE_LANGUAGE:-}" "${INTELLIGENCE_COMPLEXITY:-}" \
                 "${INTELLIGENCE_ISSUE_TYPE:-}" "[]" "[]" 2>/dev/null || true
         fi
+        # Autoresearch RL Phase 8: aggregate rewards, update bandits, learn policy
+        if type reward_aggregate_pipeline >/dev/null 2>&1; then
+            reward_aggregate_pipeline "${PIPELINE_JOB_ID:-$$}" "${INTELLIGENCE_LANGUAGE:-unknown}" "${INTELLIGENCE_COMPLEXITY:-medium}" 2>/dev/null || true
+        fi
+        if type bandit_update >/dev/null 2>&1; then
+            bandit_update "model" "${CURRENT_STAGE_ID:-build}:${MODEL:-opus}" "success" 2>/dev/null || true
+        fi
+        if type policy_learn_from_history >/dev/null 2>&1; then
+            policy_learn_from_history 2>/dev/null || true
+        fi
         # Update memory baselines with successful run metrics
         if type memory_update_metrics >/dev/null 2>&1; then
             memory_update_metrics "build_duration_s" "${total_dur_s:-0}" 2>/dev/null || true
@@ -882,6 +892,16 @@ pipeline_start() {
             rl_record_from_pipeline false "$((SELF_HEAL_COUNT + 1))" "${total_cost:-0}" \
                 "${INTELLIGENCE_LANGUAGE:-}" "${INTELLIGENCE_COMPLEXITY:-}" \
                 "${INTELLIGENCE_ISSUE_TYPE:-}" "[]" "[]" 2>/dev/null || true
+        fi
+        # Autoresearch RL Phase 8: aggregate rewards, update bandits, learn policy (failure case)
+        if type reward_aggregate_pipeline >/dev/null 2>&1; then
+            reward_aggregate_pipeline "${PIPELINE_JOB_ID:-$$}" "${INTELLIGENCE_LANGUAGE:-unknown}" "${INTELLIGENCE_COMPLEXITY:-medium}" 2>/dev/null || true
+        fi
+        if type bandit_update >/dev/null 2>&1; then
+            bandit_update "model" "${CURRENT_STAGE_ID:-build}:${MODEL:-opus}" "failure" 2>/dev/null || true
+        fi
+        if type policy_learn_from_history >/dev/null 2>&1; then
+            policy_learn_from_history 2>/dev/null || true
         fi
 
         # Capture failure learnings to memory

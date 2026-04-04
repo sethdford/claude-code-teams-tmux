@@ -350,6 +350,16 @@ ${cum_stat}
         rl_section="$(rl_compose_prompt_section 2>/dev/null || true)"
     fi
 
+    # Autoresearch RL Phase 8: policy and reward feedback injection
+    local policy_section=""
+    if type policy_inject_into_prompt >/dev/null 2>&1; then
+        policy_section="$(policy_inject_into_prompt 2>/dev/null || true)"
+    fi
+    local reward_feedback=""
+    if type reward_inject_feedback >/dev/null 2>&1; then
+        reward_feedback="$(reward_inject_feedback 2>/dev/null || true)"
+    fi
+
     # Auto-recovery hint injection (from auto-recovery.sh)
     local recovery_section=""
     if [[ -n "${RECOVERY_HINT:-}" ]]; then
@@ -390,6 +400,10 @@ $discovery_section
 ${reward_section:+$reward_section
 }
 ${rl_section:+$rl_section
+}
+${policy_section:+$policy_section
+}
+${reward_feedback:+$reward_feedback
 }
 ${dora_section:+$dora_section
 }

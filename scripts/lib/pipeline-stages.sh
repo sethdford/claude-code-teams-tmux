@@ -22,6 +22,10 @@ _SKILL_MEMORY_SH="${SCRIPT_DIR}/lib/skill-memory.sh"
 [[ -f "$SCRIPT_DIR/lib/mutation-executor.sh" ]] && source "$SCRIPT_DIR/lib/mutation-executor.sh" 2>/dev/null || true
 # Cross-session reinforcement learning optimizer (Phase 7)
 [[ -f "$SCRIPT_DIR/lib/rl-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/rl-optimizer.sh" 2>/dev/null || true
+# Autoresearch RL modules (Phase 8): reward aggregation, bandit selection, policy learning
+[[ -f "$SCRIPT_DIR/lib/reward-aggregator.sh" ]] && source "$SCRIPT_DIR/lib/reward-aggregator.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/bandit-selector.sh" ]] && source "$SCRIPT_DIR/lib/bandit-selector.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/policy-learner.sh" ]] && source "$SCRIPT_DIR/lib/policy-learner.sh" 2>/dev/null || true
 
 # Defaults for variables normally set by sw-pipeline.sh (safe under set -u).
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}"
