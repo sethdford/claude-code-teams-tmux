@@ -264,17 +264,22 @@ When a pipeline succeeds, extract and store a canonical pattern snapshot:
 - `inject_pattern(pattern_id, build_prompt) → enriched_prompt
 - `invalidate_pattern(pattern_id, reason)` (soft-delete)
 - `pattern_audit_log(pattern_id)` → [(issue_id, timestamp, result), ...]
-"
-iteration: 1
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-04T01:06:26Z
-last_iteration_at: 2026-04-04T01:06:27Z
+started_at: 2026-04-04T01:15:57Z
+last_iteration_at: 2026-04-04T01:15:57Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -287,4 +292,7 @@ max_extensions: 3
 ## Log
 ### Iteration 1 (2026-04-04T01:06:26Z)
 {"type":"result","subtype":"success","is_error":false,"duration_ms":525318,"duration_api_ms":472689,"num_turns":61,"resu
+
+### Iteration 2 (2026-04-04T01:15:57Z)
+{"type":"result","subtype":"success","is_error":false,"duration_ms":530875,"duration_api_ms":411845,"num_turns":63,"resu
 
