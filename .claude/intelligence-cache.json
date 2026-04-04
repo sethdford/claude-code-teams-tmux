@@ -647,6 +647,168 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "27b554b0b1c340485049adbef9dff62c": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "critical",
+        "success_probability": 50,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Misdiagnosis of root cause prolongs complete pipeline downtime",
+          "Recovery fix could introduce secondary failures in critical path",
+          "48-hour deadline is aggressive for complex system diagnosis",
+          "Monitoring system may not detect future subtle degradation",
+          "Multiple interacting components make isolation difficult",
+          "Recent code changes to daemon/pipeline core could be culprit"
+        ],
+        "implementation_hints": [
+          "Parse error logs from .claude/pipeline-artifacts/error-log.jsonl with structured analysis",
+          "Inspect pipeline state and check for corruption in .claude/pipeline-state.md",
+          "Diff recent commits against last known working state (5a4e041)",
+          "Examine daemon config, intelligence cache, and convergence detection logic",
+          "Create isolated test pipeline with minimal config to isolate failure mode",
+          "Implement automated success rate monitoring with >20% drop alerts",
+          "Capture root cause and recovery pattern in memory system before documenting",
+          "Run full test suite on fix before merging to verify no regressions"
+        ]
+      },
+      "timestamp": 1775263495,
+      "ttl": 3600
+    },
+    "22dfe30d17e16268f231d36d749ce361": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1775263502,
+      "ttl": 1800
+    },
+    "c7197a61f0244fa20ab1fe39accad81f": {
+      "result": {
+        "estimated_cost_usd": 8.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 380000,
+        "likely_failure_stage": "build",
+        "confidence": 65
+      },
+      "timestamp": 1775263514,
+      "ttl": 3600
+    },
+    "f0c03cfb1415a0a458b67eedc20b7bcc": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.98,
+        "secondary_domains": [
+          "reliability",
+          "observability",
+          "automation"
+        ],
+        "complexity_assessment": {
+          "score": 9,
+          "reasoning": "P0 systemic pipeline failure requiring root cause diagnosis, implementation of automated fix, recovery validation, and prevention monitoring. High stakes (blocks all work) and high complexity (requires investigation across logs, state, and recent changes)."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "observability"
+          ],
+          "build": [
+            "systematic-debugging",
+            "testing-strategy"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "deploy-safety"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability",
+            "documentation"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "The skill note explicitly warns 'previous attempt FAILED'—this signals we must follow the 4-phase structured investigation (reproduce, isolate, analyze, verify) rather than blindly retrying the same approach that already failed.",
+          "brainstorming": "Challenge assumptions about root cause before diving into implementation; the 0% success rate is a symptom, not necessarily the cause, and we risk fixing the wrong thing.",
+          "architecture-design": "Document the diagnostic architecture and recovery system as an ADR so future engineers understand the failure mode, prevention strategy, and recovery procedure.",
+          "observability": "Designing monitoring for future >20% drops and auto-alerting is a core acceptance criterion; this skill ensures we instrument the right metrics and alert thresholds.",
+          "testing-strategy": "The diagnostic agent and fix must be testable in isolation (without triggering real pipeline runs); this skill ensures we design for observability and testability.",
+          "two-stage-review": "P0 systemic failures warrant thorough review in two passes—Pass 1 validates diagnostic approach is sound, Pass 2 validates fix doesn't introduce new failure modes.",
+          "adversarial-quality": "Attack the proposed fix: what if it masks the real problem? What edge cases break the recovery? What dependencies does the fix introduce?",
+          "validation-thoroughness": "Smoke tests (running a single pipeline) are insufficient to prove 70%+ recovery—we need to validate across different job types, workloads, and failure scenarios.",
+          "deploy-safety": "Treat the recovery fix as a controlled experiment—canary the monitoring/fix to a subset of runs before rolling out to 100% of pipelines.",
+          "pr-quality": "A P0 fix requires crystal-clear documentation in the PR: root cause analysis, why this fix solves it, what was tested, and rollback procedure.",
+          "documentation": "Acceptance criteria requires documenting the failure mode and recovery in the memory system for future prevention—this skill ensures the institutional knowledge is captured."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Root cause analysis correctness—is the identified failure mode actually the source of 0% success, or a symptom of a deeper issue?",
+          "Diagnostic agent design—does it capture all relevant failure signals (error logs, pipeline state, system health, recent commits) or will it miss the actual cause?",
+          "Fix safety—does the recovery introduce new failure modes, race conditions, or dependencies that could cause future outages?",
+          "Monitoring thresholds—are the >20% drop alerts tuned to catch real problems without false positives?",
+          "Fallback behavior—if the automated fix fails, what is the manual recovery path and alert escalation?"
+        ],
+        "risk_areas": [
+          "Misdiagnosis: spending time fixing the wrong problem while 0% success persists",
+          "Fix introduces new fragility: solving one failure mode while creating another",
+          "Incomplete root cause: fixing a symptom rather than the underlying systemic issue",
+          "Monitoring blind spots: recovery appears successful locally but fails in production under full load",
+          "Rollback complexity: if the fix breaks in production, recovery must be atomic and documented"
+        ]
+      },
+      "timestamp": 1775263583,
+      "ttl": 3600
+    },
+    "cc56b8fd1a22fdb0191a2e5a64cc017e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 95,
+            "summary": "Captures Shipwright script failures (sw-cleanup.sh, sed variable expansion, deployment detection) with root causes and fixes. Directly relevant to pipeline success rate investigation."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 90,
+            "summary": "Documents successful bug fix and feature addition patterns with iteration counts, test strategies, costs, and commit history. Critical for planning recovery approaches."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 60,
+            "summary": "Project structure (Node/vitest/npm, commonjs imports, src/ layout). Useful for understanding codebase conventions during investigation."
+          },
+          {
+            "file": "failures.json (fifth entry)",
+            "relevance": 40,
+            "summary": "Build-stage failures with variable initialization issues and mitigation effectiveness tracking (100% and 66% success rates). Relevant for understanding common failure patterns."
+          },
+          {
+            "file": "failures.json (second entry)",
+            "relevance": 35,
+            "summary": "Generic Node.js errors (undefined properties, missing dependencies) with mitigation attempts tracked. Less specific but shows error tracking patterns."
+          }
+        ]
+      },
+      "timestamp": 1775263599,
+      "ttl": 1800
     }
   }
 }
