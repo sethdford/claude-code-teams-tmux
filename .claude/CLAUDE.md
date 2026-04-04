@@ -553,12 +553,12 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-incident.sh` | 1132 | Autonomous Incident Detection & Response |
 | `scripts/sw-init.sh` | 869 | Complete setup for Shipwright + Shipwright |
 | `scripts/sw-instrument.sh` | 691 | Pipeline Instrumentation & Feedback Loops |
-| `scripts/sw-intelligence.sh` | 1547 | AI-Powered Analysis & Decision Engine |
+| `scripts/sw-intelligence.sh` | 1548 | AI-Powered Analysis & Decision Engine |
 | `scripts/sw-jira.sh` | 628 | Jira ↔ GitHub Bidirectional Sync |
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2654 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2675 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2240 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1053 | Intelligent Model Routing & Cost Optimization |
