@@ -10,7 +10,7 @@
 [[ -n "${_SESSION_RESTART_LOADED:-}" ]] && return 0
 _SESSION_RESTART_LOADED=1
 
-VERSION="3.2.4"
+VERSION="3.3.0"
 
 # ─── State Capture ─────────────────────────────────────────────────────────
 

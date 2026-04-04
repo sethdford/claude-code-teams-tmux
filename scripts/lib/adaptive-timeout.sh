@@ -7,7 +7,7 @@
 _ADAPTIVE_TIMEOUT_LOADED=1
 
 # Module version for debugging
-VERSION="3.2.4"
+VERSION="3.3.0"
 
 # ─── Configuration ──────────────────────────────────────────────────────────
 

@@ -13,7 +13,7 @@
   <a href="https://github.com/sethdford/shipwright/actions/workflows/test.yml"><img src="https://github.com/sethdford/shipwright/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
   <a href="https://github.com/sethdford/shipwright/actions/workflows/shipwright-pipeline.yml"><img src="https://github.com/sethdford/shipwright/actions/workflows/shipwright-pipeline.yml/badge.svg" alt="Pipeline"></a>
   <img src="https://img.shields.io/badge/tests-141_suites_passing-4ade80?style=flat-square" alt="141 suites">
-  <img src="https://img.shields.io/badge/version-3.2.4-00d4ff?style=flat-square" alt="v3.2.4">
+  <img src="https://img.shields.io/badge/version-3.3.0-00d4ff?style=flat-square" alt="v3.3.0">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
   <img src="https://img.shields.io/badge/bash-3.2%2B-555a66?style=flat-square" alt="Bash 3.2+">
 </p>
@@ -24,7 +24,7 @@
 
 - [Shipwright Builds Itself](#shipwright-builds-itself)
 - [Code Factory Pattern](#code-factory-pattern)
-- [What's New in v3.2.4](#whats-new-in-v324)
+- [What's New in v3.3.0](#whats-new-in-v330)
 - [How It Works](#how-it-works)
 - [Install](#install)
 - [Quick Start](#quick-start)
@@ -109,7 +109,7 @@ shipwright incident gap sla
 
 ---
 
-## What's New in v3.2.4
+## What's New in v3.3.0
 
 **Code Factory pattern** — deterministic, risk-aware agent delivery with machine-verifiable evidence:
 

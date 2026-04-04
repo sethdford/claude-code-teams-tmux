@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/helpers.sh"
 source "${SCRIPT_DIR}/lib/intent-analysis.sh"
 
-VERSION="1.0.0"
+VERSION="3.3.0"
 
 # ─── Test Counters ──────────────────────────────────────────────
 TESTS_PASSED=0

@@ -6,7 +6,7 @@
 # ║  Use --force to actually kill sessions and remove files.                 ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 set -euo pipefail
 
 # shellcheck source=lib/bootstrap.sh

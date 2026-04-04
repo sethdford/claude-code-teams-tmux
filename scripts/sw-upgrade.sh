@@ -3,7 +3,7 @@
 # ║  sw upgrade — Detect and apply updates from the repo                   ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 # shellcheck disable=SC2034
-VERSION="3.2.4"
+VERSION="3.3.0"
 set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
