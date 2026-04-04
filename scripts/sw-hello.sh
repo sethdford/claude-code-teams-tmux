@@ -11,6 +11,13 @@ trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Read version from package.json (fall back to script VERSION if unavailable)
+_pkg_version=$(jq -r '.version' "$SCRIPT_DIR/../package.json" 2>/dev/null \
+    || grep '"version"' "$SCRIPT_DIR/../package.json" 2>/dev/null \
+        | grep -o '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' | head -1 \
+    || true)
+[[ -n "${_pkg_version:-}" ]] && VERSION="$_pkg_version"
+
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
@@ -48,12 +55,12 @@ main() {
             exit 0
             ;;
         --version|-v)
-            echo "$VERSION"
+            echo "Shipwright v${VERSION}"
             exit 0
             ;;
         "")
-            # No arguments: output hello world
-            echo "hello world"
+            # No arguments: display Shipwright version
+            echo "Shipwright v${VERSION}"
             exit 0
             ;;
         *)
