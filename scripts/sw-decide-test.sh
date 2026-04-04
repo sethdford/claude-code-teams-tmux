@@ -45,8 +45,21 @@ cat > "$TEST_REPO/config/policy.json" <<'POLICY'
 }
 POLICY
 
-mock_git
 mock_gh
+
+# Custom git mock that returns TEST_REPO for --show-toplevel
+# (default mock_git returns /tmp/mock-repo which doesn't contain our config)
+mock_binary "git" "case \"\${1:-}\" in
+    rev-parse)
+        if [[ \"\${2:-}\" == \"--show-toplevel\" ]]; then echo \"$TEST_REPO\"
+        elif [[ \"\${2:-}\" == \"--abbrev-ref\" ]]; then echo \"main\"
+        else echo \"$TEST_REPO\"
+        fi ;;
+    remote) echo \"https://github.com/testuser/testrepo.git\" ;;
+    branch) echo \"\" ;;
+    log) echo \"\" ;;
+    *) echo \"\" ;;
+esac"
 
 run_decide() {
     cd "$TEST_REPO" && bash "$TEST_REPO/scripts/sw-decide.sh" "$@"
