@@ -354,6 +354,9 @@ main() {
         regression)
             exec "$SCRIPT_DIR/sw-regression.sh" "$@"
             ;;
+        stage-profiler|profiler)
+            exec "$SCRIPT_DIR/sw-stage-profiler.sh" "$@"
+            ;;
         incident)
             exec "$SCRIPT_DIR/sw-incident.sh" "$@"
             ;;

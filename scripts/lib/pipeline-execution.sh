@@ -23,6 +23,7 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/stage-profiler.sh" ]] && source "$SCRIPT_DIR/lib/stage-profiler.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }
 [[ "$(type -t warn 2>/dev/null)" == "function" ]] || warn() { echo "$*"; }
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
@@ -794,6 +795,10 @@ run_pipeline() {
             stage_dur_s=$(( $(now_epoch) - stage_start_epoch ))
             success "Stage ${BOLD}$id${RESET} complete ${DIM}(${timing})${RESET}"
             emit_event "stage.completed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "duration_s=$stage_dur_s" "result=success"
+            # Stage profiler: check for duration regressions
+            if type profiler_analyze_stage >/dev/null 2>&1; then
+                profiler_analyze_stage "$id" "$stage_dur_s" "success" 2>/dev/null || true
+            fi
             # Audit: stage complete
             if type audit_emit >/dev/null 2>&1; then
                 audit_emit "stage.complete" "stage=$id" "verdict=pass" \
@@ -833,6 +838,10 @@ run_pipeline() {
                 "duration_s=$stage_dur_s" \
                 "error=${LAST_STAGE_ERROR:-unknown}" \
                 "error_class=${LAST_STAGE_ERROR_CLASS:-unknown}"
+            # Stage profiler: record failure duration (no regression check)
+            if type profiler_analyze_stage >/dev/null 2>&1; then
+                profiler_analyze_stage "$id" "$stage_dur_s" "failure" 2>/dev/null || true
+            fi
             # Audit: stage failed
             if type audit_emit >/dev/null 2>&1; then
                 audit_emit "stage.complete" "stage=$id" "verdict=fail" \
