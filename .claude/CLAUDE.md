@@ -523,7 +523,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-code-review.sh` | 697 | Clean Code & Architecture Analysis |
 | `scripts/sw-connect.sh` | 624 | Sync local state to team dashboard |
 | `scripts/sw-context.sh` | 600 | Context Engine for Pipeline Stages |
-| `scripts/sw-cost.sh` | 1013 | Token Usage & Cost Intelligence |
+| `scripts/sw-cost.sh` | 1056 | Token Usage & Cost Intelligence |
 | `scripts/sw-daemon.sh` | 1416 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
 | `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
@@ -558,7 +558,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2642 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2654 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2240 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1053 | Intelligent Model Routing & Cost Optimization |
@@ -740,7 +740,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-pipeline-state-test.sh` | 309 | Unit tests for pipeline state |
 | `scripts/sw-linear-test.sh` | 300 | Validate Linear ↔ GitHub bidirectional sync |
 | `scripts/sw-logs-test.sh` | 281 | Validate agent pane log viewing, searching, |
-| `scripts/sw-loop-test.sh` | 816 | Validate continuous agent loop harness |
+| `scripts/sw-loop-test.sh` | 850 | Validate continuous agent loop harness |
 | `scripts/sw-memory-discovery-e2e-test.sh` | 411 | Memory & Discovery E2E Test |
 | `scripts/sw-memory-effectiveness-test.sh` | 495 | Unit tests |
 | `scripts/sw-memory-test.sh` | 871 | Unit tests for memory system & cost tracking |
@@ -752,7 +752,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-oversight-test.sh` | 164 | Quality oversight board tests |
 | `scripts/sw-patrol-meta-test.sh` | 449 | Validate self-improvement patrol |
 | `scripts/sw-pipeline-composer-test.sh` | 632 | Test Suite |
-| `scripts/sw-pipeline-test.sh` | 1959 | E2E validation invoking the REAL pipeline |
+| `scripts/sw-pipeline-test.sh` | 1961 | E2E validation invoking the REAL pipeline |
 | `scripts/sw-pipeline-vitals-test.sh` | 226 | Validate pipeline health scoring |
 | `scripts/sw-pm-test.sh` | 225 | Autonomous PM Agent test suite |
 | `scripts/sw-policy-e2e-test.sh` | 290 | Verify config/policy.json is honored |
