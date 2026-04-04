@@ -2,67 +2,68 @@
 goal: "Community Starter Kit Generator with Framework Detection and Best-Practice Templates
 
 ## Plan Summary
-The implementation plan has been written to `.claude/pipeline-artifacts/plan.md`.
+I'll provide the detailed implementation plan directly in my response:
 
-**Summary of the plan:**
+---
 
-**Approach:** New `shipwright starter-kit` command (alias `sk`) backed by `lib/starter-kit.sh` library — zero risk to existing `sw-prep.sh`.
+## **Community Starter Kit Generator — Implementation Plan**
 
-**3 new files, 2 modified:**
-- `scripts/lib/starter-kit.sh` — Framework-specific best practices, quality checks, pitfalls, and example issue generators for Node.js, Python, Go, Rust, Ruby (~450 lines)
-- `scripts/sw-starter-kit.sh` — CLI with `generate`, `issues`, `check`, `help` subcommands (~350 lines)
-- `scripts/sw-starter-kit-test.sh` — Test suite covering all 5 frameworks + edge cases (~400 lines)
-- `scripts/sw` — Add `starter-kit|sk` route (2 lines)
-- `package.json` — Register test in chain (1 line)
+### **Overview**
 
-**Key design decisions:**
-- Reuses existing `lib/project-detect.sh` for detection (already works for 8+ languages)
-- Uses `<!-- sw:starter-kit-start/end -->` markers for idempotent CLAUDE.md enhancement
-- Generates 3-5 example issue templates in `.github/ISSUE_TEMPLATE/` (universal + framework-specific)
-- Validates type/framework combinations to handle detection edge cases gracefully
-- Atomic file writes throughout; `--dry-run` flag for safe CI usage
+This plan extends `sw-prep.sh` with zero-touch framework detection and best-practice generation, reducing initial setup time from **10 minutes → 2 minutes** per project. The generator auto-creates CLAUDE.md starter templates, recommends pipeline configurations, and generates example GitHub issues.
+
+---
+
+## **Requirements Analysis & Design Rationale**
+
+### **Minimum Viable Change**
+
+- Add `--gen-starter-kit` flag to `shipwright prep` 
+- Generate three artifacts:
+  1. **CLAUDE-starter.md** — framework-aware best-practice configuration
+  2. **starter-issues.json** — 5 templated GitHub issues (dependency update, bug fix, feature, docs, tests)
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Community Starter Kit Generator with Framework Detection and Best-Practice Templates
+# Architecture Decision Record: Community Starter Kit Generator
 ## Context
 ## Decision
-### Component Diagram
-### Data Flow
-### Interface Contracts
-### Error Boundaries
-### Framework Dispatch Design
+### Architecture Overview
+### Component Decomposition
+### Why Monolithic (Not Separate Module)
 ## Alternatives Considered
-### 1. Modify `sw-prep.sh` directly
+### 1. **Separate `sw-starter-kit.sh` Module**
+### 2. **Interactive Wizard (`--interactive` flag)**
+### 3. **External API (Cloud Service)**
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains build-stage failures for JavaScript variable initialization (undefined properties, undeclared variables) with 100% and 66% fix effectiveness. Directly applicable to detecting and fixing common errors during generator build phase."
-    },
-    {
-      "file": "failures.json",
-      "relevance": 90,
-      "summary": "ENOENT failure pattern for missing npm dependencies with 95% fix effectiveness. Critical for build stage—generator likely needs dependency installation before tests/build."
-    },
-    {
-      "file": "success-patterns.json",
+      "file": "patterns.json",
       "relevance": 75,
-      "summary": "Feature work patterns from sethdford/shipwright showing 3-4 iteration counts, npm test strategy, standard template, and file change patterns for framework-related work. Patterns model for building starter kit generator feature."
+      "summary": "Node.js project detection with vitest, npm, commonjs conventions. Directly applicable to framework detection aspect of the starter kit generator."
+    },
+    {
+      "file": "failures.json",
+      "relevance": 70,
+      "summary": "Build stage failures for variable initialization and reference errors. Highly relevant patterns for catching common JavaScript/build errors in generated projects."
     },
     {
       "file": "patterns.json",
       "relevance": 70,
-      "summary": "Shipwright repo metadata: Node.js project with vitest test runner, npm package manager, commonjs imports. Provides exact build environment configuration and conventions for testing during build stage."
+      "summary": "Node.js project type detection from bootstrap. Core framework detection capability needed for the starter kit generator."
     },
     {
-      "file": "patterns.json",
+      "file": "success-patterns.json",
       "relevance": 65,
-      "summary": "Bootstrap detection shows nodejs project type. Confirms framework detection patterns are appropriate for Node.js environment and helps understand how detection should work."
+      "summary": "Successful build patterns using npm test and standard template across 3-4 iterations. Shows effective test strategy and build loop behavior for nodejs projects."
+    },
+    {
+      "file": "failures.json",
+      "relevance": 60,
+      "summary": "ENOENT/missing dependency errors with npm install fix. Relevant for ensuring starter kit projects have proper dependency installation in build stage."
     }
   ]
 }
@@ -75,36 +76,32 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Community Starter Kit Generator with Framework Detection and Best-Practice Templates
 
 ## Implementation Checklist
-- [ ] Task 1: Create `scripts/lib/starter-kit.sh` with framework best practices lookup functions (Node.js, Python, Go, Rust, Ruby) — Tasks 2-4 depend on this
-- [ ] Task 2: Add quality checks functions to `lib/starter-kit.sh` returning JSON per framework
-- [ ] Task 3: Add example issue generation functions to `lib/starter-kit.sh`
-- [ ] Task 4: Add pitfalls/gotchas functions per framework to `lib/starter-kit.sh`
-- [ ] Task 5: Create `scripts/sw-starter-kit.sh` CLI with `generate`, `issues`, `check`, `help` subcommands — depends on Tasks 1-4
-- [ ] Task 6: Implement `generate` subcommand — auto-detect → prep → enhance CLAUDE.md → quality checks → issues → report
-- [ ] Task 7: Implement `issues` subcommand — generate example issue templates only
-- [ ] Task 8: Implement `check` subcommand — audit existing starter kit setup
-- [ ] Task 9: Add `starter-kit|sk` route to `scripts/sw` CLI router
-- [ ] Task 10: Create `scripts/sw-starter-kit-test.sh` with tests for all 5 frameworks + edge cases
-- [ ] Task 11: Register test in `package.json` test chain
-- [ ] Task 12: Run full test suite to verify no regressions
-- [ ] `shipwright starter-kit generate` works end-to-end for Node.js, Python, Go, Rust, Ruby projects
-- [ ] CLAUDE.md is enhanced with framework-specific conventions, pitfalls, and quality guidance
-- [ ] 3-5 example issue templates generated per project in `.github/ISSUE_TEMPLATE/`
-- [ ] Quality checks JSON generated with framework-appropriate commands
-- [ ] `shipwright starter-kit check` reports setup completeness
-- [ ] All new tests pass (`scripts/sw-starter-kit-test.sh`)
-- [ ] Full test suite passes (`npm test`) — no regressions
-- [ ] CLI router updated — `shipwright starter-kit` and `shipwright sk` work
+- [ ] **Task 1**: Implement `prep_detect_repo_size()` function
+- [ ] **Task 2**: Implement `recommend_pipeline_template()` function
+- [ ] **Task 3**: Create framework pattern library (`scripts/templates/framework-patterns.json`)
+- [ ] **Task 4**: Implement `generate_claudemd()` function
+- [ ] **Task 5**: Create framework template files
+- [ ] **Task 6**: Implement `validate_starter_kit()` function
+- [ ] **Task 7**: Implement `generate_github_issues()` function
+- [ ] **Task 8**: Implement `generate_labels_config()` function
+- [ ] **Task 9**: Add `--gen-starter-kit` flag to sw-prep.sh CLI
+- [ ] **Task 10**: Implement summary output function
+- [ ] **Task 11**: Create `scripts/sw-prep-starter-kit-test.sh` unit test suite
+- [ ] **Task 12**: Integration test for 3 representative projects
+- [ ] **Task 13**: Register test in `package.json`
+- [ ] **Task 14**: Create `docs/starter-kit-guide.md`
+- [ ] **Task 15**: Update `.claude/CLAUDE.md` with new command docs
 
 ## Context
 - Pipeline: standard
 - Branch: feat/community-starter-kit-generator-with-fra-349
 - Issue: #349
-- Generated: 2026-04-03T18:34:18Z
+- Generated: 2026-04-04T01:18:48Z
 
 ## Skill Guidance (infrastructure issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **framework-detection-best-practices**: Implement robust file-based detection for Go, Python, Node, Rust, etc. with fallback strategies and confidence scoring; detection failures directly break the user experience.
+- **framework-detection-best-practices**: Framework detection is the reliability linchpin—poor detection cascades to broken generated configs, making this the highest-ROI focus area for both design and build.
+- **testing-strategy**: Detection logic with 5+ frameworks and mono-repo edge cases demands exhaustive test matrix (happy path per framework, conflicts, missing files, corrupted files).
 
 ## Framework Detection Best Practices
 
@@ -163,15 +160,63 @@ Framework detection is the foundation of zero-touch config generation. Poor dete
 - Ignoring nested projects: monorepos have multiple manifests at different depths
 - Assuming framework without validation: check that manifest actually parses
 - Overconfidence: if detection is ambiguous, say so
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 1
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-04-03T18:47:12Z
-last_iteration_at: 2026-04-03T18:47:12Z
+started_at: 2026-04-04T01:23:15Z
+last_iteration_at: 2026-04-04T01:23:15Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true

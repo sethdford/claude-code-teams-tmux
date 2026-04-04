@@ -4,27 +4,22 @@
 Pipeline: standard | Branch: feat/community-starter-kit-generator-with-fra-349
 
 ## Checklist
-- [ ] Task 1: Create `scripts/lib/starter-kit.sh` with framework best practices lookup functions (Node.js, Python, Go, Rust, Ruby) — Tasks 2-4 depend on this
-- [ ] Task 2: Add quality checks functions to `lib/starter-kit.sh` returning JSON per framework
-- [ ] Task 3: Add example issue generation functions to `lib/starter-kit.sh`
-- [ ] Task 4: Add pitfalls/gotchas functions per framework to `lib/starter-kit.sh`
-- [ ] Task 5: Create `scripts/sw-starter-kit.sh` CLI with `generate`, `issues`, `check`, `help` subcommands — depends on Tasks 1-4
-- [ ] Task 6: Implement `generate` subcommand — auto-detect → prep → enhance CLAUDE.md → quality checks → issues → report
-- [ ] Task 7: Implement `issues` subcommand — generate example issue templates only
-- [ ] Task 8: Implement `check` subcommand — audit existing starter kit setup
-- [ ] Task 9: Add `starter-kit|sk` route to `scripts/sw` CLI router
-- [ ] Task 10: Create `scripts/sw-starter-kit-test.sh` with tests for all 5 frameworks + edge cases
-- [ ] Task 11: Register test in `package.json` test chain
-- [ ] Task 12: Run full test suite to verify no regressions
-- [ ] `shipwright starter-kit generate` works end-to-end for Node.js, Python, Go, Rust, Ruby projects
-- [ ] CLAUDE.md is enhanced with framework-specific conventions, pitfalls, and quality guidance
-- [ ] 3-5 example issue templates generated per project in `.github/ISSUE_TEMPLATE/`
-- [ ] Quality checks JSON generated with framework-appropriate commands
-- [ ] `shipwright starter-kit check` reports setup completeness
-- [ ] All new tests pass (`scripts/sw-starter-kit-test.sh`)
-- [ ] Full test suite passes (`npm test`) — no regressions
-- [ ] CLI router updated — `shipwright starter-kit` and `shipwright sk` work
+- [ ] **Task 1**: Implement `prep_detect_repo_size()` function
+- [ ] **Task 2**: Implement `recommend_pipeline_template()` function
+- [ ] **Task 3**: Create framework pattern library (`scripts/templates/framework-patterns.json`)
+- [ ] **Task 4**: Implement `generate_claudemd()` function
+- [ ] **Task 5**: Create framework template files
+- [ ] **Task 6**: Implement `validate_starter_kit()` function
+- [ ] **Task 7**: Implement `generate_github_issues()` function
+- [ ] **Task 8**: Implement `generate_labels_config()` function
+- [ ] **Task 9**: Add `--gen-starter-kit` flag to sw-prep.sh CLI
+- [ ] **Task 10**: Implement summary output function
+- [ ] **Task 11**: Create `scripts/sw-prep-starter-kit-test.sh` unit test suite
+- [ ] **Task 12**: Integration test for 3 representative projects
+- [ ] **Task 13**: Register test in `package.json`
+- [ ] **Task 14**: Create `docs/starter-kit-guide.md`
+- [ ] **Task 15**: Update `.claude/CLAUDE.md` with new command docs
 
 ## Notes
-- Generated from pipeline plan at 2026-04-03T18:34:20Z
+- Generated from pipeline plan at 2026-04-04T01:18:48Z
 - Pipeline will update status as tasks complete

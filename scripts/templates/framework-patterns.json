@@ -1,0 +1,402 @@
+{
+  "frameworks": {
+    "nodejs": {
+      "name": "Node.js",
+      "language": "javascript",
+      "detection": {
+        "primary_markers": ["package.json"],
+        "manifest_parser": "json",
+        "confidence": 0.95
+      },
+      "sub_frameworks": {
+        "react": {
+          "name": "React",
+          "detection_patterns": ["\"react\""],
+          "typical_structure": ["src/components/", "src/pages/", "public/"],
+          "conventions": {
+            "naming": "PascalCase for components, camelCase for files",
+            "testing": "Jest + React Testing Library",
+            "styling": "CSS Modules or Tailwind",
+            "build": "Vite or Create React App"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Update React and dependencies to latest versions",
+            "Add TypeScript strict mode to improve type safety",
+            "Increase component test coverage",
+            "Document component API in README"
+          ]
+        },
+        "next.js": {
+          "name": "Next.js",
+          "detection_patterns": ["\"next\""],
+          "typical_structure": ["app/", "pages/", "public/", "lib/"],
+          "conventions": {
+            "naming": "PascalCase for React components, snake_case for utilities",
+            "testing": "Vitest or Jest",
+            "styling": "Tailwind or CSS Modules",
+            "build": "next build"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Upgrade Next.js to latest version",
+            "Migrate deprecated API patterns to new App Router",
+            "Add E2E tests with Playwright",
+            "Optimize Core Web Vitals metrics"
+          ]
+        },
+        "express": {
+          "name": "Express.js",
+          "detection_patterns": ["\"express\""],
+          "typical_structure": ["src/routes/", "src/middleware/", "src/controllers/"],
+          "conventions": {
+            "naming": "camelCase for routes and handlers",
+            "testing": "Mocha or Jest with supertest",
+            "error_handling": "Express error middleware",
+            "build": "Node.js with npm scripts"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add comprehensive API integration tests",
+            "Document REST API endpoints with OpenAPI/Swagger",
+            "Implement request validation middleware",
+            "Add structured logging (winston or pino)"
+          ]
+        },
+        "fastify": {
+          "name": "Fastify",
+          "detection_patterns": ["\"fastify\""],
+          "typical_structure": ["src/routes/", "src/plugins/", "src/schemas/"],
+          "conventions": {
+            "naming": "camelCase for routes",
+            "testing": "Jest with fast-json-stringify",
+            "validation": "JSON Schema",
+            "build": "Node.js with npm scripts"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Implement comprehensive test suite with Tap",
+            "Add request validation with Fastify schemas",
+            "Document plugin architecture",
+            "Profile performance metrics"
+          ]
+        },
+        "nestjs": {
+          "name": "NestJS",
+          "detection_patterns": ["\"@nestjs/core\""],
+          "typical_structure": ["src/modules/", "src/controllers/", "src/services/"],
+          "conventions": {
+            "naming": "PascalCase for classes, camelCase for methods",
+            "testing": "Jest",
+            "architecture": "Module-based with dependency injection",
+            "build": "npm run build"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add comprehensive unit test coverage for services",
+            "Document module dependencies and architecture",
+            "Implement logging middleware across all modules",
+            "Add health checks and readiness probes for deployment"
+          ]
+        }
+      },
+      "repo_size_thresholds": {
+        "small": {"files": 50, "description": "< 50 source files"},
+        "medium": {"files": 500, "description": "50-500 source files"},
+        "large": {"files": 5000, "description": "> 500 source files"}
+      },
+      "default_labels": [
+        "kind/feature",
+        "kind/bug",
+        "priority/high",
+        "test-needed",
+        "docs-needed"
+      ],
+      "framework_specific_labels": [
+        "typescript",
+        "frontend",
+        "api",
+        "ux-issue",
+        "performance"
+      ]
+    },
+    "go": {
+      "name": "Go",
+      "language": "go",
+      "detection": {
+        "primary_markers": ["go.mod"],
+        "manifest_parser": "text",
+        "confidence": 0.99
+      },
+      "sub_frameworks": {
+        "gin": {
+          "name": "Gin Web Framework",
+          "detection_patterns": ["\"github.com/gin-gonic/gin\""],
+          "typical_structure": ["cmd/", "internal/handlers/", "internal/models/"],
+          "conventions": {
+            "naming": "PascalCase for exported, camelCase for unexported",
+            "testing": "Go testing with testify",
+            "error_handling": "Explicit error returns",
+            "build": "go build"
+          },
+          "pipeline_template": "fast",
+          "default_issues": [
+            "Add integration tests for all HTTP handlers",
+            "Implement middleware for request logging and validation",
+            "Document API endpoints with OpenAPI spec",
+            "Add graceful shutdown handling"
+          ]
+        },
+        "grpc": {
+          "name": "gRPC",
+          "detection_patterns": ["\"google.golang.org/grpc\""],
+          "typical_structure": ["api/proto/", "internal/", "cmd/"],
+          "conventions": {
+            "naming": "snake_case for proto files, PascalCase for messages",
+            "testing": "gRPC client mocks",
+            "build": "protoc generation + go build",
+            "error_handling": "gRPC status codes"
+          },
+          "pipeline_template": "fast",
+          "default_issues": [
+            "Generate and test all proto message serialization",
+            "Add service integration tests",
+            "Document protobuf message schemas",
+            "Implement reflection and health checks"
+          ]
+        }
+      },
+      "repo_size_thresholds": {
+        "small": {"files": 30, "description": "< 30 source files"},
+        "medium": {"files": 200, "description": "30-200 source files"},
+        "large": {"files": 2000, "description": "> 200 source files"}
+      },
+      "default_labels": [
+        "kind/feature",
+        "kind/bug",
+        "priority/high",
+        "test-needed",
+        "docs-needed"
+      ],
+      "framework_specific_labels": [
+        "go-best-practices",
+        "performance",
+        "concurrency",
+        "error-handling",
+        "api"
+      ]
+    },
+    "python": {
+      "name": "Python",
+      "language": "python",
+      "detection": {
+        "primary_markers": ["pyproject.toml", "setup.py", "requirements.txt"],
+        "manifest_parser": "text",
+        "confidence": 0.90
+      },
+      "sub_frameworks": {
+        "fastapi": {
+          "name": "FastAPI",
+          "detection_patterns": ["fastapi"],
+          "typical_structure": ["app/", "routers/", "models/", "schemas/"],
+          "conventions": {
+            "naming": "snake_case for modules and functions, PascalCase for classes",
+            "testing": "pytest with TestClient",
+            "validation": "Pydantic models",
+            "async": "async/await throughout"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add comprehensive test coverage with pytest",
+            "Document API with OpenAPI/Swagger UI",
+            "Add request validation and error handling",
+            "Implement background tasks and async processing"
+          ]
+        },
+        "django": {
+          "name": "Django",
+          "detection_patterns": ["django"],
+          "typical_structure": ["myapp/", "templates/", "static/", "manage.py"],
+          "conventions": {
+            "naming": "snake_case throughout",
+            "testing": "Django test framework",
+            "database": "ORM with models.py",
+            "build": "python manage.py"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add test coverage for views and models",
+            "Document models and API endpoints",
+            "Implement proper error handling and logging",
+            "Add database migration tests"
+          ]
+        },
+        "flask": {
+          "name": "Flask",
+          "detection_patterns": ["flask"],
+          "typical_structure": ["app/", "templates/", "static/", "tests/"],
+          "conventions": {
+            "naming": "snake_case for functions and routes",
+            "testing": "pytest with Flask test client",
+            "templates": "Jinja2",
+            "build": "pip install + flask run"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add pytest test suite with good coverage",
+            "Implement structured error handling",
+            "Document API endpoints",
+            "Add request validation with marshmallow or pydantic"
+          ]
+        }
+      },
+      "repo_size_thresholds": {
+        "small": {"files": 40, "description": "< 40 source files"},
+        "medium": {"files": 400, "description": "40-400 source files"},
+        "large": {"files": 4000, "description": "> 400 source files"}
+      },
+      "default_labels": [
+        "kind/feature",
+        "kind/bug",
+        "priority/high",
+        "test-needed",
+        "docs-needed"
+      ],
+      "framework_specific_labels": [
+        "type-hints",
+        "async",
+        "database",
+        "performance",
+        "security"
+      ]
+    },
+    "rust": {
+      "name": "Rust",
+      "language": "rust",
+      "detection": {
+        "primary_markers": ["Cargo.toml"],
+        "manifest_parser": "toml",
+        "confidence": 0.98
+      },
+      "sub_frameworks": {
+        "axum": {
+          "name": "Axum Web Framework",
+          "detection_patterns": ["\"axum\""],
+          "typical_structure": ["src/handlers/", "src/models/", "src/routes/"],
+          "conventions": {
+            "naming": "snake_case for modules, PascalCase for types",
+            "testing": "cargo test",
+            "error_handling": "Custom error types",
+            "async": "tokio runtime"
+          },
+          "pipeline_template": "standard",
+          "default_issues": [
+            "Add comprehensive tests for all handlers",
+            "Implement error handling with proper status codes",
+            "Add OpenAPI/Swagger documentation",
+            "Optimize compile times with cargo features"
+          ]
+        },
+        "tokio": {
+          "name": "Tokio Async Runtime",
+          "detection_patterns": ["\"tokio\""],
+          "typical_structure": ["src/", "benches/", "examples/"],
+          "conventions": {
+            "naming": "snake_case for modules",
+            "testing": "#[tokio::test]",
+            "concurrency": "tokio tasks and channels",
+            "build": "cargo build --release"
+          },
+          "pipeline_template": "fast",
+          "default_issues": [
+            "Add benchmarks for async performance",
+            "Document concurrency patterns and limits",
+            "Add error recovery and timeout handling",
+            "Profile memory usage and CPU under load"
+          ]
+        }
+      },
+      "repo_size_thresholds": {
+        "small": {"files": 20, "description": "< 20 source files"},
+        "medium": {"files": 150, "description": "20-150 source files"},
+        "large": {"files": 1500, "description": "> 150 source files"}
+      },
+      "default_labels": [
+        "kind/feature",
+        "kind/bug",
+        "priority/high",
+        "test-needed",
+        "docs-needed"
+      ],
+      "framework_specific_labels": [
+        "unsafe-code",
+        "performance",
+        "concurrency",
+        "error-handling",
+        "clippy-warning"
+      ]
+    }
+  },
+  "pipeline_recommendations": {
+    "small_repo": {
+      "template": "fast",
+      "reason": "Fewer files = faster feedback cycles"
+    },
+    "medium_repo": {
+      "template": "standard",
+      "reason": "Balanced depth and speed"
+    },
+    "large_repo": {
+      "template": "full",
+      "reason": "Complex repos benefit from all review stages"
+    },
+    "has_docker": {
+      "template_boost": "full",
+      "reason": "Deployment capability requires full testing and validation"
+    },
+    "has_ci_cd": {
+      "skip_stages": [],
+      "reason": "CI infrastructure suggests mature project"
+    }
+  },
+  "issue_templates": {
+    "dependency_update": {
+      "title_pattern": "Upgrade {{framework}} to latest version",
+      "body_pattern": "## Summary\nUpdate {{framework}} and related dependencies to the latest stable version.\n\n## Details\n- Current version: Check package.json or lock file\n- Latest version: [check official docs]\n- Breaking changes: Review migration guide\n\n## Testing\n- [ ] Run full test suite\n- [ ] Test compatibility with dependent libraries\n- [ ] Verify type definitions (if applicable)"
+    },
+    "bug_fix": {
+      "title_pattern": "Fix: {{bug_description}}",
+      "body_pattern": "## Problem\n[Describe the bug]\n\n## Steps to Reproduce\n1. [Step 1]\n2. [Step 2]\n3. [Step 3]\n\n## Expected Behavior\n[What should happen]\n\n## Actual Behavior\n[What actually happens]\n\n## Environment\n- {{framework}} version: [version]\n- {{language}} version: [version]\n- OS: [OS]\n\n## Solution\n[Optional: proposed fix]"
+    },
+    "feature_request": {
+      "title_pattern": "Feature: {{feature_name}}",
+      "body_pattern": "## Summary\n[Brief description of the feature]\n\n## Motivation\n[Why is this feature needed?]\n\n## Proposed Solution\n[How should this be implemented?]\n\n## Alternatives Considered\n[Any alternative approaches?]\n\n## Implementation Details\n[Any technical requirements or constraints]"
+    },
+    "documentation": {
+      "title_pattern": "Docs: Improve {{section}} documentation",
+      "body_pattern": "## Documentation Gap\n[Describe what's missing or unclear]\n\n## Suggested Changes\n- [ ] Add examples for common use cases\n- [ ] Clarify API documentation\n- [ ] Add troubleshooting section\n- [ ] Update README with setup instructions\n\n## Resources\n[Links to external docs, issues, or discussions]"
+    },
+    "testing": {
+      "title_pattern": "Test: Improve {{module}} test coverage",
+      "body_pattern": "## Current Coverage\n[Current test coverage percentage]\n\n## Coverage Goals\n- [ ] Unit tests for all exported functions\n- [ ] Integration tests for main features\n- [ ] Edge case testing\n- [ ] Performance benchmarks (if applicable)\n\n## Areas to Focus\n[List specific areas needing tests]\n\n## Test Framework\nUsing: {{test_framework}}"
+    }
+  },
+  "label_categories": {
+    "kind": {
+      "description": "Type of change",
+      "values": ["feature", "bug", "docs", "refactor", "test", "chore", "performance"]
+    },
+    "priority": {
+      "description": "Issue importance",
+      "values": ["critical", "high", "medium", "low"]
+    },
+    "effort": {
+      "description": "Estimated effort",
+      "values": ["effort/1pt", "effort/2pt", "effort/3pt", "effort/5pt", "effort/8pt"]
+    },
+    "status": {
+      "description": "Work status",
+      "values": ["triage-needed", "in-progress", "blocked", "review-ready", "needs-rework"]
+    }
+  }
+}

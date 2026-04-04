@@ -30,18 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "docs-writer",
-          "reviewer"
+          "docs-writer"
         ],
         "confidence": 0.85,
-        "reasoning": "Implementation of framework detection and template generation is core builder work; tester validates across frameworks; docs-writer creates starter guides and examples; reviewer ensures best practices are upheld",
+        "reasoning": "Community starter kit generator requires upfront architecture design for framework detection, template system, and scalability; builder implements core logic; tester validates across frameworks; docs-writer creates generator guides.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775241548,
+      "timestamp": 1775265795,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -794,144 +794,144 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Contains actual project framework detection (Node, vitest, conventions, source_dir, import_style) - directly applicable to planning framework-detection logic and best-practice template structure"
+            "relevance": 95,
+            "summary": "Captures project structure, framework detection metadata (source_dir, test_pattern, import_style), and language conventions—directly applicable to designing framework detection logic and best-practice templates"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Shows successful feature planning metrics (complexity 60-65, standard template, 3 iterations, test strategies) - informs approach for planning starter kit generator itself and expected effort/complexity"
-          },
-          {
-            "file": "patterns.json",
             "relevance": 75,
-            "summary": "Demonstrates framework auto-detection mechanism (project_type: nodejs) - relevant to understanding how framework detection should work in starter kit generator"
+            "summary": "Shows successful feature delivery patterns from this repo (3-4 iterations, standard template, specific file patterns touched), provides precedent for effort estimation and implementation approach"
           },
           {
             "file": "failures.json",
+            "relevance": 60,
+            "summary": "Test and build failures (sed variable expansion, test output issues) document edge cases and gotchas to avoid when building generators and templates"
+          },
+          {
+            "file": "patterns.json",
             "relevance": 50,
-            "summary": "JavaScript build/test failures (undefined variables, missing declarations) - identifies pitfalls to prevent in best-practice templates and generated code"
+            "summary": "Nodejs project type detection (third entry) validates basic framework/project detection already in use; shows existing detection patterns to build upon"
           },
           {
             "file": "architecture.json",
             "relevance": 45,
-            "summary": "Contains architecture rules - provides precedent for enforcing best practices through templated rules and conventions"
+            "summary": "Contains codebase architecture rules that new generator feature must respect; informs constraints on template structure and code organization"
           }
         ]
       },
-      "timestamp": 1775263515,
+      "timestamp": 1775265402,
       "ttl": 1800
     },
     "1226845bc3df460c9d01ad2893184a69": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 95,
-            "summary": "Contains actual framework detection patterns with project conventions (source_dir, test_pattern, import_style), project type identification, and language detection—directly applicable to framework detection and template generation validation"
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains explicit template validation failure patterns including 'Invalid template errors correctly' and sed command variable expansion issues. Directly addresses template-related test failures relevant to Best-Practice Templates validation."
           },
           {
-            "file": "failures.json (first entry)",
-            "relevance": 80,
-            "summary": "Documents test failures related to template detection, sed substitution issues, and framework-related test output—provides insights into common validation failure patterns for template systems"
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Captures project detection patterns including framework detection (currently empty), test_pattern, and source_dir conventions. Directly relevant to Community Starter Kit Generator's Framework Detection component."
           },
           {
-            "file": "success-patterns.json (first entry)",
-            "relevance": 70,
-            "summary": "Shows successful project delivery patterns with iterative approaches, test strategies, and file change patterns—demonstrates what iteration counts and test strategies work for complex feature development"
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Documents successful approaches to complex features (bug fixes, authentication) with iteration counts, file patterns, and test strategies. Provides historical context for understanding what plan approaches have succeeded in this codebase."
           }
         ]
       },
-      "timestamp": 1775241273,
+      "timestamp": 1775265543,
       "ttl": 1800
     },
     "94512db150a9d4b9caf448f456ea42d2": {
       "result": {
         "results": [
           {
+            "file": "patterns.json (sethdford/shipwright with project config)",
+            "relevance": 70,
+            "summary": "Contains framework detection patterns (vitest, npm, commonjs), source structure conventions, and test patterns — directly applicable to building a framework detection engine and generating best-practice templates"
+          },
+          {
             "file": "architecture.json",
-            "relevance": 90,
-            "summary": "Contains architecture rules directly applicable to designing architecture patterns and enforcement for the starter kit generator"
-          },
-          {
-            "file": "patterns.json (first entry)",
-            "relevance": 82,
-            "summary": "Project type detection with framework conventions (source_dir, test_pattern, import_style) — core patterns needed for framework detection system design"
-          },
-          {
-            "file": "patterns.json (nodejs detection)",
-            "relevance": 68,
-            "summary": "Project type detection (nodejs) showing framework inference approach relevant to starter kit detection stage"
-          },
-          {
-            "file": "failures.json (variable initialization errors)",
-            "relevance": 62,
-            "summary": "JavaScript best practice violations (undefined variables, missing initialization) — patterns to include in starter kit best-practice templates"
-          },
-          {
-            "file": "success-patterns.json (first entry)",
             "relevance": 55,
-            "summary": "Successful implementation approach with file patterns and test strategy — demonstrates effective project organization patterns suitable for templates"
+            "summary": "Contains architecture rules that could serve as templates or patterns for enforcing best practices in generated starter kits"
+          },
+          {
+            "file": "patterns.json (nodejs project_type detection)",
+            "relevance": 50,
+            "summary": "Demonstrates project type detection mechanism that could be extended for multi-framework detection in the Community Starter Kit Generator"
+          },
+          {
+            "file": "failures.json (variable initialization pattern)",
+            "relevance": 35,
+            "summary": "Common JavaScript initialization pitfalls with high fix effectiveness — represents best-practice patterns to prevent in generated scaffolding"
+          },
+          {
+            "file": "failures.json (ENOENT/dependency installation)",
+            "relevance": 32,
+            "summary": "Common setup issues relevant to starter kit scaffolding — informs best practices for dependency management and initialization sequences"
           }
         ]
       },
-      "timestamp": 1775241308,
+      "timestamp": 1775265587,
       "ttl": 1800
     },
     "7aaea8a8404f5c08930800854619e45a": {
       "result": {
         "results": [
           {
-            "file": "failures.json (fifth)",
-            "relevance": 25,
-            "summary": "Shows build-stage failures with variable initialization anti-patterns (uninitialized vars, missing declarations, undefined references) that would be relevant to avoid when generating starter kit code templates"
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains critical anti-patterns for starter kit templates: uninitialized variables (5 occurrences, 100% fix effectiveness), missing variable declarations (3 occurrences, 66% effectiveness). These are fundamental design flaws that best-practice templates must prevent."
           },
           {
-            "file": "success-patterns.json (first)",
-            "relevance": 22,
-            "summary": "Demonstrates successful patterns for feature/bug work with standard template and npm test strategy; provides reference for what works in similar complexity contexts"
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Shows detected project patterns (node/javascript/vitest/npm/commonjs). Directly relevant to framework detection capabilities and understanding what project configurations to support/template."
           },
           {
-            "file": "failures.json (second)",
-            "relevance": 20,
-            "summary": "Documents specific test failures and sed/variable expansion issues; anti-patterns around script variable handling and command generation that could inform best-practice templates"
+            "file": "failures.json",
+            "relevance": 78,
+            "summary": "ENOENT missing dependency installation pattern. Directly relevant anti-pattern for starter kit templates — templates should ensure all dependencies are declared and installable, critical for best-practice templates."
           }
         ]
       },
-      "timestamp": 1775241325,
+      "timestamp": 1775265601,
       "ttl": 1800
     },
     "e9a38d8610d6448bad92a4a0d2edf5ae": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains build-stage failures for JavaScript variable initialization (undefined properties, undeclared variables) with 100% and 66% fix effectiveness. Directly applicable to detecting and fixing common errors during generator build phase."
-          },
-          {
-            "file": "failures.json",
-            "relevance": 90,
-            "summary": "ENOENT failure pattern for missing npm dependencies with 95% fix effectiveness. Critical for build stage—generator likely needs dependency installation before tests/build."
-          },
-          {
-            "file": "success-patterns.json",
+            "file": "patterns.json",
             "relevance": 75,
-            "summary": "Feature work patterns from sethdford/shipwright showing 3-4 iteration counts, npm test strategy, standard template, and file change patterns for framework-related work. Patterns model for building starter kit generator feature."
+            "summary": "Node.js project detection with vitest, npm, commonjs conventions. Directly applicable to framework detection aspect of the starter kit generator."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Build stage failures for variable initialization and reference errors. Highly relevant patterns for catching common JavaScript/build errors in generated projects."
           },
           {
             "file": "patterns.json",
             "relevance": 70,
-            "summary": "Shipwright repo metadata: Node.js project with vitest test runner, npm package manager, commonjs imports. Provides exact build environment configuration and conventions for testing during build stage."
+            "summary": "Node.js project type detection from bootstrap. Core framework detection capability needed for the starter kit generator."
           },
           {
-            "file": "patterns.json",
+            "file": "success-patterns.json",
             "relevance": 65,
-            "summary": "Bootstrap detection shows nodejs project type. Confirms framework detection patterns are appropriate for Node.js environment and helps understand how detection should work."
+            "summary": "Successful build patterns using npm test and standard template across 3-4 iterations. Shows effective test strategy and build loop behavior for nodejs projects."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "ENOENT/missing dependency errors with npm install fix. Relevant for ensuring starter kit projects have proper dependency installation in build stage."
           }
         ]
       },
-      "timestamp": 1775241529,
+      "timestamp": 1775265778,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -940,38 +940,38 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Project structure, test runner (vitest), package manager (npm), and build conventions directly needed for build stage execution"
+            "summary": "Contains critical project configuration (vitest test runner, npm package manager, src/ source dir, commonjs imports). Essential for build stage to know how to test and compile."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 80,
-            "summary": "Two past successful builds with 3 iterations each using npm test strategy and standard template — provides proven approach and iteration patterns"
+            "relevance": 88,
+            "summary": "Shows successful build/test patterns from previous iterations with test strategy (npm test), iteration counts, and file change patterns. Directly informs build approach and expected complexity."
           },
           {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Test stage failures including sed variable expansion and test output issues — past problems to avoid during this build's test execution"
+            "relevance": 82,
+            "summary": "Captures test stage failures and root causes (sed expansion, dry-run detection issues). Build stage benefits from understanding what broke before to avoid regressions."
           },
           {
             "file": "metrics.json",
-            "relevance": 10,
-            "summary": "Empty baselines object — no historical performance metrics available to inform build decisions"
+            "relevance": 5,
+            "summary": "Empty baselines object provides no actionable data for build stage context."
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array — no prior architectural or approach decisions captured to reference"
+            "relevance": 3,
+            "summary": "Empty decisions array provides no architectural or strategic guidance for build decisions."
           }
         ]
       },
-      "timestamp": 1775241539,
+      "timestamp": 1775265787,
       "ttl": 1800
     },
     "45297a61707d341bbcfa1b7ef01c99f3": {
       "result": {
-        "estimated_iterations": 5
+        "estimated_iterations": 7
       },
-      "timestamp": 1775263407,
+      "timestamp": 1775265344,
       "ttl": 1800
     },
     "b2a2148d76290302dfef1a6e6a43c17a": {

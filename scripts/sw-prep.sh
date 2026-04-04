@@ -98,12 +98,13 @@ show_help() {
     echo -e "  ${CYAN}shipwright prep${RESET} [options]"
     echo ""
     echo -e "${BOLD}OPTIONS${RESET}"
-    echo -e "  ${CYAN}--force${RESET}        Overwrite existing files"
-    echo -e "  ${CYAN}--check${RESET}        Audit existing prep (dry run)"
-    echo -e "  ${CYAN}--update${RESET}       Refresh auto-generated sections only"
-    echo -e "  ${CYAN}--interactive${RESET}  Interactive quality profile dialogue"
-    echo -e "  ${CYAN}--with-claude${RESET}  Deep analysis using Claude Code (slower, richer)"
-    echo -e "  ${CYAN}--help, -h${RESET}     Show this help message"
+    echo -e "  ${CYAN}--force${RESET}            Overwrite existing files"
+    echo -e "  ${CYAN}--check${RESET}            Audit existing prep (dry run)"
+    echo -e "  ${CYAN}--update${RESET}           Refresh auto-generated sections only"
+    echo -e "  ${CYAN}--interactive${RESET}      Interactive quality profile dialogue"
+    echo -e "  ${CYAN}--with-claude${RESET}      Deep analysis using Claude Code (slower, richer)"
+    echo -e "  ${CYAN}--gen-starter-kit${RESET}  Generate community starter kit (CLAUDE.md, issues, labels)"
+    echo -e "  ${CYAN}--help, -h${RESET}        Show this help message"
     echo ""
     echo -e "${BOLD}EXAMPLES${RESET}"
     echo -e "  ${DIM}shipwright prep${RESET}                  # Full analysis + generation"
@@ -127,14 +128,17 @@ show_help() {
 
 # ─── CLI Argument Parsing ───────────────────────────────────────────────────
 
+GEN_STARTER_KIT=false
+
 for arg in "$@"; do
     case "$arg" in
-        --force)       FORCE=true ;;
-        --check)       CHECK_ONLY=true ;;
-        --update)      UPDATE_MODE=true ;;
-        --interactive) INTERACTIVE=true ;;
-        --with-claude) WITH_CLAUDE=true ;;
-        --help|-h)     show_help; exit 0 ;;
+        --force)              FORCE=true ;;
+        --check)              CHECK_ONLY=true ;;
+        --update)             UPDATE_MODE=true ;;
+        --interactive)        INTERACTIVE=true ;;
+        --with-claude)        WITH_CLAUDE=true ;;
+        --gen-starter-kit)    GEN_STARTER_KIT=true ;;
+        --help|-h)            show_help; exit 0 ;;
         *)
             error "Unknown option: $arg"
             echo ""
@@ -583,6 +587,102 @@ prep_extract_patterns() {
     fi
 
     success "Patterns: ${NAMING_CONVENTION} naming${IMPORT_STYLE:+, ${IMPORT_STYLE}}${ROUTE_PATTERNS:+, ${ROUTE_PATTERNS}}"
+}
+
+# ─── prep_detect_repo_size ──────────────────────────────────────────────────
+# Classify repository as small/medium/large based on file counts
+prep_detect_repo_size() {
+    local root="$PROJECT_ROOT"
+    local repo_size="unknown"
+
+    # Count source files (excluding vendor/node_modules)
+    local src_count=0
+    src_count=$(find "$root" -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
+        -o -name "*.py" -o -name "*.go" -o -name "*.rs" -o -name "*.rb" -o -name "*.java" \) \
+        -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" \
+        -not -path "*/target/*" 2>/dev/null | wc -l | tr -d ' ')
+
+    # Classify based on file count
+    if [[ "$src_count" -lt 50 ]]; then
+        repo_size="small"
+    elif [[ "$src_count" -lt 500 ]]; then
+        repo_size="medium"
+    else
+        repo_size="large"
+    fi
+
+    echo "$repo_size"
+}
+
+# ─── recommend_pipeline_template ────────────────────────────────────────────
+# Recommend pipeline template based on framework and repo characteristics
+recommend_pipeline_template() {
+    local lang="${1:-unknown}"
+    local framework="${2:-unknown}"
+    local repo_size="${3:-medium}"
+    local has_docker="${4:-false}"
+
+    local template="standard"
+
+    # Size-based recommendation
+    case "$repo_size" in
+        small)  template="fast" ;;
+        medium) template="standard" ;;
+        large)  template="full" ;;
+    esac
+
+    # Docker/deployment boost recommendation to 'full'
+    if [[ "$has_docker" == "true" ]]; then
+        template="full"
+    fi
+
+    # Language-specific tuning
+    case "$lang" in
+        go|rust)
+            # Compiled languages with fast feedback
+            [[ "$repo_size" == "small" ]] && template="fast" || template="standard"
+            ;;
+        python)
+            # Interpreted languages need more test stages
+            [[ "$repo_size" == "small" ]] && template="fast" || template="standard"
+            ;;
+    esac
+
+    echo "$template"
+}
+
+# ─── load_framework_patterns ────────────────────────────────────────────────
+# Load framework patterns from JSON file
+load_framework_patterns() {
+    local patterns_file="$SCRIPT_DIR/templates/framework-patterns.json"
+    if [[ ! -f "$patterns_file" ]]; then
+        error "Framework patterns file not found: $patterns_file"
+        return 1
+    fi
+    echo "$patterns_file"
+}
+
+# ─── prep_generate_starter_kit ──────────────────────────────────────────────
+# Main starter kit generator (placeholder for integration)
+prep_generate_starter_kit() {
+    if ! $GEN_STARTER_KIT; then
+        return 0
+    fi
+
+    info "Generating community starter kit..."
+
+    local repo_size
+    repo_size=$(prep_detect_repo_size)
+
+    local recommended_template
+    recommended_template=$(recommend_pipeline_template "$LANG_DETECTED" "$FRAMEWORK" "$repo_size" "$HAS_DOCKER")
+
+    info "Detected: $LANG_DETECTED${FRAMEWORK:+ / $FRAMEWORK} ($repo_size repo) → $recommended_template template"
+
+    # TODO: Generate CLAUDE-starter.md
+    # TODO: Generate starter-issues.json
+    # TODO: Generate starter-labels.json
+    # TODO: Validate artifacts
 }
 
 # ─── Intelligence Check ──────────────────────────────────────────────────
@@ -1813,6 +1913,9 @@ main() {
     prep_generate_standards
     prep_generate_dod
     prep_generate_issue_templates
+
+    # Community starter kit (optional)
+    prep_generate_starter_kit
 
     # Quality profile (auto or interactive)
     generate_quality_profile
