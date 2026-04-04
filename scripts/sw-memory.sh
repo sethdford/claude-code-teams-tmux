@@ -1115,7 +1115,7 @@ memory_inject_context() {
             echo ""
             echo "## Success Patterns for Similar Issues"
             if type success_pattern_inject >/dev/null 2>&1; then
-                local sp_goal="${CURRENT_GOAL:-}"
+                local sp_goal="${CURRENT_GOAL:-${SW_LOOP_GOAL:-${GOAL:-}}}"
                 local sp_type="${ISSUE_TYPE:-feature}"
                 local sp_complexity="${ISSUE_COMPLEXITY:-50}"
                 local sp_injection

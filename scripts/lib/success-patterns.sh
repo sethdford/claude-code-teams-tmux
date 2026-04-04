@@ -513,5 +513,4 @@ success_pattern_record_outcome() {
     ) 200>"${patterns_file}.lock"
 }
 
-# Module loaded successfully
-success "Success patterns module loaded"
+# Module loaded successfully — no stdout/stderr output from library files
