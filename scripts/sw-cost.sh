@@ -613,6 +613,49 @@ cost_dashboard() {
 
     if [[ "$entry_count" -eq 0 ]]; then
         warn "No cost entries in the last ${period_days} day(s)."
+        # Still show context efficiency data if available
+        local events_file="${HOME}/.shipwright/events.jsonl"
+        if [[ -f "$events_file" ]]; then
+            local ctx_events
+            ctx_events=$(grep '"type":"loop.context_efficiency"' "$events_file" 2>/dev/null | tail -200 || true)
+            local ctx_count
+            ctx_count=$(echo "$ctx_events" | grep -c '"loop.context_efficiency"' 2>/dev/null || echo "0")
+            ctx_count="${ctx_count:-0}"
+            if [[ "$ctx_count" -gt 0 ]]; then
+                local avg_utilization avg_trim_ratio total_raw total_trimmed trim_count
+                eval "$(echo "$ctx_events" | awk -F'"' '
+                    /"loop.context_efficiency"/ {
+                        for (i=1; i<=NF; i++) {
+                            if ($i == "budget_utilization") util = $(i+2)
+                            if ($i == "trim_ratio") ratio = $(i+2)
+                            if ($i == "raw_prompt_chars") raw = $(i+2)
+                            if ($i == "trimmed_prompt_chars") trimmed = $(i+2)
+                        }
+                        total_util += util; total_ratio += ratio
+                        total_raw += raw; total_trimmed += trimmed
+                        if (ratio + 0 > 0) trim_events++
+                        n++
+                    }
+                    END {
+                        if (n > 0) {
+                            printf "avg_utilization=%.1f\n", total_util / n
+                            printf "avg_trim_ratio=%.1f\n", total_ratio / n
+                        } else {
+                            printf "avg_utilization=0\navg_trim_ratio=0\n"
+                        }
+                        printf "total_raw=%d\ntotal_trimmed=%d\ntrim_count=%d\n", total_raw, total_trimmed, (trim_events+0)
+                    }
+                ')"
+                local total_discarded=$(( total_raw - total_trimmed ))
+                echo -e "${BOLD}  CONTEXT EFFICIENCY${RESET}"
+                echo -e "    Avg budget used     ${avg_utilization}%"
+                echo -e "    Avg trim ratio      ${avg_trim_ratio}%"
+                echo -e "    Chars generated     $(printf "%'d" "$total_raw")"
+                echo -e "    Chars discarded     $(printf "%'d" "$total_discarded")"
+                echo -e "    Trim events         ${trim_count} / ${ctx_count} iterations"
+                echo ""
+            fi
+        fi
         return 0
     fi
 
