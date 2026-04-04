@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
       "seen_count": 5,
-      "last_seen": "2026-04-04T18:47:20Z",
+      "last_seen": "2026-04-04T19:05:42Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -17,7 +17,7 @@
       "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being passed as the sed script argument, causing sed to treat the literal string as a file path",
       "fix": "ensure TEST_TEMP_DIR is exported or properly quoted so it expands inside the sed expression, or use a different substitution approach",
       "seen_count": 5,
-      "last_seen": "2026-04-04T18:52:53Z",
+      "last_seen": "2026-04-04T19:14:39Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -25,21 +25,12 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sed command references $TEST_TEMP_DIR variable that wasn't expanded before being passed as a sed script argument",
-      "fix": "ensure TEST_TEMP_DIR is exported/available when sed is called, or use double-quotes around the sed expression to allow variable expansion",
+      "root_cause": "sed command references a literal string '$TEST_TEMP_DIR' as a filename instead of using it as a variable in a substitution expression",
+      "fix": "Fix the sed invocation to properly escape or quote the substitution pattern, e.g. use sed \"s|$TEST_TEMP_DIR|/tmp/replacement|g\" file.txt instead of passing the pattern as a filename argument",
       "seen_count": 1,
       "last_seen": "2026-03-29T06:09:02Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Uses set -euo pipefail",
-      "root_cause": "sw-cost-test.sh tests for CONTEXT EFFICIENCY dashboard rendering fail because no cost entries exist in the test environment (no loop.context_efficiency events seeded)",
-      "fix": "Seed mock loop.context_efficiency events in the test setup before running the dashboard rendering assertions",
-      "seen_count": 1,
-      "last_seen": "2026-04-04T18:57:36Z",
       "category": "test_failure"
     }
   ]
