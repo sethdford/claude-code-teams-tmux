@@ -367,6 +367,40 @@ else
 fi
 rm -rf "$tmpdir2"
 
+# ─── Test 21b: _extract_text_from_json — JSON object (not array) input ───────
+echo ""
+echo -e "${DIM}  json object extraction (issue #242)${RESET}"
+_extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+tmpdir3=$(mktemp -d)
+bash -c "
+warn() { echo \"WARN: \$*\" >&2; }
+$_extract_fn
+# JSON object with .result field — Claude sometimes outputs this instead of an array
+echo '{\"type\":\"result\",\"result\":\"Object result works\"}' > '$tmpdir3/obj_result.json'
+_extract_text_from_json '$tmpdir3/obj_result.json' '$tmpdir3/obj_result_out.log' ''
+# JSON object with .content field
+echo '{\"type\":\"message\",\"content\":\"Object content works\"}' > '$tmpdir3/obj_content.json'
+_extract_text_from_json '$tmpdir3/obj_content.json' '$tmpdir3/obj_content_out.log' ''
+" 2>"$tmpdir3/warn.log"
+
+if grep -q "Object result works" "$tmpdir3/obj_result_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .result from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .result from JSON object" "expected 'Object result works'"
+fi
+if grep -q "Object content works" "$tmpdir3/obj_content_out.log" 2>/dev/null; then
+    assert_pass "_extract_text_from_json extracts .content from JSON object"
+else
+    assert_fail "_extract_text_from_json extracts .content from JSON object" "expected 'Object content works'"
+fi
+# Confirm no spurious "jq not available" warning was emitted
+if grep -q "jq not available" "$tmpdir3/warn.log" 2>/dev/null; then
+    assert_fail "_extract_text_from_json does not emit 'jq not available' for JSON objects" "got: $(cat "$tmpdir3/warn.log")"
+else
+    assert_pass "_extract_text_from_json does not emit 'jq not available' for JSON objects"
+fi
+rm -rf "$tmpdir3"
+
 # ─── Test 22: Script structure — circuit breaker, stuckness, test gate ────────
 echo ""
 echo -e "${DIM}  script structure${RESET}"

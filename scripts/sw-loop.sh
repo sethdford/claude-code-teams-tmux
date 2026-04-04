@@ -593,16 +593,28 @@ _extract_text_from_json() {
     local first_char
     first_char=$(head -c1 "$json_file" 2>/dev/null || true)
 
-    # Case 2: Valid JSON array — extract .result from last element
-    if [[ "$first_char" == "[" ]] && command -v jq >/dev/null 2>&1; then
+    # Case 2: Valid JSON (array or object) — extract text with jq
+    if [[ ("$first_char" == "[" || "$first_char" == "{") ]] && command -v jq >/dev/null 2>&1; then
         local extracted
-        extracted=$(jq -r '.[-1].result // empty' "$json_file" 2>/dev/null) || true
-        if [[ -n "$extracted" ]]; then
-            echo "$extracted" > "$log_file"
-            return 0
+        if [[ "$first_char" == "[" ]]; then
+            # Array: extract .result from last element
+            extracted=$(jq -r '.[-1].result // empty' "$json_file" 2>/dev/null) || true
+            if [[ -n "$extracted" ]]; then
+                echo "$extracted" > "$log_file"
+                return 0
+            fi
+            # Try .content fields
+            extracted=$(jq -r '.[].content // empty' "$json_file" 2>/dev/null | head -500) || true
+        else
+            # Object: extract .result directly
+            extracted=$(jq -r '.result // empty' "$json_file" 2>/dev/null) || true
+            if [[ -n "$extracted" ]]; then
+                echo "$extracted" > "$log_file"
+                return 0
+            fi
+            # Try .content field
+            extracted=$(jq -r '.content // empty' "$json_file" 2>/dev/null) || true
         fi
-        # jq succeeded but result was null/empty — try .content or raw text
-        extracted=$(jq -r '.[].content // empty' "$json_file" 2>/dev/null | head -500) || true
         if [[ -n "$extracted" ]]; then
             echo "$extracted" > "$log_file"
             return 0
@@ -613,7 +625,7 @@ _extract_text_from_json() {
         return 0
     fi
 
-    # Case 3: Looks like JSON but no jq — can't parse, use raw
+    # Case 3: Looks like JSON but jq is not available — can't parse, use raw
     if [[ "$first_char" == "[" || "$first_char" == "{" ]]; then
         warn "JSON output but jq not available — using raw output"
         cp "$json_file" "$log_file"
