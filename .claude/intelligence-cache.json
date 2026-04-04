@@ -5,27 +5,27 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 85,
-            "summary": "Test failure pattern directly related to pipeline stage artifacts (plan.md, review.md) not being written. Root cause involves adaptive stage timeout engine refactor affecting stage execution flow and artifact paths—critical for understanding build stage issues."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 50,
-            "summary": "Project metadata showing vitest as test runner and npm as package manager. Relevant for understanding build/test execution environment and conventions used in the build stage."
+            "relevance": 98,
+            "summary": "Contains 11 detailed test failure patterns with root causes and fixes directly relevant to build/test stage execution, including mock artifacts, JSON parsing issues, and resource exhaustion problems that would block the build"
           },
           {
             "file": "metrics.json",
-            "relevance": 20,
-            "summary": "Contains baseline metrics object but is empty. Minimal relevance to build stage context without populated data."
+            "relevance": 92,
+            "summary": "Baseline metrics for build_duration_s (17827s) and test_duration_s (1575s) provide performance context for the build stage, essential for understanding expected iteration time and cost"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Project detection (Node.js, vitest, npm) helps understand how the build stage should execute tests and what commands to invoke, though less critical than actual failure patterns"
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array. No actionable context for build stage work."
+            "relevance": 2,
+            "summary": "Empty decisions log, provides no actionable context for build stage execution"
           }
         ]
       },
-      "timestamp": 1772937569,
+      "timestamp": 1773214027,
       "ttl": 1800
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
@@ -263,7 +263,7 @@
           }
         }
       ],
-      "timestamp": 1772984911,
+      "timestamp": 1775302080,
       "ttl": 1800
     },
     "fdbb7bc340414cf938cecd4b790fa9e2": {
