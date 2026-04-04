@@ -6751,478 +6751,113 @@
 {"ts":"2026-04-04T00:29:25Z","ts_epoch":1775262565,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
 {"ts":"2026-04-04T00:29:25Z","ts_epoch":1775262565,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
 {"ts":"2026-04-04T00:29:26Z","ts_epoch":1775262566,"type":"patrol.issue_created","check":"untested_scripts","count":5}
-{"ts":"2026-04-04T00:43:58Z","ts_epoch":1775263438,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"infrastructure"}
-{"ts":"2026-04-04T00:43:58Z","ts_epoch":1775263438,"type":"reasoning.trace","job_id":"pipeline-3560-338","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T00:44:10Z","ts_epoch":1775263450,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":68,"recommended_template":"standard","issue_type":"infrastructure"}
-{"ts":"2026-04-04T00:44:20Z","ts_epoch":1775263460,"type":"intelligence.estimate_iterations","estimate":11,"complexity":5,"source":"claude"}
-{"ts":"2026-04-04T00:44:28Z","ts_epoch":1775263468,"type":"intelligence.prediction","estimated_cost":8.50,"estimated_iterations":8,"complexity":5}
-{"ts":"2026-04-04T00:44:29Z","ts_epoch":1775263469,"type":"checks.pipeline_start","stages":9}
-{"ts":"2026-04-04T00:44:30Z","ts_epoch":1775263470,"type":"pipeline.started","issue":338,"template":"standard","complexity":5,"machine":"runnervm727z3","pipeline":"standard","model":"opus","goal":""}
-{"ts":"2026-04-04T00:44:30Z","ts_epoch":1775263470,"type":"pipeline.started","event_id":"evt-1775263470-497051968","payload":"{\"issue\":\"338\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
-{"ts":"2026-04-04T00:44:30Z","ts_epoch":1775263470,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
-{"ts":"2026-04-04T00:44:30Z","ts_epoch":1775263470,"type":"intelligence.model_ab","issue":338,"stage":"intake","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
-{"ts":"2026-04-04T00:44:30Z","ts_epoch":1775263470,"type":"stage.started","issue":338,"stage":"intake"}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"stage.complete","event_id":"evt-1775263550-762531340","payload":"{\"stage\":\"intake\",\"issue\":\"338\",\"timing\":\"1m 19s\"}"}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"stage.completed","issue":338,"stage":"intake","duration_s":80,"result":"success"}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"vitals.snapshot","issue":338,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"intelligence.model","stage":"plan","complexity":7,"model":"haiku","source":"heuristic"}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"intelligence.model_ab","issue":338,"stage":"plan","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
-{"ts":"2026-04-04T00:45:50Z","ts_epoch":1775263550,"type":"stage.started","issue":338,"stage":"plan"}
-{"ts":"2026-04-04T00:51:42Z","ts_epoch":1775263902,"type":"plan.validated","issue":338,"valid":"true","attempts":1}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"stage.complete","event_id":"evt-1775263904-3426159632","payload":"{\"stage\":\"plan\",\"issue\":\"338\",\"timing\":\"5m 52s\"}"}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"stage.completed","issue":338,"stage":"plan","duration_s":354,"result":"success"}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"vitals.snapshot","issue":338,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"intelligence.model","stage":"design","complexity":7,"model":"haiku","source":"heuristic"}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"intelligence.model_ab","issue":338,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-04-04T00:51:44Z","ts_epoch":1775263904,"type":"stage.started","issue":338,"stage":"design"}
-{"ts":"2026-04-04T00:54:42Z","ts_epoch":1775264082,"type":"stage.complete","event_id":"evt-1775264082-690445356","payload":"{\"stage\":\"design\",\"issue\":\"338\",\"timing\":\"2m 57s\"}"}
-{"ts":"2026-04-04T00:54:42Z","ts_epoch":1775264082,"type":"stage.completed","issue":338,"stage":"design","duration_s":178,"result":"success"}
-{"ts":"2026-04-04T00:54:42Z","ts_epoch":1775264082,"type":"vitals.snapshot","issue":338,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-04-04T00:54:43Z","ts_epoch":1775264083,"type":"vitals.adaptive_limit","issue":338,"context":"build_test","original":2,"vitals_limit":6}
-{"ts":"2026-04-04T00:55:07Z","ts_epoch":1775264107,"type":"build.parallelism_suggested","issue":338,"current_agents":1}
-{"ts":"2026-04-04T00:55:18Z","ts_epoch":1775264118,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
-{"ts":"2026-04-04T00:55:18Z","ts_epoch":1775264118,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T00:55:18Z","ts_epoch":1775264118,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":17864,"trimmed_prompt_chars":17864,"trim_ratio":0.0,"budget_utilization":8.9,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-04-04T00:57:21Z","ts_epoch":1775264241,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T00:57:21Z","ts_epoch":1775264241,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:22Z","ts_epoch":1775264242,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:23Z","ts_epoch":1775264243,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T00:57:24Z","ts_epoch":1775264244,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:01:59Z","ts_epoch":1775264519,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:01:59Z","ts_epoch":1775264519,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:01:59Z","ts_epoch":1775264519,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:01:59Z","ts_epoch":1775264519,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:01:59Z","ts_epoch":1775264519,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:00Z","ts_epoch":1775264520,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:01Z","ts_epoch":1775264521,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:02:02Z","ts_epoch":1775264522,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:22Z","ts_epoch":1775264602,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:23Z","ts_epoch":1775264603,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:25Z","ts_epoch":1775264605,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:26Z","ts_epoch":1775264606,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:26Z","ts_epoch":1775264606,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:03:26Z","ts_epoch":1775264606,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:04:11Z","ts_epoch":1775264651,"type":"reasoning.trace","job_id":"pipeline-75277-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:12Z","ts_epoch":1775264652,"type":"reasoning.trace","job_id":"pipeline-75848-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:12Z","ts_epoch":1775264652,"type":"reasoning.trace","job_id":"pipeline-76419-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:13Z","ts_epoch":1775264653,"type":"reasoning.trace","job_id":"pipeline-76993-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:14Z","ts_epoch":1775264654,"type":"reasoning.trace","job_id":"pipeline-77532-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:15Z","ts_epoch":1775264655,"type":"reasoning.trace","job_id":"pipeline-78117-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:15Z","ts_epoch":1775264655,"type":"reasoning.trace","job_id":"pipeline-78690-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:16Z","ts_epoch":1775264656,"type":"reasoning.trace","job_id":"pipeline-79410-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:17Z","ts_epoch":1775264657,"type":"reasoning.trace","job_id":"pipeline-79987-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:18Z","ts_epoch":1775264658,"type":"reasoning.trace","job_id":"pipeline-80759-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:19Z","ts_epoch":1775264659,"type":"reasoning.trace","job_id":"pipeline-81330-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:19Z","ts_epoch":1775264659,"type":"reasoning.trace","job_id":"pipeline-81577-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:20Z","ts_epoch":1775264660,"type":"reasoning.trace","job_id":"pipeline-82151-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:21Z","ts_epoch":1775264661,"type":"reasoning.trace","job_id":"pipeline-82724-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:04:22Z","ts_epoch":1775264662,"type":"reasoning.trace","job_id":"pipeline-83297-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:16Z","ts_epoch":1775264716,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:17Z","ts_epoch":1775264717,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:18Z","ts_epoch":1775264718,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:05:19Z","ts_epoch":1775264719,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:06:26Z","ts_epoch":1775264786,"type":"convergence.scored","iteration":1,"score":65,"trend":"improving","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":48}
-{"ts":"2026-04-04T01:06:27Z","ts_epoch":1775264787,"type":"loop.iteration_complete","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":1,"status":"running"}
-{"ts":"2026-04-04T01:06:29Z","ts_epoch":1775264789,"type":"loop.iteration_start","iteration":2,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
-{"ts":"2026-04-04T01:06:29Z","ts_epoch":1775264789,"type":"memory.failure","stage":"test","pattern":"[2moutput missing: --force[0m"}
-{"ts":"2026-04-04T01:06:29Z","ts_epoch":1775264789,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T01:06:29Z","ts_epoch":1775264789,"type":"loop.context_efficiency","iteration":2,"raw_prompt_chars":21102,"trimmed_prompt_chars":21102,"trim_ratio":0.0,"budget_utilization":10.6,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-04-04T01:06:34Z","ts_epoch":1775264794,"type":"memory.analyze","stage":"test","category":"test_failure"}
-{"ts":"2026-04-04T01:11:56Z","ts_epoch":1775265116,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:11:56Z","ts_epoch":1775265116,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:56Z","ts_epoch":1775265116,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:56Z","ts_epoch":1775265116,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:56Z","ts_epoch":1775265116,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:57Z","ts_epoch":1775265117,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:58Z","ts_epoch":1775265118,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:11:59Z","ts_epoch":1775265119,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:12:11Z","ts_epoch":1775265131,"type":"reasoning.trace","job_id":"pipeline-146912-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:11Z","ts_epoch":1775265131,"type":"reasoning.trace","job_id":"pipeline-147483-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:12Z","ts_epoch":1775265132,"type":"reasoning.trace","job_id":"pipeline-148054-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:13Z","ts_epoch":1775265133,"type":"reasoning.trace","job_id":"pipeline-148628-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:14Z","ts_epoch":1775265134,"type":"reasoning.trace","job_id":"pipeline-149167-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:15Z","ts_epoch":1775265135,"type":"reasoning.trace","job_id":"pipeline-149752-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:15Z","ts_epoch":1775265135,"type":"reasoning.trace","job_id":"pipeline-150325-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:16Z","ts_epoch":1775265136,"type":"reasoning.trace","job_id":"pipeline-151043-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:17Z","ts_epoch":1775265137,"type":"reasoning.trace","job_id":"pipeline-151622-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:18Z","ts_epoch":1775265138,"type":"reasoning.trace","job_id":"pipeline-152394-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:19Z","ts_epoch":1775265139,"type":"reasoning.trace","job_id":"pipeline-152965-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:19Z","ts_epoch":1775265139,"type":"reasoning.trace","job_id":"pipeline-153212-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:20Z","ts_epoch":1775265140,"type":"reasoning.trace","job_id":"pipeline-153786-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:21Z","ts_epoch":1775265141,"type":"reasoning.trace","job_id":"pipeline-154359-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:12:22Z","ts_epoch":1775265142,"type":"reasoning.trace","job_id":"pipeline-154932-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:28Z","ts_epoch":1775265328,"type":"reasoning.trace","job_id":"pipeline-206406-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:29Z","ts_epoch":1775265329,"type":"reasoning.trace","job_id":"pipeline-206977-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:30Z","ts_epoch":1775265330,"type":"reasoning.trace","job_id":"pipeline-207548-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:31Z","ts_epoch":1775265331,"type":"reasoning.trace","job_id":"pipeline-208122-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:31Z","ts_epoch":1775265331,"type":"reasoning.trace","job_id":"pipeline-208661-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:32Z","ts_epoch":1775265332,"type":"reasoning.trace","job_id":"pipeline-209246-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:33Z","ts_epoch":1775265333,"type":"reasoning.trace","job_id":"pipeline-209819-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:34Z","ts_epoch":1775265334,"type":"reasoning.trace","job_id":"pipeline-210537-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:35Z","ts_epoch":1775265335,"type":"reasoning.trace","job_id":"pipeline-211171-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:36Z","ts_epoch":1775265336,"type":"reasoning.trace","job_id":"pipeline-211943-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:36Z","ts_epoch":1775265336,"type":"reasoning.trace","job_id":"pipeline-212514-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:37Z","ts_epoch":1775265337,"type":"reasoning.trace","job_id":"pipeline-212761-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:37Z","ts_epoch":1775265337,"type":"reasoning.trace","job_id":"pipeline-213335-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:38Z","ts_epoch":1775265338,"type":"reasoning.trace","job_id":"pipeline-213908-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:39Z","ts_epoch":1775265339,"type":"reasoning.trace","job_id":"pipeline-214481-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:15:57Z","ts_epoch":1775265357,"type":"convergence.scored","iteration":2,"score":50,"trend":"declining","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":709}
-{"ts":"2026-04-04T01:15:57Z","ts_epoch":1775265357,"type":"loop.iteration_complete","iteration":2,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":2,"status":"running"}
-{"ts":"2026-04-04T01:15:59Z","ts_epoch":1775265359,"type":"loop.iteration_start","iteration":3,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
-{"ts":"2026-04-04T01:15:59Z","ts_epoch":1775265359,"type":"memory.failure","stage":"test","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly... [38;2;74;222;128m✓"}
-{"ts":"2026-04-04T01:16:00Z","ts_epoch":1775265360,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T01:16:00Z","ts_epoch":1775265360,"type":"loop.context_efficiency","iteration":3,"raw_prompt_chars":22601,"trimmed_prompt_chars":22601,"trim_ratio":0.0,"budget_utilization":11.3,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-04-04T01:16:05Z","ts_epoch":1775265365,"type":"memory.analyze","stage":"test","category":"test_failure"}
-{"ts":"2026-04-04T01:17:17Z","ts_epoch":1775265437,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:17:17Z","ts_epoch":1775265437,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:17Z","ts_epoch":1775265437,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:18Z","ts_epoch":1775265438,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:19Z","ts_epoch":1775265439,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:17:20Z","ts_epoch":1775265440,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:18:46Z","ts_epoch":1775265526,"type":"reasoning.trace","job_id":"pipeline-254981-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:47Z","ts_epoch":1775265527,"type":"reasoning.trace","job_id":"pipeline-255552-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:47Z","ts_epoch":1775265527,"type":"reasoning.trace","job_id":"pipeline-256123-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:48Z","ts_epoch":1775265528,"type":"reasoning.trace","job_id":"pipeline-256697-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:49Z","ts_epoch":1775265529,"type":"reasoning.trace","job_id":"pipeline-257236-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:50Z","ts_epoch":1775265530,"type":"reasoning.trace","job_id":"pipeline-257821-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:51Z","ts_epoch":1775265531,"type":"reasoning.trace","job_id":"pipeline-258394-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:51Z","ts_epoch":1775265531,"type":"reasoning.trace","job_id":"pipeline-259112-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:52Z","ts_epoch":1775265532,"type":"reasoning.trace","job_id":"pipeline-259689-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:53Z","ts_epoch":1775265533,"type":"reasoning.trace","job_id":"pipeline-260461-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:54Z","ts_epoch":1775265534,"type":"reasoning.trace","job_id":"pipeline-261032-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:54Z","ts_epoch":1775265534,"type":"reasoning.trace","job_id":"pipeline-261279-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:55Z","ts_epoch":1775265535,"type":"reasoning.trace","job_id":"pipeline-261853-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:56Z","ts_epoch":1775265536,"type":"reasoning.trace","job_id":"pipeline-262426-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:18:57Z","ts_epoch":1775265537,"type":"reasoning.trace","job_id":"pipeline-262999-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:14Z","ts_epoch":1775265554,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T01:19:22Z","ts_epoch":1775265562,"type":"reasoning.trace","job_id":"pipeline-270948-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:23Z","ts_epoch":1775265563,"type":"reasoning.trace","job_id":"pipeline-271519-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:24Z","ts_epoch":1775265564,"type":"reasoning.trace","job_id":"pipeline-272090-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:25Z","ts_epoch":1775265565,"type":"reasoning.trace","job_id":"pipeline-272664-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:25Z","ts_epoch":1775265565,"type":"reasoning.trace","job_id":"pipeline-273203-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:26Z","ts_epoch":1775265566,"type":"reasoning.trace","job_id":"pipeline-273806-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:27Z","ts_epoch":1775265567,"type":"reasoning.trace","job_id":"pipeline-274379-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:28Z","ts_epoch":1775265568,"type":"reasoning.trace","job_id":"pipeline-275097-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:29Z","ts_epoch":1775265569,"type":"reasoning.trace","job_id":"pipeline-275674-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:30Z","ts_epoch":1775265570,"type":"reasoning.trace","job_id":"pipeline-276446-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:30Z","ts_epoch":1775265570,"type":"reasoning.trace","job_id":"pipeline-277017-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:31Z","ts_epoch":1775265571,"type":"reasoning.trace","job_id":"pipeline-277264-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:31Z","ts_epoch":1775265571,"type":"reasoning.trace","job_id":"pipeline-277838-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:32Z","ts_epoch":1775265572,"type":"reasoning.trace","job_id":"pipeline-278411-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:33Z","ts_epoch":1775265573,"type":"reasoning.trace","job_id":"pipeline-278984-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:19:51Z","ts_epoch":1775265591,"type":"convergence.scored","iteration":3,"score":50,"trend":"stable","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":825}
-{"ts":"2026-04-04T01:19:51Z","ts_epoch":1775265591,"type":"loop.iteration_complete","iteration":3,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":3,"status":"running"}
-{"ts":"2026-04-04T01:19:53Z","ts_epoch":1775265593,"type":"loop.iteration_start","iteration":4,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
-{"ts":"2026-04-04T01:19:54Z","ts_epoch":1775265594,"type":"memory.failure","stage":"test","pattern":"[38;2;74;222;128m✓[0m Uses set -euo pipefail"}
-{"ts":"2026-04-04T01:19:54Z","ts_epoch":1775265594,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T01:19:54Z","ts_epoch":1775265594,"type":"loop.context_efficiency","iteration":4,"raw_prompt_chars":22412,"trimmed_prompt_chars":22412,"trim_ratio":0.0,"budget_utilization":11.2,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-04-04T01:19:58Z","ts_epoch":1775265598,"type":"memory.analyze","stage":"test","category":"test_failure"}
-{"ts":"2026-04-04T01:24:02Z","ts_epoch":1775265842,"type":"feedback_detect_regression","merge_sha":"abc1234","regression":"false","severity":"P3"}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:11Z","ts_epoch":1775266211,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:12Z","ts_epoch":1775266212,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:13Z","ts_epoch":1775266213,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:30:14Z","ts_epoch":1775266214,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:31:11Z","ts_epoch":1775266271,"type":"reasoning.trace","job_id":"pipeline-644236-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:12Z","ts_epoch":1775266272,"type":"reasoning.trace","job_id":"pipeline-644807-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:13Z","ts_epoch":1775266273,"type":"reasoning.trace","job_id":"pipeline-645378-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:14Z","ts_epoch":1775266274,"type":"reasoning.trace","job_id":"pipeline-645952-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:14Z","ts_epoch":1775266274,"type":"reasoning.trace","job_id":"pipeline-646491-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:15Z","ts_epoch":1775266275,"type":"reasoning.trace","job_id":"pipeline-647076-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:16Z","ts_epoch":1775266276,"type":"reasoning.trace","job_id":"pipeline-647649-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:17Z","ts_epoch":1775266277,"type":"reasoning.trace","job_id":"pipeline-648367-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:18Z","ts_epoch":1775266278,"type":"reasoning.trace","job_id":"pipeline-648944-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:19Z","ts_epoch":1775266279,"type":"reasoning.trace","job_id":"pipeline-649716-0","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:19Z","ts_epoch":1775266279,"type":"reasoning.trace","job_id":"pipeline-650287-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:20Z","ts_epoch":1775266280,"type":"reasoning.trace","job_id":"pipeline-650534-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:21Z","ts_epoch":1775266281,"type":"reasoning.trace","job_id":"pipeline-651108-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:21Z","ts_epoch":1775266281,"type":"reasoning.trace","job_id":"pipeline-651681-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:31:22Z","ts_epoch":1775266282,"type":"reasoning.trace","job_id":"pipeline-652254-42","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-04-04T01:32:43Z","ts_epoch":1775266363,"type":"pattern.captured","goal":"Add authentication feature","type":"feature","iterations":3}
-{"ts":"2026-04-04T01:32:43Z","ts_epoch":1775266363,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:43Z","ts_epoch":1775266363,"type":"pattern.captured","goal":"Add feature X","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:43Z","ts_epoch":1775266363,"type":"pattern.captured","goal":"Add authentication","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:43Z","ts_epoch":1775266363,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Refactor middleware","type":"refactor","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"ab.outcome","issue":"issue-789","arm":"treatment","success":"true"}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Export test","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 4","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:44Z","ts_epoch":1775266364,"type":"pattern.captured","goal":"Feature 5","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 6","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 7","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 8","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 9","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 10","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 11","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 12","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 13","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 14","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 15","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 16","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:45Z","ts_epoch":1775266365,"type":"pattern.captured","goal":"Feature 17","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 18","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 19","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 20","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 21","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 22","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 23","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 24","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Feature 25","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Concurrent Feature 2","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Concurrent Feature 1","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:32:46Z","ts_epoch":1775266366,"type":"pattern.captured","goal":"Concurrent Feature 3","type":"feature","iterations":2}
-{"ts":"2026-04-04T01:34:14Z","ts_epoch":1775266454,"type":"convergence.scored","iteration":4,"score":50,"trend":"stable","status":"stalled","recommendation":"change_strategy","test_passed":"false","code_lines":1984}
-{"ts":"2026-04-04T01:34:14Z","ts_epoch":1775266454,"type":"loop.iteration_complete","iteration":4,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":4,"status":"running"}
-{"ts":"2026-04-04T01:34:16Z","ts_epoch":1775266456,"type":"loop.iteration_start","iteration":5,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
-{"ts":"2026-04-04T01:34:16Z","ts_epoch":1775266456,"type":"memory.failure","stage":"test","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly... [38;2;74;222;128m✓"}
-{"ts":"2026-04-04T01:34:17Z","ts_epoch":1775266457,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-04-04T01:34:17Z","ts_epoch":1775266457,"type":"loop.context_efficiency","iteration":5,"raw_prompt_chars":23269,"trimmed_prompt_chars":23269,"trim_ratio":0.0,"budget_utilization":11.6,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-04-04T01:34:21Z","ts_epoch":1775266461,"type":"memory.analyze","stage":"test","category":"flaky"}
-{"ts":"2026-04-04T01:36:59Z","ts_epoch":1775266619,"type":"pipeline.context_exhaustion","issue":338,"stage":"build"}
-{"ts":"2026-04-04T01:37:01Z","ts_epoch":1775266621,"type":"stage.failed","event_id":"evt-1775266621-1087672990","payload":"{\"stage\":\"build\",\"issue\":\"338\",\"timing\":\"42m 16s\"}"}
+{"ts":"2026-04-04T00:42:31Z","ts_epoch":1775263351,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":72,"recommended_template":"full","issue_type":"refactor"}
+{"ts":"2026-04-04T00:42:31Z","ts_epoch":1775263351,"type":"reasoning.trace","job_id":"pipeline-3541-348","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T00:42:43Z","ts_epoch":1775263363,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":78,"recommended_template":"standard","issue_type":"refactor"}
+{"ts":"2026-04-04T00:42:53Z","ts_epoch":1775263373,"type":"intelligence.estimate_iterations","estimate":6,"complexity":5,"source":"claude"}
+{"ts":"2026-04-04T00:43:04Z","ts_epoch":1775263384,"type":"intelligence.prediction","estimated_cost":3.75,"estimated_iterations":6,"complexity":5}
+{"ts":"2026-04-04T00:43:05Z","ts_epoch":1775263385,"type":"checks.pipeline_start","stages":9}
+{"ts":"2026-04-04T00:43:05Z","ts_epoch":1775263385,"type":"pipeline.started","issue":348,"template":"standard","complexity":5,"machine":"runnervm727z3","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-04-04T00:43:05Z","ts_epoch":1775263385,"type":"pipeline.started","event_id":"evt-1775263385-819943626","payload":"{\"issue\":\"348\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-04-04T00:43:06Z","ts_epoch":1775263386,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-04-04T00:43:06Z","ts_epoch":1775263386,"type":"intelligence.model_ab","issue":348,"stage":"intake","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-04-04T00:43:06Z","ts_epoch":1775263386,"type":"stage.started","issue":348,"stage":"intake"}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"stage.complete","event_id":"evt-1775263519-622774502","payload":"{\"stage\":\"intake\",\"issue\":\"348\",\"timing\":\"2m 12s\"}"}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"stage.completed","issue":348,"stage":"intake","duration_s":134,"result":"success"}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"vitals.snapshot","issue":348,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"intelligence.model","stage":"plan","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"intelligence.model_ab","issue":348,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-04-04T00:45:20Z","ts_epoch":1775263520,"type":"stage.started","issue":348,"stage":"plan"}
+{"ts":"2026-04-04T00:59:11Z","ts_epoch":1775264351,"type":"plan.validated","issue":348,"valid":"true","attempts":1}
+{"ts":"2026-04-04T00:59:12Z","ts_epoch":1775264352,"type":"stage.complete","event_id":"evt-1775264352-64355894","payload":"{\"stage\":\"plan\",\"issue\":\"348\",\"timing\":\"13m 51s\"}"}
+{"ts":"2026-04-04T00:59:12Z","ts_epoch":1775264352,"type":"stage.completed","issue":348,"stage":"plan","duration_s":832,"result":"success"}
+{"ts":"2026-04-04T00:59:12Z","ts_epoch":1775264352,"type":"vitals.snapshot","issue":348,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-04-04T00:59:13Z","ts_epoch":1775264353,"type":"intelligence.model","stage":"design","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-04-04T00:59:13Z","ts_epoch":1775264353,"type":"intelligence.model_ab","issue":348,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-04-04T00:59:13Z","ts_epoch":1775264353,"type":"stage.started","issue":348,"stage":"design"}
+{"ts":"2026-04-04T01:02:47Z","ts_epoch":1775264567,"type":"stage.complete","event_id":"evt-1775264567-2161985041","payload":"{\"stage\":\"design\",\"issue\":\"348\",\"timing\":\"3m 33s\"}"}
+{"ts":"2026-04-04T01:02:47Z","ts_epoch":1775264567,"type":"stage.completed","issue":348,"stage":"design","duration_s":214,"result":"success"}
+{"ts":"2026-04-04T01:02:47Z","ts_epoch":1775264567,"type":"vitals.snapshot","issue":348,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-04-04T01:02:47Z","ts_epoch":1775264567,"type":"vitals.adaptive_limit","issue":348,"context":"build_test","original":2,"vitals_limit":6}
+{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-04-04T01:03:24Z","ts_epoch":1775264604,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":11871,"trimmed_prompt_chars":11871,"trim_ratio":0.0,"budget_utilization":5.9,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-04-04T01:16:53Z","ts_epoch":1775265413,"type":"reasoning.trace","job_id":"pipeline-79741-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:54Z","ts_epoch":1775265414,"type":"reasoning.trace","job_id":"pipeline-80332-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:54Z","ts_epoch":1775265414,"type":"reasoning.trace","job_id":"pipeline-80925-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:55Z","ts_epoch":1775265415,"type":"reasoning.trace","job_id":"pipeline-81519-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:56Z","ts_epoch":1775265416,"type":"reasoning.trace","job_id":"pipeline-82078-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:57Z","ts_epoch":1775265417,"type":"reasoning.trace","job_id":"pipeline-82683-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:57Z","ts_epoch":1775265417,"type":"reasoning.trace","job_id":"pipeline-83276-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:58Z","ts_epoch":1775265418,"type":"reasoning.trace","job_id":"pipeline-84014-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:16:59Z","ts_epoch":1775265419,"type":"reasoning.trace","job_id":"pipeline-84611-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:00Z","ts_epoch":1775265420,"type":"reasoning.trace","job_id":"pipeline-85423-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:01Z","ts_epoch":1775265421,"type":"reasoning.trace","job_id":"pipeline-86014-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:01Z","ts_epoch":1775265421,"type":"reasoning.trace","job_id":"pipeline-86281-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:02Z","ts_epoch":1775265422,"type":"reasoning.trace","job_id":"pipeline-86878-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:02Z","ts_epoch":1775265422,"type":"reasoning.trace","job_id":"pipeline-87471-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:03Z","ts_epoch":1775265423,"type":"reasoning.trace","job_id":"pipeline-88064-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:17:21Z","ts_epoch":1775265441,"type":"convergence.scored","iteration":1,"score":50,"trend":"stable","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":721}
+{"ts":"2026-04-04T01:17:21Z","ts_epoch":1775265441,"type":"loop.iteration_complete","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":1,"status":"running"}
+{"ts":"2026-04-04T01:17:23Z","ts_epoch":1775265443,"type":"loop.iteration_start","iteration":2,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
+{"ts":"2026-04-04T01:17:24Z","ts_epoch":1775265444,"type":"memory.failure","stage":"test","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-04-04T01:17:24Z","ts_epoch":1775265444,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-04-04T01:17:24Z","ts_epoch":1775265444,"type":"loop.context_efficiency","iteration":2,"raw_prompt_chars":15918,"trimmed_prompt_chars":15918,"trim_ratio":0.0,"budget_utilization":8.0,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-04-04T01:17:29Z","ts_epoch":1775265449,"type":"memory.analyze","stage":"test","category":"test_failure"}
+{"ts":"2026-04-04T01:20:05Z","ts_epoch":1775265605,"type":"reasoning.trace","job_id":"pipeline-121651-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:06Z","ts_epoch":1775265606,"type":"reasoning.trace","job_id":"pipeline-122242-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:06Z","ts_epoch":1775265606,"type":"reasoning.trace","job_id":"pipeline-122833-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:07Z","ts_epoch":1775265607,"type":"reasoning.trace","job_id":"pipeline-123427-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:08Z","ts_epoch":1775265608,"type":"reasoning.trace","job_id":"pipeline-123986-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:08Z","ts_epoch":1775265608,"type":"reasoning.trace","job_id":"pipeline-124591-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:09Z","ts_epoch":1775265609,"type":"reasoning.trace","job_id":"pipeline-125184-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:10Z","ts_epoch":1775265610,"type":"reasoning.trace","job_id":"pipeline-125922-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:11Z","ts_epoch":1775265611,"type":"reasoning.trace","job_id":"pipeline-126576-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:12Z","ts_epoch":1775265612,"type":"reasoning.trace","job_id":"pipeline-127388-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:12Z","ts_epoch":1775265612,"type":"reasoning.trace","job_id":"pipeline-127979-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:13Z","ts_epoch":1775265613,"type":"reasoning.trace","job_id":"pipeline-128246-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:14Z","ts_epoch":1775265614,"type":"reasoning.trace","job_id":"pipeline-128840-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:14Z","ts_epoch":1775265614,"type":"reasoning.trace","job_id":"pipeline-129433-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:20:15Z","ts_epoch":1775265615,"type":"reasoning.trace","job_id":"pipeline-130026-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:25Z","ts_epoch":1775265685,"type":"reasoning.trace","job_id":"pipeline-152972-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:25Z","ts_epoch":1775265685,"type":"reasoning.trace","job_id":"pipeline-153563-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:26Z","ts_epoch":1775265686,"type":"reasoning.trace","job_id":"pipeline-154154-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:27Z","ts_epoch":1775265687,"type":"reasoning.trace","job_id":"pipeline-154748-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:27Z","ts_epoch":1775265687,"type":"reasoning.trace","job_id":"pipeline-155307-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:28Z","ts_epoch":1775265688,"type":"reasoning.trace","job_id":"pipeline-155912-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:29Z","ts_epoch":1775265689,"type":"reasoning.trace","job_id":"pipeline-156505-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:30Z","ts_epoch":1775265690,"type":"reasoning.trace","job_id":"pipeline-157243-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:30Z","ts_epoch":1775265691,"type":"reasoning.trace","job_id":"pipeline-157840-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:31Z","ts_epoch":1775265691,"type":"reasoning.trace","job_id":"pipeline-158652-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:32Z","ts_epoch":1775265692,"type":"reasoning.trace","job_id":"pipeline-159243-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:32Z","ts_epoch":1775265692,"type":"reasoning.trace","job_id":"pipeline-159510-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:33Z","ts_epoch":1775265693,"type":"reasoning.trace","job_id":"pipeline-160104-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:34Z","ts_epoch":1775265694,"type":"reasoning.trace","job_id":"pipeline-160697-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:21:35Z","ts_epoch":1775265695,"type":"reasoning.trace","job_id":"pipeline-161290-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:34Z","ts_epoch":1775265754,"type":"reasoning.trace","job_id":"pipeline-181875-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:35Z","ts_epoch":1775265755,"type":"reasoning.trace","job_id":"pipeline-182466-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:36Z","ts_epoch":1775265756,"type":"reasoning.trace","job_id":"pipeline-183057-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:37Z","ts_epoch":1775265757,"type":"reasoning.trace","job_id":"pipeline-183651-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:37Z","ts_epoch":1775265757,"type":"reasoning.trace","job_id":"pipeline-184210-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:38Z","ts_epoch":1775265758,"type":"reasoning.trace","job_id":"pipeline-184815-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:39Z","ts_epoch":1775265759,"type":"reasoning.trace","job_id":"pipeline-185408-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:40Z","ts_epoch":1775265760,"type":"reasoning.trace","job_id":"pipeline-186146-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:40Z","ts_epoch":1775265760,"type":"reasoning.trace","job_id":"pipeline-186743-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:41Z","ts_epoch":1775265761,"type":"reasoning.trace","job_id":"pipeline-187612-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:42Z","ts_epoch":1775265762,"type":"reasoning.trace","job_id":"pipeline-188203-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:42Z","ts_epoch":1775265762,"type":"reasoning.trace","job_id":"pipeline-188470-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:43Z","ts_epoch":1775265763,"type":"reasoning.trace","job_id":"pipeline-189064-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:44Z","ts_epoch":1775265764,"type":"reasoning.trace","job_id":"pipeline-189657-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:22:44Z","ts_epoch":1775265764,"type":"reasoning.trace","job_id":"pipeline-190250-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-04-04T01:23:16Z","ts_epoch":1775265796,"type":"convergence.scored","iteration":2,"score":50,"trend":"stable","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":743}
+{"ts":"2026-04-04T01:23:17Z","ts_epoch":1775265797,"type":"loop.iteration_complete","iteration":2,"max":20,"job_id":"standard","agent":1,"test_passed":"false","commits":2,"status":"running"}
+{"ts":"2026-04-04T01:23:19Z","ts_epoch":1775265799,"type":"loop.iteration_start","iteration":3,"max":20,"job_id":"standard","agent":1,"test_passed":"false"}
+{"ts":"2026-04-04T01:23:19Z","ts_epoch":1775265799,"type":"memory.failure","stage":"test","pattern":"FAIL: 0"}
+{"ts":"2026-04-04T01:23:19Z","ts_epoch":1775265799,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-04-04T01:23:20Z","ts_epoch":1775265800,"type":"loop.context_efficiency","iteration":3,"raw_prompt_chars":15585,"trimmed_prompt_chars":15585,"trim_ratio":0.0,"budget_utilization":7.8,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-04-04T01:23:29Z","ts_epoch":1775265809,"type":"memory.analyze","stage":"test","category":"test_failure"}
+{"ts":"2026-04-04T01:29:45Z","ts_epoch":1775266185,"type":"feedback_detect_regression","merge_sha":"abc1234","regression":"false","severity":"P3"}
+{"ts":"2026-04-04T01:29:51Z","ts_epoch":1775266191,"type":"feedback_detect_regression","merge_sha":"abc1234","regression":"false","severity":"P3"}
+{"ts":"2026-04-04T01:37:02Z","ts_epoch":1775266622,"type":"pipeline.context_exhaustion","issue":348,"stage":"build"}
+{"ts":"2026-04-04T01:37:03Z","ts_epoch":1775266623,"type":"stage.failed","event_id":"evt-1775266623-2938681617","payload":"{\"stage\":\"build\",\"issue\":\"348\",\"timing\":\"34m 14s\"}"}
