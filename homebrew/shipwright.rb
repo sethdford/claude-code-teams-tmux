@@ -5,22 +5,22 @@
 class Shipwright < Formula
   desc "Orchestrate autonomous Claude Code agent teams in tmux"
   homepage "https://github.com/sethdford/shipwright"
-  version "3.2.0"
+  version "3.3.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/sethdford/shipwright/releases/download/v#{version}/shipwright-darwin-arm64.tar.gz"
-      sha256 "cf54328c6031a64079b1ee69afe9bac43bcbdde09862b248ac099040a3e7a153"
+      sha256 "b34eac145f82a6524827b54f6c5e137a2e26a075dd94e294ffd70a539de7494b"
     else
       url "https://github.com/sethdford/shipwright/releases/download/v#{version}/shipwright-darwin-x86_64.tar.gz"
-      sha256 "cf54328c6031a64079b1ee69afe9bac43bcbdde09862b248ac099040a3e7a153"
+      sha256 "b34eac145f82a6524827b54f6c5e137a2e26a075dd94e294ffd70a539de7494b"
     end
   end
 
   on_linux do
     url "https://github.com/sethdford/shipwright/releases/download/v#{version}/shipwright-linux-x86_64.tar.gz"
-    sha256 "cf54328c6031a64079b1ee69afe9bac43bcbdde09862b248ac099040a3e7a153"
+    sha256 "b34eac145f82a6524827b54f6c5e137a2e26a075dd94e294ffd70a539de7494b"
   end
 
   depends_on "bash"
