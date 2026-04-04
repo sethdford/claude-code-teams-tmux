@@ -558,10 +558,10 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2561 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2642 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2240 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
-| `scripts/sw-model-router.sh` | 1023 | Intelligent Model Routing & Cost Optimization |
+| `scripts/sw-model-router.sh` | 1053 | Intelligent Model Routing & Cost Optimization |
 | `scripts/sw-otel.sh` | 609 | OpenTelemetry Observability |
 | `scripts/sw-oversight.sh` | 757 | Quality Oversight Board |
 | `scripts/sw-patrol-meta.sh` | 776 | Shipwright Self-Improvement Patrol |
