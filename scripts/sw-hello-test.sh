@@ -35,11 +35,18 @@ assert_exit_code() {
     fi
 }
 
-# ─── Test: hello command outputs "hello world" ──────────────────────────────
+# ─── Test: hello command outputs "Shipwright vX.Y.Z" ───────────────────────
 test_hello_output() {
     local output
     output=$("$SCRIPT_DIR/sw-hello.sh")
-    assert_equals "hello world" "$output" "hello command outputs 'hello world'"
+    if [[ "$output" =~ ^Shipwright\ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+        ((PASS++))
+        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello command outputs 'Shipwright vX.Y.Z'"
+    else
+        ((FAIL++))
+        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello command outputs 'Shipwright vX.Y.Z'"
+        echo "    Actual: $output"
+    fi
 }
 
 # ─── Test: hello command exits with 0 ───────────────────────────────────────
@@ -74,16 +81,36 @@ test_hello_short_help() {
     fi
 }
 
-# ─── Test: hello --version shows version ────────────────────────────────────
+# ─── Test: hello --version shows "Shipwright vX.Y.Z" ───────────────────────
 test_hello_version() {
     local output
     output=$("$SCRIPT_DIR/sw-hello.sh" --version)
-    if [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    if [[ "$output" =~ ^Shipwright\ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
         ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello --version displays version"
+        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello --version displays 'Shipwright vX.Y.Z'"
     else
         ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello --version displays version"
+        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello --version displays 'Shipwright vX.Y.Z'"
+        echo "    Actual: $output"
+    fi
+}
+
+# ─── Test: version is read from package.json ────────────────────────────────
+test_hello_version_from_package_json() {
+    local script_dir output pkg_version
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    pkg_version=$(jq -r '.version' "$script_dir/../package.json" 2>/dev/null \
+        || grep '"version"' "$script_dir/../package.json" \
+            | grep -o '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' | head -1)
+    output=$("$SCRIPT_DIR/sw-hello.sh")
+    if [[ "$output" == "Shipwright v${pkg_version}" ]]; then
+        ((PASS++))
+        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello version matches package.json ($pkg_version)"
+    else
+        ((FAIL++))
+        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello version matches package.json"
+        echo "    Expected: Shipwright v${pkg_version}"
+        echo "    Actual:   $output"
     fi
 }
 
@@ -100,6 +127,7 @@ test_hello_exit_code
 test_hello_help
 test_hello_short_help
 test_hello_version
+test_hello_version_from_package_json
 test_hello_invalid_option
 
 echo ""
