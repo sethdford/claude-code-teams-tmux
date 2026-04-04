@@ -30,9 +30,19 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "optimizer",
+          "docs-writer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Complex system requiring architectural design of cost attribution logic, ROI calculations, and forecasting algorithms; builder implements, tester validates accuracy, optimizer handles dashboard performance, docs-writer explains system",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775264185,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -651,28 +661,27 @@
     "c9c52b41bcb1e8f60ccd1c4cdc72b9d4": {
       "result": {
         "complexity": 7,
-        "risk_level": "high",
-        "success_probability": 72,
-        "recommended_template": "cost-aware",
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
         "issue_type": "backend",
         "key_risks": [
-          "Database schema migration with existing cost data integrity",
-          "Forecasting accuracy depends on historical data quality and edge cases",
-          "Financial calculations must be precise for audit/compliance use",
-          "Multi-stage cost attribution logic complexity and correctness validation",
-          "Dashboard performance with large historical datasets and aggregate queries"
+          "Database schema migration complexity and backward compatibility",
+          "Cost attribution accuracy across pipeline iterations and model changes",
+          "Insufficient historical data for reliable budget forecasting",
+          "Performance degradation with large-scale cost attribution queries",
+          "Integration conflicts with existing cost tracking system"
         ],
         "implementation_hints": [
-          "Extend sw-cost.sh to capture stage, iteration, model at token-level before aggregating",
-          "Design cost_attributions schema with foreign keys to pipeline_runs, include audit timestamp",
-          "Implement forecasting MVP with simple linear regression on complexity/template history",
-          "Build dashboard incrementally: start with template/complexity ROI, then add label breakdown",
-          "Create test suite with known cost scenarios (fast/standard/full templates) and validate attribution sums",
-          "Plan historical data migration strategy to backfill attribution records for existing pipeline runs",
-          "Add cost attribution API endpoint (GET /cost/analysis?issue=123) for CLI and dashboard"
+          "Design cost_attributions schema with foreign keys to pipeline_runs and cost_events tables first",
+          "Implement incremental cost tracking in sw-cost.sh before building attribution queries",
+          "Validate ROI calculations against known cost patterns in test suite",
+          "Build dashboard views iteratively, starting with simple breakdowns (cost per template)",
+          "Establish minimum historical data thresholds before enabling budget forecasting feature",
+          "Consider indexing strategy for cost attribution queries on issue_id and stage columns"
         ]
       },
-      "timestamp": 1775240698,
+      "timestamp": 1775263385,
       "ttl": 3600
     },
     "448c16312631171065e5c421fa83562a": {
@@ -695,45 +704,47 @@
     },
     "956fe15f625618ee6009263d89c2f8b7": {
       "result": {
-        "issue_type": "backend/database/observability",
+        "issue_type": "backend",
         "confidence": 0.88,
         "secondary_domains": [
-          "analytics",
-          "financial-data",
-          "forecasting"
+          "database",
+          "infrastructure",
+          "cost-accounting",
+          "observability"
         ],
         "complexity_assessment": {
-          "score": 7,
-          "reasoning": "Despite 'fast' label, this spans database schema changes, cost tracking logic across multiple pipeline stages, dashboard integration, CLI additions, and predictive forecasting—multi-system coordination required"
+          "score": 6,
+          "reasoning": "Well-scoped feature with clear acceptance criteria covering schema design, cost attribution logic, forecasting model, and dashboard. Complexity arises from database design correctness, forecasting accuracy, and ensuring cost attribution completeness across all pipeline stages."
         },
         "skill_plan": {
           "plan": [
-            "api-design",
-            "data-pipeline",
-            "brainstorming"
+            "brainstorming",
+            "product-thinking",
+            "data-pipeline"
           ],
           "design": [
             "architecture-design",
             "data-pipeline",
             "api-design"
           ],
-          "build": [],
+          "build": [
+            "testing-strategy"
+          ],
           "review": [
+            "two-stage-review",
             "pr-quality",
-            "security-audit",
-            "adversarial-quality"
+            "cost-accounting-and-forecasting"
           ],
           "compound_quality": [
-            "testing-strategy",
+            "adversarial-quality",
             "validation-thoroughness",
-            "adversarial-quality"
+            "cost-accounting-and-forecasting"
           ],
           "pr": [
             "pr-quality"
           ],
           "deploy": [
-            "deploy-safety",
-            "observability"
+            "deploy-safety"
           ],
           "validate": [
             "validation-thoroughness",
@@ -744,156 +755,255 @@
           ]
         },
         "skill_rationale": {
-          "api-design": "CLI endpoint (shipwright cost analyze --issue 123) and database query interfaces need consistent, debuggable design—cost attribution is a critical data product",
-          "data-pipeline": "Cost tracking is a data pipeline problem: multi-source ingestion (stage times, token counts, model calls), transformation (cost calculation), and aggregation (ROI by template/label)",
-          "brainstorming": "Challenge early assumptions: what granularity of cost tracking pays off vs. overhead? Do we track wall-clock cost or attributed cost? How do we handle concurrent iterations?",
-          "architecture-design": "Cost attribution system is a foundational change affecting cost.sh, dashboard, CLI, and database—needs ADR to document schema design, integration points, and backward compatibility strategy",
-          "security-audit": "Cost data is business-sensitive (reveals pipeline efficiency, pricing decisions); audit access controls, data retention, query logging for financial audit trail",
-          "adversarial-quality": "Find cost attribution edge cases: zero-cost stages, rounding errors, overlapping time ranges, concurrent pipeline runs on same issue, cost accumulation bugs",
-          "testing-strategy": "Financial data requires ironclad test coverage: attribution accuracy, forecasting precision, edge cases (missing data, outliers), schema migration safety",
-          "validation-thoroughness": "Cost calculations are business-critical; validate accuracy against ground truth (actual Claude API bills, historical pipeline data) before shipping",
-          "pr-quality": "Multi-system changes (cost.sh, database, dashboard, CLI) need clear commit boundaries and migration documentation so reviewers understand data flow",
-          "deploy-safety": "Rolling back cost schema changes is hard; deploy with zero downtime (backward-compat column additions, read-both strategy), validate against shadow data",
-          "observability": "Monitor cost tracking accuracy in production: compare calculated costs to actual API bills, alert on attribution anomalies (sudden spikes/drops)"
+          "brainstorming": "Challenge assumptions about which cost signals matter most for ROI decisions and whether historical forecasting is reliable with non-stationary pipeline templates.",
+          "product-thinking": "Clarify whether this tool is for FinOps teams (total cost minimization), engineering leads (cost-quality trade-offs), or strategic planning (ROI by feature), as this affects dashboard design and forecasting priorities.",
+          "data-pipeline": "Design the cost collection ETL to ensure complete attribution across all stages and iterations without double-counting or missing edge cases like retries and model changes.",
+          "architecture-design": "Create a schema ADR documenting the cost_attributions table structure, foreign key relationships, time-series query patterns, and how historical cost data flows through the system.",
+          "api-design": "Design the `shipwright cost analyze` CLI interface and dashboard API to surface cost breakdowns intuitively—by stage, model, complexity, template—and support forecasting queries.",
+          "testing-strategy": "Build comprehensive tests for cost attribution logic under diverse conditions: multi-iteration builds, model switches, stage skips, and budget exhaustion scenarios.",
+          "two-stage-review": "Pass 1: Verify schema correctness, foreign key integrity, and attribution logic soundness. Pass 2: Validate query performance on large pipeline_runs datasets and forecasting accuracy assumptions.",
+          "pr-quality": "Highlight cost model transparency—formula for cost attribution, forecasting methodology, and auditability—so reviewers understand what ROI numbers mean and can verify correctness.",
+          "cost-accounting-and-forecasting": "Validate that cost attribution is complete and accurate, forecasting methodology is sound, historical data adequately feeds the model, and edge cases (partial iterations, retries) are handled correctly.",
+          "adversarial-quality": "Attack cost tracking: What if a stage runs twice? What if a model fails mid-iteration and restarts? What if token counts are off? What skews ROI calculations and breaks financial reporting?",
+          "validation-thoroughness": "Spot-check cost attribution against actual Claude API invoices, verify ROI calculations with real pipeline runs, and test forecasting accuracy on holdout historical data.",
+          "deploy-safety": "Ensure cost_attributions table migration is backward-compatible, doesn't block pipeline_runs queries, and includes rollback procedures if cost tracking introduces regressions.",
+          "observability": "Ensure cost dashboards are queryable, performant on large datasets, emit cost tracking metrics (attribution rate, forecast error), and alert if attribution coverage drops below threshold."
         },
         "generated_skills": [
           {
             "name": "cost-accounting-and-forecasting",
-            "reason": "No existing skill covers financial data accuracy, cost attribution modeling, or predictive forecasting for budgets—this is domain-specific to Shipwright's cost intelligence system",
-            "content": "## Cost Accounting and Forecasting\n\n### Financial Data Integrity\n\n1. **Cost Attribution Accuracy**\n   - Every cost must map to exactly one issue + stage + iteration, preventing double-booking\n   - Timestamps matter: record when cost was incurred (token generation), not when billed\n   - Handle concurrent pipeline runs on same issue: cost the stage in isolation, not the whole run\n   - Rounding rule: always round towards business (overestimate cost, underestimate savings)\n\n2. **Schema Design Patterns**\n   - Foreign keys to `pipeline_runs(id)` and `issues(id)`, not loose issue numbers\n   - Denormalize complexity/template/label into cost_attributions for fast ROI queries (avoid expensive joins)\n   - Track model used (haiku/sonnet/opus) per cost row—routing decisions depend on per-model breakdown\n   - Partition by date for large datasets (cost tables grow fast—optimize for range queries)\n\n3. **Missing Data Handling**\n   - If a stage runs without token tracking, record `NULL` cost, not `0`—alerts on silent data loss\n   - When backfilling historical data, mark source as `backfilled` vs. `live` for accuracy reporting\n   - Forecasting must handle sparse historical data: require N successful runs before predicting\n\n### Forecasting Patterns\n\n1. **Pre-Pipeline Cost Estimation**\n   - Group historical data by (complexity, template, label) — find the median cost for this cohort\n   - Use median (not mean) to resist outliers (one $50 experimental run ruins the average)\n   - Confidence intervals: show cost_min..cost_max from historical range, not point estimates\n   - Fallback to global baseline if cohort has <5 runs\n\n2. **Forecast Signals**\n   - Higher complexity → higher predicted cost (exponential, not linear)\n   - Some templates are inherently pricier: `full` review template costs 3x `fast`\n   - Labels like `infrastructure` or `security` often trigger extra review iterations\n\n3. **Validation**\n   - After pipeline completes, compare actual vs. forecasted cost; store delta\n   - Track forecast accuracy over time (was our estimate within 20%?)\n   - Alert on forecast misses (actual cost >2σ from prediction) — signals data corruption or a new cohort pattern\n\n### Dashboard & CLI Design\n\n1. **ROI Calculation**\n   ```\n   ROI = (PRs merged in template X / Total attempts in template X) / (Avg cost per attempt in template X)\n   ```\n   Higher ROI = lower cost per successful merge\n\n2. **Drill-Down Paths**\n   - By template: which pipeline yields best ROI?\n   - By label: does security work cost more than features?\n   - By model: is opus worth the cost for design stage vs. sonnet?\n   - By stage: which stages have runaway costs (review loops, test retries)?\n\n3. **CLI Output Format**\n   ```\n   shipwright cost analyze --issue 123 --breakdown\n   Issue #123 (feat: auth)\n   ├─ intake:        $0.12 (1 iteration, haiku)\n   ├─ design:        $2.45 (2 iterations, opus)\n   ├─ build:         $0.98 (1 iteration, sonnet)\n   ├─ test:          $1.23 (3 iterations, haiku+sonnet)\n   └─ review:        $0.89 (1 iteration, haiku)\n   Total:            $5.67 (template: standard, complexity: medium)\n   ```\n\n### Testing Financial Logic\n\n1. **Unit Tests for Calculations**\n   - Cost = tokens_input×rate_in + tokens_output×rate_out: test exact arithmetic\n   - ROI formula: test division by zero, empty cohorts, tie-breaking\n   - Rounding: test boundary conditions (e.g., 0.005 rounds to 0.01)\n\n2. **Integration Tests**\n   - Create mock pipeline runs with known costs; validate attribution\n   - Verify forecast accuracy on historical test dataset\n   - Test schema constraints (foreign keys, no NULL issue_ids)\n\n3. **Data Quality Tests**\n   - All costs are positive (bug if negative)\n   - No orphaned cost rows (every row has valid issue_id)\n   - Cost sum per pipeline matches total of stage costs (no leaks)\n   - Forecasts never go negative"
+            "reason": "No existing skill addresses the specific nuances of cost attribution accuracy, forecasting methodology, and financial auditability required for a production cost tracking system. This skill fills that gap with domain-specific guidance on how to design, validate, and verify cost systems.",
+            "content": "# Cost Accounting and Forecasting for Pipeline Operations\n\n## Cost Attribution Accuracy\n\n**Principle**: Every cost dollar must be traceable to a specific issue, stage, iteration, and model. Audit trails are non-negotiable.\n\n**What to track**:\n- Issue ID (foreign key to pipeline_runs)\n- Stage name (plan, design, build, test, review, etc.)\n- Iteration number (which attempt in a multi-iteration build loop)\n- Model used (haiku, sonnet, opus)\n- Token count (input + output separately)\n- Cost in USD (computed from token count + model pricing)\n- Timestamp (when costs were incurred)\n\n**Granularity rule**: Track costs at iteration boundaries, not per Claude API call. This prevents inflation from internal batching and makes ROI calculations align with pipeline metrics.\n\n**Attribution gotchas**:\n- **Multi-iteration builds**: A single issue may have costs across multiple iterations. Each must be attributed to the same issue.\n- **Model switching**: If a stage retries with a different model, assign costs to the new model, not the original.\n- **Partial iterations**: If an iteration fails mid-stage, still track the tokens consumed—don't wait for stage completion.\n- **Forecasting loops**: `shipwright loop` may make multiple Claude calls per iteration. Sum them all under one iteration cost.\n\n## Forecasting Methodology\n\n**Goal**: Predict total pipeline cost before execution, based on issue metadata (complexity, labels, template).\n\n**Baseline approach**:\n1. **Stratify historical data** by template, complexity label, and issue type\n2. **Compute mean cost per stratum** with confidence intervals (use 75th percentile for conservative budgets)\n3. **Predict new issue**: Match its attributes to closest stratum, use stratum mean as forecast\n4. **Confidence**: Report forecast range (25th–75th percentile) and confidence level (% of similar issues that stayed within range)\n\n**Avoid these mistakes**:\n- **Data staleness**: If token costs haven't updated in 30 days, flag the forecast as potentially stale\n- **Too few samples**: If a stratum has <5 historical issues, widen confidence intervals or combine with adjacent strata\n- **Outlier inflation**: Exclude the top/bottom 5% of costs per stratum to prevent one expensive run from skewing the mean\n- **Model pricing changes**: If Claude pricing changes mid-month, stratify by date range and show separate forecasts\n\n## ROI Calculation\n\n**ROI = Value Delivered / Cost**\n\nFor pipeline automation, ROI dimensions:\n- **Delivery ROI**: Issues merged / cost, stratified by template and complexity\n- **Template ROI**: Success rate × cost-per-success, by template and label\n- **Model ROI**: Cost per token × token volume by model, identify cheapest model for each stage\n- **Quality ROI**: Defect rate × cost—if more expensive models catch more bugs, cost/defect matters\n\n**What NOT to do**: Don't equate cost with value delivered. A $50 architectural redesign may prevent a $100k incident; a $2 config fix has low cost but high value. Use separate value scoring (issue priority, blast radius, business impact) and divide cost by it.\n\n## Validation & Auditing\n\n**Cost verification** (spot-check against Claude API invoices):\n1. Pull cost data from `cost_attributions` for a 7-day window\n2. Query Claude API usage logs for the same period\n3. Compare totals: should match within 2% (accounting for rounding and API timing differences)\n4. Flag discrepancies >2% as attribution bugs\n\n**Forecasting accuracy**:\n1. At end of each month, compute forecast error: (predicted - actual) / actual\n2. Track error per stratum; identify systematic biases (e.g., fast template always cheaper than predicted)\n3. Retrain forecasting model if error >15% or if new strata emerge\n\n## Integration with Pipeline\n\n**Timing**: Record costs immediately after each stage completes; don't wait for full pipeline completion.\n\n**Budget enforcement**: Before pipeline start, compute forecast; if it exceeds daily budget, either:\n- Downgrade model selection (use sonnet instead of opus for lower-priority issues)\n- Reduce iteration limit in loop\n- Reject the pipeline with a cost warning\n\n**Transparency**: Always show cost forecast and actual cost attribution in pipeline UI and CLI output. Users must trust the numbers.\n"
           }
         ],
         "review_focus": [
-          "Cost attribution accuracy: verify no double-booking, correct model/stage/iteration mapping",
-          "Database schema design for scalability: partitioning strategy, index placement for ROI queries",
-          "Backward compatibility: does sw-cost.sh gracefully handle old pipeline runs without new schema columns?",
-          "Forecasting logic: median vs. mean, confidence intervals, fallback to baseline, edge cases (cohorts <5 runs)",
-          "Dashboard query performance: ROI joins on large cost tables—optimize or risk dashboard timeouts",
-          "CLI output clarity: users must understand what each cost number represents (token count? wall-clock? attributed?)",
-          "Test coverage for financial calculations: rounding, zero costs, concurrent runs, missing data scenarios"
+          "Schema design: Does cost_attributions table capture all cost dimensions (issue_id, stage, iteration, model, tokens, cost_usd) with proper foreign keys and no data loss?",
+          "Attribution logic: Is cost assignment deterministic, auditable, and complete—no missing costs from retries, model switches, or partial iterations?",
+          "Forecasting accuracy: Does the forecast model handle sparse historical data, model pricing changes, and new issue types gracefully?",
+          "ROI metric validity: Are ROI calculations measuring meaningful business outcomes, or just cost-per-merge which ignores quality and value delivered?",
+          "Test coverage: Do attribution tests validate edge cases (multi-iteration, model changes, budget exhaustion) with known expected costs?",
+          "Database performance: Will cost_attributions queries on large datasets remain performant? Are appropriate indexes in place?",
+          "Backward compatibility: How are existing pipeline_runs (without cost data) handled in historical analysis and forecasting?"
         ],
         "risk_areas": [
-          "Data accuracy risk: misattributed costs lead to wrong business decisions (template selection, budget forecasting)",
-          "Silent data loss: missing token tracking produces NULL costs—need alerts to catch schema migration failures",
-          "Forecasting overconfidence: with limited historical data (<5 runs per cohort), predictions are unreliable—require guardrails",
-          "Integration blast radius: cost tracking touches sw-cost.sh (core), database schema, dashboard, and CLI—rollback complexity is high",
-          "Performance degradation: large cost tables (millions of rows after 1 year) can slow dashboard ROI queries if not indexed correctly",
-          "Schema migration safety: adding NOT NULL columns to cost_attributions requires zero-downtime strategy (add nullable first, backfill, then add constraint)"
+          "Cost attribution incompleteness: If token counts aren't captured at iteration boundaries, ROI calculations will underestimate or misattribute costs, leading to flawed decisions.",
+          "Forecasting overfitting: If the model relies on too few historical samples or ignores outliers, forecasts will be unreliable for new issue types or templates.",
+          "Database query bottlenecks: Adding cost tracking to every pipeline run could slow down pipeline_runs queries if cost_attributions joins aren't indexed properly.",
+          "Model pricing volatility: Claude pricing may change; the forecasting model must be retrained or adjusted when pricing changes, or forecasts become stale.",
+          "Financial auditability: If cost data can't be reconciled against actual API invoices, cost tracking loses credibility and stakeholders won't trust ROI decisions."
         ]
       },
-      "timestamp": 1775240824,
+      "timestamp": 1775263539,
       "ttl": 3600
     },
     "251cb374f42c034ad3996e7deefda0a0": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Contains real delivery patterns from this repo: feature complexity (60-65), iteration counts (3), typical costs ($2.50), test strategies (npm test), and file change patterns. Directly informs estimation for cost attribution feature."
+            "file": "success-patterns.json (first)",
+            "relevance": 35,
+            "summary": "Contains actual cost tracking data ($2.50 per delivery, iterations, complexity scores, file patterns). Relevant for understanding how Shipwright measures and tracks costs in feature deliveries—foundational for a cost-per-issue attribution engine."
           },
           {
-            "file": "patterns.json",
-            "relevance": 70,
-            "summary": "Project structure: Node.js with vitest, CommonJS imports, src/ directory. Understanding the codebase topology is essential for planning where the cost attribution engine will integrate."
+            "file": "patterns.json (first)",
+            "relevance": 20,
+            "summary": "Project structure detection (Node.js, vitest, src/ directory). Relevant for understanding codebase conventions when planning dashboard implementation."
           },
           {
-            "file": "failures.json",
-            "relevance": 55,
-            "summary": "Shows build-stage failure patterns (uninitialized variables, reference errors) with 100% fix effectiveness for some categories. Useful for anticipating implementation pitfalls and test strategy."
+            "file": "failures.json (variable initialization patterns)",
+            "relevance": 15,
+            "summary": "Common build failure patterns (uninitialized variables, missing declarations). Relevant for anticipating implementation risks and defining test strategy for feature code."
           },
           {
             "file": "architecture.json",
-            "relevance": 50,
-            "summary": "Documents existing architecture rules (rule1, rule2, rule3). Cost attribution feature must conform to these constraints during design phase."
+            "relevance": 10,
+            "summary": "Generic architecture rules framework. Minimal relevance—shows that architecture enforcement exists but does not address cost/ROI specific constraints."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 42,
-            "summary": "Second success pattern example (authentication feature, 3 iterations, 45s). Provides comparative delivery data, though less detailed than the primary success pattern entry."
+            "file": "patterns.json (nodejs bootstrap)",
+            "relevance": 5,
+            "summary": "Project type detection metadata. Minimal relevance to feature planning—confirms Node.js context but no actionable insights for cost attribution design."
           }
         ]
       },
-      "timestamp": 1775240840,
+      "timestamp": 1775263557,
       "ttl": 1800
     },
     "0b89fbd9a49f811d3545cafddcb6b0c1": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (first entry)",
-            "relevance": 72,
-            "summary": "Documents successful feature delivery with 3 iterations, cost tracking ($2.50), and standard template usage. Shows outcome-feedback confidence calculation patterns (cost attribution related) and npm test strategy — directly applicable to cost attribution engine planning."
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Contains detailed test stage failures with root causes (sw-cleanup.sh, sed variable expansion) and mitigation strategies. Directly applicable to understanding why plan validation failed—shows how validation failures are documented and how to diagnose them."
           },
           {
-            "file": "failures.json (first entry)",
-            "relevance": 58,
-            "summary": "Test stage failures show validation gaps in shell scripts and cleanup detection logic. Demonstrates how sw-cleanup.sh dry-run mode validation failed — relevant to understanding plan validation rejection patterns."
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Shows successful completion of similar complexity features (bug fixes at 60 complexity, 3 iterations, ~2.5 USD cost). Provides baseline patterns for similar work scope and cost, informing what successful validation looks like."
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 48,
-            "summary": "Project structure shows vitest test runner, commonjs imports, and script-heavy codebase (scripts/lib/*.sh patterns). Conventions affect planning scope and validation strategy for cost-related features."
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Documents common build-stage failures ('cannot read property of undefined', 'referenceerror') with 100% fix effectiveness rates. Relevant as validation failure patterns often originate from build/test failures with established remediation."
           }
         ]
       },
-      "timestamp": 1775241636,
+      "timestamp": 1775263814,
       "ttl": 1800
     },
     "674353fc21453a1df989156b0d1608cb": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 85,
-            "summary": "Project type (Node.js), conventions (src/ structure, CommonJS imports, vitest), and package manager define the technical foundation for architecture design. Essential for component structure and tooling decisions."
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Contains cost_usd tracking and iteration patterns showing how costs are measured and managed across 3+ iteration cycles; directly relevant to building cost attribution and ROI calculation mechanisms"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Shows cost tracking (cost_usd field), issue complexity scoring (0-100), iterations, and duration metrics; provides patterns for cost-per-issue attribution and ROI scoring"
           },
           {
             "file": "architecture.json",
-            "relevance": 80,
-            "summary": "Existing architecture rules and patterns directly inform design decisions for the new cost attribution engine. Must align with established layer boundaries and dependency direction conventions."
+            "relevance": 35,
+            "summary": "Contains architecture rules framework that establishes design constraints and patterns; relevant for defining architectural guardrails for attribution engine components"
           },
           {
-            "file": "success-patterns.json (first entry)",
-            "relevance": 62,
-            "summary": "Demonstrates proven iteration approach (3 iterations, loop-based), testing strategy (npm test), and standard template usage. Informs methodology for building complex features like cost attribution."
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Defines project structure (src/ directory, test patterns, CommonJS imports); necessary for understanding where to place new cost attribution code and following existing conventions"
           },
           {
-            "file": "failures.json (fourth entry)",
-            "relevance": 38,
-            "summary": "Common JavaScript patterns for undefined properties and missing declarations highlight error-prone areas to avoid in the architecture design. Informs input validation and variable initialization strategies."
-          },
-          {
-            "file": "failures.json (second entry)",
-            "relevance": 32,
-            "summary": "Shipwright implementation issues (sw-cleanup.sh, sed handling) reveal common pitfalls in complex shell script integration. Relevant for designing robust pipeline integration patterns."
+            "file": "failures.json",
+            "relevance": 18,
+            "summary": "Shows variable initialization and property access failures with 100% fix effectiveness; prevents common runtime errors in cost calculation and ROI dashboard logic"
           }
         ]
       },
-      "timestamp": 1775241679,
+      "timestamp": 1775263898,
       "ttl": 1800
     },
     "5597e82715ade149c84e3e464c66953e": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (first entry)",
-            "relevance": 38,
-            "summary": "Contains cost tracking ($2.50), complexity scoring (60-65), iteration patterns, and test strategies for similar complex features. Shows working approaches for multi-iteration development with cost awareness, directly applicable to cost attribution engine design."
+            "file": "failures.json (comprehensive, 3 failures)",
+            "relevance": 75,
+            "summary": "Documents actual test failures with root causes (sw-cleanup stale detection, sed variable expansion, test regression detection). These represent concrete anti-patterns to avoid when building attribution engine features."
           },
           {
-            "file": "failures.json (first entry)",
-            "relevance": 22,
-            "summary": "Documents actual test-stage failures with root causes (heartbeat detection, variable expansion issues). These represent anti-patterns and pitfalls encountered in practice that inform what design approaches to avoid."
+            "file": "failures.json (build stage, undefined variables)",
+            "relevance": 65,
+            "summary": "Tracks common anti-patterns: uninitialized variables (100% mitigation success) and reference errors (66% success). Shows patterns that failed and effective fixes—directly applicable to avoiding similar pitfalls in new feature design."
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 18,
-            "summary": "Project conventions (vitest test runner, commonjs imports, src/ structure) provide context for implementation constraints within this codebase, indirectly informing design approach decisions."
+            "file": "success-patterns.json (feature approaches)",
+            "relevance": 55,
+            "summary": "Captures two successful delivery patterns (bug fix in 3 iterations, feature in 3 iterations at 60-65 complexity). By contrast, shows what design/iteration strategy worked, informing rejection of opposite approaches for similar complexity features."
           }
         ]
       },
-      "timestamp": 1775241696,
+      "timestamp": 1775263913,
+      "ttl": 1800
+    },
+    "9fc48fb29e0d8dc203900c384e55748c": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1775263393,
+      "ttl": 1800
+    },
+    "fbebf1422e0d6b23c08430e02382a37e": {
+      "result": {
+        "estimated_cost_usd": 3.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 28000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1775263404,
+      "ttl": 3600
+    },
+    "24e5cce61997690ecc7a6e7549d4864c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure baseline: Node.js/JavaScript, vitest test runner, npm package manager, CommonJS imports — directly describes the build environment for this task"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Common JavaScript/Node.js build failures with mitigation data: uninitialized variables (100% fix rate), undefined references (66% fix rate) — actionable patterns to watch for in build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Generic JavaScript build errors with root causes and fixes: variable initialization, missing declarations — applicable guidance for cost-attribution-engine implementation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "ENOENT/missing dependency pattern with npm install mitigation (95% effectiveness) — setup prerequisite for Node.js build"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "Two similar-complexity patterns (60–65 complexity, 3 iterations, 2.5 USD cost) using standard template — baseline expectations for feature development in this repo"
+          }
+        ]
+      },
+      "timestamp": 1775264162,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project configuration (vitest, npm, src/ layout, commonjs imports) is essential for build stage to run tests correctly and understand codebase structure"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Historical successful builds show test strategy (npm test), typical file patterns (.claude/*, scripts/*), iteration patterns, and duration baselines useful for build planning"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Previous test stage failures document common issues (variable expansion, dry-run detection) that should be avoided or mitigated during build iterations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Empty baselines entry; no historical metrics to inform build decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions list; no prior architectural choices documented for this build context"
+          }
+        ]
+      },
+      "timestamp": 1775264171,
+      "ttl": 1800
+    },
+    "afe497096cbb223a50834da939fb1d73": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1775265021,
       "ttl": 1800
     }
   }
