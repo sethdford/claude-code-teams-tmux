@@ -481,13 +481,3 @@ restart_before_restart() {
 }
 
 # Called after session restart to inject briefing into prompt
-restart_inject_briefing() {
-    local briefing_file="${1:-${ARTIFACTS_DIR:-${LOG_DIR}}/restart-briefing.md}"
-
-    if [[ ! -f "$briefing_file" ]]; then
-        return 0  # No briefing to inject
-    fi
-
-    # Return briefing content for prompt injection
-    cat "$briefing_file" 2>/dev/null || true
-}

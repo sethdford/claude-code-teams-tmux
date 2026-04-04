@@ -62,13 +62,6 @@ _rl_decay_factor() {
 }
 
 # Convert ISO timestamp to epoch seconds (portable)
-_rl_iso_to_epoch() {
-    local ts="${1:-}"
-    [[ -z "$ts" ]] && { echo "0"; return; }
-    # Try GNU date first, fall back to macOS date
-    date -d "$ts" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null || echo "0"
-}
-
 # ─── Core Functions ──────────────────────────────────────────────────────────
 
 # Record a completed pipeline episode.

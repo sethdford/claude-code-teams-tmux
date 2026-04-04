@@ -607,31 +607,31 @@ cmd_team() {
         case "${complexity}-${risk}" in
             trivial-low|simple-low)
                 template="fast"
-                model="haiku"
+                model=$(_smart_model "classification" "haiku")
                 max_iterations=2
                 agents=1
                 ;;
             simple-*|moderate-low)
                 template="standard"
-                model="sonnet"
+                model=$(_smart_model "classification" "sonnet")
                 max_iterations=5
                 agents=2
                 ;;
             moderate-*|complex-low)
                 template="standard"
-                model="sonnet"
+                model=$(_smart_model "classification" "sonnet")
                 max_iterations=8
                 agents=3
                 ;;
             complex-*|epic-*)
                 template="full"
-                model="opus"
+                model=$(_smart_model "classification" "opus")
                 max_iterations=15
                 agents=4
                 ;;
             *)
                 template="standard"
-                model="sonnet"
+                model=$(_smart_model "classification" "sonnet")
                 max_iterations=5
                 agents=2
                 ;;

@@ -273,7 +273,7 @@ recommend_team() {
         roles="builder"
         template="fast"
         estimated_agents=1
-        model="haiku"
+        model=$(_smart_model "classification" "haiku")
         max_iterations=3
         confidence=85
         risk_factors="Low complexity, single module"
@@ -283,7 +283,7 @@ recommend_team() {
         roles="builder,tester"
         template="standard"
         estimated_agents=2
-        model="sonnet"
+        model=$(_smart_model "classification" "sonnet")
         max_iterations=5
         confidence=80
         risk_factors="Moderate complexity across modules"
@@ -293,7 +293,7 @@ recommend_team() {
         roles="builder,builder,tester"
         template="standard"
         estimated_agents=3
-        model="sonnet"
+        model=$(_smart_model "classification" "sonnet")
         max_iterations=6
         confidence=75
         risk_factors="Moderate-high complexity, coordination needed"
@@ -303,7 +303,7 @@ recommend_team() {
         roles="builder,builder,tester,reviewer"
         template="full"
         estimated_agents=4
-        model="opus"
+        model=$(_smart_model "classification" "opus")
         max_iterations=8
         confidence=70
         risk_factors="High complexity, cross-system impact"

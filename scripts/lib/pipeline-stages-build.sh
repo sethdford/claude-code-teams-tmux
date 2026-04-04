@@ -521,6 +521,18 @@ ${commit_msgs}" --model "$(_smart_model commit_quality haiku)" < /dev/null 2>/de
         fi
     fi
 
+    # ── Constitutional diff check (advisory, before scope enforcement) ──
+    if type constitutional_check_diff >/dev/null 2>&1; then
+        local const_diff_violations
+        const_diff_violations=$(constitutional_check_diff "${BASE_BRANCH:-main}" "HEAD" 2>/dev/null) || true
+        local const_diff_count
+        const_diff_count=$(echo "${const_diff_violations:-[]}" | jq 'length' 2>/dev/null || echo "0")
+        if [[ "$const_diff_count" -gt 0 ]]; then
+            warn "Constitutional diff check: $const_diff_count violation(s) in changed code"
+            emit_event "build.constitutional_diff" "violations=$const_diff_count" "stage=build"
+        fi
+    fi
+
     # ── Scope Enforcement: Compare planned vs actual files (best-effort) ──
     if type generate_scope_report >/dev/null 2>&1; then
         local plan_file="$ARTIFACTS_DIR/plan.md"

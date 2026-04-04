@@ -942,12 +942,13 @@ intelligence_recommend_model() {
     local complexity="${2:-5}"
     local budget_remaining="${3:-100}"
 
-    local model="sonnet"
+    local model
+    model=$(_smart_model "routing" "sonnet")
     local reason="default balanced choice"
 
     # Budget-constrained: always use haiku regardless of routing (highest priority)
     if [[ "$budget_remaining" != "" ]] && [[ "$(awk -v b="$budget_remaining" 'BEGIN{print (b+0<5)?1:0}')" == "1" ]]; then
-        model="haiku"
+        model=$(_smart_model "budget_constrained" "haiku")
         reason="budget constrained (< \$5 remaining)"
         local result
         result=$(jq -n --arg model "$model" --arg reason "$reason" --arg stage "$stage" --argjson complexity "$complexity" \
@@ -1016,7 +1017,7 @@ intelligence_recommend_model() {
 
             if [[ "$use_sonnet" == "true" ]]; then
                 if [[ "$budget_remaining" != "" ]] && [[ "$(awk -v b="$budget_remaining" 'BEGIN{print (b+0<5)?1:0}')" == "1" ]]; then
-                    model="haiku"
+                    model=$(_smart_model "budget_constrained" "haiku")
                     reason="sonnet viable (${sonnet_rate}% success) but budget constrained"
                 else
                     model="sonnet"
@@ -1059,21 +1060,21 @@ intelligence_recommend_model() {
     # Strategy 2: Heuristic fallback (no historical data available)
     # Budget-constrained: use haiku
     if [[ "$budget_remaining" != "" ]] && [[ "$(awk -v b="$budget_remaining" 'BEGIN{print (b+0<5)?1:0}')" == "1" ]]; then
-        model="haiku"
+        model=$(_smart_model "budget_constrained" "haiku")
         reason="budget constrained (< \$5 remaining)"
     # High complexity + critical stages: use opus
     elif [[ "$complexity" -ge 8 ]]; then
         case "$stage" in
             plan|design|review|compound_quality)
-                model="opus"
+                model=$(_smart_model "routing" "opus")
                 reason="high complexity (${complexity}/10) + critical stage (${stage})"
                 ;;
             build|test)
-                model="sonnet"
+                model=$(_smart_model "routing" "sonnet")
                 reason="high complexity but execution stage — sonnet is sufficient"
                 ;;
             *)
-                model="sonnet"
+                model=$(_smart_model "routing" "sonnet")
                 reason="high complexity, non-critical stage"
                 ;;
         esac
@@ -1081,15 +1082,15 @@ intelligence_recommend_model() {
     elif [[ "$complexity" -le 3 ]]; then
         case "$stage" in
             intake|pr|merge)
-                model="haiku"
+                model=$(_smart_model "routing" "haiku")
                 reason="low complexity (${complexity}/10), simple stage (${stage})"
                 ;;
             build|test)
-                model="sonnet"
+                model=$(_smart_model "routing" "sonnet")
                 reason="low complexity but code execution stage"
                 ;;
             *)
-                model="haiku"
+                model=$(_smart_model "routing" "haiku")
                 reason="low complexity, standard stage"
                 ;;
         esac

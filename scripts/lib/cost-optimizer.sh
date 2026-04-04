@@ -63,36 +63,6 @@ if [[ -z "${OPUS_INPUT_PER_M:-}" ]]; then
 fi
 
 # ─── Calculate Cost for Token Counts ─────────────────────────────────────────
-_costopt_cost_for_tokens() {
-    local input_tokens="${1:-0}"
-    local output_tokens="${2:-0}"
-    local model="${3:-sonnet}"
-
-    local input_rate output_rate
-    case "$model" in
-        opus|claude-opus-4*)
-            input_rate="${OPUS_INPUT_PER_M}"
-            output_rate="${OPUS_OUTPUT_PER_M}"
-            ;;
-        sonnet|claude-sonnet-4*)
-            input_rate="${SONNET_INPUT_PER_M}"
-            output_rate="${SONNET_OUTPUT_PER_M}"
-            ;;
-        haiku|claude-haiku-4*)
-            input_rate="${HAIKU_INPUT_PER_M}"
-            output_rate="${HAIKU_OUTPUT_PER_M}"
-            ;;
-        *)
-            input_rate="${SONNET_INPUT_PER_M}"
-            output_rate="${SONNET_OUTPUT_PER_M}"
-            ;;
-    esac
-
-    awk -v it="$input_tokens" -v ot="$output_tokens" \
-        -v ir="$input_rate" -v or_="$output_rate" \
-        'BEGIN { printf "%.4f", (it / 1000000.0 * ir) + (ot / 1000000.0 * or_) }'
-}
-
 # ─── 1. costopt_init() ───────────────────────────────────────────────────────
 # Initialize cost optimization for a pipeline run.
 # Loads budget and historical cost data, calculates projections.

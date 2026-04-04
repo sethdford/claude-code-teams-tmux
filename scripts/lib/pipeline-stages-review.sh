@@ -547,6 +547,18 @@ ${review_summary}
 </details>"
     fi
 
+    # ── Constitutional diff check (advisory) ──
+    if type constitutional_check_diff >/dev/null 2>&1; then
+        local const_diff_violations
+        const_diff_violations=$(constitutional_check_diff "${BASE_BRANCH:-main}" "HEAD" 2>/dev/null) || true
+        local const_diff_count
+        const_diff_count=$(echo "${const_diff_violations:-[]}" | jq 'length' 2>/dev/null || echo "0")
+        if [[ "$const_diff_count" -gt 0 ]]; then
+            warn "Constitutional diff check: $const_diff_count violation(s) in changed code"
+            emit_event "review.constitutional_diff" "violations=$const_diff_count" "stage=review"
+        fi
+    fi
+
     log_stage "review" "AI review complete ($total_issues issues: $critical_count critical, $bug_count bugs, $warning_count suggestions)"
 }
 

@@ -29,11 +29,6 @@ CAUSAL_MAX_DEPTH="${CAUSAL_MAX_DEPTH:-5}"
 
 # ─── Node ID Generation ─────────────────────────────────────────────────────
 
-_causal_node_id() {
-    local type="$1" name="$2"
-    printf '%s:%s' "$type" "$name"
-}
-
 # ─── Build Graph ─────────────────────────────────────────────────────────────
 # Build entity-relationship graph from current pipeline state.
 # Analyzes: changed files, functions defined/called, test files, configs.
@@ -442,14 +437,3 @@ causal_suggest_fix() {
 
 # ─── Graph Status ────────────────────────────────────────────────────────────
 
-causal_status() {
-    if [[ -f "$CAUSAL_GRAPH_FILE" ]]; then
-        local node_count edge_count built_at
-        node_count=$(jq -r '.node_count // 0' "$CAUSAL_GRAPH_FILE" 2>/dev/null || echo "0")
-        edge_count=$(jq -r '.edge_count // 0' "$CAUSAL_GRAPH_FILE" 2>/dev/null || echo "0")
-        built_at=$(jq -r '.built_at // "unknown"' "$CAUSAL_GRAPH_FILE" 2>/dev/null || echo "unknown")
-        echo "causal_graph=active nodes=${node_count} edges=${edge_count} built=${built_at}"
-    else
-        echo "causal_graph=none"
-    fi
-}

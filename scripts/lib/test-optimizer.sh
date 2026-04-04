@@ -363,7 +363,7 @@ testopt_run_parallel() {
     for group in "${test_groups[@]:-}"; do
         # Wait for a worker slot
         while [[ $(jobs -r | wc -l) -ge "$max_workers" ]]; do
-            sleep 0.1
+            sleep 0.1  # Intentional 100ms spin-wait for worker slot — too small for backoff
         done
 
         # Run this group in background

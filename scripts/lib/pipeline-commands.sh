@@ -834,6 +834,10 @@ pipeline_start() {
         if type reward_aggregate_pipeline >/dev/null 2>&1; then
             reward_aggregate_pipeline "${PIPELINE_JOB_ID:-$$}" "${INTELLIGENCE_LANGUAGE:-unknown}" "${INTELLIGENCE_COMPLEXITY:-medium}" 2>/dev/null || true
         fi
+        # Track memory effectiveness — close the feedback loop on injected memories
+        if type memeff_on_pipeline_complete >/dev/null 2>&1; then
+            memeff_on_pipeline_complete "${PIPELINE_JOB_ID:-$$}" "success" "" 2>/dev/null || true
+        fi
         if type bandit_update >/dev/null 2>&1; then
             bandit_update "model" "${CURRENT_STAGE_ID:-build}:${MODEL:-opus}" "success" 2>/dev/null || true
         fi
@@ -896,6 +900,10 @@ pipeline_start() {
         # Autoresearch RL Phase 8: aggregate rewards, update bandits, learn policy (failure case)
         if type reward_aggregate_pipeline >/dev/null 2>&1; then
             reward_aggregate_pipeline "${PIPELINE_JOB_ID:-$$}" "${INTELLIGENCE_LANGUAGE:-unknown}" "${INTELLIGENCE_COMPLEXITY:-medium}" 2>/dev/null || true
+        fi
+        # Track memory effectiveness — close the feedback loop on injected memories (failure case)
+        if type memeff_on_pipeline_complete >/dev/null 2>&1; then
+            memeff_on_pipeline_complete "${PIPELINE_JOB_ID:-$$}" "failure" "${CURRENT_STAGE_ID:-unknown}" 2>/dev/null || true
         fi
         if type bandit_update >/dev/null 2>&1; then
             bandit_update "model" "${CURRENT_STAGE_ID:-build}:${MODEL:-opus}" "failure" 2>/dev/null || true

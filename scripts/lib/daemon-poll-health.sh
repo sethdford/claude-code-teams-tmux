@@ -171,7 +171,7 @@ NUDGE_EOF
                             daemon_log WARN "Killing stale job (legacy): issue #${issue_num} (${elapsed}s > ${kill_threshold}s kill threshold, PID $pid)"
                             emit_event "daemon.stale_kill" "issue=$issue_num" "elapsed_s=$elapsed" "pid=$pid"
                             kill "$pid" 2>/dev/null || true
-                            sleep 2
+                            sleep "$(_smart_int "daemon.kill_grace_seconds" 2)"
                             kill -9 "$pid" 2>/dev/null || true
                         else
                             daemon_log WARN "Stale job (legacy): issue #${issue_num} (${elapsed}s > ${stale_timeout}s, PID $pid) — will kill at ${kill_threshold}s"

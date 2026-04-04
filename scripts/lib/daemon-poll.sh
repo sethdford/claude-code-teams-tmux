@@ -638,7 +638,7 @@ daemon_poll_loop() {
         # Sleep in 1s intervals so we can catch shutdown quickly
         local i=0
         while [[ $i -lt $effective_interval ]] && [[ ! -f "$SHUTDOWN_FLAG" ]]; do
-            sleep 1 || true  # Guard against signal interruption under set -e
+            sleep "$(_smart_int "daemon.poll_tick_seconds" 1)" || true  # Guard against signal interruption under set -e
             i=$((i + 1))
         done
     done

@@ -509,7 +509,8 @@ select_adaptive_model() {
 
 # Select audit/DoD model — uses haiku if success rate is high enough, else sonnet
 select_audit_model() {
-    local default_model="haiku"
+    local default_model
+    default_model=$(_smart_model "audit" "haiku")
     local opt_file="$HOME/.shipwright/optimization/audit-tuning.json"
     if [[ -f "$opt_file" ]] && command -v jq >/dev/null 2>&1; then
         local success_rate
@@ -1846,6 +1847,10 @@ cd "$WORK_DIR" || { echo "ERROR: Cannot cd to WORK_DIR: $WORK_DIR" >&2; exit 1; 
 ITERATION=0
 CONSECUTIVE_FAILURES=0
 
+# Source auto-recovery for circuit breaker recovery
+# shellcheck source=lib/auto-recovery.sh
+[[ -f "__SCRIPT_DIR__/lib/auto-recovery.sh" ]] && source "__SCRIPT_DIR__/lib/auto-recovery.sh" 2>/dev/null || true
+
 echo -e "${CYAN}${BOLD}▸${RESET} Agent ${AGENT_NUM}/${TOTAL_AGENTS} starting in ${WORK_DIR}"
 
 while [[ "$ITERATION" -lt "$MAX_ITERATIONS" ]]; do
@@ -1950,6 +1955,14 @@ PROMPT
     fi
 
     if [[ "$CONSECUTIVE_FAILURES" -ge 3 ]]; then
+        # Attempt auto-recovery before tripping circuit breaker
+        if type recovery_before_circuit_breaker >/dev/null 2>&1; then
+            if recovery_before_circuit_breaker "" "$WORK_DIR" "$TEST_CMD"; then
+                CONSECUTIVE_FAILURES=0
+                echo -e "  ${GREEN}✓${RESET} Auto-recovery succeeded — resetting circuit breaker"
+                continue
+            fi
+        fi
         echo -e "  ${RED}✗${RESET} Circuit breaker — stopping agent ${AGENT_NUM}"
         break
     fi
@@ -2203,6 +2216,10 @@ ${_diagnosis}"
 
 ${GOAL}"
                 info "Memory fix injected: ${_fix_suggestion:0:80}"
+                # Track memory injection for effectiveness measurement
+                if type memeff_on_injection >/dev/null 2>&1; then
+                    memeff_on_injection "closed_loop_fix" "${PIPELINE_JOB_ID:-$$}" "build" 2>/dev/null || true
+                fi
             fi
 
             # Analyze failure via Claude (background, non-blocking) for richer root_cause/fix in memory
@@ -2275,6 +2292,10 @@ ${GOAL}"
                     # Append to next iteration's memory context
                     local memory_refresh_file="$LOG_DIR/memory-refresh-${ITERATION}.txt"
                     echo "$refreshed_memory" > "$memory_refresh_file"
+                    # Track memory injection for effectiveness measurement
+                    if type memeff_on_injection >/dev/null 2>&1; then
+                        memeff_on_injection "context_refresh" "${PIPELINE_JOB_ID:-$$}" "build" 2>/dev/null || true
+                    fi
                 fi
             fi
         fi

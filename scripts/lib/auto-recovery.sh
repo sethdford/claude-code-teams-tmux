@@ -369,36 +369,6 @@ recovery_reset() {
 
 # ─── Recovery Status ────────────────────────────────────────────────────────
 
-recovery_status() {
-    if [[ -f "$RECOVERY_STATE_FILE" ]] && command -v jq >/dev/null 2>&1; then
-        local attempts escalation_level
-        attempts=$(jq -r '.attempts // 0' "$RECOVERY_STATE_FILE" 2>/dev/null || echo "0")
-        escalation_level=$(jq -r '.escalation_level // 0' "$RECOVERY_STATE_FILE" 2>/dev/null || echo "0")
-        echo "recovery_active=true attempts=${attempts}/${RECOVERY_MAX_ATTEMPTS} escalation=${escalation_level}"
-    else
-        echo "recovery_active=false"
-    fi
-}
-
-# ─── Recovery Success Rate ──────────────────────────────────────────────────
-# Calculate historical success rate from recovery log.
-
-recovery_success_rate() {
-    if [[ ! -f "$RECOVERY_LOG_FILE" ]]; then
-        echo "0"
-        return 0
-    fi
-
-    local total succeeded
-    total=$(wc -l < "$RECOVERY_LOG_FILE" 2>/dev/null | tr -d ' ') || total=0
-    succeeded=$(grep -c '"result":"recovered"' "$RECOVERY_LOG_FILE" 2>/dev/null) || succeeded=0
-
-    if [[ "$total" -gt 0 ]]; then
-        echo $(( succeeded * 100 / total ))
-    else
-        echo "0"
-    fi
-}
 
 # ─── Integration Point: Pre-Circuit-Breaker Hook ────────────────────────────
 # Called by loop-convergence.sh before the circuit breaker trips.

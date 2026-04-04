@@ -68,7 +68,7 @@ skill_memory_record() {
     # Acquire lock
     while [[ -f "$lockfile" ]] && [[ $lock_attempts -lt $max_lock_attempts ]]; do
         lock_attempts=$((lock_attempts + 1))
-        sleep 0.1
+        sleep 0.1  # Intentional 100ms spin-wait for lock acquisition — too small for backoff
     done
 
     if [[ $lock_attempts -ge $max_lock_attempts ]]; then
@@ -233,7 +233,7 @@ skill_memory_import() {
 
     while [[ -f "$lockfile" ]] && [[ $lock_attempts -lt $max_lock_attempts ]]; do
         lock_attempts=$((lock_attempts + 1))
-        sleep 0.1
+        sleep 0.1  # Intentional 100ms spin-wait for lock acquisition — too small for backoff
     done
 
     if [[ $lock_attempts -ge $max_lock_attempts ]]; then
@@ -275,7 +275,7 @@ skill_memory_prune() {
 
     while [[ -f "$lockfile" ]] && [[ $lock_attempts -lt $max_lock_attempts ]]; do
         lock_attempts=$((lock_attempts + 1))
-        sleep 0.1
+        sleep 0.1  # Intentional 100ms spin-wait for lock acquisition — too small for backoff
     done
 
     if [[ $lock_attempts -ge $max_lock_attempts ]]; then

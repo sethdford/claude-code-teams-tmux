@@ -28,30 +28,7 @@ SPEC_SCHEMA="${SPEC_SCHEMA:-}"  # Path to specification.json schema (auto-detect
 
 # ─── Schema Location ────────────────────────────────────────────────────────
 
-_find_spec_schema() {
-    if [[ -n "$SPEC_SCHEMA" && -f "$SPEC_SCHEMA" ]]; then
-        echo "$SPEC_SCHEMA"
-        return 0
-    fi
-    # Check relative to this script (Shipwright repo)
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local repo_dir
-    repo_dir="$(cd "$script_dir/../.." && pwd)"
-    local candidates=(
-        "${repo_dir}/schemas/specification.json"
-        "./schemas/specification.json"
-        ".claude/schemas/specification.json"
-    )
-    local c
-    for c in "${candidates[@]}"; do
-        if [[ -f "$c" ]]; then
-            echo "$c"
-            return 0
-        fi
-    done
-    return 1
-}
+
 
 # ─── Spec Generation ────────────────────────────────────────────────────────
 # Generate a structured spec from issue text or goal description.
@@ -247,15 +224,6 @@ spec_validate() {
 
 # ─── Spec Load / Save ───────────────────────────────────────────────────────
 
-spec_load() {
-    local spec_file="${1:-}"
-    if [[ ! -f "$spec_file" ]]; then
-        error "Spec file not found: ${spec_file}"
-        return 1
-    fi
-    cat "$spec_file"
-}
-
 spec_save() {
     local spec_file="${1:-}"
     local spec_json="${2:-}"
@@ -394,31 +362,6 @@ EOF
 }
 
 # ─── Spec List ───────────────────────────────────────────────────────────────
-
-spec_list() {
-    if [[ ! -d "$SPEC_DIR" ]]; then
-        info "No specs directory found"
-        return 0
-    fi
-
-    local specs
-    specs=$(find "$SPEC_DIR" -name "*.json" -not -name "compliance-report.json" 2>/dev/null | sort)
-
-    if [[ -z "$specs" ]]; then
-        info "No specs found in ${SPEC_DIR}"
-        return 0
-    fi
-
-    echo "Specifications:"
-    while IFS= read -r spec; do
-        local title complexity
-        title=$(jq -r '.title // "untitled"' "$spec" 2>/dev/null)
-        complexity=$(jq -r '.metadata.complexity // "unknown"' "$spec" 2>/dev/null)
-        local goals_count
-        goals_count=$(jq '.goals | length' "$spec" 2>/dev/null || echo "0")
-        printf "  %-50s [%s] %d goals\n" "$title" "$complexity" "$goals_count"
-    done <<< "$specs"
-}
 
 # ─── Spec for Pipeline Prompt ────────────────────────────────────────────────
 # Format spec as markdown for injection into agent prompts.

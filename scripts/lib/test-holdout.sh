@@ -399,31 +399,3 @@ holdout_reveal() {
 # ─── Cleanup ─────────────────────────────────────────────────────────────────
 # Remove sealed tests and holdout artifacts.
 
-holdout_cleanup() {
-    if [[ -d "$HOLDOUT_SEALED_DIR" ]]; then
-        rm -rf "$HOLDOUT_SEALED_DIR"
-    fi
-    if [[ -f "$HOLDOUT_MANIFEST" ]]; then
-        rm -f "$HOLDOUT_MANIFEST"
-    fi
-    if [[ -f "$HOLDOUT_RESULTS" ]]; then
-        rm -f "$HOLDOUT_RESULTS"
-    fi
-    if [[ -f "$HOLDOUT_DIR/visible-tests.txt" ]]; then
-        rm -f "$HOLDOUT_DIR/visible-tests.txt"
-    fi
-}
-
-# ─── Status ──────────────────────────────────────────────────────────────────
-
-holdout_status() {
-    if [[ -f "$HOLDOUT_MANIFEST" ]]; then
-        local sealed_count visible_count ratio
-        sealed_count=$(jq -r '.sealed_count // 0' "$HOLDOUT_MANIFEST" 2>/dev/null || echo "0")
-        visible_count=$(jq -r '.visible_count // 0' "$HOLDOUT_MANIFEST" 2>/dev/null || echo "0")
-        ratio=$(jq -r '.ratio // 30' "$HOLDOUT_MANIFEST" 2>/dev/null || echo "30")
-        echo "holdout_active=true sealed=${sealed_count} visible=${visible_count} ratio=${ratio}%"
-    else
-        echo "holdout_active=false"
-    fi
-}
