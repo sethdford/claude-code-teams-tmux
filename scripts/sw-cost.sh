@@ -58,6 +58,12 @@ if [[ -f "$_COST_SCRIPT_DIR/sw-db.sh" ]]; then
     source "$_COST_SCRIPT_DIR/sw-db.sh" 2>/dev/null || true
 fi
 
+# Source cost-attribution library (ROI, forecasting, per-issue analysis)
+if [[ -f "$_COST_SCRIPT_DIR/lib/cost-attribution.sh" ]]; then
+    # shellcheck source=lib/cost-attribution.sh
+    source "$_COST_SCRIPT_DIR/lib/cost-attribution.sh" 2>/dev/null || true
+fi
+
 ensure_cost_dir() {
     mkdir -p "$COST_DIR"
     [[ -f "$COST_FILE" ]] || echo '{"entries":[],"summary":{}}' > "$COST_FILE"
@@ -938,6 +944,15 @@ show_help() {
     echo -e "  ${CYAN}calculate${RESET} <in> <out> <model>                Calculate cost (no record)"
     echo -e "  ${CYAN}check-budget${RESET} [estimated_usd]                Check budget before starting"
     echo ""
+    echo -e "${BOLD}ATTRIBUTION & ROI${RESET}"
+    echo -e "  ${CYAN}analyze${RESET}                        Per-issue cost attribution summary"
+    echo -e "  ${CYAN}analyze${RESET} --issue N --breakdown  Stage-by-stage breakdown for issue N"
+    echo -e "  ${CYAN}analyze${RESET} --period 30 --json     JSON output, custom period"
+    echo -e "  ${CYAN}roi${RESET}                            ROI dashboard (cost vs value delivered)"
+    echo -e "  ${CYAN}roi${RESET} --period 30 --json         JSON output, custom period"
+    echo -e "  ${CYAN}forecast${RESET}                       Budget forecast based on burn rate"
+    echo -e "  ${CYAN}forecast${RESET} --horizon 60 --json   Custom horizon, JSON output"
+    echo ""
     echo -e "${BOLD}EFFICIENCY${RESET}"
     echo -e "  ${CYAN}efficiency${RESET}                     Show cost/success efficiency metrics"
     echo -e "  ${CYAN}efficiency${RESET} --json              JSON output"
@@ -992,6 +1007,15 @@ case "$SUBCOMMAND" in
         ;;
     check-budget)
         cost_check_budget "$@"
+        ;;
+    analyze)
+        attrib_by_issue "$@"
+        ;;
+    roi)
+        attrib_roi "$@"
+        ;;
+    forecast)
+        attrib_forecast "$@"
         ;;
     efficiency)
         cost_show_efficiency "$@"

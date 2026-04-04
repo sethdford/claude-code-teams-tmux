@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -479,6 +479,26 @@ CREATE TABLE IF NOT EXISTS reasoning_traces (
     FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
+
+-- Cost attributions per issue/stage/iteration
+CREATE TABLE IF NOT EXISTS cost_attributions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL,
+    issue_number INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    model TEXT NOT NULL DEFAULT 'sonnet',
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    cost_usd REAL NOT NULL DEFAULT 0,
+    iteration INTEGER DEFAULT 0,
+    duration_secs INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id),
+    UNIQUE(job_id, stage, iteration)
+);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_issue ON cost_attributions(issue_number);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_job ON cost_attributions(job_id);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_created ON cost_attributions(created_at DESC);
 SCHEMA
 }
 
@@ -651,6 +671,33 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
+    fi
+
+    # Migration from v6 → v7: cost_attributions for per-issue cost tracking
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        sqlite3 "$DB_FILE" "
+CREATE TABLE IF NOT EXISTS cost_attributions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL,
+    issue_number INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    model TEXT NOT NULL DEFAULT 'sonnet',
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    cost_usd REAL NOT NULL DEFAULT 0,
+    iteration INTEGER DEFAULT 0,
+    duration_secs INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id),
+    UNIQUE(job_id, stage, iteration)
+);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_issue ON cost_attributions(issue_number);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_job ON cost_attributions(job_id);
+CREATE INDEX IF NOT EXISTS idx_cost_attrib_created ON cost_attributions(created_at DESC);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
     fi
 }
 
@@ -1077,6 +1124,164 @@ db_remaining_budget() {
     local today_spent
     today_spent=$(db_cost_today)
     awk -v budget="$budget_usd" -v spent="$today_spent" 'BEGIN { printf "%.2f", budget - spent }'
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Cost Attribution Functions
+# ═══════════════════════════════════════════════════════════════════════════
+
+# db_upsert_attribution <job_id> <issue_number> <stage> <model> <input_tokens> <output_tokens> <cost_usd> [iteration] [duration_secs]
+# Idempotent: UNIQUE(job_id, stage, iteration) → INSERT OR REPLACE
+db_upsert_attribution() {
+    local job_id="${1:-}"
+    local issue_number="${2:-0}"
+    local stage="${3:-unknown}"
+    local model="${4:-sonnet}"
+    local input_tokens="${5:-0}"
+    local output_tokens="${6:-0}"
+    local cost_usd="${7:-0}"
+    local iteration="${8:-0}"
+    local duration_secs="${9:-0}"
+
+    if ! db_available; then return 1; fi
+    if [[ -z "$job_id" ]]; then
+        warn "db_upsert_attribution: job_id required"
+        return 1
+    fi
+
+    # SQL-escape string fields
+    job_id="$(_sql_escape "$job_id")"
+    stage="$(_sql_escape "$stage")"
+    model="$(_sql_escape "$model")"
+
+    _db_exec "INSERT OR REPLACE INTO cost_attributions
+        (job_id, issue_number, stage, model, input_tokens, output_tokens, cost_usd, iteration, duration_secs, created_at)
+        VALUES ('${job_id}', ${issue_number}, '${stage}', '${model}', ${input_tokens}, ${output_tokens}, ${cost_usd}, ${iteration}, ${duration_secs}, '$(now_iso)');"
+}
+
+# db_query_attribution_by_issue [issue_number] [days] — per-issue cost breakdown as JSON
+db_query_attribution_by_issue() {
+    local issue="${1:-}"
+    local days="${2:-30}"
+    if ! db_available; then echo "[]"; return 0; fi
+    local cutoff_epoch
+    cutoff_epoch=$(( $(now_epoch) - (days * 86400) ))
+
+    local where_clause="WHERE created_at >= datetime('now', '-${days} days')"
+    if [[ -n "$issue" ]]; then
+        where_clause="WHERE issue_number = ${issue} AND created_at >= datetime('now', '-${days} days')"
+    fi
+
+    _db_query "SELECT json_group_array(json_object(
+        'issue_number', issue_number,
+        'total_cost', ROUND(total_cost, 4),
+        'total_input_tokens', total_input,
+        'total_output_tokens', total_output,
+        'total_duration_secs', total_duration,
+        'stage_count', stage_count,
+        'record_count', record_count
+    )) FROM (
+        SELECT issue_number,
+            SUM(cost_usd) as total_cost,
+            SUM(input_tokens) as total_input,
+            SUM(output_tokens) as total_output,
+            SUM(duration_secs) as total_duration,
+            COUNT(DISTINCT stage) as stage_count,
+            COUNT(*) as record_count
+        FROM cost_attributions
+        ${where_clause}
+        GROUP BY issue_number
+        ORDER BY total_cost DESC
+    );" || echo "[]"
+}
+
+# db_query_attribution_stages <issue_number> — per-stage breakdown for a single issue
+db_query_attribution_stages() {
+    local issue="${1:?issue_number required}"
+    if ! db_available; then echo "[]"; return 0; fi
+
+    _db_query "SELECT json_group_array(json_object(
+        'stage', stage,
+        'model', model,
+        'cost', cost,
+        'input_tokens', input_tok,
+        'output_tokens', output_tok,
+        'duration_secs', dur,
+        'iterations', iters
+    )) FROM (
+        SELECT stage, model,
+            ROUND(SUM(cost_usd), 4) as cost,
+            SUM(input_tokens) as input_tok,
+            SUM(output_tokens) as output_tok,
+            SUM(duration_secs) as dur,
+            COUNT(*) as iters
+        FROM cost_attributions
+        WHERE issue_number = ${issue}
+        GROUP BY stage, model
+        ORDER BY SUM(cost_usd) DESC
+    );" || echo "[]"
+}
+
+# db_query_attribution_roi [days] — ROI: cost vs complexity/success from pipeline_outcomes
+db_query_attribution_roi() {
+    local days="${1:-30}"
+    if ! db_available; then echo "[]"; return 0; fi
+
+    _db_query "SELECT json_group_array(json_object(
+        'issue_number', po.issue_number,
+        'job_id', po.job_id,
+        'template', po.template,
+        'complexity', po.complexity,
+        'success', po.success,
+        'pipeline_cost', ROUND(po.cost_usd, 4),
+        'attributed_cost', ROUND(COALESCE(ca.attr_cost, 0), 4),
+        'duration_secs', po.duration_secs,
+        'roi_score', ROUND(
+            CASE WHEN COALESCE(ca.attr_cost, po.cost_usd) > 0 THEN
+                (CASE po.complexity
+                    WHEN 'low' THEN 30
+                    WHEN 'medium' THEN 60
+                    WHEN 'high' THEN 100
+                    ELSE 60
+                END * po.success * 1.0) / COALESCE(ca.attr_cost, po.cost_usd)
+            ELSE 0 END, 2)
+    )) FROM pipeline_outcomes po
+    LEFT JOIN (
+        SELECT job_id, SUM(cost_usd) as attr_cost
+        FROM cost_attributions
+        GROUP BY job_id
+    ) ca ON ca.job_id = po.job_id
+    WHERE po.created_at >= datetime('now', '-${days} days')
+    ORDER BY po.created_at DESC;" || echo "[]"
+}
+
+# db_query_attribution_forecast [days_horizon] — daily spend trend for forecasting
+db_query_attribution_forecast() {
+    local horizon="${1:-30}"
+    if ! db_available; then echo "{}"; return 0; fi
+
+    local cutoff_30d cutoff_7d
+    cutoff_30d=$(( $(now_epoch) - (30 * 86400) ))
+    cutoff_7d=$(( $(now_epoch) - (7 * 86400) ))
+
+    _db_query "SELECT json_object(
+        'daily_costs', (
+            SELECT json_group_array(json_object('date', day, 'cost', ROUND(day_cost, 4)))
+            FROM (
+                SELECT DATE(ts) as day, SUM(cost_usd) as day_cost
+                FROM cost_entries
+                WHERE ts_epoch >= ${cutoff_30d}
+                GROUP BY DATE(ts)
+                ORDER BY day
+            )
+        ),
+        'total_30d', ROUND((SELECT COALESCE(SUM(cost_usd), 0) FROM cost_entries WHERE ts_epoch >= ${cutoff_30d}), 4),
+        'total_7d', ROUND((SELECT COALESCE(SUM(cost_usd), 0) FROM cost_entries WHERE ts_epoch >= ${cutoff_7d}), 4),
+        'avg_daily_30d', ROUND((SELECT COALESCE(SUM(cost_usd), 0) / 30.0 FROM cost_entries WHERE ts_epoch >= ${cutoff_30d}), 4),
+        'avg_daily_7d', ROUND((SELECT COALESCE(SUM(cost_usd), 0) / 7.0 FROM cost_entries WHERE ts_epoch >= ${cutoff_7d}), 4),
+        'horizon_days', ${horizon},
+        'projected_cost', ROUND((SELECT COALESCE(SUM(cost_usd), 0) / 7.0 * ${horizon} FROM cost_entries WHERE ts_epoch >= ${cutoff_7d}), 4)
+    );" || echo "{}"
 }
 
 # db_set_budget <amount_usd>

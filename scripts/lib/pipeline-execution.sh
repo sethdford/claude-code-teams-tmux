@@ -28,6 +28,11 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
 [[ "$(type -t emit_event 2>/dev/null)" == "function" ]] || emit_event() { true; }
 
+# Source cost-attribution for per-stage cost recording
+if [[ "$(type -t record_attribution 2>/dev/null)" != "function" ]]; then
+    [[ -f "$SCRIPT_DIR/lib/cost-attribution.sh" ]] && source "$SCRIPT_DIR/lib/cost-attribution.sh" 2>/dev/null || true
+fi
+
 # Ensure pipeline intelligence skip module is loaded (provides pipeline_should_skip_stage)
 # SCRIPT_DIR may point to scripts/ or scripts/lib/ depending on how this module was sourced
 if [[ -f "$SCRIPT_DIR/pipeline-intelligence-skip.sh" ]]; then
@@ -794,6 +799,14 @@ run_pipeline() {
             stage_dur_s=$(( $(now_epoch) - stage_start_epoch ))
             success "Stage ${BOLD}$id${RESET} complete ${DIM}(${timing})${RESET}"
             emit_event "stage.completed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "duration_s=$stage_dur_s" "result=success"
+            # Record cost attribution for this stage
+            if type record_attribution >/dev/null 2>&1 && [[ -n "${ISSUE_NUMBER:-}" ]]; then
+                record_attribution \
+                    "${SHIPWRIGHT_PIPELINE_ID:-pipeline-$$-${ISSUE_NUMBER:-0}}" \
+                    "${ISSUE_NUMBER}" "$id" "${stage_model_used:-sonnet}" \
+                    "${TOTAL_INPUT_TOKENS:-0}" "${TOTAL_OUTPUT_TOKENS:-0}" \
+                    "0" "0" "${stage_dur_s:-0}" 2>/dev/null || true
+            fi
             # Audit: stage complete
             if type audit_emit >/dev/null 2>&1; then
                 audit_emit "stage.complete" "stage=$id" "verdict=pass" \

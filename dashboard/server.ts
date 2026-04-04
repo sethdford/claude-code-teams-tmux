@@ -3724,6 +3724,143 @@ const server = Bun.serve({
       });
     }
 
+    // REST: Cost attribution by issue
+    if (pathname === "/api/costs/attribution") {
+      const conn = getDb();
+      if (!conn) {
+        return new Response(JSON.stringify({ issues: [], source: "none" }), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      try {
+        const period = parseInt(url.searchParams.get("period") || "30");
+        const issueParam = url.searchParams.get("issue");
+        let rows;
+        if (issueParam) {
+          rows = conn
+            .query(
+              `SELECT issue_number, stage, model, SUM(cost_usd) as cost,
+                      SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens,
+                      SUM(duration_secs) as duration_secs, COUNT(*) as records
+               FROM cost_attributions
+               WHERE issue_number = ? AND created_at >= datetime('now', '-' || ? || ' days')
+               GROUP BY stage, model ORDER BY cost DESC`,
+            )
+            .all(parseInt(issueParam), period);
+        } else {
+          rows = conn
+            .query(
+              `SELECT issue_number, SUM(cost_usd) as total_cost,
+                      SUM(input_tokens) as total_input_tokens,
+                      SUM(output_tokens) as total_output_tokens,
+                      SUM(duration_secs) as total_duration_secs,
+                      COUNT(DISTINCT stage) as stage_count, COUNT(*) as record_count
+               FROM cost_attributions
+               WHERE created_at >= datetime('now', '-' || ? || ' days')
+               GROUP BY issue_number ORDER BY total_cost DESC`,
+            )
+            .all(period);
+        }
+        return new Response(
+          JSON.stringify({ issues: rows, source: "sqlite" }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ issues: [], source: "error" }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      }
+    }
+
+    // REST: Cost ROI analysis
+    if (pathname === "/api/costs/roi") {
+      const conn = getDb();
+      if (!conn) {
+        return new Response(JSON.stringify({ issues: [], source: "none" }), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      try {
+        const period = parseInt(url.searchParams.get("period") || "30");
+        const rows = conn
+          .query(
+            `SELECT po.issue_number, po.job_id, po.template, po.complexity,
+                    po.success, po.cost_usd as pipeline_cost, po.duration_secs,
+                    COALESCE(ca.attr_cost, 0) as attributed_cost,
+                    ROUND(CASE WHEN COALESCE(ca.attr_cost, po.cost_usd) > 0 THEN
+                      (CASE po.complexity
+                        WHEN 'low' THEN 30 WHEN 'medium' THEN 60
+                        WHEN 'high' THEN 100 ELSE 60
+                      END * po.success * 1.0) / COALESCE(ca.attr_cost, po.cost_usd)
+                    ELSE 0 END, 2) as roi_score
+             FROM pipeline_outcomes po
+             LEFT JOIN (SELECT job_id, SUM(cost_usd) as attr_cost FROM cost_attributions GROUP BY job_id) ca
+               ON ca.job_id = po.job_id
+             WHERE po.created_at >= datetime('now', '-' || ? || ' days')
+             ORDER BY po.created_at DESC`,
+          )
+          .all(period);
+        return new Response(
+          JSON.stringify({ issues: rows, source: "sqlite" }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ issues: [], source: "error" }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      }
+    }
+
+    // REST: Cost forecast
+    if (pathname === "/api/costs/forecast") {
+      const conn = getDb();
+      if (!conn) {
+        return new Response(JSON.stringify({ forecast: null, source: "none" }), {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      try {
+        const horizon = parseInt(url.searchParams.get("horizon") || "30");
+        const dailyCosts = conn
+          .query(
+            `SELECT DATE(ts) as date, SUM(cost_usd) as cost
+             FROM cost_entries WHERE ts >= datetime('now', '-30 days')
+             GROUP BY DATE(ts) ORDER BY date`,
+          )
+          .all() as Array<{ date: string; cost: number }>;
+        const total30d = dailyCosts.reduce((s, r) => s + (r.cost || 0), 0);
+        const last7 = dailyCosts.filter(
+          (r) => new Date(r.date) >= new Date(Date.now() - 7 * 86400_000),
+        );
+        const total7d = last7.reduce((s, r) => s + (r.cost || 0), 0);
+        const avgDaily7d = total7d / 7;
+        const avgDaily30d = total30d / 30;
+        const projected = avgDaily7d * horizon;
+        return new Response(
+          JSON.stringify({
+            forecast: {
+              daily_costs: dailyCosts,
+              total_30d: Math.round(total30d * 10000) / 10000,
+              total_7d: Math.round(total7d * 10000) / 10000,
+              avg_daily_30d: Math.round(avgDaily30d * 10000) / 10000,
+              avg_daily_7d: Math.round(avgDaily7d * 10000) / 10000,
+              horizon_days: horizon,
+              projected_cost: Math.round(projected * 10000) / 10000,
+            },
+            source: "sqlite",
+          }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ forecast: null, source: "error" }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      }
+    }
+
     // REST: Context efficiency metrics (from loop.context_efficiency events)
     if (pathname === "/api/context-efficiency") {
       const period = parseInt(url.searchParams.get("period") || "7");

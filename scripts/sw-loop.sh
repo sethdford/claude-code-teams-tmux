@@ -43,6 +43,8 @@ fi
 # Context window budget monitoring (issue #209)
 # shellcheck source=lib/context-budget.sh
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
+# Cost attribution per-iteration recording
+[[ -f "$SCRIPT_DIR/lib/cost-attribution.sh" ]] && source "$SCRIPT_DIR/lib/cost-attribution.sh" 2>/dev/null || true
 # Convergence detection and scoring (issue #203)
 [[ -f "$SCRIPT_DIR/lib/convergence.sh" ]] && source "$SCRIPT_DIR/lib/convergence.sh" 2>/dev/null || true
 # Error actionability scoring and enhancement for better error context
@@ -2393,6 +2395,19 @@ $summary
                 "test_passed=${TEST_PASSED:-unknown}" \
                 "commits=$TOTAL_COMMITS" \
                 "status=${STATUS:-running}"
+        fi
+
+        # Record per-iteration cost attribution
+        if type record_attribution >/dev/null 2>&1 && [[ -n "${ISSUE_NUMBER:-}" ]]; then
+            local _iter_cost_usd="0"
+            if [[ "${LOOP_COST_MILLICENTS:-0}" -gt 0 ]]; then
+                _iter_cost_usd=$(awk -v mc="${LOOP_COST_MILLICENTS}" 'BEGIN{printf "%.4f", mc / 100000}')
+            fi
+            record_attribution \
+                "${PIPELINE_JOB_ID:-loop-$$}" \
+                "${ISSUE_NUMBER}" "build" "${MODEL:-${CLAUDE_MODEL:-sonnet}}" \
+                "${LOOP_INPUT_TOKENS:-0}" "${LOOP_OUTPUT_TOKENS:-0}" \
+                "$_iter_cost_usd" "$ITERATION" "0" 2>/dev/null || true
         fi
 
         # Update heartbeat
