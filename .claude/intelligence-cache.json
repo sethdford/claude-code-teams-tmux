@@ -661,27 +661,27 @@
       "result": {
         "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 78,
+        "success_probability": 72,
         "recommended_template": "standard",
-        "issue_type": "refactor",
+        "issue_type": "infrastructure",
         "key_risks": [
-          "Incomplete fallback identification leaving orphaned patterns",
-          "Backward compatibility breaks if operators rely on fallback behavior",
-          "Validation strictness causing false failures on legitimate configs",
-          "Migration gap for users with custom configurations",
-          "Edge cases in fallback behavior not covered by new tests"
+          "Startup validation failures could break existing deployments with incomplete configs",
+          "Incomplete fallback pattern identification leaves brittleness unaddressed",
+          "Migration guide unclear could confuse operators with custom configurations",
+          "Schema changes incompatible with existing deployed policy.json files",
+          "Validation too strict breaks graceful degradation for edge cases"
         ],
         "implementation_hints": [
-          "Start by reviewing #340 audit to identify top 20 highest-impact fallback patterns",
-          "Design schema-first with explicit defaults and clear documentation per pattern",
-          "Implement startup validation that fails fast with actionable error messages",
-          "Create config migration tool/script as operator deliverable",
-          "Add integration tests covering config loading, validation, and fallback execution paths",
-          "Generate migration guide with before/after config examples for each pattern",
-          "Consider deprecation warnings in phase 1 before full fallback removal"
+          "Analyze #340 audit output to identify and prioritize top 20 fallback patterns",
+          "Design policy.json schema with explicit required/optional fields and documented defaults",
+          "Implement startup validation with clear, actionable error messages for missing config",
+          "Add backwards-compatibility layer or automated migration tool for existing configs",
+          "Create comprehensive test suite covering validation logic and fallback behavior",
+          "Generate migration guide with examples for different deployment scenarios",
+          "Consider gradual rollout with feature flags to catch edge cases before full enforcement"
         ]
       },
-      "timestamp": 1775263363,
+      "timestamp": 1775299213,
       "ttl": 3600
     },
     "2c0a60c26718fbbbc561d65aca1eae65": {
@@ -830,23 +830,23 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains multiple test stage validation failures with documented root causes (sw-cleanup.sh dry-run detection, sed variable expansion, test assertions). Directly addresses validation failure patterns with specific mitigation guidance."
+            "file": "failures.json (shipwright — 3 items)",
+            "relevance": 85,
+            "summary": "Contains specific test failures in sw-cleanup.sh and sed command handling. Direct relevance to validation failures in config migration (heartbeat detection, summary output format, variable expansion issues)"
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 82,
-            "summary": "Shows successful completion patterns for similar complexity tasks (iterations=3, test_strategy=npm test, template=standard). File patterns and approach sequences demonstrate validated methodology for the test/validation stage."
+            "file": "failures.json (property/variable errors — 2 items)",
+            "relevance": 72,
+            "summary": "Shows variable initialization and scope issues with 100% and 66% fix effectiveness rates. Directly relevant to safety validation—uninitialized variables in config handling could cause plan rejection"
           },
           {
-            "file": "failures.json",
-            "relevance": 68,
-            "summary": "Documents recurring build-stage failures (undefined variables, reference errors) with 100% fix effectiveness rate for initialization issues. Provides mitigation patterns applicable to validation robustness."
+            "file": "success-patterns.json (shipwright — 2 patterns)",
+            "relevance": 65,
+            "summary": "Shows successful delivery of similar complexity work (complexity 60–65) requiring 3 iterations and config file changes. Provides baseline for understanding what approach might have been rejected"
           }
         ]
       },
-      "timestamp": 1775264337,
+      "timestamp": 1775299841,
       "ttl": 1800
     },
     "9e43a3fe77b20338d04aef11b065dd4c": {
@@ -854,55 +854,55 @@
         "results": [
           {
             "file": "architecture.json",
-            "relevance": 80,
-            "summary": "Directly models architecture rules for the project. Though currently sparse, this is the canonical place to define and enforce architecture patterns for the Fallback Pattern Eliminator feature."
+            "relevance": 85,
+            "summary": "Directly addresses architecture rules (rule1, rule2, rule3) - essential foundation for designing fallback pattern eliminator with safety validation constraints and enforcement"
           },
           {
-            "file": "patterns.json (with conventions)",
-            "relevance": 75,
-            "summary": "Contains project structure conventions (src/, *.test.js, CommonJS imports), test runner (vitest), and package manager (npm). Essential context for making architecture decisions that align with existing project standards."
+            "file": "success-patterns.json (id: f4af3e2a8276951b3c332022c8331d835dca7f862e28fddf03541a5f168d8913)",
+            "relevance": 72,
+            "summary": "Shows successful bug fix approach with iteration strategy, test patterns (npm test), and file organization patterns that inform safe config migration design and validation testing"
           },
           {
-            "file": "success-patterns.json (first entry)",
-            "relevance": 70,
-            "summary": "Demonstrates successful delivery of complex features (60-65 complexity) using iterative loop-based development with 3-4 iterations. Shows file patterns and testing strategies relevant to designing safe refactoring patterns."
+            "file": "patterns.json (project conventions)",
+            "relevance": 68,
+            "summary": "Documents project structure (src/, test patterns, commonjs imports, vitest) - essential context for designing patterns that fit existing architecture and migration pathways"
           },
           {
-            "file": "failures.json (test stage failures)",
+            "file": "success-patterns.json (id: 0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a)",
+            "relevance": 62,
+            "summary": "Feature implementation with multi-iteration refinement and safety validation through comprehensive test strategy - directly applicable to fallback pattern design and safety validation stage"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh patterns)",
             "relevance": 55,
-            "summary": "Captures shell script testing failures and edge cases (dry-run modes, variable expansion, stale state detection). Informs safety validation design for config migration and fallback elimination."
-          },
-          {
-            "file": "failures.json (build-stage JavaScript errors)",
-            "relevance": 50,
-            "summary": "Shows common JavaScript initialization and scoping errors with high fix effectiveness rates. Informs defensive coding patterns and safety checks needed when eliminating fallback code paths."
+            "summary": "Documents common failure modes (stale detection, output format mismatches) - informs safety validation patterns and configuration error detection mechanisms"
           }
         ]
       },
-      "timestamp": 1775264371,
+      "timestamp": 1775299891,
       "ttl": 1800
     },
     "361f26cb8e12af36c398d5fa781f1878": {
       "result": {
         "results": [
           {
-            "file": "failures.json (first entry with sw-cleanup.sh, template errors, sed commands)",
-            "relevance": 85,
-            "summary": "Contains specific failure patterns with root causes and fixes directly applicable to identifying anti-patterns: heartbeat detection issues, template validation errors, and variable expansion problems in sed commands"
-          },
-          {
-            "file": "success-patterns.json (first entry with iterations, files_changed, test_strategy)",
+            "file": "architecture.json",
             "relevance": 72,
-            "summary": "Documents successful approaches for similar complexity issues (bug fixes, feature work) with concrete iteration counts and strategies, providing counter-examples to identify anti-patterns through contrast"
+            "summary": "Architecture rules define valid design patterns and constraints. Anti-patterns are the inverse of these rules, making this the most relevant for identifying rejected approaches and design anti-patterns."
           },
           {
-            "file": "failures.json (fifth entry with variable initialization and reference errors)",
-            "relevance": 68,
-            "summary": "Captures common anti-patterns around variable scoping and initialization with 100% mitigation effectiveness rate, directly relevant for identifying unsafe patterns in config migration code"
+            "file": "success-patterns.json (first entry - sethdford/shipwright)",
+            "relevance": 58,
+            "summary": "Contains detailed approach descriptions and iteration strategies from successful builds. Analyzing what worked provides context for what alternative approaches were rejected or avoided during development."
+          },
+          {
+            "file": "decisions.json (first entry)",
+            "relevance": 45,
+            "summary": "Decision log would be the canonical place to record rejected design approaches and rationale. Though currently empty, this is the appropriate structure for capturing anti-pattern decisions related to config migration and safety validation."
           }
         ]
       },
-      "timestamp": 1775264383,
+      "timestamp": 1775299904,
       "ttl": 1800
     },
     "bb2b54e82c707b273aa0f2956c9cc5a9": {
@@ -983,6 +983,57 @@
         }
       ],
       "timestamp": 1775265309,
+      "ttl": 1800
+    },
+    "af6c82927b9b345ed8005846321a6d1a": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1775299222,
+      "ttl": 1800
+    },
+    "5fcb65cca23fe8a9221ae0236dc9bf92": {
+      "result": {
+        "estimated_cost_usd": 1.75,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "build",
+        "confidence": 68
+      },
+      "timestamp": 1775299233,
+      "ttl": 3600
+    },
+    "a69dc4f36f023631083f430ae7bd4e94": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 85,
+            "summary": "Project structure (Node.js, vitest, npm, CommonJS) and source conventions are essential baseline for planning feature implementation, migrations, and test strategy design."
+          },
+          {
+            "file": "success-patterns.json (first entry with two patterns)",
+            "relevance": 75,
+            "summary": "Shows feature implementation patterns from this repo: complexity 60-65 features take 3 iterations, involve config/test file changes, use standard template. Directly applicable to planning a fallback pattern feature with config migration."
+          },
+          {
+            "file": "failures.json (fifth entry - variable initialization)",
+            "relevance": 45,
+            "summary": "Captures common undefined variable errors and initialization failures in build stage with 100% fix effectiveness. Relevant to safety validation phase of fallback pattern elimination."
+          },
+          {
+            "file": "success-patterns.json (second entry)",
+            "relevance": 40,
+            "summary": "Shows iterative TDD approach for feature work (5 iterations, file pattern coverage, unit+integration testing). Methodology applicable to planning fallback pattern feature development."
+          },
+          {
+            "file": "failures.json (second entry - variable initialization)",
+            "relevance": 35,
+            "summary": "Tracks undefined variable and missing variable declaration errors with mitigation patterns. Relevant to safety validation requirements when eliminating fallback patterns."
+          }
+        ]
+      },
+      "timestamp": 1775299252,
       "ttl": 1800
     }
   }
