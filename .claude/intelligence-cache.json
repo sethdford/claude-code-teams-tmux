@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "builder",
+        "secondary_roles": [
+          "architect",
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.85,
+        "reasoning": "Fallback pattern elimination with config migration is core development work requiring design validation, extensive testing for safety, and quality review of refactoring.",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775264603,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -647,6 +656,334 @@
       },
       "timestamp": 1772936833,
       "ttl": 3600
+    },
+    "e16f8b31e34662a05af62256649f1a80": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete fallback identification leaving orphaned patterns",
+          "Backward compatibility breaks if operators rely on fallback behavior",
+          "Validation strictness causing false failures on legitimate configs",
+          "Migration gap for users with custom configurations",
+          "Edge cases in fallback behavior not covered by new tests"
+        ],
+        "implementation_hints": [
+          "Start by reviewing #340 audit to identify top 20 highest-impact fallback patterns",
+          "Design schema-first with explicit defaults and clear documentation per pattern",
+          "Implement startup validation that fails fast with actionable error messages",
+          "Create config migration tool/script as operator deliverable",
+          "Add integration tests covering config loading, validation, and fallback execution paths",
+          "Generate migration guide with before/after config examples for each pattern",
+          "Consider deprecation warnings in phase 1 before full fallback removal"
+        ]
+      },
+      "timestamp": 1775263363,
+      "ttl": 3600
+    },
+    "2c0a60c26718fbbbc561d65aca1eae65": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1775263373,
+      "ttl": 1800
+    },
+    "95aecd00c50910e192ca045921b9b2b1": {
+      "result": {
+        "estimated_cost_usd": 3.75,
+        "estimated_iterations": 6,
+        "estimated_tokens": 95000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1775263384,
+      "ttl": 3600
+    },
+    "85c5c577bedc2e61ef8a4e0d05e3aa28": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "infrastructure",
+          "testing",
+          "documentation"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Systematic refactoring of 67 fallback patterns across codebase with config schema design, validation framework, and operator migration strategy. Requires careful inventory, schema design, and safety validation but is well-scoped (top 20 patterns, <40 target). Moderate complexity due to cross-cutting nature and need for backward compatibility."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "security-audit"
+          ],
+          "build": [
+            "testing-strategy",
+            "documentation"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "documentation"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about which 20 fallbacks are truly the highest-impact to migrate first and whether full elimination is actually the goal or graceful degradation is acceptable.",
+          "architecture-design": "Create an ADR documenting the transition from scattered hardcoded fallbacks to centralized config-driven patterns, serving as a reference for operators and future fallback decisions.",
+          "security-audit": "Startup validation is a security boundary; ensure missing config is treated as a fatal error that prevents running with incomplete setup, preventing silent failures in production.",
+          "testing-strategy": "Config migration requires comprehensive test coverage for both the validation logic (catches real config errors) and fallback behavior (graceful degradation still works).",
+          "documentation": "Operators with custom configs need a clear, step-by-step migration guide showing how their existing hardcoded fallbacks map to the new schema and what config changes are required.",
+          "pr-quality": "Complex cross-cutting refactor requires a PR that makes the fallback mapping, schema changes, and validation logic immediately understandable to reviewers in 5 minutes.",
+          "adversarial-quality": "Think like a chaos engineer: What happens if required config is missing? If config is malformed? If validation passes but config semantics are wrong? If operators skip the migration?",
+          "validation-thoroughness": "Smoke tests on config validation are insufficient; validate that real operator workflows work, error messages are actionable, and missing config is caught early with clear remediation steps.",
+          "deploy-safety": "Treat startup validation as a breaking change; coordinate rollout so operators can prepare configs before deployment, provide rollback path, and verify validation doesn't break existing deployments.",
+          "observability": "Post-deploy monitoring should track fallback pattern usage (confirm top 20 are eliminated), config validation failures (operators struggling with migration), and startup times (validation performance impact)."
+        },
+        "generated_skills": [
+          {
+            "name": "config-migration-safety",
+            "reason": "Migrating 67 hardcoded fallback patterns to a centralized config system is a systematic, high-risk refactoring that requires a reproducible methodology for pattern identification, schema design, validation, and operator migration. No existing skill covers the full lifecycle of safely migrating scattered hardcoded patterns to validated config.",
+            "content": "## Config Migration Safety: Hardcoded Pattern → Validated Config\n\n### Phase 1: Fallback Pattern Inventory\n1. **Identify all 67 patterns** — Use grep/AST analysis to find all hardcoded fallback patterns (e.g., `|| default_value`, sentinel returns, if-empty checks)\n2. **Categorize by impact** — Score by frequency of use, blast radius (how many code paths depend on it), and stability (how often does it fail?)\n3. **Select top 20** — Choose patterns that are frequently used and represent distinct config categories (e.g., timeouts, retry counts, feature flags, environment defaults)\n4. **Document rationale** — For each pattern: current code location, what it defaults to, why it exists, any known issues\n\n### Phase 2: Schema Design with Validation\n1. **Define config structure** — Group related fallbacks into logical sections (networking, retries, features, performance). Use nested JSON with clear naming.\n2. **Write schema validation** — Use JSON Schema or domain-specific validation. For each field:\n   - Mark as `required: true` if fallback is critical\n   - Set realistic `min`, `max`, `enum` constraints\n   - Provide `description` explaining what the setting controls\n3. **Embed validation in startup** — Add a `validate_config()` function that runs before any service starts. Fail fast with stack trace showing exact missing/invalid fields.\n4. **Default values documentation** — Every schema field must have an explicit default documented in code comment, not implicit in fallback logic.\n\n### Phase 3: Operator Migration Path\n1. **Generate migration guide** — For each top 20 pattern, show:\n   - Old hardcoded value (e.g., `DEFAULT_TIMEOUT = 30`)\n   - New config path (e.g., `config.networking.timeout_seconds`)\n   - Migration command (e.g., `cp config.default.json config.json && edit config.json`)\n   - Validation command (`./shipwright doctor --validate-config`)\n2. **Provide config templates** — Ship `config.default.json` with all 20 patterns populated to sensible defaults. Minimal setup: `cp config.default.json config.json`.\n3. **Version config schema** — Add `\"schema_version\": \"1.0\"` to config. On startup, check if schema version matches codebase; alert on mismatch.\n\n### Phase 4: Testing & Validation\n1. **Unit tests** — Each config field has tests for:\n   - Valid values (from schema min/max/enum)\n   - Invalid values (out of range, wrong type, unrecognized keys)\n   - Missing required fields (clear error message)\n2. **Integration tests** — System boots with default config, with custom config, with incomplete config (should fail at startup with actionable error).\n3. **Operator smoke test** — New operators follow migration guide step-by-step; time to first success ≤ 5 minutes.\n\n### Phase 5: Safety Guardrails\n1. **Backward compatibility** — If old hardcoded fallbacks remain in code, startup validation should warn (not error) if config doesn't override them.\n2. **Validation error clarity** — When startup validation fails, error message must include:\n   - Exact config path that's missing/invalid\n   - Example valid value (from schema or default)\n   - Link to migration guide section\n3. **Audit trail** — Log which config values were applied at startup. Post-deploy, verify operators' actual config matches migration guide expectations.\n4. **Rollback path** — Document how to revert to old behavior if new config breaks production (e.g., restore `config.default.json`).\n\n### Metrics\n- **Fallback elimination**: Count patterns migrated (target: 20) and residual hardcoded fallbacks (target: <40).\n- **Config validation**: Track startup validation failures (should drop after migration window).\n- **Operator adoption**: Time from release to 90% of deployments using new config (target: <2 weeks)."
+          }
+        ],
+        "review_focus": [
+          "Completeness of fallback pattern inventory: Are all top 20 patterns genuinely eliminated or just moved to config?",
+          "Config schema validation logic: Does it catch all required fields, type mismatches, and semantic errors before startup?",
+          "Error message clarity: If startup validation fails, can an operator understand exactly what's wrong and how to fix it in <2 minutes?",
+          "Test coverage for config validation: Are there tests for missing fields, invalid types, out-of-range values, and valid edge cases?",
+          "Migration guide adequacy: Can a new operator successfully migrate existing hardcoded fallbacks to config by following the guide?",
+          "Startup performance impact: Does config validation on every startup add measurable latency (target: <100ms)?",
+          "Backward compatibility: What happens if operators haven't migrated yet? Does old code still work or does startup fail clearly?",
+          "Residual fallback count: After migration, confirm fallback count dropped from 67 to <40 via code analysis."
+        ],
+        "risk_areas": [
+          "Incomplete migration: Top 20 patterns identified but some remain as hardcoded fallbacks elsewhere in codebase, defeating the purpose.",
+          "Validation gap: Config validation passes but fails to catch semantic errors (e.g., timeout set to 0ms, invalid enum combinations).",
+          "Breaking change on deploy: Startup validation rejects existing incomplete configs, breaking deployments that haven't migrated yet.",
+          "Operator confusion: Migration guide is unclear or incomplete, causing operators to skip migration or create broken configs.",
+          "Performance regression: Startup validation is too expensive (blocking boot) or runs on every request.",
+          "Test coverage insufficient: Config validation logic exists but lacks tests, regressions slip through.",
+          "Undocumented fallback behavior: Schema documents required fields but not what happens when config is missing (silent degradation vs. hard error)."
+        ]
+      },
+      "timestamp": 1775263518,
+      "ttl": 3600
+    },
+    "4351a8c8f2a0fc2fcfd799d64064d787": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 85,
+            "summary": "Contains specific test failures from shell script logic (sw-cleanup.sh dry-run detection, sed variable expansion) directly relevant to understanding failure modes during config migration and safety validation"
+          },
+          {
+            "file": "failures.json (fifth entry with mitigation_success_count)",
+            "relevance": 80,
+            "summary": "Documents build failures with high-quality mitigation data (100% and 66% effectiveness rates), showing patterns of how to validate fixes—applicable to safety validation phase of migration"
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 78,
+            "summary": "Shows successful completion of bug fix and feature addition with 3 iterations, npm test strategy, and specific file patterns changed—provides template for migration planning approach"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 72,
+            "summary": "Captures project conventions (Bash 3.2 compatibility, vitest, src/ structure, commonjs imports) essential for understanding what the migration must preserve and validate"
+          },
+          {
+            "file": "failures.json (second entry - EONENT/missing deps)",
+            "relevance": 65,
+            "summary": "Documents file not found and missing dependency errors with 95% fix effectiveness—directly relevant to config migration validation (ensures new configs are discoverable and valid)"
+          }
+        ]
+      },
+      "timestamp": 1775263535,
+      "ttl": 1800
+    },
+    "edf8200f810c25f31fd1c91994f5d860": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains multiple test stage validation failures with documented root causes (sw-cleanup.sh dry-run detection, sed variable expansion, test assertions). Directly addresses validation failure patterns with specific mitigation guidance."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Shows successful completion patterns for similar complexity tasks (iterations=3, test_strategy=npm test, template=standard). File patterns and approach sequences demonstrate validated methodology for the test/validation stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 68,
+            "summary": "Documents recurring build-stage failures (undefined variables, reference errors) with 100% fix effectiveness rate for initialization issues. Provides mitigation patterns applicable to validation robustness."
+          }
+        ]
+      },
+      "timestamp": 1775264337,
+      "ttl": 1800
+    },
+    "9e43a3fe77b20338d04aef11b065dd4c": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 80,
+            "summary": "Directly models architecture rules for the project. Though currently sparse, this is the canonical place to define and enforce architecture patterns for the Fallback Pattern Eliminator feature."
+          },
+          {
+            "file": "patterns.json (with conventions)",
+            "relevance": 75,
+            "summary": "Contains project structure conventions (src/, *.test.js, CommonJS imports), test runner (vitest), and package manager (npm). Essential context for making architecture decisions that align with existing project standards."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 70,
+            "summary": "Demonstrates successful delivery of complex features (60-65 complexity) using iterative loop-based development with 3-4 iterations. Shows file patterns and testing strategies relevant to designing safe refactoring patterns."
+          },
+          {
+            "file": "failures.json (test stage failures)",
+            "relevance": 55,
+            "summary": "Captures shell script testing failures and edge cases (dry-run modes, variable expansion, stale state detection). Informs safety validation design for config migration and fallback elimination."
+          },
+          {
+            "file": "failures.json (build-stage JavaScript errors)",
+            "relevance": 50,
+            "summary": "Shows common JavaScript initialization and scoping errors with high fix effectiveness rates. Informs defensive coding patterns and safety checks needed when eliminating fallback code paths."
+          }
+        ]
+      },
+      "timestamp": 1775264371,
+      "ttl": 1800
+    },
+    "361f26cb8e12af36c398d5fa781f1878": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry with sw-cleanup.sh, template errors, sed commands)",
+            "relevance": 85,
+            "summary": "Contains specific failure patterns with root causes and fixes directly applicable to identifying anti-patterns: heartbeat detection issues, template validation errors, and variable expansion problems in sed commands"
+          },
+          {
+            "file": "success-patterns.json (first entry with iterations, files_changed, test_strategy)",
+            "relevance": 72,
+            "summary": "Documents successful approaches for similar complexity issues (bug fixes, feature work) with concrete iteration counts and strategies, providing counter-examples to identify anti-patterns through contrast"
+          },
+          {
+            "file": "failures.json (fifth entry with variable initialization and reference errors)",
+            "relevance": 68,
+            "summary": "Captures common anti-patterns around variable scoping and initialization with 100% mitigation effectiveness rate, directly relevant for identifying unsafe patterns in config migration code"
+          }
+        ]
+      },
+      "timestamp": 1775264383,
+      "ttl": 1800
+    },
+    "bb2b54e82c707b273aa0f2956c9cc5a9": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains build-stage failures for uninitialized variables ('cannot read property of undefined' with 100% fix effectiveness) and missing declarations ('referenceerror is not defined' with 66% effectiveness). Directly applicable to build phase debugging."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "EONENT 'no such file directory' error with npm install fix (95% effectiveness). Critical for build-stage setup and dependency installation validation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project configuration baseline (Node.js, vitest, npm, CommonJS imports, src/ source dir). Essential for understanding build environment and toolchain setup."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Captured success pattern for similar complexity work (complexity 60, standard template, 3 iterations, npm test strategy). Provides reference iteration strategy and timeline expectations."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Test-stage failures with patterns for variable initialization and property access (sw-cleanup.sh stale heartbeat detection). Variable initialization patterns are applicable to build-phase debugging."
+          }
+        ]
+      },
+      "timestamp": 1775264586,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical build configuration: test runner (vitest), source directory, test patterns, and package manager (npm). Essential for understanding how to execute build and test stages."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Documents successful build approaches from prior runs including iteration counts, test strategies (npm test), file patterns touched, and complexity metrics. Directly informs build stage approach."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Captures test stage failures with root causes and fixes (sed variable expansion, stale heartbeat detection). Helps avoid regressions and predict failure modes during build."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Contains empty baselines object. No metrics data currently available to inform build optimization or performance targets."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Contains empty decisions array. No prior architectural decisions captured that would influence build stage execution."
+          }
+        ]
+      },
+      "timestamp": 1775264596,
+      "ttl": 1800
+    },
+    "76d8dd7cc55751489154e783da933ac5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1775265309,
+      "ttl": 1800
     }
   }
 }
