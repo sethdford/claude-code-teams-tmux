@@ -284,7 +284,7 @@ echo -e "${DIM}  json extraction robustness${RESET}"
 # Extract the function from sw-loop.sh and test it in isolation (can't source
 # sw-loop.sh because it has no source guard — main() runs unconditionally)
 _extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
-tmpdir=$(mktemp -d)
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/sw-loop-test.XXXXXX")
 bash -c "
 warn() { :; }
 $_extract_fn
@@ -342,7 +342,7 @@ fi
 echo ""
 echo -e "${DIM}  json extraction edge cases${RESET}"
 _extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
-tmpdir2=$(mktemp -d)
+tmpdir2=$(mktemp -d "${TMPDIR:-/tmp}/sw-loop-test.XXXXXX")
 bash -c "
 warn() { :; }
 $_extract_fn
@@ -371,7 +371,7 @@ rm -rf "$tmpdir2"
 echo ""
 echo -e "${DIM}  json object extraction (issue #242)${RESET}"
 _extract_fn=$(sed -n '/^_extract_text_from_json()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
-tmpdir3=$(mktemp -d)
+tmpdir3=$(mktemp -d "${TMPDIR:-/tmp}/sw-loop-test.XXXXXX")
 bash -c "
 warn() { echo \"WARN: \$*\" >&2; }
 $_extract_fn
@@ -669,7 +669,7 @@ echo ""
 echo -e "${DIM}  validate_claude_output${RESET}"
 
 _validate_fn=$(sed -n '/^validate_claude_output()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
-_valid_tmp=$(mktemp -d)
+_valid_tmp=$(mktemp -d "${TMPDIR:-/tmp}/sw-loop-test.XXXXXX")
 # Use real git for repo setup (bypass mock from setup_env)
 _valid_git=$(PATH=/usr/local/bin:/usr/bin:/bin command -v git 2>/dev/null)
 (cd "$_valid_tmp" && "$_valid_git" init -q && "$_valid_git" config user.email "t@t" && "$_valid_git" config user.name "T")
