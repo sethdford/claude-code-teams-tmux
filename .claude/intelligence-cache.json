@@ -30,9 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "raw_response": "Mock claude response"
+        "primary_role": "architect",
+        "secondary_roles": [
+          "builder",
+          "tester",
+          "reviewer"
+        ],
+        "confidence": 0.92,
+        "reasoning": "Policy engine with JSON schema and adaptive overrides requires upfront system design, then implementation, validation, and QA",
+        "new_role_needed": false,
+        "suggested_role": null
       },
-      "timestamp": 1772984580,
+      "timestamp": 1775264853,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -651,29 +660,28 @@
     "2561f931a94a79d052d5ca53e406ad83": {
       "result": {
         "complexity": 7,
-        "risk_level": "high",
+        "risk_level": "medium",
         "success_probability": 78,
-        "recommended_template": "full",
+        "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Schema validation failures could break existing deployments if backward compatibility is not enforced",
-          "Incorrect hardcoded value extraction during migration could change pipeline behavior unexpectedly",
-          "Override precedence logic (policy.json vs policy-overrides.json) needs careful handling to avoid conflicts",
-          "Policy loading on every pipeline invocation could impact performance if not optimized",
-          "Documentation drift: schema and POLICY.md must stay synchronized"
+          "Incomplete migration of hardcoded values across multiple scripts causing inconsistent behavior",
+          "Fallback logic errors when policy.json is missing or invalid",
+          "Schema validation too strict, breaking valid override patterns",
+          "Breaking changes to scripts that depend on current hardcoded defaults",
+          "Consistency drift between different scripts interpreting policy differently"
         ],
         "implementation_hints": [
-          "Start with comprehensive JSON schema definition that matches current hardcoded defaults exactly",
-          "Create a single utility function for policy loading/validation usable across all scripts",
-          "Migrate values incrementally per script with test suite validation after each migration",
-          "Implement strict schema validation with helpful error messages pointing to POLICY.md sections",
-          "Use jq's built-in schema validation for consistency and performance",
-          "Add 'schema_version' field to policy.json to support future migrations",
-          "Cache validated policy in memory for scripts that load it multiple times",
-          "Create fallback defaults for all tunables to ensure degraded operation if policy is missing"
+          "Create comprehensive inventory of all 20+ hardcoded values before migration - use grep to find stage timeouts, iteration counts, and retry thresholds",
+          "Implement three-tier fallback: policy.json → policy-overrides.json → hardcoded defaults in each script",
+          "Use jq for JSON schema validation to stay consistent with existing tooling in sw-doctor.sh",
+          "Start migration with sw-adaptive.sh and sw-daemon.sh before touching critical sw-pipeline.sh and sw-loop.sh",
+          "Add integration tests that verify policy changes actually change script behavior (not just load without error)",
+          "Document schema with examples for each tuneable and explain when overrides trigger",
+          "Consider schema versioning strategy for future compatibility without breaking existing configs"
         ]
       },
-      "timestamp": 1775240665,
+      "timestamp": 1775263404,
       "ttl": 3600
     },
     "c434b638ae10aeed42ed8121ef5186ab": {
@@ -696,91 +704,86 @@
     },
     "2ad10fa0ba171c6f77d462c3703c54b3": {
       "result": {
-        "issue_type": "infrastructure",
-        "confidence": 0.88,
+        "issue_type": "refactoring",
+        "confidence": 0.87,
         "secondary_domains": [
-          "platform-engineering",
-          "configuration-management",
-          "schema-design"
+          "infrastructure",
+          "configuration"
         ],
         "complexity_assessment": {
-          "score": 7,
-          "reasoning": "Requires schema design, migration of 20+ hardcoded values across 3+ scripts, validation logic, adaptive override system, and comprehensive test coverage. High impact on platform behavior with significant refactoring scope."
+          "score": 6,
+          "reasoning": "Multi-file constant migration (20+ values), schema design, validation logic, override system, backward-compatibility fallbacks, and comprehensive test suite required. Moderate scope but requires careful design of precedence rules and validation."
         },
         "skill_plan": {
           "plan": [
-            "brainstorming",
-            "architecture-design"
-          ],
-          "design": [
             "architecture-design",
             "config-system-design"
           ],
-          "build": [
+          "design": [
             "config-system-design",
-            "testing-strategy"
+            "api-design"
           ],
+          "build": [],
           "review": [
-            "two-stage-review",
             "architecture-design",
-            "validation-thoroughness"
+            "adversarial-quality"
           ],
           "compound_quality": [
-            "adversarial-quality",
-            "validation-thoroughness",
-            "testing-strategy"
+            "testing-strategy",
+            "validation-thoroughness"
           ],
           "pr": [
             "pr-quality"
           ],
           "deploy": [
-            "deploy-safety",
-            "observability"
+            "deploy-safety"
           ],
           "validate": [
-            "validation-thoroughness",
-            "observability"
+            "validation-thoroughness"
           ],
           "monitor": [
             "observability"
           ]
         },
         "skill_rationale": {
-          "brainstorming": "Challenge assumptions about which timeouts/thresholds should be user-configurable vs. platform-owned, and whether the JSON schema design matches Shipwright's multi-agent, fleet-aware architecture.",
-          "architecture-design": "This migration fundamentally changes how Shipwright enforces constraints—document the decision to move from hardcoded rules to config-driven policies and justify the schema structure.",
-          "config-system-design": "Specialized guidance for schema design, validation patterns, fallback strategies, and override precedence rules critical to a robust policy engine.",
-          "testing-strategy": "Policy system requires comprehensive test coverage of schema validation, override application, fallback behavior, and migration of legacy hardcoded values.",
-          "two-stage-review": "First pass: schema design and validation logic. Second pass: migration correctness across sw-pipeline.sh, sw-loop.sh, sw-daemon.sh with no behavioral changes.",
-          "validation-thoroughness": "Validate that each hardcoded value is migrated correctly, schema validation surfaces clear errors, overrides take effect, and fallback defaults work when policy.json is missing.",
-          "adversarial-quality": "Test edge cases: malformed JSON, missing required fields, precedence conflicts between policy.json and overrides.json, performance under rapid policy changes.",
-          "pr-quality": "Migration spans multiple files—PRs must clearly show which hardcoded values moved, the schema change, and test coverage for each."
+          "architecture-design": "The policy system touches sw-pipeline.sh, sw-loop.sh, sw-daemon.sh, and sw-adaptive.sh—a clear architecture decision record prevents inconsistent usage patterns across scripts.",
+          "config-system-design": "Core skill for this issue: guides schema structure, validation rules, precedence between policy.json and policy-overrides.json, and fallback behavior when config is missing or invalid.",
+          "api-design": "The policy object becomes a system interface consumed by multiple scripts; clean API design (top-level keys, nested structure) prevents future brittleness as new tunables are added.",
+          "adversarial-quality": "Identifies failure modes: incomplete migration leaving hardcoded fallbacks, schema too permissive allowing invalid configs, override loops, missing validation on policy load.",
+          "testing-strategy": "Policy system requires edge case testing: missing keys, invalid values, corrupted JSON, override conflicts, schema validation errors, and fallback activation paths.",
+          "validation-thoroughness": "Beyond unit tests, must validate actual pipeline behavior with policy.json present/absent, overrides active/inactive, and verify sw-doctor.sh catches schema violations.",
+          "pr-quality": "Changes span 5+ scripts; clear PR must explain what constants moved, why precedence matters, and how to troubleshoot policy loading failures.",
+          "deploy-safety": "Policy changes directly affect pipeline behavior; rollout should verify schema validation passes, no infinite loops from overrides, and sw-doctor.sh integrates cleanly.",
+          "observability": "Must track policy violations (schema errors, missing files, override conflicts) and override application (which tunable changed, why) for debugging self-tuning behavior."
         },
         "generated_skills": [
           {
             "name": "config-system-design",
-            "reason": "No existing skill covers the specific pattern of moving from hardcoded constants to a configuration system with schema validation, adaptive overrides, and fallback behavior—a critical architectural pattern for self-tuning platforms.",
-            "content": "## Config-Driven System Design\n\nMoving from hardcoded constants to configuration requires careful design of schema, validation, precedence, and fallback behavior.\n\n### Schema Design\n\n- **Organize by concern**: Group related timeouts together (stage_timeouts), limits together (iteration_limits), etc.\n- **Provide sensible defaults**: Schema should document the default value for each field.\n- **Version the schema**: Include a schema_version field to enable future migrations without breaking existing policies.\n- **Use constraints in schema**: Set min/max bounds on numeric fields (e.g., max_iterations > 0, timeout in seconds).\n\n### Validation & Error Messages\n\n- **Fail fast with context**: When schema validation fails, report the field path, expected type, and constraint violation.\n- **Provide a fix suggestion**: For common errors (typo in field name), suggest the closest valid field.\n- **Test error cases explicitly**: Schema validation is the primary defense against misconfiguration.\n\n### Fallback & Precedence\n\n- **Hardcoded defaults**: If policy.json is missing, use hardcoded defaults from code.\n- **Override precedence**: policy.json (base) < policy-overrides.json (adaptive suggestions) < environment variables (operator overrides).\n- **Don't cascade overrides**: If an override suggests an invalid value, reject it and log; don't silently fall back.\n\n### Migration Strategy\n\n- **Extract values systematically**: Identify all hardcoded constants; group by semantic meaning (stage timeout, max retries, cost limit).\n- **Preserve behavior exactly**: After migration, no behavior should change—hardcoded defaults must exactly match original values.\n- **Test side-by-side**: Load both hardcoded and policy-driven values; assert they produce identical results.\n- **Phase migration**: Migrate one script at a time with full test coverage before moving to the next.\n\n### Adaptive Override Design\n\n- **Narrow scope**: Intelligence layer should only suggest overrides for values it has evidence for (e.g., stage timeout based on historical run duration).\n- **Confidence threshold**: Only write an override if confidence is high (e.g., 95th percentile data).\n- **Explainability**: Include reasoning in the override (why the new value was suggested) for debugging.\n- **Validation before apply**: Adaptive overrides must pass schema validation before being written to disk.\n\n### Documentation\n\n- **POLICY.md**: Document each tunable, its default, valid range, and impact on pipeline behavior.\n- **Schema inline comments**: Use JSON Schema description fields to make the schema self-documenting.\n- **Example policies**: Show real-world policy configurations for different use cases (fast iteration, cost-aware, high-reliability)."
+            "reason": "Existing skills don't cover config system architecture: schema design, validation rules, precedence/override handling, and backward-compatibility fallbacks are specific to configuration migration.",
+            "content": "## Config-System Design for Policy Engine\n\n### Schema Design\n- **Structure**: Organize by concern (stage_timeouts, iteration_limits, retry_thresholds, cost_limits) not by script\n- **Validation**: Use strict JSON Schema (draft 7) with helpful `description` and `examples` fields\n- **Defaults**: Define all defaults in schema `default` field, not in script fallback code\n- **Versioning**: Include `\"schema_version\": \"1.0\"` to support future migrations without breaking parsers\n\n### Precedence & Override\n- **Layering**: policy.json (base) → policy-overrides.json (adaptive suggestions) → environment vars (operator override)\n- **Merging**: Deep merge at key level (don't replace entire objects), flag conflicts in debug output\n- **Rollback**: Keep previous policy.json in `.claude/policy-backup.json` before applying overrides\n\n### Validation Strategy\n- **On load**: Validate against schema; emit structured error with line number if invalid\n- **Fallback**: If policy.json missing, use compiled schema defaults; if invalid, log error + use defaults\n- **Doctor checks**: sw-doctor.sh validates schema, checks for unknown keys, compares actual timeouts vs policy\n\n### Migration Path\n- **Audit phase**: Grep all scripts for `TIMEOUT=`, `MAX_ITERATIONS=`, `RETRY_LIMIT=` patterns\n- **Extraction**: Move each constant to policy.json with rationale comment\n- **Script changes**: Replace hardcoded value with `$(jq -r '.stage_timeouts.build' .claude/policy.json)`\n- **Compatibility**: Hardcoded defaults in scripts must match policy.json defaults for smooth transition\n\n### Observability\n- **Log policy load**: When daemon starts, log policy.json version + which tunables were overridden\n- **Track override source**: Record whether override came from adaptive engine, environment, or manual edit\n- **Audit trail**: Append policy changes to `.claude/policy-audit.jsonl` with timestamp and source"
           }
         ],
         "review_focus": [
-          "Schema structure and completeness: does it cover all 20+ hardcoded values identified?",
-          "Validation logic: error messages are clear, constraints are enforced, malformed JSON is rejected safely.",
-          "Fallback behavior: policy.json is optional; missing file or missing fields correctly fall back to hardcoded defaults without behavioral change.",
-          "Override precedence: policy-overrides.json correctly takes precedence over policy.json, and both are overridable by environment variables.",
-          "Migration correctness: each migrated hardcoded value produces identical behavior before/after; no silent changes in thresholds or timeouts.",
-          "Test coverage: schema validation, override application, fallback scenarios, and adaptive policy generation all have explicit test cases.",
-          "Adaptive override safety: sw-adaptive.sh validates overrides against schema before writing; invalid suggestions are rejected with logging."
+          "Completeness of constant migration: all 20+ hardcoded values identified, extracted, and moved to schema",
+          "Schema structure is extensible: new tunables can be added without restructuring existing keys",
+          "Validation error messages are actionable (line number, what failed, how to fix)",
+          "Fallback behavior is airtight: missing policy.json, invalid JSON, missing key, all gracefully degrade",
+          "Override precedence is unambiguous: policy.json vs policy-overrides.json vs env var precedence is documented and tested",
+          "sw-doctor.sh integration is complete: detects schema violations, unknown keys, version mismatches",
+          "Test suite covers edge cases: corrupted JSON, empty file, missing required keys, invalid types, override conflicts",
+          "POLICY.md documentation includes example policy.json, all tunables with defaults, and troubleshooting guide"
         ],
         "risk_areas": [
-          "Silent behavior changes: migrating hardcoded values without verification could mask subtle timeout/iteration limit changes that break existing workflows.",
-          "Missing policy.json handling: if policy.json doesn't exist or is incomplete, fallback must be bulletproof; unclear defaults could cause unexpected behavior.",
-          "Schema evolution: future additions to policy.json must not break existing scripts; versioning strategy is essential.",
-          "Adaptive override conflicts: if sw-adaptive suggests a policy that conflicts with user intent, need clear precedence and visibility into why override was applied.",
-          "Cross-script consistency: the same timeout value is likely used in multiple scripts; migrations must be synchronized to avoid inconsistency.",
-          "Performance: policy loading on every pipeline invocation should be fast; avoid expensive validation on hot paths."
+          "Incomplete migration: hardcoded constants left in scripts are silently ignored, diverging from policy.json",
+          "Schema too rigid: legitimate use cases blocked by overly strict validation constraints",
+          "Override loops: adaptive engine suggests policy changes that trigger conditions causing more policy changes",
+          "Performance regression: schema validation on every policy.json read (should cache after validation)",
+          "Backward compatibility: old daemon-config.json entries (timeout_build, etc.) conflict with new policy.json",
+          "Silent fallback: policy load fails but scripts continue with stale hardcoded values, masking the error",
+          "Documentation drift: POLICY.md not kept in sync when new tunables added later"
         ]
       },
-      "timestamp": 1775240915,
+      "timestamp": 1775263510,
       "ttl": 3600
     },
     "9c11f5629d92e710bf8d21b7ac55b0db": {
@@ -814,6 +817,242 @@
         ]
       },
       "timestamp": 1775240931,
+      "ttl": 1800
+    },
+    "62c9830de280c2ccfc2c0cbd56c62233": {
+      "result": {
+        "estimated_iterations": 11
+      },
+      "timestamp": 1775263414,
+      "ttl": 1800
+    },
+    "e2a1c43c7851a925c7dd315686660654": {
+      "result": {
+        "estimated_cost_usd": 2.15,
+        "estimated_iterations": 3,
+        "estimated_tokens": 64000,
+        "likely_failure_stage": "build",
+        "confidence": 75,
+        "breakdown": {
+          "intake": {
+            "tokens": 3000,
+            "cost_usd": 0.05
+          },
+          "plan": {
+            "tokens": 8000,
+            "cost_usd": 0.15
+          },
+          "build": {
+            "iterations": 3,
+            "tokens_per_iteration": 12000,
+            "total_tokens": 36000,
+            "cost_usd": 0.95,
+            "risk_factors": [
+              "20+ scripts require migration",
+              "Three-tier fallback logic complexity",
+              "Schema validation tuning"
+            ]
+          },
+          "test": {
+            "tokens": 10000,
+            "cost_usd": 0.25
+          },
+          "review": {
+            "tokens": 5000,
+            "cost_usd": 0.45
+          },
+          "pr": {
+            "tokens": 2000,
+            "cost_usd": 0.30
+          }
+        },
+        "rationale": "7/10 complexity + multi-script infrastructure work + schema validation overhead. Three iterations account for initial implementation, fallback logic refinement, and integration test fixes. Build stage highest risk due to breadth of scripts and failure modes.",
+        "recommended_safeguards": [
+          "Start with grep inventory step before coding",
+          "Implement schema validation tests before touching scripts",
+          "Isolate policy loading into reusable shell functions early",
+          "Test each script's fallback chain independently before integration"
+        ]
+      },
+      "timestamp": 1775263425,
+      "ttl": 3600
+    },
+    "fced27d6d8614de83c2236f0631e24f0": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Feature implementation example: authentication feature took 150s over 4 iterations using standard template with 5-6 commits. Directly relevant as a parallel feature implementation for planning complexity, iteration count, and resource estimation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project conventions: Node.js, vitest test runner, npm, CommonJS imports, src/ source directory, *.test.js pattern. Essential for planning implementation structure and testing approach for this feature."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Build-stage failures: uninitialized variables (5 seen, 100% fix rate), undeclared references (3 seen, 66% fix rate). Relevant for understanding common pitfalls during implementation and setting quality gates for the planning stage."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 25,
+            "summary": "Generic architecture rules present but no specific content. Potentially relevant if enforced rules exist but too generic without context."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 10,
+            "summary": "Empty baselines. Not currently relevant to planning but may become useful for establishing feature-specific performance baselines."
+          }
+        ]
+      },
+      "timestamp": 1775263528,
+      "ttl": 1800
+    },
+    "8405531af4614ba9d5f50b9a9faeab49": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 85,
+            "summary": "Contains recent test stage failures from Shipwright's own pipeline work (sw-cleanup.sh, sed variable expansion, deploy regression). Directly shows validation/test failure patterns that could inform why plan validation failed."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 72,
+            "summary": "Shows two successful feature approaches (bug fix in 3 iterations, authentication feature in 3 iterations) with standard template. Provides context for what working approaches look like for comparison to rejected plan."
+          },
+          {
+            "file": "failures.json (second entry - uninitialized variables)",
+            "relevance": 58,
+            "summary": "Documents common build-stage failures (uninitialized variables, missing declarations) with 100% fix effectiveness rate. Relevant for understanding schema/validation error patterns that could have caused plan rejection."
+          }
+        ]
+      },
+      "timestamp": 1775264519,
+      "ttl": 1800
+    },
+    "b2e96a2355dc36dfc3a3d1627c22f9be": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Contains architecture rules that directly inform the policy engine design. Essential for understanding existing architectural constraints and patterns."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Shows completed feature implementations with complexity metrics (65), iteration patterns, and test strategies. Demonstrates how similar architectural work was approached and validated."
+          },
+          {
+            "file": "patterns.json (first entry with conventions)",
+            "relevance": 70,
+            "summary": "Captures project conventions: Node.js stack, src/ structure, vitest test runner, CommonJS imports. Critical for designing the policy engine to fit existing project standards."
+          },
+          {
+            "file": "failures.json (first entry - test stage failures)",
+            "relevance": 45,
+            "summary": "Documents test infrastructure issues and debugging patterns from previous work. Useful for anticipating test strategy challenges in policy engine design."
+          },
+          {
+            "file": "failures.json (variable initialization pattern)",
+            "relevance": 35,
+            "summary": "Shows common JavaScript runtime errors and mitigation strategies. General development patterns applicable to policy engine implementation validation."
+          }
+        ]
+      },
+      "timestamp": 1775264558,
+      "ttl": 1800
+    },
+    "4778501093dcfae52917cb9c624b9744": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first)",
+            "relevance": 78,
+            "summary": "Documents concrete failure patterns with root causes (sw-cleanup.sh stale heartbeat detection, sed variable expansion) and documented fixes—direct anti-patterns learned from pipeline execution"
+          },
+          {
+            "file": "failures.json (fifth)",
+            "relevance": 72,
+            "summary": "Catalogs common build-stage anti-patterns (uninitialized variables, undefined references) with mitigation success rates (66-100%), showing what design approaches fail and why"
+          },
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 48,
+            "summary": "Shows successful delivery patterns (iterations, file changes, test strategies) that implicitly define anti-patterns by contrast; context for what NOT to repeat"
+          }
+        ]
+      },
+      "timestamp": 1775264573,
+      "ttl": 1800
+    },
+    "6d1f8e2595309ccd84acf737919ff8bd": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 88,
+            "summary": "Defines actual project structure: Node.js with vitest, npm, CommonJS imports, src/ directory. Critical for understanding build environment and conventions."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 82,
+            "summary": "Contains two successful patterns from similar-complexity builds (60-65 complexity), both using standard template and npm test strategy. Shows 3-4 iteration approach."
+          },
+          {
+            "file": "failures.json (fifth entry)",
+            "relevance": 76,
+            "summary": "Build-stage failures with variable initialization and declaration errors. Shows both 100% and 66% fix effectiveness rates, directly applicable to JavaScript build debugging."
+          },
+          {
+            "file": "failures.json (second entry)",
+            "relevance": 72,
+            "summary": "Build-stage failures from variable initialization (100% fix effectiveness). Provides mitigation patterns for common JavaScript runtime errors in build phase."
+          },
+          {
+            "file": "failures.json (third entry)",
+            "relevance": 65,
+            "summary": "ENOENT dependency issue (95% fix effectiveness via npm install). Relevant for build stage dependency validation before compilation."
+          }
+        ]
+      },
+      "timestamp": 1775264832,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains 2 successful build patterns with test strategies (npm test), iteration counts (3 each), file change patterns, and complexity metrics. Directly applicable to current build stage execution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Project metadata: test runner (vitest), package manager (npm), source directory (src/), test pattern (*.test.js). Essential build configuration for setting up test environment."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Captures 3 test failures including sed variable expansion issues and shell script dry-run detection bugs. Helps build stage avoid known failure patterns in test execution."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Contains empty baselines object with no data. Provides no actionable metrics or baseline comparisons for build stage execution."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Empty decisions array with no captured decisions. Provides no contextual guidance for build stage approach."
+          }
+        ]
+      },
+      "timestamp": 1775264842,
       "ttl": 1800
     }
   }

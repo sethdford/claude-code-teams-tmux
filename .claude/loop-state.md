@@ -1,101 +1,85 @@
 ---
-goal: "Add a shipwright ping command that prints pong to stdout and exits 0
+goal: "Config-Driven Policy Engine with JSON Schema and Adaptive Override System
 
 ## Plan Summary
-Plan complete and saved to `docs/plans/2026-03-02-ping-command.md`.
+Here is the implementation plan:
 
 ---
 
-## Summary
+## Plan: Config-Driven Policy Engine
 
-The plan adds the `shipwright ping` command in **4 files, 9 tasks**:
+### Key finding: most infrastructure already exists
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1-2 | Create + chmod `sw-ping.sh` | `scripts/sw-ping.sh` (new) |
-| 3-4 | Create + chmod `sw-ping-test.sh` | `scripts/sw-ping-test.sh` (new) |
-| 5 | Run test in isolation — verify 6 PASS | — |
-| 6 | Register `ping)` case in router | `scripts/sw` |
-| 7 | Add test to `npm test` chain | `package.json` |
-| 8 | Smoke-test via router | — |
-| 9 | Commit | — |
+`config/policy.json`, `config/policy.schema.json`, `scripts/lib/policy.sh`, and `scripts/lib/config.sh` are all already in place. The work is closing **five specific gaps**:
 
-**Key decisions:**
-- **Standalone script** (not inline in router) — only approach consistent with all 100+ existing commands, independently testable
+### Five gaps to close
+
+| Gap | Root Cause |
+|-----|-----------|
+| Schema broken | `policy.json` has a `decision` section but schema has `additionalProperties: false` with no `decision` property — schema validation fails today |
+| Missing loop values | sw-loop.sh has 14+ hardcoded env-var fallbacks (`MAX_ITERATIONS=20`, `EXTENSION_SIZE=5`, `test_timeout=900`, etc.) that bypass the policy system |
+| No policy-overrides.json | sw-adaptive.sh writes learned data to `~/.shipwright/adaptive-models.json` only — no bridge to the policy system |
+| No schema validation on load | `policy_get` only calls `jq -r`, no constraint checking |
+| sw-doctor.sh has zero policy checks | Completely absent |
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Add a shipwright ping command that prints pong to stdout and exits 0
+# Design: Config-Driven Policy Engine with JSON Schema and Adaptive Override System
 ## Context
-## Component Diagram
 ## Decision
-## Interface Contracts
-# sw-ping.sh — Public interface
-# Invocation (no args): happy path
-# stdout: "pong\n"
-# stderr: (empty)
-# exit:   0
+### 1. Override Precedence Chain
+### 2. Schema Repair
+### 3. Policy Values in `policy.json`
+### 4. Schema Validation in Bash via `jq`
+### 5. Script Migration Pattern
+# sw-loop.sh — before
+# sw-loop.sh — after  
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "architecture.json",
-      "relevance": 95,
-      "summary": "Describes Command Router pattern, bash 3.2 conventions (set -euo pipefail, VERSION at top), snake_case function naming, and test harness structure — exactly what's needed to implement the ping command correctly"
+      "file": "patterns.json (first entry)",
+      "relevance": 88,
+      "summary": "Defines actual project structure: Node.js with vitest, npm, CommonJS imports, src/ directory. Critical for understanding build environment and conventions."
     },
     {
-      "file": "failures.json (comprehensive with 8 entries)",
-      "relevance": 85,
-      "summary": "Shows critical historical failures including 'output missing: intake' (23 occurrences, highest weight 7.8e+47), shell-init errors, and test infrastructure issues — directly relevant to avoiding similar failures in build stage"
+      "file": "success-patterns.json (first entry)",
+      "relevance": 82,
+      "summary": "Contains two successful patterns from similar-complexity builds (60-65 complexity), both using standard template and npm test strategy. Shows 3-4 iteration approach."
     },
     {
-      "file": "metrics.json (build_duration_s: 2826)",
-      "relevance": 55,
-      "summary": "Previous build took 47 minutes — provides performance baseline and expectation setting for current build duration"
+      "file": "failures.json (fifth entry)",
+      "relevance": 76,
+      "summary": "Build-stage failures with variable initialization and declaration errors. Shows both 100% and 66% fix effectiveness rates, directly applicable to JavaScript build debugging."
     },
     {
-      "file": "failures.json (shell-init: error retrieving current directory)",
-      "relevance": 50,
-      "summary": "Test stage failure in getcwd — indicates potential sandbox/environment issues that could affect ping command testing"
+      "file": "failures.json (second entry)",
+      "relevance": 72,
+      "summary": "Build-stage failures from variable initialization (100% fix effectiveness). Provides mitigation patterns for common JavaScript runtime errors in build phase."
     },
     {
-      "file": "patterns.json (import_style: commonjs)",
-      "relevance": 30,
-      "summary": "Indicates JavaScript/Node.js project context; mostly empty but shows partial project type detection from previous runs"
+      "file": "failures.json (third entry)",
+      "relevance": 65,
+      "summary": "ENOENT dependency issue (95% fix effectiveness via npm install). Relevant for build stage dependency validation before compilation."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 1 new discoveries
-[design] Design completed for Add a shipwright ping command that prints pong to stdout and exits 0 — Resolution: 
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
-
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 4
+✓ Injected 1 new discoveries
+[design] Design completed for Config-Driven Policy Engine with JSON Schema and Adaptive Override System — Resolution: "
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-03-02T08:27:01Z
-last_iteration_at: 2026-03-02T08:27:01Z
-consecutive_failures: 1
-total_commits: 3
+started_at: 2026-04-04T01:07:34Z
+last_iteration_at: 2026-04-04T01:07:34Z
+consecutive_failures: 0
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -106,14 +90,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-03-02T08:06:08Z)
-This is also a task notification for a background command that was already retrieved and reviewed via `TaskOutput` in th
-No new information — the ping command implementation is complete and `LOOP_COMPLETE` was already declared.
-
-### Iteration 2 (2026-03-02T08:25:28Z)
-The background task already completed and was retrieved in my previous turn — `npm test` exited with code 0. The ping co
-LOOP_COMPLETE
-
-### Iteration 3 (2026-03-02T08:26:58Z)
-(no output)
 
