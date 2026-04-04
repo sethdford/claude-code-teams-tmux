@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
       "seen_count": 2,
-      "last_seen": "2026-04-04T01:12:58Z",
+      "last_seen": "2026-04-04T01:13:43Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -17,7 +17,7 @@
       "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being passed as the sed script argument, causing sed to treat the literal string as a file path",
       "fix": "ensure TEST_TEMP_DIR is exported or properly quoted so it expands inside the sed expression, or use a different substitution approach",
       "seen_count": 4,
-      "last_seen": "2026-04-04T01:34:11Z",
+      "last_seen": "2026-04-04T01:20:36Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -25,21 +25,12 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, causing dry-run to not display 'agent-1', 'Found', or '--force' hint in output",
-      "fix": "Update sw-cleanup-test.sh expected strings to match current sw-cleanup.sh output, or fix sw-cleanup.sh to restore stale heartbeat detection and summary output with 'Found N items' and '--force' hint",
+      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being used as a filename argument",
+      "fix": "quote the sed expression correctly so the variable substitution happens in the shell before sed receives it, e.g. use sed \"s|$TEST_TEMP_DIR|...|g\" instead of passing the unexpanded string as a file path",
       "seen_count": 1,
       "last_seen": "2026-03-29T06:09:02Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Uses set -euo pipefail",
-      "root_cause": "regression detection test failed — the subcommand output is not valid JSON",
-      "fix": "Fix the regression detection output in sw-feedback.sh to emit valid JSON when called from the test",
-      "seen_count": 1,
-      "last_seen": "2026-04-04T01:21:27Z",
       "category": "test_failure"
     }
   ]
