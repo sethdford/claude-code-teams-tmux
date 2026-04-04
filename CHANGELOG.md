@@ -7,6 +7,51 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.3.0] — 2026-04-04
+
+### SOTA Dark Factory — Fully Autonomous Pipeline
+
+- **Context exhaustion auto-recovery**: Detects Claude context limits, auto-restarts with progress briefing (configurable limit). Zero human intervention needed.
+- **Config-driven model routing**: `_smart_model()` reads from env → daemon-config → user-config → defaults. All 7 hardcoded model names replaced.
+- **Adaptive effort levels**: `_smart_effort()` per-stage effort from daemon-config with intelligent defaults.
+- **Config-driven parameters**: Circuit breaker threshold, max-turns, extension sizes, restart caps all read from `daemon-config.json`.
+- **Exponential backoff**: `_exponential_backoff()` with jitter replaces hardcoded sleep values in health checks and deployment polling.
+- **Configurable pricing**: Model costs read from `~/.shipwright/pricing.json` with sensible defaults.
+
+### Dark Factory Phases 1-8
+
+- Test-as-holdout validation (agents can't overfit to visible tests)
+- Specification-driven development (structured JSON specs from issues)
+- Causal dependency graphs (trace test failures to root causes)
+- Auto-recovery system (14 error categories, model escalation ladder)
+- Process reward models (5-dimensional per-iteration scoring)
+- Constitutional AI (20 principles, deterministic self-critique)
+- Formal specification extraction (pre/post-conditions from JSDoc)
+- Mutation testing (sed-based mutant generation, kill rate measurement)
+- Cross-session RL (episode recording, Thompson sampling bandits, policy learning)
+- Spec-driven pipeline stages (spec_generation + spec_verification)
+
+### AutoResearch RL System
+
+- Reward aggregation from 80+ existing pipeline signals
+- Thompson Sampling bandit selector for model/template selection
+- Policy learner with per-context strategy optimization
+- 26/26 E2E tests prove RL system wiring
+
+### Pipeline Test Fixes
+
+- Fixed mock claude to handle new CLI flags (--effort, --fallback-model)
+- Fixed scope enforcement set -e propagation bug (subshell isolation)
+- Updated stage list to include spec_generation/spec_verification
+- All 58 pipeline tests now pass (were failing before)
+
+### SOTA Research
+
+- 5 research documents (77KB), 65+ sources covering autonomous loops, dark factories, RL for code, multi-agent coordination
+- 20-item prioritized backlog with 12-week implementation roadmap
+
+---
+
 ## [3.2.0] — 2026-02-27
 
 ### Context Engineering & Intelligence
