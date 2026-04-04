@@ -662,8 +662,244 @@ load_framework_patterns() {
     echo "$patterns_file"
 }
 
+# ─── generate_claudemd_from_template ───────────────────────────────────────
+# Generate CLAUDE.md from framework template with variable substitution
+generate_claudemd_from_template() {
+    local lang="${1:-unknown}"
+    local framework="${2:-unknown}"
+    local output_file="${3:-.claude/CLAUDE-starter.md}"
+
+    local template_file="$SCRIPT_DIR/templates/starter-generic.md"
+
+    # Select appropriate template
+    case "$lang" in
+        nodejs|typescript)    template_file="$SCRIPT_DIR/templates/starter-nodejs.md" ;;
+        go)                   template_file="$SCRIPT_DIR/templates/starter-go.md" ;;
+        python)               template_file="$SCRIPT_DIR/templates/starter-python.md" ;;
+        rust)                 template_file="$SCRIPT_DIR/templates/starter-rust.md" ;;
+    esac
+
+    if [[ ! -f "$template_file" ]]; then
+        warn "Template not found: $template_file, using generic template"
+        template_file="$SCRIPT_DIR/templates/starter-generic.md"
+    fi
+
+    # Read template and perform substitutions
+    local content
+    content=$(cat "$template_file" 2>/dev/null)
+
+    # Replace placeholders with actual values
+    content="${content//\{\{PROJECT_NAME\}\}/$PROJECT_NAME}"
+    content="${content//\{\{FRAMEWORK\}\}/${FRAMEWORK:-generic}}"
+    content="${content//\{\{LANGUAGE\}\}/${LANG_DETECTED:-unknown}}"
+    content="${content//\{\{TEST_CMD\}\}/${TEST_CMD:-npm test}}"
+    content="${content//\{\{BUILD_CMD\}\}/${BUILD_CMD:-npm run build}}"
+    content="${content//\{\{DEV_CMD\}\}/${DEV_CMD:-npm run dev}}"
+    content="${content//\{\{LINT_CMD\}\}/${LINT_CMD:-npm run lint}}"
+    content="${content//\{\{FORMAT_CMD\}\}/${FORMAT_CMD:-npm run format}}"
+    content="${content//\{\{PACKAGE_MANAGER\}\}/${PACKAGE_MANAGER:-npm}}"
+    content="${content//\{\{TEST_FRAMEWORK\}\}/${TEST_FRAMEWORK:-jest}}"
+
+    # Write output file
+    mkdir -p "$(dirname "$output_file")"
+    echo "$content" > "$output_file"
+
+    if [[ $? -eq 0 ]]; then
+        success "Generated starter CLAUDE.md → ${output_file##"$PROJECT_ROOT"/}"
+        track_file "$output_file"
+        return 0
+    else
+        error "Failed to generate $output_file"
+        return 1
+    fi
+}
+
+# ─── generate_github_issues_from_patterns ───────────────────────────────────
+# Generate example GitHub issues based on framework patterns
+generate_github_issues_from_patterns() {
+    local framework="${1:-unknown}"
+    local language="${2:-unknown}"
+    local output_file="${3:-.claude/starter-issues.json}"
+
+    mkdir -p "$(dirname "$output_file")"
+
+    # Create issues JSON array with 5 starter issues
+    local issues_json='['
+
+    # Issue 1: Dependency Update
+    issues_json+='{
+    "title": "Upgrade '"${FRAMEWORK:-framework}"' to latest version",
+    "body": "## Summary\nUpdate '"${FRAMEWORK:-framework}"' and related dependencies to the latest stable version.\n\n## Details\n- Review changelog for breaking changes\n- Update all related packages\n- Run full test suite\n\n## Testing\n- [ ] All tests pass\n- [ ] No deprecation warnings\n- [ ] TypeScript types updated (if applicable)",
+    "labels": ["kind/chore", "priority/medium"],
+    "assignees": []
+  },'
+
+    # Issue 2: Bug Fix Example
+    issues_json+='{"title":"Fix: Handle edge case in error handling","body":"## Problem\nDescribe the bug that needs to be fixed.\n\n## Steps to Reproduce\n1. First step\n2. Second step\n3. Third step\n\n## Expected Behavior\nWhat should happen.\n\n## Actual Behavior\nWhat actually happens.","labels":["kind/bug","priority/high"],"assignees":[]},'
+
+    # Issue 3: Feature Request
+    issues_json+='{"title":"Feature: Add comprehensive logging throughout application","body":"## Summary\nAdd structured logging to all major code paths.\n\n## Motivation\nImprove observability and debugging capabilities.\n\n## Proposed Solution\nIntegrate logging library ('"${FRAMEWORK:-framework}"' specific) with structured JSON output.\n\n## Testing\n- [ ] Logs appear in all critical paths\n- [ ] Performance impact is minimal\n- [ ] Log levels are appropriate","labels":["kind/feature","priority/medium"],"assignees":[]},'
+
+    # Issue 4: Documentation
+    issues_json+='{"title":"Docs: Document setup and development process in README","body":"## Documentation Gap\nThe README needs more detailed setup and development instructions.\n\n## Suggested Changes\n- [ ] Add step-by-step setup guide\n- [ ] Document common development tasks\n- [ ] Add troubleshooting section\n- [ ] Include examples for main features\n\n## Resources\nLink to any external docs or discussions","labels":["kind/docs","priority/medium"],"assignees":[]},'
+
+    # Issue 5: Testing/Coverage
+    issues_json+='{"title":"Test: Improve test coverage to 80%","body":"## Current Coverage\nCheck current coverage percentage.\n\n## Coverage Goals\n- [ ] Unit tests for all exported functions\n- [ ] Integration tests for main features\n- [ ] Edge case testing\n\n## Test Framework\nUsing: '"${TEST_FRAMEWORK:-jest}"'","labels":["kind/test","priority/medium"],"assignees":[]}'
+
+    issues_json+=']'
+
+    echo "$issues_json" > "$output_file"
+
+    # Validate JSON
+    if command -v jq >/dev/null 2>&1; then
+        if ! jq empty "$output_file" 2>/dev/null; then
+            error "Generated invalid JSON in $output_file"
+            return 1
+        fi
+    fi
+
+    success "Generated starter issues → ${output_file##"$PROJECT_ROOT"/}"
+    track_file "$output_file"
+    return 0
+}
+
+# ─── generate_labels_config_from_patterns ───────────────────────────────────
+# Generate GitHub labels configuration
+generate_labels_config_from_patterns() {
+    local framework="${1:-unknown}"
+    local output_file="${2:-.claude/starter-labels.json}"
+
+    mkdir -p "$(dirname "$output_file")"
+
+    # Create labels JSON with default + framework-specific labels
+    local labels_json='{
+  "default_labels": [
+    {"name": "kind/feature", "color": "0366d6", "description": "New feature request"},
+    {"name": "kind/bug", "color": "d73a49", "description": "Bug report"},
+    {"name": "kind/docs", "color": "FEF2C0", "description": "Documentation"},
+    {"name": "kind/refactor", "color": "7057ff", "description": "Code refactoring"},
+    {"name": "kind/test", "color": "0E8A16", "description": "Testing"},
+    {"name": "kind/chore", "color": "cccccc", "description": "Maintenance"},
+    {"name": "priority/critical", "color": "b60205", "description": "Critical priority"},
+    {"name": "priority/high", "color": "ff6b6b", "description": "High priority"},
+    {"name": "priority/medium", "color": "fbca04", "description": "Medium priority"},
+    {"name": "priority/low", "color": "0075ca", "description": "Low priority"},
+    {"name": "status/triage-needed", "color": "cccccc", "description": "Needs triage"},
+    {"name": "status/in-progress", "color": "cccccc", "description": "In progress"},
+    {"name": "status/blocked", "color": "d73a49", "description": "Blocked"},
+    {"name": "effort/1pt", "color": "cccccc", "description": "1 point effort"},
+    {"name": "effort/3pt", "color": "cccccc", "description": "3 point effort"},
+    {"name": "effort/5pt", "color": "cccccc", "description": "5 point effort"}
+  ],'
+
+    # Add framework-specific labels
+    case "$framework" in
+        react|next.js|vue|angular|nestjs)
+            labels_json+='
+  "framework_specific_labels": [
+    {"name": "typescript", "color": "3178c6", "description": "TypeScript"},
+    {"name": "frontend", "color": "4a90e2", "description": "Frontend"},
+    {"name": "ux-issue", "color": "ff69b4", "description": "UX issue"},
+    {"name": "performance", "color": "ffa500", "description": "Performance"}
+  ]'
+            ;;
+        go|rust)
+            labels_json+='
+  "framework_specific_labels": [
+    {"name": "performance", "color": "ffa500", "description": "Performance"},
+    {"name": "concurrency", "color": "9370db", "description": "Concurrency"},
+    {"name": "safety", "color": "ff6b6b", "description": "Safety concern"}
+  ]'
+            ;;
+        python)
+            labels_json+='
+  "framework_specific_labels": [
+    {"name": "type-hints", "color": "3572a5", "description": "Type hints"},
+    {"name": "async", "color": "9370db", "description": "Async/await"},
+    {"name": "database", "color": "336791", "description": "Database"}
+  ]'
+            ;;
+        *)
+            labels_json+='
+  "framework_specific_labels": []'
+            ;;
+    esac
+
+    labels_json+='
+}'
+
+    echo "$labels_json" > "$output_file"
+
+    # Validate JSON
+    if command -v jq >/dev/null 2>&1; then
+        if ! jq empty "$output_file" 2>/dev/null; then
+            error "Generated invalid JSON in $output_file"
+            return 1
+        fi
+    fi
+
+    success "Generated labels config → ${output_file##"$PROJECT_ROOT"/}"
+    track_file "$output_file"
+    return 0
+}
+
+# ─── validate_starter_kit_artifacts ─────────────────────────────────────────
+# Validate generated starter kit artifacts
+validate_starter_kit_artifacts() {
+    local claudemd="${1:-.claude/CLAUDE-starter.md}"
+    local issues="${2:-.claude/starter-issues.json}"
+    local labels="${3:-.claude/starter-labels.json}"
+
+    local valid=true
+
+    # Check CLAUDE.md
+    if [[ -f "$claudemd" ]]; then
+        local line_count
+        line_count=$(wc -l < "$claudemd" | tr -d ' ')
+        if [[ "$line_count" -lt 50 ]]; then
+            warn "CLAUDE.md is short ($line_count lines), may need customization"
+        fi
+        # Check for unclosed code blocks
+        local block_count
+        block_count=$(grep -c '```' "$claudemd" || true)
+        if [[ $((block_count % 2)) -ne 0 ]]; then
+            warn "CLAUDE.md has unclosed code blocks"
+        fi
+    fi
+
+    # Check issues JSON
+    if [[ -f "$issues" ]] && command -v jq >/dev/null 2>&1; then
+        if ! jq empty "$issues" 2>/dev/null; then
+            error "starter-issues.json is invalid JSON"
+            valid=false
+        else
+            local issue_count
+            issue_count=$(jq 'length' "$issues" 2>/dev/null || echo 0)
+            if [[ "$issue_count" -lt 3 ]]; then
+                warn "Only $issue_count starter issues generated (expected ≥3)"
+            fi
+        fi
+    fi
+
+    # Check labels JSON
+    if [[ -f "$labels" ]] && command -v jq >/dev/null 2>&1; then
+        if ! jq empty "$labels" 2>/dev/null; then
+            error "starter-labels.json is invalid JSON"
+            valid=false
+        fi
+    fi
+
+    if $valid; then
+        success "Starter kit validation passed"
+        return 0
+    else
+        error "Starter kit validation failed"
+        return 1
+    fi
+}
+
 # ─── prep_generate_starter_kit ──────────────────────────────────────────────
-# Main starter kit generator (placeholder for integration)
+# Main starter kit generator
 prep_generate_starter_kit() {
     if ! $GEN_STARTER_KIT; then
         return 0
@@ -679,10 +915,25 @@ prep_generate_starter_kit() {
 
     info "Detected: $LANG_DETECTED${FRAMEWORK:+ / $FRAMEWORK} ($repo_size repo) → $recommended_template template"
 
-    # TODO: Generate CLAUDE-starter.md
-    # TODO: Generate starter-issues.json
-    # TODO: Generate starter-labels.json
-    # TODO: Validate artifacts
+    # Generate CLAUDE.md
+    generate_claudemd_from_template "$LANG_DETECTED" "$FRAMEWORK" "$PROJECT_ROOT/.claude/CLAUDE-starter.md" || return 1
+
+    # Generate starter issues
+    generate_github_issues_from_patterns "$FRAMEWORK" "$LANG_DETECTED" "$PROJECT_ROOT/.claude/starter-issues.json" || return 1
+
+    # Generate labels config
+    generate_labels_config_from_patterns "$FRAMEWORK" "$PROJECT_ROOT/.claude/starter-labels.json" || return 1
+
+    # Validate artifacts
+    validate_starter_kit_artifacts "$PROJECT_ROOT/.claude/CLAUDE-starter.md" \
+                                   "$PROJECT_ROOT/.claude/starter-issues.json" \
+                                   "$PROJECT_ROOT/.claude/starter-labels.json" || return 1
+
+    echo ""
+    info "Community starter kit ready! Next steps:"
+    echo -e "  ${DIM}1. Review .claude/CLAUDE-starter.md and integrate into existing config${RESET}"
+    echo -e "  ${DIM}2. Import issues: ${CYAN}gh issue create -R org/repo -B .claude/starter-issues.json${RESET}${DIM} (requires GitHub CLI)${RESET}"
+    echo -e "  ${DIM}3. Create labels: Reference .claude/starter-labels.json in your GitHub settings${RESET}"
 }
 
 # ─── Intelligence Check ──────────────────────────────────────────────────
