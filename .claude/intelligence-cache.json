@@ -30,18 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "builder",
         "secondary_roles": [
-          "builder",
+          "architect",
           "tester",
-          "optimizer"
+          "docs-writer"
         ],
-        "confidence": 0.85,
-        "reasoning": "Task requires designing pattern library architecture and replay engine; builder implements it; tester validates patterns work correctly; optimizer tunes matching/replay performance",
+        "confidence": 0.95,
+        "reasoning": "Pattern library requires core implementation (builder) with upfront architecture design, comprehensive testing for replay reliability, and user documentation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775241546,
+      "timestamp": 1775264117,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -665,24 +665,24 @@
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Pattern relevance: injecting irrelevant success patterns could mislead build loop and reduce success rate",
-          "Pattern library bloat: unbounded growth without retention policies causes memory/lookup performance issues",
-          "A/B test statistical validity: insufficient sample size or confounding variables undermine impact measurement",
-          "Pattern staleness: successful approaches from old issues become obsolete as codebase evolves",
-          "Circular dependency: success patterns generated from previous builds could reinforce suboptimal strategies"
+          "Pattern quality degradation - poor patterns could reduce success rates if injected",
+          "Pattern matching accuracy - correctly identifying similar issues is non-trivial",
+          "Memory bloat - need aggressive pruning strategy to prevent pattern library growth",
+          "A/B test infrastructure - requires statistical significance tracking and phase-out logic",
+          "Pattern injection bias - over-reliance on patterns could prevent agents from innovating"
         ],
         "implementation_hints": [
-          "Implement pattern fingerprinting (issue type + complexity tier) for initial matching before similarity scoring",
-          "Add confidence scoring: patterns from multiple successes weighted higher than single-run outliers",
-          "Start with simple pattern capture (approach name, iteration count, test strategy) before adding complex metadata",
-          "Use existing A/B test framework in daemon-config (ab_test_ratio field) for structured split testing",
-          "Add pattern TTL and recency decay: weight recent patterns 2x higher to handle codebase drift",
-          "Implement anti-injection guard: threshold confidence level (e.g., >=0.7) before pattern enters prompt",
-          "Batch pattern capture in memory.sh alongside failure patterns rather than separate system",
-          "Dashboard: start with success rate histogram by issue type before full pattern browser"
+          "Extend existing memory system incrementally; reuse failure-pattern capture infrastructure",
+          "Start with simple success metrics: iteration count, file change patterns, test coverage delta",
+          "Build pattern matching as pluggable module before A/B testing to validate accuracy",
+          "Implement pattern confidence scoring based on sample size and success rate variance",
+          "Add dashboard view early to validate captured patterns and catch low-quality patterns",
+          "Plan pattern versioning scheme so agents can evolve strategies without breaking old patterns",
+          "Consider time-windowed patterns - recent success patterns more relevant than year-old ones",
+          "Implement cleanup: prune patterns with <5 samples or <60% confidence automatically"
         ]
       },
-      "timestamp": 1775240742,
+      "timestamp": 1775263450,
       "ttl": 3600
     },
     "d398f5313f9a46b8496da148b4bb553e": {
@@ -706,88 +706,99 @@
     "0b1d9f06481a0b0a6bef6d427841cb4c": {
       "result": {
         "issue_type": "backend",
-        "confidence": 0.88,
+        "confidence": 0.78,
         "secondary_domains": [
-          "testing",
           "observability",
+          "testing",
           "data-pipeline"
         ],
         "complexity_assessment": {
-          "score": 6,
-          "reasoning": "Standard scope: extends existing memory system with pattern capture/indexing, integrates into build loop, adds A/B testing framework. Well-defined acceptance criteria but requires coordination across multiple subsystems (memory, daemon, loop, dashboard)."
+          "score": 7,
+          "reasoning": "Multi-subsystem feature integrating pattern capture, indexing, injection, A/B testing, and dashboard—each with precision requirements. Pattern quality directly impacts success rates, making validation critical."
         },
         "skill_plan": {
           "plan": [
             "brainstorming",
-            "api-design"
+            "data-pipeline"
           ],
           "design": [
             "architecture-design",
-            "data-pipeline"
+            "data-pipeline",
+            "ab-testing-framework"
           ],
           "build": [
-            "performance",
-            "testing-strategy"
+            "testing-strategy",
+            "observability",
+            "success-pattern-lifecycle"
           ],
           "review": [
             "two-stage-review",
             "adversarial-quality"
           ],
           "compound_quality": [
-            "validation-thoroughness"
+            "adversarial-quality",
+            "validation-thoroughness",
+            "performance"
           ],
           "pr": [
-            "pr-quality"
+            "pr-quality",
+            "documentation"
           ],
           "deploy": [
-            "deploy-safety"
+            "deploy-safety",
+            "observability"
           ],
           "validate": [
-            "observability"
+            "validation-thoroughness"
           ],
           "monitor": [
             "observability"
           ]
         },
         "skill_rationale": {
-          "brainstorming": "Challenge assumptions about which success patterns (iteration count, file diffs, commit structure, test strategy) actually correlate with future success to avoid capturing noise.",
-          "api-design": "Design a clean pattern library API (query by issue type/complexity, rank by effectiveness) that feels natural to integrate into build loop prompts.",
-          "architecture-design": "Create an ADR documenting the success pattern schema, indexing strategy (issue type → patterns), storage format, and how patterns flow through the pipeline.",
-          "data-pipeline": "Design the ETL for success patterns: capture structured metadata at pipeline completion → index by issue type/complexity → retrieve relevant patterns for new builds.",
-          "performance": "Pattern indexing and retrieval happens synchronously during build loop initialization—ensure lookups are sub-100ms or risk stalling build startup.",
-          "testing-strategy": "Validate A/B test design: proper randomization (deterministic per issue to avoid reroll bias), control/treatment bucket sizes, duration, and success rate measurement consistency.",
-          "two-stage-review": "Pass 1: Review pattern capture logic, indexing schema, and backward compatibility. Pass 2: Deep audit of A/B test framework for statistical validity and confounding variables.",
-          "adversarial-quality": "Find failure modes: what happens if pattern library is empty? If a pattern is stale/wrong? If pattern injection contradicts the actual issue? If concurrent builds corrupt the index?",
-          "validation-thoroughness": "Don't just measure success rate delta—validate that pattern-injected builds follow the suggested approach and that success improvements are not random noise.",
-          "pr-quality": "Summarize the pattern schema, indexing strategy, A/B test results (confidence interval, effect size), and rollout plan in a PR reviewable in 5 minutes.",
-          "deploy-safety": "Roll out pattern injection gradually: first to non-critical builds, monitor for unexpected failures (pattern contradictions, false positives), then expand.",
-          "observability": "Post-deploy: track which patterns are actually used, which drives success, which are stale. Dashboard showing pattern effectiveness by issue type and trend over time."
+          "brainstorming": "Challenge whether patterns should be captured at all intermediate success points (partial wins) vs only full pipeline success, and whether issue type/complexity alone are sufficient indexing dimensions.",
+          "data-pipeline": "Pattern capture is a structured ETL problem—defining schemas for (approach, iteration count, files changed, test strategy, commits), indexing by metadata, and ensuring no data loss during pipeline completion.",
+          "architecture-design": "Pattern library needs a formal schema, storage layer decisions (in-memory, SQLite, JSON file), versioning strategy, and backward compatibility with the existing memory system.",
+          "ab-testing-framework": "Deterministic assignment (issue ID + date hash) prevents contamination; measurement must correctly isolate pattern-injection impact from confounding factors like agent model version or codebase state.",
+          "testing-strategy": "Pattern capture and injection are high-stakes; tests must verify patterns are correctly extracted, indexed, injected into prompts, and don't malform agent input.",
+          "observability": "Dashboard requires real-time pattern metrics (capture rate, library size, top patterns by type, A/B arm distribution); pattern injection must emit structured logs for later analysis.",
+          "success-pattern-lifecycle": "Governs how patterns are captured, versioned, expire over time, and audit-trailed—ensures stale patterns don't hurt future builds and library stays maintainable.",
+          "two-stage-review": "Pass 1: verify pattern schema, capture logic, and A/B test design. Pass 2: deep review of injection point integration, performance impact, and memory system interaction.",
+          "adversarial-quality": "Inject malformed patterns, patterns from unrelated issues, and patterns during failures to verify robustness; ensure pattern injection can't crash agents or poison future builds.",
+          "validation-thoroughness": "End-to-end validation: capture a pattern on a successful build, wait for next similar issue, verify pattern was injected and build succeeded; measure A/B deltas with statistical significance.",
+          "performance": "Pattern library queries during build loop startup must be sub-100ms; index structures and caching strategies are critical as library grows.",
+          "pr-quality": "New pattern library APIs must be discoverable; document the pattern schema, capture hooks, and injection points so future agent improvements can build on this.",
+          "documentation": "Dashboard and `.claude/memory/<repo>/success-patterns.json` format need clear examples showing a captured pattern and how it influences a build prompt.",
+          "deploy-safety": "Pattern library goes live during deploy stage; rollback strategy must handle: library corruption, partial captures, A/B randomization drift."
         },
         "generated_skills": [
           {
-            "name": "ab-testing-framework",
-            "reason": "Acceptance criteria explicitly require A/B testing to measure pattern injection impact, but no existing skill covers statistical test design, randomization strategy, sample sizing, or result interpretation in the context of a CI/CD system.",
-            "content": "## A/B Testing Framework for Pattern Injection\n\n### Design Principles\n\n**Deterministic Randomization**: Use a hash of (issue ID + date) modulo 100 to assign builds to control/treatment arms. This ensures:\n- Same issue always gets same treatment (no mid-week reroll)\n- Uniform distribution across arms\n- Reproducible results for debugging\n\n**Sample Size & Duration**:\n- Minimum 100 builds per arm before declaring significance\n- Run for at least 1 week to capture typical variation\n- If baseline success rate is 70%, need ~350 builds per arm to detect 5% improvement at p < 0.05\n\n**Success Metric Definition**:\n- Primary: \"pipeline merge outcome\" (MERGED = success, BLOCKED/FAILED = failure)\n- Secondary: \"iterations to success\" (lower is better, measure only on successful builds)\n- Do NOT use: commit volume, test coverage, or other proxies—measure actual merge outcome\n\n**Confounding Variables to Control**:\n- Issue complexity (control: stratify by issue score)\n- Time-of-day effects (control: measure across all hours)\n- Pattern library freshness (control: use same snapshot for full test duration)\n- Iteration budget changes (control: lock loop settings for test period)\n\n### Implementation Checklist\n\n1. **Log treatment assignment**: Write `{issue_id, arm: 'control'|'treatment', date, pattern_injected: boolean}` to test manifest\n2. **Validate randomization**: Post-test, chi-square test that arm distribution is uniform (~50/50 ± 5%)\n3. **Calculate effect size**: Cohen's h for proportions (success rate difference)\n4. **Statistical test**: Two-proportion z-test; report p-value and 95% confidence interval\n5. **Interpretation**: If p < 0.05 AND effect size > 2%, pattern injection is statistically significant\n6. **Guardrails**: If success rate drops in treatment arm, immediately suspend and investigate\n\n### Monitoring During Test\n\n- Daily: Plot cumulative success rate per arm. If one arm diverges >10% by day 3, investigate immediately.\n- Track pattern usage: log which patterns were injected, how often they matched new issues.\n- Failure mode tracking: if treatment arm has new failure signatures, capture to error log.\n\n### Post-Test Reporting\n\nOutput JSON with fields:\n```json\n{\n  \"test_duration_days\": 7,\n  \"control_builds\": 320,\n  \"treatment_builds\": 315,\n  \"control_success_rate\": 0.72,\n  \"treatment_success_rate\": 0.78,\n  \"effect_size\": 0.065,\n  \"p_value\": 0.042,\n  \"confidence_interval_95\": [0.008, 0.122],\n  \"conclusion\": \"Pattern injection improved success rate by 6.5% (statistically significant at p=0.042)\"\n}\n```\n"
+            "name": "success-pattern-lifecycle",
+            "reason": "No existing skill covers the full lifecycle of pattern capture, storage, versioning, expiration, and audit-trailing required for a robust pattern library that doesn't degrade over time.",
+            "content": "## Success Pattern Lifecycle Management\n\n### Pattern Capture\nWhen a pipeline succeeds, extract and store a canonical pattern snapshot:\n- **Approach**: Brief description of strategy taken (e.g., 'iterative refactoring with incremental tests')\n- **Iteration count**: How many build loop iterations to success\n- **File patterns**: Changed file paths grouped by semantic role (tests, impl, docs)\n- **Test strategy**: Which tests drove the build (unit, integration, e2e suite composition)\n- **Commit structure**: Atomic commits vs squashed, message pattern (imperative vs descriptive)\n- **Model/effort**: Claude model used, effort level setting\n- **Duration**: Total time from intake to success\n- **Metadata**: Issue type, complexity score, codebase domain (frontend/backend/infra)\n\n### Indexing & Storage\n- Store patterns in `.claude/memory/<repo-hash>/success-patterns.json` as an array of pattern objects\n- Index by (issue_type, complexity_band, codebase_domain) for O(1) retrieval\n- Maintain a secondary index: (pattern_hash) → timestamp for deduplication\n- Keep a rolling window of 200 patterns per repo (rotate by LRU, preserve high-value patterns)\n\n### Pattern Versioning\n- Capture pattern_version=YYYYMMDD_SEQUENCE at capture time\n- Include codebase_snapshot: git commit SHA when pattern was captured\n- When querying patterns for injection, filter by age: prefer patterns < 90 days old, warn if pattern is stale\n- Allowlist mechanism: certain patterns (golden paths) are marked keep_forever=true\n\n### Pattern Expiration & Cleanup\n- Patterns older than 180 days are automatically archived (not deleted; moved to `.claude/memory/<repo>/archive/`)\n- Patterns matching failed builds within 7 days are demoted (success_weight -= 1, min 0)\n- Patterns from refactored/deleted code paths are invalidated via `git log --follow` on files in the pattern\n\n### Audit Trail\n- Each pattern capture logs: (pattern_id, issue_id, timestamp, success_build_sha, injected_count_since_capture)\n- Audit log stored in `.claude/memory/<repo-hash>/pattern-audit.jsonl`\n- Monthly archival: compress audit logs older than 60 days to `.claude/memory/<repo-hash>/archive/audit-YYYY-MM.jsonl.gz`\n\n### Injection Safety\n- Validate pattern before injection: ensure all fields are JSON-safe, no embedded nulls, description < 200 chars\n- If validation fails, log to error-log.jsonl and skip injection (don't fail the build)\n- Pattern injection is read-only: patterns are never modified during injection, only metadata updated\n\n### Monitoring & Quality\n- Dashboard metric: pattern_reuse_rate = (builds_with_injection) / (total_builds)\n- Dashboard metric: pattern_success_delta = (success_rate_with_injection) - (success_rate_baseline)\n- Metric: stale_pattern_ratio = (patterns > 120 days old) / (total patterns)\n- Alert if stale_pattern_ratio > 0.3 (indicates insufficient pattern refresh)\n\n### API\n- `capture_pattern(approach, iteration_count, files_changed, test_strategy, commits, metadata)` → pattern_id\n- `query_patterns(issue_type, complexity_band, limit=3)` → [pattern1, pattern2, ...]\n- `inject_pattern(pattern_id, build_prompt) → enriched_prompt\n- `invalidate_pattern(pattern_id, reason)` (soft-delete)\n- `pattern_audit_log(pattern_id)` → [(issue_id, timestamp, result), ...]\n"
           }
         ],
         "review_focus": [
-          "Pattern capture correctness: is metadata captured at the right pipeline stage (post-merge, not pre-test)? Are file diffs, iteration counts, and commit structure accurately recorded?",
-          "A/B test validity: proper randomization (deterministic per issue), control/treatment split, and success metric definition (merge outcome, not commit volume or test count)",
-          "Indexing performance: pattern retrieval must be <100ms or build loop initialization stalls; verify with load tests",
-          "Backward compatibility: existing memory files and pipeline state remain readable; pattern injection is optional and fails gracefully if library is empty",
-          "Pattern injection point in build loop: injected at the right prompt location (after issue context, before build instructions) to influence agent behavior without overwhelming token budget",
-          "Dashboard accuracy: success pattern effectiveness metrics (click-through correlation, build outcome correlation) must not include confounding variables"
+          "Pattern capture correctness: Does the extraction logic capture what actually drove success, or is it capturing spurious correlations?",
+          "A/B test design: Is the deterministic randomization truly preventing cross-contamination, and are measurement buckets properly isolated?",
+          "Prompt injection safety: Can malformed or injected patterns break agent prompts or cause prompt injection attacks?",
+          "Pattern library query performance: Does pattern lookup add measurable latency to build loop startup?",
+          "Memory system integration: Does pattern capture/injection code modify shared memory structures in a way that could corrupt failure patterns?",
+          "Dashboard data freshness and accuracy: Are pattern metrics (reuse rate, success delta) correctly computed from audit logs?",
+          "Pattern expiration logic: Are old patterns being retired at the right cadence to avoid stale guidance poisoning new builds?"
         ],
         "risk_areas": [
-          "Pattern injection could reduce innovation: if agents always follow proven patterns, they may miss novel approaches for atypical issues; mitigate with treatment arm baseline comparison",
-          "A/B test bias from uneven complexity distribution: if treatment arm gets simpler issues by chance, success rate delta is inflated; mitigate with stratified randomization by issue complexity score",
-          "Pattern library corruption under concurrent writes: if two pipelines complete simultaneously, race condition during index update could corrupt file; mitigate with atomic writes (temp file + mv)",
-          "Stale patterns driving failures: if a pattern worked 3 months ago but codebase has changed, injecting it could mislead agent; mitigate with pattern age tracking and deprecation strategy",
-          "Memory footprint explosion: pattern library grows unbounded if all successful builds are captured; mitigate with retention policy (keep top N patterns per issue type) and periodic pruning",
-          "False success metric: measuring success by merge outcome alone misses builds that merged but with poor quality/correctness; mitigate by adding secondary metrics (test pass rate, code review feedback)"
+          "False pattern capture: Patterns that correlate with success by coincidence (e.g., patterns from simple issues mistakenly applied to complex ones)",
+          "Statistical noise in A/B testing: Low signal-to-noise ratio if pattern injection effect is small relative to build variance; need sufficient sample size",
+          "Prompt injection via patterns: Malformed patterns could escape JSON context and inject instructions into agent prompts",
+          "Pattern library unbounded growth: No enforcement of size limits could cause memory exhaustion or slow library queries",
+          "Stale pattern reuse: Patterns from old codebase states (e.g., pre-refactor) becoming counterproductive after architecture changes",
+          "A/B test bias: If pattern assignment correlates with issue difficulty (e.g., assigned to easy issues), measurement becomes confounded",
+          "Dashboard metric gaming: If measurement drives behavior, patterns optimized for high-reuse count may not be highest-quality patterns",
+          "Backward compatibility: Pattern library schema changes could invalidate stored patterns or break injection at runtime"
         ]
       },
-      "timestamp": 1775240854,
+      "timestamp": 1775263548,
       "ttl": 3600
     },
     "2159d76f3d1b4f9830fde2d266cd73bc": {
@@ -795,32 +806,32 @@
         "results": [
           {
             "file": "success-patterns.json",
-            "relevance": 98,
-            "summary": "Contains detailed success pattern entries with goal, approach, iterations, duration, files_changed, test_strategy, and template info — exactly the data structure needed for a Success Pattern Library. Shows what captured patterns look like."
+            "relevance": 95,
+            "summary": "Contains two real captured success patterns (bug fix, auth feature) with complete metadata: complexity scores, iteration counts, file patterns, test strategies, costs. Directly shows the structure and examples that the new pattern library should support."
           },
           {
             "file": "failures.json",
-            "relevance": 82,
-            "summary": "Contains failure patterns with root_cause, fix, mitigation_attempts, and effectiveness_rate. Understanding failure patterns and their resolutions is essential for the replay engine to avoid repeating mistakes."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 65,
-            "summary": "Project conventions (source_dir, test_pattern, import_style, package_manager, test_runner). Provides context about repo structure and conventions that patterns should capture alongside code changes."
+            "relevance": 70,
+            "summary": "Captures test stage failures with root causes and fixes. Informs what failure patterns the replay engine should detect and prevent, plus insight into mitigation strategies."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 62,
-            "summary": "Second success-patterns entry with authentication example pattern. Demonstrates partial pattern capture (empty approach field) — useful reference for incomplete vs complete pattern data during design."
+            "relevance": 60,
+            "summary": "Shows a partial success pattern example (auth bug fix with minimal approach details). Useful reference for pattern schema design and edge cases with sparse data."
           },
           {
             "file": "failures.json",
-            "relevance": 58,
-            "summary": "Failure patterns with fix_effectiveness_rate tracking. Shows how effectiveness metrics evolve over time — important context for designing the replay engine's confidence scoring."
+            "relevance": 50,
+            "summary": "Documents recurring build failures (variable initialization, reference errors) with effectiveness tracking. Helps identify anti-patterns and failure modes to avoid during replay."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Shows simple ENOENT failure pattern and mitigation (npm install). Demonstrates basic dependency-related failures that replay logic should handle."
           }
         ]
       },
-      "timestamp": 1775240871,
+      "timestamp": 1775263574,
       "ttl": 1800
     },
     "664c8436d15dfaf6d3aa1ce01e8c750b": {
@@ -829,77 +840,77 @@
           {
             "file": "success-patterns.json",
             "relevance": 95,
-            "summary": "Contains actual captured success patterns from sethdford/shipwright runs (bug fix and auth feature). Directly shows the data structure and content the Success Pattern Library stores — essential for understanding what plan validation should accept/reject."
+            "summary": "Contains 2 captured success patterns (Fix bug with 3 iterations, Add authentication feature) directly relevant to the Success Pattern Library feature. Shows prior successful iterations, file patterns, test strategies, and costs that inform the replay engine design."
           },
           {
             "file": "failures.json",
-            "relevance": 85,
-            "summary": "Documents test stage failures from success pattern system (cleanup dry-run, sed variable expansion, template validation). These are real validation failures that inform what the pattern replay engine must handle or avoid."
+            "relevance": 90,
+            "summary": "Contains 3 detailed failure patterns from recent test runs (missing --force output, sed variable expansion, test regression detection). These represent validation failures that directly inform why the plan was rejected and what edge cases the replay engine must handle."
           },
           {
             "file": "failures.json",
-            "relevance": 70,
-            "summary": "Shows build-stage pattern failures with mitigation effectiveness rates (undefined variables, missing declarations). Demonstrates failure tracking structure and fix success rates relevant to pattern quality validation."
+            "relevance": 58,
+            "summary": "Contains build failures about uninitialized variables and missing declarations with mitigation tracking. While less specific to plan validation, demonstrates failure pattern capture and fix effectiveness metrics that the Success Pattern Library should model."
           }
         ]
       },
-      "timestamp": 1775241182,
+      "timestamp": 1775263882,
       "ttl": 1800
     },
     "87ee11ea3ecfcbb76a76d620ac4b0904": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (first entry)",
+            "file": "success-patterns.json (patterns array with goal/iterations/duration/cost)",
             "relevance": 95,
-            "summary": "Contains actual captured success patterns with full lifecycle metadata (goals, iterations, duration, files changed, test strategy, templates, costs). Directly exemplifies what the pattern library must store and replay."
+            "summary": "Directly relevant — shows the exact data structure for success patterns: goals, complexity, iterations, duration_s, cost_usd, test_strategy, file_patterns. These are the patterns the library should capture and replay."
           },
           {
-            "file": "failures.json (first entry)",
-            "relevance": 85,
-            "summary": "Detailed failure patterns with root causes and fixes. Essential for designing resilient pattern replay logic that can detect and handle failure conditions."
+            "file": "failures.json (test failures with root_cause/fix/seen_count)",
+            "relevance": 82,
+            "summary": "Important for pattern replay engine — shows failure signatures, root causes, and fix effectiveness metrics. Understanding what fails informs which patterns are worth replaying and what conditions trigger replays."
           },
           {
-            "file": "failures.json (fifth entry)",
-            "relevance": 75,
-            "summary": "Failure patterns with effectiveness tracking (fix_effectiveness_rate, mitigation_attempts). Informs intelligent replay decision logic—which patterns to suggest based on success likelihood."
+            "file": "success-patterns.json (single pattern with id/goal/complexity/template)",
+            "relevance": 78,
+            "summary": "Secondary example of success pattern structure. Demonstrates the schema for capturing goal, issue_type, complexity, template choice, and cost — all critical for automatic pattern selection during replay."
           },
           {
-            "file": "success-patterns.json (second entry)",
-            "relevance": 70,
-            "summary": "Another success pattern entry showing different issue type (feature vs bug) and complexity. Demonstrates pattern diversity the library must support."
+            "file": "failures.json (build failures: variable initialization/undefined property)",
+            "relevance": 72,
+            "summary": "Relevant for pattern library — shows recurring failure patterns with high mitigation effectiveness (100% for property initialization). These patterns are good candidates for automated replay when encountered."
           },
           {
-            "file": "patterns.json (first entry)",
-            "relevance": 60,
-            "summary": "Project conventions (source_dir, test_pattern, import_style, test_runner). Architectural design must respect these to generate patterns compatible with the codebase."
+            "file": "patterns.json (project metadata: conventions/source_dir/test_pattern/package_manager)",
+            "relevance": 68,
+            "summary": "Architectural context — project conventions and test runner choice inform how patterns should be captured, stored, and replayed across different project types."
           }
         ]
       },
-      "timestamp": 1775241278,
+      "timestamp": 1775263919,
       "ttl": 1800
     },
     "62781bf95bd94bfa9155891e05ae4b78": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Contains actual captured success patterns with detailed approaches, complexity scores, iterations, and test strategies. This IS the Success Pattern Library data—shows what patterns have worked in practice (bug fixes, features) with metrics on cost, duration, and file patterns."
+            "file": "success-patterns.json (first instance with detailed patterns)",
+            "relevance": 85,
+            "summary": "Contains two detailed success patterns showing effective goal/iteration/cost/file_pattern structures. Understanding what successful patterns look like directly informs what design anti-patterns to reject in the library."
           },
           {
-            "file": "failures.json",
-            "relevance": 90,
-            "summary": "Documents specific anti-patterns and root causes from real failures (sw-cleanup.sh stale heartbeat detection, sed variable expansion issues). Directly shows rejected design approaches and their fixes—critical for understanding what NOT to do in the pattern replay engine."
+            "file": "failures.json (first instance with detailed failures)",
+            "relevance": 75,
+            "summary": "Shows specific test failures with root causes (sed variable expansion, stale file detection) and fixes. Directly illustrates anti-patterns and problematic approaches to avoid in pattern capture and replay logic."
           },
           {
-            "file": "failures.json",
-            "relevance": 82,
-            "summary": "Categorizes common build-stage anti-patterns (uninitialized variables, missing declarations) with effectiveness rates and mitigation tracking. Provides concrete examples of code anti-patterns to avoid when replaying success patterns, with 100% fix effectiveness data."
+            "file": "failures.json (fourth instance with effectiveness tracking)",
+            "relevance": 70,
+            "summary": "Tracks failure patterns with mitigation effectiveness (100% and 66% fix rates). Shows which design approaches work reliably vs. partially, informing decisions about what patterns to reject as unreliable."
           }
         ]
       },
-      "timestamp": 1775241289,
+      "timestamp": 1775263932,
       "ttl": 1800
     },
     "cee229217f8f327bb787c8740550d592": {
@@ -908,31 +919,31 @@
           {
             "file": "success-patterns.json (first entry)",
             "relevance": 95,
-            "summary": "Contains actual success pattern structures with detailed metadata (id, goal, approach, iterations, files_changed, test_strategy, cost). Directly shows the data model and examples for the feature being built."
-          },
-          {
-            "file": "success-patterns.json (second entry)",
-            "relevance": 90,
-            "summary": "Another complete success pattern example demonstrating pattern capture from a feature build, including loop iterations, audit logs, and approach history. Shows realistic pattern data from recent project work."
+            "summary": "Contains fully-formed success pattern examples with complete metadata structure (id, goal, complexity, iterations, duration_s, files_changed, file_patterns, test_strategy, cost_usd, injection tracking). This is the exact data model needed for the Success Pattern Library."
           },
           {
             "file": "failures.json (first entry)",
-            "relevance": 70,
-            "summary": "Contains test stage failures and root causes from recent builds in this repo. Relevant for understanding failure patterns that automatic replay should handle or detect."
+            "relevance": 75,
+            "summary": "Documents failure patterns with root causes and fixes from recent builds (sw-cleanup.sh, sed command issues). Understanding failure modes helps the pattern library provide better replay guidance and avoid regressions."
           },
           {
             "file": "patterns.json (first entry)",
-            "relevance": 65,
-            "summary": "Documents project conventions (vitest test runner, npm, commonjs imports, test pattern). Understanding the build environment is essential for implementing pattern replay."
+            "relevance": 70,
+            "summary": "Contains project conventions (source_dir, test_pattern, import_style, test_runner: vitest, package_manager: npm) and detected project type. Contextual info for understanding what patterns apply to this Node.js/vitest environment."
           },
           {
-            "file": "failures.json (fifth entry)",
-            "relevance": 55,
-            "summary": "Shows common build-stage variable initialization failures and their fixes. Relevant for understanding what errors the pattern library should capture and replay mitigations for."
+            "file": "success-patterns.json (second entry)",
+            "relevance": 60,
+            "summary": "Additional success pattern example with similar metadata structure, though less detailed than the first entry. Shows pattern library should handle patterns across different goal types (bug, feature)."
+          },
+          {
+            "file": "failures.json (second/fourth entry)",
+            "relevance": 50,
+            "summary": "Documents common build-stage failures (undefined variables, scope issues) with 100% fix effectiveness. Patterns for these errors could be captured and replayed in the library."
           }
         ]
       },
-      "timestamp": 1775241527,
+      "timestamp": 1775264098,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -940,33 +951,51 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Critical for build stage: defines test runner (vitest), package manager (npm), test pattern conventions, and source directory structure needed to execute build and test commands"
+            "relevance": 90,
+            "summary": "Defines project configuration (vitest test runner, npm package manager, src/ source directory, *.test.js test pattern, commonjs imports) essential for build stage setup and test execution"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 80,
-            "summary": "Highly relevant: previous successful builds show test strategy (npm test), iteration patterns, template choice (standard), and file patterns modified — guides build approach and test execution"
+            "relevance": 85,
+            "summary": "Documents successful build patterns with iteration counts, test strategies ('npm test'), file patterns, and approaches that worked in 2 previous builds; directly applicable to build stage decision-making"
           },
           {
             "file": "failures.json",
             "relevance": 65,
-            "summary": "Moderately relevant: captures previous test failures (sed variable expansion, cleanup detection) that should be avoided or fixed during build and test execution"
+            "summary": "Records 3 test-stage failures with root causes (sw-cleanup.sh stale heartbeat detection, sed variable expansion, test output issues) and mitigations; helps avoid known pitfalls during build testing"
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Not relevant: contains only empty baselines object with no actionable data for build stage"
+            "summary": "Empty baselines object; no baseline metrics captured yet for build performance or quality gates"
           },
           {
             "file": "decisions.json",
             "relevance": 5,
-            "summary": "Not relevant: empty decisions array provides no context or guidance for build decisions"
+            "summary": "Empty decisions array; no architectural or build-stage decisions recorded"
           }
         ]
       },
-      "timestamp": 1775241537,
+      "timestamp": 1775264107,
       "ttl": 1800
+    },
+    "19fd978cb202e877d7a7a964d87da615": {
+      "result": {
+        "estimated_iterations": 11
+      },
+      "timestamp": 1775263460,
+      "ttl": 1800
+    },
+    "bcc8e26360aabfe21639543a38ef7468": {
+      "result": {
+        "estimated_cost_usd": 8.50,
+        "estimated_iterations": 8,
+        "estimated_tokens": 120000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1775263468,
+      "ttl": 3600
     }
   }
 }

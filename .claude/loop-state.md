@@ -2,38 +2,39 @@
 goal: "Success Pattern Library with Automatic Pattern Replay Engine
 
 ## Plan Summary
+## Implementation Plan: Success Pattern Library (#338)
 
+The branch already has substantial scaffolding from previous commits. Here's a summary of what needs to be completed:
 
-Now I have a comprehensive understanding of the entire system. Let me write the implementation plan.
+### What's Already Done
+- `scripts/lib/success-patterns.sh` — all capture, match, A/B testing, export functions
+- Pattern capture wired into `memory_finalize_pipeline()` (success-only)  
+- Pattern inject called in the build stage via `memory_inject_context`
+- `sw-success-patterns-test.sh` — 481-line test suite
 
----
+### Three Critical Gaps to Close
 
-# Implementation Plan: Success Pattern Library with Automatic Pattern Replay Engine
+**1. `success_pattern_inject()` silently discards its output** (`lib/success-patterns.sh:302`)
+The rich `jq` formatting block pipes to `>> /dev/null`. Fallback loop iterates a JSON array as plain text (broken). Fix: output formatted patterns to stdout properly.
 
-## Brainstorming: Socratic Design Refinement
+**2. Missing dashboard section** (`sw-memory.sh:1545`)
+`memory_show` has PROJECT, FAILURE PATTERNS, DECISIONS, BASELINES — no SUCCESS PATTERNS. Add it.
 
-### Requirements Clarity
-
-**Minimum viable change:** Capture success patterns on pipeline completion, store them in the existing memory directory, inject the top-matching pattern into the build loop prompt, and expose them via the dashboard. The A/B testing and export are secondary but included in acceptance criteria.
-
-**Implicit requirements:**
-- Must integrate with existing `memory_finalize_pipeline()` flow — not a separate hook
-- Must use the same locking/atomic-write patterns as `failures.json`
-- Pattern matching must be fast (pure `jq`, no Claude call) since it runs on every build loop iteration
-- Must not break existing memory injection budget (200K chars) — success patterns share context space
+**3. No REST endpoint** (`dashboard/server.ts`)
+`GET /api/memory/success-patterns` doesn't exist. Add it.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Architecture Decision Record: Success Pattern Library with Automatic Pattern Replay Engine
-## Executive Summary
+# Design: Success Pattern Library with Automatic Pattern Replay Engine
 ## Context
-### Problem Statement
-### Constraints
-### Requirements Met by Design
 ## Decision
-### Chosen Approach: New Library Module with Atomic File Operations
-### Design Decisions (Context + Rationale)
-## Alternatives Considered
+### Component Architecture
+### Interface Contracts
+### Data Flow
+### Critical Bug Fixes
+# Fallback loop reads entire JSON blob as one line — broken
+### Recency Scoring Enhancement
+### Repo Export
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
@@ -42,27 +43,27 @@ Historical context (lessons from previous pipelines):
     {
       "file": "success-patterns.json (first entry)",
       "relevance": 95,
-      "summary": "Contains actual success pattern structures with detailed metadata (id, goal, approach, iterations, files_changed, test_strategy, cost). Directly shows the data model and examples for the feature being built."
-    },
-    {
-      "file": "success-patterns.json (second entry)",
-      "relevance": 90,
-      "summary": "Another complete success pattern example demonstrating pattern capture from a feature build, including loop iterations, audit logs, and approach history. Shows realistic pattern data from recent project work."
+      "summary": "Contains fully-formed success pattern examples with complete metadata structure (id, goal, complexity, iterations, duration_s, files_changed, file_patterns, test_strategy, cost_usd, injection tracking). This is the exact data model needed for the Success Pattern Library."
     },
     {
       "file": "failures.json (first entry)",
-      "relevance": 70,
-      "summary": "Contains test stage failures and root causes from recent builds in this repo. Relevant for understanding failure patterns that automatic replay should handle or detect."
+      "relevance": 75,
+      "summary": "Documents failure patterns with root causes and fixes from recent builds (sw-cleanup.sh, sed command issues). Understanding failure modes helps the pattern library provide better replay guidance and avoid regressions."
     },
     {
       "file": "patterns.json (first entry)",
-      "relevance": 65,
-      "summary": "Documents project conventions (vitest test runner, npm, commonjs imports, test pattern). Understanding the build environment is essential for implementing pattern replay."
+      "relevance": 70,
+      "summary": "Contains project conventions (source_dir, test_pattern, import_style, test_runner: vitest, package_manager: npm) and detected project type. Contextual info for understanding what patterns apply to this Node.js/vitest environment."
     },
     {
-      "file": "failures.json (fifth entry)",
-      "relevance": 55,
-      "summary": "Shows common build-stage variable initialization failures and their fixes. Relevant for understanding what errors the pattern library should capture and replay mitigations for."
+      "file": "success-patterns.json (second entry)",
+      "relevance": 60,
+      "summary": "Additional success pattern example with similar metadata structure, though less detailed than the first entry. Shows pattern library should handle patterns across different goal types (bug, feature)."
+    },
+    {
+      "file": "failures.json (second/fourth entry)",
+      "relevance": 50,
+      "summary": "Documents common build-stage failures (undefined variables, scope issues) with 100% fix effectiveness. Patterns for these errors could be captured and replayed in the library."
     }
   ]
 }
@@ -101,57 +102,9 @@ Task tracking (check off items as you complete them):
 
 ## Skill Guidance (backend issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **performance**: Pattern indexing and retrieval happens synchronously during build loop initialization—ensure lookups are sub-100ms or risk stalling build startup.
-- **testing-strategy**: Validate A/B test design: proper randomization (deterministic per issue to avoid reroll bias), control/treatment bucket sizes, duration, and success rate measurement consistency.
-
-## Performance Expertise
-
-Apply these optimization patterns:
-
-### Profiling First
-- Measure before optimizing — identify the actual bottleneck
-- Use profiling tools appropriate to the language/runtime
-- Focus on the critical path — optimize what users experience
-
-### Caching Strategy
-- Cache expensive computations and repeated queries
-- Set appropriate TTLs — stale data vs freshness trade-off
-- Invalidate caches on write operations
-- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
-
-### Database Performance
-- Add indexes for frequently queried columns (check EXPLAIN plans)
-- Avoid N+1 queries — use batch loading or JOINs
-- Use connection pooling
-- Consider read replicas for read-heavy workloads
-
-### Algorithm Complexity
-- Prefer O(n log n) over O(n²) for sorting/searching
-- Use appropriate data structures (hash maps for lookups, trees for ranges)
-- Avoid unnecessary allocations in hot paths
-- Pre-compute values that are used repeatedly
-
-### Network Optimization
-- Minimize round trips — batch API calls where possible
-- Use compression for large payloads
-- Implement pagination — never return unbounded result sets
-- Use CDNs for static assets
-
-### Benchmarking
-- Include before/after benchmarks for performance changes
-- Test with realistic data volumes (not just unit test fixtures)
-- Measure p50, p95, p99 latencies — not just averages
-
-### Required Output (Mandatory)
-
-Your output MUST include these sections when this skill is active:
-
-1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
-2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
-3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
-4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
-
-If any section is not applicable, explicitly state why it's skipped.
+- **testing-strategy**: Pattern capture and injection are high-stakes; tests must verify patterns are correctly extracted, indexed, injected into prompts, and don't malform agent input.
+- **observability**: Dashboard requires real-time pattern metrics (capture rate, library size, top patterns by type, A/B arm distribution); pattern injection must emit structured logs for later analysis.
+- **success-pattern-lifecycle**: Governs how patterns are captured, versioned, expire over time, and audit-trailed—ensures stale patterns don't hurt future builds and library stays maintainable.
 
 ## Testing Strategy Expertise
 
@@ -201,31 +154,135 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 
+## Observability: Watch the Deploy Like a Hawk
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 2
-max_iterations: 30
-status: error
+Post-deploy monitoring catches what tests miss. Real traffic reveals real problems.
+
+### What to Monitor (by Priority)
+
+**P0 — Immediate (first 5 minutes):**
+- Error rate: any increase over baseline?
+- Health check: still returning 200?
+- Latency: p50/p95/p99 within normal range?
+- Memory/CPU: any sudden spikes?
+
+**P1 — Short-term (5-30 minutes):**
+- Business metrics: are users completing key flows?
+- Queue depths: are background jobs processing normally?
+- Connection pools: any exhaustion or leak patterns?
+- Disk usage: any unexpected growth?
+
+**P2 — Medium-term (1-24 hours):**
+- Memory trends: gradual leak over time?
+- Error rate trends: slowly increasing?
+- User-reported issues: any new support tickets?
+- Performance degradation under sustained load?
+
+### Anomaly Detection Patterns
+- **Spike detection**: >2x baseline error rate in any 1-minute window
+- **Trend detection**: steadily increasing error rate over 5-minute window
+- **Absence detection**: expected periodic events stop occurring
+[... skills truncated: 9166→8000 chars ...]
+- Response status code distribution (2xx vs 4xx vs 5xx)
+- Request throughput — drops indicate client-side breakage
+- Authentication failures — spikes indicate auth regression
+
+**Database changes:**
+- Query latency per endpoint
+- Connection pool utilization
+- Slow query log entries
+- Replication lag (if applicable)
+
+### Incident Escalation
+If monitoring detects issues:
+1. Execute rollback (if auto-rollback enabled)
+2. Create incident issue with monitoring data
+3. Attach relevant logs and metrics
+4. Tag the original issue with `incident` label
+5. Do NOT silence alerts — let them fire
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Monitoring Checklist**: P0/P1/P2 metrics to watch (error rate, latency, memory, health checks) with specific thresholds
+2. **Anomaly Detection Triggers**: Explicit conditions that trigger alerts (spike detection >2x, trend detection over 5min, absence detection, latency shift >50%)
+3. **Log Analysis**: Search strategy for new ERROR/FATAL entries, stack traces, retry storms, resource exhaustion patterns
+4. **Auto-Rollback Decision Criteria**: Conditions that trigger automatic rollback (health check failures, error rate threshold, critical dependency unreachable, memory exhaustion)
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Success Pattern Lifecycle Management
+
+### Pattern Capture
+When a pipeline succeeds, extract and store a canonical pattern snapshot:
+- **Approach**: Brief description of strategy taken (e.g., 'iterative refactoring with incremental tests')
+- **Iteration count**: How many build loop iterations to success
+- **File patterns**: Changed file paths grouped by semantic role (tests, impl, docs)
+- **Test strategy**: Which tests drove the build (unit, integration, e2e suite composition)
+- **Commit structure**: Atomic commits vs squashed, message pattern (imperative vs descriptive)
+- **Model/effort**: Claude model used, effort level setting
+- **Duration**: Total time from intake to success
+- **Metadata**: Issue type, complexity score, codebase domain (frontend/backend/infra)
+
+### Indexing & Storage
+- Store patterns in `.claude/memory/<repo-hash>/success-patterns.json` as an array of pattern objects
+- Index by (issue_type, complexity_band, codebase_domain) for O(1) retrieval
+- Maintain a secondary index: (pattern_hash) → timestamp for deduplication
+- Keep a rolling window of 200 patterns per repo (rotate by LRU, preserve high-value patterns)
+
+### Pattern Versioning
+- Capture pattern_version=YYYYMMDD_SEQUENCE at capture time
+- Include codebase_snapshot: git commit SHA when pattern was captured
+- When querying patterns for injection, filter by age: prefer patterns < 90 days old, warn if pattern is stale
+- Allowlist mechanism: certain patterns (golden paths) are marked keep_forever=true
+
+### Pattern Expiration & Cleanup
+- Patterns older than 180 days are automatically archived (not deleted; moved to `.claude/memory/<repo>/archive/`)
+- Patterns matching failed builds within 7 days are demoted (success_weight -= 1, min 0)
+- Patterns from refactored/deleted code paths are invalidated via `git log --follow` on files in the pattern
+
+### Audit Trail
+- Each pattern capture logs: (pattern_id, issue_id, timestamp, success_build_sha, injected_count_since_capture)
+- Audit log stored in `.claude/memory/<repo-hash>/pattern-audit.jsonl`
+- Monthly archival: compress audit logs older than 60 days to `.claude/memory/<repo-hash>/archive/audit-YYYY-MM.jsonl.gz`
+
+### Injection Safety
+- Validate pattern before injection: ensure all fields are JSON-safe, no embedded nulls, description < 200 chars
+- If validation fails, log to error-log.jsonl and skip injection (don't fail the build)
+- Pattern injection is read-only: patterns are never modified during injection, only metadata updated
+
+### Monitoring & Quality
+- Dashboard metric: pattern_reuse_rate = (builds_with_injection) / (total_builds)
+- Dashboard metric: pattern_success_delta = (success_rate_with_injection) - (success_rate_baseline)
+- Metric: stale_pattern_ratio = (patterns > 120 days old) / (total patterns)
+- Alert if stale_pattern_ratio > 0.3 (indicates insufficient pattern refresh)
+
+### API
+- `capture_pattern(approach, iteration_count, files_changed, test_strategy, commits, metadata)` → pattern_id
+- `query_patterns(issue_type, complexity_band, limit=3)` → [pattern1, pattern2, ...]
+- `inject_pattern(pattern_id, build_prompt) → enriched_prompt
+- `invalidate_pattern(pattern_id, reason)` (soft-delete)
+- `pattern_audit_log(pattern_id)` → [(issue_id, timestamp, result), ...]
+"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-04-03T18:47:14Z
-last_iteration_at: 2026-04-03T18:47:14Z
+started_at: 2026-04-04T00:55:17Z
+last_iteration_at: 2026-04-04T00:55:17Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
+dod_file: ""
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-03T18:47:09Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":435296,"duration_api_ms":405362,"num_turns":94,"resu
 
