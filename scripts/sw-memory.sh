@@ -1528,6 +1528,24 @@ memory_show() {
     fi
     echo ""
 
+    # Success Patterns
+    echo -e "${BOLD}  SUCCESS PATTERNS${RESET}"
+    if [[ -f "$mem_dir/success-patterns.json" ]]; then
+        local sp_count
+        sp_count=$(jq '.patterns | length' "$mem_dir/success-patterns.json" 2>/dev/null || echo 0)
+        if [[ "$sp_count" -gt 0 ]]; then
+            echo -e "    Total patterns: ${CYAN}${sp_count}${RESET}"
+            jq -r '.patterns | sort_by(-.seen_count) | .[:5][] |
+                "    [\(.issue_type // "unknown")] \(.goal[:60]) — \(.iterations) iters, seen \(.seen_count // 1)x"' \
+                "$mem_dir/success-patterns.json" 2>/dev/null || true
+        else
+            echo -e "    ${DIM}No success patterns captured yet.${RESET}"
+        fi
+    else
+        echo -e "    ${DIM}No success patterns captured yet.${RESET}"
+    fi
+    echo ""
+
     # Metrics
     echo -e "${BOLD}  BASELINES${RESET}"
     if [[ -f "$mem_dir/metrics.json" ]]; then

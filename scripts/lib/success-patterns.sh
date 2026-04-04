@@ -299,16 +299,28 @@ success_pattern_inject() {
     output+="## Success Patterns for Similar Issues"$'\n'
     output+="Similar issues succeeded with:"$'\n'
 
-    echo "$matches" | jq -r '.[] | "- \(.issue_type | ascii_upcase): \(.goal) (\(.iterations) iterations, \(.files_changed | length) files)\n  Approach: \(.approach | if length > 200 then .[0:200] + "..." else . end)\n  Files: \(.file_patterns)\n  Test strategy: \(.test_strategy)\n"' 2>/dev/null | head -50 >> /dev/null
+    local details
+    details=$(echo "$matches" | jq -r '.[] | "- \(.issue_type | ascii_upcase): \(.goal) (\(.iterations) iterations, \(.files_changed | length) files)\n  Approach: \(.approach | if length > 200 then .[0:200] + "..." else . end)\n  Files: \(.file_patterns)\n  Test strategy: \(.test_strategy)\n"' 2>/dev/null || true)
 
-    # Simple text output (fallback if jq fails)
-    echo "$matches" | while IFS= read -r line; do
-        if [[ -n "$line" ]]; then
-            echo "- Pattern: $(echo "$line" | jq -r '.goal // ""')"
-        fi
-    done
+    if [[ -n "$details" ]]; then
+        output+="$details"
+    else
+        # Fallback: iterate JSON array elements individually
+        local i=0
+        local count
+        count=$(echo "$matches" | jq 'length' 2>/dev/null || echo 0)
+        while [[ "$i" -lt "$count" ]]; do
+            local pat_goal
+            pat_goal=$(echo "$matches" | jq -r ".[$i].goal // \"\"" 2>/dev/null || echo "")
+            if [[ -n "$pat_goal" ]]; then
+                output+="- Pattern: $pat_goal"$'\n'
+            fi
+            i=$((i + 1))
+        done
+    fi
 
-    echo "$output"
+    # Trim to 2KB budget
+    echo "${output:0:2048}"
 }
 
 # success_pattern_export <output_path> [repo_memory_dir]

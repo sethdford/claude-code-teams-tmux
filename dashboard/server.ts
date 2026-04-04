@@ -3835,6 +3835,45 @@ const server = Bun.serve({
       });
     }
 
+    // REST: Success patterns from memory
+    if (pathname === "/api/memory/success-patterns") {
+      const raw = readMemoryFiles("success-patterns.json") as Array<
+        Record<string, unknown>
+      >;
+      // readMemoryFiles returns wrapper objects {patterns: [...]} — flatten
+      const allSP: Array<Record<string, unknown>> = [];
+      for (const item of raw) {
+        if (Array.isArray(item.patterns)) {
+          allSP.push(
+            ...(item.patterns as Array<Record<string, unknown>>),
+          );
+        } else if (item.goal) {
+          allSP.push(item);
+        }
+      }
+      // Sort by seen_count descending, return top 50
+      const sorted = allSP
+        .sort(
+          (a, b) =>
+            ((b.seen_count as number) || 1) - ((a.seen_count as number) || 1),
+        )
+        .slice(0, 50);
+      const stats = {
+        total: allSP.length,
+        by_type: {} as Record<string, number>,
+      };
+      for (const p of allSP) {
+        const t = (p.issue_type as string) || "unknown";
+        stats.by_type[t] = (stats.by_type[t] || 0) + 1;
+      }
+      return new Response(
+        JSON.stringify({ patterns: sorted, stats }),
+        {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        },
+      );
+    }
+
     // REST: Memory decisions
     if (pathname === "/api/memory/decisions") {
       const decisions = readMemoryFiles("decisions.json");
