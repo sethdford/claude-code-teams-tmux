@@ -269,17 +269,22 @@ When a pipeline succeeds, extract and store a canonical pattern snapshot:
 ## Failure Diagnosis (Iteration 2)
 Classification: unknown
 Strategy: retry_with_context
-Repeat count: 0"
-iteration: 2
+Repeat count: 0
+
+## Failure Diagnosis (Iteration 3)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 1"
+iteration: 3
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-04T01:15:57Z
-last_iteration_at: 2026-04-04T01:15:57Z
+started_at: 2026-04-04T01:19:51Z
+last_iteration_at: 2026-04-04T01:19:51Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 3
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -295,4 +300,7 @@ max_extensions: 3
 
 ### Iteration 2 (2026-04-04T01:15:57Z)
 {"type":"result","subtype":"success","is_error":false,"duration_ms":530875,"duration_api_ms":411845,"num_turns":63,"resu
+
+### Iteration 3 (2026-04-04T01:19:51Z)
+{"type":"result","subtype":"success","is_error":false,"duration_ms":192394,"duration_api_ms":138785,"num_turns":20,"resu
 

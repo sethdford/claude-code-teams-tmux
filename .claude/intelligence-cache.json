@@ -950,33 +950,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Defines project configuration (vitest test runner, npm package manager, src/ source directory, *.test.js test pattern, commonjs imports) essential for build stage setup and test execution"
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains proven build approaches with iteration counts, test strategies (npm test), file patterns, and cost metrics. Directly shows what worked in previous build stage runs."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Documents successful build patterns with iteration counts, test strategies ('npm test'), file patterns, and approaches that worked in 2 previous builds; directly applicable to build stage decision-making"
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project metadata essential for build setup: test runner (vitest), package manager (npm), source directory (src/), test pattern (*.test.js). Defines how to execute the build."
           },
           {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Records 3 test-stage failures with root causes (sw-cleanup.sh stale heartbeat detection, sed variable expansion, test output issues) and mitigations; helps avoid known pitfalls during build testing"
+            "relevance": 75,
+            "summary": "Records test stage failures with root causes and fixes. Reveals common issues (sed variable expansion, test seeding) to avoid during build and testing phases."
           },
           {
             "file": "metrics.json",
             "relevance": 5,
-            "summary": "Empty baselines object; no baseline metrics captured yet for build performance or quality gates"
+            "summary": "Contains empty baselines object. Not currently useful for build stage context."
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array; no architectural or build-stage decisions recorded"
+            "relevance": 0,
+            "summary": "Empty decisions array. No recorded decisions to inform build stage execution."
           }
         ]
       },
-      "timestamp": 1775264107,
+      "timestamp": 1775266230,
       "ttl": 1800
     },
     "19fd978cb202e877d7a7a964d87da615": {
