@@ -2,68 +2,57 @@
 goal: "Failure Pattern Auto-Mitigation Engine with Memory-Driven Fix Injection
 
 ## Plan Summary
-The implementation plan has been written to `.claude/pipeline-artifacts/plan.md`. Here's a summary of the key decisions:
+The implementation plan is complete. It covers:
 
-## Plan Summary
-
-**Architecture**: New focused library `scripts/lib/auto-mitigation.sh` (~200 lines) with 4 public functions:
-- `mitigation_scan()` -- reads error-summary.json, matches against failures.json patterns with >80% effectiveness
-- `mitigation_inject()` -- formats matches into prompt-ready markdown
-- `mitigation_record_outcome()` -- atomically tracks attempts/successes in failures.json
-- `mitigation_stats()` -- aggregates metrics for the dashboard
-
-**Integration points** (minimal blast radius):
-- `sw-loop.sh` -- source library, call before compose_prompt, record outcomes after test gate
-- `loop-iteration.sh` -- inject mitigation section into prompt before memory section  
-- `sw-memory.sh` -- add `mitigation_attempts`/`mitigation_success_count` to existing fix outcome tracking
-- Dashboard -- new `GET /api/metrics/mitigations` endpoint + frontend rendering
-
-**9 files touched** (2 new, 7 modified), **10 tasks**, **12 test cases**
-
-**Key design decisions**:
-- Chose new lib file over extending sw-memory.sh (already 2118 lines) -- follows existing 40+ module decomposition
+- **7 files** (2 new, 5 modified) with minimal blast radius
+- **10 tasks** with explicit dependencies
+- **New `scripts/lib/mitigation-engine.sh`** library with 5 public functions
+- **Integration at 3 points**: sw-loop.sh (source + call + track), loop-iteration.sh (compose_prompt), dashboard (API endpoint)
+- **15+ tests** covering matching, formatting, tracking, stats, and edge cases
+- **3 concrete failure modes** analyzed with mitigations
+- **Key design decision**: Separate library (not inline in sw-memory.sh) for testability and separation of concerns
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
 # Design: Failure Pattern Auto-Mitigation Engine with Memory-Driven Fix Injection
 ## Context
 ## Decision
-### Component Diagram
-### Interface Contracts
-# ── auto-mitigation.sh ──
-# Scan error-summary.json against failure patterns with proven fixes.
-# Params:
-#   $1 - path to error-summary.json (must exist, JSON with .error_lines[])
-#   $2 - path to failures.json (must exist, JSON with .failures[])
+### Core Design: Score → Rank → Format → Inject → Track
+### Data Flow
+### Error Handling
+## Component Diagram
+## Interface Contracts
+### `scripts/lib/mitigation-engine.sh` — Public Functions
+### Error Contracts
 [... full design in .claude/pipeline-artifacts/design.md]
 
 Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json",
+      "file": "failures.json",
       "relevance": 90,
-      "summary": "Contains concrete successful patterns from loop iterations with proven fixes (bc syntax, /tmp substitution, test cleanup). Direct memory of what worked in build stage—essential for injection into current build."
+      "summary": "Build stage failure patterns with proven mitigation rates (100% effective for 'cannot read property', 66% for 'reference error'). Directly applicable to auto-mitigation engine."
     },
     {
-      "file": "failures.json",
-      "relevance": 88,
-      "summary": "Captures test stage failures with root causes (sw-cleanup dry-run mode, sed variable expansion, regression detection) and fixes. Directly applicable to mitigating similar build/test failures."
+      "file": "success-patterns.json",
+      "relevance": 85,
+      "summary": "Recent successful patterns showing bug fix (3 iterations, npm test) with specific file patterns and test strategy. Provides baseline for what works in build loops."
     },
     {
       "file": "failures.json",
       "relevance": 82,
-      "summary": "Build stage failures with proven mitigation effectiveness: variable initialization (100% success rate, 4/4 applied), missing dependencies (95% effectiveness). High-confidence patterns for auto-mitigation."
+      "summary": "Test stage failures with root causes and specific fixes (sw-cleanup.sh stale detection, sed variable expansion). Patterns applicable to build iteration feedback."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 65,
+      "summary": "Project metadata (Node.js, vitest, npm, CommonJS). Establishes project structure needed for build stage execution and test discovery."
     },
     {
       "file": "failures.json",
-      "relevance": 80,
-      "summary": "Build stage failure patterns with detailed mitigation tracking: uninitialized variables (100% effectiveness) and reference errors (66% effectiveness). Provides decision data for fix selection."
-    },
-    {
-      "file": "failures.json",
-      "relevance": 78,
-      "summary": "Minimal but high-confidence pattern: 'cannot read property' errors with 100% fix effectiveness rate (initialize variable). Lightweight entry useful for quick failure matching during build."
+      "relevance": 60,
+      "summary": "Simple failure signature (ENOENT) with npm install fix. Shows basic dependency-related failures that occur during build initialization."
     }
   ]
 }
@@ -95,63 +84,102 @@ Task tracking (check off items as you complete them):
 
 ## Skill Guidance (infrastructure issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **systematic-debugging**: Pattern matching and fix injection are failure-prone; if initial implementation doesn't match failure signatures correctly, systematic investigation prevents blind retry cycles.
+- **memory-driven-remediation**: This skill directly addresses the core requirement: detecting failure patterns and safely auto-injecting proven fixes with guardrails to prevent cascading failures.
+- **testing-strategy**: Build pattern matching with test-first approach—validate on known failure signatures, edge cases, and false-positive prevention before integrating into hot loop path.
 
-## Systematic Debugging: Root Cause Analysis
+## Memory-Driven Auto-Remediation Pattern
 
-A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+When building systems that detect failure patterns and auto-inject fixes, follow these principles:
 
-### Phase 1: Evidence Collection
-- Read the error output from the previous attempt carefully
-- Identify the EXACT line/file where the failure occurred
-- Check if the error is a symptom or the root cause
-- Look for patterns: is this a known error type?
+### Pattern Matching Design
+- **Signature specificity**: Extract error signatures with enough specificity to avoid false matches, but general enough to apply across similar contexts. Test both: what % of errors does the pattern match? Of matched errors, how many did the fix solve?
+- **Semantic vs. regex**: Consider regex matching on error messages vs. semantic matching (stack trace structure, error type). Regex is faster but fragile; semantic is robust but adds latency. Measure both in staging.
+- **Recency weighting**: Recent patterns (from last 100 builds) have higher priority than historical patterns; failure modes shift as code evolves.
 
-### Phase 2: Hypothesis Formation
-- List 3 possible root causes for this failure
-- For each hypothesis, identify what evidence would confirm or deny it
-- Rank hypotheses by likelihood
+### Fix Eligibility & Safety
+- **Success threshold**: >80% is aggressive; validate in staging that false positives don't outweigh true fixes. Track precision (fix actually helped / injected count) separately from recall.
+- **Context isolation**: A fix proven in context A (e.g., Node test failure) may not apply in context B (Python integration test). Store fix metadata: file patterns, failure types, test categories it applies to.
+- **Injection safety**: Inject fix *suggestions* into loop context, not auto-apply to code. Let the agent decide whether to use it. Track agent acceptance rate separately from fix success rate.
 
-### Phase 3: Root Cause Verification
-- Test the most likely hypothesis first
-- Read the relevant source code — don't guess
-- Check if previous artifacts (plan.md, design.md) are correct or flawed
-- If the plan was correct but execution failed, focus on execution
-- If the plan was flawed, document what was wrong
+### Metrics & Observability
+- **Mitigation hit rate**: % of failures matched by patterns. High hit rate = good pattern coverage; low = incomplete patterns.
+- **Success lift**: Actual success rate improvement. If baseline is 77%, measure whether mitigation engine drives it to 85%. Account for confounding factors (code quality improvements, env changes).
+- **False positives**: Injected fixes that made things worse. Track separately; signal systemic issues with pattern matching or fix quality.
+- **Pattern ROI**: Some patterns may match rarely; disable patterns with <5% hit rate after 100 builds to reduce noise.
 
-### Phase 4: Targeted Fix
-- Fix the ROOT CAUSE, not the symptom
-- If the previous approach was fundamentally wrong, choose a different approach
-- If it was a minor error, make the minimal fix
-- Document what went wrong and why the new approach is better
+### Failure Mode Recovery
+- **Recursive loops**: If injected fix causes new failure matching another pattern, that fix could loop infinitely. Detect: track injected fix history per iteration, reject fixes if they cause regression.
+- **Pattern conflicts**: If two patterns match, prioritize by recency and success rate. Document tie-breaking logic.
+- **Graceful degradation**: If pattern matching hangs (malformed error-summary.json), timeout and continue without mitigation. Never block the loop.
 
-IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+### Testing Strategy
+- Unit: pattern matching on synthetic error signatures (edge cases: truncated stack traces, locale-dependent messages, multiline errors).
+- Integration: loop harness integration + fix injection context isolation.
+- Scenario: recursive failures, conflicting patterns, fix causing new errors.
+- Staging validation: run with both mitigation enabled and disabled, measure both success rate and false-positive rate.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
 
 ### Required Output (Mandatory)
 
 Your output MUST include these sections when this skill is active:
 
-1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
-2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
-3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
-4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 1
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-03T18:47:12Z
-last_iteration_at: 2026-04-03T18:47:12Z
+started_at: 2026-04-04T01:02:22Z
+last_iteration_at: 2026-04-04T01:02:22Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
+dod_file: ""
 auto_extend: true
 extension_count: 0
 max_extensions: 3
