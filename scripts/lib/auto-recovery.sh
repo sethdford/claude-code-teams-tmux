@@ -263,9 +263,7 @@ recovery_attempt() {
         escalate_model)
             # Move up the model ladder
             escalation_level=$((escalation_level + 1))
-            local model_list
-            IFS=',' read -r -a model_list <<< "$RECOVERY_MODEL_LADDER" 2>/dev/null || true
-            # Bash 3.2 compat: count elements
+            # Count models in ladder (Bash 3.2 compat — no read -a)
             local model_count=0
             local m
             for m in $(echo "$RECOVERY_MODEL_LADDER" | tr ',' ' '); do
@@ -392,8 +390,8 @@ recovery_success_rate() {
     fi
 
     local total succeeded
-    total=$(wc -l < "$RECOVERY_LOG_FILE" 2>/dev/null | tr -d ' ' || echo "0")
-    succeeded=$(grep -c '"result":"recovered"' "$RECOVERY_LOG_FILE" 2>/dev/null || echo "0")
+    total=$(wc -l < "$RECOVERY_LOG_FILE" 2>/dev/null | tr -d ' ') || total=0
+    succeeded=$(grep -c '"result":"recovered"' "$RECOVERY_LOG_FILE" 2>/dev/null) || succeeded=0
 
     if [[ "$total" -gt 0 ]]; then
         echo $(( succeeded * 100 / total ))

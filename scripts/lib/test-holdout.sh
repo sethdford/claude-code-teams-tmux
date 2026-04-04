@@ -144,7 +144,8 @@ holdout_partition() {
     if [[ -z "$holdout_tests" ]] && [[ "$total_tests" -ge 2 ]]; then
         # Move last visible test to holdout
         holdout_tests=$(echo "$visible_tests" | tail -1)
-        visible_tests=$(echo "$visible_tests" | head -n -1)
+        # BSD head doesn't support -n -1; use sed to remove last line
+        visible_tests=$(echo "$visible_tests" | sed '$ d')
     fi
 
     # Ensure we have at least one visible test
@@ -154,8 +155,8 @@ holdout_partition() {
     fi
 
     local actual_holdout actual_visible
-    actual_holdout=$(echo "$holdout_tests" | grep -c '.' || echo "0")
-    actual_visible=$(echo "$visible_tests" | grep -c '.' || echo "0")
+    actual_holdout=$(echo "$holdout_tests" | grep -c '.' 2>/dev/null) || actual_holdout=0
+    actual_visible=$(echo "$visible_tests" | grep -c '.' 2>/dev/null) || actual_visible=0
 
     info "Test partition: ${actual_visible} visible, ${actual_holdout} holdout (${ratio}% target)"
 
@@ -320,9 +321,9 @@ holdout_validate() {
             continue
         fi
 
-        # Run the individual test
+        # Run the individual test (quote path to handle spaces)
         local test_result=0
-        if eval "${test_cmd} ${full_path}" >/dev/null 2>&1; then
+        if eval "${test_cmd} \"${full_path}\"" >/dev/null 2>&1; then
             pass_count=$((pass_count + 1))
         else
             test_result=$?
