@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working in dry-run mode",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files in dry-run mode and output 'Found N item(s)' summary with '--force' hint when items are found",
-      "seen_count": 4,
-      "last_seen": "2026-04-04T10:45:56Z",
+      "seen_count": 5,
+      "last_seen": "2026-04-04T18:40:39Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -16,8 +16,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being passed as the sed script argument, causing sed to treat the literal string as a file path",
       "fix": "ensure TEST_TEMP_DIR is exported or properly quoted so it expands inside the sed expression, or use a different substitution approach",
-      "seen_count": 4,
-      "last_seen": "2026-04-04T01:20:36Z",
+      "seen_count": 5,
+      "last_seen": "2026-04-04T18:46:53Z",
       "mitigation_attempts": 0,
       "mitigation_success_count": 0,
       "category": "test_failure"
@@ -25,8 +25,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or display 'Found' count and '--force' hint in summary output",
-      "fix": "Update sw-cleanup.sh to scan for stale heartbeat files in dry-run mode and output a summary line with 'Found N items' and '--force' hint when items are detected",
+      "root_cause": "sed command references $TEST_TEMP_DIR variable that was not expanded before being passed as a sed script argument, causing 'No such file or directory' error",
+      "fix": "ensure TEST_TEMP_DIR is exported or use double-quotes around the sed expression so the variable expands correctly before sed receives it",
       "seen_count": 1,
       "last_seen": "2026-03-29T06:09:02Z",
       "mitigation_attempts": 0,
