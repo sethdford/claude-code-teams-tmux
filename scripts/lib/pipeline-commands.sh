@@ -699,31 +699,31 @@ pipeline_start() {
         return $?
     fi
 
-    # Capture predictions for feedback loop (intelligence → actuals → learning)
-    if type intelligence_analyze_issue >/dev/null 2>&1 && (type intelligence_estimate_iterations >/dev/null 2>&1 || type intelligence_predict_cost >/dev/null 2>&1); then
-        local issue_json="${INTELLIGENCE_ANALYSIS:-}"
-        if [[ -z "$issue_json" || "$issue_json" == "{}" ]]; then
-            if [[ -n "$ISSUE_NUMBER" ]]; then
-                issue_json=$(gh issue view "$ISSUE_NUMBER" --json number,title,body,labels 2>/dev/null || echo "{}")
-            else
-                issue_json=$(jq -n --arg title "${GOAL:-untitled}" --arg body "" '{title: $title, body: $body, labels: []}')
-            fi
-            if [[ -n "$issue_json" && "$issue_json" != "{}" ]]; then
-                issue_json=$(intelligence_analyze_issue "$issue_json" 2>/dev/null || echo "{}")
-            fi
+    # Intelligence orchestration: sequence all modules and write consolidated report
+    local issue_json="${INTELLIGENCE_ANALYSIS:-}"
+    if [[ -z "$issue_json" || "$issue_json" == "{}" ]]; then
+        if [[ -n "$ISSUE_NUMBER" ]]; then
+            issue_json=$(gh issue view "$ISSUE_NUMBER" --json number,title,body,labels 2>/dev/null || echo "{}")
+        else
+            issue_json=$(jq -n --arg title "${GOAL:-untitled}" --arg body "" '{title: $title, body: $body, labels: []}')
         fi
-        if [[ -n "$issue_json" && "$issue_json" != "{}" ]]; then
-            if type intelligence_estimate_iterations >/dev/null 2>&1; then
-                PREDICTED_ITERATIONS=$(intelligence_estimate_iterations "$issue_json" "" 2>/dev/null || echo "")
-                export PREDICTED_ITERATIONS
-            fi
-            if type intelligence_predict_cost >/dev/null 2>&1; then
-                local cost_json
-                cost_json=$(intelligence_predict_cost "$issue_json" "{}" 2>/dev/null || echo "{}")
-                PREDICTED_COST=$(echo "$cost_json" | jq -r '.estimated_cost_usd // empty' 2>/dev/null || echo "")
-                export PREDICTED_COST
-            fi
+        if [[ -n "$issue_json" && "$issue_json" != "{}" ]] && type intelligence_analyze_issue >/dev/null 2>&1; then
+            issue_json=$(intelligence_analyze_issue "$issue_json" 2>/dev/null || echo "{}")
         fi
+    fi
+
+    if type intelligence_orchestrate >/dev/null 2>&1; then
+        intelligence_orchestrate "$issue_json" "$PIPELINE_CONFIG" "$ARTIFACTS_DIR" "${SHIPWRIGHT_PIPELINE_ID:-$$}" || true
+    fi
+
+    # Extract predictions from report for feedback loop compatibility
+    if [[ -f "$ARTIFACTS_DIR/intelligence-report.json" ]]; then
+        PREDICTED_ITERATIONS=$(jq -r '.analysis.complexity_score // empty' "$ARTIFACTS_DIR/intelligence-report.json" 2>/dev/null || echo "")
+        PREDICTED_COST=$(jq -r '.prediction.overall_risk // empty' "$ARTIFACTS_DIR/intelligence-report.json" 2>/dev/null || echo "")
+        export PREDICTED_ITERATIONS PREDICTED_COST
+    elif type intelligence_estimate_iterations >/dev/null 2>&1 && [[ -n "$issue_json" && "$issue_json" != "{}" ]]; then
+        PREDICTED_ITERATIONS=$(intelligence_estimate_iterations "$issue_json" "" 2>/dev/null || echo "")
+        export PREDICTED_ITERATIONS
     fi
 
     # Start background heartbeat writer

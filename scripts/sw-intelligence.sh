@@ -1492,6 +1492,186 @@ cmd_cache_clear() {
     fi
 }
 
+# ─── Orchestrate Pipeline Start ─────────────────────────────────────────────
+# Sequences all intelligence modules in dependency order and writes a
+# consolidated intelligence-report.json. Called once at pipeline start.
+# Fail-open: always returns 0.
+
+intelligence_orchestrate() {
+    local issue_analysis="${1:-"{}"}"
+    local pipeline_config="${2:-}"
+    local artifacts_dir="${3:-}"
+    local run_id="${4:-}"
+
+    if [[ -z "$artifacts_dir" ]]; then
+        warn "intelligence_orchestrate: no artifacts_dir provided, skipping"
+        return 0
+    fi
+
+    local report_file="$artifacts_dir/intelligence-report.json"
+
+    # Idempotency: skip if already ran for this run_id
+    if [[ -n "$run_id" && -f "$report_file" ]]; then
+        local existing_run_id
+        existing_run_id=$(jq -r '.run_id // ""' "$report_file" 2>/dev/null || echo "")
+        if [[ "$existing_run_id" == "$run_id" ]]; then
+            info "Intelligence orchestration already completed for run $run_id"
+            return 0
+        fi
+    fi
+
+    local ts
+    ts=$(now_iso)
+
+    # 1. Analyze — extract complexity score from pre-existing analysis
+    local complexity_score risk_level template_rec
+    complexity_score=$(echo "$issue_analysis" | jq -r '.complexity // 5' 2>/dev/null || echo "5")
+    risk_level=$(echo "$issue_analysis" | jq -r '.risk_level // "medium"' 2>/dev/null || echo "medium")
+    template_rec=$(echo "$issue_analysis" | jq -r '.recommended_template // "standard"' 2>/dev/null || echo "standard")
+
+    # 2. Compose pipeline
+    local compose_result="" compose_applied=false compose_path="" compose_stages=0
+    if type intelligence_compose_pipeline >/dev/null 2>&1; then
+        compose_result=$(intelligence_compose_pipeline "$issue_analysis" "{}" "0" 2>/dev/null || echo "")
+        if [[ -n "$compose_result" ]]; then
+            compose_stages=$(echo "$compose_result" | jq '.stages | length' 2>/dev/null || echo "0")
+            # Write composed pipeline to artifacts dir (atomic)
+            if [[ "$compose_stages" -gt 0 ]]; then
+                local tmp_composed
+                tmp_composed=$(mktemp "$artifacts_dir/composed-pipeline.json.XXXXXX") || true
+                if [[ -n "$tmp_composed" ]]; then
+                    echo "$compose_result" > "$tmp_composed"
+                    mv "$tmp_composed" "$artifacts_dir/composed-pipeline.json"
+                    compose_path="$artifacts_dir/composed-pipeline.json"
+                    compose_applied=true
+                fi
+            fi
+        fi
+    fi
+
+    # 3. Predict risk
+    local risk_score=0 failure_stages="[]"
+    if type predict_pipeline_risk >/dev/null 2>&1; then
+        local predict_result
+        predict_result=$(predict_pipeline_risk "$issue_analysis" "" 2>/dev/null || echo "{}")
+        risk_score=$(echo "$predict_result" | jq -r '.overall_risk // 0' 2>/dev/null || echo "0")
+        failure_stages=$(echo "$predict_result" | jq -c '.failure_stages // []' 2>/dev/null || echo "[]")
+    fi
+
+    # 4. Model routing
+    local model_routing="{}"
+    if type intelligence_recommend_model >/dev/null 2>&1; then
+        local budget_remaining="${BUDGET_REMAINING:-100}"
+        local build_model review_model
+        build_model=$(intelligence_recommend_model "build" "$complexity_score" "$budget_remaining" 2>/dev/null | jq -r '.model // "sonnet"' 2>/dev/null || echo "sonnet")
+        review_model=$(intelligence_recommend_model "review" "$complexity_score" "$budget_remaining" 2>/dev/null | jq -r '.model // "sonnet"' 2>/dev/null || echo "sonnet")
+        model_routing=$(jq -n --arg build "$build_model" --arg review "$review_model" \
+            '{build: $build, review: $review}')
+    fi
+
+    # 5. Vitals baseline
+    local health_score=0 vitals_verdict="unknown"
+    if type pipeline_compute_vitals >/dev/null 2>&1; then
+        local vitals_result
+        vitals_result=$(pipeline_compute_vitals "" "$artifacts_dir" "" 2>/dev/null || echo "{}")
+        health_score=$(echo "$vitals_result" | jq -r '.health_score // 0' 2>/dev/null || echo "0")
+        vitals_verdict=$(echo "$vitals_result" | jq -r '.verdict // "unknown"' 2>/dev/null || echo "unknown")
+    fi
+
+    # Write consolidated report (atomic)
+    local tmp_report
+    tmp_report=$(mktemp "$report_file.XXXXXX") || {
+        warn "intelligence_orchestrate: failed to create temp file"
+        return 0
+    }
+
+    jq -n \
+        --arg run_id "$run_id" \
+        --arg ts "$ts" \
+        --argjson complexity "$complexity_score" \
+        --arg risk_level "$risk_level" \
+        --arg template "$template_rec" \
+        --argjson compose_applied "$compose_applied" \
+        --arg compose_path "$compose_path" \
+        --argjson compose_stages "$compose_stages" \
+        --argjson risk_score "$risk_score" \
+        --argjson failure_stages "$failure_stages" \
+        --argjson model_routing "$model_routing" \
+        --argjson health_score "$health_score" \
+        --arg vitals_verdict "$vitals_verdict" \
+        '{
+            run_id: $run_id,
+            timestamp: $ts,
+            analysis: {
+                complexity_score: $complexity,
+                risk_level: $risk_level,
+                recommended_template: $template
+            },
+            composition: {
+                applied: $compose_applied,
+                path: $compose_path,
+                stages: $compose_stages
+            },
+            prediction: {
+                overall_risk: $risk_score,
+                failure_stages: $failure_stages
+            },
+            model_routing: $model_routing,
+            vitals: {
+                health_score: $health_score,
+                verdict: $vitals_verdict
+            }
+        }' > "$tmp_report" 2>/dev/null
+
+    mv "$tmp_report" "$report_file"
+    emit_event "intelligence.orchestrate" \
+        "run_id=$run_id" \
+        "complexity=$complexity_score" \
+        "risk=$risk_score" \
+        "compose_stages=$compose_stages" \
+        "health=$health_score"
+
+    success "Intelligence orchestration complete (complexity=$complexity_score, risk=$risk_score, stages=$compose_stages)"
+    return 0
+}
+
+# ─── Apply Composed Pipeline ────────────────────────────────────────────────
+# Swaps PIPELINE_CONFIG to the composed pipeline if it exists and is valid.
+# Caller MUST re-read build_enabled/test_enabled/use_self_healing after this.
+# Fail-open: always returns 0, leaves PIPELINE_CONFIG unchanged on failure.
+
+intelligence_apply_composed_pipeline() {
+    local artifacts_dir="${1:-}"
+    local composed_file="${artifacts_dir}/composed-pipeline.json"
+
+    if [[ -z "$artifacts_dir" || ! -f "$composed_file" ]]; then
+        return 0
+    fi
+
+    # Validate the composed pipeline has required structure
+    # Must have at least one stage regardless of validator
+    local stage_count
+    stage_count=$(jq '.stages | if type == "array" then length else 0 end' "$composed_file" 2>/dev/null || echo "0")
+    if [[ "$stage_count" -lt 1 ]]; then
+        warn "Composed pipeline has no stages, keeping original config"
+        return 0
+    fi
+
+    if type composer_validate_pipeline >/dev/null 2>&1; then
+        if ! composer_validate_pipeline "$composed_file" >/dev/null 2>&1; then
+            warn "Composed pipeline failed validation, keeping original config"
+            return 0
+        fi
+    fi
+
+    # Swap PIPELINE_CONFIG to the composed pipeline
+    PIPELINE_CONFIG="$composed_file"
+    export PIPELINE_CONFIG
+    info "Applied composed pipeline from intelligence layer ($composed_file)"
+    emit_event "intelligence.config_swap" "composed_file=$composed_file"
+    return 0
+}
+
 main() {
     local cmd="${1:-help}"
     shift 2>/dev/null || true
@@ -1517,6 +1697,12 @@ main() {
             ;;
         recommend-model)
             intelligence_recommend_model "$@"
+            ;;
+        orchestrate)
+            intelligence_orchestrate "$@"
+            ;;
+        apply-composed)
+            intelligence_apply_composed_pipeline "$@"
             ;;
         validate-prediction)
             intelligence_validate_prediction "$@"

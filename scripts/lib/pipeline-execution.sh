@@ -530,6 +530,21 @@ run_pipeline() {
         use_self_healing=true
     fi
 
+    # Apply composed pipeline from intelligence layer (if available)
+    if type intelligence_apply_composed_pipeline >/dev/null 2>&1; then
+        intelligence_apply_composed_pipeline "${ARTIFACTS_DIR:-}" || true
+        # Re-read config after potential swap (FM-3 mitigation)
+        stages=$(jq -c '.stages[]' "$PIPELINE_CONFIG" 2>/dev/null)
+        stage_count=$(jq '.stages | length' "$PIPELINE_CONFIG" 2>/dev/null)
+        enabled_count=$(jq '[.stages[] | select(.enabled == true)] | length' "$PIPELINE_CONFIG" 2>/dev/null)
+        build_enabled=$(jq -r '.stages[] | select(.id == "build") | .enabled' "$PIPELINE_CONFIG" 2>/dev/null)
+        test_enabled=$(jq -r '.stages[] | select(.id == "test") | .enabled' "$PIPELINE_CONFIG" 2>/dev/null)
+        use_self_healing=false
+        if [[ "$build_enabled" == "true" && "$test_enabled" == "true" && "$BUILD_TEST_RETRIES" -gt 0 ]]; then
+            use_self_healing=true
+        fi
+    fi
+
     while IFS= read -r -u 3 stage; do
         local id enabled gate
         id=$(echo "$stage" | jq -r '.id' 2>/dev/null)
