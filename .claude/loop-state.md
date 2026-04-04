@@ -69,17 +69,27 @@ Historical context (lessons from previous pipelines):
 
 Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
-[design] Design completed for Config-Driven Policy Engine with JSON Schema and Adaptive Override System — Resolution: "
-iteration: 1
+[design] Design completed for Config-Driven Policy Engine with JSON Schema and Adaptive Override System — Resolution: 
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0
+
+## Failure Diagnosis (Iteration 3)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 1"
+iteration: 3
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-04T01:22:03Z
-last_iteration_at: 2026-04-04T01:22:03Z
+started_at: 2026-04-04T01:37:02Z
+last_iteration_at: 2026-04-04T01:37:02Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -92,4 +102,7 @@ max_extensions: 3
 ## Log
 ### Iteration 1 (2026-04-04T01:22:03Z)
 {"type":"result","subtype":"success","is_error":false,"duration_ms":740748,"duration_api_ms":716548,"num_turns":97,"resu
+
+### Iteration 2 (2026-04-04T01:29:57Z)
+{"type":"result","subtype":"success","is_error":false,"duration_ms":326466,"duration_api_ms":272511,"num_turns":34,"resu
 
