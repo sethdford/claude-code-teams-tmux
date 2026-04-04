@@ -18,7 +18,11 @@
     "health_check_interval": 60,
     "stale_job_timeout_hours": 2,
     "branch_pattern": "shipwright/issue-{issue}",
-    "worktree_dir": ".worktrees"
+    "worktree_dir": ".worktrees",
+    "patrol_interval": 3600,
+    "patrol_max_issues": 5,
+    "patrol_label": "auto-patrol",
+    "on_failure_log_lines": 50
   },
   "pipeline": {
     "max_iterations": 20,
@@ -43,12 +47,20 @@
     ]
   },
   "loop": {
+    "model": "opus",
+    "fallback_model": "sonnet",
+    "max_iterations": 20,
     "claude_timeout": 1800,
     "sleep_between_iterations": 2,
     "max_restarts": 0,
     "fast_test_interval": 5,
     "convergence_threshold": 3,
     "multi_agent_sleep": 5,
+    "auto_extend": true,
+    "extension_size": 5,
+    "max_extensions": 3,
+    "circuit_breaker_threshold": 3,
+    "min_progress_lines": 5,
     "context_budget_chars": 180000,
     "context_trim_memory_chars": 20000,
     "context_trim_git_entries": 10,
@@ -83,9 +95,33 @@
     "ab_test_ratio": 0.2,
     "claude_timeout": 60
   },
+  "cost": {
+    "opus_input_per_m": 15.00,
+    "opus_output_per_m": 75.00,
+    "sonnet_input_per_m": 3.00,
+    "sonnet_output_per_m": 15.00,
+    "haiku_input_per_m": 0.25,
+    "haiku_output_per_m": 1.25
+  },
+  "vitals": {
+    "weight_momentum": 35,
+    "weight_convergence": 30,
+    "weight_budget": 20,
+    "weight_error_maturity": 15
+  },
   "predictive": {
     "default_risk_score": 50,
-    "keyword_risk_score": 70
+    "keyword_risk_score": 70,
+    "anomaly_threshold": 3.0,
+    "warning_multiplier": 2.0,
+    "ema_alpha": 0.1
+  },
+  "model_router": {
+    "complexity_low": 30,
+    "complexity_high": 80
+  },
+  "fleet": {
+    "metrics_period": 7
   },
   "api_optimization": {
     "programmatic_tool_calling": true,

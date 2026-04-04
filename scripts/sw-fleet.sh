@@ -14,6 +14,8 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ─── Cross-platform compatibility ──────────────────────────────────────────
 # shellcheck source=lib/compat.sh
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
+# shellcheck source=lib/config.sh
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
 
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
@@ -95,7 +97,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-METRICS_PERIOD="${METRICS_PERIOD:-7}"
+METRICS_PERIOD="${METRICS_PERIOD:-$(_config_get_int "fleet.metrics_period" 7 2>/dev/null || echo 7)}"
 JSON_OUTPUT="${JSON_OUTPUT:-false}"
 
 # ─── Help ───────────────────────────────────────────────────────────────────

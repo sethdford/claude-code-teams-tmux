@@ -16,6 +16,8 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ─── Cross-platform compatibility ──────────────────────────────────────────
 # shellcheck source=lib/compat.sh
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
+# shellcheck source=lib/config.sh
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
 
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
@@ -68,8 +70,8 @@ SONNET_STAGES="test|review"
 OPUS_STAGES="plan|design|build|compound_quality"
 
 # ─── Complexity Thresholds ──────────────────────────────────────────────────
-COMPLEXITY_LOW=30          # Below this: use sonnet
-COMPLEXITY_HIGH=80         # Above this: use opus
+COMPLEXITY_LOW=$(_config_get_int "model_router.complexity_low" 30 2>/dev/null || echo 30)
+COMPLEXITY_HIGH=$(_config_get_int "model_router.complexity_high" 80 2>/dev/null || echo 80)
 
 # ─── Resolve Routing Config Path ────────────────────────────────────────────
 # Priority: optimization (self-optimize writes) > legacy > create in optimization

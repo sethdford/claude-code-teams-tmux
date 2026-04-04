@@ -1,0 +1,245 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://shipwright.dev/schemas/defaults-v1.json",
+  "title": "Shipwright Defaults Configuration",
+  "description": "Schema for config/defaults.json — canonical default values for all Shipwright tunables.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "description": { "type": "string" },
+    "version": { "type": "string" },
+    "network": {
+      "type": "object",
+      "properties": {
+        "connect_timeout": { "type": "integer", "minimum": 1 },
+        "max_time": { "type": "integer", "minimum": 1 },
+        "gh_timeout": { "type": "integer", "minimum": 1 },
+        "retry_count": { "type": "integer", "minimum": 0 },
+        "retry_delay": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "daemon": {
+      "type": "object",
+      "properties": {
+        "poll_interval": { "type": "integer", "minimum": 1 },
+        "max_parallel": { "type": "integer", "minimum": 1 },
+        "watch_label": { "type": "string" },
+        "issue_limit": { "type": "integer", "minimum": 1 },
+        "on_success_remove_label": { "type": "boolean" },
+        "health_check_interval": { "type": "integer", "minimum": 1 },
+        "stale_job_timeout_hours": { "type": "integer", "minimum": 1 },
+        "branch_pattern": { "type": "string" },
+        "worktree_dir": { "type": "string" },
+        "patrol_interval": { "type": "integer", "minimum": 1 },
+        "patrol_max_issues": { "type": "integer", "minimum": 1 },
+        "patrol_label": { "type": "string" },
+        "on_failure_log_lines": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "pipeline": {
+      "type": "object",
+      "properties": {
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "build_test_retries": { "type": "integer", "minimum": 0 },
+        "claude_timeout": { "type": "integer", "minimum": 1 },
+        "heartbeat_interval": { "type": "integer", "minimum": 1 },
+        "composed_cache_ttl": { "type": "integer", "minimum": 0 },
+        "branch_pattern": { "type": "string" },
+        "stage_order": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "loop": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "fallback_model": { "type": "string" },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "claude_timeout": { "type": "integer", "minimum": 1 },
+        "sleep_between_iterations": { "type": "integer", "minimum": 0 },
+        "max_restarts": { "type": "integer", "minimum": 0 },
+        "fast_test_interval": { "type": "integer", "minimum": 1 },
+        "convergence_threshold": { "type": "integer", "minimum": 1 },
+        "multi_agent_sleep": { "type": "integer", "minimum": 0 },
+        "auto_extend": { "type": "boolean" },
+        "extension_size": { "type": "integer", "minimum": 1 },
+        "max_extensions": { "type": "integer", "minimum": 0 },
+        "circuit_breaker_threshold": { "type": "integer", "minimum": 1 },
+        "min_progress_lines": { "type": "integer", "minimum": 0 },
+        "context_budget_chars": { "type": "integer", "minimum": 1000 },
+        "context_trim_memory_chars": { "type": "integer", "minimum": 0 },
+        "context_trim_git_entries": { "type": "integer", "minimum": 0 },
+        "context_trim_hotspot_files": { "type": "integer", "minimum": 0 },
+        "context_trim_test_lines": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "dashboard": {
+      "type": "object",
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "poll_interval_ms": { "type": "integer", "minimum": 100 },
+        "ws_heartbeat_ms": { "type": "integer", "minimum": 1000 }
+      },
+      "additionalProperties": false
+    },
+    "webhook": {
+      "type": "object",
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "secret_length": { "type": "integer", "minimum": 16 },
+        "max_payload_bytes": { "type": "integer", "minimum": 1024 }
+      },
+      "additionalProperties": false
+    },
+    "urls": {
+      "type": "object",
+      "properties": {
+        "linear_api": { "type": "string", "format": "uri" },
+        "github_api": { "type": "string", "format": "uri" },
+        "github_device_code": { "type": "string", "format": "uri" },
+        "github_device_login": { "type": "string", "format": "uri" },
+        "otel_endpoint": { "type": "string", "format": "uri" },
+        "tpm_repo": { "type": "string", "format": "uri" },
+        "bun_install": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    "intelligence": {
+      "type": "object",
+      "properties": {
+        "cache_ttl": { "type": "integer", "minimum": 0 },
+        "complexity_bands": {
+          "type": "object",
+          "properties": {
+            "low": { "type": "integer" },
+            "medium": { "type": "integer" },
+            "high": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "miss_rate_high": { "type": "integer", "minimum": 0 },
+        "miss_rate_low": { "type": "integer", "minimum": 0 },
+        "anomaly_threshold": { "type": "number", "minimum": 0 },
+        "ab_test_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claude_timeout": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "cost": {
+      "type": "object",
+      "properties": {
+        "opus_input_per_m": { "type": "number", "minimum": 0 },
+        "opus_output_per_m": { "type": "number", "minimum": 0 },
+        "sonnet_input_per_m": { "type": "number", "minimum": 0 },
+        "sonnet_output_per_m": { "type": "number", "minimum": 0 },
+        "haiku_input_per_m": { "type": "number", "minimum": 0 },
+        "haiku_output_per_m": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "vitals": {
+      "type": "object",
+      "properties": {
+        "weight_momentum": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "weight_convergence": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "weight_budget": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "weight_error_maturity": { "type": "integer", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "predictive": {
+      "type": "object",
+      "properties": {
+        "default_risk_score": { "type": "integer", "minimum": 0 },
+        "keyword_risk_score": { "type": "integer", "minimum": 0 },
+        "anomaly_threshold": { "type": "number", "minimum": 0 },
+        "warning_multiplier": { "type": "number", "minimum": 0 },
+        "ema_alpha": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "model_router": {
+      "type": "object",
+      "properties": {
+        "complexity_low": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "complexity_high": { "type": "integer", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "fleet": {
+      "type": "object",
+      "properties": {
+        "metrics_period": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "api_optimization": {
+      "type": "object",
+      "properties": {
+        "programmatic_tool_calling": { "type": "boolean" },
+        "tool_search_enabled": { "type": "boolean" },
+        "tool_search_type": { "type": "string" },
+        "defer_unused_tools": { "type": "boolean" },
+        "web_search_version": { "type": "string" },
+        "web_fetch_version": { "type": "string" },
+        "dynamic_filtering": { "type": "boolean" },
+        "code_execution_sandbox": { "type": "boolean" },
+        "beta_header": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "gate_score_threshold": { "type": "integer", "minimum": 0 },
+        "secret_threshold": { "type": "integer", "minimum": 0 },
+        "min_file_count": { "type": "integer", "minimum": 0 },
+        "score_weight_per_file": { "type": "integer", "minimum": 0 },
+        "pass_rate_threshold": { "type": "number", "minimum": 0 },
+        "bundle_growth_legacy_pct": { "type": "integer", "minimum": 0 },
+        "perf_regression_legacy_pct": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "artifact_age_days": { "type": "integer", "minimum": 1 },
+        "heartbeat_stale_seconds": { "type": "integer", "minimum": 1 },
+        "checkpoint_max_count": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "labels": {
+      "type": "object",
+      "properties": {
+        "watch": { "type": "string" },
+        "ready_to_build": { "type": "string" },
+        "hotfix": { "type": "string" },
+        "claimed_prefix": { "type": "string" },
+        "incident": { "type": "array", "items": { "type": "string" } },
+        "incident_labels": { "type": "string" },
+        "harness_gap": { "type": "array", "items": { "type": "string" } },
+        "harness_gap_labels": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "triage_issues": { "type": "integer", "minimum": 1 },
+        "triage_unlabeled": { "type": "integer", "minimum": 1 },
+        "strategic_closed": { "type": "integer", "minimum": 1 },
+        "dora_days": { "type": "integer", "minimum": 1 },
+        "log_tail_lines": { "type": "integer", "minimum": 1 },
+        "function_scan_limit": { "type": "integer", "minimum": 0 },
+        "dependency_scan_limit": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

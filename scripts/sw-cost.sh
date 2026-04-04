@@ -14,6 +14,8 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ─── Cross-platform compatibility ──────────────────────────────────────────
 # shellcheck source=lib/compat.sh
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
+# shellcheck source=lib/config.sh
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
 
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
@@ -65,13 +67,13 @@ ensure_cost_dir() {
 }
 
 # ─── Model Pricing (USD per million tokens) ────────────────────────────────
-# Default pricing (fallback when no config file exists)
-_DEFAULT_OPUS_INPUT_PER_M=15.00
-_DEFAULT_OPUS_OUTPUT_PER_M=75.00
-_DEFAULT_SONNET_INPUT_PER_M=3.00
-_DEFAULT_SONNET_OUTPUT_PER_M=15.00
-_DEFAULT_HAIKU_INPUT_PER_M=0.25
-_DEFAULT_HAIKU_OUTPUT_PER_M=1.25
+# Default pricing from config chain (fallback when no config file exists)
+_DEFAULT_OPUS_INPUT_PER_M=$(_config_get "cost.opus_input_per_m" "15.00" 2>/dev/null || echo "15.00")
+_DEFAULT_OPUS_OUTPUT_PER_M=$(_config_get "cost.opus_output_per_m" "75.00" 2>/dev/null || echo "75.00")
+_DEFAULT_SONNET_INPUT_PER_M=$(_config_get "cost.sonnet_input_per_m" "3.00" 2>/dev/null || echo "3.00")
+_DEFAULT_SONNET_OUTPUT_PER_M=$(_config_get "cost.sonnet_output_per_m" "15.00" 2>/dev/null || echo "15.00")
+_DEFAULT_HAIKU_INPUT_PER_M=$(_config_get "cost.haiku_input_per_m" "0.25" 2>/dev/null || echo "0.25")
+_DEFAULT_HAIKU_OUTPUT_PER_M=$(_config_get "cost.haiku_output_per_m" "1.25" 2>/dev/null || echo "1.25")
 
 MODEL_PRICING_FILE="${HOME}/.shipwright/model-pricing.json"
 

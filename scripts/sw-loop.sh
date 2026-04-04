@@ -76,12 +76,12 @@ fi
 # ─── Defaults ─────────────────────────────────────────────────────────────────
 GOAL=""
 ORIGINAL_GOAL=""  # Preserved across restarts — GOAL gets appended to
-MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"
+MAX_ITERATIONS="${SW_MAX_ITERATIONS:-$(_config_get_int "loop.max_iterations" 20 2>/dev/null || echo 20)}"
 TEST_CMD=""
 FAST_TEST_CMD=""
-FAST_TEST_INTERVAL=5
+FAST_TEST_INTERVAL=$(_config_get_int "loop.fast_test_interval" 5 2>/dev/null || echo 5)
 TEST_LOG_FILE=""
-MODEL="${SW_MODEL:-opus}"
+MODEL="${SW_MODEL:-$(_config_get "loop.model" "opus" 2>/dev/null || echo "opus")}"
 AGENTS=1
 AGENT_ROLES=""
 USE_WORKTREE=false
@@ -102,14 +102,14 @@ LOOP_OUTPUT_TOKENS=0
 LOOP_COST_MILLICENTS=0
 
 # ─── Flexible Iteration Defaults ────────────────────────────────────────────
-AUTO_EXTEND=true          # Auto-extend iterations when work is incomplete
-EXTENSION_SIZE=5          # Additional iterations per extension
-MAX_EXTENSIONS=3          # Max number of extensions (hard cap safety net)
+AUTO_EXTEND=$(_config_get "loop.auto_extend" "true" 2>/dev/null || echo "true")
+EXTENSION_SIZE=$(_config_get_int "loop.extension_size" 5 2>/dev/null || echo 5)
+MAX_EXTENSIONS=$(_config_get_int "loop.max_extensions" 3 2>/dev/null || echo 3)
 EXTENSION_COUNT=0         # Current number of extensions applied
 
 # ─── Circuit Breaker Defaults ──────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=3       # Consecutive low-progress iterations before stopping
-MIN_PROGRESS_LINES=5              # Minimum insertions to count as progress
+CIRCUIT_BREAKER_THRESHOLD=$(_config_get_int "loop.circuit_breaker_threshold" 3 2>/dev/null || echo 3)
+MIN_PROGRESS_LINES=$(_config_get_int "loop.min_progress_lines" 5 2>/dev/null || echo 5)
 
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
@@ -124,11 +124,11 @@ QUALITY_GATE_PASSED=true
 ADDITIONAL_TEST_CMDS=()   # Array of extra test commands (from --additional-test-cmds)
 
 # ─── Context Budget ──────────────────────────────────────────────────────────
-CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-200000}"  # Max prompt chars before trimming
+CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-$(_config_get_int "loop.context_budget_chars" 180000 2>/dev/null || echo 180000)}"
 
 # ─── Claude CLI Flags ─────────────────────────────────────────────────────────
 EFFORT_LEVEL="${SW_EFFORT_LEVEL:-}"
-FALLBACK_MODEL="${SW_FALLBACK_MODEL:-sonnet}"
+FALLBACK_MODEL="${SW_FALLBACK_MODEL:-$(_config_get "loop.fallback_model" "sonnet" 2>/dev/null || echo "sonnet")}"
 
 # ─── Parse Arguments ──────────────────────────────────────────────────────────
 show_help() {

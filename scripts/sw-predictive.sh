@@ -52,9 +52,9 @@ fi
 # ─── Storage ───────────────────────────────────────────────────────────────
 BASELINES_DIR="${HOME}/.shipwright/baselines"
 OPTIMIZATION_DIR="${HOME}/.shipwright/optimization"
-DEFAULT_ANOMALY_THRESHOLD=3.0
-DEFAULT_WARNING_MULTIPLIER=2.0
-DEFAULT_EMA_ALPHA=0.1
+DEFAULT_ANOMALY_THRESHOLD=$(_config_get "predictive.anomaly_threshold" "3.0" 2>/dev/null || echo "3.0")
+DEFAULT_WARNING_MULTIPLIER=$(_config_get "predictive.warning_multiplier" "2.0" 2>/dev/null || echo "2.0")
+DEFAULT_EMA_ALPHA=$(_config_get "predictive.ema_alpha" "0.1" 2>/dev/null || echo "0.1")
 ANOMALY_THRESHOLD="${ANOMALY_THRESHOLD:-$DEFAULT_ANOMALY_THRESHOLD}"
 
 # ─── Adaptive Threshold Helpers ───────────────────────────────────────────

@@ -35,6 +35,9 @@ if [[ "$(type -t emit_event 2>/dev/null)" != "function" ]]; then
     echo "${payload}}" >> "${HOME}/.shipwright/events.jsonl"
   }
 fi
+# shellcheck source=lib/config.sh
+[[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+
 # ─── Constants ──────────────────────────────────────────────────────────────
 PROGRESS_DIR="${HOME}/.shipwright/progress"
 COST_DIR="${HOME}/.shipwright"
@@ -42,11 +45,11 @@ COST_FILE="${COST_DIR}/costs.json"
 BUDGET_FILE="${COST_DIR}/budget.json"
 OPTIMIZATION_DIR="${HOME}/.shipwright/optimization"
 
-# Signal weights for health score (configurable via env vars)
-WEIGHT_MOMENTUM="${VITALS_WEIGHT_MOMENTUM:-35}"
-WEIGHT_CONVERGENCE="${VITALS_WEIGHT_CONVERGENCE:-30}"
-WEIGHT_BUDGET="${VITALS_WEIGHT_BUDGET:-20}"
-WEIGHT_ERROR_MATURITY="${VITALS_WEIGHT_ERROR_MATURITY:-15}"
+# Signal weights for health score (configurable via env vars or config chain)
+WEIGHT_MOMENTUM="${VITALS_WEIGHT_MOMENTUM:-$(_config_get_int "vitals.weight_momentum" 35 2>/dev/null || echo 35)}"
+WEIGHT_CONVERGENCE="${VITALS_WEIGHT_CONVERGENCE:-$(_config_get_int "vitals.weight_convergence" 30 2>/dev/null || echo 30)}"
+WEIGHT_BUDGET="${VITALS_WEIGHT_BUDGET:-$(_config_get_int "vitals.weight_budget" 20 2>/dev/null || echo 20)}"
+WEIGHT_ERROR_MATURITY="${VITALS_WEIGHT_ERROR_MATURITY:-$(_config_get_int "vitals.weight_error_maturity" 15 2>/dev/null || echo 15)}"
 
 # ─── Helper: safe numeric extraction ────────────────────────────────────────
 _safe_num() {

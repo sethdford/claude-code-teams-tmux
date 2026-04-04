@@ -210,7 +210,7 @@ ON_SUCCESS_REMOVE_LABEL="shipwright"
 ON_SUCCESS_ADD_LABEL="pipeline/complete"
 ON_SUCCESS_CLOSE_ISSUE=false
 ON_FAILURE_ADD_LABEL="pipeline/failed"
-ON_FAILURE_LOG_LINES=50
+ON_FAILURE_LOG_LINES=$(_config_get_int "daemon.on_failure_log_lines" 50 2>/dev/null || echo 50)
 SLACK_WEBHOOK=""
 
 # Priority lane defaults
@@ -235,10 +235,10 @@ WORKER_MEM_GB=4
 EST_COST_PER_JOB=5.0
 FLEET_MAX_PARALLEL=""
 
-# Patrol defaults (overridden by daemon-config.json or env)
-PATROL_INTERVAL="${PATROL_INTERVAL:-3600}"
-PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-5}"
-PATROL_LABEL="${PATROL_LABEL:-auto-patrol}"
+# Patrol defaults (config chain: env > daemon-config > policy > defaults.json)
+PATROL_INTERVAL="${PATROL_INTERVAL:-$(_config_get_int "daemon.patrol_interval" 3600 2>/dev/null || echo 3600)}"
+PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-$(_config_get_int "daemon.patrol_max_issues" 5 2>/dev/null || echo 5)}"
+PATROL_LABEL="${PATROL_LABEL:-$(_config_get "daemon.patrol_label" "auto-patrol" 2>/dev/null || echo "auto-patrol")}"
 PATROL_DRY_RUN=false
 PATROL_AUTO_WATCH=false
 PATROL_FAILURES_THRESHOLD=3

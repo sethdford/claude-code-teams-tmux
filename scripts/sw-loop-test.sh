@@ -183,7 +183,7 @@ echo ""
 echo -e "${DIM}  defaults${RESET}"
 
 # Check key defaults in source
-if grep -q 'MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"' "$SCRIPT_DIR/sw-loop.sh"; then
+if grep -qE 'MAX_ITERATIONS=.*20' "$SCRIPT_DIR/sw-loop.sh"; then
     assert_pass "Default MAX_ITERATIONS is 20"
 else
     assert_fail "Default MAX_ITERATIONS is 20"
@@ -321,7 +321,7 @@ rm -rf "$tmpdir"
 # ─── Test 20: Default configuration values from source ─────────────────────────
 echo ""
 echo -e "${DIM}  default config from source${RESET}"
-max_iter_line=$(grep -E '^MAX_ITERATIONS=' "$SCRIPT_DIR/sw-loop.sh" | head -1)
+max_iter_line=$(grep -E 'MAX_ITERATIONS=.*20' "$SCRIPT_DIR/sw-loop.sh" | head -1)
 if [[ "$max_iter_line" =~ 20 ]]; then
     assert_pass "Default MAX_ITERATIONS is 20 (from source)"
 else
