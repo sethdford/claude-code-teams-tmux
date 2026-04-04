@@ -660,31 +660,28 @@
     "c1d5d7db916d905a16cb34914b097409": {
       "result": {
         "complexity": 7,
-        "risk_level": "high",
-        "success_probability": 70,
-        "recommended_template": "full",
+        "risk_level": "medium",
+        "success_probability": 65,
+        "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Config rollback oscillation if threshold too sensitive or logic flawed",
-          "Metrics collection overhead slowing daemon if not optimized",
-          "False negatives in rollback trigger with 5-run window missing gradual degradation",
-          "Dashboard staleness from real-time aggregation bottleneck",
-          "Database schema migration complexity and backward compatibility",
-          "P50/P95 percentile accuracy with small sample sizes"
+          "Rollback trigger logic may activate on noise rather than real degradation",
+          "Automatic rollback could mask systemic issues that need investigation",
+          "Race conditions if config changes and metric collection race",
+          "Rollback decision must preserve audit trail for post-mortems",
+          "10% threshold may need tuning per-stage (hotspots vs stable stages)"
         ],
         "implementation_hints": [
-          "Extend sw-db.sh with stage_metrics table and SQL aggregation functions first",
-          "Add metric collection hooks to existing pipeline stage tracking (already instrumented)",
-          "Use SQLite window functions for efficient percentile calculation",
-          "Implement config versioning keeping last 5 known-good states, not just one",
-          "Add dry-run mode to validate rollback before applying in production",
-          "Use exponential backoff in rollback detection to avoid thrashing on noise",
-          "Async dashboard updates via event bus to prevent daemon blocking",
-          "Create synthetic degradation test suite (inject failures, validate rollback triggers correctly)",
-          "Add telemetry to track rollback effectiveness and false positives"
+          "Implement rolling window (last 5 runs) with baseline snapshot before config change",
+          "Add dry-run mode to validate rollback logic without actually reverting",
+          "Create db migration for stage_metrics table (run_id, stage, timestamp, success_rate, p50_duration, p95_duration, failure_type)",
+          "Dashboard should surface rollback events timeline alongside metric trends",
+          "CLI: include recent rollback history in stage-health output",
+          "Integrate daemon check-and-apply pattern (check metric baseline, spawn, check post-spawn, rollback if triggered)",
+          "Add guardrails: prevent rollbacks within cooldown period to avoid thrashing"
         ]
       },
-      "timestamp": 1775240726,
+      "timestamp": 1775263421,
       "ttl": 3600
     },
     "f0d750451a24bf57975df9b82bc08f2a": {
@@ -735,43 +732,48 @@
     "07233a7efee3f2a132d44080a51f0726": {
       "result": {
         "issue_type": "infrastructure",
-        "confidence": 0.95,
+        "confidence": 0.88,
         "secondary_domains": [
           "database",
           "observability",
-          "reliability",
-          "automation"
+          "data-pipeline"
         ],
         "complexity_assessment": {
-          "score": 6,
-          "reasoning": "Multi-system integration (database metrics, daemon spawn logic, CLI, dashboard) with safety-critical rollback automation; well-scoped but requires careful metric aggregation, threshold detection, and rollback state management"
+          "score": 7,
+          "reasoning": "Multi-component change touching sw-db.sh schema, daemon integration, dashboard UI, CLI command, and rollback state machine; metric aggregation logic is error-prone; rollback atomicity is critical"
         },
         "skill_plan": {
           "plan": [
-            "brainstorming",
-            "architecture-design"
+            "architecture-design",
+            "data-pipeline",
+            "brainstorming"
           ],
           "design": [
             "architecture-design",
-            "data-pipeline",
-            "api-design"
+            "api-design",
+            "observability"
           ],
           "build": [
+            "data-pipeline",
+            "testing-strategy",
             "performance"
           ],
           "review": [
+            "pr-quality",
             "two-stage-review",
+            "adversarial-quality",
             "security-audit"
           ],
           "compound_quality": [
-            "adversarial-quality",
-            "testing-strategy"
+            "config-rollback-safety",
+            "validation-thoroughness"
           ],
           "pr": [
             "pr-quality"
           ],
           "deploy": [
-            "deploy-safety"
+            "deploy-safety",
+            "config-rollback-safety"
           ],
           "validate": [
             "validation-thoroughness"
@@ -781,45 +783,46 @@
           ]
         },
         "skill_rationale": {
-          "brainstorming": "Challenge assumptions about what constitutes a >10% degradation, when to measure (per run vs rolling window), and whether the last-known-good config could itself be stale or corrupted",
-          "architecture-design": "Document the metric flow (collection → aggregation → daemon decision) and design how rollback integrates into spawn logic without blocking worker availability",
-          "data-pipeline": "Design efficient metric aggregation queries to compute per-stage success_rate and percentiles (p50, p95) over rolling 5-run windows without full table scans",
-          "api-design": "Design the `shipwright stage-health` CLI interface and dashboard REST endpoints to expose health trends in actionable forms for operators",
-          "performance": "Ensure metric lookups and aggregations don't increase daemon spawn latency, and optimize database indices for health queries",
-          "two-stage-review": "Pass 1: Verify metric accuracy (success_rate calculation, percentile logic) and aggregation window correctness; Pass 2: Scrutinize rollback trigger conditions to prevent oscillation or false positives",
-          "security-audit": "Validate that rollback logic can't be exploited to revert legitimate improvements, ensure config atomicity prevents partial rollbacks from leaving corrupt state, and audit access controls on config restore",
-          "adversarial-quality": "Test failure modes: transient metric spikes triggering false rollbacks, rollback itself failing and triggering another rollback, last-known-good config corruption, stale metrics leading to wrong decisions",
-          "testing-strategy": "Build comprehensive test suites for: metric insertion and aggregation correctness, rollback trigger logic at 5-10% thresholds, daemon integration without blocking spawn, and CLI output validation",
-          "pr-quality": "Structure PR to isolate database schema changes, rollback detection logic, daemon integration, and dashboard features so each component can be independently verified",
-          "deploy-safety": "Plan phased rollout: enable metric tracking first, validate data collection matches reality, stage test rollbacks on staging environment, then enable automatic rollback in production with alerting",
-          "validation-thoroughness": "Verify collected metrics match actual pipeline behavior (spot-check success_rate vs real failures), test rollback actually restores performance, validate dashboard trends against raw database",
-          "observability": "Monitor the monitoring system itself: track metric collection latency, rollback frequency and causes, detect rollback oscillation patterns, and alert if dashboard query performance degrades"
+          "architecture-design": "Metric schema, rollback state machine, and daemon integration points need an ADR to document assumptions about what triggers rollback and how config is restored atomically",
+          "data-pipeline": "Success rate, p50/p95 duration, and failure type aggregation across multiple pipeline runs requires careful window functions and correct percentile calculation",
+          "brainstorming": "Challenge assumptions: Is 10% success drop the right threshold for all stages? Should rollback be automatic or require human approval? How do we avoid thrashing between two bad configs?",
+          "api-design": "The `shipwright stage-health <stage-name> --days 30` CLI needs consistent semantics with existing commands and clear JSON output for programmatic use",
+          "observability": "Design metric collection touchpoints in sw-daemon.sh, loop, and pipeline to ensure complete coverage; dashboard must surface anomalies (sudden spikes in failure_types)",
+          "testing-strategy": "Metric aggregation (percentiles, moving windows) and rollback trigger logic are easy to implement incorrectly; needs unit tests for boundary cases (exactly 10% drop, missing data points)",
+          "performance": "Querying 90 days of per-stage metrics across all runs without proper indexing will slow daemon operations; need to optimize sw-db.sh queries",
+          "pr-quality": "This is a complex multi-file change (db schema migration, daemon integration, dashboard, CLI, tests); make the PR reviewable by clear separation of concerns",
+          "two-stage-review": "Pass 1: Does metric collection work and is rollback logic correct? Pass 2: Does rollback actually restore config correctly and not break running pipelines?",
+          "adversarial-quality": "Test rollback failures: what if config file is corrupted? What if two daemons try to rollback simultaneously? What if success rate fluctuates around the 10% threshold?",
+          "security-audit": "Rollback mechanism must prevent unauthorized config changes; ensure only daemon can trigger rollback; validate config before applying from backup",
+          "config-rollback-safety": "Automatic rollback prevents silent degradation but risks rolling back to a bad state; implement safeguards against thrashing, data loss, and false-positive triggers",
+          "validation-thoroughness": "Smoke tests must verify: (1) metrics are collected, (2) dashboard renders without errors, (3) CLI returns correct aggregations, (4) rollback actually restores the right config",
+          "deploy-safety": "The rollback feature itself could destabilize existing daemon deployments; deploy in canary mode, monitor for unexpected rollbacks, have a kill switch"
         },
         "generated_skills": [
           {
             "name": "config-rollback-safety",
-            "reason": "Automatic rollback of infrastructure config is safety-critical and requires specific patterns for threshold detection, state management, cooldown logic, partial rollback scenarios, and failure cascades that no existing skill addresses",
-            "content": "## Config Rollback Safety Patterns\n\nAutomatic rollback systems prevent operators from unknowingly deploying configs that degrade reliability. But rollback itself can fail, creating cascading problems. Use these patterns to build safe, debuggable rollback logic.\n\n### Threshold & Detection\n- **Measure relative change, not absolute value**: Trigger on >10% *relative drop* in success_rate (e.g., 99% → 89%, or 50% → 45% both trigger), not a fixed threshold. Avoids false positives in naturally low-success stages.\n- **Rolling window aggregation**: Average metrics over N recent runs (e.g., 5) to filter single transient spikes. Store both current and previous window to compute the delta.\n- **Cooldown period**: After rollback fires, disable rollback for 2+ hours to prevent thrashing if the new config needs time to stabilize.\n- **Pre-alarm threshold**: Log warnings at 5% degradation so operators notice drift before automatic action.\n\n### Last-Known-Good State\n- **Atomic snapshots**: When creating a candidate for rollback, capture: (config content, timestamp, current success_rate, metric samples from this period). Store atomically.\n- **Prevent ping-pong**: Track which configs were rolled back and when; add them to a 24-hour blocklist to avoid re-enabling them immediately.\n- **Lineage audit log**: Keep a 30-day immutable log of all config changes and rollbacks with reasons.\n\n### Rollback Execution\n- **File atomicity**: Write new config to temp file, validate schema, then atomic rename to active location. Never partial writes.\n- **Partial rollback support**: If only one stage (e.g., `build`) is degraded, roll back only that stage's config subset, not the entire pipeline config. Requires modular config design.\n- **Verify-after wait**: After rollback, don't assume immediate recovery. Wait 5 runs and re-check success_rate before declaring rollback successful.\n\n### Failure Recovery\n- **Bounded rollback depth**: Allow rollback of rollback only once (revert to the previous known-good). Prevents infinite recursion if rollback itself is broken.\n- **Manual override**: Provide `--disable-auto-rollback` flag for operators to investigate manually when system is misbehaving.\n- **Rollback failure alerting**: If rollback is triggered but fails (e.g., last-known-good is corrupted), immediately alert and fall back to read-only mode.\n\n### Validation & Sanity Checks\n- **Config schema validation**: Before restoring a rolled-back config, validate it against the schema (not corrupted, all required fields present).\n- **Metrics sanity check**: After rollback, verify that new metric samples follow the same statistical pattern as the last-good period (detect data anomalies or collection failures).\n- **Staging pre-validation**: Test the entire rollback mechanism (detection, execution, recovery) on staging before enabling in production.\n\n### Observability\n- **Structured rollback events**: Log to machine-readable format: trigger reason, config version diff, before/after success_rate, latency of rollback execution, operator notified.\n- **Dashboard visualization**: Plot success_rate trend line with rollback markers (vertical lines with reason), and show detection threshold bands.\n- **Oscillation detection**: Alert if 3+ rollbacks occur within 1 hour (system thrashing). Page on-call for manual investigation."
+            "reason": "Automatic rollback is a critical safety mechanism that prevents operators from unknowingly deploying harmful configs. However, rollback systems introduce new failure modes (thrashing, data loss, false positives) that existing skills don't address. This generated skill provides specific guardrails for automatic rollback implementations.",
+            "content": "# Config Rollback Safety\n\nAutomatic rollback prevents operators from unknowingly deploying configs that degrade reliability. But rollback itself can introduce instability if not carefully designed. Use these guardrails:\n\n## Design Principles\n\n1. **Measure before rolling back**: Don't rollback based on a single bad metric; require consecutive degradation (5 runs, success_rate drops >10%) to distinguish real problems from noise.\n\n2. **Prevent thrashing**: If rollback returns to the previous config and that config is also failing, we oscillate. Store a \"rollback history\" and skip configs that have already failed.\n\n3. **Atomicity is non-negotiable**: Rollback must be all-or-nothing. Use atomic writes (write tmp file, mv) for config files. If rollback fails, leave the daemon in a safe halted state, not partially updated.\n\n4. **Graceful degradation**: If both current and previous configs are failing, don't keep rolling back. Alert an operator and freeze config changes.\n\n## Implementation Checklist\n\n- [ ] **Metrics collection**: Ensure success_rate, p50_duration, p95_duration, and failure_types are collected for every stage of every pipeline run.\n- [ ] **Aggregation window**: Define the moving window (e.g., last 5 runs) used for rollback decisions. Document why this window size is safe.\n- [ ] **Rollback trigger**: Implement as: `current_success_rate < (last_successful_rate - 10%)`. Test boundary cases (exactly 10%, missing data, single run).\n- [ ] **Config backup**: Before applying a new config, save the previous one atomically. Include a timestamp and reason (\"Applied by agent X at Y\").\n- [ ] **Rollback procedure**: Restore config file via atomic write, then reload daemon without restarting (SIGHUP or equivalent). Document reload semantics.\n- [ ] **Rollback history**: Track which configs have been tried and reverted. If a config is rolled back, don't apply it again for N hours.\n- [ ] **Operator visibility**: Log every rollback decision (why it triggered, which config was restored). Dashboard must show rollback events in timeline.\n- [ ] **Kill switch**: Provide a way to disable automatic rollback (env var, flag, or config file) if it's causing cascading failures.\n- [ ] **Test rollback failures**: Simulate a rollback that fails halfway (corrupted config file, permission denied, daemon doesn't reload). Ensure daemon halts gracefully instead of running with unknown config.\n\n## Monitoring\n\nAfter deploying automatic rollback:\n\n- Alert if rollbacks happen more than once per day (indicates instability in config selection logic, not just noise).\n- Track rollback latency — does the daemon respond within 30 seconds of detecting degradation?\n- Watch for cascading rollbacks (A → B → A → B) — indicates threshold is too sensitive.\n- Monitor operator overrides of automatic decisions — if humans frequently disable rollback, threshold needs tuning.\n"
           }
         ],
         "review_focus": [
-          "Metric aggregation correctness—verify success_rate and percentile calculations match real pipeline behavior; spot-check against raw logs",
-          "Rollback trigger logic—ensure the >10% relative-change detection is correct and won't trigger on false positives (e.g., stages naturally have lower success rates)",
-          "Daemon integration safety—confirm rollback check doesn't block spawn on each poll cycle and gracefully handles missing/stale metrics",
-          "Config state atomicity—validate that both full and partial rollback operations are atomic and can't leave corrupted state",
-          "Last-known-good validity—ensure the stored last-good config is schema-valid and can actually be restored without errors",
-          "Database schema—verify indices support efficient metric aggregation queries; confirm locking strategy won't deadlock daemon polls"
+          "Metric aggregation correctness: verify p50/p95 percentile calculations handle missing data and don't produce NaN",
+          "Rollback atomicity: ensure config file changes are all-or-nothing; test failure cases (disk full, permission denied, concurrent write)",
+          "Rollback trigger logic: edge cases around threshold (exactly 10% drop, single-run datasets, success_rate = 0)",
+          "Dashboard performance: queries for 90 days of metrics should complete in <500ms; verify indexes are created",
+          "Daemon integration: rollback check must not block pipeline spawning; use async signals or background thread",
+          "CLI consistency: `shipwright stage-health` output format aligns with other shipwright commands (--json flag, exit codes)"
         ],
         "risk_areas": [
-          "Rollback oscillation: if rollback itself doesn't improve metrics immediately, could trigger another rollback within the cooldown period",
-          "Metric staleness: if metric collection lags behind actual impact, rollback decision could be based on data from before the config change took effect",
-          "Metric accuracy: miscalculated success_rate or percentiles could trigger false positives, eroding confidence in the system",
-          "Last-known-good corruption: if the stored rollback target config becomes corrupted, restore could make things worse than the bad config",
-          "Daemon spawn blocking: rollback check in spawn logic must be non-blocking; any latency multiplied across many workers could slow all deployments",
-          "Partial rollback complexity: rolling back individual stage configs while keeping others introduces subtle coupling and state management complexity"
+          "Rollback thrashing: if prev config is also failing, auto-rollback oscillates between two bad states",
+          "Metric staleness: rolling back based on 5-run window may miss config degradation that only appears under specific load",
+          "Concurrent daemon access: multiple daemons running pipelines may trigger rollback simultaneously, corrupting config",
+          "Dashboard query performance: querying all stages × 90 days could timeout if sw-db.sh isn't optimized with indexes",
+          "False positives: natural variance in metrics (network latency, random test failures) triggers unnecessary rollbacks",
+          "Incomplete rollback: if rollback fails mid-process, daemon is left in inconsistent state (new config partially applied)"
         ]
       },
-      "timestamp": 1775240933,
+      "timestamp": 1775263580,
       "ttl": 3600
     },
     "119b71a5994b119ad7f19304451ab099": {
@@ -998,6 +1001,74 @@
         ]
       },
       "timestamp": 1775242003,
+      "ttl": 1800
+    },
+    "b0d62a7a950594fbb4012b2fd4c66a8a": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1775263430,
+      "ttl": 1800
+    },
+    "295badfba9da59aedcb8e103cdbb7257": {
+      "result": {
+        "estimated_cost_usd": 7.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 50000,
+        "likely_failure_stage": "test",
+        "confidence": 65,
+        "reasoning": {
+          "complexity_7_10": "Infrastructure feature with db schema, daemon integration, dashboard changes, and CLI updates",
+          "token_breakdown": {
+            "intake": 2000,
+            "plan": 4000,
+            "build": 18000,
+            "test": 12000,
+            "review": 10000,
+            "pr": 4000
+          },
+          "failure_modes": [
+            "Race conditions in metric collection vs config change",
+            "Database migration edge cases",
+            "Rollback logic not properly capturing baseline state"
+          ],
+          "model_routing": "haiku for intake/pr, sonnet for build/test/review"
+        }
+      },
+      "timestamp": 1775263441,
+      "ttl": 3600
+    },
+    "4aa03975564bf1793c7e38eb18ee452c": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "sw-cleanup.sh heartbeat detection issue directly relates to reliability monitoring. Heartbeat protocol is foundational for a reliability dashboard to detect agent/stage health and trigger automatic config rollback. Understanding this failure pattern is critical for planning stage health detection."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Bug fix pattern (complexity 60, 3 iterations, standard template) shows iteration structure and test strategy (npm test). Informs how to structure multi-iteration devops work with proper validation cadence."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 52,
+            "summary": "Three architecture rules constrain how reliability dashboard integrates with existing system. Devops feature must respect layer boundaries and dependency direction when adding monitoring/rollback mechanisms."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 48,
+            "summary": "Feature development pattern (complexity 65, 3 iterations, files in .claude and scripts dirs) demonstrates file organization and test-driven approach applicable to building new observability/recovery features."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Node.js project conventions (vitest, commonjs, src/ structure) are baseline context. Reliability dashboard may be instrumented via TypeScript/JavaScript, so understanding the tech stack guides implementation approach."
+          }
+        ]
+      },
+      "timestamp": 1775263599,
       "ttl": 1800
     }
   }
