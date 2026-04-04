@@ -703,11 +703,7 @@ test_resume() {
     pipeline_config_with_stages "intake,plan" > "$TEST_TEMP_DIR/templates/pipelines/standard.json"
 
     # Rewrite status from "complete" to "interrupted" so resume will continue
-    if [[ "$(uname)" == "Darwin" ]]; then
-        sed -i '' 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
-    else
-        sed -i 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
-    fi
+    sed_i 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
 
     # Step 4: Resume — should skip intake, run plan
     invoke_pipeline resume

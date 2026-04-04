@@ -17,6 +17,10 @@
 [[ -n "${_TEST_HELPERS_LOADED:-}" ]] && return 0
 _TEST_HELPERS_LOADED=1
 
+# Source cross-platform compat helpers (sed_i, file_mtime, etc.)
+_TH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -f "$_TH_DIR/compat.sh" ]] && source "$_TH_DIR/compat.sh"
+
 # ─── Colors ──────────────────────────────────────────────────────────────────
 CYAN='\033[38;2;0;212;255m'
 GREEN='\033[38;2;74;222;128m'

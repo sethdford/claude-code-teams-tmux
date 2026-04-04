@@ -481,8 +481,7 @@ auto_fix_issues() {
     info "Removing trailing whitespace..."
     while IFS= read -r file; do
         if grep -q '[[:space:]]$' "$file" 2>/dev/null; then
-            sed -i.bak 's/[[:space:]]*$//' "$file" 2>/dev/null || sed -i '' 's/[[:space:]]*$//' "$file"
-            rm -f "${file}.bak" 2>/dev/null || true
+            sed_i 's/[[:space:]]*$//' "$file"
             success "Cleaned whitespace: $(basename "$file")"
             fixed_count=$((fixed_count + 1))
         fi
