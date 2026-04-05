@@ -1401,6 +1401,256 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "db00ebd5c40df4db2944f824ceef7314": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "False positives in validation could prevent legitimate builds from starting",
+          "Tool detection inconsistencies across different system configurations and paths",
+          "Test discovery dry-run may not work reliably across all test frameworks",
+          "Missing support for less common package managers or build system variants",
+          "Performance overhead if validation checks run too frequently or broadly",
+          "Cross-platform path resolution issues for tool location detection"
+        ],
+        "implementation_hints": [
+          "Extend existing validation framework from issue #237 for consistency and code reuse",
+          "Leverage dry-run modes where available (go build -n, npm list, cargo check --dry-run)",
+          "Make validation rules configurable to accommodate different team preferences",
+          "Provide clear, actionable error messages suggesting specific fixes and remediation steps",
+          "Cache validation results to minimize repeated checks within a pipeline run",
+          "Add comprehensive logging at each validation step for easy debugging",
+          "Handle gracefully: timeouts for test discovery, missing optional tools, offline scenarios",
+          "Create mock test environments for multiple package managers and build systems to verify robustness"
+        ]
+      },
+      "timestamp": 1775371604,
+      "ttl": 3600
+    },
+    "0d4c35cdc82bd30c733ab203090a5af1": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1775371617,
+      "ttl": 1800
+    },
+    "58030187abedc4b1da6003c8905490aa": {
+      "result": {
+        "estimated_cost_usd": 11.25,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 97000,
+        "likely_failure_stage": "test",
+        "confidence": 67
+      },
+      "timestamp": 1775371630,
+      "ttl": 3600
+    },
+    "7b437cf603c09a732a03cc7cb20ff525": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "testing",
+          "reliability",
+          "build-systems"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Ecosystem-agnostic validator requiring broad package manager and build tool support, but straightforward detection and dry-run logic per ecosystem"
+        },
+        "skill_plan": {
+          "plan": [
+            "validation-thoroughness",
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "design": [
+            "architecture-design",
+            "collection-system-validation"
+          ],
+          "build": [
+            "testing-strategy",
+            "build-precondition-validation"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "validation-thoroughness": "This issue IS about validation—must define what thorough precondition checking means across npm/pip/go/cargo ecosystems and avoid false positives on valid setups",
+          "architecture-design": "Need a validator interface that cleanly abstracts per-ecosystem logic so adding new package managers doesn't require rewriting core validation flow",
+          "testing-strategy": "Must test the validators themselves without actually building/testing the user's project; requires safe dry-run patterns and comprehensive edge case coverage",
+          "collection-system-validation": "Validators must inspect heterogeneous systems (lockfiles, tool presence, test framework metadata) and emit a structured report—this pattern directly applies",
+          "build-precondition-validation": "Provides concrete patterns for ecosystem detection, safe dry-run execution, actionable error messaging, and report schema design specific to this feature",
+          "adversarial-quality": "Validators can be circumvented or break on edge cases (monorepos, optional tools, missing lockfiles); think like an attacker to find gaps",
+          "security-audit": "Running command-based validators (e.g., `go build -n`) risks injection if inputs are unsanitized; validate all tool paths and arguments",
+          "pr-quality": "Report must be machine-readable and documented; validators must fail clearly; implementation should be easy to understand in code review",
+          "deploy-safety": "The validator itself must be deployed safely and tested before relying on it to gate the build stage",
+          "observability": "Validator diagnostics and report are the main user interface; must emit clear signals about what passed/failed and why"
+        },
+        "generated_skills": [
+          {
+            "name": "build-precondition-validation",
+            "reason": "No existing skill provides concrete patterns for multi-ecosystem build validators, safe dry-run execution, ecosystem-specific error recovery, or schema design for precondition reports",
+            "content": "## Build Precondition Validation Patterns\n\n### Ecosystem Detection\n\n1. **Hierarchy**: Check in order (most specific to least specific)\n   - Lockfile presence (`package-lock.json`, `yarn.lock`, `go.mod`, `Cargo.lock`)\n   - Package manager config (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`)\n   - Language detection from file extensions as fallback\n\n2. **Multi-lockfile handling**: Error if both `package-lock.json` AND `yarn.lock` exist (ambiguous)\n\n### Safe Dry-Run Execution\n\n- **npm**: `npm install --dry-run` or parse `package.json` without installing\n- **go**: `go build -n ./...` (prints commands without executing)\n- **cargo**: `cargo check --dry-run` or `cargo metadata --format-version=1`\n- **python**: Parse `requirements.txt`, `pyproject.toml`, or `setup.py` without installing\n- **Never execute arbitrary commands**; whitelist safe introspection tools\n\n### Test Discovery Dry-Run\n\n1. Look for test config/discovery artifacts:\n   - `jest.config.js`, `vitest.config.ts`, `.mocharc.json` (JS)\n   - `pytest.ini`, `tox.ini` (Python)\n   - `go test ./...` with `-list` flag to enumerate tests without running\n   - `cargo test --no-run` to compile tests but skip execution\n\n2. If discovery fails, report which test framework is expected vs. what was found\n\n3. For dry-run, prefer metadata queries over test execution (faster, safer)\n\n### Tool Presence Validation\n\n```bash\n# Validate tool is in PATH and works\nif ! command -v prettier &>/dev/null; then\n  MISSING_TOOLS+=(\"prettier\")\nfi\n\n# Alternatively, check for local install\nif [[ ! -f node_modules/.bin/eslint ]]; then\n  MISSING_TOOLS+=(\"eslint\")\nfi\n```\n\nPrefer local install in `node_modules/`, `.cargo/bin/`, etc. over global PATH lookup for reproducibility.\n\n### Validation Report Schema\n\n```json\n{\n  \"timestamp\": \"2026-04-05T06:47:13Z\",\n  \"status\": \"pass|fail|warn\",\n  \"ecosystem\": \"node|python|go|rust\",\n  \"checks\": {\n    \"package_manager\": { \"status\": \"pass\", \"version\": \"20.11.0\" },\n    \"lockfile\": { \"status\": \"pass\", \"path\": \"package-lock.json\" },\n    \"test_framework\": { \"status\": \"warn\", \"message\": \"Jest config found but no tests/ directory\" },\n    \"build_command\": { \"status\": \"pass\", \"exit_code\": 0 },\n    \"tools\": {\n      \"prettier\": { \"status\": \"pass\", \"path\": \"node_modules/.bin/prettier\" },\n      \"eslint\": { \"status\": \"fail\", \"message\": \"Not found in node_modules\" }\n    }\n  },\n  \"errors\": [\n    \"eslint not installed; run 'npm install --save-dev eslint'\"\n  ],\n  \"warnings\": [],\n  \"duration_ms\": 234\n}\n```\n\n### Error Messaging\n\n- **Actionable**: Include fix command (e.g., `npm install --save-dev eslint`)\n- **Specific**: Name the exact missing tool, path, or command\n- **Grouped**: Separate errors from warnings; list all failures before asking for fixes\n- **Early exit**: If any error-level check fails, exit build stage before loop iterations\n\n### Edge Cases to Handle\n\n1. **Monorepos**: Detect workspace roots and validate per-workspace\n2. **Optional dependencies**: Mark as `warn` instead of `fail` if configured as optional\n3. **Multiple test frameworks**: If `jest.config.js` AND `vitest.config.ts` both exist, ask user to clarify\n4. **Missing ecosystems**: Don't assume Node just because `package.json` exists; check for `go.mod`, `Cargo.toml` first\n5. **Lockfile out of date**: Warn if lockfile timestamp is older than package manager config\n6. **Tool version conflicts**: Validate tool versions if critical (e.g., Node 16+ for certain eslint plugins)\n\n### Performance Considerations\n\n- **Parallel checks**: Run ecosystem detection, lockfile checks, and tool validation in parallel\n- **Cache results**: Store validation report; skip re-validation within same session if source files unchanged\n- **Fast path**: If all checks pass, complete validation in <1s; complex monorepos may take 3-5s\n- **Timeout**: Set 30s overall timeout; report `timeout` status if validation takes too long\n"
+          }
+        ],
+        "review_focus": [
+          "Test coverage for all supported ecosystems (npm, pip, go, cargo, rust); integration tests on each",
+          "Error messages are actionable with specific fix commands, not generic advice",
+          "Dry-run commands are safe and don't execute arbitrary user code (use whitelisted introspection only)",
+          "Lockfile and tool detection handles edge cases (monorepos, multiple frameworks, optional dependencies)",
+          "JSON report schema is complete and machine-readable for downstream pipeline logic",
+          "Early exit on precondition failure prevents wasted build loop iterations",
+          "No hardcoded tool paths; respect local installs and PATH correctly"
+        ],
+        "risk_areas": [
+          "Silent failures: Validator passes but misses critical dependency (e.g., transitive dependencies not checked)",
+          "False positives: Validator fails on valid setups (optional tools, non-standard monorepo layouts)",
+          "Command injection: Executing build commands without proper argument sanitization",
+          "Incomplete ecosystem coverage: New package managers or build tools emerge; validator becomes outdated",
+          "Performance regression: Validation takes too long, becomes a bottleneck before entering build loop",
+          "Ambiguous error messages: Users don't understand why precondition failed or how to fix it",
+          "Lockfile staleness: Detection doesn't account for lockfiles that are out of sync with config"
+        ]
+      },
+      "timestamp": 1775371745,
+      "ttl": 3600
+    },
+    "54e72ed8b6bc35b958aec3718d63f8ea": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions (Node.js, vitest, npm, src/ dir, CommonJS imports) directly inform implementation patterns for build stage validator"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Bug fix using npm test strategy and iterative loop approach shows validated testing pattern for this team"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Feature implementation (auth module) demonstrates TDD approach with unit+integration tests and iterative methodology used in this codebase"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "ENOENT missing dependency pattern shows npm install prerequisite is critical—relevant for build precondition validation"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 30,
+            "summary": "Authentication bug fix using standard template shows iterative approach, though minimal detail about files/approach for build-specific context"
+          }
+        ]
+      },
+      "timestamp": 1775371812,
+      "ttl": 1800
+    },
+    "80581716a99d938eca88b017217eaafe": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project conventions (Node.js/CommonJS, vitest, npm, src/ directory structure) directly inform how to architect and test the precondition validator. Critical for understanding expected code organization and test patterns."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "EONENT/npm install failure pattern (95% effectiveness fix) highlights a common blocker in Node.js projects that could have contributed to plan validation failure. Dependency installation is prerequisite for build validation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 68,
+            "summary": "Bug fix success pattern (60 complexity, 3 iterations, standard template) shows proven iterative approach for similar-complexity work in this codebase. Demonstrates effective test strategy (npm test) and file mutation patterns for build-related changes."
+          }
+        ]
+      },
+      "timestamp": 1775372125,
+      "ttl": 1800
+    },
+    "62694b7e5665e16b85464baeac1959f7": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 90,
+            "summary": "Contains actual project conventions (source_dir: src/, test_pattern, commonjs imports, vitest runner) — essential for designing the validator to match existing codebase standards"
+          },
+          {
+            "file": "success-patterns.json (second entry with auth module)",
+            "relevance": 68,
+            "summary": "Shows TDD approach with module isolation and iterative development strategy — informs how to structure the precondition validator as a modular component"
+          },
+          {
+            "file": "success-patterns.json (first entry with authentication feature)",
+            "relevance": 62,
+            "summary": "Demonstrates multi-iteration feature development using npm test strategy in standard template — relevant for designing testable validator architecture"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 58,
+            "summary": "Contains architecture rules that should constrain the validator design — ensures compliance with existing architectural guidelines"
+          },
+          {
+            "file": "failures.json (entry with cannot read property)",
+            "relevance": 35,
+            "summary": "Documents common initialization errors — low relevance for design, but useful to know what errors the validator should help prevent"
+          }
+        ]
+      },
+      "timestamp": 1775372843,
+      "ttl": 1800
+    },
+    "3fa94aa29356cf826304f639d2b36799": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Contains failure pattern 'ENOENT no such file directory' with root cause and fix. Directly informs anti-patterns (missing dependency installation, uninitialized state) relevant to precondition validation design."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 62,
+            "summary": "First entry shows successful completion of 'Fix bug' with standard template, 3 iterations. Demonstrates working patterns for complex tasks (complexity 60) and test strategy (npm test) applicable to validator feature."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Entry with 'cannot read property' failure and 'Initialize variable' fix. Anti-pattern example showing importance of initialization checks, directly relevant to precondition validation logic."
+          }
+        ]
+      },
+      "timestamp": 1775372860,
+      "ttl": 1800
     }
   }
 }
