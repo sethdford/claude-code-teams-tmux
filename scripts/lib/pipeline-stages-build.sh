@@ -84,7 +84,9 @@ Create files in the appropriate project directories (e.g. tests/, __tests__/, sr
     [[ -z "$model" || "$model" == "null" ]] && model="sonnet"
 
     local output=""
-    output=$(echo "$tdd_prompt" | timeout 120 claude --print --model "$model" 2>/dev/null) || {
+    local tdd_timeout
+    tdd_timeout=$(_smart_int "timeouts.tdd_generation" 120)
+    output=$(echo "$tdd_prompt" | timeout "$tdd_timeout" claude --print --model "$model" 2>/dev/null) || {
         warn "TDD test generation failed, falling back to standard build"
         return 1
     }

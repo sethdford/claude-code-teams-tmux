@@ -631,8 +631,10 @@ cleanup_on_exit() {
                 fi
             done <<< "$child_pids"
             if [[ $killed -gt 0 ]]; then
-                daemon_log INFO "Sent SIGTERM to ${killed} pipeline process(es) — waiting 5s"
-                sleep 5
+                local kill_grace
+                kill_grace=$(_smart_int "daemon.kill_grace_seconds" 5)
+                daemon_log INFO "Sent SIGTERM to ${killed} pipeline process(es) — waiting ${kill_grace}s"
+                sleep "$kill_grace"
                 # Force-kill any that didn't exit
                 while IFS= read -r cpid; do
                     [[ -z "$cpid" ]] && continue
@@ -860,7 +862,9 @@ daemon_stop() {
     if kill -0 "$pid" 2>/dev/null; then
         warn "Daemon didn't stop gracefully — sending SIGTERM"
         kill "$pid" 2>/dev/null || true
-        sleep 2
+        local stop_grace
+        stop_grace=$(_smart_int "daemon.stop_grace_seconds" 2)
+        sleep "$stop_grace"
         if kill -0 "$pid" 2>/dev/null; then
             warn "Sending SIGKILL"
             kill -9 "$pid" 2>/dev/null || true

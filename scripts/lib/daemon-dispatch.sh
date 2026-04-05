@@ -47,6 +47,8 @@ daemon_spawn_pipeline() {
     local repo_full_name="${3:-}"  # owner/repo (org mode only)
     shift 3 2>/dev/null || true
     local extra_pipeline_args=("$@")  # Optional extra args passed to sw-pipeline.sh
+    local gh_timeout
+    gh_timeout=$(_smart_int "daemon.gh_timeout_seconds" 30)
 
     # ── Input validation: Validate issue number is strictly numeric ──
     if [[ ! "$issue_num" =~ ^[0-9]+$ ]]; then
@@ -119,7 +121,7 @@ daemon_spawn_pipeline() {
         if [[ "$decompose_result" == *"decomposed"* ]]; then
             daemon_log INFO "Issue #${issue_num} decomposed into subtasks — skipping pipeline"
             # Remove the shipwright label so decomposed parent doesn't re-queue
-            _timeout 30 gh issue edit "$issue_num" --remove-label "shipwright" 2>/dev/null || true
+            _timeout "$gh_timeout" gh issue edit "$issue_num" --remove-label "shipwright" 2>/dev/null || true
             return 0
         fi
     fi
@@ -128,7 +130,7 @@ daemon_spawn_pipeline() {
     local issue_goal="$issue_title"
     if [[ "$NO_GITHUB" != "true" ]]; then
         local issue_body_first
-        issue_body_first=$(_timeout 30 gh issue view "$issue_num" --json body --jq '.body' 2>/dev/null | head -3 | tr '\n' ' ' | cut -c1-200 || true)
+        issue_body_first=$(_timeout "$gh_timeout" gh issue view "$issue_num" --json body --jq '.body' 2>/dev/null | head -3 | tr '\n' ' ' | cut -c1-200 || true)
         if [[ -n "$issue_body_first" ]]; then
             issue_goal="${issue_title}: ${issue_body_first}"
         fi
@@ -578,6 +580,8 @@ daemon_reap_completed() {
 
 daemon_on_success() {
     local issue_num="$1" duration="${2:-}"
+    local gh_timeout
+    gh_timeout=$(_smart_int "daemon.gh_timeout_seconds" 30)
 
     # Reset consecutive failure tracking on any success
     reset_failure_tracking
@@ -615,12 +619,12 @@ daemon_on_success() {
 
     if [[ "$NO_GITHUB" != "true" ]]; then
         # Remove watch label, add success label
-        _timeout 30 gh issue edit "$issue_num" \
+        _timeout "$gh_timeout" gh issue edit "$issue_num" \
             --remove-label "$ON_SUCCESS_REMOVE_LABEL" \
             --add-label "$ON_SUCCESS_ADD_LABEL" 2>/dev/null || true
 
         # Comment on issue
-        _timeout 30 gh issue comment "$issue_num" --body "## ✅ Pipeline Complete
+        _timeout "$gh_timeout" gh issue comment "$issue_num" --body "## ✅ Pipeline Complete
 
 The autonomous pipeline finished successfully.
 
@@ -633,7 +637,7 @@ Check the associated PR for the implementation." 2>/dev/null || true
 
         # Optionally close the issue
         if [[ "$ON_SUCCESS_CLOSE_ISSUE" == "true" ]]; then
-            _timeout 30 gh issue close "$issue_num" 2>/dev/null || true
+            _timeout "$gh_timeout" gh issue close "$issue_num" 2>/dev/null || true
         fi
     fi
 

@@ -147,6 +147,21 @@ SPECEOF
     fi
     rm -f "$tmp_file" "${output_file}.pp" "${output_file}.raw" 2>/dev/null || true
 
+    # Validate generated spec has required non-empty arrays
+    if command -v jq >/dev/null 2>&1 && [[ -f "$output_file" ]]; then
+        local g_count ac_count
+        g_count=$(jq '.goals | if type == "array" then length else 0 end' "$output_file" 2>/dev/null || echo "0")
+        ac_count=$(jq '.acceptance_criteria | if type == "array" then length else 0 end' "$output_file" 2>/dev/null || echo "0")
+        if [[ "$g_count" -eq 0 ]]; then
+            error "Generated spec missing non-empty 'goals' array: ${output_file}"
+            return 1
+        fi
+        if [[ "$ac_count" -eq 0 ]]; then
+            error "Generated spec missing non-empty 'acceptance_criteria' array: ${output_file}"
+            return 1
+        fi
+    fi
+
     success "Spec generated: ${output_file}" >&2
 
     if type emit_event >/dev/null 2>&1; then
