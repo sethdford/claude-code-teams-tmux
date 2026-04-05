@@ -290,6 +290,12 @@ compute_md5() {
 _smart_model() {
     local purpose="${1:-default}" default="${2:-haiku}"
 
+    # Sanitize purpose to alphanumeric/underscore only (prevents eval injection)
+    if [[ ! "$purpose" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        echo "$default"
+        return
+    fi
+
     # 1. Environment override (e.g., SW_MODEL_CLASSIFICATION=sonnet)
     local env_key
     env_key="SW_MODEL_$(echo "$purpose" | tr '[:lower:]' '[:upper:]')"
@@ -330,6 +336,12 @@ _smart_model() {
 # Read int from daemon-config with env override and default fallback
 _smart_int() {
     local key="$1" default="$2"
+
+    # Sanitize key to alphanumeric/underscore/dot only (prevents eval injection)
+    if [[ ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_.]*$ ]]; then
+        echo "$default"
+        return
+    fi
 
     # Env override: config.key.path → SW_KEY_PATH
     local env_key

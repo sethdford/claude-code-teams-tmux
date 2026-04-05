@@ -6,7 +6,7 @@
  * @invariant typeof result === 'number'
  */
 function add(a, b) {
-  if (a == null || b == null) return 0;
+  if (a === null || a === undefined || b === null || b === undefined) return 0;
   return a + b;
 }
 
@@ -16,7 +16,7 @@ function add(a, b) {
  * @postcondition result equals dividend / divisor
  */
 function divide(dividend, divisor) {
-  if (divisor == 0) throw new Error("Division by zero");
+  if (divisor === 0) throw new Error("Division by zero");
   return dividend / divisor;
 }
 

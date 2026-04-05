@@ -183,7 +183,8 @@ route_agent() {
         standup)      exec "$SCRIPT_DIR/sw-standup.sh" "$@" ;;
         guild)        exec "$SCRIPT_DIR/sw-guild.sh" "$@" ;;
         oversight)    exec "$SCRIPT_DIR/sw-oversight.sh" "$@" ;;
-        help|*) echo "Usage: shipwright agent {recruit|swarm|standup|guild|oversight}"; exit 1 ;;
+        help)         echo "Usage: shipwright agent {recruit|swarm|standup|guild|oversight}"; exit 0 ;;
+        *)            echo "Unknown agent subcommand: $subcmd"; echo "Usage: shipwright agent {recruit|swarm|standup|guild|oversight}"; exit 1 ;;
     esac
 }
 
@@ -196,7 +197,8 @@ route_quality() {
         testgen)          exec "$SCRIPT_DIR/sw-testgen.sh" "$@" ;;
         hygiene)          exec "$SCRIPT_DIR/sw-hygiene.sh" "$@" ;;
         validate|gate)    exec "$SCRIPT_DIR/sw-quality.sh" "$@" ;;
-        help|*) echo "Usage: shipwright quality {code-review|security-audit|testgen|hygiene|validate}"; exit 1 ;;
+        help)             echo "Usage: shipwright quality {code-review|security-audit|testgen|hygiene|validate}"; exit 0 ;;
+        *)                echo "Unknown quality subcommand: $subcmd"; echo "Usage: shipwright quality {code-review|security-audit|testgen|hygiene|validate}"; exit 1 ;;
     esac
 }
 
@@ -211,32 +213,36 @@ route_observe() {
         activity)     exec "$SCRIPT_DIR/sw-activity.sh" "$@" ;;
         replay)       exec "$SCRIPT_DIR/sw-replay.sh" "$@" ;;
         status)       exec "$SCRIPT_DIR/sw-status.sh" "$@" ;;
-        help|*) echo "Usage: shipwright observe {vitals|dora|retro|stream|activity|replay|status}"; exit 1 ;;
+        help)         echo "Usage: shipwright observe {vitals|dora|retro|stream|activity|replay|status}"; exit 0 ;;
+        *)            echo "Unknown observe subcommand: $subcmd"; echo "Usage: shipwright observe {vitals|dora|retro|stream|activity|replay|status}"; exit 1 ;;
     esac
 }
 
 route_release() {
-    local subcmd="${1:-help}"
+    local subcmd="${1:-}"
     shift 2>/dev/null || true
     case "$subcmd" in
-        release)          exec "$SCRIPT_DIR/sw-release.sh" "$@" ;;
         release-manager)  exec "$SCRIPT_DIR/sw-release-manager.sh" "$@" ;;
         changelog)        exec "$SCRIPT_DIR/sw-changelog.sh" "$@" ;;
         deploy|deploys)   exec "$SCRIPT_DIR/sw-github-deploy.sh" "$@" ;;
         build)            exec "$SCRIPT_DIR/build-release.sh" "$@" ;;
-        help|*) echo "Usage: shipwright release {release|release-manager|changelog|deploy|build}"; exit 1 ;;
+        help)             echo "Usage: shipwright release [release-manager|changelog|deploy|build]"; exit 0 ;;
+        ""|release)       exec "$SCRIPT_DIR/sw-release.sh" "$@" ;;
+        *)                echo "Unknown release subcommand: $subcmd"; echo "Usage: shipwright release [release-manager|changelog|deploy|build]"; exit 1 ;;
     esac
 }
 
 route_intel() {
-    local subcmd="${1:-help}"
+    local subcmd="${1:-}"
     shift 2>/dev/null || true
     case "$subcmd" in
         predict)      exec "$SCRIPT_DIR/sw-predictive.sh" "$@" ;;
         intelligence) exec "$SCRIPT_DIR/sw-intelligence.sh" "$@" ;;
         strategic)    exec "$SCRIPT_DIR/sw-strategic.sh" "$@" ;;
         optimize)     exec "$SCRIPT_DIR/sw-self-optimize.sh" "$@" ;;
-        help|*) echo "Usage: shipwright intel {predict|intelligence|strategic|optimize}"; exit 1 ;;
+        help)         echo "Usage: shipwright intel {predict|intelligence|strategic|optimize}"; exit 0 ;;
+        "")           exec "$SCRIPT_DIR/sw-intelligence.sh" "$@" ;;
+        *)            echo "Unknown intel subcommand: $subcmd"; echo "Usage: shipwright intel {predict|intelligence|strategic|optimize}"; exit 1 ;;
     esac
 }
 
@@ -426,7 +432,7 @@ main() {
         auth)
             exec "$SCRIPT_DIR/sw-auth.sh" "$@"
             ;;
-        intelligence|intel)
+        intelligence)
             exec "$SCRIPT_DIR/sw-intelligence.sh" "$@"
             ;;
         optimize)
@@ -464,9 +470,6 @@ main() {
             ;;
         doc-fleet)
             exec "$SCRIPT_DIR/sw-doc-fleet.sh" "$@"
-            ;;
-        release)
-            exec "$SCRIPT_DIR/sw-release.sh" "$@"
             ;;
         release-manager|rm)
             exec "$SCRIPT_DIR/sw-release-manager.sh" "$@"
