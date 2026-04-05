@@ -1,3 +1,13 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh does not detect stale heartbeats or show summary with Found count and --force hint in dry-run output",
+      "fix": "Update sw-cleanup.sh to scan heartbeat files for stale entries and output 'Found N item(s)' summary with '--force' hint when items are detected",
+      "seen_count": 1,
+      "last_seen": "2026-04-05T06:58:21Z",
+      "category": "test_failure"
+    }
+  ]
 }
