@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.82,
+        "reasoning": "Requires system design for dependency graph structure and coupling detection algorithm, implementation, comprehensive testing, and performance optimization of analysis",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1775351442,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,307 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "676ce0f8050c09508abc25512eb4402b": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Shell script parsing edge cases (variable expansion, conditional sourcing, indirect includes)",
+          "Circular dependency detection correctness (complex dependency chains may be missed)",
+          "High-coupling threshold (in-degree >10) may produce false positives for intentional hubs",
+          "Graph visualization scalability (Mermaid may struggle with >50 nodes)",
+          "Performance on large repo (200+ scripts will require optimization)"
+        ],
+        "implementation_hints": [
+          "Use grep -n to find source/. patterns, then parse paths with sed/awk to extract script names",
+          "Build graph as JSON adjacency list: {\"node\": [\"deps\"], ...} for easy jq manipulation",
+          "Implement cycle detection with recursive DFS or BFS — standard algorithm, well-tested",
+          "Filter high-coupling nodes by in-degree >= 10, then exclude data files (lib/ scripts are expected hubs)",
+          "Generate Mermaid subgraph for top 20 nodes only to keep visualization readable",
+          "Test with fixture: create 3 scripts with A→B→C→A cycle, assert detection works",
+          "Cache graph in ~/.shipwright/dependency-graph.json with mtime check to avoid regeneration",
+          "Suggest refactors: split lib/X.sh into lib/X-public.sh (reused) + lib/X-internal.sh (private)",
+          "CLI: integrate as `shipwright analyze dependencies` or standalone `sw-analyze-dependencies.sh`",
+          "Document which hotspots are intentional (e.g., lib/compat.sh used by 40+ scripts) vs refactorable"
+        ]
+      },
+      "timestamp": 1775350435,
+      "ttl": 3600
+    },
+    "354c99da3b2e73360eda80be2440ca9c": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1775350444,
+      "ttl": 1800
+    },
+    "02542f7983783a00a5697fbe963a4364": {
+      "result": {
+        "estimated_cost_usd": 1.20,
+        "estimated_iterations": 2,
+        "estimated_tokens": 48000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1775350456,
+      "ttl": 3600
+    },
+    "0250619fddee11932adc50394b81ebd9": {
+      "result": {
+        "issue_type": "infrastructure/refactoring",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "documentation",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires bash static analysis, graph algorithm implementation (cycle detection), and reliable edge case handling; moderate algorithmic complexity with production-grade robustness requirements"
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "bash-static-analysis-tool-implementation"
+          ],
+          "review": [
+            "adversarial-quality",
+            "architecture-design"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "architecture-design": "Define the dependency graph schema, cycle detection algorithm, and coupling metrics in an ADR so future maintainers understand design tradeoffs (why >10 in-degree threshold, graph format choice, etc.)",
+          "brainstorming": "Challenge assumptions about what constitutes a 'hotspot'—does in-degree alone capture coupling risk, or should edge-weighted metrics matter; how to handle dynamic sourcing and transitive dependencies",
+          "data-pipeline": "Treat dependency extraction as a data pipeline: parse → normalize → transform into graph → analyze → generate reports; apply ETL patterns for reliable, testable data flow",
+          "bash-static-analysis-tool-implementation": "This issue requires safe bash parsing (handling comments, quoted strings, variable expansion), reliable cycle detection, and robust edge case handling—core competencies for building production analysis tools",
+          "adversarial-quality": "Stress-test the parser against real-world edge cases: symlinks, variable-expanded sourcing, conditional imports, sourcing in subshells, and deliberately malformed scripts to ensure parser robustness",
+          "testing-strategy": "Design comprehensive tests covering the integration test requirement: real circular dependency detection, hotspot identification, and validation that refactor suggestions are actionable",
+          "validation-thoroughness": "Verify the dependency graph accuracy against actual script behavior (not just regex matching); test that the CLI correctly surfaces hotspots and that the Mermaid visualization matches graph structure",
+          "pr-quality": "Document algorithm choice (e.g., Tarjan's for SCC detection), explain the in-degree threshold rationale, and provide examples showing before/after coupling metrics"
+        },
+        "generated_skills": [
+          {
+            "name": "bash-static-analysis-tool-implementation",
+            "reason": "No existing skill guides implementation of bash-based static analysis tools—requires expertise in safe parsing, edge case handling, graph algorithms, and JSON serialization specific to this domain",
+            "content": "## Bash Static Analysis Tool Implementation\n\n### Challenge: Safe Parsing Without Full Interpretation\nBash allows dynamic features (variable expansion, conditionals, command substitution) that make full parsing unsafe. Balance **accuracy vs. robustness**:\n\n1. **Regex-based extraction** (fast, safe, lossy):\n   - Pattern: `^\\s*(?:\\.|source)\\s+(['\\\"]?)([^'\\\"]+)\\1` captures `source` and `.` statements\n   - Handles common cases: `source script.sh`, `. \"$DIR/file.sh\"`, `source '$LIB'`\n   - Ignore comments, already-handled elsewhere\n   - Document limitations: won't catch variable-expanded paths like `source \"${SCRIPT_DIR}/lib\"`\n\n2. **Edge cases to handle**:\n   - Quoted strings: `source \"path with spaces\"`\n   - Single/double quotes: track which delimiter started the string\n   - Comments: strip `#...` before parsing (but watch for `\"#\"` inside strings)\n   - Variable references: `$SCRIPT_DIR`, `${VAR}` — try simple extraction, fallback to unresolved\n   - Subshells: `( source ... )` — extract dependencies normally\n   - Conditionals: `if [[ ... ]]; then source; fi` — extract anyway (over-approximate)\n   - Already-sourced detection: use `sort -u` on the final list\n\n### Graph Data Structure\nStore in JSON for durability and downstream tooling:\n\n```json\n{\n  \"nodes\": [\n    { \"id\": \"scripts/sw-pipeline.sh\", \"type\": \"script\", \"in_degree\": 5 },\n    { \"id\": \"scripts/lib/compat.sh\", \"type\": \"library\", \"in_degree\": 12 }\n  ],\n  \"edges\": [\n    { \"source\": \"scripts/sw-daemon.sh\", \"target\": \"scripts/lib/compat.sh\" }\n  ]\n}\n```\n\n### Cycle Detection: Tarjan's Algorithm\nDetect strongly connected components (cycles) in one pass—more efficient than Floyd-Warshall:\n\n- Build adjacency list from edges\n- Run DFS-based SCC algorithm (Tarjan or Kosaraju)\n- Any SCC with >1 node = cycle\n- Report: `[\"sw-a.sh\", \"sw-b.sh\", \"sw-a.sh\"]` as a cycle\n\n### Coupling Hotspot Detection\nIn-degree threshold: count incoming edges.\n- High-coupling: in-degree >= 10 (configurable)\n- Report format: `{ \"script\": \"lib/compat.sh\", \"in_degree\": 12, \"dependents\": [\"sw-a.sh\", ...] }`\n- Refactor suggestion: break into smaller, more focused libraries\n\n### Output Generation\n- **JSON**: `~/.shipwright/dependency-graph.json` — for downstream tooling\n- **Markdown report**: `scripts/coupling-report.md` with:\n  - Summary: total scripts, edges, cycles found, hotspots\n  - Cycles section: each cycle as a list\n  - Hotspots section: sorted by in-degree, with dependents list\n  - Refactor suggestions: e.g., \"extract monitoring functions from lib/compat.sh into lib/monitoring.sh\"\n- **Mermaid visualization**: ASCII graph or Mermaid syntax\n\n### Error Handling\n- Non-existent sourced files: warn, don't fail (external deps)\n- Malformed scripts: skip, report in diagnostics section\n- Timeout on very large graphs: cap at 10k nodes, warn user\n\n### Testing Hooks\n- **Unit tests**: cycle detection on synthetic graphs\n- **Integration test**: fixture with real circular dependency (test/fixtures/circular-deps.sh) and verify detection\n- **Regression**: run on Shipwright repo itself, validate hotspots match expectations\n"
+          }
+        ],
+        "review_focus": [
+          "Parser robustness: does it correctly handle quoted strings, comments, variable references, and conditional sourcing across the real Shipwright codebase?",
+          "Cycle detection algorithm correctness: validate SCC implementation identifies all cycles and no false positives",
+          "In-degree threshold rationale: is >10 the right threshold, or should it be configurable in daemon-config.json?",
+          "Refactor suggestions actionability: are the recommendations specific enough to guide actual decoupling work?",
+          "Graph schema stability: will the JSON format support future enhancements (e.g., edge weights, temporal analysis)?"
+        ],
+        "risk_areas": [
+          "Parser missing real-world edge cases: variable-expanded paths like `source \"${SCRIPT_DIR}/lib\"` won't be detected; document limitation and consider fuzzy matching for common patterns",
+          "Performance on large graphs: ensure cycle detection doesn't timeout on 100+ nodes; may need memoization or iterative deepening",
+          "False negatives in high-coupling detection: scripts loaded indirectly or dynamically won't appear in the graph; validate against actual usage patterns",
+          "Integration with daemon: ensure dependency analysis doesn't block daemon startup or slow it significantly; consider lazy evaluation or background precomputation"
+        ]
+      },
+      "timestamp": 1775350542,
+      "ttl": 3600
+    },
+    "56ac36d16bac88f96745fc43e2e26431": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first)",
+            "relevance": 85,
+            "summary": "Project conventions (source_dir, test_pattern, commonjs imports) are essential for planning a dependency analyzer that must traverse and understand the codebase structure"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 72,
+            "summary": "Contains architecture rules directly relevant to planning an architecture-focused feature; provides context for what architectural concerns the analyzer should detect"
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 65,
+            "summary": "Documents common test/implementation failures (sed syntax, variable expansion) that the planning stage should account for to avoid similar issues in the analyzer implementation"
+          },
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 58,
+            "summary": "Shows successful multi-iteration feature development with standard template; demonstrates test strategy (npm test) and complexity handling relevant to planning this feature"
+          },
+          {
+            "file": "failures.json (fifth)",
+            "relevance": 52,
+            "summary": "Build-stage failures around undefined variables and scope issues; relevant patterns to consider when planning the analyzer's implementation approach"
+          }
+        ]
+      },
+      "timestamp": 1775350612,
+      "ttl": 1800
+    },
+    "bb42eb22b6fe7ee8a39df5b584af77f8": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Contains architecture enforcement rules relevant to validating a dependency graph analyzer plan. The plan must align with these architectural constraints and patterns to pass validation."
+          },
+          {
+            "file": "success-patterns.json (Fix bug - f4af3e2a...)",
+            "relevance": 72,
+            "summary": "Shows successful standard template delivery with 3 iterations in this repo. Provides reference for what execution patterns work and realistic scope/effort estimates for similar architectural features."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 68,
+            "summary": "Documents actual project conventions (Node.js, vitest, commonjs imports, src/ source dir). The plan must account for these constraints and testing patterns to pass validation."
+          }
+        ]
+      },
+      "timestamp": 1775350969,
+      "ttl": 1800
+    },
+    "ef7bcbf9e12ad5076e1d6889a38f061e": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Directly references architecture rules and enforcement model — most relevant for designing architecture patterns"
+          },
+          {
+            "file": "patterns.json (first entry with project conventions)",
+            "relevance": 75,
+            "summary": "Captures project conventions (src/ structure, test patterns, import style) that should inform architecture design decisions"
+          },
+          {
+            "file": "failures.json (JavaScript variable initialization failures)",
+            "relevance": 60,
+            "summary": "Shows common pitfalls in Node.js projects (undefined variables, missing initialization) — valuable for designing defensive architecture"
+          },
+          {
+            "file": "success-patterns.json (first entry with feature/bug patterns)",
+            "relevance": 55,
+            "summary": "Documents successful implementation patterns including file organization, test strategies, and iteration approaches useful for architecture design"
+          },
+          {
+            "file": "success-patterns.json (TDD approach with module isolation)",
+            "relevance": 50,
+            "summary": "Demonstrates proven architectural approach (iterative TDD with module isolation) applicable to dependency graph analyzer design"
+          }
+        ]
+      },
+      "timestamp": 1775351013,
+      "ttl": 1800
+    },
+    "9390365b5d7c28ecc46f312611946e3f": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Documents recurring implementation failures (undefined variables, sed command errors, stale detection logic) that stem from design flaws. These patterns show what design choices lead to runtime problems and should be avoided in the dependency graph analyzer."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Contains architecture rules that define design boundaries and constraints. Understanding existing rules helps identify anti-patterns that violate architectural principles—critical for designing a graph analyzer that must maintain clean dependency boundaries."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows successful feature implementations (bug fixes, auth features) with approach details and iteration counts. By studying what worked (TDD, module isolation, standard template), the inverse informs design anti-patterns to avoid in the new analyzer."
+          }
+        ]
+      },
+      "timestamp": 1775351029,
+      "ttl": 1800
+    },
+    "e9fc54e7b01d834bf6734f3238db9751": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 95,
+            "summary": "Project metadata (Node.js, vitest, npm, src/, CommonJS) directly applicable to build stage configuration and conventions"
+          },
+          {
+            "file": "success-patterns.json (Fix bug pattern)",
+            "relevance": 90,
+            "summary": "Same repo (sethdford/shipwright), recent success pattern shows iteration count (3), test strategy (npm test), and file modification patterns relevant to build execution"
+          },
+          {
+            "file": "failures.json (cannot read property undefined)",
+            "relevance": 75,
+            "summary": "Build stage failures with 100% mitigation success rate on variable initialization—applicable pattern for preventing similar errors during this build"
+          },
+          {
+            "file": "failures.json (ENOENT no such file directory)",
+            "relevance": 70,
+            "summary": "Dependency installation failure pattern (npm install) with 95% fix effectiveness—relevant to build stage setup"
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 65,
+            "summary": "Feature development success pattern showing TDD approach, test strategy (unit + integration), and typical 3-5 iteration count for similar complexity"
+          }
+        ]
+      },
+      "timestamp": 1775351420,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 98,
+            "summary": "Documents recent test failures (sw-cleanup.sh, sed variable expansion issues) with root causes and fixes. Directly applicable to preventing test failures during build stage iterations."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains 2 successful patterns showing iteration strategy (3 iterations typical), test_strategy (npm test), and file patterns changed. Demonstrates proven approach for similar complexity work."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project conventions (test_runner: vitest, import_style: commonjs, test_pattern: *.test.js) are foundational for build stage to correctly run tests and structure code."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array—no relevant decisions captured yet."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines—no metrics data available."
+          }
+        ]
+      },
+      "timestamp": 1775351433,
+      "ttl": 1800
     }
   }
 }
