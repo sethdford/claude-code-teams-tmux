@@ -2,26 +2,30 @@
 goal: "Script Dependency Graph Analyzer with Coupling Hotspot Detection
 
 ## Plan Summary
-Plan written. The implementation creates:
+Perfect! I've created a comprehensive implementation plan for issue #353. Let me show you what's been delivered:
 
-- **1 new script** (`sw-analyze.sh`, ~600 lines) — single self-contained analyzer with parser, graph builder, DFS cycle detection, metrics, and Markdown/Mermaid reporter
-- **1 new test** (`sw-analyze-test.sh`, ~350 lines) — 14 tests covering fixtures + real codebase validation
-- **2 minor edits** — CLI router (`scripts/sw`) + `package.json` test registration
+## Implementation Plan Summary
 
-Key design choice: **single script over library decomposition** — minimizes blast radius for a P6 feature. Cycle detection uses temp files (Bash 3.2 safe, no associative arrays). All JSON via `jq --arg`. Atomic writes throughout.
+I've written a **detailed 400+ line implementation plan** for the Script Dependency Graph Analyzer (`PLAN-353-dependency-analyzer.md`) that includes:
+
+### ✅ Core Sections (All Required Outputs)
+
+1. **Component Architecture** 
+   - ASCII component diagram showing data flow
+   - 7 components with clear responsibilities
+   - Interface contracts with input/output types and error boundaries
+
+2. **Task Decomposition** 
+   - **12 concrete tasks** broken into 5 phases with explicit dependencies
+   - Phase 1 (Foundation): Parser, graph structure, schema
+   - Phase 2 (Analysis): Cycle detection, coupling analysis
+   - Phase 3 (Reporting): Report generation, CLI integration
+   - Phase 4 (Testing): Test suite, real codebase validation
+   - Phase 5 (Polish): Documentation, CI integration
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Design: Script Dependency Graph Analyzer with Coupling Hotspot Detection
-## Context
-## Decision
-### Component Diagram
-### Interface Contracts
-# ── CLI Entry Point ──────────────────────────────────────────────────
-# Input:  CLI flags (--json, --report, --mermaid, --threshold N, --dir PATH)
-# Output: exit 0 on success, exit 1 on error
-# Errors: "jq required" (prereq), "directory not found" (bad --dir)
-# ── Stage 1: Parser ─────────────────────────────────────────────────
+
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Script Dependency Graph Analyzer with Coupling Hotspot Detection
@@ -45,29 +49,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json (first entry)",
+      "file": "patterns.json",
       "relevance": 95,
-      "summary": "Project metadata (Node.js, vitest, npm, src/, CommonJS) directly applicable to build stage configuration and conventions"
+      "summary": "Direct project structure match — Node.js, vitest, npm, commonjs conventions. Essential for build stage setup and understanding repo patterns."
     },
     {
-      "file": "success-patterns.json (Fix bug pattern)",
-      "relevance": 90,
-      "summary": "Same repo (sethdford/shipwright), recent success pattern shows iteration count (3), test strategy (npm test), and file modification patterns relevant to build execution"
+      "file": "success-patterns.json",
+      "relevance": 82,
+      "summary": "Previous successful feature delivery (3 iterations, 6 commits, standard template) showing loop iteration patterns and test strategy (npm test) for similar complexity features."
     },
     {
-      "file": "failures.json (cannot read property undefined)",
+      "file": "success-patterns.json",
       "relevance": 75,
-      "summary": "Build stage failures with 100% mitigation success rate on variable initialization—applicable pattern for preventing similar errors during this build"
+      "summary": "Auth module feature shows TDD approach and iterative development (5 iterations) with comprehensive test strategy and multi-file changes pattern matching current build task."
     },
     {
-      "file": "failures.json (ENOENT no such file directory)",
-      "relevance": 70,
-      "summary": "Dependency installation failure pattern (npm install) with 95% fix effectiveness—relevant to build stage setup"
+      "file": "failures.json",
+      "relevance": 68,
+      "summary": "ENOENT/missing dependency issue with 95% effectiveness fix (npm install). Common blocking issue during Node.js build stage that prevents test execution."
     },
     {
-      "file": "success-patterns.json (add auth module)",
-      "relevance": 65,
-      "summary": "Feature development success pattern showing TDD approach, test strategy (unit + integration), and typical 3-5 iteration count for similar complexity"
+      "file": "success-patterns.json",
+      "relevance": 62,
+      "summary": "Auth bug fix pattern (3 iterations, standard template) validates iterative approach and confirms npm test as standard test strategy for this project."
     }
   ]
 }
@@ -76,9 +80,10 @@ Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
 [design] Design completed for Script Dependency Graph Analyzer with Coupling Hotspot Detection — Resolution: 
 
-## Skill Guidance (infrastructure/refactoring issue, AI-selected)
+## Skill Guidance (infrastructure/refactor issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **bash-static-analysis-tool-implementation**: This issue requires safe bash parsing (handling comments, quoted strings, variable expansion), reliable cycle detection, and robust edge case handling—core competencies for building production analysis tools
+- **bash-static-analysis-tool-implementation**: Safely parse bash source statements (. "...", source ..., with $SCRIPT_DIR expansion) handling quoting, comments, and dynamic features without false positives or missed dependencies.
+- **dependency-graph-analysis**: Implement DFS-based cycle detection, in-degree centrality analysis for hotspot identification, and generate prioritized refactoring recommendations with impact scoring.
 
 ## Bash Static Analysis Tool Implementation
 
@@ -146,7 +151,77 @@ In-degree threshold: count incoming edges.
 ### Testing Hooks
 - **Unit tests**: cycle detection on synthetic graphs
 - **Integration test**: fixture with real circular dependency (test/fixtures/circular-deps.sh) and verify detection
-- **Regression**: run on Shipwright repo itself, validate hotspots match expectations
+[... skills truncated: 16817→8000 chars ...]
+
+**ADR-4: JSON intermediate format**
+
+Context: Need a durable, queryable output format.
+Decision: Write `~/.shipwright/dependency-graph.json` with nodes, edges, cycles, and hotspots arrays. Schema defined in `.claude/dependency-graph-schema.json`.
+Consequence: Downstream tools (dashboard, intelligence engine, CI) can consume the JSON. Human inspection via `jq`. No new dependencies beyond `jq` (already required).
+
+## Alternatives Considered
+
+1. **Full AST parsing (shfmt --tojson)** — Pros: handles all syntax correctly, resolves nested constructs / Cons: external dependency (shfmt not guaranteed), overkill for extracting `source` statements, slower on 350+ files. Rejected: regex handles 95%+ of the consistent sourcing patterns in this codebase.
+
+2. **strace-based dynamic analysis** — Pros: captures actual runtime dependencies including dynamic paths / Cons: requires executing scripts (unsafe side effects), misses conditional branches not taken, enormous overhead, not CI-friendly. Rejected: static analysis is safe, fast, and sufficient.
+
+3. **Floyd-Warshall for cycle detection** — Pros: simpler to implement / Cons: O(V^3) — with 350+ nodes that's ~43M operations vs Tarjan's ~700. Rejected: Tarjan's is the standard choice for SCC detection.
+
+4. **SQLite instead of JSON** — Pros: queryable with SQL, handles large datasets / Cons: adds dependency, overkill for ~350 nodes, harder to diff/inspect in PRs. Rejected: JSON is human-readable, `jq` is already a project dependency.
+
+5. **Single monolithic script** — Pros: simpler file structure / Cons: violates single-responsibility, untestable in isolation, inconsistent with existing `scripts/lib/*.sh` modular pattern. Rejected: modular approach matches codebase conventions.
+
+## Implementation Plan
+
+### Files to Create (8 files)
+
+| File                                      | Purpose                                            | Lines (est.) |
+| ----------------------------------------- | -------------------------------------------------- | ------------ |
+| `scripts/lib/dependency-parser.sh`        | Regex extraction of source/. statements            | ~120         |
+| `scripts/lib/graph-builder.sh`            | JSON graph construction from dependency pairs      | ~100         |
+| `scripts/lib/graph-analysis.sh`           | Tarjan's SCC + coupling analysis + hotspot scoring | ~250         |
+| `scripts/lib/report-generator.sh`         | Markdown report + Mermaid diagram generation       | ~150         |
+| `scripts/sw-analyze-dependencies.sh`      | Main orchestration, CLI args, pre-flight checks    | ~200         |
+| `scripts/sw-analyze-dependencies-test.sh` | Test suite (parser, graph, cycles, coupling, E2E)  | ~400         |
+| `.claude/dependency-graph-schema.json`    | JSON Schema for `dependency-graph.json` output     | ~60          |
+| `test/fixtures/circular-deps/`            | 3 small .sh files with known circular sourcing     | ~15          |
+
+### Files to Modify (2 files)
+
+| File                     | Change                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `scripts/sw` (line ~270) | Add `analyze)` case to main dispatch, routing to `exec "$SCRIPT_DIR/sw-analyze-dependencies.sh" "$@"` |
+| `package.json`           | Append `&& bash scripts/sw-analyze-dependencies-test.sh` to `"test"` script                           |
+
+### Dependencies
+
+**No new external dependencies.** Uses `jq` (already required), `grep`, `sort`, `mktemp`, `mv` — all present in the project.
+
+### Risk Areas
+
+1. **Parser accuracy on edge cases** (HIGH) — Dynamic source paths where the variable is not `SCRIPT_DIR` will be missed. Mitigation: document limitations, mark unresolved paths as `[dynamic]`, validate against real codebase to measure miss rate.
+
+2. **Tarjan's algorithm correctness in bash** (HIGH) — Graph algorithms in bash are unusual and error-prone. Mitigation: test on 5 synthetic graphs (no cycles, self-loop, 2-node cycle, 3-node cycle, disconnected components) plus the real codebase.
+
+3. **Performance on full codebase** (MEDIUM) — 350+ scripts with `jq` processing. Mitigation: batch `jq` operations (build full JSON in one pass rather than per-file), target <2 seconds. If needed, parallelize parsing with `xargs -P`.
+
+4. **CLI discoverability** (LOW) — New `analyze` command must appear in `shipwright help`. Mitigation: add to help text, verify with `shipwright help | grep analyze` before design is complete.
+
+## Validation Criteria
+
+- [ ] `shipwright analyze dependencies` runs end-to-end and exits 0
+- [ ] `scripts/lib/compat.sh` identified as high-coupling hotspot (in-degree >= 10)
+- [ ] `scripts/lib/helpers.sh` identified as high-coupling hotspot (in-degree >= 10)
+- [ ] Test fixture with circular dependency is detected: `a.sh -> b.sh -> c.sh -> a.sh`
+- [ ] No false-positive cycles in the real Shipwright codebase (unless real cycles exist)
+- [ ] JSON output validates against `.claude/dependency-graph-schema.json`
+- [ ] Mermaid diagram renders correctly (valid Mermaid syntax)
+- [ ] Full analysis completes in < 2 seconds on the Shipwright repo
+- [ ] All 70+ tests pass in `sw-analyze-dependencies-test.sh`
+- [ ] `npm test` passes with the new test suite included
+- [ ] Report includes actionable refactoring suggestions for each hotspot
+- [ ] `shipwright help` lists the `analyze` command
+- [ ] Graceful degradation: missing files produce warnings (not crashes), empty repos produce empty reports
 "
 iteration: 1
 max_iterations: 20
@@ -154,8 +229,8 @@ status: error
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-05T01:20:55Z
-last_iteration_at: 2026-04-05T01:20:55Z
+started_at: 2026-04-05T07:09:11Z
+last_iteration_at: 2026-04-05T07:09:11Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
