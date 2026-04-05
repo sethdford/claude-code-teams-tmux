@@ -448,8 +448,202 @@ generate_reasoning_trace() {
     emit_event "reasoning.trace" "job_id=$job_id" "complexity=$complexity" "risk=$risk_score" "template=${selected_template:-standard}" 2>/dev/null || true
 }
 
+# ─── tmux Pipeline Session ─────────────────────────────────────────
+SW_PIPELINE_SESSION="sw-pipelines"
+
+_ensure_tmux_session() {
+    if ! command -v tmux >/dev/null 2>&1; then
+        error "tmux is required for --detach mode"
+        return 1
+    fi
+    if ! tmux has-session -t "$SW_PIPELINE_SESSION" 2>/dev/null; then
+        tmux new-session -d -s "$SW_PIPELINE_SESSION" -n "status" 2>/dev/null || true
+        tmux send-keys -t "$SW_PIPELINE_SESSION:status" "echo 'Shipwright Pipeline Session — use shipwright pipeline list'" Enter 2>/dev/null || true
+    fi
+}
+
+_pipeline_window_name() {
+    local issue="${1:-}"
+    local goal="${2:-}"
+    if [[ -n "$issue" ]]; then
+        echo "p-${issue}"
+    elif [[ -n "$goal" ]]; then
+        # Slugify goal: first 30 chars, lowercase, spaces to dashes
+        local slug
+        slug=$(echo "$goal" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | head -c 30 | sed 's/-$//')
+        echo "p-${slug}"
+    else
+        echo "p-$$"
+    fi
+}
+
+# ─── Detached Pipeline Start ──────────────────────────────────────
+pipeline_start_detached() {
+    _ensure_tmux_session || { error "Cannot create tmux session"; exit 1; }
+
+    local win_name
+    win_name=$(_pipeline_window_name "${ISSUE_NUMBER:-}" "${GOAL:-}")
+
+    # Build the command to run inside tmux
+    local cmd="cd '$(pwd)' && "
+    cmd+="'${SCRIPT_DIR}/../sw-pipeline.sh' start"
+    [[ -n "${ISSUE_NUMBER:-}" ]] && cmd+=" --issue '${ISSUE_NUMBER}'"
+    [[ -n "${GOAL:-}" ]] && cmd+=" --goal '${GOAL}'"
+    [[ -n "${PIPELINE_NAME:-}" && "${PIPELINE_NAME:-}" != "standard" ]] && cmd+=" --pipeline '${PIPELINE_NAME}'"
+    [[ -n "${TEST_CMD:-}" ]] && cmd+=" --test-cmd '${TEST_CMD}'"
+    [[ -n "${MODEL:-}" ]] && cmd+=" --model '${MODEL}'"
+    [[ "${SKIP_GATES:-}" == "true" ]] && cmd+=" --skip-gates"
+    [[ "${AUTO_WORKTREE:-}" == "true" ]] && cmd+=" --worktree"
+    [[ -n "${WORKTREE_NAME:-}" ]] && cmd+=" --worktree='${WORKTREE_NAME}'"
+    cmd+=" --foreground"  # Inside tmux, run foreground
+
+    # Create window and send command
+    tmux new-window -t "$SW_PIPELINE_SESSION" -n "$win_name" 2>/dev/null || true
+    local pane_id
+    pane_id=$(tmux list-panes -t "${SW_PIPELINE_SESSION}:${win_name}" -F '#{pane_id}' 2>/dev/null | head -1)
+
+    # Set pane title
+    tmux send-keys -t "$pane_id" "printf '\\033]2;shipwright pipeline #${ISSUE_NUMBER:-${GOAL:0:30}}\\033\\\\'" Enter 2>/dev/null || true
+    tmux send-keys -t "$pane_id" "$cmd" Enter
+
+    # Store heartbeat for attach/tail
+    local hb_dir="$HOME/.shipwright/heartbeats"
+    mkdir -p "$hb_dir"
+    local hb_file="${hb_dir}/pipeline-${ISSUE_NUMBER:-goal-$$}.json"
+    cat > "$hb_file" <<HEARTBEAT
+{
+  "job_id": "pipeline-${ISSUE_NUMBER:-goal-$$}",
+  "pane_id": "${pane_id:-unknown}",
+  "window": "${win_name}",
+  "session": "${SW_PIPELINE_SESSION}",
+  "status": "running",
+  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "goal": "${GOAL:-issue #${ISSUE_NUMBER:-}}",
+  "pid": 0
+}
+HEARTBEAT
+
+    emit_event "pipeline.detached" \
+        "issue=${ISSUE_NUMBER:-0}" \
+        "window=${win_name}" \
+        "session=${SW_PIPELINE_SESSION}"
+
+    echo ""
+    echo -e "${CYAN}${BOLD}Pipeline started in tmux${RESET}"
+    echo ""
+    echo -e "  ${BOLD}Attach:${RESET}  shipwright pipeline attach ${ISSUE_NUMBER:-}"
+    echo -e "  ${BOLD}Tail:${RESET}    shipwright pipeline tail ${ISSUE_NUMBER:-}"
+    echo -e "  ${BOLD}Status:${RESET}  shipwright pipeline status"
+    echo -e "  ${BOLD}tmux:${RESET}    tmux attach -t ${SW_PIPELINE_SESSION}:${win_name}"
+    echo ""
+    echo -e "  ${DIM}Detach from tmux: Ctrl-a d${RESET}"
+}
+
+# ─── Attach to Pipeline ───────────────────────────────────────────
+pipeline_attach() {
+    local target="${1:-}"
+
+    if ! command -v tmux >/dev/null 2>&1; then
+        error "tmux is required for attach"
+        exit 1
+    fi
+
+    # Find the window
+    local win_name=""
+    if [[ -n "$target" ]]; then
+        win_name="p-${target}"
+    else
+        # Find most recent pipeline window
+        win_name=$(tmux list-windows -t "$SW_PIPELINE_SESSION" -F '#{window_name}' 2>/dev/null | grep '^p-' | tail -1 || true)
+    fi
+
+    if [[ -z "$win_name" ]]; then
+        error "No pipeline windows found"
+        echo -e "  ${DIM}Start one: shipwright pipeline start --issue N --detach${RESET}"
+        exit 1
+    fi
+
+    # Check window exists
+    if ! tmux list-windows -t "$SW_PIPELINE_SESSION" -F '#{window_name}' 2>/dev/null | grep -q "^${win_name}$"; then
+        # Try heartbeat fallback
+        local hb_file="$HOME/.shipwright/heartbeats/pipeline-${target}.json"
+        if [[ -f "$hb_file" ]]; then
+            local hb_session hb_window
+            hb_session=$(jq -r '.session // ""' "$hb_file" 2>/dev/null || true)
+            hb_window=$(jq -r '.window // ""' "$hb_file" 2>/dev/null || true)
+            if [[ -n "$hb_session" && -n "$hb_window" ]]; then
+                tmux select-window -t "${hb_session}:${hb_window}" 2>/dev/null && \
+                exec tmux attach -t "$hb_session" 2>/dev/null
+            fi
+        fi
+        error "Pipeline window not found: $win_name"
+        echo -e "  ${DIM}Available windows:${RESET}"
+        tmux list-windows -t "$SW_PIPELINE_SESSION" -F '  #{window_name}' 2>/dev/null || echo "  (none)"
+        exit 1
+    fi
+
+    tmux select-window -t "${SW_PIPELINE_SESSION}:${win_name}" 2>/dev/null
+    exec tmux attach -t "$SW_PIPELINE_SESSION"
+}
+
+# ─── Tail Pipeline Output ─────────────────────────────────────────
+pipeline_tail() {
+    local target="${1:-}"
+
+    # Try tmux capture first
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t "$SW_PIPELINE_SESSION" 2>/dev/null; then
+        local win_name=""
+        if [[ -n "$target" ]]; then
+            win_name="p-${target}"
+        else
+            win_name=$(tmux list-windows -t "$SW_PIPELINE_SESSION" -F '#{window_name}' 2>/dev/null | grep '^p-' | tail -1 || true)
+        fi
+
+        if [[ -n "$win_name" ]] && tmux list-windows -t "$SW_PIPELINE_SESSION" -F '#{window_name}' 2>/dev/null | grep -q "^${win_name}$"; then
+            local pane_id
+            pane_id=$(tmux list-panes -t "${SW_PIPELINE_SESSION}:${win_name}" -F '#{pane_id}' 2>/dev/null | head -1)
+            if [[ -n "$pane_id" ]]; then
+                info "Streaming pipeline output (Ctrl-C to stop)..."
+                echo ""
+                while true; do
+                    tmux capture-pane -t "$pane_id" -p -S -50 2>/dev/null || break
+                    sleep 2
+                    # Clear and redraw
+                    printf '\033[H\033[2J'
+                done
+                return 0
+            fi
+        fi
+    fi
+
+    # Fallback: tail log file
+    local log_dir="$HOME/.shipwright/logs"
+    local log_file=""
+    if [[ -n "$target" ]]; then
+        log_file="${log_dir}/issue-${target}.log"
+    else
+        # Find most recent log
+        log_file=$(ls -t "${log_dir}"/issue-*.log 2>/dev/null | head -1 || true)
+    fi
+
+    if [[ -n "$log_file" && -f "$log_file" ]]; then
+        info "Tailing log: $log_file"
+        tail -f "$log_file"
+    else
+        error "No pipeline output found for: ${target:-most recent}"
+        echo -e "  ${DIM}Start a pipeline: shipwright pipeline start --issue N --detach${RESET}"
+        exit 1
+    fi
+}
+
 # ─── Main 'start' Command ──────────────────────────────────────────
 pipeline_start() {
+    # Detach mode: spawn in tmux and return
+    if [[ "${DETACH:-false}" == "true" ]]; then
+        pipeline_start_detached
+        return 0
+    fi
+
     # Handle --repo flag: change to directory before running
     if [[ -n "$REPO_OVERRIDE" ]]; then
         if [[ ! -d "$REPO_OVERRIDE" ]]; then
@@ -1187,6 +1381,21 @@ pipeline_status() {
             echo ""
             echo -e "  ${BOLD}Artifacts:${RESET} ($artifact_count files)"
             ls "$ARTIFACTS_DIR" 2>/dev/null | sed 's/^/    /'
+        fi
+    fi
+
+    # Show tmux attach hint if pipeline is running in tmux
+    if [[ "$p_status" == "running" ]] && command -v tmux >/dev/null 2>&1; then
+        local issue_num="${p_issue#\#}"
+        local hb_file="$HOME/.shipwright/heartbeats/pipeline-${issue_num:-goal}.json"
+        if [[ -f "$hb_file" ]]; then
+            local hb_session hb_window
+            hb_session=$(jq -r '.session // ""' "$hb_file" 2>/dev/null || true)
+            hb_window=$(jq -r '.window // ""' "$hb_file" 2>/dev/null || true)
+            if [[ -n "$hb_session" ]] && tmux has-session -t "$hb_session" 2>/dev/null; then
+                echo -e "  ${BOLD}Watch:${RESET}     shipwright pipeline attach ${issue_num}"
+                echo -e "  ${BOLD}Tail:${RESET}      shipwright pipeline tail ${issue_num}"
+            fi
         fi
     fi
     echo ""

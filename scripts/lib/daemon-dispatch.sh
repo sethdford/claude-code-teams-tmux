@@ -253,15 +253,42 @@ daemon_spawn_pipeline() {
     # Ensure issue type is available for skill injection in pipeline
     export INTELLIGENCE_ISSUE_TYPE="${INTELLIGENCE_ISSUE_TYPE:-backend}"
 
-    # Run pipeline in work directory (background)
-    # Ignore SIGHUP so tmux attach/detach and process group changes don't kill the pipeline
+    # Run pipeline — tmux window (watchable) or background subprocess
+    local spawn_in_tmux
+    spawn_in_tmux=$(_smart_int "spawn_in_tmux" 1)
     echo -e "\n\n===== Pipeline run $(date -u +%Y-%m-%dT%H:%M:%SZ) =====" >> "$LOG_DIR/issue-${issue_num}.log" 2>/dev/null || true
-    (
-        trap '' HUP
-        cd "$work_dir" || exit 1
-        exec "$SCRIPT_DIR/sw-pipeline.sh" "${pipeline_args[@]}"
-    ) >> "$LOG_DIR/issue-${issue_num}.log" 2>&1 200>&- &
-    local pid=$!
+
+    local pid=0
+    if [[ "$spawn_in_tmux" == "1" ]] && command -v tmux >/dev/null 2>&1; then
+        # Spawn in tmux window for visibility
+        local _tmux_session="sw-pipelines"
+        local _tmux_win="p-${issue_num}"
+        if ! tmux has-session -t "$_tmux_session" 2>/dev/null; then
+            tmux new-session -d -s "$_tmux_session" -n "daemon" 2>/dev/null || true
+        fi
+        tmux new-window -t "$_tmux_session" -n "$_tmux_win" 2>/dev/null || true
+        local _tmux_cmd="cd '${work_dir}' && '${SCRIPT_DIR}/sw-pipeline.sh' ${pipeline_args[*]} 2>&1 | tee -a '${LOG_DIR}/issue-${issue_num}.log'"
+        tmux send-keys -t "${_tmux_session}:${_tmux_win}" "$_tmux_cmd" Enter 2>/dev/null || true
+        # Store heartbeat
+        local _hb_dir="$HOME/.shipwright/heartbeats"
+        mkdir -p "$_hb_dir"
+        local _pane_id
+        _pane_id=$(tmux list-panes -t "${_tmux_session}:${_tmux_win}" -F '#{pane_id}' 2>/dev/null | head -1 || true)
+        cat > "${_hb_dir}/pipeline-${issue_num}.json" <<HB_EOF
+{"job_id":"pipeline-${issue_num}","pane_id":"${_pane_id:-}","window":"${_tmux_win}","session":"${_tmux_session}","status":"running","started_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+HB_EOF
+        # Get PID from tmux pane
+        pid=$(tmux list-panes -t "${_tmux_session}:${_tmux_win}" -F '#{pane_pid}' 2>/dev/null | head -1 || echo "0")
+        daemon_log INFO "Pipeline spawned in tmux: ${_tmux_session}:${_tmux_win}"
+    else
+        # Fallback: background subprocess (original behavior)
+        (
+            trap '' HUP
+            cd "$work_dir" || exit 1
+            exec "$SCRIPT_DIR/sw-pipeline.sh" "${pipeline_args[@]}"
+        ) >> "$LOG_DIR/issue-${issue_num}.log" 2>&1 200>&- &
+        pid=$!
+    fi
 
     daemon_log INFO "Pipeline started for issue #${issue_num} (PID: ${pid})"
 

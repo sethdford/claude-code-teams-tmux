@@ -144,6 +144,8 @@ parse_args() {
             --resume) RESUME_FROM_CHECKPOINT=true; shift ;;
             --worktree=*) AUTO_WORKTREE=true; WORKTREE_NAME="${1#--worktree=}"; WORKTREE_NAME="${WORKTREE_NAME//[^a-zA-Z0-9_-]/}"; if [[ -z "$WORKTREE_NAME" ]]; then error "Invalid worktree name (alphanumeric, hyphens, underscores only)"; exit 1; fi; shift ;;
             --worktree)   AUTO_WORKTREE=true; shift ;;
+            --detach|-d)   DETACH=true; shift ;;
+            --foreground|-f) DETACH=false; shift ;;
             --dry-run)     DRY_RUN=true; shift ;;
             --slack-webhook) SLACK_WEBHOOK="$2"; shift 2 ;;
             --self-heal)   BUILD_TEST_RETRIES="${2:-3}"; shift 2 ;;

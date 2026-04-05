@@ -229,6 +229,17 @@ parse_args "$@"
 # Export effort and fallback variables so subprocesses can access them
 export EFFORT_LEVEL_OVERRIDE PIPELINE_FALLBACK_MODEL
 
+# ─── Detach Mode ──────────────────────────────────────────────────────────────
+# --worktree auto-detaches unless --foreground explicitly overrides
+if [[ -z "${DETACH:-}" ]]; then
+    # No explicit flag — auto-detach for worktree pipelines
+    if [[ "${AUTO_WORKTREE:-}" == "true" ]]; then
+        DETACH=true
+    else
+        DETACH=false
+    fi
+fi
+
 # ─── Non-Interactive Detection ──────────────────────────────────────────────
 # When stdin is not a terminal (background, pipe, nohup, tmux send-keys),
 # auto-enable headless mode to prevent read prompts from killing the script.
@@ -252,6 +263,8 @@ case "$SUBCOMMAND" in
     abort)          pipeline_abort ;;
     list)           pipeline_list ;;
     show)           pipeline_show ;;
+    attach)         pipeline_attach "${ISSUE_NUMBER:-${2:-}}" ;;
+    tail|logs)      pipeline_tail "${ISSUE_NUMBER:-${2:-}}" ;;
     test)
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         exec "$SCRIPT_DIR/sw-pipeline-test.sh" "$@"
