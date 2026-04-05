@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "pm",
+          "builder",
+          "tester"
         ],
         "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "reasoning": "Feature requires system design of cost/probability estimation models and interactive approval workflow; PM needed for estimation accuracy; Builder for implementation; Tester for validation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1775372585,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,334 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "ab54a867fe53a86bfc9d1280d33ab19e": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Prediction accuracy must be within 30% - inaccurate estimates undermine user trust",
+          "Tight integration with intelligence layer, memory system, and cost router - multiple failure points",
+          "Daemon policy enforcement logic for cost/probability thresholds needs careful validation",
+          "Historical data quality and feature engineering for complexity estimation critical",
+          "Model pricing changes require prediction model retraining"
+        ],
+        "implementation_hints": [
+          "Leverage existing intelligence.sh and memory.sh modules as foundation for issue analysis",
+          "Query similar historical issues from memory system to establish baseline success rates",
+          "Use cost router pricing tables to calculate per-iteration costs upfront",
+          "Build interactive approval as lightweight CLI prompt; separate daemon policy mode uses config thresholds",
+          "Start with simple heuristics (issue labels + code churn + past similar runs) before ML refinement",
+          "Log all predictions to ~/.shipwright/cost-predictions.jsonl with actual outcomes for feedback loop",
+          "Add integration test that validates 3-5 historical issues; compare predicted vs actual within 30%"
+        ]
+      },
+      "timestamp": 1775371584,
+      "ttl": 3600
+    },
+    "b4e9aef781550c2c599319b81f21a6bd": {
+      "result": {
+        "estimated_iterations": 6,
+        "reasoning": {
+          "complexity_factor": "7/10 = 1.4x base iterations",
+          "risk_factor": "medium risk with tight integrations = +1 iteration",
+          "success_probability": "72% suggests 1-2 buffer iterations",
+          "iteration_breakdown": [
+            "1: Core prediction logic implementation",
+            "2: Intelligence/memory/cost-router integration",
+            "3: Policy enforcement and daemon config",
+            "4: Historical data validation against 3-5 issues",
+            "5: Edge cases and accuracy thresholds (±30%)",
+            "6: Buffer for unforeseen integration issues"
+          ]
+        }
+      },
+      "timestamp": 1775371595,
+      "ttl": 1800
+    },
+    "4cf66e3a93f48a3f5cc5c48bb8a1d1ca": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 2,
+        "estimated_tokens": 200000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1775371604,
+      "ttl": 3600
+    },
+    "af95fcc2c44d8854009c52768d319610": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "cost-intelligence",
+          "predictive-analytics",
+          "daemon-operations"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Moderate-high complexity: requires deep integration with intelligence layer (sw-intelligence.sh), cost system (sw-cost.sh), memory system (sw-memory.sh), and daemon policy enforcement. Prediction accuracy depends on historical data quality and similarity matching algorithm. Interactive approval workflow adds state management complexity."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design",
+            "product-thinking"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "iteration-complexity-estimation"
+          ],
+          "build": [
+            "iteration-complexity-estimation",
+            "pattern-matching-similarity-scoring"
+          ],
+          "review": [
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about iteration count estimation—is label-based prediction sufficient, or does codebase file count/test coverage matter more?",
+          "architecture-design": "Design how the pre-flight check integrates with daemon spawn-time decision points, cost system caching, and memory injection without creating circular dependencies.",
+          "product-thinking": "The interactive approval workflow must balance user control (daemon mode vs. interactive CLI) with preventing decision fatigue—design the default/policy override model carefully.",
+          "api-design": "Define the clean CLI/JSON output contract for 'predict cost/success' so daemon and interactive modes call the same underlying system.",
+          "iteration-complexity-estimation": "Core algorithm: how to infer iteration count from issue body, labels, file complexity, and test coverage—estimate conservatively to avoid false confidence.",
+          "pattern-matching-similarity-scoring": "Query memory and intelligence cache for historically similar issues to extract empirical success rates and actual vs. predicted cost deltas.",
+          "adversarial-quality": "Find edge cases: new issue types with no history (cold start), misclassified labels, unusual cost spikes, predictions that flip on tiny input changes.",
+          "security-audit": "Ensure cost/success predictions don't leak sensitive repo metrics or create side-channel attacks (e.g., inferring competitor activity from cost patterns).",
+          "testing-strategy": "Test suite must validate: (1) predictions within 30% accuracy on test issues, (2) graceful degradation when history is sparse, (3) daemon policy enforcement under threshold violations.",
+          "validation-thoroughness": "After building the predictor, run 10-20 real issues through it and compare actual vs. predicted cost/duration—log misses to improve the model.",
+          "pr-quality": "PR must show before/after cost prediction examples, rationale for the estimation algorithm, and links to memory/cache queries that drive decisions.",
+          "observability": "Emit cost-prediction events (estimated vs. actual, accuracy drift over time) to track whether the predictor remains calibrated as codebase and team patterns evolve."
+        },
+        "generated_skills": [
+          {
+            "name": "iteration-complexity-estimation",
+            "reason": "No existing skill covers the core technical challenge: algorithmically inferring iteration count from issue metadata (body text, labels, codebase signals). This is load-bearing for the entire cost prediction system.",
+            "content": "## Iteration Complexity Estimation for Cost Prediction\n\n### Problem\nPredicting pipeline cost requires estimating how many loop iterations (build→test→review→fix cycles) an issue will require. This depends on issue complexity, codebase familiarity, and test failure patterns—none of which are directly observable before the pipeline runs.\n\n### Algorithm Design\n\n**Baseline iteration count = 2 (most issues converge in 2 cycles)**\n\n**Complexity signals (add 1 iteration each if true):**\n1. **Issue body length < 100 chars**: Vague requirements → more clarification rounds\n2. **Multiple non-standard labels** (not in top 10): Unfamiliar patterns → higher learning curve\n3. **Files touched > 10**: Large scope → higher regression risk\n4. **Test coverage on changed files < 70%**: Untested areas → more test failures\n5. **Similar issue in memory with >2 iterations**: Historical pattern → likely to repeat\n6. **Issue complexity label = \"complex\" or \"epic\"**: Explicit signal\n7. **Codebase has had >3 failed recent runs**: Unstable state → expect more cycles\n8. **First-time contributor**: Cold start → assume one extra iteration for onboarding\n\n**Multiplier (apply after baseline + signals):**\n- If all signals absent (simple, small, high test coverage, familiar code): **0.8x** (often done in 1 iteration)\n- Normal case: **1.0x** (baseline 2)\n- High-risk (3+ signals): **1.5x** (expect 3-4 cycles)\n\n**Max cap: 8 iterations.** Anything beyond is a scope problem, not an estimation problem.\n\n### Implementation Checklist\n\n1. **Parse issue body** via GitHub API for word count, code blocks (indicator of specificity)\n2. **Query intelligence cache** (`~/.shipwright/intelligence-cache.json`) for file change frequency in this repo\n3. **Query memory** (`sw memory show`) for similar issues and their iteration counts\n4. **Calculate score**: `iterations = max(1, baseline + signals_sum * multiplier_ratio)`\n5. **Cache result** in `.claude/pipeline-artifacts/estimate.json` for actual vs. predicted comparison at end of run\n6. **Log to `cost-predictions.jsonl`** with timestamp, estimated iterations, signals triggered, and rationale\n\n### Risk Mitigations\n\n- **Cold start (no history)**: Use conservative baseline (2) + all complexity signals trigger\n- **Outliers in memory**: Filter historical issues by recency (last 30 days) and repo similarity (same top 5 languages)\n- **False negatives**: If a run actually completes in 1 iteration when predicted 3, investigate: was the issue truly simple, or did the team get lucky? Log both\n\n### Integration Points\n\n- Call this from `sw-predictive.sh` (cost estimation) before pipeline spawn\n- Pass `estimate.json` to loop as context (helps loop terminate early if converging faster than predicted)\n- Update `cost-predictions.jsonl` after pipeline completes with actual iterations\n- Feed accuracy metrics to `sw-self-optimize.sh` for periodic model retraining"
+          },
+          {
+            "name": "daemon-policy-enforcement",
+            "reason": "Daemon mode must enforce cost/success thresholds without interactive prompts. No existing skill covers the gating logic, policy file format, and escalation workflows for cost-aware daemon operations.",
+            "content": "## Daemon Policy Enforcement for Pre-Flight Approval\n\n### Policy File Format\n\nAdd `cost_policy` section to `.claude/daemon-config.json`:\n\n```json\n{\n  \"cost_policy\": {\n    \"enabled\": true,\n    \"max_estimated_cost_usd\": 10.0,\n    \"min_success_probability\": 0.40,\n    \"min_estimated_confidence\": 0.50,\n    \"escalation_mode\": \"auto_abort\",\n    \"whitelist_labels\": [\"critical\", \"hotfix\"],\n    \"always_allow_labels\": [\"p0\", \"security\"],\n    \"dry_run_high_cost\": true\n  }\n}\n```\n\n| Field | Default | Behavior |\n|-------|---------|----------|\n| `enabled` | `false` | Skip cost pre-flight checks if false |\n| `max_estimated_cost_usd` | `15.0` | Abort if predicted cost exceeds this |\n| `min_success_probability` | `0.35` | Abort if success rate < threshold |\n| `min_estimated_confidence` | `0.50` | Require estimation algorithm confidence ≥ this; if lower, ask user or escalate |\n| `escalation_mode` | `notify` | `auto_abort` (fail fast), `notify` (log + Slack), `ask` (block until human confirms) |\n| `whitelist_labels` | `[]` | Skip cost checks for issues with any of these labels (e.g., `critical`, `hotfix`) |\n| `always_allow_labels` | `[]` | Force proceed regardless of cost/success thresholds (e.g., `p0`, `security`) |\n| `dry_run_high_cost` | `false` | If true, run in dry-run mode when cost > threshold (don't merge PR, save artifacts) |\n\n### Decision Tree\n\n```\nPre-flight: Estimate cost & success probability\n  ↓\n1. Has \"always_allow_labels\" → Proceed (skip all checks)\n2. Estimation confidence < min_estimated_confidence → Escalate (notify or ask)\n3. Estimated cost > max_cost → Check escalation_mode\n   a. auto_abort → Emit error event, exit 1\n   b. notify → Log to error-log.jsonl, emit Slack notification, queue issue for later\n   c. ask → Block daemon, write issue to .claude/approval-pending.txt\n4. Success probability < min_success_probability → Check escalation_mode (same as above)\n5. Has whitelist_labels → Skip cost/success checks, proceed\n6. All checks pass → Proceed to spawn pipeline\n```\n\n### Integration with Daemon\n\n1. Call `sw-predictive.sh` (cost/success estimation) in daemon spawn loop, **before** calling `pipeline start`\n2. If pre-flight fails and `escalation_mode=auto_abort`, emit event type `pre_flight_rejection` with reason\n3. If `escalation_mode=notify`, post Slack notification: `\"Issue #123 estimated $12.50 (threshold $10)—queued for manual review\"`\n4. If `escalation_mode=ask`, create interactive prompt in tmux or write JSON to `.claude/approval-pending/<issue-id>.json`\n\n### Logging Pre-Flight Decisions\n\nAppend to `~/.shipwright/cost-predictions.jsonl` for every issue:\n\n```json\n{\n  \"timestamp\": \"2026-04-05T12:30:00Z\",\n  \"issue_id\": 352,\n  \"issue_title\": \"Pre-Flight Cost Estimator\",\n  \"estimated_cost_usd\": 6.50,\n  \"success_probability\": 0.68,\n  \"estimation_confidence\": 0.72,\n  \"signals_triggered\": [\"multiple_labels\", \"coverage_low\"],\n  \"decision\": \"proceed\",\n  \"policy_applied\": \"default\",\n  \"actual_cost_usd\": null,\n  \"actual_success\": null,\n  \"actual_iterations\": null\n}\n```\n\nAfter pipeline completes, backfill `actual_*` fields. Track accuracy drift over time."
+          }
+        ],
+        "review_focus": [
+          "Estimation algorithm calibration—do predicted iterations align with actual loop behavior on real issues?",
+          "Memory query efficiency—is the similarity matching fast enough to not block daemon spawn (target <2s)?",
+          "Daemon policy enforcement under edge cases—whitelist labels, escalation mode transitions, Slack notification format",
+          "Cost calculation accuracy—ensure model router pricing is up-to-date and not cached stale values",
+          "Cold start behavior—what happens when there's no historical data for a new repo or issue type?"
+        ],
+        "risk_areas": [
+          "Prediction inaccuracy early in repo's lifecycle (sparse historical data) could cause user frustration or budget waste if model is too optimistic",
+          "Off-by-one errors in iteration count estimation could lead to systematic under/over-prediction of cost (e.g., always off by $2)",
+          "Model router pricing changes mid-run—if a stage's model selection changes, cached cost prediction becomes invalid",
+          "Interactive approval prompt blocks daemon indefinitely if user is unavailable—need timeout or policy override",
+          "Success probability heavily biased by recent runs—outlier failures could unfairly penalize all future issues; need temporal weighting",
+          "Integration test claim of '30% accuracy' may not hold across different repo types (ML vs. CLI tools vs. web apps)"
+        ]
+      },
+      "timestamp": 1775371699,
+      "ttl": 3600
+    },
+    "2844bd531d0ca322f53ebf385283e235": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project conventions (src/, test patterns, commonjs imports) essential for planning architecture and estimating implementation scope"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Feature success data: 'add auth module' shows complexity 60, 5 iterations, $1.50 cost, 300s duration—directly applicable for cost/probability estimation"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Bug fix success pattern shows standard template execution: 3 iterations, $2.50 cost, 45s duration—provides baseline for complexity scoring"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Architectural rules inform design decisions during planning phase and constrain implementation scope"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Dependency installation failures (ENOENT) inform pre-flight checks and success probability calculations"
+          }
+        ]
+      },
+      "timestamp": 1775371773,
+      "ttl": 1800
+    },
+    "cf2a017437d01b28cf798f285f30b726": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains two completed success patterns from this repo (Shipwright): a bug fix (3 iterations, complexity 60) and authentication feature (3 iterations, complexity 65). Shows real approaches, iteration counts, file patterns, test strategies, and costs—directly applicable to feature development planning."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Project conventions and structure: Node.js/Vitest project, src/ source directory, CommonJS imports, .test.js test pattern. Essential for understanding how to develop features in this codebase."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 52,
+            "summary": "Contains common failure pattern (ENOENT missing dependency, fix: npm install, 95% effectiveness). Relevant for pre-flight validation to catch missing dependencies early."
+          }
+        ]
+      },
+      "timestamp": 1775372281,
+      "ttl": 1800
+    },
+    "21289e1acf9aded5e6186a0cbcaeebbb": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure conventions (src/, *.test.js, commonjs, vitest) define the architectural boundaries and module organization for the estimator"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Feature complexity baseline (65, 3-4 iterations, ~$2.5 cost) and test strategy patterns inform architectural decisions and iteration planning for estimator design"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 78,
+            "summary": "TDD approach with unit+integration testing and file organization patterns (src/, test/) show validated design patterns for feature modules"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 68,
+            "summary": "Architecture rules constrain design choices and enforce layer boundaries that must be reflected in estimator API contract and module separation"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 42,
+            "summary": "Common runtime errors (EONENT, property access) suggest defensive design patterns needed in configuration loading and data validation"
+          }
+        ]
+      },
+      "timestamp": 1775372318,
+      "ttl": 1800
+    },
+    "1d72e92d6d21e530a520d0789e67e866": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Shows successful iteration-based delivery patterns for feature work (65 complexity). Reveals that multi-iteration approaches with loop convergence work well; inverse indicates that single-pass design without iteration is an anti-pattern for complex features like cost/probability estimation."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 78,
+            "summary": "Contains design rules (3 explicit rules) that enforce/reject certain architectural patterns. These rules implicitly define anti-patterns to avoid in the design phase."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Contains failure signatures including uninitialized variable access and missing dependencies. Shows that 'design without input validation' and 'assuming dependencies are pre-installed' are anti-patterns in this codebase."
+          }
+        ]
+      },
+      "timestamp": 1775372337,
+      "ttl": 1800
+    },
+    "19b79c3f2d9d1bde0eb45c6278c0d2a1": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project conventions for this repo: Node.js, vitest test runner, src/ source directory, commonjs imports. Critical for understanding structure and test patterns during build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Records successful feature work ('Add authentication feature') with 65 complexity, 3 iterations, npm test strategy, and standard template. Directly applicable to building a new feature estimator."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Shows successful auth module feature (complexity 60) using iterative TDD approach with unit+integration tests. Provides tested pattern for feature implementation in this codebase."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Documents successful bug fix with 3 iterations and npm test strategy. Shows typical iteration count and test patterns for standard template pipelines in this repo."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Captured EONENT failure showing missing npm dependencies. Relevant preventive check — ensures npm install runs before testing to avoid common failure."
+          }
+        ]
+      },
+      "timestamp": 1775372563,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project conventions (vitest test runner, src/ directory, npm package manager, commonjs imports) essential for build execution and test command selection"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Two prior successes show standard template usage, npm test strategy, loop iteration patterns (3-4 iterations), and file modification patterns (.claude/, scripts/lib/) applicable to current build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Contains empty baselines object; minimal relevance to build stage at present"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 3,
+            "summary": "No captured failures currently; would become relevant if build encounters test failures"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 0,
+            "summary": "Empty decisions array; no prior architectural or implementation decisions captured"
+          }
+        ]
+      },
+      "timestamp": 1775372574,
+      "ttl": 1800
     }
   }
 }
