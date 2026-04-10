@@ -1401,6 +1401,258 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "ed89ea6027a6cdc10daa8c023bca765c": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "high",
+        "success_probability": 80,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "False positive rollbacks triggering on normal variance, masking real improvements",
+          "Race conditions when multiple workers modify health state and rollback files concurrently",
+          "Baseline instability in early deployment with insufficient historical data",
+          "Cascading failures if health detection itself fails or gets corrupted",
+          "Aggressive rollback discarding valuable adaptive learning and intelligence optimization"
+        ],
+        "implementation_hints": [
+          "Use atomic file operations (temp file + mv) for health-baseline.json and rollback-log.jsonl writes to prevent corruption",
+          "Create versioned backups of intelligence cache before any rollback to enable audit and recovery",
+          "Implement the 3-consecutive-run threshold explicitly to filter noise from real regressions",
+          "Include detailed audit trail in rollback logs: timestamp, old rate, new rate, reason, exact files reverted",
+          "Test with synthetic failure injection: artificially lower success rates and verify rollback triggers at exactly the right threshold",
+          "Consider gradual rollback (revert only most recent changes, not entire cache) as future enhancement",
+          "Add operational metrics: frequency of rollback triggers, reversion success rate, time to system recovery",
+          "Document tunable thresholds (15%, 3 runs) so ops teams can adjust if system is over/under-sensitive",
+          "Emit event BEFORE rollback to preserve causality in logs and audit trail",
+          "Validate that only auto-generated files are reverted, never user-edited daemon-config.json"
+        ]
+      },
+      "timestamp": 1775824835,
+      "ttl": 3600
+    },
+    "4f53f2c289b7a5b43651b20f6b23534d": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1775824848,
+      "ttl": 1800
+    },
+    "8afbcae9bfe9a0592fa04826fc184e98": {
+      "result": {
+        "estimated_cost_usd": 0.15,
+        "estimated_iterations": 4,
+        "estimated_tokens": 65000,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1775824862,
+      "ttl": 3600
+    },
+    "4c83855b1fe61f538d34671dad3b9619": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "observability",
+          "reliability",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Well-scoped health monitoring with auto-recovery, but involves statistical regression detection, critical state mutations (rollback), and integration with multiple subsystems (intelligence, adaptive config, event bus). High consequences of failure (false positives could break system, false negatives hide real issues)."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "observability",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design",
+            "observability",
+            "data-pipeline"
+          ],
+          "build": [
+            "collection-system-validation"
+          ],
+          "review": [
+            "security-audit",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about regression sensitivity (why 15% drop? why 3 runs?) and false positive prevention before committing to algorithm.",
+          "observability": "Post-deploy, monitor health detector itself: track regression detection accuracy, false positive/negative rates, rollback frequency, success rate after rollback, system stability.",
+          "systematic-debugging": "Auto-recovery systems are risky; think through failure modes (partial rollback, cascading issues, race conditions in health tracking) before implementation.",
+          "architecture-design": "Document integration with existing intelligence, adaptive, and event bus systems; specify rollback ordering and atomicity guarantees for future maintainers.",
+          "data-pipeline": "Design the rolling 7-day/24-hour time-series collection strategy, ensuring correctness under concurrent pipeline runs and graceful handling of data gaps.",
+          "collection-system-validation": "Health regression detection consumes data from multiple sources (pipeline runs, intelligence cache, adaptive state); validate consistency and correctness of heterogeneous data collection.",
+          "security-audit": "Auto-rollback touches critical system state; verify no unintended side effects, that rollback decisions cannot be triggered maliciously, and that reverted files maintain integrity.",
+          "two-stage-review": "Critical reliability mechanism warrants dual pass: Pass 1 algorithm correctness (regression detection threshold, window sizing), Pass 2 integration safety (state consistency, event ordering).",
+          "adversarial-quality": "Think like chaos engineer: What triggers false regressions? Can cascading rollbacks occur? What if health tracking itself fails mid-detection? What about race conditions?",
+          "validation-thoroughness": "Integration test (80%→55% simulation) is smoke test only; validate against realistic pipeline failure patterns, measure false positive/negative rates, verify rollback actually resolves issues.",
+          "testing-strategy": "Comprehensive test suite must cover edge cases: transient failures vs. real regressions, partial rollback failures, event bus unavailability, concurrent health checks.",
+          "pr-quality": "Critical reliability feature requires clarity: document regression algorithm, rollback triggers, scope boundaries (what gets reverted, what doesn't), integration assumptions.",
+          "deploy-safety": "Deploying auto-recovery system itself is risky; plan canary period with monitoring, kill switch to disable health checks if broken, and rollback of the rollback mechanism."
+        },
+        "generated_skills": [
+          {
+            "name": "health-regression-detection",
+            "reason": "No existing skill covers the core challenge: designing and validating a statistical regression detection algorithm that minimizes both false positives (unnecessary rollbacks) and false negatives (missed real degradation). This requires specific expertise in time-series anomaly detection, threshold tuning, and preventing cascading effects.",
+            "content": "## Health Regression Detection Algorithm Design\n\n### Core Challenge\nDetect when system-wide pipeline success rate degrades significantly, but avoid false positives that cause unnecessary rollbacks or cascading failures. Balance sensitivity (catch real regressions) vs. specificity (avoid noise).\n\n### Algorithm Design\n\n**Baseline Tracking**:\n- Maintain rolling 7-day and 24-hour success rate windows in `~/.shipwright/health-baseline.json`\n- Update only after pipeline completion (not mid-run)\n- Store: `{ \"baseline_7d\": 0.82, \"baseline_24h\": 0.79, \"current_rate\": 0.68, \"window_size\": 42 }`\n\n**Regression Detection**:\n- Trigger when: `current_rate < 0.85 * baseline_rate` **AND** this condition holds for **>3 consecutive runs** (not single outlier)\n- Rationale: 15% drop is meaningful but not noise; 3-run confirmation prevents false positives from single transient failure\n- Edge case: if baseline < 5 runs, use 0.80 multiplier (more conservative when data is sparse)\n\n**False Positive Prevention**:\n1. Check run duration variance — if recent runs are exceptionally long, failures may be timeout-related, not intelligence regression\n2. Check for infrastructure alerts in same window (CI outages, GitHub API limits) — skip rollback if external factors detected\n3. Log rejection reasons: why this was NOT a regression (data too sparse, external factor detected, recovery in progress)\n\n### Rollback Scope & Ordering\n\nRollback is **dangerous**; only revert auto-generated adaptive state, never user edits:\n\n1. **Intelligence cache** (`~/.shipwright/intelligence-cache.json`): Revert to snapshot from 24h ago\n2. **Adaptive overrides** (in-memory state): Clear model routing, timeout adjustments from `sw-adaptive.sh`\n3. **User config** (`daemon-config.json`): **DO NOT TOUCH** if modified by user (check mtime)\n\n**Rollback Ordering**:\n- Disable intelligence first (stop new bad decisions)\n- Clear adaptive state (prevent feedback loops)\n- Emit alert event (notify operator)\n- Log complete rollback details\n- Do NOT kill running pipelines (let them finish)\n\n### Validation Checklist\n- [ ] Algorithm correctly identifies regression in test data (80%→55% drop)\n- [ ] Does NOT trigger false positive on normal variance (random 3-run dip that recovers)\n- [ ] Respects 3-run confirmation window (doesn't trigger on 1-2 outliers)\n- [ ] Handles edge case: baseline < 5 runs (uses conservative threshold)\n- [ ] Logs all decisions (both triggers and rejections with reasons)\n- [ ] Rollback is idempotent (can be called twice safely)\n- [ ] Event emission happens regardless of alert delivery (fire-and-forget)\n\n### Integration Points\n- Read from: pipeline result stream (success/failure per run)\n- Write to: `health-baseline.json` (metrics), `rollback-log.jsonl` (audit trail), event bus\n- Interact with: intelligence cache, adaptive config (state to revert)\n- Called by: daemon poll loop or pipeline completion hook\n\n### Common Pitfalls\n- **Threshold too aggressive** (0.90 multiplier): triggers on normal variance, usefulness destroyed\n- **Threshold too lenient** (0.95 multiplier): fails to detect real degradation\n- **No time-series awareness**: single drop looks like regression, but system recovering masks it\n- **Cascading rollbacks**: if rollback itself causes failures, system could oscillate\n- **Missing external factors**: GitHub outage causes failures, rollback doesn't help\n"
+          }
+        ],
+        "review_focus": [
+          "Regression detection algorithm: Is 0.85 multiplier appropriate? Is 3-run window sufficient to avoid false positives without missing real issues?",
+          "Rollback scope correctness: Verify intelligence cache revert logic, that user-edited daemon-config.json is never touched, atomicity of file operations",
+          "Event emission reliability: Events sent before/after rollback? What if event bus is unavailable? How does operator get notified of rollbacks?",
+          "Edge case handling: Sparse data (< 5 runs), transient infrastructure failures, concurrent health checks, partial rollback failures",
+          "Integration safety: How does rollback interact with in-flight pipelines? Can cascading rollbacks occur? Data consistency with adaptive system?",
+          "Logging completeness: Enough detail for debugging false positives (threshold values, run details, rejection reasons)?"
+        ],
+        "risk_areas": [
+          "Premature rollback triggered by noise or transient failures, disabling intelligence layer unnecessarily",
+          "Partial rollback failure leaving system in inconsistent state (cache reverted, but adaptive state not cleared)",
+          "Cascading rollbacks: rollback causes new regression, triggering another rollback",
+          "Race conditions in health tracking during concurrent pipeline runs",
+          "Event bus integration: if event emission fails, operator has no visibility into rollback event",
+          "Integration with intelligence layer: rollback must properly disable intelligence cache without breaking dependent systems",
+          "False negative: algorithm fails to detect real regression, system silently degrades"
+        ]
+      },
+      "timestamp": 1775824965,
+      "ttl": 3600
+    },
+    "9f4b8745d2faafdd85d0baba963704de": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Captured today for this exact project—defines Node.js project structure, vitest test runner, src/ conventions, commonjs imports. Essential for planning implementation details."
+          },
+          {
+            "file": "success-patterns.json (Fix bug with intelligence-cache)",
+            "relevance": 85,
+            "summary": "Successful bug fix (3 iterations) that modified .claude/intelligence-cache.json and outcome-feedback.sh—directly relevant to the 'Automatic Intelligence Rollback' goal. Shows what works in this codebase."
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 70,
+            "summary": "Successful feature delivery (complexity 65, 3 iterations) using standard template with iterative testing. Comparable scope and approach for planning a new devops feature."
+          },
+          {
+            "file": "failures.json (cannot read property)",
+            "relevance": 60,
+            "summary": "Node.js initialization error pattern with 100% fix effectiveness. Common pitfall to architect around during planning phase."
+          },
+          {
+            "file": "failures.json (ENOENT missing deps)",
+            "relevance": 55,
+            "summary": "Dependency installation issue (95% fix effectiveness). Relevant for devops work that may need to handle npm lifecycle and dependency validation."
+          }
+        ]
+      },
+      "timestamp": 1775825052,
+      "ttl": 1800
+    },
+    "10b837d4d7a0e1098bc6b2ad4d556995": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current repo detection (sethdford/shipwright, 2026-04-10) with project conventions (vitest, npm, src/, *.test.js). Critical for plan validation as it establishes baseline expectations for the health regression detector."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Multiple successful patterns from this repo show effective approaches: bugfix in 3 iterations (45s, 6 commits) and feature delivery with TDD. Provides template for health detector implementation strategy and realistic effort estimation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "ENOENT (missing dependency) and 'cannot read property' patterns are common in CI/devops work. Plan validation should account for these failure modes when designing automatic intelligence rollback triggers."
+          }
+        ]
+      },
+      "timestamp": 1775825425,
+      "ttl": 1800
+    },
+    "d944dab5604f86a5c5ed73432c5bd8f7": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (repo: sethdford/shipwright, captured_at: 2026-04-10T12:42:47Z)",
+            "relevance": 95,
+            "summary": "Current project conventions critical for design: Node.js, vitest test runner, npm, commonjs imports, src/ source dir. These conventions must be reflected in the health regression detector architecture."
+          },
+          {
+            "file": "success-patterns.json (test1: add auth module, 2026-04-01)",
+            "relevance": 72,
+            "summary": "Iterative TDD approach with module isolation shown to work in this codebase. Pattern of isolated feature modules with unit+integration tests directly applicable to designing a pluggable health regression detector."
+          },
+          {
+            "file": "success-patterns.json (bug fix pattern, 2026-03-29T01:52:45Z)",
+            "relevance": 58,
+            "summary": "Shows real example of multi-iteration debugging and refactoring in shipwright itself (outcome-feedback, loop logic). Patterns with intelligence-cache.json manipulation relevant to automatic intelligence rollback feature."
+          },
+          {
+            "file": "failures.json (cannot read property / Initialize variable)",
+            "relevance": 42,
+            "summary": "Common initialization pitfall with 100% fix effectiveness. Relevant for designing initialization patterns in health state management and intelligence component initialization."
+          },
+          {
+            "file": "failures.json (EONENT / Missing dependency installation)",
+            "relevance": 38,
+            "summary": "Dependency installation failures (95% effectiveness fix). Relevant for ensuring health regression detector properly detects and reports missing dependencies as a health signal."
+          }
+        ]
+      },
+      "timestamp": 1775825471,
+      "ttl": 1800
+    },
+    "8158f19283bd66f905a5bbf618d29d56": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright repo info)",
+            "relevance": 85,
+            "summary": "Shows current project structure (Node/vitest/npm/commonjs) and conventions (src/ dir, *.test.js pattern). Directly constrains what design approaches are feasible and what architectural patterns align with existing codebase conventions."
+          },
+          {
+            "file": "success-patterns.json (outcome-feedback fix - id: f4af3e2a...)",
+            "relevance": 72,
+            "summary": "Shows successful iterative approach for intelligent/complex features in this repo (3 iterations, touched .claude/loop-logs, intelligence-cache.json, lib scripts). Demonstrates what works for reasoning/detection components; inverse patterns suggest what to avoid."
+          },
+          {
+            "file": "success-patterns.json (auth feature - id: 0bcf0637...)",
+            "relevance": 68,
+            "summary": "Shows successful feature development pattern (4 iterations, touched loop-logs and memory systems). Indicates iterative/loop-driven approach works well for features in this codebase; reveals testing strategy and file patterns that succeeded."
+          }
+        ]
+      },
+      "timestamp": 1775825488,
+      "ttl": 1800
     }
   }
 }
