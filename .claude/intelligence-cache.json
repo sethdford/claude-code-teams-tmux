@@ -1401,6 +1401,185 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "a4f3700b2155f4d54c3bff791fcdde47": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 80,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Performance degradation when parsing large events.jsonl files for historical trends",
+          "Events.jsonl data quality or format inconsistencies across pipeline versions",
+          "Dashboard server route conflicts or TypeScript integration complexity",
+          "Time-series aggregation correctness for 7-day, 30-day, and all-time windows",
+          "Scope creep from multi-dimensional analysis (stage × error type × template × project type)"
+        ],
+        "implementation_hints": [
+          "Start with CLI table/ASCII chart output before web dashboard component",
+          "Reuse aggregation patterns from sw-dora.sh and sw-cost.sh for metrics computation",
+          "Cache daily snapshots to avoid full events.jsonl replay on each request",
+          "Add new route to existing dashboard server at dashboard/server.ts for /metrics/success",
+          "Validate events.jsonl schema and gracefully handle missing/malformed entries",
+          "Consider pre-aggregated event summaries indexed by (stage, error_type, template, project_type)"
+        ]
+      },
+      "timestamp": 1775824773,
+      "ttl": 3600
+    },
+    "0b962b45591b01c3fba7417a88a4e6c6": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1775824783,
+      "ttl": 1800
+    },
+    "580440a26c1c26635d8939aa062d129e": {
+      "result": {
+        "estimated_cost_usd": 4.82,
+        "estimated_iterations": 2,
+        "estimated_tokens": 98500,
+        "likely_failure_stage": "test",
+        "confidence": 72,
+        "cost_breakdown": {
+          "build_stage": 0.45,
+          "test_stage": 1.23,
+          "review_stage": 1.87,
+          "integration_testing": 1.27
+        },
+        "token_breakdown": {
+          "codebase_analysis": 12500,
+          "implementation": 42000,
+          "testing": 28000,
+          "review": 16000
+        },
+        "risk_factors": [
+          "Events.jsonl parsing at scale may require optimization iteration",
+          "Dashboard TypeScript integration could surface compatibility issues",
+          "Time-series aggregation logic needs thorough edge-case testing",
+          "Multiple dimensional indexing (stage × error type × template × project) adds complexity"
+        ],
+        "iteration_breakdown": [
+          "Iteration 1: CLI table output + events.jsonl aggregation (60% confidence pass)",
+          "Iteration 2: Dashboard route integration + caching layer (85% confidence pass)"
+        ],
+        "template_rationale": "standard template appropriate for infrastructure feature with moderate complexity, clear implementation path, and good test coverage patterns available in codebase"
+      },
+      "timestamp": 1775824794,
+      "ttl": 3600
+    },
+    "b3270c19a6c9c288e7f85900bd96cb6c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Exact repo match (sethdford/shipwright) with current project metadata: node/vitest/npm setup, javascript language, src/ conventions. Critical for understanding the codebase structure during planning."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Auth feature implementation pattern (complexity 65, 3-4 iterations, 300s duration) demonstrates successful feature delivery with TDD approach and integration testing. Applicable to dashboard feature planning."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Bug fix pattern with 3 iterations shows complexity 60, files changed in .claude/ and scripts/lib/ directories. Demonstrates iterative approach and test strategy (npm test) relevant to feature implementation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "EONENT dependency installation failure with 95% fix effectiveness. Highlights common setup issue to anticipate and prevent during dashboard development."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Property initialization bug pattern with 100% fix effectiveness. Common javascript pitfall to guard against in dashboard implementation planning."
+          }
+        ]
+      },
+      "timestamp": 1775824994,
+      "ttl": 1800
+    },
+    "c3aa9a6b60d47cfd4a8452f496bf5e34": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current repo patterns (sethdford/shipwright, captured 2026-04-10) specify project conventions: vitest test runner, npm package manager, nodejs project type, commonjs imports, src/ source dir, *.test.js test pattern. Plan validation should align with these conventions."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 78,
+            "summary": "Recent successful delivery (Fix bug, 60 complexity, 3 iterations, standard template) shows proven loop strategy with file patterns (.claude/*.json/.md, scripts/lib/*.sh) and npm test strategy. Provides template for similar-complexity dashboard feature plan."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Common failure pattern (ENOENT - missing dependency installation) suggests plan should explicitly include npm install verification step before testing to avoid validation failures."
+          }
+        ]
+      },
+      "timestamp": 1775825313,
+      "ttl": 1800
+    },
+    "12f7af336882eaf518cbe730aee4c222": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project's tech stack and conventions (Node.js, vitest, npm, commonjs, src/ directory structure). Essential baseline for architecture decisions."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Existing architectural rules that must guide the design of the dashboard feature to maintain consistency."
+          },
+          {
+            "file": "success-patterns.json (feature complexity 65, auth module)",
+            "relevance": 75,
+            "summary": "Recent successful feature implementation showing iterative approach, file patterns, and test strategy applicable to dashboard development."
+          },
+          {
+            "file": "failures.json (with fixes: cannot read property, ENOENT)",
+            "relevance": 50,
+            "summary": "Common failure patterns and fixes (initialization errors, missing dependencies) to avoid during design and implementation."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 35,
+            "summary": "Architectural decisions from prior work (empty in current state, but would document design rationale if populated)."
+          }
+        ]
+      },
+      "timestamp": 1775825353,
+      "ttl": 1800
+    },
+    "58e6ffba73750bd6dd77d821631f4488": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (with signatures: EONENT, cannot read property)",
+            "relevance": 80,
+            "summary": "Captures concrete failure signatures and their root causes (missing npm install, uninitialized variables). These directly represent anti-patterns to avoid in design."
+          },
+          {
+            "file": "success-patterns.json (auth module, bug fixes with approaches)",
+            "relevance": 72,
+            "summary": "Shows successful design approaches (TDD, iterative development, module isolation). By contrast, helps identify what anti-patterns to reject."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-10)",
+            "relevance": 65,
+            "summary": "Current project structure and conventions (vitest, commonjs, src/ layout, node/javascript). Provides context for design decisions specific to this codebase."
+          }
+        ]
+      },
+      "timestamp": 1775825370,
+      "ttl": 1800
     }
   }
 }
