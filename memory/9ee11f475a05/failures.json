@@ -1,22 +1,3 @@
 {
-  "failures": [
-    {
-      "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output are broken — the script fails to detect stale heartbeat files and does not emit 'Found N' count or '--force' hint in dry-run mode",
-      "fix": "Fix the heartbeat age-check logic in sw-cleanup.sh to correctly identify stale heartbeat files and ensure the dry-run summary prints 'Found <n> item(s)' and the '--force' hint when items are detected",
-      "seen_count": 1,
-      "last_seen": "2026-04-12T07:03:17Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command missing -e flag causes substitution expression to be interpreted as a filename instead of a script",
-      "fix": "Add -e flag to the sed invocation: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` in sw-code-review-test.sh",
-      "seen_count": 1,
-      "last_seen": "2026-04-12T07:08:43Z",
-      "category": "test_failure"
-    }
-  ]
+  "failures": []
 }
