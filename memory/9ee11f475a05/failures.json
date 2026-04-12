@@ -2,12 +2,12 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this runner",
-      "fix": "Add 'mkdir -p /tmp/claude' before running tests, or update test scripts to use 'mktemp -d /tmp/sw-test-XXXXXX' without the subdirectory",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not working correctly in dry-run mode",
+      "fix": "Fix the stale heartbeat detection logic and summary output in sw-cleanup.sh to display 'agent-1', 'Found', and '--force' text during dry-run when stale heartbeats or items are detected",
       "seen_count": 1,
-      "last_seen": "2026-04-12T07:08:44Z",
-      "category": "config"
+      "last_seen": "2026-04-12T07:05:42Z",
+      "category": "test_failure"
     }
   ]
 }
