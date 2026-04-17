@@ -1401,6 +1401,177 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "18062fda3f0f14e281b3b1c4d96afc7f": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "performance",
+        "key_risks": [
+          "Data insufficiency early on - recommendations based on small sample sizes may be noisy",
+          "Confounding factors (network latency, rate limits, timeouts) polluting performance metrics",
+          "Self-reinforcing bias - certain agents may be overspecialized early and recommendations lock them in",
+          "Cold start problem for new agent types with no historical performance data",
+          "Data staleness - old agent performance data becomes irrelevant as codebase and agents evolve"
+        ],
+        "implementation_hints": [
+          "Add agent_type, task_type, and outcome fields to event logging in events.jsonl - low-effort first step",
+          "Use rolling time windows (e.g., last 100 tasks) for recommendations to handle staleness",
+          "Include statistical significance thresholds before making recommendations (avoid N=1 edge cases)",
+          "Add confidence scores to recommendations and implement A/B testing for validation",
+          "Start with simple success_rate matrix, expand to latency/cost metrics later",
+          "Hook into existing intelligence layer (sw-intelligence.sh) rather than creating separate system",
+          "Mock historical data for local testing and dashboard development before real deployment",
+          "Consider SQLite for fast performance queries instead of JSON file with O(n) searches"
+        ]
+      },
+      "timestamp": 1776429723,
+      "ttl": 3600
+    },
+    "85ad6dfe87653e9b1ab9b8e8ebf8f8cc": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1776429736,
+      "ttl": 1800
+    },
+    "08d4a666a6956b4b6271837f4e110509": {
+      "result": {
+        "estimated_cost_usd": 0.58,
+        "estimated_iterations": 3,
+        "estimated_tokens": 128000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1776429750,
+      "ttl": 3600
+    },
+    "77fdc15cb8692f07b0cead36c345a57d": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "data-pipeline",
+          "observability",
+          "optimization"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Multi-component system: event logging modification, performance matrix calculation, recommendation algorithm, dashboard integration, and adaptive pipeline coupling. Data quality and metric design decisions are critical."
+        },
+        "skill_plan": {
+          "plan": [
+            "data-pipeline",
+            "brainstorming",
+            "collection-system-validation"
+          ],
+          "design": [
+            "data-pipeline",
+            "api-design",
+            "agent-performance-profiling"
+          ],
+          "build": [
+            "agent-performance-profiling",
+            "pattern-matching-similarity-scoring"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "performance"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "data-pipeline": "Agent outcomes are heterogeneous events that must be collected, aggregated, and transformed into a normalized performance matrix; data pipeline patterns ensure reliable collection and schema evolution.",
+          "brainstorming": "The definition of 'success' is non-obvious (PR merge, tests passing, code review approval, or some combination?) and directly affects recommendation reliability; challenge assumptions upfront.",
+          "collection-system-validation": "The system ingests events.jsonl (existing) + new agent performance tracking; validators must ensure schema consistency and prevent poisoned data before it corrupts the performance matrix.",
+          "api-design": "If building APIs for querying agent performance recommendations (used by adaptive pipeline composition), design them for discoverability and extensibility as new metrics are added.",
+          "agent-performance-profiling": "New skill needed for designing performance matrices, handling cold-start (new agent/task type pairs), weighting recent vs. historical data, and integrating with adaptive composition.",
+          "pattern-matching-similarity-scoring": "When a new task arrives, use pattern similarity scoring to recommend agents with similar historical task performance, even if the exact task type is unseen.",
+          "two-stage-review": "Complex feature spanning data collection, algorithm design, and dashboard integration; Pass 1 validates metric definitions and cold-start handling, Pass 2 validates integration and adaptive pipeline impact.",
+          "adversarial-quality": "Attack the recommendation algorithm: can agents game metrics, are there feedback loops that reinforce bad assignments, what happens under distribution shift (tasks/agents change over time)?",
+          "validation-thoroughness": "Smoke test the recommendation system in isolation; validate against real multi-agent pipeline data to ensure recommendations actually improve outcomes.",
+          "performance": "Performance matrix queries (during adaptive composition) must return in <100ms; ensure calculation and storage are optimized for the expected volume.",
+          "pr-quality": "Document the new performance matrix schema, explain cold-start strategy, and justify the success metric definition so reviewers understand data reliability.",
+          "deploy-safety": "Gradually enable agent performance logging to detect unintended side effects (event volume, storage growth) before full rollout.",
+          "observability": "Post-deploy, monitor recommendation accuracy over time (do recommended agents actually succeed more often?) and alert if recommendation distribution becomes skewed."
+        },
+        "generated_skills": [
+          {
+            "name": "agent-performance-profiling",
+            "reason": "The issue requires designing a complete performance tracking system specific to multi-agent task assignment; generic data and optimization skills don't address cold-start handling, success metric reliability, metric weighting strategies, or feedback loop prevention unique to agent profiling.",
+            "content": "## Agent Performance Profiling & Specialization Tuning\n\n### Success Metric Definition\nDefine \"success\" explicitly before implementation—this cascades through the entire system. Options:\n- **PR merge**: Coarse-grained, subject to human judgment on review\n- **Tests passing + review approval**: Compound metric, harder to attribute\n- **Code quality impact**: Measure test coverage delta, bug density in merged code (best for learning)\n- **Speed + cost**: How fast did the agent complete, how much did it cost?\n\nRecommendation: Use **test passing + review approval** as primary signal, with **code quality delta** as secondary signal for tie-breaking.\n\n### Performance Matrix Schema\n```json\n{\n  \"agent_type\": {\n    \"task_type\": {\n      \"success_count\": 42,\n      \"total_count\": 50,\n      \"success_rate\": 0.84,\n      \"avg_duration_seconds\": 1245,\n      \"avg_cost_cents\": 87,\n      \"last_updated\": \"2026-04-17T12:00:00Z\",\n      \"confidence\": 0.92\n    }\n  }\n}\n```\n\n### Cold-Start Strategy\nNew agent types or task types have zero historical data:\n1. **Fallback to parent task type** (e.g., \"test_fix\" → \"test\")\n2. **Fallback to agent role similarity** (e.g., new builder variant → builder base rate)\n3. **Decay recent failures**: If an agent type fails on all recent tasks, downweight its recommendations\n4. **Confidence scoring**: Include `\"confidence\"` in matrix; only recommend agents with `confidence >= 0.8`\n\n### Feedback Loop Prevention\n- **Metric normalization**: Task complexity varies (some are 10x harder). Normalize success rate by task complexity estimate (from intelligence engine)\n- **Distribution drift detection**: Alert if recommendation distribution changes >20% month-over-month\n- **Audit trail**: Log every recommendation + outcome to detect systematic bias\n\n### Recommendation Algorithm\n1. For incoming task, extract features: task_type, complexity, file_types\n2. Query performance matrix: agent_type → task_type → success_rate (with confidence check)\n3. If exact match with confidence >= 0.8: return top-3 agents by success_rate\n4. If no exact match: use pattern similarity to find similar task types, weight by similarity\n5. Break ties by speed/cost efficiency\n6. Always include fallback (random selection from available agents)\n\n### Integration with Adaptive Pipeline\n- Expose recommendation API: `GET /agent-performance/recommend?task_type=build_fix&complexity=high`\n- Adaptive composer calls this API during pipeline generation\n- Pass recommended agent type as hint to swarm orchestrator\n- Track whether recommendation was accepted/rejected\n\n### Metrics to Track\n- Recommendation accuracy: % of recommended agents that succeeded\n- Coverage: % of tasks for which confidence >= 0.8 recommendation exists\n- Cold-start cost: how many tasks fail before new agent/task type pair gets confidence >= 0.8\n- Diversity: ensure recommendations don't always suggest the same agent type\n"
+          }
+        ],
+        "review_focus": [
+          "Success metric definition clarity: is 'success' PR merge alone, or does it require code quality checks?",
+          "Cold-start handling: does the fallback strategy (parent task type → role similarity) work for all agent/task combinations?",
+          "Feedback loops: could poor initial assignments create a self-reinforcing cycle that locks out an agent type?",
+          "Data reliability: are events being logged for ALL agent tasks, or only certain pipeline stages?",
+          "Integration correctness: does adaptive pipeline composition actually call the recommendation API and respect it?",
+          "Performance: does performance matrix calculation (aggregating events.jsonl) complete in acceptable time for interactive use?",
+          "Recommendation distribution: are recommendations skewed toward popular agent types, or is diversity maintained?"
+        ],
+        "risk_areas": [
+          "**Metric poisoning**: If success metric is poorly defined, agents could game it or system learns the wrong patterns.",
+          "**Cold start failure**: New agent types with zero historical data may get punished unfairly if recommendation algorithm doesn't handle missing data gracefully.",
+          "**Distribution drift**: As agent implementations change, old performance data becomes stale and corrupts future recommendations.",
+          "**Feedback loop amplification**: Initial assignment bias (e.g., new agent type gets only hard tasks) can prevent it from ever accumulating success history.",
+          "**Dashboard scalability**: If performance matrix grows to 100s of agent types × 1000s of task types, dashboard queries could become slow.",
+          "**Recommendation bias**: Pattern similarity scoring could systematically favor similar task types even if they're actually different (type confusion)."
+        ]
+      },
+      "timestamp": 1776429832,
+      "ttl": 3600
+    },
+    "8cc9941083f8f35fab632ae9a564f977": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current project metadata (nodejs, vitest, npm, commonjs) and conventions captured today—essential baseline for architecture planning and understanding current build/test strategies"
+          },
+          {
+            "file": "failures.json (detailed test failures)",
+            "relevance": 82,
+            "summary": "Recent test failures in sw-cleanup.sh and sw-code-review-test.sh with root causes—identifies performance bottlenecks and reliability issues that specialization tuning should address"
+          },
+          {
+            "file": "success-patterns.json (bug fix and auth feature patterns)",
+            "relevance": 68,
+            "summary": "Two completed patterns showing iterative approaches (3-4 iterations), file access patterns, and test strategies—informs profiling decisions on what to measure and optimize"
+          },
+          {
+            "file": "success-patterns.json (auth module TDD pattern)",
+            "relevance": 62,
+            "summary": "5-iteration TDD pattern with specific file patterns (src/, test/) and unit+integration test strategy—provides concrete example of performance-relevant iteration patterns"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 55,
+            "summary": "Existing architecture rules (rule1, rule2, rule3)—baseline for identifying which rules may impact agent specialization or performance profiling constraints"
+          }
+        ]
+      },
+      "timestamp": 1776429895,
+      "ttl": 1800
     }
   }
 }
