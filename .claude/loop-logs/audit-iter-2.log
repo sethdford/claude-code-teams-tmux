@@ -1,1 +1,57 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across iterations, I need to flag **critical issues** that prevent audit passage:
+
+## Issues Found
+
+### 1. **CRITICAL: Test Suite Failure** ❌
+- Harness reports: `npm test: exit 3` (FAILING)
+- Agent claims: "7 new integration tests pass; daemon tests 66/66 green; 27 file-lock tests pass"
+- **Contradiction**: Agent's test claims don't match the npm test exit code of 3
+- **Impact**: Build stage cannot proceed with failing tests. Exit code 3 indicates test failures or registration errors.
+
+### 2. **CRITICAL: Discrepancy in Test Status**
+The agent attributes failures to "pre-existing `sw-cleanup-test.sh` failures (3 tests) unrelated to conflict prevention and predate this branch" but:
+- This is unverified — no evidence the 3 tests actually predate this branch
+- The agent did not verify or fix these failures despite them blocking `npm test`
+- The plan requires "Register new test suites in `package.json`" (Task 12) but no evidence of completion
+
+### 3. **Incomplete Delivery**
+The agent deferred critical work to "next iteration":
+- [ ] `/api/locks` endpoint + dashboard widget (Task 9)
+- [ ] `sw-fleet-viz.sh` metrics row (Task 10)
+- [ ] `shipwright docs sync` (Task 14)
+
+The plan explicitly lists 14 tasks; only ~8-10 appear implemented. This is iteration 2 (not iteration 1), and the build stage should be approaching completion, not deferring core features.
+
+### 4. **Unverified Integration Claims**
+Agent claims work is integrated (spawn gate, reap drains, stale cleanup, kill switch) but:
+- No evidence these are actually called in daemon spawn/reap codepaths
+- Diff shows `+72` lines in `daemon-dispatch.sh` but unclear if complete
+- No evidence of wiring in `sw-fleet.sh` (Task 7 deferred?)
+
+### 5. **Missing Verification Steps**
+Per the design spec, critical verification scenarios should be tested:
+- Two conflicting pipelines: one acquires, one queues ✗
+- Release drains queued item; it starts automatically ✗
+- Patrol reaps crashed pipeline within 120s; queue drains ✗
+- `/api/locks` returns holders + metrics ✗
+- `sw-fleet-viz` prints `conflicts_avoided` ✗
+
+---
+
+## Required Fixes (Before Proceeding)
+
+1. **Fix `npm test` exit code 3** — Run tests locally and report actual failures. If pre-existing, file separate issue; don't block this work.
+2. **Verify test registration** — Confirm new test suites are in `package.json` and discoverable by vitest.
+3. **Complete deferred tasks** — Implement `/api/locks`, fleet-viz metrics, and docs sync **in this iteration**. Plan said 14 tasks, iteration 2 should finish build.
+4. **Wire integration endpoints** — Verify spawn/reap gates are actually called; add integration test demonstrating queue→release flow.
+5. **Verify the 5 acceptance test scenarios** — None appear to have been run.
+
+---
+
+**AUDIT_FAIL**
+
+The work is directionally sound (conflict predictor + queue + lock integration is the right architecture), but test failures and incomplete delivery block progression. Iteration 3 should not start until `npm test` exits 0 and all 14 planned tasks are complete.
