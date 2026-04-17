@@ -83,27 +83,52 @@ _lock_update() {
     local jq_expr="$1"; shift
     _lock_init
     local flock_lock="${LOCK_FILE}.lock"
+    local mkdir_lock="${LOCK_FILE}.mkdirlock"
     local out
-    out=$({
-        (
-            if command -v flock >/dev/null 2>&1; then
+    if command -v flock >/dev/null 2>&1; then
+        out=$({
+            (
                 flock -w "$FILE_LOCK_FLOCK_TIMEOUT" 201 2>/dev/null || {
                     daemon_log ERROR "file-locks: flock acquisition timed out"
                     exit 1
                 }
+                local tmp
+                tmp=$(jq -c "$jq_expr" "$@" "$LOCK_FILE" 2>&1) || {
+                    daemon_log ERROR "file-locks: jq failed — $(echo "$tmp" | head -1)"
+                    exit 1
+                }
+                local tmp_file
+                tmp_file=$(mktemp "${LOCK_FILE}.tmp.XXXXXX") || exit 1
+                printf '%s\n' "$tmp" > "$tmp_file" || { rm -f "$tmp_file"; exit 1; }
+                mv "$tmp_file" "$LOCK_FILE" || { rm -f "$tmp_file"; exit 1; }
+                printf '%s' "$tmp"
+            ) 201>"$flock_lock"
+        }) || return 1
+    else
+        # macOS fallback: mkdir is atomic on POSIX filesystems
+        local waited=0
+        while ! mkdir "$mkdir_lock" 2>/dev/null; do
+            if (( waited >= FILE_LOCK_FLOCK_TIMEOUT )); then
+                daemon_log ERROR "file-locks: mkdir-lock acquisition timed out"
+                return 1
             fi
-            local tmp
-            tmp=$(jq -c "$jq_expr" "$@" "$LOCK_FILE" 2>&1) || {
-                daemon_log ERROR "file-locks: jq failed — $(echo "$tmp" | head -1)"
-                exit 1
-            }
-            local tmp_file
-            tmp_file=$(mktemp "${LOCK_FILE}.tmp.XXXXXX") || exit 1
-            printf '%s\n' "$tmp" > "$tmp_file" || { rm -f "$tmp_file"; exit 1; }
-            mv "$tmp_file" "$LOCK_FILE" || { rm -f "$tmp_file"; exit 1; }
-            printf '%s' "$tmp"
-        ) 201>"$flock_lock"
-    }) || return 1
+            sleep 0.1
+            waited=$((waited + 1))
+        done
+        trap 'rmdir "$mkdir_lock" 2>/dev/null || true' RETURN
+        local tmp
+        tmp=$(jq -c "$jq_expr" "$@" "$LOCK_FILE" 2>&1) || {
+            daemon_log ERROR "file-locks: jq failed — $(echo "$tmp" | head -1)"
+            rmdir "$mkdir_lock" 2>/dev/null || true
+            return 1
+        }
+        local tmp_file
+        tmp_file=$(mktemp "${LOCK_FILE}.tmp.XXXXXX") || { rmdir "$mkdir_lock" 2>/dev/null || true; return 1; }
+        printf '%s\n' "$tmp" > "$tmp_file" || { rm -f "$tmp_file"; rmdir "$mkdir_lock" 2>/dev/null || true; return 1; }
+        mv "$tmp_file" "$LOCK_FILE" || { rm -f "$tmp_file"; rmdir "$mkdir_lock" 2>/dev/null || true; return 1; }
+        rmdir "$mkdir_lock" 2>/dev/null || true
+        out="$tmp"
+    fi
     printf '%s' "$out"
 }
 

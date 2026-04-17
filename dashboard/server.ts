@@ -23,6 +23,7 @@ const EVENTS_FILE = join(HOME, ".shipwright", "events.jsonl");
 const DAEMON_STATE = join(HOME, ".shipwright", "daemon-state.json");
 const LOGS_DIR = join(HOME, ".shipwright", "logs");
 const HEARTBEAT_DIR = join(HOME, ".shipwright", "heartbeats");
+const FILE_LOCKS_FILE = join(HOME, ".shipwright", "file-locks.json");
 const MACHINES_FILE = join(HOME, ".shipwright", "machines.json");
 const COSTS_FILE = join(HOME, ".shipwright", "costs.json");
 const BUDGET_FILE = join(HOME, ".shipwright", "budget.json");
@@ -512,7 +513,8 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/api/team/invite/") ||
     pathname === "/api/claim" ||
     pathname === "/api/claim/release" ||
-    pathname === "/api/webhook/ci"
+    pathname === "/api/webhook/ci" ||
+    pathname === "/api/locks"
   );
 }
 
@@ -2600,6 +2602,52 @@ const server = Bun.serve({
       return new Response(JSON.stringify(health), {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
+    }
+
+    // GET /api/locks — file-lock registry (holders, queued work, metrics)
+    if (pathname === "/api/locks" && req.method === "GET") {
+      try {
+        const raw = await Bun.file(FILE_LOCKS_FILE).text();
+        const data = JSON.parse(raw);
+        const pipelines = data.pipelines ?? {};
+        const holders = Object.entries(pipelines).map(
+          ([pid, info]: [string, any]) => ({
+            pid,
+            issue: info.issue ?? null,
+            files: info.files ?? [],
+            acquired_at: info.acquired_at ?? null,
+          }),
+        );
+        return new Response(
+          JSON.stringify({
+            holders,
+            holder_count: holders.length,
+            metrics: data.metrics ?? {
+              conflicts_avoided: 0,
+              locks_acquired: 0,
+              locks_released: 0,
+              stale_cleaned: 0,
+            },
+            timestamp: new Date().toISOString(),
+          }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({
+            holders: [],
+            holder_count: 0,
+            metrics: {
+              conflicts_avoided: 0,
+              locks_acquired: 0,
+              locks_released: 0,
+              stale_cleaned: 0,
+            },
+            timestamp: new Date().toISOString(),
+          }),
+          { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+        );
+      }
     }
 
     // GET /api/ws-status — WebSocket connection status (for evidence collection)
