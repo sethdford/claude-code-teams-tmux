@@ -32,15 +32,14 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Feature implementation task requiring dashboard creation, cost attribution logic, and analytics; architect needed for data model and dashboard architecture design",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776430495,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1400,263 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "54408f6190a05fc8d05295b898be07c6": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Cost attribution accuracy across issue/stage/repo dimensions must be precise",
+          "Historical data integrity and migration from existing cost.json",
+          "Statistical analysis correctness for outlier detection and recommendations",
+          "Performance degradation with large historical datasets (30 days+)",
+          "Integration complexity with budget system and model router feedback loops"
+        ],
+        "implementation_hints": [
+          "Extend cost-attribution.json schema with granular issue/stage/repo/model breakdown and timestamps",
+          "Use existing ~/.shipwright/costs.json as source data, build aggregation layer on top",
+          "Implement median absolute deviation (MAD) for robust outlier detection instead of z-score",
+          "Store 30-day historical data as rolling time-series; lazy-load in dashboard commands",
+          "Connect cost recommendations directly to model_routing section in daemon-config.json",
+          "Add validation tests comparing attributed costs against raw event logs",
+          "Batch cost calculations per issue to avoid recalculating entire history on updates",
+          "Design cost-breakdown command with filtering by date range, issue type, stage, and repo"
+        ]
+      },
+      "timestamp": 1776429801,
+      "ttl": 3600
+    },
+    "beb230e4f9da982f194ab4d24f0aa099": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1776429812,
+      "ttl": 1800
+    },
+    "d88d0430926b2af9e78ed39f37a6495d": {
+      "result": {
+        "estimated_cost_usd": 22.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 145000,
+        "likely_failure_stage": "test",
+        "confidence": 68,
+        "breakdown": {
+          "cost_by_stage": {
+            "intake": 0.15,
+            "plan": 2.80,
+            "design": 3.50,
+            "spec_generation": 2.20,
+            "build_iteration_1": 3.20,
+            "build_iteration_2": 3.10,
+            "build_iteration_3": 2.80,
+            "build_iteration_4": 1.90,
+            "test": 1.95,
+            "review": 2.50,
+            "spec_verification": 1.80,
+            "compound_quality": 1.45,
+            "pr": 0.65
+          },
+          "token_breakdown": {
+            "plan_stage": 18000,
+            "design_stage": 22000,
+            "spec_generation": 15000,
+            "build_loop": 65000,
+            "test": 12000,
+            "review": 8000,
+            "quality": 5000
+          },
+          "risk_factors": {
+            "data_integrity_validation": "high",
+            "statistical_analysis_correctness": "high",
+            "performance_with_historical_data": "medium",
+            "integration_complexity": "medium"
+          },
+          "notes": "Complexity 7 infrastructure issue requires multi-iteration builds for statistical validation. Test stage most likely to fail on outlier detection algorithm validation. Recommend fast-test-interval=3 to balance coverage with cost."
+        }
+      },
+      "timestamp": 1776429825,
+      "ttl": 3600
+    },
+    "531d6d30c9c033c143a8281f6303c825": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current repo structure (sethdford/shipwright): Node.js, vitest, npm, JavaScript, src/ source dir, *.test.js pattern. Essential context for planning implementation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Auth module feature (complexity 65, 5 iterations, TDD approach): Shows successful feature development pattern with file patterns and test strategy applicable to dashboard feature."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Bug fix and auth feature patterns: Demonstrates iteration count (3-4), file change patterns, and commit strategies relevant to estimating dashboard feature effort."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent repo test failures (sw-cleanup.sh, sw-code-review-test.sh): Shows active issues in this codebase that could impact plan execution and testing approach."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Architecture rules defined: Indicates constraints and patterns to enforce during feature design and implementation planning stage."
+          }
+        ]
+      },
+      "timestamp": 1776430014,
+      "ttl": 1800
+    },
+    "673526918701d11bbff291127a495b9c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current project structure and conventions captured today: Node.js, vitest, npm, commonjs imports, src/ directory. Essential for understanding constraints and conventions that any plan for this feature must respect."
+          },
+          {
+            "file": "failures.json (5 test failures, 2026-04-16/17)",
+            "relevance": 80,
+            "summary": "Recent test failures from sw-cleanup.sh, sw-code-review-test.sh, and mktemp issues captured in last 24 hours. Directly relevant to understanding what validation checks are failing and common error patterns in this codebase."
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature, 2026-03-29)",
+            "relevance": 75,
+            "summary": "Shows successful feature implementation with iterative approach, test strategy, and file patterns for similar complexity (65). Demonstrates what plan approach and patterns worked for passing validation in this codebase."
+          }
+        ]
+      },
+      "timestamp": 1776430312,
+      "ttl": 1800
+    },
+    "5d2c484e7d7087c9cd10c6665cf75c99": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project structure (Node.js, vitest, npm, JavaScript) captured 2026-04-17. Contains conventions (src/, *.test.js, commonjs) essential for designing dashboard architecture."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Feature pattern 'add auth module' shows successful modular design with proper file structure (src/, test/), TDD approach, and unit+integration testing strategy applicable to dashboard design."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Feature pattern 'Add authentication feature' demonstrates design iteration approach, testing strategies, and file organization for complex feature development with multiple iterations."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Contains architecture rules that constrain and inform design decisions for the dashboard, though content is generic."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 35,
+            "summary": "Project type detection (Node.js bootstrap) provides baseline understanding of project classification and detection patterns."
+          }
+        ]
+      },
+      "timestamp": 1776430365,
+      "ttl": 1800
+    },
+    "f680eeaa24058c6168241b9569b4663f": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright captured_at 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current repo project metadata (Node, vitest, npm, JavaScript). Essential context for understanding tech stack constraints when rejecting design approaches."
+          },
+          {
+            "file": "failures.json (stage: test, multiple patterns, last_seen 2026-04-17)",
+            "relevance": 78,
+            "summary": "Recent test failures (sw-cleanup.sh, sed command issues, mktemp failures) show anti-patterns and gotchas in this codebase that should inform design approach rejections."
+          },
+          {
+            "file": "success-patterns.json (bug fix f4af3e2a... and auth feature 0bcf0637...)",
+            "relevance": 72,
+            "summary": "Successful feature development patterns show iterative TDD approach, file mutation patterns, and test strategies that could validate or reject design candidates."
+          }
+        ]
+      },
+      "timestamp": 1776430378,
+      "ttl": 1800
+    },
+    "427d8de3b3cc509ed8b7310fcfe9c11c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project metadata (sethdford/shipwright, captured 2026-04-17) with tech stack: Node.js, vitest, npm, commonjs. Directly applicable for build decisions."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Recent test failures (sw-cleanup.sh, sed command, mktemp issues) with root causes and fixes. Highly actionable for preventing build failures."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Two detailed successful patterns showing TDD approach, file change patterns (src/, test/, .claude/), iteration counts (3-4), and test strategies for feature development."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "ENOENT 'missing dependency installation' failure with 95% fix effectiveness. Relevant for npm projects to run install before testing."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Authentication feature pattern showing standard template, 3-5 iterations, TDD approach. Provides reference for feature complexity (complexity: 65) and development methodology."
+          }
+        ]
+      },
+      "timestamp": 1776430469,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Captures project structure (Node/vitest/npm), source conventions, and test patterns — essential context for configuring and executing the build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Historical successful builds show iteration counts (3 typical), test strategy (npm test), file change patterns, and duration (~45-150s) — informs expected build approach and convergence"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Captured test-stage failures (cleanup heartbeat detection, sed syntax, mktemp paths) provide context on known pitfalls and common errors to avoid during current build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 22,
+            "summary": "Empty baselines structure exists but contains no data; minimal immediate relevance until benchmarks are populated during build execution"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Empty decisions array; no prior architectural or implementation decisions captured to inform current build stage"
+          }
+        ]
+      },
+      "timestamp": 1776430482,
+      "ttl": 1800
     }
   }
 }
