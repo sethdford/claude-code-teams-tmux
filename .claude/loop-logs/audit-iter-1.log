@@ -2,55 +2,91 @@
 ⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-## Audit Report: Fleet Work Conflict Prevention System with File-Level Locking
+I'll analyze the cumulative work systematically against the goal and plan.
 
-Based on my comprehensive review of the cumulative work across iterations, here is my assessment:
+## Audit Summary
 
-### ✅ **Code Quality & Design**
+**Status**: ⚠️ **CONDITIONAL** - Progress is meaningful but blocked by a test failure that must be resolved.
 
-**file-locks.sh (316 lines):**
-- Excellent atomic locking implementation using `flock` with proper serialization
-- Deadlock prevention via sorted alphabetical file acquisition in single atomic operation
-- Proper error handling and resource cleanup
-- Well-documented with clear inline comments
-- Follows all bash standards (`set -euo pipefail`, ERR trap, VERSION, module guard)
-- No obvious logic errors, security vulnerabilities, or TODOs in the code itself
+## Detailed Findings
 
-**sw-file-locks-test.sh (20 test cases):**
-- Comprehensive coverage: acquire, release, conflicts, stale cleanup, metrics, event emission
-- **All 20 tests passing** ✓
-- Proper test isolation and cleanup patterns
-- Good assertion coverage
+### ✅ What's Working
 
-### ✅ **Meaningful Progress**
+1. **New Libraries Created**: `conflict-predictor.sh` (92 lines) and `conflict-queue.sh` (165 lines) are well-structured and address core components from the plan (tasks 3-4).
+2. **Unit Test Coverage**: 21 passing unit tests for the new libraries (`sw-conflict-predictor-test.sh`, `sw-conflict-queue-test.sh`) demonstrate functionality.
+3. **Code Quality**: The new library code follows project conventions (bash 3.2 compatible, `set -euo pipefail`, proper error handling).
+4. **Reasonable Progress**: Tasks 3-5 of 14 completed in iteration 1 is reasonable scope for multi-iteration work.
 
-- **Phase 1 Complete**: Core file lock registry library fully implemented
-- **Production-ready foundation**: The library can be integrated into daemon with no modifications needed
-- **Proper abstractions**: Clean public API (`lock_acquire_files`, `lock_release_files`, `lock_check_conflict`, `lock_cleanup_stale`)
+### ❌ Critical Issues
 
-### ⚠️ **Incomplete Work (Intentional)**
+1. **TEST SUITE FAILURE** (**BLOCKER**):
+   - `npm test` exits with code 3 (failed)
+   - `npm run test:smoke` passes
+   - This regression must be investigated and fixed before proceeding
+   - **Action required**: Debug why full test suite fails while unit tests for new code pass
 
-The agent acknowledged this is Phase 1 and explicitly noted planned future work:
-- Integration into `daemon_spawn_pipeline` 
-- Integration into reap path
-- File prediction heuristics
-- E2E conflict scenario test
+2. **Incomplete Core Functions** (tasks 1-2 not started):
+   - `_lock_acquire_serializer` - missing
+   - `lock_acquire_or_queue` - missing  
+   - `lock_export_metrics_prometheus` - missing
+   - These are foundational; new libraries can't be integrated without them
 
-This is **not a bug**—it's a deliberate phase-based implementation approach.
+3. **No Integration Work** (tasks 6-11 not started):
+   - `daemon-dispatch.sh` not wired with acquisition gate
+   - `sw-fleet.sh` not wired with acquisition gate
+   - `/api/locks` endpoint missing
+   - Fleet-viz metrics missing
+   - The libraries exist but aren't being *used* anywhere
+   - Integration tests deferred to later iterations
 
-### ⚠️ **npm Test Suite Status**
+4. **Incomplete Documentation** (task 14 not done):
+   - No `shipwright docs sync` executed
+   - New test suites in `package.json` but not fully wired
 
-**File-locks tests**: ✅ 20/20 passing  
-**Overall npm test**: ❌ exit code 3 (3 tests failing in `sw-cleanup-test.sh`)
+### Potential Logic Issues
 
-**Critical finding**: The npm test failures are **PRE-EXISTING** and **NOT caused by this work**:
-- Current iteration (578e050) only modified internal state files (`.claude/` directory)
-- No source code changes in current iteration
-- Failing tests are in `sw-cleanup-test.sh`, which was not modified
-- The file-locks test suite itself passes completely
+Looking at the new code structure:
+- `conflict-queue.sh` has basic FIFO mechanics but no persistence validation (survives restarts?)
+- `conflict-predictor.sh` uses static file analysis heuristic, which is reasonable, but no tests validate accuracy against real conflict scenarios
+- No coordination logic between lock acquisition and queue draining visible yet
+
+### Unverified Assumptions
+
+From the plan, the root cause hypothesis was "scope drift" on the prior WIP. The new approach seems sound (thin predictor + queue rather than rewrite), but:
+- No validation that the existing `file-locks.sh` library integrates cleanly with the new components
+- No evidence that `SW_FILE_LOCKS_ENABLED=0` kill switch will work as designed
+- macOS `flock`→`mkdir` fallback not yet tested
 
 ---
 
-**AUDIT_PASS**
+## Required Fixes Before Continuing
 
-The agent delivered solid, production-ready code for Phase 1. The file-locks library is well-designed, thoroughly tested, and follows all project conventions. Incompleteness of daemon integration is intentional and explicitly planned for future iterations, not a code quality issue. The npm test failure is pre-existing and unrelated to this work.
+1. **Investigate and fix `npm test` failure immediately**:
+   - Run with verbose output to see which test/suite fails
+   - Check if new test files have syntax/import errors
+   - Confirm regression is from these changes, not pre-existing
+   - All tests must pass before iteration 2
+
+2. **Verify new libraries don't have hidden issues**:
+   - Check for TODOs, placeholder code, or unfinished paths (did not detect in scan, but confirm)
+   - Validate queue persistence (if needed) or document that it's in-memory-only
+
+3. **Next iteration must start with integration** (tasks 1-2, 6):
+   - Implement `_lock_acquire_serializer` in `file-locks.sh` (or new file)
+   - Implement `lock_acquire_or_queue` wrapper
+   - Wire into `daemon-dispatch.sh` spawn/reap paths
+   - Add integration tests immediately after wiring
+
+---
+
+## Verdict
+
+**AUDIT_FAIL** — cannot approve this iteration because:
+
+1. **`npm test` is broken** (exit code 3 != 0). This must be fixed. Even if the new code itself is correct, breaking the test suite is unacceptable.
+2. **No integration yet.** Libraries exist but aren't used. This is planned for later iterations, but the test failure blocks confidence.
+
+**Path forward**: 
+- Debug and fix the test failure (1-2 hours)
+- Approve iteration 1 once tests pass
+- Proceed to iteration 2 with integration tasks (tasks 1-2, 6-11)
