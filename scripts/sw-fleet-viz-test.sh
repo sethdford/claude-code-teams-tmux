@@ -248,6 +248,15 @@ insights_out=$(bash "$SUT" insights 2>&1) || true
 assert_contains "insights shows Fleet Insights" "$insights_out" "Fleet Insights"
 assert_contains "insights shows Success Rate" "$insights_out" "Success Rate"
 
+# Seed a file-locks registry and verify metrics row is rendered
+cat > "$TEST_TEMP_DIR/home/.shipwright/file-locks.json" <<'EOF'
+{"version":1,"pipelines":{"9991":{"files":["a.sh"],"issue":42,"acquired_at":"2026-04-17T00:00:00Z","heartbeat":"2026-04-17T00:00:00Z"}},"metrics":{"conflicts_avoided":3,"locks_acquired":4,"locks_released":1,"stale_cleaned":0}}
+EOF
+insights_lock_out=$(bash "$SUT" insights 2>&1) || true
+assert_contains "insights shows File-Lock Conflicts header" "$insights_lock_out" "File-Lock Conflicts"
+assert_contains "insights shows conflicts_avoided counter" "$insights_lock_out" "conflicts_avoided: "
+assert_contains "insights shows active_holders" "$insights_lock_out" "active_holders:"
+
 echo ""
 
 # ─── 11. Default Command ────────────────────────────────────────────────────

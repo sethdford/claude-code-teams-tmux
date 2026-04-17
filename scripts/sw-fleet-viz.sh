@@ -220,6 +220,24 @@ show_insights() {
 
     echo -e "${BOLD}Success Rate:${RESET} ${success_rate}% (${successful_pipelines}/${total_pipelines})"
 
+    # File-lock conflict metrics (from file-locks.json registry)
+    local lock_file="${LOCK_FILE:-${FLEET_DIR}/file-locks.json}"
+    if [[ -f "$lock_file" ]]; then
+        local conflicts_avoided locks_acquired locks_released stale_cleaned active_holders
+        conflicts_avoided=$(jq -r '.metrics.conflicts_avoided // 0' "$lock_file" 2>/dev/null || echo 0)
+        locks_acquired=$(jq -r '.metrics.locks_acquired // 0' "$lock_file" 2>/dev/null || echo 0)
+        locks_released=$(jq -r '.metrics.locks_released // 0' "$lock_file" 2>/dev/null || echo 0)
+        stale_cleaned=$(jq -r '.metrics.stale_cleaned // 0' "$lock_file" 2>/dev/null || echo 0)
+        active_holders=$(jq -r '.pipelines | length' "$lock_file" 2>/dev/null || echo 0)
+        echo ""
+        echo -e "${BOLD}File-Lock Conflicts:${RESET}"
+        echo -e "  conflicts_avoided: ${GREEN}${conflicts_avoided}${RESET}"
+        echo -e "  locks_acquired:    ${locks_acquired}"
+        echo -e "  locks_released:    ${locks_released}"
+        echo -e "  stale_cleaned:     ${stale_cleaned}"
+        echo -e "  active_holders:    ${active_holders}"
+    fi
+
     # Most expensive repo
     if [[ -f "$COSTS_FILE" ]]; then
         echo ""
