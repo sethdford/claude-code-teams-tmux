@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "optimizer",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.92,
+        "reasoning": "Task requires designing change impact analysis system and stage dependency graph; builder implements, optimizer validates perf gains, tester covers edge cases",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776451794,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,229 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "a101c483aacf3992cd80a17ec53e6fbf": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Incorrectly skipping necessary stages leads to undetected bugs and silent failures",
+          "Skip rule configuration becomes unmaintainable with too many special cases and edge cases",
+          "Integration bugs with pipeline state tracking and vitals reporting systems",
+          "Performance overhead of analyzing git diffs for every pipeline run in fleet mode",
+          "Mixed change types (code + docs + config) classified incorrectly causing false skip decisions"
+        ],
+        "implementation_hints": [
+          "Start with conservative skip rules - only skip when 100% certain it's safe",
+          "Use git diff --name-only with file path patterns for efficient categorization",
+          "Make skip rules configurable and overridable per repository in daemon-config.json",
+          "Add detailed audit logging to pipeline-state.md explaining every skip decision",
+          "Build comprehensive test suite covering diverse change scenarios and edge cases",
+          "Leverage existing intelligence layer patterns for change impact detection",
+          "Consider caching diff analysis results to optimize fleet operations"
+        ]
+      },
+      "timestamp": 1776451060,
+      "ttl": 3600
+    },
+    "987c12bd22f732c814510f4e16539a37": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1776451074,
+      "ttl": 1800
+    },
+    "bb65908544be570772ea74d0b07c6749": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 4,
+        "estimated_tokens": 185000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1776451088,
+      "ttl": 3600
+    },
+    "95e9240c513c295a636d2592ba7d02b4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project structure and conventions (Node.js, vitest, src/ layout, commonjs imports) — essential for planning where code goes and how to structure the feature"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Successful feature/bug patterns in this codebase show iterative TDD approach with 3-5 iterations, module isolation strategy, and common file patterns — informs design approach"
+          },
+          {
+            "file": "failures.json (2026-04-17 detailed test failures)",
+            "relevance": 78,
+            "summary": "Recent test infrastructure issues (sw-cleanup.sh heartbeat detection, sed quoting, mktemp) reveal current pain points in codebase testing to avoid repeating in new feature"
+          },
+          {
+            "file": "failures.json (ENOENT, npm install fix)",
+            "relevance": 65,
+            "summary": "Common setup/dependency issues (95% fix effectiveness for npm install) — relevant for anticipating integration and test environment considerations in plan"
+          },
+          {
+            "file": "patterns.json (project_type: nodejs)",
+            "relevance": 58,
+            "summary": "Confirms tech stack context, though largely redundant with the more detailed sethdford/shipwright patterns entry"
+          }
+        ]
+      },
+      "timestamp": 1776451351,
+      "ttl": 1800
+    },
+    "46d29d6c6f3d9e5ca16fcf4c6caa9e06": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project metadata (sethdford/shipwright, node/vitest/npm, captured 2026-04-17) provides essential context for designing the stage skipping engine within the actual project constraints"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Recent test failures (sw-cleanup.sh dry-run detection, sed quoting, mktemp directory) show patterns to avoid in the stage skipping implementation; directly informs plan validation for preventing similar issues"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Two successful delivery patterns (bug fix with 3 iterations, feature with TDD approach) show proven templates: standard template, 3-5 iterations, npm test strategy—applicable as reference for this feature's implementation plan"
+          }
+        ]
+      },
+      "timestamp": 1776451617,
+      "ttl": 1800
+    },
+    "4e4465d0c7d8b64216558d0b9931ceb7": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project context (sethdford/shipwright, Node/vitest/npm/commonjs) captured today. Essential for understanding the target architecture and tech stack constraints for the stage skipping engine."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 90,
+            "summary": "Architecture rules and enforcement model. Directly relevant to design stage—defines what architectural constraints and patterns must be followed in the new engine."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Auth module feature (complexity 65, 5 iterations, TDD approach). Shows successful feature dev patterns with file organization, test strategy, and iteration approach applicable to engine design."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recent test failures (sw-cleanup.sh heartbeat detection, sed bugs, mktemp issues from 2026-04-17). Specific gotchas and implementation pitfalls to avoid in the stage skipping engine architecture."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Bug fix pattern (complexity 60, 3 iterations, 6 commits). Shows successful iterative approach to complex changes with file patterns and test strategy that could inform engine development."
+          }
+        ]
+      },
+      "timestamp": 1776451649,
+      "ttl": 1800
+    },
+    "4d21ca043b70a3a616702bed5ac30970": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 85,
+            "summary": "Current project conventions, structure, and test patterns (vitest, npm, src/ dir, commonjs) are essential context for designing stage-skipping logic compatible with this codebase"
+          },
+          {
+            "file": "failures.json (recent test failures)",
+            "relevance": 75,
+            "summary": "Shows actual anti-patterns encountered in recent pipeline work—heartbeat detection failures, sed syntax errors, mktemp issues—indicating fragile assumptions to avoid in stage-skipping engine design"
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 65,
+            "summary": "Demonstrates successful iterative TDD approach with module isolation and file pattern targeting; implicitly shows what design avoided premature optimization and scope creep"
+          }
+        ]
+      },
+      "timestamp": 1776451664,
+      "ttl": 1800
+    },
+    "8e9f7e4b010b54d97ec8b728573c76e4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current repo state captured today with exact project config (Node.js, vitest, npm, JavaScript). Identifies source conventions (src/, *.test.js, commonjs) directly applicable to build stage."
+          },
+          {
+            "file": "failures.json (multiple, 2026-04-16/17)",
+            "relevance": 90,
+            "summary": "Recent test failures from this repo with root causes and fixes (mktemp dir issue, sed invocation, heartbeat detection). Direct guidance for fixing likely build/test stage issues."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a..., complexity 60)",
+            "relevance": 75,
+            "summary": "Successful 3-iteration fix pattern on this repo using npm test strategy, with file change patterns and loop approach. Demonstrates effective build/test iteration cycles."
+          },
+          {
+            "file": "success-patterns.json (0bcf0637..., complexity 65)",
+            "relevance": 70,
+            "summary": "Successful feature implementation (4 iterations, npm test strategy, TDD approach) showing similar complexity to stage-skipping engine. Provides iteration and test strategy guidance."
+          },
+          {
+            "file": "failures.json (EONENT error)",
+            "relevance": 65,
+            "summary": "Common Node.js dependency error (95% fix effectiveness with npm install). Directly applicable to npm-based build initialization."
+          }
+        ]
+      },
+      "timestamp": 1776451767,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions directly applicable to build: test_pattern (*.test.js), source_dir (src/), import_style (commonjs), test_runner (vitest). Essential for understanding codebase structure during implementation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Captures recurring test failures from prior builds including mktemp directory issues, sed syntax errors in sw-code-review-test.sh, and sw-cleanup.sh heartbeat detection bugs. Critical for avoiding known pitfalls in current build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Shows two prior successful feature/bug builds completing in 3 iterations with standard template. Provides reference for iteration strategy, test approach (npm test), and typical file change patterns for similar complexity work."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 12,
+            "summary": "Contains only empty baselines dict with no actual metrics data. Could be useful once populated with cost/timing baselines for build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 8,
+            "summary": "Empty decisions array with no prior architectural or implementation decisions recorded. Not actionable for current build stage."
+          }
+        ]
+      },
+      "timestamp": 1776451782,
+      "ttl": 1800
     }
   }
 }
