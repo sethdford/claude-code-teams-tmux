@@ -243,17 +243,22 @@ Your output MUST include these sections when this skill is active:
 3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
-"
-iteration: 1
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-17T18:55:32Z
-last_iteration_at: 2026-04-17T18:55:32Z
+started_at: 2026-04-17T19:02:23Z
+last_iteration_at: 2026-04-17T19:02:23Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -266,4 +271,9 @@ max_extensions: 3
 ## Log
 ### Iteration 1 (2026-04-17T18:55:32Z)
 Iteration 1 complete. Delivered the core engine: `scripts/lib/change-impact.sh` with `classify_change_impact()` and `cha
+
+### Iteration 2 (2026-04-17T19:02:23Z)
+- `pipeline-state.sh`: renders a "Skipped Stages" block in `pipeline-state.md` from `skip-log.jsonl`.
+- `sw-pipeline-vitals.sh`: adds a stage-skip summary (count, category, per-stage reasons) to the vitals report.
+- `sw-daemon.sh` init: seeds default `stage_skip_rules` in the generated `daemon-config.json`.
 
