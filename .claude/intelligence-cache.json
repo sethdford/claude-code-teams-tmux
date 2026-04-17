@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "security-auditor"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Fleet-wide file-level locking is fundamentally an architecture design problem requiring distributed state management, conflict detection strategy, and locking protocols. Builder implements, tester validates concurrency scenarios, security-auditor reviews access control and atomicity guarantees.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776430395,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,232 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "579f1cad3e2a96c40d2a00b7ee439a08": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Race conditions during concurrent lock acquisition across multiple processes",
+          "Orphaned locks if pipelines crash or are force-killed before releasing",
+          "Deadlocks if queued pipelines form circular file dependencies",
+          "Stale lock cleanup failures causing permanent queue blockages during long daemon runs",
+          "Inconsistent lock state between fleet workers on distributed systems",
+          "Performance degradation from lock checking on every pipeline start"
+        ],
+        "implementation_hints": [
+          "Use atomic file writes (tmpfile + mv) for lock state to prevent partial writes",
+          "Implement per-lock timeout mechanism (e.g., 24h expiry) to auto-cleanup stale locks",
+          "Store lock metadata (pipeline ID, start time, file list, worker node) for forensics",
+          "Build on existing SQLite persistence layer instead of file-based locks for atomicity",
+          "Implement two-level locking: repo-level check first, then file-level to reduce contention",
+          "Add daemon patrol task to detect and clean up orphaned locks every 5 minutes",
+          "Use eventbus to broadcast lock/unlock events for real-time dashboard updates",
+          "Queue conflicting pipelines with priority inheritance to prevent starvation",
+          "Add conflict metrics: lock wait time, queue depth, resolved conflicts per run"
+        ]
+      },
+      "timestamp": 1776429700,
+      "ttl": 3600
+    },
+    "0fe5184ad6acdeb52e782835e6a45563": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1776429715,
+      "ttl": 1800
+    },
+    "952c84dfc3ded7abb5bc3d739a2dac9f": {
+      "result": {
+        "estimated_cost_usd": 0.19,
+        "estimated_iterations": 4,
+        "estimated_tokens": 52000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1776429731,
+      "ttl": 3600
+    },
+    "6c9ce97db54f6a6fdd8822f21786c9e3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current project conventions (Node/vitest/npm, src/ layout, commonjs) are essential for architecture planning in this codebase"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 90,
+            "summary": "Existing architecture rules directly inform the design of the conflict prevention system and file-level locking constraints"
+          },
+          {
+            "file": "success-patterns.json (add auth module, TDD approach)",
+            "relevance": 75,
+            "summary": "Similar-complexity feature (60) showing successful multi-iteration approach with module isolation and test patterns applicable to conflict prevention"
+          },
+          {
+            "file": "success-patterns.json (2 detailed patterns: bug fix + auth feature)",
+            "relevance": 70,
+            "summary": "Real implementation examples showing file change patterns, iteration counts, and complexity scoring useful for estimating the conflict prevention system scope"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 65,
+            "summary": "Heartbeat/stale detection failures inform how to design robust locking mechanisms and detect abandoned agent work in the fleet"
+          }
+        ]
+      },
+      "timestamp": 1776429945,
+      "ttl": 1800
+    },
+    "3eb2e6e4a9c3dbaafef684ef957d7ca4": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 5 recent test stage failures (2026-04-17) with root causes, fixes, and effectiveness rates. Directly relevant to understanding what plan validation checks are failing in this pipeline run."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project detection for sethdford/shipwright captured at 2026-04-17T12:44:01Z. Defines current project conventions (node, vitest, npm, src/ directory) essential for understanding the plan context."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful feature implementation patterns (auth module, bug fixes) with iterative approaches, file patterns, and test strategies. Provides baseline for how similar complexity work succeeded."
+          }
+        ]
+      },
+      "timestamp": 1776430215,
+      "ttl": 1800
+    },
+    "7a3a41fd39ab8876e8d2339713d2d55a": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Directly relevant — contains architecture rules that would inform design patterns for the conflict prevention system's structure and constraints"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 65,
+            "summary": "Project conventions and structure — Node.js with vitest, commonjs imports, src/ directory structure inform architectural decisions for this repo's conflict prevention system"
+          },
+          {
+            "file": "success-patterns.json (auth module, id: test1)",
+            "relevance": 55,
+            "summary": "Module isolation and TDD approach — demonstrates successful iterative feature development with clear file patterns and test strategy relevant to designing locked file coordination"
+          },
+          {
+            "file": "patterns.json (project_type nodejs)",
+            "relevance": 45,
+            "summary": "Confirms Node.js/JavaScript environment, baseline for architectural technology choices and runtime constraints for fleet-wide locking"
+          },
+          {
+            "file": "success-patterns.json (authentication feature, id: 0bcf06...)",
+            "relevance": 40,
+            "summary": "Feature implementation patterns across multiple iterations — shows approach to complex systems design and testing that could inform conflict prevention architecture"
+          }
+        ]
+      },
+      "timestamp": 1776430267,
+      "ttl": 1800
+    },
+    "6d6ac8b9a8d74d8de5271261d5e4af98": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (recent test failures with sw-cleanup, mktemp, heartbeat)",
+            "relevance": 75,
+            "summary": "Recent test failures around file handling, stale heartbeat detection, and cleanup logic are directly relevant to file-level locking anti-patterns. sw-cleanup.sh issues inform what NOT to do in conflict prevention."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright captured 2026-04-17)",
+            "relevance": 65,
+            "summary": "Current project conventions (node, vitest, src/ structure) provide essential context for this specific codebase, allowing rejection of design approaches that violate existing patterns."
+          },
+          {
+            "file": "success-patterns.json (fix bug iteration 3, auth feature iteration 4)",
+            "relevance": 45,
+            "summary": "Successful approaches (iterative refinement, TDD, module isolation) show design patterns that work in this codebase, allowing contrast against rejected anti-patterns for the locking system."
+          }
+        ]
+      },
+      "timestamp": 1776430281,
+      "ttl": 1800
+    },
+    "55ab117e13308b434a4c59fa9dfc4af5": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current repo project metadata: Node.js, vitest test runner, npm package manager, CommonJS imports, src/ and test/ conventions. Critical for build stage context."
+          },
+          {
+            "file": "failures.json (with multiple test failures, 2026-04-17)",
+            "relevance": 85,
+            "summary": "Recent test failures from build/test stages with root causes and fixes (sw-cleanup.sh heartbeat detection, sed command issues, mktemp failures). Directly applicable to avoiding repeated failures."
+          },
+          {
+            "file": "success-patterns.json (two patterns: bug fix and auth feature)",
+            "relevance": 75,
+            "summary": "Successful delivery patterns for similar complexity work (60-65) in this repo using standard template. Shows 3-5 iterations with npm test strategy, relevant for build approach."
+          },
+          {
+            "file": "patterns.json (project_type: nodejs, 2026-02-21)",
+            "relevance": 70,
+            "summary": "Project type context confirming Node.js environment. Useful for understanding build environment and tooling expectations."
+          },
+          {
+            "file": "failures.json (ENOENT and cannot read property errors)",
+            "relevance": 65,
+            "summary": "Common error signatures for Node.js projects with documented fixes (npm install, variable initialization). Helps anticipate and prevent frequent build failures."
+          }
+        ]
+      },
+      "timestamp": 1776430369,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions are critical for build: defines source_dir (src/), test_pattern (*.test.js), test_runner (vitest), package_manager (npm), and import_style (commonjs) needed to execute build correctly"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Recent test failures during build stage show specific issues to avoid: sw-cleanup.sh heartbeat detection, sed command syntax, mktemp directory path issues. These patterns will likely recur during current build iteration"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Successful build strategies from similar complexity work show typical iteration counts (3), duration (45-150s), file patterns touched (scripts/lib/*.sh, .claude/), and that loop-based iteration is the approach used"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines provide no contextual value for current build stage"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions provide no contextual value for current build stage"
+          }
+        ]
+      },
+      "timestamp": 1776430381,
+      "ttl": 1800
     }
   }
 }
