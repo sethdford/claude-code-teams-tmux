@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "optimizer",
         "secondary_roles": [
           "tester",
-          "reviewer"
+          "builder",
+          "architect"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Test suite execution optimization with adaptive fast-path sampling is fundamentally a performance problem requiring profiling, efficiency analysis, and optimization expertise, with secondary input from testing strategy and architecture design.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776430539,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,320 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "0cd86ce4475a682b7a8b297193b71d04": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "testing",
+        "key_risks": [
+          "Sampling logic could miss real failures if stratification is inadequate",
+          "Stale/inaccurate test stats could lead to skipped important tests",
+          "Integration overhead could negate performance gains on small test suites",
+          "Smoke test mode false negatives could hide failures and reduce reliability",
+          "Data collection overhead (stat tracking) could slow down feedback loop"
+        ],
+        "implementation_hints": [
+          "Store per-test timing and failure rate in .claude/test-stats.json with versioning for schema changes",
+          "Use stratified random sampling: partition slow tests by decile, sample proportionally",
+          "Implement smoke mode as: top-20 fastest + top-10 highest-failure-rate tests",
+          "Add --fast-test-cmd integration to sw-loop.sh with fallback to full suite on first iteration",
+          "Track false negatives: if full suite finds failures not in smoke results, downweight those tests next cycle",
+          "Dashboard should show per-test execution time distribution, failure hotspots, and feedback time delta",
+          "Default to running all tests if stats are missing/stale (>7 days) for safety",
+          "Consider caching test discovery separately from execution timing to avoid repeated startup cost"
+        ]
+      },
+      "timestamp": 1776429828,
+      "ttl": 3600
+    },
+    "d59228ea65cb4fb09408a61239908366": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1776429843,
+      "ttl": 1800
+    },
+    "bbff235b2bd2b509bdca08a5f7eec854": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.92,
+        "secondary_domains": [
+          "performance",
+          "infrastructure"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires building a new subsystem with data collection, sampling algorithm design, integration with build loop, and dashboard support. Moderate complexity due to contained scope and well-defined acceptance criteria."
+        },
+        "skill_plan": {
+          "plan": [
+            "performance",
+            "data-pipeline",
+            "testing-strategy"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "performance"
+          ],
+          "build": [
+            "performance",
+            "testing-strategy"
+          ],
+          "review": [
+            "performance",
+            "testing-strategy",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "performance": "Test optimization is fundamentally about reducing feedback time while maintaining reliability—every design decision must account for execution speed and resource efficiency",
+          "data-pipeline": "The optimizer depends on reliable collection, storage, and analysis of test execution statistics (timing, failure rates) forming a critical feedback loop",
+          "testing-strategy": "Understanding test characteristics (fast vs slow, flaky vs stable, critical vs redundant) is essential to design effective stratified sampling strategies",
+          "architecture-design": "This subsystem must integrate cleanly with sw-loop.sh and the dashboard without breaking existing build loop behavior or adding critical dependencies",
+          "adversarial-quality": "The optimizer itself needs adversarial stress testing—what happens with flaky tests, stale statistics, test refactoring, or when sampling systematically misses failure modes?",
+          "validation-thoroughness": "Success isn't just speed; it's maintaining test reliability—validate that smoke tests catch ≥95% of failures and the <30s target is real, not theoretical",
+          "pr-quality": "Clear documentation of the sampling strategy, failure detection rate metrics, and integration points is critical for reviewer understanding and future maintenance",
+          "observability": "Ongoing monitoring validates that the optimizer achieves its P0 reliability goals and <30s target; track false negatives and adapter effectiveness"
+        },
+        "generated_skills": [
+          {
+            "name": "adaptive-test-sampling-design",
+            "reason": "No existing skill addresses the core challenge of designing and validating adaptive test sampling algorithms that balance feedback speed against detection completeness",
+            "content": "## Adaptive Test Sampling for Build Loop Optimization\n\n**Core Strategy**\n\nSmoke test mode targets <30s by running: (1) top N fastest tests for baseline coverage, (2) top M historically failing tests for reliability signal. Full mode runs all tests ordered by (failure_rate × execution_time) to fail-fast.\n\n**Implementation Priorities**\n\n1. **Atomic Data Collection**: Track per-test execution time (ms), pass/fail counts, and pass rate. Store in test-stats.json with rolling window (e.g., last 30 runs). Update atomically after every test run. Handle new tests conservatively (assume median speed + 50% pass rate until ≥30 runs).\n\n2. **Sampling Algorithm**: Use stratified sampling by test speed, then within each stratum, prioritize by failure_rate. Ensure at least one test per module is sampled (no module fully skipped). Seed RNG with commit SHA for reproducibility.\n\n3. **Integration Safety**: Opt-in via --fast-test-cmd flag. Graceful degradation: if test-stats.json is missing/corrupted, run all tests. Test the optimizer itself with unit tests for sampling logic and integration tests with sw-loop.sh.\n\n4. **Validation Metrics**:\n   - Failure detection rate: % of failures in full suite caught by smoke suite (target: ≥95%)\n   - False negative rate: % of failures missed in smoke (target: <5%, trigger alerts)\n   - Wall-clock improvement: smoke <30s, full suite unaffected\n   - Flaky test handling: tests with 0.4–0.7 pass rate weighted higher in samples\n\n5. **Risk Scenarios**:\n   - Stale stats after test refactoring → graceful fallback to full suite\n   - Sampling misses integration tests → monitor false negative rate\n   - Test infrastructure changes break sampler → safeguard with feature flag\n   - Optimizer overhead >1s → negate time savings\n\nDisplay on dashboard: execution time histogram, failure hotspots, false negative trend, and time savings % over time."
+          }
+        ],
+        "review_focus": [
+          "Algorithm correctness: Does stratified sampling with failure-rate weighting correctly prioritize critical tests?",
+          "Data integrity: Are execution times measured cleanly (excluding setup/teardown)? Is test-stats.json updated atomically?",
+          "Integration safety: Does --fast-test-cmd flag work without breaking sw-loop.sh? Backwards compatibility with existing builds?",
+          "Edge case handling: New tests, deleted tests, flaky tests (0.4–0.7 pass rate), stale statistics—all handled gracefully?",
+          "Optimizer efficiency: Does the optimizer itself add <1s overhead? Does sampling logic avoid O(n²) complexity?",
+          "Test coverage for optimizer: Unit tests for sampling algorithm? Integration tests with build loop?",
+          "Missing failure risk: Could sampling systematically miss integration, performance, or end-to-end tests?"
+        ],
+        "risk_areas": [
+          "Sampling bias: Skipping slow tests in smoke mode could miss integration/performance failures that only manifest under realistic load patterns",
+          "Stale statistics: test-stats.json becomes invalid after test refactoring/renaming—need detection and graceful fallback",
+          "False confidence: Smoke tests passing could mask systematic failures if sampler doesn't cover critical execution paths",
+          "Flaky amplification: Tests with volatile pass rates (0.4–0.7) could distort statistics if variance isn't accounted for correctly",
+          "Integration risk: Build loop is critical path; any bugs block all developers—requires thorough integration testing before merge",
+          "Performance regression: If optimizer overhead exceeds time savings, the feature provides negative value"
+        ]
+      },
+      "timestamp": 1776430021,
+      "ttl": 3600
+    },
+    "5de333ce8b1e2ec9ace8ba3da9fc1ec6": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current repo structure (nodejs, vitest, npm, commonjs) is essential context for planning test optimization features"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 85,
+            "summary": "Recent test failures in this repo show patterns to avoid; sw-cleanup.sh and test harness issues directly relevant to test suite work"
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 72,
+            "summary": "Recent successful feature (3 iterations, multiple files, vitest strategy) provides reference pattern for test-related work"
+          },
+          {
+            "file": "failures.json (npm install / EONENT)",
+            "relevance": 40,
+            "summary": "Generic Node.js dependency patterns; applicable reference but less specific than repo-specific failures"
+          },
+          {
+            "file": "success-patterns.json (Fix bug with iterative approach)",
+            "relevance": 38,
+            "summary": "Iterative TDD approach and loop patterns provide methodology reference for optimization work"
+          }
+        ]
+      },
+      "timestamp": 1776430089,
+      "ttl": 1800
+    },
+    "7ad2baa0ff37909cac4c245bcf6fe93e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sw-cleanup.sh, sw-code-review-test.sh, mktemp)",
+            "relevance": 95,
+            "summary": "Contains 5 actual test failures with root causes and fixes. Directly relevant to plan validation failures—shows specific test suite issues (cleanup heartbeat detection, sed command syntax, mktemp path setup) that likely blocked the optimizer plan."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright repo detection)",
+            "relevance": 85,
+            "summary": "Project metadata captured today (2026-04-17T12:47:02Z): vitest test runner, npm package manager, commonjs imports. Essential context for understanding the test suite structure the optimizer must handle."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a... bug fix with 3 iterations)",
+            "relevance": 65,
+            "summary": "Shows successful multi-iteration approach (3 iterations, 45s, 6 commits) with test strategy 'npm test'. Provides precedent for how similar optimizer features navigated testing complexity and iteration patterns."
+          }
+        ]
+      },
+      "timestamp": 1776430375,
+      "ttl": 1800
+    },
+    "20098f381607c3ff2966ce8745b7b14a": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, captured 2026-04-17T12:47:02Z)",
+            "relevance": 95,
+            "summary": "Current project metadata: vitest test runner, javascript, commonjs imports, src/ and test/ directories with *.test.js pattern. Essential for designing optimizer targeting this specific test infrastructure."
+          },
+          {
+            "file": "success-patterns.json (test1: add auth module)",
+            "relevance": 85,
+            "summary": "Shows successful feature with iterative TDD approach, unit + integration test strategy, file patterns (src/, test/), and 5-iteration development cycle. Directly relevant to understanding existing test patterns that optimizer must handle."
+          },
+          {
+            "file": "success-patterns.json (0bcf06...: Add authentication feature)",
+            "relevance": 75,
+            "summary": "Feature development pattern with multiple iterations (complexity 65), test strategy details, file change patterns. Demonstrates real-world iteration depth for test-heavy features."
+          },
+          {
+            "file": "failures.json (detailed list with test failures)",
+            "relevance": 65,
+            "summary": "Contains test infrastructure pain points: mktemp failures, sed command issues, heartbeat detection problems. Reveals test runner pain points that adaptive sampling could address."
+          },
+          {
+            "file": "success-patterns.json (f4af3e...: Fix bug)",
+            "relevance": 55,
+            "summary": "Bug fix with 3 iterations, files changed in .claude/ and scripts/lib/, test strategy 'npm test'. Shows iteration patterns and test execution patterns in practice."
+          }
+        ]
+      },
+      "timestamp": 1776430402,
+      "ttl": 1800
+    },
+    "f3b82f9da78292ff72cd740d2ecf979d": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sethdford/shipwright test failures)",
+            "relevance": 92,
+            "summary": "Real failure patterns in test suite (sw-cleanup.sh, sw-code-review-test.sh, mktemp issues). Directly relevant for identifying anti-patterns to avoid in test optimizer design."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 88,
+            "summary": "Current project conventions (vitest, npm, commonjs, src/test/ structure). Essential baseline for understanding what design approaches align with vs. contradict existing codebase patterns."
+          },
+          {
+            "file": "success-patterns.json (iterative TDD, auth module)",
+            "relevance": 72,
+            "summary": "Successful approaches (iterative TDD, module isolation, unit+integration tests). Understanding what works helps identify anti-patterns by inversion—approaches that contradict these patterns."
+          }
+        ]
+      },
+      "timestamp": 1776430416,
+      "ttl": 1800
+    },
+    "742695fe71961c31278085a46b61dd66": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project context captured today (2026-04-17T12:47:02Z) with exact config: Node/vitest/npm, source_dir: src/, test_pattern: *.test.js, javascript. Critical for understanding test structure during build stage."
+          },
+          {
+            "file": "failures.json (test stage failures)",
+            "relevance": 88,
+            "summary": "Recent test failures (last seen 2026-04-17) in sw-cleanup.sh and sw-code-review-test.sh with heartbeat detection and sed issues. Directly applicable to avoiding test failures in current build."
+          },
+          {
+            "file": "success-patterns.json (auth module feature)",
+            "relevance": 72,
+            "summary": "Proven feature development pattern: 5 iterations with TDD approach (unit + integration), files changed in src/test directories, seen 3 times. Relevant template for similar complexity feature work."
+          },
+          {
+            "file": "failures.json (ENOENT/npm install)",
+            "relevance": 68,
+            "summary": "Common Node.js dependency failure pattern with 95% fix effectiveness. Critical for preventing test stage failures in npm-based projects."
+          },
+          {
+            "file": "success-patterns.json (fix bug pattern)",
+            "relevance": 62,
+            "summary": "Iterative bug fix approach: 3 iterations, npm test strategy, modifies multiple .sh and .json files. Applicable pattern for test optimizer fixes during build stage."
+          }
+        ]
+      },
+      "timestamp": 1776430515,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Contains critical project conventions (source_dir: src/, test_pattern: *.test.js, import_style: commonjs) and project metadata (vitest, npm, Node.js) that builder must follow when writing code"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Documents successful build approaches with iteration counts, file patterns, test strategies, and workflows that worked; directly informs build decisions and expected iteration depth"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Identifies known bugs in scripts (sw-cleanup.sh heartbeat detection, sed quoting in sw-code-review-test.sh, mktemp directory issues) and test failures that inform what to avoid and what may need fixing"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decision log; would contain prior architectural choices but provides no useful context currently"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines; would contain performance targets and cost history but provides no actionable context for build stage"
+          }
+        ]
+      },
+      "timestamp": 1776430527,
+      "ttl": 1800
+    },
+    "8af7179cf670c4a1aa54cf8c9302ed84": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1776430728,
+      "ttl": 1800
     }
   }
 }

@@ -573,6 +573,9 @@ main() {
         testgen)
             exec "$SCRIPT_DIR/sw-testgen.sh" "$@"
             ;;
+        test-optimizer|testopt)
+            exec "$SCRIPT_DIR/sw-test-optimizer.sh" "$@"
+            ;;
         e2e)
             exec "$SCRIPT_DIR/sw-e2e-orchestrator.sh" "$@"
             ;;

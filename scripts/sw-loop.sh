@@ -371,6 +371,11 @@ fi
 # max-restarts is supported in both single-agent and multi-agent mode
 # In multi-agent mode, restarts apply per-agent (agent can be respawned up to MAX_RESTARTS)
 
+# Auto-enable fast-test via test-optimizer when SW_TEST_OPTIMIZER=1 and no fast cmd was set
+if [[ -z "$FAST_TEST_CMD" && "${SW_TEST_OPTIMIZER:-0}" == "1" && -x "$SCRIPT_DIR/sw-test-optimizer.sh" ]]; then
+    FAST_TEST_CMD="$SCRIPT_DIR/sw-test-optimizer.sh smoke"
+fi
+
 # Validate numeric flags
 if ! [[ "$FAST_TEST_INTERVAL" =~ ^[1-9][0-9]*$ ]]; then
     error "--fast-test-interval must be a positive integer (got: $FAST_TEST_INTERVAL)"
