@@ -277,37 +277,17 @@ LOCK_FREE → (acquire with TTL) → LOCK_HELD (heartbeat updates mtime)
 - **"My pipeline is stuck waiting for files"**: Check `.claude/pipeline-artifacts/lock-state.json` for stale entries older than TTL. If old, run `shipwright fleet unlock --force --file <file>` to manually release.
 - **"Queue is huge but no pipelines running"**: Likely lock corruption. Clear queue with `shipwright fleet queue clear` and re-queue blocked issues.
 - **"Lock file is corrupted"**: Remove `~/.shipwright/lock-state.json` and restart daemon—fleet will rebuild on next spawn.
-
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
-
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 2
-INSTRUCTION: This error has occurred 2 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements"
-iteration: 4
+"
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-04-17T19:07:25Z
-last_iteration_at: 2026-04-17T19:07:25Z
+started_at: 2026-04-17T19:24:42Z
+last_iteration_at: 2026-04-17T19:24:42Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -318,18 +298,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-17T18:54:22Z)
-Iteration 1 complete: added `conflict-predictor.sh` + `conflict-queue.sh` libraries with 21 passing unit tests, register
-
-### Iteration 2 (2026-04-17T18:59:46Z)
-- **Reap drains** — releases PID's locks and pops next ready queue entry
-- **Stale cleanup** runs each poll tick
-- **`SW_FILE_LOCKS_ENABLED=0`** kill switch
-
-### Iteration 3 (2026-04-17T19:04:56Z)
-Committed. This iteration addresses the audit's "sw-fleet-viz prints conflicts_avoided" requirement with working output 
-
-### Iteration 4 (2026-04-17T19:07:25Z)
-Fixed the 3 failing cleanup tests. The root cause was in `scripts/lib/compat.sh`: `file_mtime()` called GNU `stat -f %m`
-Not declaring LOOP_COMPLETE yet — there may be further audit issues. Letting the loop re-audit.
 

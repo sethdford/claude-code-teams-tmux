@@ -300,6 +300,46 @@
           <h2 class="section-label">MACHINES</h2>
           <div class="machines-grid" id="machines-grid"></div>
         </section>
+
+        <!-- File-Lock Conflict Prevention -->
+        <section class="section" id="file-locks-section">
+          <h2 class="section-label">FILE LOCKS</h2>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Active Holders</div>
+              <div class="stat-value" id="locks-holder-count">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Conflicts Avoided</div>
+              <div class="stat-value" id="locks-conflicts-avoided">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Acquired</div>
+              <div class="stat-value" id="locks-acquired">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Stale Cleaned</div>
+              <div class="stat-value" id="locks-stale-cleaned">0</div>
+            </div>
+          </div>
+          <div
+            class="pipeline-table-wrap"
+            id="locks-holders-wrap"
+            style="display: none"
+          >
+            <table class="pipeline-table">
+              <thead>
+                <tr>
+                  <th>PID</th>
+                  <th>Issue</th>
+                  <th>Files</th>
+                  <th>Acquired</th>
+                </tr>
+              </thead>
+              <tbody id="locks-holders-body"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       <!-- ═══ AGENTS TAB ═══ -->
@@ -1030,5 +1070,64 @@
     <div class="tab-panel" id="panel-shipyard"></div>
 
     <script src="dist/main.js"></script>
+    <script>
+      // File-lock widget: polls /api/locks every 5s, populates stats + holder table
+      (function () {
+        async function refreshLocks() {
+          try {
+            const res = await fetch("/api/locks");
+            if (!res.ok) return;
+            const data = await res.json();
+            const m = data.metrics || {};
+            const set = (id, v) => {
+              const el = document.getElementById(id);
+              if (el) el.textContent = String(v ?? 0);
+            };
+            set("locks-holder-count", data.holder_count);
+            set("locks-conflicts-avoided", m.conflicts_avoided);
+            set("locks-acquired", m.locks_acquired);
+            set("locks-stale-cleaned", m.stale_cleaned);
+            const wrap = document.getElementById("locks-holders-wrap");
+            const body = document.getElementById("locks-holders-body");
+            if (!wrap || !body) return;
+            const holders = data.holders || [];
+            if (holders.length === 0) {
+              wrap.style.display = "none";
+              body.innerHTML = "";
+              return;
+            }
+            wrap.style.display = "";
+            body.innerHTML = holders
+              .map(function (h) {
+                const files = (h.files || []).slice(0, 3).join(", ");
+                const more =
+                  (h.files || []).length > 3
+                    ? " +" + ((h.files || []).length - 3)
+                    : "";
+                const pid = String(h.pid || "");
+                const issue = h.issue ? "#" + h.issue : "—";
+                const ts = h.acquired_at || "—";
+                return (
+                  "<tr><td>" +
+                  pid +
+                  "</td><td>" +
+                  issue +
+                  "</td><td>" +
+                  files +
+                  more +
+                  "</td><td>" +
+                  ts +
+                  "</td></tr>"
+                );
+              })
+              .join("");
+          } catch (e) {
+            /* silent */
+          }
+        }
+        refreshLocks();
+        setInterval(refreshLocks, 5000);
+      })();
+    </script>
   </body>
 </html>
