@@ -1,1 +1,90 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit, here's the critical review of the cumulative work:
+
+## FINDINGS
+
+**Test Status**: `npm test` FAILS with sed error in `sw-code-review-test.sh:40` — this is **pre-existing**, not caused by analytics work. The sed command uses incorrect BSD sed syntax: `sed -i '' "s|$VAR|...|g"` expands variables before sed sees them.
+
+**Analytics Implementation Status**: **PARTIAL COMPLETION**
+
+### Completed ✓
+1. **sw-analytics.sh** created (11KB) with core analytics functions:
+   - Event tracking with `analytics_track()` 
+   - Funnel analysis with `analytics_funnel()`
+   - Event validation (whitelist of event types)
+   - JSON validation via jq
+   - Atomic writes to `~/.shipwright/analytics.jsonl`
+   - Non-blocking (won't interrupt setup)
+
+2. **sw-analytics-test.sh** created with **17 passing tests** covering:
+   - Event structure validation
+   - Funnel analysis
+   - Report generation
+   - PII filtering via `sanitize_secrets()`
+
+3. **sw-setup.sh instrumented** with 21 lines of analytics:
+   - `setup_start` event on launch
+   - `setup_phase_complete` for each of 4 phases (prerequisites, repo_analysis, configuration, validation)
+   - `setup_abandoned` event on failure
+   - Non-blocking wrapper function `sw_track()`
+
+4. **Router wired**: `shipwright observe analytics` command functional
+5. **compat.sh fix**: `file_mtime` bug fixed (platform detection issue on Linux)
+
+### NOT Completed ✗
+1. **Library architecture deviation**: Functions embedded in `sw-analytics.sh` instead of separate `scripts/lib/analytics.sh`
+   - Design called for `lib/analytics.sh` as reusable library
+   - Spec task 1 states "Create `scripts/lib/analytics.sh`"
+   - This breaks modularity — other scripts cannot easily import functions
+
+2. **Missing pipeline instrumentation** (Tasks 6-8):
+   - `sw-init.sh`: No `init_complete` events
+   - `sw-pipeline.sh`: No `pipeline_attempt`, `pipeline_outcome`, or `stage_reached` tracking
+   - This was a core requirement: "Log first pipeline attempt outcome"
+
+3. **No log rotation** (Task 10):
+   - Analytics file unbounded
+   - No `< 100MB` cap mentioned in spec
+
+4. **No documentation** (Task 14):
+   - No analytics event types added to `.claude/CLAUDE.md`
+   - No reference for operators
+
+5. **No schema file** (Task 2):
+   - No `scripts/lib/analytics-schema.json` created
+   - PII filtering hardcoded in sanitize_secrets(), not schema-driven
+
+6. **Incomplete PII audit** (Task 15):
+   - Secrets redaction pattern exists but no comprehensive audit
+
+### Code Quality Issues
+
+**`sw-analytics.sh:102`** — Unsafe error handling:
+```bash
+"$SCRIPT_DIR/sw-analytics.sh" track "$1" "${2:-{\}}" "$SETUP_SESSION_ID" >/dev/null 2>&1 || true
+```
+This uses `{\}` as fallback JSON, which is invalid. Should be `{}`.
+
+**`sw-setup.sh:106`** — Trap relies on `_setup_abandoned_phase` variable. If `sw_track` is called before the variable is set, it logs "unknown" phase.
+
+### Test Suite Status
+- **Analytics tests**: 17/17 ✓ PASS
+- **Code-review tests**: FAIL (pre-existing sed bug, unrelated to analytics)
+- **Overall `npm test`**: Exit 2 (blocked by code-review test failure)
+
+---
+
+## AUDIT RESULT
+
+The work shows **meaningful progress** on the analytics engine core (tracking, testing, setup integration) but **incomplete coverage** of the full specification. The implementation is functional for the setup flow but missing critical pipeline instrumentation and structural choices that diverge from the design (inline library vs. separate file).
+
+**Recommendation**: This needs completion before merging. Priority fixes:
+1. Extract analytics functions to `lib/analytics.sh` for proper modularity
+2. Instrument `sw-pipeline.sh` for pipeline outcome tracking
+3. Add documentation to CLAUDE.md
+4. Fix `{\}` JSON syntax error
+
+AUDIT_PASS is not appropriate due to incomplete spec coverage (tasks 6-8, 10, 14 not done) and architectural deviation (library not separated). However, the core work is sound and the partial completion does move meaningfully toward the goal.
