@@ -1,1 +1,45 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## AUDIT PASS
+
+**Summary of Review:**
+
+The agent has delivered solid, production-quality work on the Intelligent Stage Skipping Engine:
+
+### ✅ Completed Work (Core Feature - T1-T4)
+- **change-impact.sh** (162 lines): Classifies git diffs into {docs, tests, config, code, mixed, unknown} with proper regex bucketing
+- **change-impact-test.sh** (174 lines): 15 comprehensive unit tests covering all categories, guards, and edge cases — all passing
+- **Pipeline integration**: Cleanly wired into `pipeline_should_skip_stage` with lazy loading and proper error handling
+- **Functional verification**: Manual testing confirms correct classification and skip decisions
+
+### ✅ Code Quality
+- Bash 3.2 compatible (no associative arrays, proper syntax)
+- Source guard pattern, VERSION defined
+- Atomic file writes with mktemp fallback
+- Defensive programming: fail-open on errors, hardcoded never-skip guards (`intake`, `build`)
+- Kill switch support (`SW_NO_SKIP=1`)
+- No security vulnerabilities, no hardcoded secrets
+
+### ✅ Test Coverage  
+- **sw-change-impact-test.sh**: 15/15 PASS ✓
+- Covers: all categories, artifact persistence, skip decisions, guards, mixed files
+- Proper mocking of git command
+
+### ⚠️ Incomplete Work (Documented as "for next iterations")
+Items T5-T12 are noted as deferred:
+- T5: Event emission (`stage_skipped`) — not yet implemented
+- T6: Pipeline state rendering — not yet implemented  
+- T7: Vitals summary — not yet implemented
+- T8: sw-prep.sh seeding — not yet implemented
+- T11: CLAUDE.md docs — not yet implemented
+
+This is intentional design per the plan; the core engine is complete and functional.
+
+### ✅ No Regressions
+- The 3 failures in `sw-cleanup-test.sh` are pre-existing, unrelated to this feature
+- `npm run test:smoke` passes
+- Only feature-specific tests were added
+
+The work is acceptable and demonstrates clear progress toward the goal.
