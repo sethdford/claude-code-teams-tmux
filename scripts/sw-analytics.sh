@@ -251,12 +251,20 @@ main() {
   shift 2>/dev/null || true
 
   case "$subcmd" in
-    track)
+    track|emit)
       if [[ $# -lt 1 ]]; then
-        error "track: event_type required"
+        error "$subcmd: event_type required"
         return 1
       fi
       analytics_track "$@"
+      ;;
+    clear)
+      if [[ -f "$ANALYTICS_FILE" ]]; then
+        rm -f "$ANALYTICS_FILE"
+        echo "Cleared analytics log: $ANALYTICS_FILE"
+      else
+        echo "No analytics log to clear"
+      fi
       ;;
     report)
       if [[ $# -lt 2 ]]; then
@@ -277,11 +285,14 @@ main() {
       ;;
     help)
       cat <<EOF
-Usage: shipwright analytics {track|report|funnel|drop-off-summary}
+Usage: shipwright analytics {track|emit|clear|report|funnel|drop-off-summary}
 
-  track EVENT_TYPE [METADATA_JSON] [SESSION_ID]
+  track|emit EVENT_TYPE [METADATA_JSON] [SESSION_ID]
     Emit an analytics event. Event types: setup_start, setup_phase_complete,
     setup_abandoned, pipeline_attempt, pipeline_outcome, init_complete
+
+  clear
+    Delete the local analytics log file
 
   report START_DATE END_DATE [EVENT_TYPE]
     Generate event report for date range (YYYY-MM-DD format)
