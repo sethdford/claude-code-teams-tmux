@@ -314,3 +314,80 @@ lock_cleanup_stale() {
     done <<< "$pids"
     echo "$cleaned"
 }
+
+# ─── Public: high-level gate — predict files, acquire, or enqueue ───────────
+# Usage: lock_acquire_or_queue <pid> <issue> <repo> <title> <body>
+# Requires conflict-predictor.sh and conflict-queue.sh already sourced.
+# Exit codes:
+#   0 — locks acquired (or empty prediction → proceed unguarded)
+#   2 — conflict detected; issue was enqueued instead
+#   1 — internal error
+# Honors SW_FILE_LOCKS_ENABLED=0 kill switch (returns 0 with no locks).
+lock_acquire_or_queue() {
+    local pid="$1" issue="$2" repo="${3:-}" title="${4:-}" body="${5:-}"
+
+    if [[ "${SW_FILE_LOCKS_ENABLED:-1}" == "0" ]]; then
+        return 0
+    fi
+
+    if [[ "$(type -t predict_pipeline_files 2>/dev/null)" != "function" ]]; then
+        daemon_log WARN "file-locks: predictor unavailable — spawning without locks"
+        return 0
+    fi
+
+    local files
+    files=$(predict_pipeline_files "$title" "$body" 2>/dev/null || true)
+    if [[ -z "$files" ]]; then
+        return 0  # no predicted files = nothing to lock
+    fi
+
+    local files_arr=()
+    while IFS= read -r f; do
+        [[ -n "$f" ]] && files_arr+=("$f")
+    done <<< "$files"
+    [[ ${#files_arr[@]} -eq 0 ]] && return 0
+
+    local result
+    if result=$(lock_acquire_files "$pid" "$issue" "${files_arr[@]}"); then
+        return 0
+    fi
+
+    # Conflict — enqueue if queue module available.
+    if [[ "$(type -t queue_enqueue 2>/dev/null)" == "function" ]]; then
+        local owner_pid owner_issue
+        owner_pid=$(echo "$result" | jq -r '.owner_pid // ""' 2>/dev/null || echo "")
+        owner_issue=$(echo "$result" | jq -r '.owner_issue // 0' 2>/dev/null || echo "0")
+        queue_enqueue "$issue" "$repo" "$title" "$owner_pid" "$owner_issue" "${files_arr[@]}" || {
+            daemon_log ERROR "file-locks: enqueue failed for issue #$issue"
+            return 1
+        }
+        daemon_log INFO "file-locks: issue #$issue queued (blocked by #$owner_issue on $(echo "$result" | jq -r '.file'))"
+    fi
+    return 2
+}
+
+# ─── Public: emit Prometheus-style metrics ──────────────────────────────────
+lock_export_metrics_prometheus() {
+    _lock_init
+    local m
+    m=$(lock_metrics)
+    local held
+    held=$(jq -r '.pipelines | length' "$LOCK_FILE" 2>/dev/null || echo 0)
+    cat <<EOF
+# HELP shipwright_file_locks_held Currently held file-level locks
+# TYPE shipwright_file_locks_held gauge
+shipwright_file_locks_held ${held}
+# HELP shipwright_conflicts_avoided Total conflicts prevented by file locks
+# TYPE shipwright_conflicts_avoided counter
+shipwright_conflicts_avoided $(echo "$m" | jq -r '.conflicts_avoided // 0')
+# HELP shipwright_locks_acquired Total file-lock acquisitions
+# TYPE shipwright_locks_acquired counter
+shipwright_locks_acquired $(echo "$m" | jq -r '.locks_acquired // 0')
+# HELP shipwright_locks_released Total file-lock releases
+# TYPE shipwright_locks_released counter
+shipwright_locks_released $(echo "$m" | jq -r '.locks_released // 0')
+# HELP shipwright_locks_stale_cleaned Total stale locks reaped
+# TYPE shipwright_locks_stale_cleaned counter
+shipwright_locks_stale_cleaned $(echo "$m" | jq -r '.stale_cleaned // 0')
+EOF
+}

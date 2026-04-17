@@ -558,6 +558,11 @@ daemon_poll_loop() {
         daemon_preflight_auth_check || daemon_log WARN "Auth check failed — daemon may be paused"
         daemon_poll_issues || daemon_log WARN "daemon_poll_issues failed — continuing"
         daemon_reap_completed || daemon_log WARN "daemon_reap_completed failed — continuing"
+        # Reap stale file locks from crashed pipelines (bounded work).
+        if [[ "${SW_FILE_LOCKS_ENABLED:-1}" != "0" ]] \
+            && [[ "$(type -t lock_cleanup_stale 2>/dev/null)" == "function" ]]; then
+            lock_cleanup_stale >/dev/null 2>&1 || true
+        fi
         daemon_health_check || daemon_log WARN "daemon_health_check failed — continuing"
 
         # Fleet failover: re-queue work from offline machines

@@ -3,6 +3,12 @@
 [[ -n "${_DAEMON_DISPATCH_LOADED:-}" ]] && return 0
 _DAEMON_DISPATCH_LOADED=1
 
+# Conflict prevention libs (idempotent sourcing — each has a load guard).
+_DD_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -f "$_DD_LIB_DIR/conflict-predictor.sh" ]] && source "$_DD_LIB_DIR/conflict-predictor.sh"
+[[ -f "$_DD_LIB_DIR/file-locks.sh" ]] && source "$_DD_LIB_DIR/file-locks.sh"
+[[ -f "$_DD_LIB_DIR/conflict-queue.sh" ]] && source "$_DD_LIB_DIR/conflict-queue.sh"
+
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 DAEMON_DIR="${DAEMON_DIR:-${HOME}/.shipwright}"
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -252,6 +258,34 @@ daemon_spawn_pipeline() {
         pipeline_args+=("${extra_pipeline_args[@]}")
     fi
 
+    # ── File-lock conflict gate ──
+    # Predict files this pipeline will touch. If any conflict with a running
+    # pipeline, enqueue instead of spawning. Gated by SW_FILE_LOCKS_ENABLED.
+    if [[ "${SW_FILE_LOCKS_ENABLED:-1}" != "0" ]] \
+        && [[ "$(type -t lock_acquire_or_queue 2>/dev/null)" == "function" ]]; then
+        # Use a temporary marker PID (issue number) since the real PID is not
+        # known until spawn. We'll rewrite the lock entry with the real PID
+        # immediately after spawn succeeds.
+        local _pred_body=""
+        if [[ "$NO_GITHUB" != "true" ]]; then
+            _pred_body=$(_timeout "$gh_timeout" gh issue view "$issue_num" --json body --jq '.body' 2>/dev/null || echo "")
+        fi
+        local _gate_marker="pending-${issue_num}"
+        local _gate_rc=0
+        lock_acquire_or_queue "$_gate_marker" "$issue_num" "${repo_full_name:-}" "$issue_title" "$_pred_body" \
+            || _gate_rc=$?
+        if [[ "$_gate_rc" -eq 2 ]]; then
+            daemon_log INFO "Issue #${issue_num} enqueued due to file-lock conflict"
+            emit_event "daemon.spawn_deferred" "issue=$issue_num" "reason=file_lock_conflict"
+            # Clean up worktree we just created — we didn't actually spawn.
+            if [[ -d "$work_dir" && "$WATCH_MODE" != "org" ]]; then
+                git worktree remove "$work_dir" --force 2>/dev/null || true
+                git branch -D "$branch_name" 2>/dev/null || true
+            fi
+            return 0
+        fi
+    fi
+
     # Ensure issue type is available for skill injection in pipeline
     export INTELLIGENCE_ISSUE_TYPE="${INTELLIGENCE_ISSUE_TYPE:-backend}"
 
@@ -293,6 +327,26 @@ HB_EOF
     fi
 
     daemon_log INFO "Pipeline started for issue #${issue_num} (PID: ${pid})"
+
+    # Re-parent lock from pending marker to real PID (best effort).
+    if [[ "${SW_FILE_LOCKS_ENABLED:-1}" != "0" ]] \
+        && [[ "$(type -t lock_release_files 2>/dev/null)" == "function" ]] \
+        && [[ "$(type -t lock_acquire_files 2>/dev/null)" == "function" ]] \
+        && [[ "$pid" != "0" ]]; then
+        local _gate_marker="pending-${issue_num}"
+        local _held_files
+        _held_files=$(jq -r --arg p "$_gate_marker" '.pipelines[$p].files[]? // empty' \
+            "${LOCK_FILE:-$HOME/.shipwright/file-locks.json}" 2>/dev/null || true)
+        if [[ -n "$_held_files" ]]; then
+            local _files_arr=()
+            while IFS= read -r f; do [[ -n "$f" ]] && _files_arr+=("$f"); done <<< "$_held_files"
+            lock_release_files "$_gate_marker" 2>/dev/null || true
+            if [[ ${#_files_arr[@]} -gt 0 ]]; then
+                lock_acquire_files "$pid" "$issue_num" "${_files_arr[@]}" >/dev/null 2>&1 || \
+                    daemon_log WARN "file-locks: re-parent to pid=$pid failed for issue #$issue_num"
+            fi
+        fi
+    fi
 
     # Track the job (include repo and goal for org mode)
     daemon_track_job "$issue_num" "$pid" "$work_dir" "$issue_title" "$repo_full_name" "$issue_goal"
@@ -519,6 +573,24 @@ daemon_reap_completed() {
         if type optimize_full_analysis &>/dev/null; then
             optimize_full_analysis &>/dev/null &
             wait $! 2>/dev/null || true
+        fi
+
+        # Release any file locks held by this PID and drain queue.
+        if [[ "${SW_FILE_LOCKS_ENABLED:-1}" != "0" ]] \
+            && [[ "$(type -t lock_release_files 2>/dev/null)" == "function" ]]; then
+            lock_release_files "$pid" 2>/dev/null || true
+            if [[ "$(type -t queue_pop_ready 2>/dev/null)" == "function" ]]; then
+                local _ready_entry
+                _ready_entry=$(queue_pop_ready 2>/dev/null || true)
+                if [[ -n "$_ready_entry" ]]; then
+                    local _q_issue _q_repo _q_title
+                    _q_issue=$(echo "$_ready_entry" | jq -r '.issue')
+                    _q_repo=$(echo "$_ready_entry" | jq -r '.repo // ""')
+                    _q_title=$(echo "$_ready_entry" | jq -r '.title // ""')
+                    daemon_log INFO "Dequeuing #${_q_issue} from conflict queue"
+                    daemon_spawn_pipeline "$_q_issue" "$_q_title" "$_q_repo" || true
+                fi
+            fi
         fi
 
         # Clean up progress tracking for this job

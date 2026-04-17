@@ -177,4 +177,55 @@ else
     assert_fail "events_emitted: missing expected events" "$(cat "$EVENTS" 2>/dev/null || echo none)"
 fi
 
+# ═══ Integration tests: lock_acquire_or_queue + conflict-queue ═════════════
+
+# Load sibling modules required by the wrapper.
+unset _CONFLICT_PREDICTOR_LOADED _CONFLICT_QUEUE_LOADED
+export CONFLICT_QUEUE_FILE="$DAEMON_DIR/conflict-queue.json"
+source "$SCRIPT_DIR/lib/conflict-predictor.sh"
+source "$SCRIPT_DIR/lib/conflict-queue.sh"
+
+# Test 16: kill switch bypasses the gate (returns 0, no locks)
+reset_test
+SW_FILE_LOCKS_ENABLED=0 lock_acquire_or_queue 2001 60 "r" "t" "b" >/dev/null
+assert_pass "kill_switch: SW_FILE_LOCKS_ENABLED=0 returns 0 without locking"
+
+# Test 17: two conflicting pipelines — second is enqueued
+reset_test
+# Make a fake tracked-file universe for the predictor.
+_PREDICTOR_TRACKED_CACHE="scripts/lib/foo.sh"$'\n'"scripts/lib/bar.sh"
+export _PREDICTOR_TRACKED_CACHE
+title1="Update scripts/lib/foo.sh module"
+title2="Tweak scripts/lib/foo.sh for fix"
+lock_acquire_or_queue 2002 70 "r/x" "$title1" "" >/dev/null
+rc=0
+lock_acquire_or_queue 2003 71 "r/x" "$title2" "" >/dev/null || rc=$?
+assert_eq "gate: second conflicting pipeline returns rc=2 (queued)" "2" "$rc"
+depth=$(queue_depth)
+assert_eq "gate: queue depth is 1 after conflict" "1" "$depth"
+
+# Test 18: release drains queue — popped entry matches enqueued issue
+lock_release_files 2002
+popped=$(queue_pop_ready || true)
+popped_issue=$(echo "$popped" | jq -r '.issue // 0' 2>/dev/null || echo "0")
+assert_eq "drain: pop_ready returns the blocked issue (#71)" "71" "$popped_issue"
+final_depth=$(queue_depth)
+assert_eq "drain: queue empty after pop" "0" "$final_depth"
+
+# Test 19: prometheus metrics export has required counters
+reset_test
+lock_acquire_files 2004 72 "x.sh" >/dev/null
+metrics=$(lock_export_metrics_prometheus)
+echo "$metrics" | grep -q "shipwright_locks_acquired 1" \
+    && assert_pass "prometheus: locks_acquired gauge present" \
+    || assert_fail "prometheus: locks_acquired missing" "$metrics"
+
+# Test 20: empty prediction → gate returns 0 (no locks, no queue)
+reset_test
+unset _PREDICTOR_TRACKED_CACHE
+export _PREDICTOR_TRACKED_CACHE=""
+lock_acquire_or_queue 2005 73 "r" "no file references here" "" >/dev/null
+acquired=$(lock_metrics | jq -r '.locks_acquired')
+assert_eq "empty_prediction: no locks acquired when no files predicted" "0" "$acquired"
+
 print_test_results
