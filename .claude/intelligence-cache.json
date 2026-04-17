@@ -34,14 +34,15 @@
         "secondary_roles": [
           "builder",
           "tester",
+          "reviewer",
           "security-auditor"
         ],
         "confidence": 0.88,
-        "reasoning": "Fleet-wide file-level locking is fundamentally an architecture design problem requiring distributed state management, conflict detection strategy, and locking protocols. Builder implements, tester validates concurrency scenarios, security-auditor reviews access control and atomicity guarantees.",
+        "reasoning": "Fleet conflict prevention requires upfront system design for distributed file-level locking; builders implement, testers validate concurrency edge cases, reviewers ensure quality, security-auditor validates lock mechanism.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1776430395,
+      "timestamp": 1776451776,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1407,30 +1408,27 @@
       "result": {
         "complexity": 7,
         "risk_level": "high",
-        "success_probability": 75,
-        "recommended_template": "standard",
+        "success_probability": 72,
+        "recommended_template": "full",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Race conditions during concurrent lock acquisition across multiple processes",
-          "Orphaned locks if pipelines crash or are force-killed before releasing",
-          "Deadlocks if queued pipelines form circular file dependencies",
-          "Stale lock cleanup failures causing permanent queue blockages during long daemon runs",
-          "Inconsistent lock state between fleet workers on distributed systems",
-          "Performance degradation from lock checking on every pipeline start"
+          "Race conditions in shared state file access during concurrent lock checks",
+          "Deadlock potential if lock release fails or pipeline crashes unexpectedly",
+          "Stale lock entries accumulating if pipelines crash without cleanup",
+          "Performance degradation from lock registry checks on every pipeline spawn",
+          "Clock skew issues in lock timeout expiry across distributed processes"
         ],
         "implementation_hints": [
-          "Use atomic file writes (tmpfile + mv) for lock state to prevent partial writes",
-          "Implement per-lock timeout mechanism (e.g., 24h expiry) to auto-cleanup stale locks",
-          "Store lock metadata (pipeline ID, start time, file list, worker node) for forensics",
-          "Build on existing SQLite persistence layer instead of file-based locks for atomicity",
-          "Implement two-level locking: repo-level check first, then file-level to reduce contention",
-          "Add daemon patrol task to detect and clean up orphaned locks every 5 minutes",
-          "Use eventbus to broadcast lock/unlock events for real-time dashboard updates",
-          "Queue conflicting pipelines with priority inheritance to prevent starvation",
-          "Add conflict metrics: lock wait time, queue depth, resolved conflicts per run"
+          "Use atomic writes (temp file + mv) for lock registry to prevent corruption",
+          "Leverage existing heartbeat system to detect and reap stale locks automatically",
+          "Implement lock timeout mechanism (e.g., 1 hour) with process health validation",
+          "Consider git worktrees as first-class isolation before queueing (already isolates files)",
+          "Add lock contention metrics to fleet dashboard (wait time, queue depth, conflicts)",
+          "Create cleanup hooks in pipeline failure path to release locks on crash",
+          "Test with stress scenarios (50+ concurrent pipelines) to validate queue behavior"
         ]
       },
-      "timestamp": 1776429700,
+      "timestamp": 1776451065,
       "ttl": 3600
     },
     "0fe5184ad6acdeb52e782835e6a45563": {
@@ -1455,145 +1453,145 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17T18:40:22Z)",
             "relevance": 95,
-            "summary": "Current project conventions (Node/vitest/npm, src/ layout, commonjs) are essential for architecture planning in this codebase"
+            "summary": "Current repo's project structure and conventions (Node.js, vitest, npm, src/ dir, *.test.js pattern, commonjs imports). Critical for architecture planning to match project standards."
           },
           {
-            "file": "architecture.json",
-            "relevance": 90,
-            "summary": "Existing architecture rules directly inform the design of the conflict prevention system and file-level locking constraints"
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 80,
+            "summary": "Shows successful feature architecture with moderate complexity (60), TDD approach with module isolation, files organized in src/auth.ts and test/auth.test.ts. Relevant pattern for structuring new features like file-level locking."
           },
           {
-            "file": "success-patterns.json (add auth module, TDD approach)",
-            "relevance": 75,
-            "summary": "Similar-complexity feature (60) showing successful multi-iteration approach with module isolation and test patterns applicable to conflict prevention"
-          },
-          {
-            "file": "success-patterns.json (2 detailed patterns: bug fix + auth feature)",
+            "file": "success-patterns.json (Add authentication feature)",
             "relevance": 70,
-            "summary": "Real implementation examples showing file change patterns, iteration counts, and complexity scoring useful for estimating the conflict prevention system scope"
+            "summary": "Demonstrates successful multi-iteration architecture approach (65 complexity, 5 iterations), shows how loop-based development evolves architectures over time. Relevant for iterative conflict-prevention system design."
           },
           {
-            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
-            "relevance": 65,
-            "summary": "Heartbeat/stale detection failures inform how to design robust locking mechanisms and detect abandoned agent work in the fleet"
+            "file": "failures.json (2026-04-17 test failures)",
+            "relevance": 55,
+            "summary": "Recent test failures in sw-cleanup.sh, sed commands, and mktemp reveal implementation pitfalls to avoid. Informs architectural decisions about file handling, script robustness, and heartbeat mechanisms."
+          },
+          {
+            "file": "success-patterns.json (Fix bug)",
+            "relevance": 50,
+            "summary": "Shows successful bug fix architecture with 3 iterations, multiple file patterns (.claude/*.json, scripts/lib/*.sh), and comprehensive test strategy. Relevant for understanding how to structure iterative fixes."
           }
         ]
       },
-      "timestamp": 1776429945,
+      "timestamp": 1776451318,
       "ttl": 1800
     },
     "3eb2e6e4a9c3dbaafef684ef957d7ca4": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains 5 recent test stage failures (2026-04-17) with root causes, fixes, and effectiveness rates. Directly relevant to understanding what plan validation checks are failing in this pipeline run."
+            "file": "failures.json (test stage, 5 failures, 2026-04-17)",
+            "relevance": 92,
+            "summary": "Most recent test failures from today directly impacting pipeline validation. Includes sw-cleanup.sh heartbeat detection, sed command issues, and mktemp directory failures—all blocking factors for plan validation."
           },
           {
-            "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project detection for sethdford/shipwright captured at 2026-04-17T12:44:01Z. Defines current project conventions (node, vitest, npm, src/ directory) essential for understanding the plan context."
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17T18:40:22Z)",
+            "relevance": 88,
+            "summary": "Current repo project metadata captured today at 18:40Z (minutes after pipeline start). Defines project as Node.js/vitest/npm/javascript with source_dir, test patterns, and import style—essential context for validating architecture plans."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 70,
-            "summary": "Shows successful feature implementation patterns (auth module, bug fixes) with iterative approaches, file patterns, and test strategies. Provides baseline for how similar complexity work succeeded."
+            "file": "success-patterns.json (add auth module, 2026-04-01)",
+            "relevance": 65,
+            "summary": "Recent successful feature implementation pattern showing iteration count, test strategy (npm test), files changed pattern, and approach. Provides methodology template for what valid plans should structure like in this repo."
           }
         ]
       },
-      "timestamp": 1776430215,
+      "timestamp": 1776451598,
       "ttl": 1800
     },
     "7a3a41fd39ab8876e8d2339713d2d55a": {
       "result": {
         "results": [
           {
-            "file": "architecture.json",
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17T18:40:22Z)",
             "relevance": 95,
-            "summary": "Directly relevant — contains architecture rules that would inform design patterns for the conflict prevention system's structure and constraints"
+            "summary": "Contains actual project context: nodejs type, vitest test runner, npm package manager, commonjs imports, src/ and test/ conventions — directly informs architecture pattern choices for this specific codebase"
           },
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "file": "architecture.json",
+            "relevance": 90,
+            "summary": "Stores architecture rules and enforcement patterns — directly relevant to designing architecture patterns for the Fleet Work Conflict Prevention System"
+          },
+          {
+            "file": "success-patterns.json (auth module with TDD, 2026-04-01T00:00:00Z)",
+            "relevance": 72,
+            "summary": "Shows successful iterative TDD approach with module isolation for complex feature (auth module) — patterns applicable to designing file-level locking architecture with proper isolation"
+          },
+          {
+            "file": "failures.json (test/implementation failures, 2026-04-17T13:22:43Z)",
             "relevance": 65,
-            "summary": "Project conventions and structure — Node.js with vitest, commonjs imports, src/ directory structure inform architectural decisions for this repo's conflict prevention system"
+            "summary": "Documents test failure patterns and root causes in shell scripts — informs error handling and testing patterns to avoid during implementation of conflict prevention system"
           },
           {
-            "file": "success-patterns.json (auth module, id: test1)",
-            "relevance": 55,
-            "summary": "Module isolation and TDD approach — demonstrates successful iterative feature development with clear file patterns and test strategy relevant to designing locked file coordination"
-          },
-          {
-            "file": "patterns.json (project_type nodejs)",
-            "relevance": 45,
-            "summary": "Confirms Node.js/JavaScript environment, baseline for architectural technology choices and runtime constraints for fleet-wide locking"
-          },
-          {
-            "file": "success-patterns.json (authentication feature, id: 0bcf06...)",
-            "relevance": 40,
-            "summary": "Feature implementation patterns across multiple iterations — shows approach to complex systems design and testing that could inform conflict prevention architecture"
+            "file": "success-patterns.json (bug fix + auth feature, 2026-03-29T02:20:18Z)",
+            "relevance": 58,
+            "summary": "Shows iteration counts (3-5 iterations), file pattern changes, and multi-file coordination — provides baseline complexity expectations and architectural coordination patterns for feature delivery"
           }
         ]
       },
-      "timestamp": 1776430267,
+      "timestamp": 1776451625,
       "ttl": 1800
     },
     "6d6ac8b9a8d74d8de5271261d5e4af98": {
       "result": {
         "results": [
           {
-            "file": "failures.json (recent test failures with sw-cleanup, mktemp, heartbeat)",
-            "relevance": 75,
-            "summary": "Recent test failures around file handling, stale heartbeat detection, and cleanup logic are directly relevant to file-level locking anti-patterns. sw-cleanup.sh issues inform what NOT to do in conflict prevention."
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Current repo context (sethdford/shipwright, captured 2026-04-17) showing project structure: Node.js, vitest, commonjs imports. Essential for understanding architectural constraints and conventions that inform file-level locking design."
           },
           {
-            "file": "patterns.json (sethdford/shipwright captured 2026-04-17)",
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Documents successful approaches in this codebase (iterative TDD, file patterns, test strategies). Shows what design patterns and development approaches work in this context, informing what NOT to do by contrast."
+          },
+          {
+            "file": "failures.json",
             "relevance": 65,
-            "summary": "Current project conventions (node, vitest, src/ structure) provide essential context for this specific codebase, allowing rejection of design approaches that violate existing patterns."
-          },
-          {
-            "file": "success-patterns.json (fix bug iteration 3, auth feature iteration 4)",
-            "relevance": 45,
-            "summary": "Successful approaches (iterative refinement, TDD, module isolation) show design patterns that work in this codebase, allowing contrast against rejected anti-patterns for the locking system."
+            "summary": "Concrete anti-patterns and failure signatures: uninitialized variables, missing setup steps (npm install), command syntax errors. These are implementation-level anti-patterns to avoid in the file-level locking system design."
           }
         ]
       },
-      "timestamp": 1776430281,
+      "timestamp": 1776451645,
       "ttl": 1800
     },
     "55ab117e13308b434a4c59fa9dfc4af5": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "file": "patterns.json",
             "relevance": 95,
-            "summary": "Current repo project metadata: Node.js, vitest test runner, npm package manager, CommonJS imports, src/ and test/ conventions. Critical for build stage context."
+            "summary": "Current project (sethdford/shipwright) with Node/vitest/npm detected today (2026-04-17T18:40:22Z). Shows exact build environment: src/ source dir, commonjs imports, vitest test runner. Directly applicable to build stage configuration."
           },
           {
-            "file": "failures.json (with multiple test failures, 2026-04-17)",
+            "file": "failures.json",
             "relevance": 85,
-            "summary": "Recent test failures from build/test stages with root causes and fixes (sw-cleanup.sh heartbeat detection, sed command issues, mktemp failures). Directly applicable to avoiding repeated failures."
+            "summary": "Recent test failures in this repo (2026-04-17) including sw-cleanup.sh heartbeat detection issues and sed syntax errors. Directly relevant to build stage test execution and will inform debugging strategy."
           },
           {
-            "file": "success-patterns.json (two patterns: bug fix and auth feature)",
-            "relevance": 75,
-            "summary": "Successful delivery patterns for similar complexity work (60-65) in this repo using standard template. Shows 3-5 iterations with npm test strategy, relevant for build approach."
-          },
-          {
-            "file": "patterns.json (project_type: nodejs, 2026-02-21)",
-            "relevance": 70,
-            "summary": "Project type context confirming Node.js environment. Useful for understanding build environment and tooling expectations."
-          },
-          {
-            "file": "failures.json (ENOENT and cannot read property errors)",
+            "file": "success-patterns.json",
             "relevance": 65,
-            "summary": "Common error signatures for Node.js projects with documented fixes (npm install, variable initialization). Helps anticipate and prevent frequent build failures."
+            "summary": "Successful bug fix pattern in Node project (complexity 60, 3 iterations, npm test strategy). Shows effective build loop approach and file modification patterns. Template and strategy directly applicable."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "ENOENT/missing npm install failure with 95% fix effectiveness. Common blocker in Node builds that can prevent tests from running. Relevant as pre-build step validation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 55,
+            "summary": "Add auth module feature (complexity 65, 5 iterations, TDD approach). Shows Node feature development with unit+integration test strategy. File patterns and duration inform iteration planning for similar complexity work."
           }
         ]
       },
-      "timestamp": 1776430369,
+      "timestamp": 1776451748,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -1601,33 +1599,156 @@
         "results": [
           {
             "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Project conventions are critical for build: defines source_dir (src/), test_pattern (*.test.js), test_runner (vitest), package_manager (npm), and import_style (commonjs) needed to execute build correctly"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Recent test failures during build stage show specific issues to avoid: sw-cleanup.sh heartbeat detection, sed command syntax, mktemp directory path issues. These patterns will likely recur during current build iteration"
+            "relevance": 92,
+            "summary": "Contains project structure conventions (source_dir, test_pattern, import_style), test runner (vitest), package manager (npm), and language info essential for the build stage to execute correctly"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 70,
-            "summary": "Successful build strategies from similar complexity work show typical iteration counts (3), duration (45-150s), file patterns touched (scripts/lib/*.sh, .claude/), and that loop-based iteration is the approach used"
+            "relevance": 78,
+            "summary": "Demonstrates successful iteration patterns (3 iterations typical), test strategy (npm test), template choice (standard), and approaches that completed similar work—directly applicable to this build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Records test-stage failures (sw-cleanup.sh, sed issues, mktemp failures) and their fixes; relevant for preventing similar issues during build if test execution is involved"
           },
           {
             "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines provide no contextual value for current build stage"
+            "relevance": 22,
+            "summary": "Baseline metrics are empty; would be valuable once baselines are established for performance tracking during build iterations"
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions provide no contextual value for current build stage"
+            "relevance": 12,
+            "summary": "Decisions array is empty; provides no recorded decisions or architectural choices to guide the build stage"
           }
         ]
       },
-      "timestamp": 1776430381,
+      "timestamp": 1776451764,
       "ttl": 1800
+    },
+    "7daef009730af8c8b7f7037856a6e06d": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1776451079,
+      "ttl": 1800
+    },
+    "c574e89a26e919591bff26adc8bdc436": {
+      "result": {
+        "estimated_cost_usd": 14.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 62000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1776451091,
+      "ttl": 3600
+    },
+    "44c87f0a11f7d7719bdfa759550ac276": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "concurrency",
+          "distributed-coordination",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "File-level locking under concurrent fleet execution requires careful state management, atomic operations, stale lock cleanup, and comprehensive race condition testing. Standard complexity underestimates the distributed coordination and failure-recovery aspects."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "security-audit"
+          ],
+          "build": [
+            "performance",
+            "testing-strategy",
+            "distributed-lock-recovery"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "test-parallelization-detection"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "test-parallelization-detection"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "File-level locking protocol needs an ADR documenting atomic acquisition, cleanup policies, and recovery from crashes to guide future maintenance and extensions.",
+          "brainstorming": "Must challenge assumptions about pessimistic locking vs optimistic conflict detection, file-based vs in-memory state, and queueing fairness before committing to design.",
+          "systematic-debugging": "Issue notes 'a previous attempt failed'—must investigate root cause before implementing, not blindly retry the same approach.",
+          "api-design": "Lock acquisition and release APIs must have clear contracts around atomicity, timeouts, error codes, and queue position visibility for callers.",
+          "security-audit": "File-based locking has permission boundary risks, symlink vulnerabilities, and atomic write guarantees that must be audited against OWASP principles.",
+          "performance": "Lock file I/O on every pipeline start in fleet mode can become a bottleneck; implementation must minimize syscalls and handle filesystem latency.",
+          "testing-strategy": "Race condition testing critical: need coverage for simultaneous lock acquisitions, stale lock cleanup, queue depth under load, and failure recovery scenarios.",
+          "distributed-lock-recovery": "Stale locks from crashed pipelines and recovery from corrupted lock state are primary failure modes—need explicit recovery protocol and timeout windows.",
+          "adversarial-quality": "Think like chaos engineer: filesystem corruption, slow I/O, permission denial, queue poisoning, and lock contention under 100+ concurrent pipelines.",
+          "two-stage-review": "Distributed coordination systems need multi-pass review—Pass 1 verifies protocol correctness, Pass 2 audits error handling and edge cases.",
+          "test-parallelization-detection": "This skill directly addresses the core risk: detecting and preventing race conditions from shared file state across parallel pipeline execution.",
+          "validation-thoroughness": "Integration test with actual parallel pipelines under load to confirm queuing, lock release, and dashboard metrics work end-to-end.",
+          "pr-quality": "PR must clearly explain the locking protocol, state transitions, and recovery guarantees so reviewers can reason about correctness.",
+          "documentation": "Lock protocol must be documented with state diagrams, timeout windows, cleanup procedures, and troubleshooting guide for operators.",
+          "deploy-safety": "Deploying a locking system requires phased rollout—test on staging fleet, monitor lock contention and timeouts, have rollback plan.",
+          "observability": "Instrument lock acquisitions, conflicts prevented, queue depth, release latency, and stale lock cleanup to detect lock system degradation."
+        },
+        "generated_skills": [
+          {
+            "name": "distributed-lock-recovery",
+            "reason": "No existing skill covers the critical failure modes for distributed file locks: stale lock detection, recovery from corrupted state, timeout policies, and cleanup procedures. This is a P0 reliability issue where recovery guarantees directly impact fleet availability.",
+            "content": "## Distributed Lock Recovery & Failure Modes\n\nFile-level locking in concurrent fleet execution must survive process crashes, filesystem errors, and malformed lock state. This skill guides building resilient lock recovery.\n\n### Core Failure Modes\n\n1. **Stale Locks**: Pipeline crashes before releasing lock—other pipelines blocked indefinitely\n2. **Corrupted State**: Lock file partially written, unreadable JSON, or filesystem error mid-write\n3. **Lock Timeout**: Queue depth grows as locks held longer than expected\n4. **Permission Denial**: Lock cleanup fails due to process permission mismatch\n5. **Clock Skew**: Timestamp-based cleanup unreliable in distributed scenarios\n\n### Recovery Protocol\n\n**Acquisition with TTL**:\n- Every lock must include `acquired_at` timestamp and `ttl_seconds` (recommend 3600 = 1 hour for pipeline execution)\n- On startup, scan lock file and purge locks older than TTL—prevents indefinite blocking\n- Log stale lock cleanup with pipeline ID and age for auditing\n\n**Atomic Writes**:\n- Lock file mutations via temp file + `mv` (atomic rename)\n- Never partial writes—lock state is either valid or absent\n- Track lock format version in lock file for forward compatibility\n\n**Crash Detection**:\n- Lock entry includes heartbeat mechanism: pipeline updates mtime every 30s during execution\n- If mtime hasn't changed in 2× heartbeat interval, treat lock as stale\n- Daemon cleanup task runs every 5 minutes scanning for stale locks by mtime\n\n**Queue Corruption**:\n- If queued pipelines file becomes unreadable, restart queue empty (log incident)\n- Queue entries must be durable—use append-only log, not in-memory\n- Replay log to recover queue state on startup\n\n### State Transitions\n\n```\nLOCK_FREE → (acquire with TTL) → LOCK_HELD (heartbeat updates mtime)\n          → (release called) → LOCK_FREE\n          → (crash, mtime stale) → [cleanup task] → LOCK_FREE\n          → (JSON corrupt) → [cleanup task] → LOCK_FREE\n```\n\n### Monitoring Signals\n\n- Alert if stale lock cleanup removes >10 locks in 5 min window (suggests systemic crash)\n- Alert if queue depth grows monotonically (suggests locks not releasing)\n- Alert if lock file mtime hasn't been touched in 10 min (suggests lock system offline)\n\n### Operator Runbook\n\n- **\"My pipeline is stuck waiting for files\"**: Check `.claude/pipeline-artifacts/lock-state.json` for stale entries older than TTL. If old, run `shipwright fleet unlock --force --file <file>` to manually release.\n- **\"Queue is huge but no pipelines running\"**: Likely lock corruption. Clear queue with `shipwright fleet queue clear` and re-queue blocked issues.\n- **\"Lock file is corrupted\"**: Remove `~/.shipwright/lock-state.json` and restart daemon—fleet will rebuild on next spawn.\n"
+          },
+          {
+            "name": "fleet-conflict-detection-protocol",
+            "reason": "The issue specifically requires file conflict detection across running pipelines, but no existing skill addresses the protocol design: how to discover which files a pipeline will modify, how to represent conflict sets efficiently, and how to query/update shared state atomically.",
+            "content": "## Fleet Conflict Detection Protocol\n\nFile conflict detection must be fast (checked before every pipeline start), accurate (no false negatives that allow conflicts, minimal false positives that block unnecessarily), and distributed (work across daemon and fleet modes).\n\n### File Dependency Discovery\n\nBefore a pipeline starts, determine the set of files it will modify. Three approaches:\n\n1. **Static Analysis** (fastest, possible false positives):\n   - Parse issue description and PR files from linked issues\n   - Scan CODEOWNERS for file→owner mapping\n   - Use git blame to identify hotspot files for the feature area\n   - Risk: May over-estimate scope\n\n2. **Specification-Based** (medium speed, medium accuracy):\n   - If spec.json exists from spec_generation stage, extract file list from spec\n   - Parse design docs for architecture changes\n   - Risk: Spec may be incomplete\n\n3. **Empirical** (slowest, best accuracy):\n   - Run git diff --name-only against base branch for similar issues\n   - Build historical database of files touched per issue type\n   - Use pattern-matching similarity scoring to find analogous issues\n   - Estimate file scope from analogs\n\nRecommendation: Hybrid—start with static + spec, fall back to empirical if confidence is low.\n\n### Conflict Representation\n\n```json\n{\n  \"pipeline_id\": \"issue-401-uuid\",\n  \"started_at\": \"2026-04-17T18:37:30Z\",\n  \"ttl_seconds\": 3600,\n  \"file_ownership\": {\n    \"scripts/sw-fleet.sh\": { \"access\": \"write\", \"confidence\": 0.95 },\n    \"scripts/lib/compat.sh\": { \"access\": \"read\", \"confidence\": 0.8 },\n    \".claude/fleet-config.json\": { \"access\": \"write\", \"confidence\": 1.0 }\n  },\n  \"conflict_class\": \"high\"\n}\n```\n\n### Conflict Queries\n\nWhen a new pipeline is about to start with its own file set:\n\n```bash\nconflict_score() {\n  # Score = (files_in_common / union_of_files) * confidence_product\n  # Score > 0.3 = likely conflict, queue the pipeline\n  # Score > 0.7 = definite conflict, queue immediately\n  # Score < 0.15 = safe to run in parallel\n}\n```\n\n### Shared State Format\n\nFile: `~/.shipwright/fleet-lock-state.json` (fleet mode) or `.claude/fleet-lock-state.json` (daemon mode)\n\nAppend-only log to prevent race conditions:\n\n```bash\n# Thread-safe append (uses flock)\necho '{\"action\": \"acquire\", \"pipeline_id\": \"...\", \"files\": [...]}' >> lock-state.json\n\n# On pipeline complete:\necho '{\"action\": \"release\", \"pipeline_id\": \"...\"}' >> lock-state.json\n```\n\nDaemon periodically replays log to compute current state, compacts if log grows > 10MB.\n\n### Queueing Logic\n\nWhen conflict detected:\n1. Add pipeline to queue file with original issue metadata\n2. Record `blocked_by: [list of conflicting pipeline IDs]`\n3. When blocking pipeline releases, rescan queue and restart first non-blocked pipeline\n4. To prevent starvation: prioritize by (original_priority - queue_wait_time), re-evaluate every 30s\n"
+          }
+        ],
+        "review_focus": [
+          "Lock acquisition atomicity: Verify temp file + mv pattern is used for all state writes, no partial states possible",
+          "Stale lock cleanup: Confirm TTL and heartbeat mechanism prevent locks from being held indefinitely after crashes",
+          "Queue fairness: Ensure queued pipelines don't starve—verify priority scoring and re-evaluation schedule prevent FIFO deadlock",
+          "Conflict detection accuracy: Walk through 3-4 real issue scenarios to confirm file conflict detection doesn't miss or over-detect",
+          "Dashboard metrics: Verify lock acquisition/release latency, queue depth, and conflict prevention count are all tracked and visible",
+          "Error recovery: What happens if lock file is corrupted? Queue file lost? Operators need clear runbook and CLI tools to recover"
+        ],
+        "risk_areas": [
+          "Race condition on lock file: Multiple daemon processes or fleet workers attempting simultaneous lock acquisitions—must use atomic filesystem operations (rename not write)",
+          "Stale lock indefinite blocking: Pipeline crashes before release, subsequent pipelines wait forever—mitigated by TTL + heartbeat cleanup, but needs strict testing",
+          "Lock contention performance: High fleet load causes lock file I/O to become bottleneck—monitoring and potential migration to in-memory + persistence needed",
+          "Corrupted shared state leading to cascading failures: Partial writes, unreadable JSON, or filesystem errors can poison lock state for all subsequent pipelines",
+          "Deadlock in queueing logic: If queue re-evaluation isn't careful, Pipeline A waiting for B's files while B waits for A's—need cycle detection or timeout-based breaking",
+          "Operator troubleshooting complexity: Stale locks, queue corruption, and timing-dependent races are hard to debug—needs comprehensive logging and manual unlock tools"
+        ]
+      },
+      "timestamp": 1776451221,
+      "ttl": 3600
     }
   }
 }

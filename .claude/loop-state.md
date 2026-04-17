@@ -2,39 +2,39 @@
 goal: "Fleet Work Conflict Prevention System with File-Level Locking
 
 ## Plan Summary
-Perfect! Let me provide you with a comprehensive implementation plan for the Fleet Work Conflict Prevention System:
+Plan written to `.claude/pipeline-artifacts/plan.md` (191 lines).
 
----
+**Summary:** Completes the partial WIP by *integrating* the existing `scripts/lib/file-locks.sh` (already has atomic registry) rather than rewriting it. Adds a thin predictor (`conflict-predictor.sh`) + FIFO queue (`conflict-queue.sh`), wires an acquisition gate into `daemon-dispatch.sh` and `sw-fleet.sh`, exposes metrics via `/api/locks` and `sw-fleet-viz`, and ships with a `SW_FILE_LOCKS_ENABLED=0` kill switch plus macOS `flock`→`mkdir` fallback. 14 tasks, integration tests for queue/release/stale-reap, with the release-vs-enqueue race addressed by routing all mutations through a single flock serializer.
+turns only self-references — zero integration call sites. Commit `278058e WIP` did partial work; this plan completes it.
 
-# **Fleet Work Conflict Prevention System: Implementation Plan**
+## Root Cause Hypothesis (prior stage failure)
 
-## **Executive Summary**
+1. **Most likely — scope drift:** prior attempt tried to rewrite `file-locks.sh` instead of integrating the existing library.
+2. Predictor complexity: static analysis of files a pipeline will touch is hard; a conservative heuristic is sufficient.
+3. Release-on-crash already handled via heartbeat staleness + `lock_cleanup_stale`.
 
-When the Shipwright daemon/fleet spawns multiple pipelines in parallel, they can edit the same files simultaneously, causing merge conflicts and pipeline failures. This plan implements **file-level locking** to prevent conflicts while preserving parallelism for non-conflicting work.
+**Fix strategy:** do NOT modify `file-locks.sh` beyond a portability fix. Add a thin predictor + tiny queue + wire into spawn/reap. Use existing reaper as crash-safe release path.
 
-**Key Components**:
-- Atomic file lock registry tracking file→pipeline ownership
-- Predictive conflict detection before spawn (no mid-pipeline surprises)
-- Smart queuing for conflicting issues
-- Heartbeat-based stale lock cleanup
-- Fleet dashboard metrics for observability
+## Alternatives Considered
 
----
-
-## **Design Approach: File-Level Locking**
+| Approach | Complexity | Blast radius | Verdict |
+|---|---|---|---|
+| A. File-level pessimistic locks (chosen) | Medium | Low — additive at spawn boundary | **Chosen** |
+| B. Optimistic detection (merge-then-rebase) | Low up-front | High — failed merges waste cost | Rejected |
+| C. Global single-writer lock per repo | Trivial | High — kills fleet parallelism | Rejected |
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
 # Design: Fleet Work Conflict Prevention System with File-Level Locking
 ## Context
 ## Decision
-### Component Diagram
-### Interface Contracts
-### Data Flow
-### Error Boundaries
 ## Alternatives Considered
-## Implementation Plan
-## Validation Criteria
+## Component Diagram
+## Interface Contracts
+# conflict-predictor.sh (pure; no I/O failures propagate)
+# conflict-queue.sh
+# file-locks.sh (additions)
+## Data Flow
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Fleet Work Conflict Prevention System with File-Level Locking
@@ -58,29 +58,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+      "file": "patterns.json",
       "relevance": 95,
-      "summary": "Current repo project metadata: Node.js, vitest test runner, npm package manager, CommonJS imports, src/ and test/ conventions. Critical for build stage context."
+      "summary": "Current project (sethdford/shipwright) with Node/vitest/npm detected today (2026-04-17T18:40:22Z). Shows exact build environment: src/ source dir, commonjs imports, vitest test runner. Directly applicable to build stage configuration."
     },
     {
-      "file": "failures.json (with multiple test failures, 2026-04-17)",
+      "file": "failures.json",
       "relevance": 85,
-      "summary": "Recent test failures from build/test stages with root causes and fixes (sw-cleanup.sh heartbeat detection, sed command issues, mktemp failures). Directly applicable to avoiding repeated failures."
+      "summary": "Recent test failures in this repo (2026-04-17) including sw-cleanup.sh heartbeat detection issues and sed syntax errors. Directly relevant to build stage test execution and will inform debugging strategy."
     },
     {
-      "file": "success-patterns.json (two patterns: bug fix and auth feature)",
-      "relevance": 75,
-      "summary": "Successful delivery patterns for similar complexity work (60-65) in this repo using standard template. Shows 3-5 iterations with npm test strategy, relevant for build approach."
-    },
-    {
-      "file": "patterns.json (project_type: nodejs, 2026-02-21)",
-      "relevance": 70,
-      "summary": "Project type context confirming Node.js environment. Useful for understanding build environment and tooling expectations."
-    },
-    {
-      "file": "failures.json (ENOENT and cannot read property errors)",
+      "file": "success-patterns.json",
       "relevance": 65,
-      "summary": "Common error signatures for Node.js projects with documented fixes (npm install, variable initialization). Helps anticipate and prevent frequent build failures."
+      "summary": "Successful bug fix pattern in Node project (complexity 60, 3 iterations, npm test strategy). Shows effective build loop approach and file modification patterns. Template and strategy directly applicable."
+    },
+    {
+      "file": "failures.json",
+      "relevance": 60,
+      "summary": "ENOENT/missing npm install failure with 95% fix effectiveness. Common blocker in Node builds that can prevent tests from running. Relevant as pre-build step validation."
+    },
+    {
+      "file": "success-patterns.json",
+      "relevance": 55,
+      "summary": "Add auth module feature (complexity 65, 5 iterations, TDD approach). Shows Node feature development with unit+integration test strategy. File patterns and duration inform iteration planning for similar complexity work."
     }
   ]
 }
@@ -93,85 +93,201 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Fleet Work Conflict Prevention System with File-Level Locking
 
 ## Implementation Checklist
-- [ ] File conflict detected **before** pipeline spawn (not during git operations)
-- [ ] Conflicting issues queued instead of spawned
-- [ ] Locks released within 2 seconds of pipeline completion
-- [ ] Stale locks cleaned within 2 minutes of pipeline failure
-- [ ] All existing daemon tests pass (`npm test`)
-- [ ] All existing pipeline tests pass
-- [ ] All existing fleet tests pass
-- [ ] Lock file at `$DAEMON_DIR/file-locks.json` (daemon-config.json can override)
-- [ ] All lock updates atomic (flock-serialized)
-- [ ] Files locked in sorted alphabetical order (deadlock prevention)
-- [ ] No circular lock dependencies possible
-- [ ] Heartbeat integration with existing `~/.shipwright/heartbeats/` pattern
-- [ ] Events emitted: `daemon.conflict_detected`, `daemon.lock_acquired`, `daemon.lock_released`
-- [ ] Metrics tracked: `conflicts_avoided`, `queue_depth`, `avg_wait_seconds`
-- [ ] Dashboard endpoint: `GET /api/fleet/locks` with lock status JSON
-- [ ] Stale cleanup logged with PID, issue number, and reason
-- [ ] Unit test suite: `sw-file-locks-test.sh` with 12 test cases
-- [ ] E2E test: Two-issue conflict scenario in `sw-pipeline-test.sh`
-- [ ] Edge cases: stale cleanup, deadlock prevention, queue stalling
-- [ ] All tests use mocks (no real git/network calls)
+- [ ] Task 1: `_lock_acquire_serializer` (flock+mkdir fallback)
+- [ ] Task 2: `lock_acquire_or_queue` + `lock_export_metrics_prometheus`
+- [ ] Task 3: Create `conflict-predictor.sh`
+- [ ] Task 4: Create `conflict-queue.sh`
+- [ ] Task 5: Unit tests for predictor + queue (T3, T4 block T5)
+- [ ] Task 6: Wire gate into `daemon-dispatch.sh` spawn + reap (T2, T3, T4 block T6)
+- [ ] Task 7: Wire gate into `sw-fleet.sh`
+- [ ] Task 8: `lock_cleanup_stale` in daemon patrol
+- [ ] Task 9: `/api/locks` endpoint + dashboard widget
+- [ ] Task 10: Metrics row in `sw-fleet-viz.sh`
+- [ ] Task 11: Extend `sw-file-locks-test.sh` integration scenarios
+- [ ] Task 12: Register new test suites in `package.json`
+- [ ] Task 13: Run suites, fix regressions
+- [ ] Task 14: `shipwright docs sync`
+- [ ] Two conflicting pipelines: one acquires, one queues (integration test).
+- [ ] Release drains queued item; it starts automatically.
+- [ ] Patrol reaps crashed pipeline within 120s; queue drains.
+- [ ] `/api/locks` returns holders + metrics; widget renders.
+- [ ] `sw-fleet-viz` prints `conflicts_avoided`.
+- [ ] `SW_FILE_LOCKS_ENABLED=0` fully bypasses.
 
 ## Context
 - Pipeline: standard
 - Branch: arch/fleet-work-conflict-prevention-system-wi-401
 - Issue: #401
-- Generated: 2026-04-17T12:50:02Z
+- Generated: 2026-04-17T18:46:19Z
 
-## Skill Guidance (backend issue, AI-selected)
-## Systematic Debugging: Root Cause Analysis
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **performance**: Lock file I/O on every pipeline start in fleet mode can become a bottleneck; implementation must minimize syscalls and handle filesystem latency.
+- **testing-strategy**: Race condition testing critical: need coverage for simultaneous lock acquisitions, stale lock cleanup, queue depth under load, and failure recovery scenarios.
+- **distributed-lock-recovery**: Stale locks from crashed pipelines and recovery from corrupted lock state are primary failure modes—need explicit recovery protocol and timeout windows.
 
-A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+## Performance Expertise
 
-### Phase 1: Evidence Collection
-- Read the error output from the previous attempt carefully
-- Identify the EXACT line/file where the failure occurred
-- Check if the error is a symptom or the root cause
-- Look for patterns: is this a known error type?
+Apply these optimization patterns:
 
-### Phase 2: Hypothesis Formation
-- List 3 possible root causes for this failure
-- For each hypothesis, identify what evidence would confirm or deny it
-- Rank hypotheses by likelihood
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
 
-### Phase 3: Root Cause Verification
-- Test the most likely hypothesis first
-- Read the relevant source code — don't guess
-- Check if previous artifacts (plan.md, design.md) are correct or flawed
-- If the plan was correct but execution failed, focus on execution
-- If the plan was flawed, document what was wrong
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
 
-### Phase 4: Targeted Fix
-- Fix the ROOT CAUSE, not the symptom
-- If the previous approach was fundamentally wrong, choose a different approach
-- If it was a minor error, make the minimal fix
-- Document what went wrong and why the new approach is better
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
 
-IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
+
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
 
 ### Required Output (Mandatory)
 
 Your output MUST include these sections when this skill is active:
 
-1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
-2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
-3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
-4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
 
 If any section is not applicable, explicitly state why it's skipped.
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Distributed Lock Recovery & Failure Modes
+
+File-level locking in concurrent fleet execution must survive process crashes, filesystem errors, and malformed lock state. This skill guides building resilient lock recovery.
+
+### Core Failure Modes
+
+1. **Stale Locks**: Pipeline crashes before releasing lock—other pipelines blocked indefinitely
+2. **Corrupted State**: Lock file partially written, unreadable JSON, or filesystem error mid-write
+3. **Lock Timeout**: Queue depth grows as locks held longer than expected
+4. **Permission Denial**: Lock cleanup fails due to process permission mismatch
+5. **Clock Skew**: Timestamp-based cleanup unreliable in distributed scenarios
+
+### Recovery Protocol
+
+**Acquisition with TTL**:
+- Every lock must include `acquired_at` timestamp and `ttl_seconds` (recommend 3600 = 1 hour for pipeline execution)
+- On startup, scan lock file and purge locks older than TTL—prevents indefinite blocking
+- Log stale lock cleanup with pipeline ID and age for auditing
+
+**Atomic Writes**:
+- Lock file mutations via temp file + `mv` (atomic rename)
+- Never partial writes—lock state is either valid or absent
+- Track lock format version in lock file for forward compatibility
+
+**Crash Detection**:
+- Lock entry includes heartbeat mechanism: pipeline updates mtime every 30s during execution
+- If mtime hasn't changed in 2× heartbeat interval, treat lock as stale
+- Daemon cleanup task runs every 5 minutes scanning for stale locks by mtime
+
+**Queue Corruption**:
+- If queued pipelines file becomes unreadable, restart queue empty (log incident)
+- Queue entries must be durable—use append-only log, not in-memory
+- Replay log to recover queue state on startup
+
+### State Transitions
+
+```
+LOCK_FREE → (acquire with TTL) → LOCK_HELD (heartbeat updates mtime)
+          → (release called) → LOCK_FREE
+          → (crash, mtime stale) → [cleanup task] → LOCK_FREE
+          → (JSON corrupt) → [cleanup task] → LOCK_FREE
+```
+
+### Monitoring Signals
+
+- Alert if stale lock cleanup removes >10 locks in 5 min window (suggests systemic crash)
+- Alert if queue depth grows monotonically (suggests locks not releasing)
+- Alert if lock file mtime hasn't been touched in 10 min (suggests lock system offline)
+
+### Operator Runbook
+
+- **"My pipeline is stuck waiting for files"**: Check `.claude/pipeline-artifacts/lock-state.json` for stale entries older than TTL. If old, run `shipwright fleet unlock --force --file <file>` to manually release.
+- **"Queue is huge but no pipelines running"**: Likely lock corruption. Clear queue with `shipwright fleet queue clear` and re-queue blocked issues.
+- **"Lock file is corrupted"**: Remove `~/.shipwright/lock-state.json` and restart daemon—fleet will rebuild on next spawn.
 "
-iteration: 1
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-04-17T13:00:27Z
-last_iteration_at: 2026-04-17T13:00:27Z
+started_at: 2026-04-17T18:49:37Z
+last_iteration_at: 2026-04-17T18:49:37Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
