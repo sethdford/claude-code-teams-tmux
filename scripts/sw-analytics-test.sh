@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
   local expected="$1" actual="$2" description="${3:-}"
   if [[ "$expected" == "$actual" ]]; then
-    ((PASS++))
+    PASS=$((PASS + 1))
     echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
   else
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
     echo "    Expected: $expected"
     echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
   local haystack="$1" needle="$2" description="${3:-}"
   if [[ "$haystack" == *"$needle"* ]]; then
-    ((PASS++))
+    PASS=$((PASS + 1))
     echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
   else
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
     echo "    Expected substring: $needle"
     echo "    Actual: $haystack"
@@ -38,10 +38,10 @@ assert_contains() {
 assert_exit_code() {
   local expected="$1" actual="$2" description="${3:-}"
   if [[ "$expected" == "$actual" ]]; then
-    ((PASS++))
+    PASS=$((PASS + 1))
     echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
   else
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
     echo "    Expected exit code: $expected"
     echo "    Actual exit code: $actual"
@@ -55,8 +55,8 @@ test_track_valid_event() {
   export HOME="$tmpdir"
   mkdir -p "$HOME/.shipwright"
 
-  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{}' "session-001" > /dev/null 2>&1
-  local result=$?
+  local result=0
+  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{}' "session-001" > /dev/null 2>&1 || result=$?
 
   assert_exit_code 0 "$result" "analytics_track with valid event returns 0"
 
@@ -65,7 +65,7 @@ test_track_valid_event() {
     event_count=$(jq -s 'length' "$HOME/.shipwright/analytics.jsonl" 2>/dev/null || echo "0")
     assert_equals "1" "$event_count" "exactly 1 event written"
   else
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m analytics.jsonl file created"
   fi
 
@@ -78,8 +78,8 @@ test_track_invalid_json() {
   tmpdir=$(mktemp -d)
   export HOME="$tmpdir"
 
-  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{invalid json}' > /dev/null 2>&1
-  local result=$?
+  local result=0
+  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{invalid json}' > /dev/null 2>&1 || result=$?
 
   assert_exit_code 1 "$result" "analytics_track with invalid JSON returns 1"
 
@@ -92,8 +92,8 @@ test_track_missing_event_type() {
   tmpdir=$(mktemp -d)
   export HOME="$tmpdir"
 
-  "$SCRIPT_DIR/sw-analytics.sh" track > /dev/null 2>&1 || true
-  local result=$?
+  local result=0
+  "$SCRIPT_DIR/sw-analytics.sh" track > /dev/null 2>&1 || result=$?
 
   assert_exit_code 1 "$result" "analytics_track without event_type returns 1"
 
@@ -107,10 +107,10 @@ test_event_record_structure() {
   export HOME="$tmpdir"
   mkdir -p "$HOME/.shipwright"
 
-  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{}' "session-001" > /dev/null 2>&1
+  "$SCRIPT_DIR/sw-analytics.sh" track setup_start '{}' "session-001" > /dev/null 2>&1 || true
 
-  local event
-  event=$(jq '.[0]' "$HOME/.shipwright/analytics.jsonl" 2>/dev/null)
+  local event=""
+  event=$(jq -s '.[0]' "$HOME/.shipwright/analytics.jsonl" 2>/dev/null || echo "")
 
   assert_contains "$event" '"timestamp"' "event record contains timestamp field"
   assert_contains "$event" '"session_id"' "event record contains session_id field"
@@ -141,8 +141,8 @@ test_funnel_missing_name() {
   tmpdir=$(mktemp -d)
   export HOME="$tmpdir"
 
-  "$SCRIPT_DIR/sw-analytics.sh" funnel > /dev/null 2>&1 || true
-  local result=$?
+  local result=0
+  "$SCRIPT_DIR/sw-analytics.sh" funnel > /dev/null 2>&1 || result=$?
 
   assert_exit_code 1 "$result" "analytics_funnel without name returns 1"
 
@@ -155,8 +155,8 @@ test_report_missing_dates() {
   tmpdir=$(mktemp -d)
   export HOME="$tmpdir"
 
-  "$SCRIPT_DIR/sw-analytics.sh" report > /dev/null 2>&1 || true
-  local result=$?
+  local result=0
+  "$SCRIPT_DIR/sw-analytics.sh" report > /dev/null 2>&1 || result=$?
 
   assert_exit_code 1 "$result" "analytics_report without dates returns 1"
 
@@ -180,10 +180,10 @@ test_metadata_preservation() {
   export HOME="$tmpdir"
   mkdir -p "$HOME/.shipwright"
 
-  "$SCRIPT_DIR/sw-analytics.sh" track setup_phase_complete '{"phase":"plan","status":"success"}' > /dev/null 2>&1
+  "$SCRIPT_DIR/sw-analytics.sh" track setup_phase_complete '{"phase":"plan","status":"success"}' > /dev/null 2>&1 || true
 
-  local metadata
-  metadata=$(jq '.[0].metadata' "$HOME/.shipwright/analytics.jsonl" 2>/dev/null)
+  local metadata=""
+  metadata=$(jq -sc '.[0].metadata' "$HOME/.shipwright/analytics.jsonl" 2>/dev/null || echo "")
 
   assert_contains "$metadata" '"phase":"plan"' "metadata contains phase field"
   assert_contains "$metadata" '"status":"success"' "metadata contains status field"
