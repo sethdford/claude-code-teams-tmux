@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Real-time context window health monitoring requires architectural design of detection mechanisms, health metrics, and exhaustion prevention strategies; implementation by builder; and DevOps-level observability/instrumentation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776430252,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,377 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "f6140b941019cc1494aed80098eea985": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Accurate real-time context measurement across heterogeneous prompt types and API versions",
+          "Compression timing: triggering too early wastes capacity; triggering too late allows exhaustion",
+          "Aggressive compression may degrade solution quality or lose critical build context",
+          "Session restart coordination—preserving build state and iteration history across session boundaries",
+          "Performance overhead of continuous monitoring may slow loop iteration throughput",
+          "Dashboard latency: vitals updates may lag behind actual context consumption in real-time"
+        ],
+        "implementation_hints": [
+          "Track actual token usage from Claude API responses (prompt_tokens + completion_tokens) rather than estimation",
+          "Implement multi-tier compression: structured summary → Markdown digest → minimal JSON state",
+          "Integrate context metrics into progress.md after each iteration; emit context-health events to events.jsonl",
+          "Hook into sw-loop.sh's iteration cycle post-completion to sample and log context health",
+          "Design graceful escalation: compression → restart only if compression insufficient (configurable thresholds)",
+          "Dashboard widget should display % used, trend line, and compression event history with timestamps",
+          "Use convergence detector to suppress monitoring noise during stalled/looping iterations"
+        ]
+      },
+      "timestamp": 1776429693,
+      "ttl": 3600
+    },
+    "22d5fe72cfb5c4d5da9e84097c783d20": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1776429707,
+      "ttl": 1800
+    },
+    "33918ef274ff578edd69a3346d18a815": {
+      "result": {
+        "estimated_cost_usd": 5.8,
+        "estimated_iterations": 3,
+        "estimated_tokens": 28500,
+        "likely_failure_stage": "test",
+        "confidence": 72,
+        "cost_breakdown": {
+          "plan": 0.6,
+          "build": 2.1,
+          "test": 1.8,
+          "review": 0.9,
+          "pr": 0.4
+        },
+        "iteration_breakdown": {
+          "iteration_1": "Core feature (token tracking, compression tiers, progress.md integration)",
+          "iteration_2": "Integration (hook into sw-loop.sh, events.jsonl emission, dashboard widget)",
+          "iteration_3": "Testing and refinement (edge cases, compression thresholds, restart scenarios)"
+        },
+        "risk_factors": {
+          "context_measurement_accuracy": "high",
+          "compression_timing_critical_path": "high",
+          "session_restart_coordination": "medium",
+          "dashboard_latency_validation": "medium",
+          "performance_overhead_monitoring": "medium"
+        },
+        "failure_stage_rationale": "Test stage most likely due to multi-component integration (token tracking, compression, restart coordination) requiring careful validation across edge cases despite 78% success probability",
+        "recommendation": "Use standard template with extended test cycle; monitor token usage empirically rather than estimation; implement phased compression escalation with configurable thresholds"
+      },
+      "timestamp": 1776429718,
+      "ttl": 3600
+    },
+    "ad7bcfcfac26d82e0db34cb511c9242e": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "observability",
+          "performance",
+          "reliability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires integrating real-time metric collection into the build loop, designing threshold-based remediation (compression/restart), event logging, and dashboard integration. Standard complexity per issue labels, but implementation spans multiple systems."
+        },
+        "skill_plan": {
+          "plan": [
+            "observability",
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "observability",
+            "performance"
+          ],
+          "build": [
+            "context-aware-monitoring-patterns",
+            "performance",
+            "api-design",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "security-audit",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability",
+            "collection-system-validation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "observability": "Context window exhaustion is invisible without real-time metrics; need comprehensive tracking, alerting at thresholds, and dashboard visibility to prevent wasted iterations",
+          "architecture-design": "Critical decisions: where to place monitor (in-loop vs separate), how data flows to dashboard, compression strategy, restart triggers, and state management need explicit design",
+          "brainstorming": "Challenge core assumptions: is 80% the right alert threshold? Will prompt compression reliably recover 20%+ tokens? Should compression or restart trigger first?",
+          "performance": "Context tracking runs every iteration and must not introduce measurable latency; compression logic must be fast enough to prevent exhaustion mid-compression",
+          "api-design": "Design clean interfaces for context health queries, remediation triggers, and event emission so loop, dashboard, and automation can coordinate without tight coupling",
+          "context-aware-monitoring-patterns": "Provides specific patterns for in-band context tracking during loops, automatic threshold-based remediation (alert/compress/restart), graceful degradation, and metrics state management",
+          "testing-strategy": "Real-time monitoring requires synthetic load testing to hit thresholds, compression effectiveness validation, metric accuracy verification, and failure mode injection",
+          "adversarial-quality": "Find failure modes: compression fails but token count not updated, metrics lag behind actual usage, threshold too aggressive (false restarts) or too conservative (exhaustion happens anyway), compression deletes needed context",
+          "security-audit": "Context metrics may contain sensitive data; ensure events.jsonl, progress.md, and dashboard display don't accidentally leak prompt content, API keys, or user data",
+          "pr-quality": "Implementation coordinates loop, compression, events, and dashboard; PR must clearly explain architecture, remediation strategy, threshold choices, and why testing proves it works",
+          "validation-thoroughness": "Beyond unit tests, validate with realistic long-running loops, stress test compression under high iteration load, confirm dashboard accurately reflects health, and verify exhaustion is actually prevented",
+          "collection-system-validation": "Context metrics must integrate correctly with events.jsonl and pipeline state; validate schema consistency, accurate event emission, and discoverability for dashboard queries",
+          "deploy-safety": "This is a critical reliability feature; deploy conservatively with fallbacks if monitoring fails, verify thresholds work in production before relying on automatic restart"
+        },
+        "generated_skills": [
+          {
+            "name": "context-aware-monitoring-patterns",
+            "reason": "No existing skill covers the specific patterns for in-band context tracking during build loops, automatic threshold-based remediation (alert/compress/restart), or integration with loop state management and event systems",
+            "content": "## Context-Aware Monitoring Patterns\n\nImplement real-time context window monitoring in build loops to prevent exhaustion through automatic threshold-based remediation.\n\n### Architecture\n\n**In-Band Tracking**: Place context monitoring within the loop's main iteration, not as a separate process. Track after each Claude API call completes:\n- Tokens used this iteration (input + output from API response)\n- Running total since loop start\n- Percentage of total window capacity\n\n**Lightweight State**: Store health in a single JSON file, updated atomically after each iteration:\n```json\n{\n  \"iteration\": 42,\n  \"tokens_used_total\": 125000,\n  \"tokens_capacity\": 200000,\n  \"percent_used\": 62.5,\n  \"compressed_at_iterations\": [20, 35],\n  \"restart_triggered\": false,\n  \"last_checked_at\": \"2026-04-17T12:45:30Z\"\n}\n```\n\n**Event Emission**: After each token count update, emit to events.jsonl (one event per check, not per token):\n```bash\nemit_event \"context_health_check\" \\\n  \"iteration=$iter\" \\\n  \"tokens_used=$used\" \\\n  \"percent_used=$pct\" \\\n  \"alert_threshold_hit=$alert_hit\" \\\n  \"compression_triggered=$comp_triggered\"\n```\n\n### Threshold Tiers & Remediation\n\n**Three-Tier Response**:\n1. **Alert (80% default)**: Emit warning event, dashboard shows yellow gauge; loop continues\n2. **Compress (90% default)**: Trigger automatic prompt summarization; redact old iterations from context, keep 3-5 most recent for continuity\n3. **Restart (95% default)**: Hard stop — emit event, write checkpoint, exit loop for session restart\n\n**Compression Logic**:\n```bash\nif (( tokens_used > tokens_capacity * 90 / 100 )); then\n  # Summarize iterations 1-N into progress.md\n  # Clear function defs, intermediate vars from prompt\n  # Re-measure tokens after cleanup\n  # If still >85%, escalate to restart\nfi\n```\n\n**Graceful Degradation**: If reaching 99% before remediation completes, halt new Claude calls immediately. Don't attempt compression when already over limit.\n\n### Integration Points\n\n**Loop Hook**: After each `claude` invocation in loop:\n```bash\nupdate_context_health \"$current_tokens\" \"$total_tokens\"\nif should_compress; then\n  trigger_compression\nfi\nif should_restart; then\n  exit_for_restart\nfi\n```\n\n**Dashboard**: Vitals reads the health file and displays:\n- Gauge showing % capacity used (0-100)\n- Trend line over last 20 iterations\n- Alert badge when >80%, compress badge when >90%\n- Last N remediation actions\n\n**Auto-Restart**: Existing restart logic detects `restart_triggered` flag and:\n1. Saves progress.md and iteration history\n2. Exits current session\n3. New session reads checkpoint and continues\n\n### Testing Patterns\n\n1. **Synthetic Thresholds**: Mock large Claude responses (adjust token counts artificially) to hit 80%/90%/95% without real long iteration runs\n2. **Metric Accuracy**: Calculate tokens independently from response metadata; verify reported ≈ actual (±5%)\n3. **Compression Recovery**: Inject a fake 140k token state, compress, verify drops to <120k\n4. **Failure Injection**: Force compression to fail (write-protected file), verify escalates to restart\n5. **Threshold Sensitivity**: Run with 60%, 80%, 95% thresholds; find sweet spot preventing exhaustion without excessive restarts\n"
+          }
+        ],
+        "review_focus": [
+          "Metric Accuracy**: Token counting must match Claude SDK behavior; off-by-one or missing tokens defeats the entire feature",
+          "Threshold Tuning**: 80% alert and 90% compress levels must prevent exhaustion while avoiding false positives; validate with real loop data",
+          "Compression Effectiveness**: Verify compression recovers ≥20% of tokens without deleting state required for failing tests or context recovery",
+          "State Consistency**: Metrics file, events.jsonl, dashboard, and loop internal state must stay in sync; race conditions cause missed thresholds",
+          "Graceful Failure**: If compression fails or metrics fail to collect, system must degrade safely (alert operator, don't crash loop)",
+          "Dashboard Integration**: Context health must be real-time visible in vitals; stale metrics are useless for prevention",
+          "Restart Recovery**: Session restart from checkpoint must restore full context (not lose error history or test failures)"
+        ],
+        "risk_areas": [
+          "Token Counting Drift**: Estimate vs actual usage diverges if implementation doesn't precisely match Claude SDK tokenization or includes/excludes caching correctly",
+          "Threshold Blindness**: Thresholds tuned for typical code changes may fail for pathological cases (huge prompts, many retries), allowing exhaustion to slip through",
+          "Compression Loses Context**: Over-aggressive summarization deletes error messages, test failures, or architectural context needed to fix the build",
+          "Restart Churn**: Frequent restarts due to too-low thresholds increase token cost and reduce reliability; may negate the benefit",
+          "Metric Collection Lag**: If context health updates lag real usage, compression/restart triggers too late (already exhausted)",
+          "Side Channel Leaks**: Event logs or progress.md may contain sensitive prompts, API responses, or user data; ensure sanitization",
+          "Dashboard Reliability**: If dashboard can't query metrics reliably, visibility is lost when most needed (during build pressure)"
+        ]
+      },
+      "timestamp": 1776429876,
+      "ttl": 3600
+    },
+    "927a43a68b2826ab958143571018b8b8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright 2026-04-17)",
+            "relevance": 95,
+            "summary": "Current project structure with vitest test runner, npm package manager, JavaScript/CommonJS conventions - essential for planning implementation in this specific codebase"
+          },
+          {
+            "file": "failures.json (test stage with loop-state patterns)",
+            "relevance": 80,
+            "summary": "Recent test failures involving loop iteration handling, loop-state.md, and iteration logs (captured 2026-04-17) - directly relevant to understanding build loop mechanics and exhaustion scenarios"
+          },
+          {
+            "file": "success-patterns.json (Fix bug with iterations and loop-logs)",
+            "relevance": 75,
+            "summary": "Successful pattern showing 3 iterations with .claude/loop-state.md and loop-logs - demonstrates how current build loops track state and progress, informing health monitor design"
+          },
+          {
+            "file": "success-patterns.json (Add auth feature with 5 iterations)",
+            "relevance": 65,
+            "summary": "Feature development pattern with multiple iterations and comprehensive file changes - shows iterative approach that context window health monitor will need to support"
+          },
+          {
+            "file": "failures.json (mktemp /tmp/claude environment issue)",
+            "relevance": 50,
+            "summary": "Shows codebase uses /tmp/claude directory for temporary build artifacts - relevant for understanding memory and resource constraints the health monitor needs to track"
+          }
+        ]
+      },
+      "timestamp": 1776429956,
+      "ttl": 1800
+    },
+    "3ffdbf7be1267348a9cc433cef9dcd5e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (2026-04-17T07:19:43Z+)",
+            "relevance": 92,
+            "summary": "Most recent failure patterns from actual runs: sw-cleanup.sh heartbeat detection, sed command quoting, mktemp directory issues. Directly informs what validation failures to expect in planning stage."
+          },
+          {
+            "file": "patterns.json (2026-04-17T12:44:37Z)",
+            "relevance": 85,
+            "summary": "Current project context captured during intake: nodejs, vitest, npm, javascript. Shows conventions (src/, *.test.js, commonjs). Essential baseline for plan validation assumptions."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a...)",
+            "relevance": 68,
+            "summary": "Recent bug fix pattern (3 iterations, 45s): shows file patterns, test strategy (npm test), multi-file changes. Similar complexity to context window monitoring feature; informs iteration expectations."
+          }
+        ]
+      },
+      "timestamp": 1776430070,
+      "ttl": 1800
+    },
+    "2ca78a262b3896d4f0dfd553f3852e5e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current sethdford/shipwright project metadata (Node.js, vitest, npm conventions, src/ structure). Critical for understanding existing codebase patterns that the health monitor must integrate with."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recent test failures show context-related issues (mktemp, heartbeat detection, cleanup) that directly inform context window health monitoring design. Patterns like missing /tmp/claude directory are architecture constraints."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Detailed success pattern from bug fix (3 iterations, file patterns, 6 commits, cost tracking) demonstrates iteration and monitoring patterns applicable to context window health tracking architecture."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Feature implementation pattern (iterative TDD, unit + integration testing, module isolation) provides architectural approach for monitoring and health checking systems in the pipeline."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Earlier project detection snapshot shows Node.js project type and test runner conventions. Provides historical context for architectural stability across pipeline stages."
+          }
+        ]
+      },
+      "timestamp": 1776430095,
+      "ttl": 1800
+    },
+    "9fccc740800a967d13fc59093dcc466b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (test stage failures with heartbeat/cleanup issues)",
+            "relevance": 80,
+            "summary": "Shows actual anti-patterns in monitoring and cleanup logic (heartbeat detection, summary output). Directly relevant to designing a health monitor—reveals pitfalls to avoid in state detection and reporting."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 75,
+            "summary": "Current repo project metadata (Node, vitest, npm, commonjs). Essential context for design phase—informs conventions, test strategy, and file organization for the new feature."
+          },
+          {
+            "file": "success-patterns.json (auth module + fix bug patterns)",
+            "relevance": 62,
+            "summary": "Shows iteration counts (3-5), complexity ranges (60-65), and successful approaches (TDD, module isolation). Inverse anti-patterns—reveals what strategies worked, informing rejected approaches by contrast."
+          }
+        ]
+      },
+      "timestamp": 1776430115,
+      "ttl": 1800
+    },
+    "b218c5179191d0a099de31063d525a56": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17T12:44:37Z)",
+            "relevance": 95,
+            "summary": "Exact project configuration: Node.js, vitest test runner, npm, src/ source dir, *.test.js pattern, commonjs imports. Essential for BUILD stage to know test strategy and file conventions."
+          },
+          {
+            "file": "failures.json (5 test failures: sw-cleanup.sh, sed, mktemp, heartbeat detection)",
+            "relevance": 90,
+            "summary": "Recent test failures (last seen 2026-04-17) with specific fixes: heartbeat detection logic, sed -e flag syntax, /tmp/claude mkdir issue. Directly applicable to avoid in current build."
+          },
+          {
+            "file": "success-patterns.json (Fix bug: 3 iterations, 45s, standard template, npm test)",
+            "relevance": 85,
+            "summary": "Successful bug fix pattern with similar complexity (60) and standard template. Shows 3 iterations needed, files_changed in .claude/ and scripts/lib/, matches current pipeline approach."
+          },
+          {
+            "file": "success-patterns.json (Add auth module: 5 iterations, TDD approach, unit+integration)",
+            "relevance": 80,
+            "summary": "Shows iterative TDD approach with module isolation, 3 seen_count indicates proven pattern. File changes in src/ and test/ align with Node.js project structure."
+          },
+          {
+            "file": "failures.json (EONENT: Missing dependency installation, 95% effectiveness)",
+            "relevance": 75,
+            "summary": "Common build-stage blocker in Node.js projects. Clear fix: 'npm install before testing'. 95% effectiveness rate shows high confidence this pattern prevents failures."
+          }
+        ]
+      },
+      "timestamp": 1776430218,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure, tooling, and conventions essential for build: node/vitest/npm, src/ directory, test patterns. Directly guides how to build and test the feature."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Documents 5 known test failures with root causes and fixes (sw-cleanup.sh heartbeat detection, sed command syntax, mktemp directory creation). Prevents repeating these mistakes during build."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful iteration strategies (3 iterations typical), file patterns that change together, and npm test command validation. Provides templates for effective build loop approach."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Empty baselines object provides no actionable context for current build stage."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array provides no guidance or architectural decisions for the build."
+          }
+        ]
+      },
+      "timestamp": 1776430234,
+      "ttl": 1800
+    },
+    "49a0910596182a37090ed73e654c6681": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1776430555,
+      "ttl": 1800
+    },
+    "59f90cc6f63218c9097df0c3e27c2f78": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1776430689,
+      "ttl": 1800
     }
   }
 }
