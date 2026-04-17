@@ -295,7 +295,7 @@ feedback_detect_regression() {
         }')
 
     echo "$regression_result"
-    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity"
+    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity" 2>/dev/null || true
 }
 
 # ─── Correlate regressions with changed files ───────────────────────────────────
@@ -363,7 +363,7 @@ feedback_correlate_with_changes() {
         }')
 
     echo "$correlation_result"
-    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence"
+    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence" 2>/dev/null || true
 }
 
 # ─── Auto-respond to regressions based on severity ──────────────────────────────
