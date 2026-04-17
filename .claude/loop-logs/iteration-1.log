@@ -1,1 +1,1 @@
-You've hit your limit · resets 5pm (UTC)
+Iteration 1 complete. Fixed `sw-analytics-test.sh`: `set -e` caused early exit on `((PASS++))` when PASS=0, and `jq '.[0]'` failed on JSONL files. All 17 analytics tests now pass. Registered the test in `package.json`. Analytics engine core (`sw-analytics.sh`) and CLI wiring were already in place.

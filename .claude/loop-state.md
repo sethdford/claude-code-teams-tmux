@@ -2,37 +2,38 @@
 goal: "Setup and First-Run Analytics Engine with Drop-off Tracking
 
 ## Plan Summary
-The plan is ready. Here's a summary of what it covers:
+I'll analyze the goal and context to create a detailed implementation plan for the analytics engine.
 
-**New files:**
-- `scripts/sw-analytics.sh` — core module with `analytics_track()` (atomic JSONL writes via existing `atomic_append()`), `analytics_report()` (funnel with drop-off detection), and subcommands
-- `scripts/sw-analytics-test.sh` — unit tests using existing test harness
+## Analysis
 
-**Modified files:**
-- `scripts/sw-setup.sh` — track all 4 phases + EXIT trap for abandoned sessions
-- `scripts/sw-init.sh` — emit `init_complete` event
-- `scripts/sw-pipeline.sh` — emit `pipeline_attempt` at start + `pipeline_outcome` in EXIT trap
-- `scripts/sw` — register `analytics` in `route_observe()` + top-level alias + help text
-- `config/event-schema.json` — register 4 new analytics event types
+**Goal Summary**: Instrument the setup flow to track user drop-off points and identify friction in the adoption funnel. This is a **telemetry layer** to answer "where do users abandon setup?" without compromising privacy.
 
-**Key design choices:**
-1. Separate `~/.shipwright/analytics.jsonl` (not events.jsonl) to avoid mixing concerns
-2. Reuse `atomic_append()` from helpers.sh for safe concurrent writes — already has `flock`
-3. Whitelist-only error types + `sanitize_secrets()` call enforces privacy guarantee
-4. Instrumentation is always non-blocking: if sw-analytics.sh not found, stub is used
+**Key Constraints**:
+- Privacy-preserving (no PII, repo names, or code content)
+- Local-only (no external services)
+- JSONL format for append-efficient logging
+- Must work with existing pipeline orchestration
+
+**Alternatives Considered**:
+
+| Approach | Pros | Cons | Blast Radius |
+|----------|------|------|--------------|
+| **1. Central analytics library** (CHOSEN) | Consistent event format, easy to add instrumentation, centralized reporting | More code to maintain, potential overhead | Medium |
+| 2. Lightweight edge tracking | Minimal code, low overhead | Limited insights, scattered logic, hard to aggregate | Low |
+| 3. External analytics service | Professional tooling | Violates privacy requirement, network dependency | High ❌ |
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
 # Design: Setup and First-Run Analytics Engine with Drop-off Tracking
 ## Context
 ## Decision
-### Core Principles
-### Data Model
-### Component Responsibilities
 ## Alternatives Considered
-### Alternative 1: Extend events.jsonl with Analytics Metadata
-### Alternative 2: Synchronous Error Reporting with Centralized Service
-### Alternative 3: Append-Only Ledger with Compaction
+## Implementation Plan
+## Component Diagram
+## Interface Contracts
+# lib/analytics.sh — public functions
+# emit_analytics_event <event_type> [key=value ...]
+# Returns: 0 always (never blocks caller). Writes warning to stderr on invalid event.
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Setup and First-Run Analytics Engine with Drop-off Tracking
@@ -56,29 +57,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
+      "file": "patterns.json (sethdford/shipwright project info)",
       "relevance": 95,
-      "summary": "Project structure (Node.js, vitest, npm, src/, *.test.js, commonjs) captured 2026-04-17 — essential for understanding build conventions and test setup"
+      "summary": "Exact current repo configuration: Node.js, vitest test runner, npm package manager, JavaScript, src/ directory, *.test.js pattern, commonjs imports. Captured today (2026-04-17). Directly applicable to build stage decisions."
     },
     {
-      "file": "failures.json",
+      "file": "failures.json (multiple test failures from this repo)",
+      "relevance": 90,
+      "summary": "Recent actual failures from this repo's test suite (last seen 2026-04-17). Includes sw-cleanup.sh, sed command, and mktemp issues. Shows patterns to avoid during build and test stages."
+    },
+    {
+      "file": "failures.json (ENOENT no such file directory)",
       "relevance": 85,
-      "summary": "Recent test stage failures from this repo (mktemp /tmp/claude issue, sw-cleanup.sh heartbeat detection, sed flag issues) — may block build if not addressed"
+      "summary": "Common Node.js build issue with 95% fix effectiveness. 'npm install' solution directly applicable to analytics engine setup in npm-based project."
     },
     {
-      "file": "success-patterns.json",
-      "relevance": 72,
-      "summary": "Authentication feature (complexity 65, 3 iterations, 150s) and bug fix patterns show iterative TDD approach with test strategy 'npm test'"
+      "file": "success-patterns.json (auth module feature addition)",
+      "relevance": 80,
+      "summary": "Successful feature implementation with 5 iterations, TDD approach with unit+integration tests. File patterns (src/, test/) and complexity (60) match typical analytics engine feature work. npm test strategy."
     },
     {
-      "file": "failures.json",
-      "relevance": 55,
-      "summary": "Generic Node.js failures (ENOENT missing deps, uninitialized variables) — common patterns to watch for, though less specific to current project state"
-    },
-    {
-      "file": "architecture.json",
-      "relevance": 40,
-      "summary": "Architecture rules stub — potentially useful for ensuring code complies with project structure constraints, but minimal detail provided"
+      "file": "failures.json (cannot read property)",
+      "relevance": 75,
+      "summary": "Common JavaScript error pattern with 100% fix effectiveness (variable initialization). Likely to occur during analytics engine implementation work on Node.js project."
     }
   ]
 }
@@ -86,6 +87,32 @@ Historical context (lessons from previous pipelines):
 Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
 [design] Design completed for Setup and First-Run Analytics Engine with Drop-off Tracking — Resolution: 
+
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Setup and First-Run Analytics Engine with Drop-off Tracking
+
+## Implementation Checklist
+- [ ] **Task 1**: Create `scripts/lib/analytics.sh` with `emit_analytics_event()`, atomic write, validation
+- [ ] **Task 2**: Create `scripts/lib/analytics-schema.json` with allowed fields and forbidden patterns
+- [ ] **Task 3**: Create `scripts/sw-analytics.sh` with `emit`, `report`, `clear` subcommands
+- [ ] **Task 4**: Implement funnel analysis and report generation in `sw-analytics.sh`
+- [ ] **Task 5**: Modify `scripts/sw-setup.sh` to emit events at each phase (prerequisites, PATH, tmux, CLI)
+- [ ] **Task 6**: Modify `scripts/sw-init.sh` to emit setup flow events
+- [ ] **Task 7**: Modify `scripts/sw-pipeline.sh` to track pipeline start/stage completion/final outcome
+- [ ] **Task 8**: Integrate pipeline stage tracking to emit `stage_reached` on failure
+- [ ] **Task 9**: Implement PII filtering in `emit_analytics_event()` — validate against schema
+- [ ] **Task 10**: Add log rotation logic to keep analytics.jsonl < 100MB
+- [ ] **Task 11**: Create `scripts/sw-analytics-test.sh` with unit and integration tests
+- [ ] **Task 12**: Update `scripts/sw` router to dispatch `analytics` subcommand
+- [ ] **Task 13**: Add analytics test suite to `package.json`
+- [ ] **Task 14**: Document analytics event types in `.claude/CLAUDE.md` under a new "Analytics Events" section
+- [ ] **Task 15**: Verify privacy preservation — audit all emitted events for sensitive data
+
+## Context
+- Pipeline: standard
+- Branch: feat/setup-and-first-run-analytics-engine-wit-404
+- Issue: #404
+- Generated: 2026-04-17T18:42:01Z
 
 ## Skill Guidance (backend issue, AI-selected)
 ## API Design Expertise
@@ -173,20 +200,20 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 1
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-04-17T13:00:32Z
-last_iteration_at: 2026-04-17T13:00:32Z
+started_at: 2026-04-17T18:45:20Z
+last_iteration_at: 2026-04-17T18:45:20Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3

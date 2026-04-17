@@ -32,16 +32,15 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
-          "architect",
-          "devops",
-          "tester"
+          "tester",
+          "devops"
         ],
         "confidence": 0.85,
-        "reasoning": "Analytics engine requires implementation-focused builder with architect for system design, devops for infrastructure setup, and tester for drop-off tracking validation.",
+        "reasoning": "Build stage of feature delivery pipeline; analytics engine implementation with event tracking and drop-off detection requires core development and infrastructure setup",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1776430389,
+      "timestamp": 1776451519,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1406,26 +1405,31 @@
     "9b43241745c48e66163a09f14c85d394": {
       "result": {
         "complexity": 6,
-        "risk_level": "medium",
-        "success_probability": 78,
+        "risk_level": "low",
+        "success_probability": 80,
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Accidental collection of PII or sensitive repo data despite privacy intent",
-          "Performance degradation if analytics events are logged synchronously in hot paths",
-          "Schema evolution and backwards compatibility of analytics format",
-          "Over-instrumentation creating noise instead of actionable insights"
+          "Privacy violation: accidentally logging PII, repo names, or code content despite best intentions",
+          "Incomplete instrumentation: missing key drop-off points reduces insights value",
+          "Performance overhead: excessive event emission during setup could slow execution",
+          "Report output clarity: funnel visualization must be immediately actionable to justify instrumentation",
+          "Schema brittleness: analytics.jsonl format must support future requirements without breaking existing events"
         ],
         "implementation_hints": [
-          "Define strict allowlist of safe fields: phase names, error codes, timing only — exclude file paths, output, config values",
-          "Add SHIPWRIGHT_ANALYTICS=false environment variable to opt-out completely",
-          "Version the analytics schema field in event JSON to support future evolution",
-          "Implement clear funnel: setup_started → (prereq_check → path_setup → tmux_setup → claude_setup) → first_pipeline_run → outcome",
-          "Use error classification codes (ERR_CLAUDE_CLI_MISSING) instead of raw stderr for privacy",
-          "Add analytics.jsonl to .gitignore and validate no sensitive data leaks to version control"
+          "Define strict event schema upfront (event_type, timestamp, phase, status, error_type, exit_code) — document in .claude/CLAUDE.md",
+          "Add privacy validation function that strips any path fragments, error messages, version hashes before emission",
+          "Instrument at decision points: after prerequisites check, PATH validation, tmux setup, Claude CLI verify, first pipeline stage completion",
+          "Create `shipwright analytics report` with aggregation logic: funnel visualization (completion % per phase), top 5 failure modes, time-to-first-run percentiles",
+          "Include timestamp and shipwright version in every event to enable trend analysis and regression detection",
+          "Add optional `--disable-analytics` flag to setup/init for privacy-conscious users",
+          "Test report generation with synthetic 1000-event dataset before shipping to verify SQL/jq queries are performant",
+          "Use existing `.shipwright/analytics.jsonl` — don't create new logging mechanism; keep single source of truth",
+          "Categorize errors into buckets (missing_prereq, permission_denied, timeout, user_canceled, internal_error) for actionable insights",
+          "Track not just completion but time spent in each phase — slow phases indicate UX friction beyond drop-off"
         ]
       },
-      "timestamp": 1776429664,
+      "timestamp": 1776451049,
       "ttl": 3600
     },
     "b357f80829baccce2e72bee8c9490c8c": {
@@ -1487,145 +1491,145 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright)",
+            "file": "patterns.json (2026-04-17T18:39:55Z)",
             "relevance": 95,
-            "summary": "Current project structure: Node.js, vitest, npm, commonjs conventions. Essential for planning architecture that fits existing codebase patterns."
+            "summary": "Current project structure for sethdford/shipwright: Node.js, vitest test runner, npm, JavaScript, src/ directory, *.test.js pattern, commonjs imports. Essential baseline for planning analytics feature implementation."
           },
           {
-            "file": "success-patterns.json (add auth module)",
+            "file": "success-patterns.json (Add authentication feature, id: 0bcf...)",
             "relevance": 85,
-            "summary": "Similar feature implementation: complexity 60, 5 iterations, TDD with module isolation, unit+integration test strategy. Directly applicable to planning analytics feature architecture."
+            "summary": "Recent successful feature development (complexity 65, 3 iterations, 150s duration). Shows iterative approach, test strategy, and file patterns relevant to planning new feature delivery methodology."
           },
           {
-            "file": "success-patterns.json (Add authentication feature)",
+            "file": "success-patterns.json (add auth module TDD, id: test1)",
             "relevance": 80,
-            "summary": "Feature development pattern: complexity 65, 3 iterations, 150s duration. Shows iteration count and effort expectations for medium-complexity feature work."
+            "summary": "Feature complexity scoring (60), TDD approach, test strategy (unit + integration), 5 iterations. Demonstrates proven planning methodology for feature-level work in this project."
           },
           {
-            "file": "failures.json (recent test failures)",
-            "relevance": 55,
-            "summary": "Recent test failures (last_seen 2026-04-17) document sed, mktemp, and heartbeat detection issues. Helps plan to avoid known pitfalls during build/test phases."
+            "file": "failures.json (recent multi-entry, 2026-04-17)",
+            "relevance": 60,
+            "summary": "Recent test failures and fixes (sw-cleanup.sh detection logic, sed syntax, mktemp directory issues). Patterns inform edge cases, testing strategy, and common pitfalls to avoid during implementation planning."
           },
           {
-            "file": "success-patterns.json (Fix bug pattern)",
-            "relevance": 50,
-            "summary": "Bug fix pattern: 3 iterations, complexity 60. Shows faster iteration cycles; less relevant than feature patterns but indicates realistic timescale for development."
+            "file": "failures.json (ENOENT no such file directory)",
+            "relevance": 45,
+            "summary": "Common npm install/setup failure pattern. Relevant for planning initial setup steps and dependency validation in analytics engine feature."
           }
         ]
       },
-      "timestamp": 1776429868,
+      "timestamp": 1776451262,
       "ttl": 1800
     },
     "0f0ec6a13ce3304f72ba80e1f599dbac": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (repo: sethdford/shipwright, 2026-04-17T12:43:22Z)",
+            "file": "patterns.json (sethdford/shipwright)",
             "relevance": 95,
-            "summary": "Current project state: Node.js with vitest, npm, commonjs imports, src/ structure. Essential context for planning analytics engine implementation."
+            "summary": "Current project architecture and conventions (captured 2026-04-17T18:39:55Z). Shows Node.js with vitest, npm, commonjs imports, src/ structure. Critical for understanding what the plan should target."
           },
           {
-            "file": "failures.json (5 detailed failures, stage: test, 2026-04-17)",
-            "relevance": 80,
-            "summary": "Recent test failures in sw-cleanup.sh and sw-code-review-test.sh with root causes and fixes. Informs what pitfalls to avoid in plan validation and test strategy."
+            "file": "failures.json (test failures, 2026-04-17)",
+            "relevance": 85,
+            "summary": "Recent validation failures from current project (2026-04-17). Documents test stage failures, sw-cleanup.sh heartbeat detection issues, sed command errors, mktemp directory problems. Directly relevant to understanding what validation is catching."
           },
           {
-            "file": "success-patterns.json (2 patterns: feature & bug, 2026-03-29)",
+            "file": "success-patterns.json (Add authentication feature + Fix bug)",
             "relevance": 75,
-            "summary": "Successful feature implementation (auth module, 5 iterations, TDD approach) and bug fixes showing proven strategies, iterations, and cost profiles for similar complexity work."
+            "summary": "Two successful feature/bug fix patterns showing complexity 60-65, 3-5 iterations, TDD approach, proper file patterns and test strategies. Provides blueprint for what successful plan execution looks like in this project."
           }
         ]
       },
-      "timestamp": 1776430223,
+      "timestamp": 1776451340,
       "ttl": 1800
     },
     "0de1607250f97bfd9f9f8e830fb9dfd1": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-04-17T12:43:22Z)",
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
             "relevance": 95,
-            "summary": "Current project conventions and structure (node/vitest/npm/javascript, src/ dir, commonjs imports). Essential for designing analytics engine that fits existing architecture patterns."
+            "summary": "Current project architecture patterns: Node.js project with vitest, npm, JavaScript. Directly applicable to designing analytics engine architecture for this codebase."
           },
           {
-            "file": "success-patterns.json (add auth module, test1)",
-            "relevance": 82,
-            "summary": "Successful feature implementation pattern with TDD approach, module isolation, and file patterns (src/, test/). Demonstrates proven approach for complex feature development similar to analytics engine."
+            "file": "failures.json (2026-04-17 test failures)",
+            "relevance": 85,
+            "summary": "Recent test failures in current project provide design constraints and common failure patterns to avoid in analytics engine implementation."
           },
           {
-            "file": "failures.json (multiple patterns: cannot read property, EONENT, heartbeat detection)",
-            "relevance": 68,
-            "summary": "Common failure patterns to avoid in design: initialization bugs, missing dependencies, and file system issues. Especially relevant for first-run setup scenarios with drop-off tracking."
+            "file": "success-patterns.json (third entry, 2026-03-29)",
+            "relevance": 70,
+            "summary": "Shows successful feature development with 3-6 iterations, files changed patterns (.claude, scripts/lib), and iterative TDD approach applicable to analytics engine design."
           },
           {
-            "file": "success-patterns.json (Fix bug, f4af3e2a...)",
-            "relevance": 58,
-            "summary": "Shows iteration cycles and file change patterns across scripts and config files. Demonstrates how analytics engine changes may span multiple file types and require multi-iteration cycles."
+            "file": "success-patterns.json (second entry, auth module, 2026-04-01)",
+            "relevance": 65,
+            "summary": "TDD approach for feature development with module isolation, 5 iterations, unit+integration test strategy, similar complexity to analytics engine."
           },
           {
-            "file": "architecture.json",
-            "relevance": 52,
-            "summary": "Existing architecture rules constrain design decisions. Essential to understand rules before proposing analytics engine architecture and integration points."
+            "file": "patterns.json (project_type nodejs, 2026-02-21)",
+            "relevance": 45,
+            "summary": "Project type detection baseline showing Node.js environment, less recent than current project snapshot but establishes foundational project context."
           }
         ]
       },
-      "timestamp": 1776430264,
+      "timestamp": 1776451396,
       "ttl": 1800
     },
     "68b89838ba3569bae1bf85ecb919d0fa": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright)",
-            "relevance": 95,
-            "summary": "Describes the exact project structure, tech stack (Node, vitest, commonjs), and conventions. Understanding these is critical for making design decisions that fit the codebase."
+            "file": "patterns.json (sethdford/shipwright at 2026-04-17)",
+            "relevance": 90,
+            "summary": "Project type (Node.js, vitest, npm, CommonJS) directly constrains analytics engine design decisions—tech stack determines interface contracts, module structure, and testing approach"
           },
           {
-            "file": "failures.json (detailed failures from test stage)",
-            "relevance": 80,
-            "summary": "Contains actual anti-patterns experienced in this project (heartbeat detection logic, sed command errors, mktemp failures). These failures directly inform what design approaches to reject."
+            "file": "success-patterns.json (with iterative TDD and module isolation patterns)",
+            "relevance": 78,
+            "summary": "Successful feature patterns (iterative TDD, component isolation, 5-iteration average) inform what design approaches work in this codebase—inverse of anti-patterns to reject"
           },
           {
-            "file": "success-patterns.json (add auth module pattern)",
-            "relevance": 65,
-            "summary": "Shows a successful feature implementation (complexity 65, TDD approach with module isolation, 5 iterations). Provides a reference model for feature design that has worked in this context."
+            "file": "failures.json (with test failure signatures from sw-cleanup.sh, sed, mktemp)",
+            "relevance": 62,
+            "summary": "Test and implementation failure modes (file detection issues, template failures) reveal brittle design patterns and edge cases to avoid in analytics event handling"
           }
         ]
       },
-      "timestamp": 1776430278,
+      "timestamp": 1776451412,
       "ttl": 1800
     },
     "5f2a88c9999fc31ce0682f21af896a9a": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (sethdford/shipwright project info)",
             "relevance": 95,
-            "summary": "Project structure (Node.js, vitest, npm, src/, *.test.js, commonjs) captured 2026-04-17 — essential for understanding build conventions and test setup"
+            "summary": "Exact current repo configuration: Node.js, vitest test runner, npm package manager, JavaScript, src/ directory, *.test.js pattern, commonjs imports. Captured today (2026-04-17). Directly applicable to build stage decisions."
           },
           {
-            "file": "failures.json",
+            "file": "failures.json (multiple test failures from this repo)",
+            "relevance": 90,
+            "summary": "Recent actual failures from this repo's test suite (last seen 2026-04-17). Includes sw-cleanup.sh, sed command, and mktemp issues. Shows patterns to avoid during build and test stages."
+          },
+          {
+            "file": "failures.json (ENOENT no such file directory)",
             "relevance": 85,
-            "summary": "Recent test stage failures from this repo (mktemp /tmp/claude issue, sw-cleanup.sh heartbeat detection, sed flag issues) — may block build if not addressed"
+            "summary": "Common Node.js build issue with 95% fix effectiveness. 'npm install' solution directly applicable to analytics engine setup in npm-based project."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 72,
-            "summary": "Authentication feature (complexity 65, 3 iterations, 150s) and bug fix patterns show iterative TDD approach with test strategy 'npm test'"
+            "file": "success-patterns.json (auth module feature addition)",
+            "relevance": 80,
+            "summary": "Successful feature implementation with 5 iterations, TDD approach with unit+integration tests. File patterns (src/, test/) and complexity (60) match typical analytics engine feature work. npm test strategy."
           },
           {
-            "file": "failures.json",
-            "relevance": 55,
-            "summary": "Generic Node.js failures (ENOENT missing deps, uninitialized variables) — common patterns to watch for, though less specific to current project state"
-          },
-          {
-            "file": "architecture.json",
-            "relevance": 40,
-            "summary": "Architecture rules stub — potentially useful for ensuring code complies with project structure constraints, but minimal detail provided"
+            "file": "failures.json (cannot read property)",
+            "relevance": 75,
+            "summary": "Common JavaScript error pattern with 100% fix effectiveness (variable initialization). Likely to occur during analytics engine implementation work on Node.js project."
           }
         ]
       },
-      "timestamp": 1776430357,
+      "timestamp": 1776451491,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -1634,32 +1638,50 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Critical for build stage — contains project conventions needed to execute: test runner (vitest), package manager (npm), test pattern (*.test.js), source structure (src/), import style. Build stage requires this metadata to properly run tests and build commands."
-          },
-          {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "High relevance for avoiding repeated failures. Multiple test stage failures documented (sw-cleanup.sh heartbeat detection, sed command issues, /tmp/claude directory missing). The mktemp config issue and sw-cleanup patterns are directly applicable to preventing regression in build/test stages."
+            "summary": "Defines project structure (src/, vitest, npm, commonjs imports). Critical for build stage to know where source files are, how to run tests, and package management approach."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 60,
-            "summary": "Moderate relevance — provides successful approach patterns from similar complexity (60-65), standard template, 3-4 iterations. Useful for understanding expected iteration count, duration (~45-150s), and cost ($2.50). Less directly applicable since these are bug fixes rather than analytics engine setup."
+            "relevance": 75,
+            "summary": "Previous successful builds show test strategy ('npm test'), typical iteration counts (3), and which files changed. Informs expected build duration and test patterns for this project."
           },
           {
-            "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines object with no actionable data. Could be populated with build metrics but currently provides no insights."
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Test stage failures reveal common issues (mktemp paths, sed syntax, heartbeat detection). Early warning for potential build/test failures, though these are primarily test-stage concerns."
           },
           {
             "file": "decisions.json",
-            "relevance": 5,
-            "summary": "Empty decisions array. No prior architectural or implementation decisions recorded. Not applicable to current build stage."
+            "relevance": 12,
+            "summary": "Empty decisions array provides no context. Would only be relevant if it contained build-related decisions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 8,
+            "summary": "Empty baselines object. Would be relevant for performance tracking but contains no actual data to inform the build stage."
           }
         ]
       },
-      "timestamp": 1776430372,
+      "timestamp": 1776451506,
       "ttl": 1800
+    },
+    "489ee0055e51dfa50e8a2b395c645b5a": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1776451061,
+      "ttl": 1800
+    },
+    "ae1ed935fb7a3ebcf02b6bf6401997b8": {
+      "result": {
+        "estimated_cost_usd": 0.62,
+        "estimated_iterations": 2,
+        "estimated_tokens": 65000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1776451084,
+      "ttl": 3600
     }
   }
 }
