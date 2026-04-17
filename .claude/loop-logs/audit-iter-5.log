@@ -1,1 +1,57 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit of the cumulative work from iterations 1-5, here are my findings:
+
+## ISSUES FOUND
+
+**1. CRITICAL: npm test FAILS (exit code 1)**
+   - The failure is NOT caused by analytics work—it's an unrelated issue in `sw-outcome-feedback-test.sh` (mktemp error creating `/tmp/claude/sw-test-XXXXXX`)
+   - Acceptance criteria states "All existing tests continue to pass" — this requirement is NOT met
+
+**2. ARCHITECTURAL DEVIATION: Missing `scripts/lib/analytics.sh`**
+   - Implementation checklist Task 1: "Create `scripts/lib/analytics.sh` with `emit_analytics_event()`, atomic write, validation"
+   - This file was NEVER created
+   - All functions are instead embedded in `sw-analytics.sh`, violating the design's library abstraction
+   - This makes analytics functions inaccessible to other scripts (like `sw-loop.sh`, `sw-pipeline.sh`) that should emit events
+
+**3. INCOMPLETE INSTRUMENTATION: Pipeline scripts not instrumented**
+   - Per the spec: "Log first pipeline attempt outcome (success/failure/abandoned) with stage reached"
+   - `scripts/sw-pipeline.sh` — NOT instrumented with pipeline tracking events
+   - `scripts/sw-loop.sh` — NOT instrumented with loop iteration events
+   - `scripts/sw-init.sh` — NOT instrumented
+   - These were Tasks 6, 7, 8 which were never completed
+
+**4. MISSING INTEGRATION: Analytics not wired into daemon or pipeline**
+   - Design says pipeline should emit `pipeline_attempt` and `pipeline_outcome` events
+   - This hook is missing—the pipeline can't actually track completion
+
+**5. INCOMPLETE: No analytics command functions as CLI**
+   - `shipwright analytics report` — exists but likely incomplete
+   - `shipwright analytics clear` — no evidence it was implemented
+   - `shipwright analytics emit` — no evidence it was implemented
+
+## WHAT WORKS
+
+✓ `sw-analytics.sh` exists with ~200+ lines of analytics logic  
+✓ `sw-analytics-test.sh` PASSES all 17 tests  
+✓ Event schema updated with setup/pipeline event types  
+✓ `sw-setup.sh` instrumented with tracking calls (5 events added)  
+✓ Router wired: `shipwright observe analytics` works  
+
+## SUMMARY
+
+The agent made **partial progress** on the analytics feature. Core analytics engine logic was implemented and tested, but:
+- Tests break the overall test suite (npm test fails)
+- Architecture deviates from design (no lib/ separation)
+- Pipeline/daemon instrumentation incomplete
+- Cannot satisfy acceptance criterion: "all existing tests continue to pass"
+
+AUDIT_FAIL
+
+**Specific Issues to Fix:**
+1. Resolve mktemp issue in `sw-outcome-feedback-test.sh` to fix npm test exit code
+2. Create `scripts/lib/analytics.sh` with public `emit_analytics_event()` function exported for other scripts
+3. Instrument `sw-pipeline.sh` to emit `pipeline_attempt`/`pipeline_outcome` on stage completion/failure
+4. Verify all 15 checklist items are actually complete
