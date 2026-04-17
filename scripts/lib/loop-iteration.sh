@@ -567,6 +567,23 @@ run_claude_iteration() {
     local approx_tokens=$((prompt_chars / 4))
     info "Prompt: ~${approx_tokens} tokens (${prompt_chars} chars)"
 
+    # Real-time context health monitor (issue #399)
+    # Estimates post-trim utilization, emits transition events, escalates to
+    # restart at critical. Runs AFTER trimming so snapshot reflects reality.
+    if type context_health_tick >/dev/null 2>&1; then
+        local health_json
+        health_json=$(context_health_tick "$final_prompt" \
+            "${ARTIFACTS_DIR:-./.claude/pipeline-artifacts}" \
+            "$ITERATION" \
+            "${PIPELINE_JOB_ID:-loop-$$}" 2>/dev/null || echo "")
+        if [[ -n "$health_json" ]] && type context_health_should_restart >/dev/null 2>&1; then
+            if context_health_should_restart "$health_json"; then
+                warn "Context health critical — signaling session restart (issue #399)"
+                export CONTEXT_HEALTH_CRITICAL=1
+            fi
+        fi
+    fi
+
     # Audit: save full prompt to disk for traceability
     if type audit_save_prompt >/dev/null 2>&1; then
         audit_save_prompt "$final_prompt" "$ITERATION" || true

@@ -43,6 +43,8 @@ fi
 # Context window budget monitoring (issue #209)
 # shellcheck source=lib/context-budget.sh
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
+# shellcheck source=lib/context-health.sh
+[[ -f "$SCRIPT_DIR/lib/context-health.sh" ]] && source "$SCRIPT_DIR/lib/context-health.sh" 2>/dev/null || true
 # Convergence detection and scoring (issue #203)
 [[ -f "$SCRIPT_DIR/lib/convergence.sh" ]] && source "$SCRIPT_DIR/lib/convergence.sh" 2>/dev/null || true
 # Error actionability scoring and enhancement for better error context
@@ -2261,6 +2263,23 @@ ${GOAL}"
         local stderr_file="${LOG_DIR}/iteration-${ITERATION}.stderr"
         local stderr_content=""
         [[ -f "$stderr_file" ]] && stderr_content=$(cat "$stderr_file" 2>/dev/null || true)
+
+        # Proactive context-health-based exhaustion signal (issue #399)
+        # Reuses existing restart machinery with a `proactive_health` cause tag.
+        if [[ "${CONTEXT_HEALTH_CRITICAL:-0}" == "1" ]]; then
+            unset CONTEXT_HEALTH_CRITICAL
+            if [[ "${CONTEXT_RESTART_COUNT:-0}" -lt "${CONTEXT_RESTART_LIMIT:-2}" ]]; then
+                CONTEXT_RESTART_COUNT=$(( CONTEXT_RESTART_COUNT + 1 ))
+                STATUS="context_exhaustion_restart"
+                write_state
+                write_progress
+                warn "Context health critical (iteration $ITERATION) — proactive restart ($CONTEXT_RESTART_COUNT/$CONTEXT_RESTART_LIMIT)"
+                if type emit_event >/dev/null 2>&1; then
+                    emit_event "loop.context_exhaustion" "iteration=$ITERATION" "restart_count=$CONTEXT_RESTART_COUNT" "max_restarts=$MAX_RESTARTS" "cause=proactive_health"
+                fi
+                break
+            fi
+        fi
 
         if echo "${log_content}${stderr_content}" | grep -qiE "$CONTEXT_EXHAUSTION_PATTERNS" 2>/dev/null; then
             if [[ "${CONTEXT_RESTART_COUNT:-0}" -lt "${CONTEXT_RESTART_LIMIT:-2}" ]]; then

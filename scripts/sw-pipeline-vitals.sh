@@ -927,6 +927,27 @@ vitals_dashboard() {
         echo ""
     fi
 
+    # ── Context Health (issue #399) ──
+    local ch_file="${artifacts_dir}/context-health.json"
+    if [[ -f "$ch_file" ]] && command -v jq >/dev/null 2>&1; then
+        local ch_status ch_util ch_action ch_iter
+        ch_status=$(jq -r '.status // "unknown"' "$ch_file" 2>/dev/null || echo "unknown")
+        ch_util=$(jq -r '.utilization_percent // 0' "$ch_file" 2>/dev/null || echo 0)
+        ch_action=$(jq -r '.action // "continue"' "$ch_file" 2>/dev/null || echo "continue")
+        ch_iter=$(jq -r '.iteration // 0' "$ch_file" 2>/dev/null || echo 0)
+        local ch_color="$GREEN"
+        case "$ch_status" in
+            critical) ch_color="$RED" ;;
+            red)      ch_color="$RED" ;;
+            yellow)   ch_color="$YELLOW" ;;
+            green)    ch_color="$GREEN" ;;
+            *)        ch_color="$DIM" ;;
+        esac
+        printf "  ${BOLD}Context Health:${RESET}  ${ch_color}%s${RESET} ${DIM}(%s%% used, action=%s, iter=%s)${RESET}\n" \
+            "$ch_status" "$ch_util" "$ch_action" "$ch_iter"
+        echo ""
+    fi
+
     # ── Budget trajectory ──
     local bt
     bt=$(pipeline_budget_trajectory "$state_file")
