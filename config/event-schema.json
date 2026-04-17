@@ -213,6 +213,30 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "setup_start": {
+      "required": ["timestamp", "session_id"],
+      "optional": ["template"]
+    },
+    "setup_phase_complete": {
+      "required": ["timestamp", "session_id", "phase"],
+      "optional": ["status", "elapsed_seconds"]
+    },
+    "setup_abandoned": {
+      "required": ["timestamp", "session_id"],
+      "optional": ["last_phase_reached"]
+    },
+    "pipeline_attempt": {
+      "required": ["timestamp", "session_id"],
+      "optional": ["goal", "template"]
+    },
+    "pipeline_outcome": {
+      "required": ["timestamp", "session_id", "status"],
+      "optional": ["final_stage", "elapsed_seconds"]
+    },
+    "init_complete": {
+      "required": ["timestamp", "session_id"],
+      "optional": []
     }
   }
 }
