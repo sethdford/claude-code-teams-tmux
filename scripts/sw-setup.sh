@@ -95,6 +95,17 @@ done
 # Detect OS once at startup
 OS="$(detect_os)"
 
+# ─── Analytics instrumentation (non-blocking) ──────────────────────────────
+SETUP_SESSION_ID="setup-$(date +%s)-$$"
+sw_track() {
+    # Non-blocking: failures must not interrupt setup
+    "$SCRIPT_DIR/sw-analytics.sh" track "$1" "${2:-{\}}" "$SETUP_SESSION_ID" >/dev/null 2>&1 || true
+}
+# Emit abandoned event if setup exits non-zero from here on
+_setup_abandoned_phase="unknown"
+trap '[[ $? -ne 0 ]] && sw_track setup_abandoned "{\"phase\":\"$_setup_abandoned_phase\"}"' EXIT
+sw_track setup_start "{\"version\":\"$VERSION\"}"
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Welcome Banner
 # ═════════════════════════════════════════════════════════════════════════════
@@ -111,6 +122,7 @@ echo ""
 echo -e "${PURPLE}${BOLD}  PHASE 1: PREREQUISITES${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
+_setup_abandoned_phase="prerequisites"
 
 # Required tools
 REQUIRED_TOOLS=("tmux" "bash" "git" "jq" "gh" "claude")
@@ -214,6 +226,7 @@ fi
 
 echo -e "  Summary: ${GREEN}${BOLD}${PASS}${RESET} passed  ${YELLOW}${BOLD}${WARN}${RESET} warnings  ${RED}${BOLD}${FAIL}${RESET} failed"
 echo ""
+sw_track setup_phase_complete "{\"phase\":\"prerequisites\",\"status\":\"ok\",\"pass\":$PASS,\"warn\":$WARN,\"fail\":$FAIL}"
 
 # ═════════════════════════════════════════════════════════════════════════════
 # PHASE 2: Repo Analysis
@@ -221,6 +234,7 @@ echo ""
 echo -e "${PURPLE}${BOLD}  PHASE 2: REPO ANALYSIS${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
+_setup_abandoned_phase="repo_analysis"
 
 DETECTED_LANGUAGE=""
 DETECTED_FRAMEWORK=""
@@ -301,6 +315,8 @@ echo ""
 echo -e "${PURPLE}${BOLD}  PHASE 3: CONFIGURATION GENERATION${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
+sw_track setup_phase_complete "{\"phase\":\"repo_analysis\",\"status\":\"ok\"}"
+_setup_abandoned_phase="configuration"
 
 "$SCRIPT_DIR/sw-init.sh"
 
@@ -327,8 +343,13 @@ fi
 echo -e "${PURPLE}${BOLD}  PHASE 4: VALIDATION${RESET}"
 echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
 echo ""
+sw_track setup_phase_complete "{\"phase\":\"configuration\",\"status\":\"ok\"}"
+_setup_abandoned_phase="validation"
 
 "$SCRIPT_DIR/sw-doctor.sh" || true
+sw_track setup_phase_complete "{\"phase\":\"validation\",\"status\":\"ok\"}"
+sw_track init_complete "{\"version\":\"$VERSION\"}"
+_setup_abandoned_phase="complete"
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Quick Start Guide
