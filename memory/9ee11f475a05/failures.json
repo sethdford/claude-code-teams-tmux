@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint",
       "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan and report stale heartbeat files during dry-run, and ensure the summary block prints 'Found' count and '--force' suggestion when items are detected",
-      "seen_count": 14,
-      "last_seen": "2026-04-17T19:04:16Z",
+      "seen_count": 12,
+      "last_seen": "2026-04-17T18:55:50Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh passes substitution expression as filename instead of -e argument, likely due to missing -e flag or incorrect quoting",
       "fix": "Change sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|$TEST_TEMP_DIR|...|g\"`",
-      "seen_count": 8,
-      "last_seen": "2026-04-17T19:07:30Z",
+      "seen_count": 9,
+      "last_seen": "2026-04-17T19:06:18Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude directory does not exist on this runner",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory template",
-      "seen_count": 2,
-      "last_seen": "2026-04-17T00:29:26Z",
+      "seen_count": 3,
+      "last_seen": "2026-04-17T19:14:44Z",
       "category": "config"
     },
     {
@@ -32,15 +32,15 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output 'agent-1' when listing stale heartbeats, 'Found N item(s)' in summary, and '--force' hint when items are detected",
-      "seen_count": 1,
-      "last_seen": "2026-04-16T21:12:04Z",
+      "seen_count": 2,
+      "last_seen": "2026-04-17T19:23:22Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed called without -e flag causing substitution expression to be treated as a filename",
-      "fix": "add -e flag to sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g'",
+      "root_cause": "quality-profile.json contains an empty value at line 5 causing jq parse failure, resulting in learned rules written with empty confidence field and invalid JSON output",
+      "fix": "ensure quality-profile.json is initialized with valid JSON before appending learned rules; guard against empty confidence values in the rule-generation path",
       "seen_count": 1,
       "last_seen": "2026-04-17T03:08:56Z",
       "category": "test_failure"
