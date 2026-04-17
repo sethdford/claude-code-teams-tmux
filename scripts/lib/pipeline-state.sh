@@ -514,6 +514,16 @@ _SW_STATE_END_
         printf 'stages:\n'
         printf '%s' "${stages_yaml}"
         printf -- '---\n\n'
+        # Render skipped stages block (from change-impact / intelligence skips)
+        local _skip_log="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}/skip-log.jsonl"
+        if [[ -f "$_skip_log" ]] && command -v jq >/dev/null 2>&1; then
+            local _skip_rows
+            _skip_rows=$(jq -r '. | "- \(.stage) — \(.reason)"' "$_skip_log" 2>/dev/null) || _skip_rows=""
+            if [[ -n "$_skip_rows" ]]; then
+                printf '## Skipped Stages\n'
+                printf '%s\n\n' "$_skip_rows"
+            fi
+        fi
         printf '## Log\n'
         printf '%s\n' "$LOG_ENTRIES"
     } >> "$STATE_FILE"

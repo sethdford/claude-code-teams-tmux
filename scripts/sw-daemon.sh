@@ -1068,6 +1068,16 @@ daemon_init() {
     "architecture_enabled": false,
     "ab_test_ratio": 0.2,
     "anomaly_threshold": 3.0
+  },
+  "stage_skip_rules": {
+    "enabled": true,
+    "categories": {
+      "docs":   { "skip": ["test", "compound_quality", "review", "spec_verification"] },
+      "tests":  { "skip": ["deploy", "validate", "monitor"] },
+      "config": { "skip": ["test", "deploy"] },
+      "code":   { "skip": [] },
+      "mixed":  { "skip": [] }
+    }
   }
 }
 CONFIGEOF

@@ -927,6 +927,24 @@ vitals_dashboard() {
         echo ""
     fi
 
+    # ── Stage skip summary (change-impact engine) ──
+    local _skip_log="${artifacts_dir}/skip-log.jsonl"
+    if [[ -f "$_skip_log" ]] && command -v jq >/dev/null 2>&1; then
+        local _skip_count
+        _skip_count=$(wc -l < "$_skip_log" 2>/dev/null | tr -d ' ' || echo 0)
+        if [[ "$_skip_count" -gt 0 ]]; then
+            printf "  ${BOLD}Stages Skipped:${RESET}  %s\n" "$_skip_count"
+            local _impact="${artifacts_dir}/change-impact.json"
+            if [[ -f "$_impact" ]]; then
+                local _cat
+                _cat=$(jq -r '.category // "unknown"' "$_impact" 2>/dev/null) || _cat="unknown"
+                printf "    ${DIM}Change category: %s${RESET}\n" "$_cat"
+            fi
+            jq -r '"    ○ \(.stage) — \(.reason)"' "$_skip_log" 2>/dev/null || true
+            echo ""
+        fi
+    fi
+
     # ── Budget trajectory ──
     local bt
     bt=$(pipeline_budget_trajectory "$state_file")

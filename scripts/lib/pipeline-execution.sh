@@ -581,6 +581,19 @@ run_pipeline() {
                 echo -e "  ${DIM}○ ${id} — skipped (intelligence: ${skip_reason})${RESET}"
                 set_stage_status "$id" "complete"
                 completed=$((completed + 1))
+                emit_event "stage.skipped" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "reason=$skip_reason"
+                # Append to skip-log.jsonl (atomic line-append is safe for JSONL)
+                if command -v jq >/dev/null 2>&1; then
+                    local _skip_log="$ARTIFACTS_DIR/skip-log.jsonl"
+                    mkdir -p "$ARTIFACTS_DIR" 2>/dev/null || true
+                    jq -cn \
+                        --arg stage "$id" \
+                        --arg reason "$skip_reason" \
+                        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                        --arg issue "${ISSUE_NUMBER:-0}" \
+                        '{ts:$ts, stage:$stage, reason:$reason, issue:$issue}' \
+                        >> "$_skip_log" 2>/dev/null || true
+                fi
                 continue
             fi
         fi
