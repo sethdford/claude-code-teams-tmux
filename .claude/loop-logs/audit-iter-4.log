@@ -1,1 +1,56 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at this cumulative work across 4 iterations:
+
+## Critical Issues Found
+
+### 1. **Test Suite Failing** (Blocker)
+- `npm test` exits with code 2 (failure)
+- `npm run test:smoke` passes, but full test suite does not
+- This means new test files (conflict-predictor-test, conflict-queue-test, file-locks-test) or their integration with the harness is broken
+- The compat.sh fix in iteration 4 addressed a portability issue but didn't fix the underlying test failure
+
+### 2. **Incomplete Implementation** (Multiple components missing)
+From the plan's 14 tasks, several are absent from the git diff:
+
+- **Task 7**: "Wire gate into `sw-fleet.sh`" — **no changes to sw-fleet.sh in diff**
+- **Task 9**: "`/api/locks` endpoint + dashboard widget" — **no changes to dashboard server**
+- **Missing kill switch**: Plan specifies `SW_FILE_LOCKS_ENABLED=0` — not visible in changes
+- **Task 14**: "`shipwright docs sync`" — no updates to AUTO sections in CLAUDE.md
+
+### 3. **Integration Gaps**
+- daemon-dispatch.sh shows +72 lines (new code), but unclear if it properly orchestrates with conflict-queue.sh
+- conflict-queue.sh (+165 lines) and conflict-predictor.sh (+92 lines) are created but their integration into spawn/reap lifecycle is incomplete
+- No evidence of wiring into fleet mode's parallel pipeline spawning
+
+### 4. **Agent Self-Assessment**
+The agent's own note: "Not declaring LOOP_COMPLETE yet — there may be further audit issues. Letting the loop re-audit."
+- This indicates the agent knows the work is incomplete
+
+### 5. **Design Compliance** 
+The design spec calls for:
+- Metrics via `/api/locks` and dashboard widget → **Not implemented**
+- Integration into both daemon AND fleet modes → **Partial (daemon only)**
+- macOS fallback (flock→mkdir) → **No evidence in compat.sh changes**
+
+## Summary
+
+The agent made progress on core components (queue, predictor modules) but:
+1. **Test suite is broken** ← immediate blocker
+2. **Half the plan unimplemented** (fleet integration, API, dashboard, docs)
+3. **Iteration 4 only fixed a portability bug**, not advancing feature work
+4. **Effort is scattered** across 4 iterations with 2 previous unknown failures
+
+---
+
+**AUDIT_FAIL**
+
+**Must fix before next iteration:**
+1. Debug and fix `npm test` failure (exit 2)
+2. Complete sw-fleet.sh integration
+3. Implement /api/locks endpoint in dashboard server
+4. Add SW_FILE_LOCKS_ENABLED kill switch to compat.sh
+5. Sync documentation to CLAUDE.md AUTO sections
+6. Verify queue/predictor integration with actual daemon dispatch flow
