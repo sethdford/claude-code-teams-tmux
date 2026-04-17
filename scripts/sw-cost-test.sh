@@ -226,6 +226,182 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# COST ATTRIBUTION DASHBOARD (v3.4.0)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${DIM}  cost attribution dashboard${RESET}"
+
+# Seed a rich ledger for the attribution tests
+now_epoch_val=$(date +%s)
+recent1=$((now_epoch_val - 3600))
+recent2=$((now_epoch_val - 7200))
+recent3=$((now_epoch_val - 10800))
+cat > "$HOME/.shipwright/costs.json" <<EOF
+{"entries":[
+{"input_tokens":10000,"output_tokens":2000,"model":"opus","stage":"build","issue":"389","repo":"shipwright","cost_usd":0.30,"ts":"2026-04-17T10:00:00Z","ts_epoch":${recent1}},
+{"input_tokens":5000,"output_tokens":500,"model":"haiku","stage":"intake","issue":"389","repo":"shipwright","cost_usd":0.01,"ts":"2026-04-17T10:01:00Z","ts_epoch":${recent2}},
+{"input_tokens":20000,"output_tokens":5000,"model":"opus","stage":"review","issue":"389","repo":"shipwright","cost_usd":0.68,"ts":"2026-04-17T10:02:00Z","ts_epoch":${recent3}},
+{"input_tokens":3000,"output_tokens":1000,"model":"sonnet","stage":"test","issue":"400","repo":"shipwright","cost_usd":0.02,"ts":"2026-04-17T10:03:00Z","ts_epoch":${recent1}},
+{"input_tokens":1000,"output_tokens":100,"model":"sonnet","stage":"build","issue":"","cost_usd":0.005,"ts":"2026-04-17T10:04:00Z","ts_epoch":${recent2}}
+],"summary":{}}
+EOF
+
+# Test: breakdown --by stage exits 0
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --by stage 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 0 ]]; then
+    assert_pass "breakdown --by stage exits 0"
+else
+    assert_fail "breakdown --by stage exits 0" "rc=$rc"
+fi
+assert_contains "breakdown shows stage header" "$output" "stage"
+
+# Test: breakdown --by invalid dimension exits 1
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --by foo 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 1 ]]; then
+    assert_pass "invalid dimension exits 1"
+else
+    assert_fail "invalid dimension exits 1" "rc=$rc"
+fi
+assert_contains "invalid dimension error message" "$output" "INVALID_DIMENSION"
+
+# Test: breakdown --json emits valid attribution JSON
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --json --refresh 2>&1)
+if echo "$output" | jq -e '.version == 1' >/dev/null 2>&1; then
+    assert_pass "attribution JSON has version=1"
+else
+    assert_fail "attribution JSON has version=1" "$(echo "$output" | tail -3)"
+fi
+
+if echo "$output" | jq -e '.by_stage and .by_issue and .by_repo and .by_model' >/dev/null 2>&1; then
+    assert_pass "attribution JSON has all 4 dimensions"
+else
+    assert_fail "attribution JSON has all 4 dimensions"
+fi
+
+if echo "$output" | jq -e '.trend_30d | type == "array"' >/dev/null 2>&1; then
+    assert_pass "attribution JSON has trend_30d array"
+else
+    assert_fail "attribution JSON has trend_30d array"
+fi
+
+# Test: sum invariant — grouped stage sum equals raw total
+raw_sum=$(jq '[.entries[].cost_usd] | add' "$HOME/.shipwright/costs.json")
+grouped_sum=$(echo "$output" | jq '[.by_stage[].cost_usd] | add')
+# Use awk for floating compare (4dp tolerance)
+if awk -v r="$raw_sum" -v g="$grouped_sum" 'BEGIN { exit !( (r-g < 0.01) && (g-r < 0.01) )}'; then
+    assert_pass "breakdown grouping sum equals raw total"
+else
+    assert_fail "breakdown grouping sum equals raw total" "raw=$raw_sum grouped=$grouped_sum"
+fi
+
+# Test: legacy entry with no repo groups as 'unknown' or valid string
+legacy_group=$(echo "$output" | jq -r '.by_repo[] | .key' | head -1)
+if [[ -n "$legacy_group" ]]; then
+    assert_pass "by_repo handles entries (including legacy without repo)"
+else
+    assert_fail "by_repo handles legacy entries"
+fi
+
+# Test: attribution file is valid JSON (atomic write)
+if jq empty "$HOME/.shipwright/cost-attribution.json" 2>/dev/null; then
+    assert_pass "cost-attribution.json is valid JSON"
+else
+    assert_fail "cost-attribution.json is valid JSON"
+fi
+
+# Test: recommendations are advisory
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --recommend 2>&1)
+if [[ $? -eq 0 ]] || true; then
+    if echo "$output" | grep -q "advisory\|recommendations\|no recommendations"; then
+        assert_pass "recommendations flagged as advisory"
+    else
+        assert_fail "recommendations flagged as advisory" "$(echo "$output" | tail -3)"
+    fi
+fi
+
+# Test: trend sparkline renders
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --trend 2>&1)
+if echo "$output" | grep -q "trend"; then
+    assert_pass "trend sparkline renders"
+else
+    assert_fail "trend sparkline renders"
+fi
+
+# Test: NO_DATA on empty ledger exits 2
+echo '{"entries":[],"summary":{}}' > "$HOME/.shipwright/costs.json"
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --by stage 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 2 ]]; then
+    assert_pass "empty ledger exits 2 (NO_DATA)"
+else
+    assert_fail "empty ledger exits 2 (NO_DATA)" "rc=$rc"
+fi
+assert_contains "NO_DATA error message" "$output" "NO_DATA"
+
+# Test: single entry — no divide-by-zero in outlier detector
+cat > "$HOME/.shipwright/costs.json" <<EOF
+{"entries":[{"input_tokens":1000,"output_tokens":100,"model":"opus","stage":"build","issue":"1","repo":"r","cost_usd":0.05,"ts":"2026-04-17T10:00:00Z","ts_epoch":${recent1}}],"summary":{}}
+EOF
+output=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --by stage --outliers 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 0 ]]; then
+    assert_pass "single-entry outlier detector does not crash"
+else
+    assert_fail "single-entry outlier detector does not crash" "rc=$rc out=$(echo "$output" | tail -3)"
+fi
+
+# Test: cost_record accepts optional 6th repo arg (backward compat)
+echo '{"entries":[],"summary":{}}' > "$HOME/.shipwright/costs.json"
+bash "$SCRIPT_DIR/sw-cost.sh" record 1000 100 opus build 777 2>/dev/null || true
+legacy_repo=$(jq -r '.entries[0].repo // "MISSING"' "$HOME/.shipwright/costs.json")
+if [[ "$legacy_repo" != "MISSING" && -n "$legacy_repo" ]]; then
+    assert_pass "cost_record auto-detects repo when omitted"
+else
+    assert_fail "cost_record auto-detects repo when omitted" "got: $legacy_repo"
+fi
+
+bash "$SCRIPT_DIR/sw-cost.sh" record 1000 100 opus build 777 explicit-repo 2>/dev/null || true
+explicit_repo=$(jq -r '.entries[1].repo' "$HOME/.shipwright/costs.json")
+assert_eq "cost_record accepts explicit repo arg" "explicit-repo" "$explicit_repo"
+
+# Test: cache refresh behavior
+echo '{"entries":[{"input_tokens":0,"output_tokens":0,"model":"opus","stage":"build","issue":"1","repo":"r","cost_usd":0.10,"ts":"2026-04-17T10:00:00Z","ts_epoch":'"${recent1}"'}],"summary":{}}' > "$HOME/.shipwright/costs.json"
+first=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --json --refresh 2>/dev/null | jq -r '.generated_at')
+# Modify ledger, re-run without --refresh → should still show cached
+echo '{"entries":[{"input_tokens":0,"output_tokens":0,"model":"opus","stage":"build","issue":"1","repo":"r","cost_usd":0.99,"ts":"2026-04-17T10:00:00Z","ts_epoch":'"${recent1}"'}],"summary":{}}' > "$HOME/.shipwright/costs.json"
+cached_total=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --json 2>/dev/null | jq -r '.totals.cost_usd')
+# With --refresh, should show new total
+refreshed_total=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --json --refresh 2>/dev/null | jq -r '.totals.cost_usd')
+if [[ "$cached_total" == "0.1" && "$refreshed_total" == "0.99" ]]; then
+    assert_pass "--refresh regenerates rollup; default serves from cache"
+else
+    assert_fail "--refresh regenerates rollup; default serves from cache" "cached=$cached_total refreshed=$refreshed_total"
+fi
+
+# Test: budget-type alert threshold
+cat > "$HOME/.shipwright/budget.json" <<'EOF'
+{"daily_budget_usd":0,"enabled":false,"issue_type_budgets":{"refactor":1.0}}
+EOF
+cat > "$HOME/.shipwright/costs.json" <<EOF
+{"entries":[
+{"input_tokens":0,"output_tokens":0,"model":"opus","stage":"build","issue":"refactor:1","repo":"r","cost_usd":0.90,"ts":"2026-04-17T10:00:00Z","ts_epoch":${recent1}}
+],"summary":{}}
+EOF
+alerts=$(bash "$SCRIPT_DIR/sw-cost.sh" breakdown --json --refresh 2>/dev/null | jq '.budget_alerts | length')
+if [[ "${alerts:-0}" -ge 1 ]]; then
+    assert_pass "budget-type alert fires at ≥80% cap"
+else
+    assert_fail "budget-type alert fires at ≥80% cap" "alerts=$alerts"
+fi
+
+# Test: VERSION bumped
+version_value=$(grep '^VERSION=' "$SCRIPT_DIR/sw-cost.sh" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+if [[ "$version_value" == "3.4.0" ]]; then
+    assert_pass "VERSION bumped to 3.4.0"
+else
+    assert_fail "VERSION bumped to 3.4.0" "got: $version_value"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

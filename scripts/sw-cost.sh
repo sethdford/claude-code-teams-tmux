@@ -6,7 +6,7 @@
 set -euo pipefail
 trap 'echo "ERROR: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
 
-VERSION="3.3.0"
+VERSION="3.4.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC2034
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -129,7 +129,19 @@ cost_calculate() {
         'BEGIN { printf "%.4f", (it / 1000000.0 * ir) + (ot / 1000000.0 * or_) }'
 }
 
-# cost_record <input_tokens> <output_tokens> <model> <stage> [issue]
+# _cost_detect_repo
+# Best-effort repo detection. Never fails under set -e.
+_cost_detect_repo() {
+    local r
+    r=$(git rev-parse --show-toplevel 2>/dev/null || true)
+    if [[ -n "$r" ]]; then
+        basename "$r"
+    else
+        echo "local"
+    fi
+}
+
+# cost_record <input_tokens> <output_tokens> <model> <stage> [issue] [repo]
 # Records a cost entry to the cost file and events log.
 # Tries SQLite first, always writes to JSON for backward compat.
 cost_record() {
@@ -138,6 +150,8 @@ cost_record() {
     local model="${3:-sonnet}"
     local stage="${4:-unknown}"
     local issue="${5:-}"
+    local repo="${6:-}"
+    [[ -z "$repo" ]] && repo=$(_cost_detect_repo)
 
     ensure_cost_dir
 
@@ -161,6 +175,7 @@ cost_record() {
            --arg model "$model" \
            --arg stage "$stage" \
            --arg issue "$issue" \
+           --arg repo "$repo" \
            --arg cost "$cost_usd" \
            --arg ts "$(now_iso)" \
            --argjson epoch "$(now_epoch)" \
@@ -170,6 +185,7 @@ cost_record() {
                model: $model,
                stage: $stage,
                issue: $issue,
+               repo: $repo,
                cost_usd: ($cost | tonumber),
                ts: $ts,
                ts_epoch: $epoch
@@ -958,6 +974,427 @@ budget_show() {
     echo ""
 }
 
+# ─── Cost Attribution Dashboard ────────────────────────────────────────────
+ATTRIBUTION_FILE="${COST_DIR}/cost-attribution.json"
+ATTRIBUTION_TTL="${SW_COST_ATTRIBUTION_TTL:-300}"
+
+# _cost_since_epoch <days> → epoch cutoff
+_cost_since_epoch() {
+    local days="${1:-30}"
+    local now
+    now=$(now_epoch)
+    awk -v n="$now" -v d="$days" 'BEGIN { print n - (d * 86400) }'
+}
+
+# cost_breakdown <dim> <days> [top] [--json]
+# Prints grouped breakdown of entries in the window.
+cost_breakdown() {
+    local dim="${1:-stage}"
+    local days="${2:-30}"
+    local top="${3:-10}"
+    local json="${4:-}"
+
+    case "$dim" in
+        issue|stage|repo|model) ;;
+        *) error "INVALID_DIMENSION: unknown dimension: ${dim}; expected issue|stage|repo|model"; return 1 ;;
+    esac
+
+    ensure_cost_dir
+    local cutoff
+    cutoff=$(_cost_since_epoch "$days")
+
+    local total_entries
+    total_entries=$(jq --argjson c "$cutoff" '[.entries[] | select(.ts_epoch >= $c)] | length' "$COST_FILE" 2>/dev/null || echo "0")
+    if [[ "${total_entries:-0}" -eq 0 ]]; then
+        error "NO_DATA: no cost entries in last ${days} days"
+        return 2
+    fi
+
+    local rows
+    rows=$(jq --argjson c "$cutoff" --arg dim "$dim" --argjson top "$top" '
+        [.entries[] | select(.ts_epoch >= $c)]
+        | map(. + {_key: (.[$dim] // "unknown" | tostring)})
+        | map(select(._key != "" and ._key != null))
+        | group_by(._key)
+        | map({
+            key: .[0]._key,
+            cost_usd: ([.[].cost_usd] | add // 0 | . * 10000 | round / 10000),
+            entries: length,
+            avg_usd: (([.[].cost_usd] | add // 0) / length | . * 10000 | round / 10000),
+            p95_usd: (([.[].cost_usd] | sort | .[(length * 0.95 | floor)]) // 0)
+          })
+        | sort_by(-.cost_usd)
+        | .[0:$top]
+    ' "$COST_FILE" 2>/dev/null)
+
+    if [[ "$json" == "--json" || "$json" == "json" ]]; then
+        echo "$rows"
+        return 0
+    fi
+
+    echo ""
+    echo -e "${BOLD}  Cost breakdown by ${dim} (last ${days}d)${RESET}"
+    printf "  %-28s %10s %8s %10s %10s\n" "KEY" "COST_USD" "ENTRIES" "AVG_USD" "P95_USD"
+    echo "$rows" | jq -r '.[] | [.key, .cost_usd, .entries, .avg_usd, .p95_usd] | @tsv' | \
+        while IFS=$'\t' read -r k c e a p; do
+            printf "  %-28.28s %10.4f %8d %10.4f %10.4f\n" "$k" "$c" "$e" "$a" "$p"
+        done
+    echo ""
+}
+
+# cost_outliers <dim> <days> → JSON array of outliers (>2σ above mean)
+cost_outliers() {
+    local dim="${1:-stage}"
+    local days="${2:-30}"
+
+    ensure_cost_dir
+    local cutoff
+    cutoff=$(_cost_since_epoch "$days")
+
+    jq --argjson c "$cutoff" --arg dim "$dim" '
+        [.entries[] | select(.ts_epoch >= $c)]
+        | map(. + {_key: (.[$dim] // "unknown" | tostring)})
+        | group_by(._key)
+        | map({
+            dimension: $dim,
+            key: .[0]._key,
+            cost_usd: ([.[].cost_usd] | add // 0),
+            entries: length,
+            avg: (([.[].cost_usd] | add // 0) / length)
+          })
+        | . as $groups
+        | ([$groups[].avg] as $avgs
+           | ($avgs | add // 0) / (($avgs | length) | if . == 0 then 1 else . end)) as $mean
+        | ([$groups[].avg] as $avgs
+           | if ($avgs | length) <= 1 then 0
+             else ([$avgs[] | (. - $mean) * (. - $mean)] | add / ($avgs | length) | sqrt)
+             end) as $stddev
+        | $groups
+        | map(. + {
+            mean: $mean,
+            stddev: $stddev,
+            z_score: (if $stddev == 0 then 0 else ((.avg - $mean) / $stddev) end)
+          })
+        | map(select(.z_score > 2))
+        | sort_by(-.z_score)
+    ' "$COST_FILE" 2>/dev/null || echo "[]"
+}
+
+# cost_recommendations <days> → JSON array of advisory recommendations
+cost_recommendations() {
+    local days="${1:-30}"
+    local threshold="${SW_COST_RECOMMEND_THRESHOLD:-0.20}"
+
+    ensure_cost_dir
+    local cutoff
+    cutoff=$(_cost_since_epoch "$days")
+
+    jq --argjson c "$cutoff" --argjson th "$threshold" '
+        [.entries[] | select(.ts_epoch >= $c)]
+        | group_by(.stage // "unknown")
+        | map({
+            stage: (.[0].stage // "unknown"),
+            current_avg_usd: (([.[].cost_usd] | add // 0) / length | . * 10000 | round / 10000),
+            current_model: (
+                [.[].model] | group_by(.) | sort_by(-length) | .[0][0] // "sonnet"
+            ),
+            total_usd: ([.[].cost_usd] | add // 0)
+          })
+        | map(
+            . as $s
+            | if (.current_avg_usd > $th) then
+                if (.stage | IN("intake","pr","merge","triage")) then
+                    . + {
+                        suggested_model: "haiku",
+                        projected_savings_usd: (.total_usd * 0.9 | . * 10000 | round / 10000),
+                        rationale: "Mechanical stage — haiku is typically sufficient",
+                        advisory: true
+                    }
+                elif (.stage | IN("build","test")) then
+                    . + {
+                        suggested_model: "sonnet",
+                        projected_savings_usd: (.total_usd * 0.6 | . * 10000 | round / 10000),
+                        rationale: "Standard dev work — sonnet offers better cost/quality",
+                        advisory: true
+                    }
+                elif (.current_avg_usd > 1.00 and (.stage | IN("plan","design","review","security","compound_quality"))) then
+                    . + {
+                        suggested_model: .current_model,
+                        projected_savings_usd: 0,
+                        rationale: "High-reasoning stage — keep opus but audit token usage",
+                        advisory: true
+                    }
+                else empty end
+              else empty end
+          )
+    ' "$COST_FILE" 2>/dev/null || echo "[]"
+}
+
+# cost_trend <days> → JSON array of {date,cost_usd,entries} + sparkline
+cost_trend() {
+    local days="${1:-30}"
+
+    ensure_cost_dir
+
+    jq --argjson days "$days" --argjson now "$(now_epoch)" '
+        [.entries[] | select(.ts_epoch >= ($now - $days * 86400))]
+        | group_by((.ts_epoch / 86400 | floor))
+        | map({
+            date: (.[0].ts_epoch / 86400 | floor | . * 86400 | todate | .[0:10]),
+            cost_usd: ([.[].cost_usd] | add // 0 | . * 10000 | round / 10000),
+            entries: length
+          })
+        | sort_by(.date)
+    ' "$COST_FILE" 2>/dev/null || echo "[]"
+}
+
+# _cost_sparkline <json_array_of_costs>
+_cost_sparkline() {
+    local vals="$1"
+    awk -v v="$vals" 'BEGIN {
+        n = split(v, a, " ")
+        if (n == 0) { print ""; exit }
+        max = 0
+        for (i=1; i<=n; i++) if (a[i]+0 > max) max = a[i]+0
+        bars = "▁▂▃▄▅▆▇█"
+        split(bars, b, "")
+        out = ""
+        for (i=1; i<=n; i++) {
+            if (max == 0) { idx = 1 }
+            else { idx = int((a[i] / max) * 7) + 1 }
+            if (idx < 1) idx = 1
+            if (idx > 8) idx = 8
+            out = out b[idx]
+        }
+        print out
+    }'
+}
+
+# cost_budget_type_alerts → JSON array of alerts for issue-type budgets ≥80%
+cost_budget_type_alerts() {
+    ensure_cost_dir
+
+    local has_types
+    has_types=$(jq -r '.issue_type_budgets // {} | length' "$BUDGET_FILE" 2>/dev/null || echo "0")
+    if [[ "${has_types:-0}" -eq 0 ]]; then
+        echo "[]"
+        return 0
+    fi
+
+    jq -s '
+        .[0] as $budgets | .[1] as $costs
+        | ($budgets.issue_type_budgets // {}) | to_entries
+        | map(
+            . as $b
+            | ($b.key) as $type
+            | ($costs.entries // [] | map(select((.issue // "") | startswith($type + ":")))
+               | [.[].cost_usd] | add // 0) as $spent
+            | {
+                issue_type: $type,
+                budget_usd: $b.value,
+                spent_usd: ($spent | . * 100 | round / 100),
+                pct: (if $b.value == 0 then 0 else (($spent / $b.value) * 100 | round) end)
+              }
+          )
+        | map(select(.pct >= 80))
+    ' "$BUDGET_FILE" "$COST_FILE" 2>/dev/null || echo "[]"
+}
+
+# cost_attribution_rollup [--refresh]
+# Compose attribution.json via atomic write.
+cost_attribution_rollup() {
+    local force="${1:-}"
+    ensure_cost_dir
+
+    # Serve from cache if fresh
+    if [[ "$force" != "--refresh" && -f "$ATTRIBUTION_FILE" ]]; then
+        local age now mtime
+        now=$(now_epoch)
+        mtime=$(stat -c %Y "$ATTRIBUTION_FILE" 2>/dev/null || stat -f %m "$ATTRIBUTION_FILE" 2>/dev/null || echo "0")
+        # Strip any non-numeric output defensively
+        mtime=$(echo "$mtime" | grep -oE '^[0-9]+' | head -1)
+        [[ -z "$mtime" ]] && mtime=0
+        age=$((now - mtime))
+        if [[ "$age" -lt "$ATTRIBUTION_TTL" ]]; then
+            cat "$ATTRIBUTION_FILE"
+            return 0
+        fi
+    fi
+
+    (
+        if command -v flock >/dev/null 2>&1; then
+            flock -w 10 201 2>/dev/null || warn "Attribution lock timeout — proceeding"
+        fi
+
+        local by_issue by_stage by_repo by_model outliers recs trend alerts
+        by_issue=$(cost_breakdown issue 30 100 --json 2>/dev/null || echo "[]")
+        by_stage=$(cost_breakdown stage 30 100 --json 2>/dev/null || echo "[]")
+        by_repo=$(cost_breakdown repo 30 100 --json 2>/dev/null || echo "[]")
+        by_model=$(cost_breakdown model 30 100 --json 2>/dev/null || echo "[]")
+        outliers=$(cost_outliers stage 30 2>/dev/null || echo "[]")
+        recs=$(cost_recommendations 30 2>/dev/null || echo "[]")
+        trend=$(cost_trend 30 2>/dev/null || echo "[]")
+        alerts=$(cost_budget_type_alerts 2>/dev/null || echo "[]")
+
+        local totals
+        totals=$(jq --argjson c "$(_cost_since_epoch 30)" '{
+            cost_usd: ([.entries[] | select(.ts_epoch >= $c) | .cost_usd] | add // 0 | . * 10000 | round / 10000),
+            entries: ([.entries[] | select(.ts_epoch >= $c)] | length)
+        }' "$COST_FILE" 2>/dev/null || echo '{"cost_usd":0,"entries":0}')
+
+        local tmp
+        tmp=$(mktemp "${ATTRIBUTION_FILE}.tmp.XXXXXX") || { error "mktemp failed"; exit 1; }
+
+        if ! jq -n \
+            --arg ts "$(now_iso)" \
+            --argjson totals "$totals" \
+            --argjson by_issue "$by_issue" \
+            --argjson by_stage "$by_stage" \
+            --argjson by_repo "$by_repo" \
+            --argjson by_model "$by_model" \
+            --argjson outliers "$outliers" \
+            --argjson recs "$recs" \
+            --argjson trend "$trend" \
+            --argjson alerts "$alerts" \
+            '{
+                version: 1,
+                generated_at: $ts,
+                window_days: 30,
+                totals: $totals,
+                by_issue: $by_issue,
+                by_stage: $by_stage,
+                by_repo: $by_repo,
+                by_model: $by_model,
+                outliers: $outliers,
+                recommendations: $recs,
+                trend_30d: $trend,
+                budget_alerts: $alerts
+            }' > "$tmp" 2>/dev/null; then
+            error "ROLLUP_FAILED: jq composition failed"
+            rm -f "$tmp"
+            emit_event "cost_rollup_failed" "reason=jq_compose"
+            return 1
+        fi
+
+        if ! jq empty "$tmp" >/dev/null 2>&1; then
+            error "ROLLUP_FAILED: invalid JSON"
+            rm -f "$tmp"
+            emit_event "cost_rollup_failed" "reason=invalid_json"
+            return 1
+        fi
+
+        mv "$tmp" "$ATTRIBUTION_FILE" || {
+            error "ROLLUP_FAILED: mv failed"
+            rm -f "$tmp"
+            emit_event "cost_rollup_failed" "reason=mv"
+            return 1
+        }
+
+        cat "$ATTRIBUTION_FILE"
+
+        # Emit budget alerts
+        local alert_count
+        alert_count=$(echo "$alerts" | jq 'length' 2>/dev/null || echo "0")
+        if [[ "${alert_count:-0}" -gt 0 ]]; then
+            emit_event "cost_budget_alert" "alerts=${alert_count}"
+        fi
+    ) 201>"${ATTRIBUTION_FILE}.lock"
+}
+
+# cost_breakdown_cmd — CLI entry for `shipwright cost breakdown`
+cost_breakdown_cmd() {
+    local period=30 by=stage top=10 json=false
+    local outliers=false recommend=false trend=false refresh=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --period)    period="${2:-30}"; shift 2 ;;
+            --by)        by="${2:-stage}"; shift 2 ;;
+            --top)       top="${2:-10}"; shift 2 ;;
+            --json)      json=true; shift ;;
+            --outliers)  outliers=true; shift ;;
+            --recommend) recommend=true; shift ;;
+            --trend)     trend=true; shift ;;
+            --refresh)   refresh="--refresh"; shift ;;
+            -h|--help)
+                echo "Usage: shipwright cost breakdown [--by issue|stage|repo|model] [--period N] [--top N] [--json] [--outliers] [--recommend] [--trend] [--refresh]"
+                return 0
+                ;;
+            *) error "Unknown option: $1"; return 1 ;;
+        esac
+    done
+
+    case "$by" in
+        issue|stage|repo|model) ;;
+        *) error "INVALID_DIMENSION: unknown dimension: ${by}; expected issue|stage|repo|model"; return 1 ;;
+    esac
+
+    if [[ "$json" == true ]]; then
+        cost_attribution_rollup $refresh
+        return $?
+    fi
+
+    if [[ "$outliers" == true ]]; then
+        local o
+        o=$(cost_outliers "$by" "$period")
+        echo ""
+        echo -e "${BOLD}  Outliers (>2σ) by ${by} (last ${period}d)${RESET}"
+        local count
+        count=$(echo "$o" | jq 'length' 2>/dev/null || echo "0")
+        if [[ "${count:-0}" -eq 0 ]]; then
+            echo -e "  ${DIM}no outliers detected${RESET}"
+        else
+            printf "  %-24s %10s %8s %10s %10s\n" "KEY" "AVG_USD" "Z_SCORE" "MEAN" "STDDEV"
+            echo "$o" | jq -r '.[] | [.key, .avg, .z_score, .mean, .stddev] | @tsv' | \
+                while IFS=$'\t' read -r k a z m s; do
+                    printf "  %-24.24s %10.4f %8.2f %10.4f %10.4f\n" "$k" "$a" "$z" "$m" "$s"
+                done
+        fi
+        echo ""
+    fi
+
+    if [[ "$recommend" == true ]]; then
+        local r
+        r=$(cost_recommendations "$period")
+        echo ""
+        echo -e "${BOLD}  Model-routing recommendations (advisory)${RESET}"
+        local count
+        count=$(echo "$r" | jq 'length' 2>/dev/null || echo "0")
+        if [[ "${count:-0}" -eq 0 ]]; then
+            echo -e "  ${DIM}no recommendations${RESET}"
+        else
+            echo "$r" | jq -r '.[] | "  \(.stage): \(.current_model)→\(.suggested_model)  avg=$\(.current_avg_usd)  save~$\(.projected_savings_usd)  (\(.rationale))"'
+        fi
+        echo ""
+    fi
+
+    if [[ "$trend" == true ]]; then
+        local t
+        t=$(cost_trend "$period")
+        local vals
+        vals=$(echo "$t" | jq -r '[.[].cost_usd] | join(" ")' 2>/dev/null || echo "")
+        echo ""
+        echo -e "${BOLD}  ${period}-day cost trend${RESET}"
+        if [[ -n "$vals" ]]; then
+            echo -e "  $(_cost_sparkline "$vals")"
+            echo ""
+            printf "  %-12s %10s %8s\n" "DATE" "COST_USD" "ENTRIES"
+            echo "$t" | jq -r '.[] | [.date, .cost_usd, .entries] | @tsv' | \
+                while IFS=$'\t' read -r d c e; do
+                    printf "  %-12s %10.4f %8d\n" "$d" "$c" "$e"
+                done
+        else
+            echo -e "  ${DIM}no data${RESET}"
+        fi
+        echo ""
+    fi
+
+    # Default: just show the breakdown
+    if [[ "$outliers" == false && "$recommend" == false && "$trend" == false ]]; then
+        cost_breakdown "$by" "$period" "$top"
+    fi
+}
+
 # ─── Help ──────────────────────────────────────────────────────────────────
 
 show_help() {
@@ -972,6 +1409,15 @@ show_help() {
     echo -e "  ${CYAN}show${RESET} --json                   JSON output"
     echo -e "  ${CYAN}show${RESET} --by-stage               Breakdown by pipeline stage"
     echo -e "  ${CYAN}show${RESET} --by-issue               Breakdown by issue"
+    echo -e "  ${CYAN}breakdown${RESET} [options]             Cost attribution dashboard"
+    echo -e "    --by issue|stage|repo|model  Group by dimension (default: stage)"
+    echo -e "    --period N                   Days of history (default: 30)"
+    echo -e "    --top N                      Limit rows (default: 10)"
+    echo -e "    --outliers                   Show outliers (>2σ)"
+    echo -e "    --recommend                  Show model-routing recommendations"
+    echo -e "    --trend                      Show 30-day sparkline + daily table"
+    echo -e "    --json                       Emit raw attribution JSON"
+    echo -e "    --refresh                    Force rollup (else 5-min cache)"
     echo -e "  ${CYAN}budget set${RESET} <amount>            Set daily budget (USD)"
     echo -e "  ${CYAN}budget show${RESET}                    Show current budget/usage"
     echo ""
@@ -1010,6 +1456,9 @@ shift 2>/dev/null || true
 case "$SUBCOMMAND" in
     show)
         cost_dashboard "$@"
+        ;;
+    breakdown)
+        cost_breakdown_cmd "$@"
         ;;
     budget)
         BUDGET_CMD="${1:-show}"
