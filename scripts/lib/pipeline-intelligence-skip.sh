@@ -126,6 +126,22 @@ classify_quality_findings() {
 pipeline_should_skip_stage() {
     local stage="$1"
 
+    # Change Impact Analysis (docs/tests/config-only diffs skip irrelevant stages).
+    # Sourced lazily so older call sites still work if the file is absent.
+    if [[ -z "${_CHANGE_IMPACT_LOADED:-}" ]]; then
+        local _ci_lib
+        _ci_lib="$(dirname "${BASH_SOURCE[0]}")/change-impact.sh"
+        [[ -f "$_ci_lib" ]] && source "$_ci_lib"
+    fi
+    if type change_impact_should_skip >/dev/null 2>&1; then
+        local ci_reason=""
+        ci_reason=$(change_impact_should_skip "$stage" 2>/dev/null) || true
+        if [[ -n "$ci_reason" ]]; then
+            echo "$ci_reason"
+            return 0
+        fi
+    fi
+
     # Check for skip overrides in reassessment
     local reassessment_file="$ARTIFACTS_DIR/reassessment.json"
     if [[ -f "$reassessment_file" ]]; then
