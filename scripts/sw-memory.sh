@@ -47,6 +47,10 @@ fi
 # shellcheck source=lib/memory-effectiveness.sh
 [[ -f "$SCRIPT_DIR/lib/memory-effectiveness.sh" ]] && source "$SCRIPT_DIR/lib/memory-effectiveness.sh"
 
+# ─── Fleet Memory (cross-repo synchronization) ─────────────────────────────
+# shellcheck source=lib/fleet-memory.sh
+[[ -f "$SCRIPT_DIR/lib/fleet-memory.sh" ]] && source "$SCRIPT_DIR/lib/fleet-memory.sh"
+
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
@@ -436,6 +440,10 @@ memory_capture_failure() {
     fi
 
     memory_store_for_embedding "failure" "$pattern" "$(repo_hash)" 2>/dev/null || true
+
+    if type fleet_memory_broadcast >/dev/null 2>&1; then
+        fleet_memory_broadcast "failure:${stage}" "$pattern" "$(repo_name)" 2>/dev/null || true
+    fi
 
     emit_event "memory.failure" "stage=${stage}" "pattern=${pattern:0:80}"
 }
@@ -938,6 +946,11 @@ memory_capture_pattern() {
             fi
             memory_store_for_embedding "pattern" "project: $proj_type/$framework, $pkg_mgr, $language" "$(repo_hash)" 2>/dev/null || true
             emit_event "memory.pattern" "type=project" "proj_type=${proj_type}" "framework=${framework}"
+            if type fleet_memory_broadcast >/dev/null 2>&1; then
+                fleet_memory_broadcast "project" \
+                    "type=$proj_type framework=$framework test_runner=$test_runner pkg_mgr=$pkg_mgr language=$language" \
+                    "$repo" 2>/dev/null || true
+            fi
             success "Captured project patterns (${proj_type}/${framework:-none})"
             ;;
 
@@ -961,6 +974,9 @@ memory_capture_pattern() {
                 fi
                 memory_store_for_embedding "pattern" "known_issue: $pattern_data" "$(repo_hash)" 2>/dev/null || true
                 emit_event "memory.pattern" "type=known_issue"
+                if type fleet_memory_broadcast >/dev/null 2>&1; then
+                    fleet_memory_broadcast "known_issue" "$pattern_data" "$repo" 2>/dev/null || true
+                fi
             fi
             ;;
 
@@ -1212,6 +1228,11 @@ memory_inject_context() {
             [[ -n "$global_patterns" ]] && echo "$global_patterns"
             [[ -n "$cross_repo_learnings" ]] && echo "$cross_repo_learnings"
         fi
+    fi
+
+    # ── Fleet-wide memory injection (cross-repo patterns) ──
+    if type fleet_memory_inject >/dev/null 2>&1; then
+        fleet_memory_inject "$stage_id" 5 2>/dev/null || true
     fi
 
     echo ""

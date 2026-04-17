@@ -30,17 +30,19 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "devops",
+          "docs-writer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Fleet-wide learning sync engine requires system design for cross-repo coordination, scalability, and learning propagation; implementation, testing, infrastructure, and documentation support the design.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1776430640,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1403,232 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "6fd6bfc744c3fe03c443ea449a23f913": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 68,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Race conditions in shared fleet-memory store with concurrent repo/worker access",
+          "Incorrect pattern reuse could propagate bad fixes across entire fleet",
+          "Pattern expiry logic correctness (30-day threshold with success count tracking)",
+          "File locking and atomic writes with distributed processes",
+          "Pattern deduplication and vote counting accuracy under concurrent updates",
+          "Dashboard scalability and performance with large pattern catalogs"
+        ],
+        "implementation_hints": [
+          "Use atomic file operations (temp file + mv) for all shared store writes to prevent corruption",
+          "Implement file-based advisory locking to serialize concurrent pattern updates across repos",
+          "Store patterns as JSON with metadata: created_at, last_used_at, success_count, repo_count, origin_repo",
+          "Pattern deduplication: use content-based hash (SHA256 of normalized pattern rules) as key",
+          "Expiry logic: archive patterns unused for 30 days AND zero successful applications since creation",
+          "Validation gate: patterns must pass origin repo's test suite before broadcast to fleet-memory",
+          "Broadcast: after local memory.sh capture, atomically write to ~/.shipwright/fleet-memory/patterns/",
+          "Dashboard: extend fleet-viz with adoption heatmap showing which repos use each pattern",
+          "Metrics: track pattern_reused, pattern_effectiveness, cross_repo_adoption_rate in events.jsonl"
+        ]
+      },
+      "timestamp": 1776429821,
+      "ttl": 3600
+    },
+    "3cd52566be954abe8d77d7f621d17488": {
+      "result": {
+        "estimated_iterations": 15
+      },
+      "timestamp": 1776429835,
+      "ttl": 1800
+    },
+    "12a27f270d4232993087c2ddf0f78c33": {
+      "result": {
+        "estimated_cost_usd": 5.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 42000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1776429849,
+      "ttl": 3600
+    },
+    "364531c201d7c0a26d62cb906ddeda54": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17T12:46:21Z)",
+            "relevance": 90,
+            "summary": "Current repo project structure (Node.js, vitest, npm, commonjs) is essential for architecture planning in this codebase"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Existing architecture rules provide constraints and patterns that the new synchronization engine must respect and integrate with"
+          },
+          {
+            "file": "global.json (cross_repo_learnings)",
+            "relevance": 75,
+            "summary": "Cross-repo learnings structure is directly relevant to the 'Fleet-Wide Cross-Repo Learning Synchronization Engine' goal, shows data model for multi-repo coordination"
+          },
+          {
+            "file": "success-patterns.json (0bcf06... Add authentication feature + f4af3e... Fix bug)",
+            "relevance": 70,
+            "summary": "Proven implementation patterns with file organization, iteration strategies, and TDD approach inform architectural design decisions for a complex system"
+          },
+          {
+            "file": "failures.json (2026-04-17, detailed test failures)",
+            "relevance": 55,
+            "summary": "Recent test failure patterns highlight operational constraints (heartbeat detection, sed command issues) that architecture should account for or prevent"
+          }
+        ]
+      },
+      "timestamp": 1776430083,
+      "ttl": 1800
+    },
+    "9dd55e0b855cae5516ae73233961bc41": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (stage: test, sw-cleanup.sh/sw-code-review-test.sh patterns)",
+            "relevance": 95,
+            "summary": "Detailed test failures with root causes, fix patterns, and effectiveness rates from current project. Critical for understanding validation blockers that rejected the plan."
+          },
+          {
+            "file": "patterns.json (repo: sethdford/shipwright, captured_at 2026-04-17T12:46:21Z)",
+            "relevance": 90,
+            "summary": "Current project configuration (Node.js/vitest, src/ and test/ conventions, CommonJS imports). Essential for planning implementation in correct project context."
+          },
+          {
+            "file": "success-patterns.json (authentication feature, 3 iterations, 5 files changed)",
+            "relevance": 78,
+            "summary": "Past successful implementation of complex feature (65 complexity) with iterative approach, file patterns, and test strategy. Informs realistic planning for similar-scope learning engine work."
+          }
+        ]
+      },
+      "timestamp": 1776430491,
+      "ttl": 1800
+    },
+    "80fdd6ca47bf05989b0863ed0a3c588c": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 95,
+            "summary": "Contains cross_repo_learnings array—the core data structure for a fleet-wide learning synchronization engine"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-04-17)",
+            "relevance": 88,
+            "summary": "Current project structure and conventions (Node/vitest/commonjs) inform architectural decisions for multi-repo coordination"
+          },
+          {
+            "file": "success-patterns.json (add auth module, 2026-04-01)",
+            "relevance": 78,
+            "summary": "Demonstrates TDD with module isolation and iterative feature development—patterns applicable to distributed learning synchronization"
+          },
+          {
+            "file": "success-patterns.json (Fix bug, 2026-03-29)",
+            "relevance": 72,
+            "summary": "Shows multi-file iteration patterns across .claude and scripts directories—relevant for cross-repo change coordination"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Existing architectural rules provide foundation for designing fleet-wide synchronization patterns and enforcement mechanisms"
+          }
+        ]
+      },
+      "timestamp": 1776430518,
+      "ttl": 1800
+    },
+    "6169090c79229ae85b624b54f1b5e406": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains specific test failure patterns from shipwright repo (sw-cleanup.sh heartbeat detection, sed command syntax, mktemp path issues). Shows concrete anti-patterns to avoid in implementation: missing dependency installation, incorrect file path handling, shell command syntax errors."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project conventions for sethdford/shipwright captured 2026-04-17: Node.js, vitest, npm, commonjs imports, src/ directory structure. Critical for avoiding design approaches that conflict with established project patterns and conventions."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Detailed success patterns showing iterative TDD approaches and file-change patterns that worked (auth module, bug fixes with 3-5 iterations). Understanding successful design patterns helps identify anti-patterns by contrast (what NOT to iterate on vs. what proved effective)."
+          }
+        ]
+      },
+      "timestamp": 1776430537,
+      "ttl": 1800
+    },
+    "d15d9f9be024b1e7fc3ab1104badb7d8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Exact project type detection (Node.js, vitest, npm) captured today at 12:46 UTC. Provides build conventions (src/, *.test.js, commonjs) essential for the build stage."
+          },
+          {
+            "file": "failures.json (test failures array)",
+            "relevance": 90,
+            "summary": "Recent test failures (2026-04-17, 2026-04-16) in sw-cleanup.sh, sw-code-review-test.sh, and mktemp. Build stage will run npm test and should account for these known failures."
+          },
+          {
+            "file": "success-patterns.json (2 detailed patterns)",
+            "relevance": 78,
+            "summary": "Two successful builds: 'Fix bug' (3 iterations, 45s) and 'Add authentication feature' (3 iterations, 150s). Both use npm test strategy and standard template. Demonstrates proven iteration patterns."
+          },
+          {
+            "file": "failures.json (EONENT dependency issue)",
+            "relevance": 65,
+            "summary": "Missing npm install error with 95% fix effectiveness. Build stage should ensure dependencies are installed before test execution."
+          },
+          {
+            "file": "success-patterns.json (auth module pattern)",
+            "relevance": 58,
+            "summary": "TDD approach with module isolation for features (complexity 60). Shows file pattern (src/, test/) and integration test strategy applicable to architecture work."
+          }
+        ]
+      },
+      "timestamp": 1776430612,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Critical for build stage — defines project conventions (node/npm, vitest runner, src/ source dir, commonjs imports). Essential for understanding how to build and test this codebase."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Documents recurring test failures (sw-cleanup.sh heartbeat detection, sed syntax, mktemp path issues) from previous runs. Helps anticipate and prevent test stage failures that follow build."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful build approaches from prior runs: npm test strategy, typical 3-iteration loops, file patterns touched, standard template usage. Provides baseline for expected iteration count and test strategy."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array. No architectural or process decisions recorded to inform build decisions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines. No performance or quality metrics to guide build optimization."
+          }
+        ]
+      },
+      "timestamp": 1776430627,
+      "ttl": 1800
     }
   }
 }

@@ -1362,6 +1362,28 @@ case "$SUBCOMMAND" in
         shift 2>/dev/null || true
         exec "$SCRIPT_DIR/sw-fleet-discover.sh" "$@"
         ;;
+    memory)
+        # shellcheck source=lib/fleet-memory.sh
+        source "$SCRIPT_DIR/lib/fleet-memory.sh"
+        case "${1:-dashboard}" in
+            dashboard|"") fleet_memory_dashboard ;;
+            stats)        fleet_memory_stats_json ;;
+            sync)         fleet_memory_sync && success "Index rebuilt: $FLEET_MEMORY_INDEX" ;;
+            prune)
+                archived=$(fleet_memory_prune)
+                success "Archived ${archived} stale patterns (>${FLEET_MEMORY_TTL_DAYS}d, no successes)"
+                ;;
+            inject)
+                shift
+                fleet_memory_inject "${1:-}" "${2:-5}"
+                ;;
+            *)
+                error "Unknown fleet memory subcommand: $1"
+                echo "Usage: shipwright fleet memory {dashboard|stats|sync|prune|inject}"
+                exit 1
+                ;;
+        esac
+        ;;
     init)
         fleet_init
         ;;
