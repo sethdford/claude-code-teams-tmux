@@ -287,15 +287,25 @@ Repeat count: 0
 ## Failure Diagnosis (Iteration 3)
 Classification: unknown
 Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
+Repeat count: 1
+
+## Failure Diagnosis (Iteration 4)
+Classification: unknown
+Strategy: alternative_approach
+Repeat count: 2
+INSTRUCTION: This error has occurred 2 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
+- If you were modifying existing code, try rewriting the function from scratch
+- If you were using one library, try a different one
+- If you were adding to a file, try creating a new file instead
+- Step back and reconsider the requirements"
+iteration: 4
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-17T19:04:56Z
-last_iteration_at: 2026-04-17T19:04:56Z
+started_at: 2026-04-17T19:07:25Z
+last_iteration_at: 2026-04-17T19:07:25Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -318,4 +328,8 @@ Iteration 1 complete: added `conflict-predictor.sh` + `conflict-queue.sh` librar
 
 ### Iteration 3 (2026-04-17T19:04:56Z)
 Committed. This iteration addresses the audit's "sw-fleet-viz prints conflicts_avoided" requirement with working output 
+
+### Iteration 4 (2026-04-17T19:07:25Z)
+Fixed the 3 failing cleanup tests. The root cause was in `scripts/lib/compat.sh`: `file_mtime()` called GNU `stat -f %m`
+Not declaring LOOP_COMPLETE yet — there may be further audit issues. Letting the loop re-audit.
 
