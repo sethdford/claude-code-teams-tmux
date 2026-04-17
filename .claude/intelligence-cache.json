@@ -1638,31 +1638,31 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Defines project structure (src/, vitest, npm, commonjs imports). Critical for build stage to know where source files are, how to run tests, and package management approach."
-          },
-          {
-            "file": "success-patterns.json",
-            "relevance": 75,
-            "summary": "Previous successful builds show test strategy ('npm test'), typical iteration counts (3), and which files changed. Informs expected build duration and test patterns for this project."
+            "summary": "Contains critical project configuration (Node.js, vitest, npm, CommonJS) needed to execute build steps correctly. Source structure and test patterns are essential for the agent to build and test properly."
           },
           {
             "file": "failures.json",
-            "relevance": 55,
-            "summary": "Test stage failures reveal common issues (mktemp paths, sed syntax, heartbeat detection). Early warning for potential build/test failures, though these are primarily test-stage concerns."
+            "relevance": 85,
+            "summary": "Documents recurring test failures and config issues from previous runs: mktemp /tmp/claude failures, sed command syntax bugs in shell tests, heartbeat detection issues. Agent should avoid these patterns."
           },
           {
-            "file": "decisions.json",
-            "relevance": 12,
-            "summary": "Empty decisions array provides no context. Would only be relevant if it contained build-related decisions."
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Shows successful past builds took 3 iterations, used standard pipeline template, and modified shell scripts and test files. Provides iteration strategy context and file patterns that frequently change."
           },
           {
             "file": "metrics.json",
-            "relevance": 8,
-            "summary": "Empty baselines object. Would be relevant for performance tracking but contains no actual data to inform the build stage."
+            "relevance": 20,
+            "summary": "Empty baselines file. Could track build performance metrics but currently contains no data relevant to current build execution."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Empty decisions log. Could document build-stage decisions but currently unused and not applicable to current context."
           }
         ]
       },
-      "timestamp": 1776451506,
+      "timestamp": 1776453365,
       "ttl": 1800
     },
     "489ee0055e51dfa50e8a2b395c645b5a": {
