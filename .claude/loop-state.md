@@ -282,15 +282,20 @@ LOCK_FREE → (acquire with TTL) → LOCK_HELD (heartbeat updates mtime)
 ## Failure Diagnosis (Iteration 2)
 Classification: unknown
 Strategy: retry_with_context
-Repeat count: 0"
-iteration: 2
+Repeat count: 0
+
+## Failure Diagnosis (Iteration 3)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 1"
+iteration: 3
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-04-17T18:59:46Z
-last_iteration_at: 2026-04-17T18:59:46Z
+started_at: 2026-04-17T19:04:56Z
+last_iteration_at: 2026-04-17T19:04:56Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -310,4 +315,7 @@ Iteration 1 complete: added `conflict-predictor.sh` + `conflict-queue.sh` librar
 - **Reap drains** — releases PID's locks and pops next ready queue entry
 - **Stale cleanup** runs each poll tick
 - **`SW_FILE_LOCKS_ENABLED=0`** kill switch
+
+### Iteration 3 (2026-04-17T19:04:56Z)
+Committed. This iteration addresses the audit's "sw-fleet-viz prints conflicts_avoided" requirement with working output 
 
