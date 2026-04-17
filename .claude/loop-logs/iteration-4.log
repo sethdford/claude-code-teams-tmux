@@ -1,5 +1,0 @@
-Fixed the `file_mtime()` cross-platform bug: on Linux, `stat -f %m <file>` treats `%m` as a path argument and produces "File:" stdout noise with exit 0, which corrupted cleanup's stale-heartbeat detection. Swapped so Linux `-c '%Y'` is tried first. Cleanup tests now 24/24 green; compat tests still 56/56.
-
-The stage-skipping engine itself (the loop goal) was completed in iterations 1-2. This iteration addressed the test regression blocking completion.
-
-LOOP_COMPLETE
