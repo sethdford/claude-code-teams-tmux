@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint",
       "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan and report stale heartbeat files during dry-run, and ensure the summary block prints 'Found' count and '--force' suggestion when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-04-16T20:39:38Z",
+      "seen_count": 5,
+      "last_seen": "2026-04-17T00:00:29Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh passes substitution expression as filename instead of -e argument, likely due to missing -e flag or incorrect quoting",
       "fix": "Change sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|$TEST_TEMP_DIR|...|g\"`",
-      "seen_count": 1,
-      "last_seen": "2026-04-16T20:48:06Z",
+      "seen_count": 5,
+      "last_seen": "2026-04-17T00:49:37Z",
       "category": "test_failure"
     },
     {
@@ -23,18 +23,18 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude directory does not exist on this runner",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory template",
-      "seen_count": 1,
-      "last_seen": "2026-04-16T21:00:42Z",
+      "seen_count": 2,
+      "last_seen": "2026-04-17T00:29:26Z",
       "category": "config"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails parsing quality-profile.json because a field contains empty string instead of valid JSON, causing learned rule generation to produce invalid output",
-      "fix": "Fix the quality-profile.json generation to ensure all fields contain valid JSON values before jq processes them, guarding against empty strings with a default fallback",
+      "root_cause": "All tests in the log are passing; no actual failure detected in the provided output",
+      "fix": "Check earlier log output for the actual failing test — the provided 200 lines show only passing suites",
       "seen_count": 1,
       "last_seen": "2026-04-16T21:12:04Z",
-      "category": "test_failure"
+      "category": "unknown"
     }
   ]
 }
