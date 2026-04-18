@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint",
       "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan and report stale heartbeat files during dry-run, and ensure the summary block prints 'Found' count and '--force' suggestion when items are detected",
-      "seen_count": 16,
-      "last_seen": "2026-04-18T07:32:48Z",
+      "seen_count": 13,
+      "last_seen": "2026-04-18T08:47:13Z",
       "category": "test_failure"
     },
     {
@@ -41,8 +41,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command passed a substitution expression as a filename instead of using -e flag or proper quoting",
       "fix": "Fix the sed invocation to use 'sed -e \"s|$TEST_TEMP_DIR|...|g\"' with -e flag before the expression",
-      "seen_count": 4,
-      "last_seen": "2026-04-18T08:46:06Z",
+      "seen_count": 1,
+      "last_seen": "2026-04-17T03:08:56Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, breaking 3 tests expecting 'agent-1', 'Found', and '--force' strings",
-      "fix": "Update sw-cleanup.sh dry-run to output stale heartbeat filenames and a 'Found N items' summary with '--force' hint",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing 3 tests to fail matching expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh to restore heartbeat detection output showing agent IDs and summary lines with 'Found N items' and '--force' hint, or update the test expectations to match current output format",
       "seen_count": 1,
       "last_seen": "2026-04-18T01:09:16Z",
       "category": "test_failure"
