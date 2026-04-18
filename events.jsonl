@@ -1823,3 +1823,17 @@
 {"ts":"2026-04-18T01:32:12Z","ts_epoch":1776475932,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":12291,"trimmed_prompt_chars":12291,"trim_ratio":0.0,"budget_utilization":6.1,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-04-18T01:32:15Z","ts_epoch":1776475935,"type":"pipeline.context_exhaustion","issue":403,"stage":"build"}
 {"ts":"2026-04-18T01:32:17Z","ts_epoch":1776475937,"type":"stage.failed","event_id":"evt-1776475937-711280473","payload":"{\"stage\":\"build\",\"issue\":\"403\",\"timing\":\"38m 6s\"}"}
+{"ts":"2026-04-18T06:29:28Z","ts_epoch":1776493768,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-04-18T06:29:31Z","ts_epoch":1776493771,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-04-18T06:29:36Z","ts_epoch":1776493776,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":12}
+{"ts":"2026-04-18T06:29:36Z","ts_epoch":1776493776,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-04-18T06:29:36Z","ts_epoch":1776493776,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly..","seen_count":9}
+{"ts":"2026-04-18T06:29:37Z","ts_epoch":1776493777,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly.."}
+{"ts":"2026-04-18T06:29:37Z","ts_epoch":1776493777,"type":"patrol.finding","check":"recurring_failure","pattern":"mktemp: failed to create directory via template ‘/tmp/clau","seen_count":3}
+{"ts":"2026-04-18T06:29:37Z","ts_epoch":1776493777,"type":"patrol.issue_created","check":"recurring_failure","pattern":"mktemp: failed to create directory via template ‘/tmp/clau"}
+{"ts":"2026-04-18T06:29:38Z","ts_epoch":1776493778,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-04-18T06:29:38Z","ts_epoch":1776493778,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-04-18T06:29:38Z","ts_epoch":1776493778,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-04-18T06:29:38Z","ts_epoch":1776493778,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-04-18T06:29:38Z","ts_epoch":1776493778,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
+{"ts":"2026-04-18T06:29:39Z","ts_epoch":1776493779,"type":"patrol.issue_created","check":"untested_scripts","count":5}
