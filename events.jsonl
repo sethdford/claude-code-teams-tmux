@@ -2110,3 +2110,18 @@
 {"ts":"2026-04-18T13:05:24Z","ts_epoch":1776517524,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":15636,"trimmed_prompt_chars":15636,"trim_ratio":0.0,"budget_utilization":7.8,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-04-18T13:05:27Z","ts_epoch":1776517527,"type":"pipeline.context_exhaustion","issue":406,"stage":"build"}
 {"ts":"2026-04-18T13:05:29Z","ts_epoch":1776517529,"type":"stage.failed","event_id":"evt-1776517529-3611063573","payload":"{\"stage\":\"build\",\"issue\":\"406\",\"timing\":\"31m 42s\"}"}
+{"ts":"2026-04-18T18:15:35Z","ts_epoch":1776536135,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-04-18T18:15:37Z","ts_epoch":1776536137,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-04-18T18:15:42Z","ts_epoch":1776536142,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":14}
+{"ts":"2026-04-18T18:15:43Z","ts_epoch":1776536143,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-04-18T18:15:43Z","ts_epoch":1776536143,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly..","seen_count":10}
+{"ts":"2026-04-18T18:15:43Z","ts_epoch":1776536143,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly.."}
+{"ts":"2026-04-18T18:15:44Z","ts_epoch":1776536144,"type":"patrol.finding","check":"recurring_failure","pattern":"mktemp: failed to create directory via template ‘/tmp/clau","seen_count":3}
+{"ts":"2026-04-18T18:15:44Z","ts_epoch":1776536144,"type":"patrol.issue_created","check":"recurring_failure","pattern":"mktemp: failed to create directory via template ‘/tmp/clau"}
+{"ts":"2026-04-18T18:15:44Z","ts_epoch":1776536144,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Pipeline exit code default is 1 (fa","seen_count":3}
+{"ts":"2026-04-18T18:15:45Z","ts_epoch":1776536145,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Pipeline exit code default is 1 (fa"}
+{"ts":"2026-04-18T18:15:46Z","ts_epoch":1776536146,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-04-18T18:15:46Z","ts_epoch":1776536146,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-04-18T18:15:46Z","ts_epoch":1776536146,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-04-18T18:15:46Z","ts_epoch":1776536146,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-04-18T18:15:46Z","ts_epoch":1776536146,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
