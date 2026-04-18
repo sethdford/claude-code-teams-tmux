@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint",
       "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan and report stale heartbeat files during dry-run, and ensure the summary block prints 'Found' count and '--force' suggestion when items are detected",
       "seen_count": 14,
-      "last_seen": "2026-04-18T12:38:03Z",
+      "last_seen": "2026-04-18T13:04:55Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh passes substitution expression as filename instead of -e argument, likely due to missing -e flag or incorrect quoting",
       "fix": "Change sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|$TEST_TEMP_DIR|...|g\"`",
-      "seen_count": 13,
-      "last_seen": "2026-04-18T12:52:46Z",
+      "seen_count": 10,
+      "last_seen": "2026-04-18T08:12:30Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "classify_failure function is referenced in retry logic but never called in daemon_on_failure, leaving failure classification unwired",
-      "fix": "Add classify_failure call inside daemon_on_failure before retry decision so failure type informs retry behavior",
+      "root_cause": "sed invocation passes substitution expression as file argument — missing -e flag causes sed to treat 's|$TEST_TEMP_DIR|...|g' as a filename",
+      "fix": "add -e flag before the substitution expression: sed -e 's|$TEST_TEMP_DIR|...|g' or use quotes to prevent variable expansion in the expression",
       "seen_count": 1,
       "last_seen": "2026-04-18T01:09:16Z",
       "category": "test_failure"
