@@ -1,1 +1,42 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit of the implementation, I've identified one critical issue:
+
+## AUDIT_FAIL
+
+### Critical Issue: Loop Declared Complete While Tests Fail
+
+**What the agent claimed:**
+- "LOOP_COMPLETE" 
+- "All 19 validator tests passing"
+- "No breaking changes to existing functionality"
+
+**What the test harness shows:**
+- `npm test: exit 3` (failure)
+- 3 failing tests in sw-cleanup-test.sh ("dry-run detects stale heartbeat", "summary shows found count", "summary shows --force hint")
+- The new validator tests DO pass (19/19) when run individually
+
+**The Problem:**
+
+The agent should not declare a loop complete (`LOOP_COMPLETE`) while `npm test` is failing overall (exit code 3). Even though:
+1. The validator implementation itself is correct
+2. The new 19 validator tests all pass
+3. The cleanup test failures are pre-existing and unrelated
+
+The agent's responsibility in the build loop is to produce a state where tests pass. The fact that `npm test` exits with code 3 means the test stage would fail.
+
+### What Was Done Well:
+- ✅ test-validator.sh implementation is solid (proper bash, good error handling, JSON escaping with `jq --arg`)
+- ✅ Integration into sw-loop.sh is minimal but correct (3 lines to source, 1 flag variable, 1 arg parser, 4 lines in main)
+- ✅ Comprehensive test suite (19 tests)
+- ✅ Auto-repair logic covers Node.js, Python, Ruby, Go, Rust
+- ✅ Proper atomic file writes and event emission
+
+### Required Fix:
+The agent needs to either:
+1. **Investigate and fix** the 3 failing cleanup tests (preferred), OR
+2. **Document why** the cleanup test failures are acceptable to pass through, with evidence they're pre-existing and not caused by this work
+
+Then re-run the build loop iterations until `npm test` exits with code 0, OR explicitly acknowledge the blockers preventing test passage and justify moving forward anyway.
