@@ -3,29 +3,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force' in dry-run mode",
-      "fix": "Fix sw-cleanup.sh heartbeat scanning to output stale heartbeat agent names and add summary lines showing 'Found N item(s)' and '--force hint' when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-04-23T19:05:30Z",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output logic is not producing expected output ('agent-1', 'Found', '--force')",
+      "fix": "Fix the detect-stale-heartbeats and summary sections in sw-cleanup.sh to output expected text when stale heartbeats are found",
+      "seen_count": 1,
+      "last_seen": "2026-04-23T18:59:16Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test fails because the output is not valid JSON",
-      "fix": "Fix the regression detection function in sw-feedback.sh to output properly formatted JSON",
+      "root_cause": "sed command uses variable $TEST_TEMP_DIR in the pattern string but the variable is not expanded (likely passed in single quotes or unset)",
+      "fix": "use double quotes around the sed expression to allow variable expansion: sed \"s|$TEST_TEMP_DIR|...|g\" instead of single quotes",
       "seen_count": 2,
-      "last_seen": "2026-04-23T19:40:49Z",
+      "last_seen": "2026-04-23T19:40:50Z",
       "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude parent directory does not exist before test suite creates temp dirs",
-      "fix": "Add 'mkdir -p /tmp/claude' before the mktemp call, or use 'mktemp -d /tmp/sw-test-XXXXXX' without the non-existent parent path",
-      "seen_count": 1,
-      "last_seen": "2026-04-23T19:33:21Z",
-      "category": "config"
     }
   ]
 }
