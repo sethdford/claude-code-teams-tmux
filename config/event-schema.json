@@ -213,6 +213,26 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "feedback_detect_regression": {
+      "required": ["merge_sha", "regression"],
+      "optional": ["severity", "type", "evidence"]
+    },
+    "feedback_correlate": {
+      "required": ["pr", "confidence"],
+      "optional": ["changed_files", "culprit_files"]
+    },
+    "doctor_fix": {
+      "required": ["type"],
+      "optional": ["path", "hook"]
+    },
+    "test.event": {
+      "required": [],
+      "optional": ["agent", "count", "key1", "key2"]
+    },
+    "test.event2": {
+      "required": [],
+      "optional": ["data"]
     }
   }
 }

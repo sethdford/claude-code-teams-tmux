@@ -12,11 +12,11 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
+        ((PASS++)) || true
+        echo "✓ $description"
     else
-        ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
+        ((FAIL++)) || true
+        echo "✗ $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
     fi
@@ -25,11 +25,11 @@ assert_equals() {
 assert_exit_code() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
+        ((PASS++)) || true
+        echo "✓ $description"
     else
-        ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
+        ((FAIL++)) || true
+        echo "✗ $description"
         echo "    Expected exit code: $expected"
         echo "    Actual exit code:   $actual"
     fi
@@ -53,11 +53,11 @@ test_hello_help() {
     local output
     output=$("$SCRIPT_DIR/sw-hello.sh" --help)
     if [[ "$output" =~ "USAGE" ]]; then
-        ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello --help displays help text"
+        ((PASS++)) || true
+        echo "✓ hello --help displays help text"
     else
-        ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello --help displays help text"
+        ((FAIL++)) || true
+        echo "✗ hello --help displays help text"
     fi
 }
 
@@ -66,11 +66,11 @@ test_hello_short_help() {
     local output
     output=$("$SCRIPT_DIR/sw-hello.sh" -h)
     if [[ "$output" =~ "USAGE" ]]; then
-        ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello -h displays help text"
+        ((PASS++)) || true
+        echo "✓ hello -h displays help text"
     else
-        ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello -h displays help text"
+        ((FAIL++)) || true
+        echo "✗ hello -h displays help text"
     fi
 }
 
@@ -79,11 +79,11 @@ test_hello_version() {
     local output
     output=$("$SCRIPT_DIR/sw-hello.sh" --version)
     if [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-        ((PASS++))
-        echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m hello --version displays version"
+        ((PASS++)) || true
+        echo "✓ hello --version displays version"
     else
-        ((FAIL++))
-        echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m hello --version displays version"
+        ((FAIL++)) || true
+        echo "✗ hello --version displays version"
     fi
 }
 

@@ -196,7 +196,19 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local mtime
+
+    # Try stat -c '%Y' first (Linux standard)
+    mtime=$(stat -c '%Y' "$file" 2>/dev/null) && echo "$mtime" && return 0
+
+    # Fallback to stat -f %m (macOS/BSD)
+    mtime=$(stat -f %m "$file" 2>/dev/null) && echo "$mtime" && return 0
+
+    # Last resort: use stat with Modify field
+    mtime=$(stat "$file" 2>/dev/null | grep -oP 'Modify: \K[^\s]+' | head -1 | xargs -I {} date -d "{}" +%s 2>/dev/null) && echo "$mtime" && return 0
+
+    # Default to 0 if all methods fail
+    echo "0"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
