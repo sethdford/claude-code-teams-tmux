@@ -3,28 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not matching expected strings in test assertions",
-      "fix": "Fix sw-cleanup.sh to output 'agent-1' when detecting stale heartbeats in dry-run mode, and ensure summary section prints 'Found N' count and '--force' hint when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-04-23T19:09:58Z",
+      "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
+      "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
+      "seen_count": 1,
+      "last_seen": "2026-04-23T19:14:44Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command references a file path instead of using inline substitution syntax — 's|$TEST_TEMP_DIR|...|g' was passed as a filename argument rather than an expression",
-      "fix": "Change `sed s|$TEST_TEMP_DIR|...|g file` to `sed \"s|$TEST_TEMP_DIR|...|g\" file` with proper quoting and ensure the -e flag or inline expression is used correctly",
+      "root_cause": "sed invocation missing -e flag, causing the substitution expression to be interpreted as a filename",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` or use `sed \"s|$TEST_TEMP_DIR|...|g\"` with double quotes so the variable expands",
       "seen_count": 1,
-      "last_seen": "2026-04-23T19:17:28Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "quality-profile.json contains malformed JSON (empty value at line 5), causing jq to fail during learned rule generation and producing a rule with empty confidence field",
-      "fix": "Ensure quality-profile.json is initialized with valid JSON before jq reads it, or add a guard to validate/default the confidence value before writing the rule",
-      "seen_count": 1,
-      "last_seen": "2026-04-23T19:36:54Z",
+      "last_seen": "2026-04-23T19:33:30Z",
       "category": "test_failure"
     }
   ]
