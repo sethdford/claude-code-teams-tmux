@@ -1,3 +1,21 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not matching expected strings in sw-cleanup-test.sh",
+      "fix": "Fix sw-cleanup.sh to output 'agent-1' when listing stale heartbeats and include 'Found' count and '--force' hint in dry-run summary output",
+      "seen_count": 1,
+      "last_seen": "2026-04-23T19:35:30Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-04-23T19:40:25Z"
+    }
+  ]
 }
