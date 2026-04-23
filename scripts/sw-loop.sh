@@ -54,6 +54,9 @@ fi
 # Test execution optimization (issue #200)
 # shellcheck source=lib/test-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/test-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/test-optimizer.sh" 2>/dev/null || true
+# Test command validation and auto-repair (issue #406)
+# shellcheck source=lib/test-validator.sh
+[[ -f "$SCRIPT_DIR/lib/test-validator.sh" ]] && source "$SCRIPT_DIR/lib/test-validator.sh" 2>/dev/null || true
 # Audit trail for compliance-grade pipeline traceability
 # shellcheck source=lib/audit-trail.sh
 [[ -f "$SCRIPT_DIR/lib/audit-trail.sh" ]] && source "$SCRIPT_DIR/lib/audit-trail.sh" 2>/dev/null || true
@@ -104,6 +107,7 @@ RESUME=false
 VERBOSE=false
 MAX_ITERATIONS_EXPLICIT=false
 MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
+SKIP_PREFLIGHT=false
 SESSION_RESTART=false
 RESTART_COUNT=0
 REPO_OVERRIDE=""
@@ -173,6 +177,7 @@ show_help() {
     echo -e "  ${CYAN}--max-turns${RESET} N             Max API turns per Claude session"
     echo -e "  ${CYAN}--resume${RESET}                  Resume from existing .claude/loop-state.md"
     echo -e "  ${CYAN}--max-restarts${RESET} N          Max session restarts on exhaustion (default: 0)"
+    echo -e "  ${CYAN}--skip-preflight${RESET}          Skip test command validation before starting loop"
     echo -e "  ${CYAN}--verbose${RESET}                 Show full Claude output (default: summary)"
     echo -e "  ${CYAN}--help${RESET}                    Show this help"
     echo ""
@@ -313,6 +318,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-restarts=*) MAX_RESTARTS="${1#--max-restarts=}"; shift ;;
+        --skip-preflight) SKIP_PREFLIGHT=true; shift ;;
         --roles)
             AGENT_ROLES="${2:-}"
             [[ -z "$AGENT_ROLES" ]] && { error "Missing value for --roles"; exit 1; }
@@ -2658,6 +2664,11 @@ run_loop_with_restarts() {
 # ─── Main: Entry Point ───────────────────────────────────────────────────────
 
 main() {
+    # Run preflight validation unless disabled
+    if [[ "$SKIP_PREFLIGHT" != "true" ]] && [[ -n "$TEST_CMD" ]]; then
+        preflight_validate_test_cmd "$TEST_CMD" || return $?
+    fi
+
     if [[ "$AGENTS" -gt 1 ]]; then
         if $RESUME; then
             resume_state
