@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-04-24T07:28:20Z",
+      "last_seen": "2026-04-24T07:23:03Z",
       "category": "test_failure"
     },
     {
@@ -14,15 +14,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of an inline substitution expression",
       "fix": "fix the sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of passing the expression without -e",
-      "seen_count": 3,
-      "last_seen": "2026-04-24T07:48:27Z",
+      "seen_count": 5,
+      "last_seen": "2026-04-24T08:03:21Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command using variable path in pattern fails because the argument is interpreted as a file path rather than a substitution expression",
-      "fix": "quote the sed expression correctly or use a variable expansion approach that prevents shell from interpreting the sed -e argument as a filename",
+      "root_cause": "sed command references $TEST_TEMP_DIR variable that is not expanded before use, causing it to look for a literal file named 's|$TEST_TEMP_DIR|...|g'",
+      "fix": "ensure TEST_TEMP_DIR is exported or use double quotes around the sed expression so the variable expands correctly before sed executes",
       "seen_count": 1,
       "last_seen": "2026-04-24T01:46:28Z",
       "category": "test_failure"
