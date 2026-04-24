@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-04-24T07:38:19Z",
+      "last_seen": "2026-04-24T07:19:11Z",
       "category": "test_failure"
     },
     {
@@ -14,15 +14,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of an inline substitution expression",
       "fix": "fix the sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of passing the expression without -e",
-      "seen_count": 3,
-      "last_seen": "2026-04-24T07:53:12Z",
+      "seen_count": 4,
+      "last_seen": "2026-04-24T07:35:02Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command receives a substitution expression as a filename instead of a flag, likely due to missing -e flag or incorrect argument ordering in the test script",
-      "fix": "fix the sed invocation in sw-code-review-test.sh to use 'sed -e s|...|...|g' instead of passing the expression as a positional argument",
+      "root_cause": "sed command references a non-existent file path literal instead of using inline substitution — the pattern 's|$TEST_TEMP_DIR|...|g' was passed as a filename argument rather than an expression",
+      "fix": "change `sed s|$TEST_TEMP_DIR|...|g filename` to `sed -e 's|...|...|g' filename` or ensure the -e flag precedes the substitution expression",
       "seen_count": 1,
       "last_seen": "2026-04-24T01:46:28Z",
       "category": "test_failure"
