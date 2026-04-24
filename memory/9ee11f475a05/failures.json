@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-04-24T07:27:44Z",
+      "last_seen": "2026-04-24T07:30:08Z",
       "category": "test_failure"
     },
     {
@@ -15,26 +15,26 @@
       "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of an inline substitution expression",
       "fix": "fix the sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of passing the expression without -e",
       "seen_count": 3,
-      "last_seen": "2026-04-24T07:30:51Z",
+      "last_seen": "2026-04-24T08:00:42Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references a variable $TEST_TEMP_DIR that is not expanded before use, treating it as a literal filename",
-      "fix": "ensure TEST_TEMP_DIR is exported/available in the sed invocation scope, or use double quotes around the sed expression to allow variable expansion",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format does not match test expectations for stale heartbeat display, 'Found' count text, and '--force' hint text",
+      "fix": "Update sw-cleanup.sh dry-run output to include stale heartbeat filenames, 'Found N items' summary line, and '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-04-24T01:46:28Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude directory does not exist before test temp dirs are created",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in the test harness, or change the mktemp template to use /tmp directly",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "All tests passed — no actual failure detected in the provided log output",
+      "fix": "Review earlier log output or re-run tests to identify the actual failure; the provided logs show only passing tests",
       "seen_count": 1,
-      "last_seen": "2026-04-24T07:52:31Z",
-      "category": "config"
+      "last_seen": "2026-04-24T07:46:42Z",
+      "category": "unknown"
     }
   ]
 }
