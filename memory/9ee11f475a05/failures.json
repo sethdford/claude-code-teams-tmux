@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
       "seen_count": 7,
-      "last_seen": "2026-04-25T01:14:03Z",
+      "last_seen": "2026-04-25T01:11:08Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of an inline substitution expression",
       "fix": "fix the sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of passing the expression without -e",
-      "seen_count": 7,
-      "last_seen": "2026-04-25T01:18:46Z",
+      "seen_count": 10,
+      "last_seen": "2026-04-25T02:00:12Z",
       "category": "test_failure"
     },
     {
@@ -39,19 +39,20 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist on this Linux system, and a sed command references TEST_TEMP_DIR before it is set",
-      "fix": "Replace `mktemp -d /tmp/claude/sw-test-XXXXXX` with `mktemp -d /tmp/sw-test-XXXXXX` so mktemp uses an existing parent directory",
-      "seen_count": 1,
-      "last_seen": "2026-04-24T19:35:29Z",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
+      "fix": "Create /tmp/claude directory before running tests, or update test scripts to use mktemp without a subdirectory prefix (e.g., mktemp -d /tmp/sw-test-XXXXXX)",
+      "seen_count": 2,
+      "last_seen": "2026-04-25T01:39:52Z",
       "category": "config"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "",
-      "fix": "",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
+      "root_cause": "classify_failure function is not called within daemon_on_failure, breaking the wired retry logic integration",
+      "fix": "Add a call to classify_failure inside daemon_on_failure before the retry decision is made",
       "seen_count": 1,
-      "last_seen": "2026-04-25T02:23:08Z"
+      "last_seen": "2026-04-25T01:30:23Z",
+      "category": "test_failure"
     }
   ]
 }
