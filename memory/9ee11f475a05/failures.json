@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
       "seen_count": 8,
-      "last_seen": "2026-04-25T12:42:53Z",
+      "last_seen": "2026-04-25T12:56:06Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of an inline substitution expression",
       "fix": "fix the sed invocation to use -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of passing the expression without -e",
       "seen_count": 11,
-      "last_seen": "2026-04-25T12:53:21Z",
+      "last_seen": "2026-04-25T13:05:01Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "regression detection test expects valid JSON output but the function does not produce properly formatted JSON",
-      "fix": "fix the regression detection output in sw-feedback.sh to emit valid JSON when detecting regressions",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint from output",
+      "fix": "Fix the heartbeat detection logic in sw-cleanup.sh dry-run path to enumerate ~/.shipwright/heartbeats/ and print the agent ID, found count, and --force hint to stdout",
       "seen_count": 1,
       "last_seen": "2026-04-25T01:30:23Z",
       "category": "test_failure"
