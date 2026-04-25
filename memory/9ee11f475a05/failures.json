@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint in dry-run output",
       "fix": "Add heartbeat file detection logic and summary output with 'Found' count and '--force' hint to sw-cleanup.sh dry-run mode",
-      "seen_count": 7,
-      "last_seen": "2026-04-25T01:11:08Z",
+      "seen_count": 8,
+      "last_seen": "2026-04-25T13:02:46Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "classify_failure function is not called within daemon_on_failure, breaking the wired retry logic integration",
-      "fix": "Add a call to classify_failure inside daemon_on_failure before the retry decision is made",
+      "root_cause": "sw-cleanup.sh dry-run mode does not report stale heartbeats or display 'Found N items' summary with '--force' hint",
+      "fix": "Update sw-cleanup.sh to detect and display stale heartbeat files in dry-run output and add a summary line showing found count with --force hint",
       "seen_count": 1,
       "last_seen": "2026-04-25T01:30:23Z",
       "category": "test_failure"
