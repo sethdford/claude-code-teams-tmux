@@ -590,3 +590,11 @@ npm test    # 125 shell suites + 16 dashboard test files (141 total), E2E system
 ## License
 
 MIT — Seth Ford, 2026.
+
+## 💰 Bounty Contribution
+
+- **Task:** Stage-Level Budget Caps with Real-Time Enforcement and Auto-Abort
+- **Reward:** $5
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
