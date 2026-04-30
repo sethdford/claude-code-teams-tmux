@@ -3,37 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint",
-      "fix": "Fix heartbeat detection logic in sw-cleanup.sh dry-run path to scan heartbeat files and emit the 'Found' count summary with '--force' hint when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-04-30T19:13:56Z",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
+      "seen_count": 1,
+      "last_seen": "2026-04-30T19:00:29Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test fails because the output is not valid JSON",
-      "fix": "Fix the regression detection function in sw-feedback.sh to output valid JSON format",
-      "seen_count": 2,
-      "last_seen": "2026-04-30T19:21:40Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude parent directory does not exist before test temp dir creation",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in the test harness, or use 'mktemp -d' without a fixed parent path",
+      "root_cause": "sed receives substitution expression as a filename instead of an inline script — the '-e' flag is missing or quoting caused the 's|...|...|g' pattern to be parsed as a file path",
+      "fix": "Add '-e' before the sed expression: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` and ensure the variable is quoted correctly so the shell does not split the argument",
       "seen_count": 1,
-      "last_seen": "2026-04-30T19:30:10Z",
-      "category": "config"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "platform-refactor subcommand exits with code 1 instead of 0 in sw-hygiene.sh",
-      "fix": "Find the platform-refactor command handler in sw-hygiene.sh and ensure it exits 0 on success instead of propagating a non-zero exit code",
-      "seen_count": 1,
-      "last_seen": "2026-04-30T19:59:48Z",
+      "last_seen": "2026-04-30T19:04:23Z",
       "category": "test_failure"
     }
   ]
