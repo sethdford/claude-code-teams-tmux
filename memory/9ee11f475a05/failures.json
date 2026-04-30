@@ -1,3 +1,40 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output are broken — the script fails to detect stale heartbeat files and omits the 'Found' count and '--force' hint from dry-run output",
+      "fix": "Fix the heartbeat file scanning logic in sw-cleanup.sh to correctly identify stale heartbeat files and ensure the dry-run summary prints the item count and '--force' usage hint",
+      "seen_count": 1,
+      "last_seen": "2026-04-30T19:07:46Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command references a variable $TEST_TEMP_DIR that is not expanded before being passed as the sed expression, causing it to be treated as a filename instead of a substitution pattern",
+      "fix": "Quote the sed expression correctly or ensure the variable is expanded before use: use double quotes around the sed expression instead of single quotes, e.g. sed \"s|$TEST_TEMP_DIR|...|g\" or pass the expression via -e flag with proper quoting",
+      "seen_count": 3,
+      "last_seen": "2026-04-30T20:10:21Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
+      "root_cause": "Event type 'feedback_detect_regression' is not registered in config/event-schema.json, causing WARN on every regression detection call",
+      "fix": "Add 'feedback_detect_regression' to config/event-schema.json event type registry",
+      "seen_count": 1,
+      "last_seen": "2026-04-30T19:37:51Z",
+      "category": "config"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp called with template '/tmp/claude/sw-test-XXXXXX' but parent directory '/tmp/claude' does not exist",
+      "fix": "Create '/tmp/claude' before calling mktemp, or use mktemp without a path prefix so it defaults to /tmp directly",
+      "seen_count": 1,
+      "last_seen": "2026-04-30T19:49:49Z",
+      "category": "test_failure"
+    }
+  ]
 }
