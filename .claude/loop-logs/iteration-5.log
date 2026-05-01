@@ -1,1 +1,12 @@
-Invalid API key · Fix external API key
+The goal is fully implemented and all goal-related tests pass (45/45 in `sw-merge-validation-test.sh`). The 3 failing tests in `sw-cleanup-test.sh` are pre-existing on `main` (verified by checking out main's version — same failures), in code untouched by this branch.
+
+Checklist:
+- ✅ Post-merge validation orchestrator wired into `stage_validate`
+- ✅ State machine, Checks API polling with backoff, safe revert with idempotency
+- ✅ Issue reopening with `validation-failed` label + retry queue + circuit breaker
+- ✅ Memory logging for pattern intelligence
+- ✅ Enabled by default in `standard`/`full` templates, skippable via flag
+- ✅ E2E test covers full validation→revert→reopen flow
+- ✅ ADR documenting design
+
+LOOP_COMPLETE
