@@ -1692,31 +1692,31 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Project conventions (source_dir, test_runner: vitest, test_pattern, import_style) directly inform build and test execution during build stage"
-          },
-          {
-            "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Historical successful builds show iteration counts (2-3 iterations), test strategies (npm test), timing (45-150s), and template patterns (standard) applicable to current build"
+            "summary": "Essential project configuration: defines source structure (src/), test pattern (*.test.js), test runner (vitest), package manager (npm), and import style (commonjs). Build stage needs this to properly compile and test the codebase."
           },
           {
             "file": "failures.json",
-            "relevance": 70,
-            "summary": "Recent test failures in sw-cleanup.sh inform build stage about what tests fail and their root causes, enabling proactive fixes before test stage"
+            "relevance": 90,
+            "summary": "Documents 10 recent test failures in sw-cleanup.sh related to stale heartbeat detection. Build stage can avoid repeating these failures by understanding the root causes and required fixes."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Captures two successful builds: bug fix (3 iterations, complexity 60) and feature addition (3 iterations, complexity 65). Shows validated approaches using standard template, npm test, and typical iteration/cost patterns for similar work."
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Empty baselines object provides no actionable data for build stage planning or execution"
+            "relevance": 20,
+            "summary": "Contains empty baselines object. No historical metrics available to guide build decisions or performance targets."
           },
           {
             "file": "decisions.json",
             "relevance": 10,
-            "summary": "Empty decisions array provides no prior decisions to inform current build stage work"
+            "summary": "Empty decisions array. No prior architectural or strategic decisions captured to inform build-stage choices."
           }
         ]
       },
-      "timestamp": 1777620445,
+      "timestamp": 1777622323,
       "ttl": 1800
     }
   }

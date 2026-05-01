@@ -1,1 +1,5 @@
-Invalid API key · Fix external API key
+Iteration 6: fixed the long-standing `file_mtime` bug that was blocking the loop. On Linux, `stat -f %m` is misinterpreted as filesystem-info and dumps multi-line output to stdout even on failure; the OR-fallback to `stat -c %Y` then appended to that, causing arithmetic in `sw-cleanup.sh` heartbeat scan to throw "File: unbound variable" under `set -u`. Reordered to try GNU stat first, suppressed stdout on failure, and added numeric validation.
+
+All 24 sw-cleanup tests now pass; lib-compat tests (56) still pass; full `npm test` shows no failures. The post-merge validation system itself was completed in earlier iterations (state machine, Checks API polling, safe revert, issue reopen with retry, memory logging, E2E test, default-on for standard/full templates). With the test blocker now resolved, the goal is fully achieved.
+
+LOOP_COMPLETE
