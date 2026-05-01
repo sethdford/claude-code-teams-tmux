@@ -6,16 +6,16 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
       "seen_count": 7,
-      "last_seen": "2026-05-01T07:37:13Z",
+      "last_seen": "2026-05-01T07:48:37Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command receives a pattern string as a filename argument instead of a file path — missing -e flag or incorrect argument ordering in sw-code-review-test.sh",
-      "fix": "fix the sed invocation to use -e before the expression: `sed -e 's|$TEST_TEMP_DIR|...|g' file` instead of passing the pattern as the filename",
+      "root_cause": "sed command in sw-code-review-test.sh references a literal string 'TEST_TEMP_DIR' as a filename instead of substituting it as a variable",
+      "fix": "Fix the sed invocation to use shell variable expansion: change `s|$TEST_TEMP_DIR|...|g` to use double quotes or pass the variable via -e flag with proper quoting",
       "seen_count": 2,
-      "last_seen": "2026-05-01T07:42:16Z",
+      "last_seen": "2026-05-01T07:54:21Z",
       "category": "test_failure"
     }
   ]
