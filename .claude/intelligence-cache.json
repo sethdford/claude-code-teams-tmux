@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "devops",
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.9,
+        "reasoning": "Post-merge validation and auto-revert is a systems design problem requiring architecture (validation triggers, revert logic, state management), DevOps (CI/CD integration, GitHub API), implementation, and comprehensive testing.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1777620454,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,322 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "6df0aa50f0c70e9c50daf0368398cd14": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Auto-revert operations could disrupt developer workflows if triggered by false positives",
+          "Race conditions between merge completion and GitHub Checks API status updates",
+          "Smoke test reliability and false positive rate causing unnecessary reverts",
+          "GitHub API rate limiting during polling operations",
+          "State consistency issues if revert operation fails mid-execution",
+          "Timing edge cases within the 15-minute validation window"
+        ],
+        "implementation_hints": [
+          "Use GraphQL API for efficient polling of check status instead of REST API",
+          "Implement exponential backoff strategy to avoid GitHub API rate limits",
+          "Make smoke test suite configurable with safe defaults",
+          "Add dry-run/simulation mode to test revert logic without destructive operations",
+          "Store validation state and history in pipeline artifacts for recovery and debugging",
+          "Implement careful retry logic before committing to auto-revert decision",
+          "Log detailed context and failure reasons before any auto-revert",
+          "Add notifications to team/Slack before reverting to catch false positives",
+          "Implement graceful handling of partial revert failures"
+        ]
+      },
+      "timestamp": 1777619813,
+      "ttl": 3600
+    },
+    "29f0c6bfd3a6a28ad247f47bb61713fb": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1777619825,
+      "ttl": 1800
+    },
+    "03733e8b020b6046377cb88e35723a9f": {
+      "result": {
+        "estimated_cost_usd": 6.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 550000,
+        "likely_failure_stage": "validate",
+        "confidence": 65
+      },
+      "timestamp": 1777619837,
+      "ttl": 3600
+    },
+    "93fc0bcac158c438fcd7d499557b77b9": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "reliability",
+          "testing",
+          "deployment"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Multi-stage orchestration (test → poll API → revert → reopen issue → log patterns) with distributed state management and multiple failure paths, but with well-defined acceptance criteria."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "deploy-safety"
+          ],
+          "design": [
+            "architecture-design",
+            "deploy-safety"
+          ],
+          "build": [
+            "testing-strategy",
+            "api-design"
+          ],
+          "review": [
+            "security-audit",
+            "two-stage-review",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about safety boundaries: What if validation fails but revert also fails? What prevents cascading reverts if another merge lands during the 15-min window?",
+          "deploy-safety": "This feature IS the post-merge safety gate; design must treat validation as a controlled experiment with clear rollback paths and failure boundaries.",
+          "architecture-design": "Multi-stage orchestration (poll CI → timeout handling → revert → issue reopening → memory logging) requires clear state machine and async coordination design.",
+          "testing-strategy": "Comprehensive test coverage needed for all paths: validation success, validation timeout, GitHub API errors, revert success/failure, issue reopening failure scenarios.",
+          "api-design": "GitHub Checks API polling and issue management API calls need careful error handling, retry logic, and idempotency to prevent partial failures and state inconsistencies.",
+          "security-audit": "Merge revert is a destructive operation requiring strict safety verification: Who can trigger reverts? Can untrusted test failures cause reverts? Require cryptographic proof of CI status.",
+          "two-stage-review": "Complex choreography with multiple concerns: CI polling, revert mechanics, issue lifecycle, memory injection—needs focused review of each concern separately then integration.",
+          "pr-quality": "Reviewers need to quickly understand the safety model, the 15-minute window rationale, and when reversion is skipped; unclear PR makes safety bugs invisible.",
+          "documentation": "Operators need clear docs on: enabling/disabling per template, failure modes, manual revert procedures, how to interpret validation logs, cost implications of frequent reverts.",
+          "adversarial-quality": "Chaos engineer perspective: GitHub API timeouts, partial revert (commit reverted but other refs not updated), race conditions (new commits landing during validation), cascading reverts.",
+          "validation-thoroughness": "Smoke tests passing doesn't guarantee main is green (flaky tests, undetected regressions); design must verify the reverted state actually works, not just that tests ran.",
+          "observability": "Validation system health must be observable: Did validation run? How long did it take? Did revert succeed? Did issue reopen work? What patterns do failed validations show?"
+        },
+        "generated_skills": [
+          {
+            "name": "merge-validation-and-revert-safety",
+            "reason": "Existing skills cover testing, safety gates, and observability, but none address the specific choreography of post-merge validation with safe merge reverting, state management across async boundaries, partial failure recovery, and learning patterns from validation failures.",
+            "content": "## Merge Validation and Revert Safety Patterns\n\nPost-merge validation reverting is a high-risk operation—you're undoing a decision the team made. Safe patterns prevent cascading failures, race conditions, and inconsistent state.\n\n### State Machine Design\n\nTrack validation state atomically in a single file to prevent splits (test passed but revert failed = inconsistent):\n\n```\nSTATE_VALIDATING → STATE_SUCCESS → complete\n              ↓\n           STATE_FAILED → STATE_REVERTING → STATE_REVERTED → reopen_issue → complete\n                                    ↓\n                           STATE_REVERT_FAILED → alert_human\n```\n\nWrite state to `.claude/pipeline-artifacts/validation-state.json` with SHA of the commit being validated. Each transition is atomic (write tmp file, mv). Never partially transition.\n\n### Distributed State: The 15-Min Window\n\nValidation spans ~15 minutes (tests + CI polling). During this window:\n- New commits can land on main\n- Another merge validation can start on the new commit\n- Team members might manually intervene\n\nPrevention patterns:\n1. **Commit SHA lockfile**: Validation state must identify THE commit being validated by SHA. If HEAD has moved, skip revert even if validation failed.\n2. **No cascading**: If validating commit N and find commit N+1 already arrived, stop—don't revert N. Let N+1's validation run.\n3. **Idempotent revert attempts**: Reverting twice = creates two revert commits (bad). Use `git log --grep=\"Revert\"` to detect if commit is already reverted; skip if so.\n\n### Revert Safety: Who Can Trigger It?\n\nRevert is destructive. Patterns:\n- **CI-only**: Only pre-approved CI checks can fail validation (e.g., required GitHub Checks). Flaky tests must not trigger reverts.\n- **Human approval**: For high-risk repos, require manual approval before revert (async gate in issue comment).\n- **Limits**: Revert only if validation failed within 15 min AND fewer than N reverts in the past 7 days. Escalate to human if revert rate spikes.\n\n### Partial Failure Recovery\n\nRevert succeeds but issue reopening fails = broken state. Patterns:\n1. **Revert verification before cleanup**: After revert commit, verify HEAD actually moved by comparing pre/post SHA.\n2. **Async issue operations**: Issue reopening can fail asynchronously. If it fails, write to `.claude/pipeline-artifacts/pending-issue-reopens.jsonl`. Next validation run processes the backlog.\n3. **Circuit breaker**: If issue reopening fails 3 times in a row, stop attempting and alert (don't silently accumulate failed reopens).\n\n### Memory Injection: Learning from Failures\n\nPatterns stored in `~/.shipwright/memory/<repo-hash>/validation-failures.jsonl`:\n- Commit SHA, test that failed, time to detection, whether revert helped\n- Root cause category (flaky test, real regression, environment issue)\n- Build a failure index: commits that failed validation but should have reverted vs. commits that reverted and then passed on retry\n\n### GitHub API Resilience\n\nChecks API is eventually consistent:\n- Retry polling up to 180s (3 min) waiting for required checks to complete\n- Use exponential backoff (1s → 2s → 4s → 8s)\n- After timeout, assume validation PASSED (fail-open). Better to merge a regression than lock main.\n- Store all Checks API responses in `.claude/pipeline-artifacts/checks-responses.jsonl` for debugging\n\n### Testing All Paths\n\nMust mock:\n- GitHub Checks API: success, timeout, failure, partial response\n- `git revert`: success, merge conflict (revert can't apply), permission denied\n- Issue reopening: success, 404 (issue deleted), 422 (can't reopen locked issue)\n- State file corruption (write fails partway through)\n\nEach mock must be independently testable in unit tests, then composed in integration tests."
+          }
+        ],
+        "review_focus": [
+          "State atomicity during validation window (no splits between test passing and revert failing)",
+          "Handling race conditions when new commits land during the 15-minute validation window",
+          "Idempotency of revert operations (prevent double reverts)",
+          "GitHub API error handling and timeout behavior (fail-open or fail-closed?)",
+          "Memory injection logic: what patterns are captured, how are they surfaced to future builds?",
+          "Rollback plan if validation system itself becomes a blocker (e.g., always reverting green commits)"
+        ],
+        "risk_areas": [
+          "Cascading reverts: If commit N fails validation and reverts, but N+1 lands before revert completes, could create confusing state",
+          "Flaky test regressions: A single flaky test could trigger unneeded reverts, eroding team trust in the system",
+          "GitHub API eventual consistency: Checks API may show old status if polled too quickly; requires careful retry logic",
+          "Partial failure: Revert succeeds but issue reopening fails, leaving inconsistent state (reverted commit but issue still closed)",
+          "Default behavior blast radius: Feature is enabled by default for standard/full templates—bugs affect all those pipelines",
+          "Memory exhaustion: Frequent validation failures could accumulate large memory datasets if pattern cleanup isn't implemented",
+          "Manual intervention conflicts: If ops manually revert while validation revert is in flight, could create double reverts or conflicts"
+        ]
+      },
+      "timestamp": 1777619994,
+      "ttl": 3600
+    },
+    "6209326a158edff26839028a6d2e8352": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "sethdford/shipwright project metadata (captured 2026-05-01) with conventions, test runner (vitest), and language (javascript) — directly applicable to understanding the current codebase structure and testing approach for the plan"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 78,
+            "summary": "sw-cleanup.sh test failures (last seen 2026-05-01) showing stale heartbeat detection and output formatting issues — recent pattern in this repo relevant to understanding current test quality concerns"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Add authentication feature pattern (5 iterations, complexity 60, duration 300s) — shows how feature work progresses through multiple iterations, informing realistic planning estimates for complex DevOps feature"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 68,
+            "summary": "Fix bug pattern (3 iterations, complexity 60, duration 45s) — demonstrates rapid bug fix cycle with multiple iterations and file changes across build system, applicable to planning validation/revert logic"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 52,
+            "summary": "EONENT missing dependency installation pattern (effectiveness 95%) — common npm setup issue that may affect DevOps feature initialization and deployment validation logic"
+          }
+        ]
+      },
+      "timestamp": 1777620095,
+      "ttl": 1800
+    },
+    "6bba7a9ebeff16137ca35f64e487883f": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-01)",
+            "relevance": 95,
+            "summary": "Current project patterns captured today: node project, vitest test runner, npm, javascript, with src/ and *.test.js conventions. Essential baseline for plan validation — establishes project structure and testing approach."
+          },
+          {
+            "file": "failures.json (heartbeat detection issues)",
+            "relevance": 88,
+            "summary": "Recent test failures (seen as recently as 2026-05-01) in sw-cleanup.sh stale heartbeat detection. Highly relevant since the feature is about post-merge validation and auto-revert — these failures indicate what's been blocking tests in related cleanup/validation logic."
+          },
+          {
+            "file": "success-patterns.json (March 29, shipwright repo)",
+            "relevance": 72,
+            "summary": "Past successful feature implementations in this repo (complexity 60-65, 3 iterations each) with patterns on iterative TDD approach, file changes, and test strategies. Provides precedent for how similar-complexity work was structured and validated."
+          }
+        ]
+      },
+      "timestamp": 1777620239,
+      "ttl": 1800
+    },
+    "317686bb3dae085fb867d6bd7465900e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project conventions and structure (Node.js, vitest, npm, src/ directory, CommonJS imports) — essential baseline for designing architecture that fits existing patterns"
+          },
+          {
+            "file": "success-patterns.json (auth module feature)",
+            "relevance": 80,
+            "summary": "Feature implementation with TDD approach, module isolation, and test/source file patterns — demonstrates proven iterative design approach for complex features"
+          },
+          {
+            "file": "success-patterns.json (bug fix pattern)",
+            "relevance": 75,
+            "summary": "Bug fix iterations and cleanup patterns with specific file changes and test strategies — relevant for designing robust error handling in auto-revert system"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 70,
+            "summary": "Existing architectural rules and constraints — critical for ensuring new post-merge validation system complies with established architecture patterns"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh test failures)",
+            "relevance": 65,
+            "summary": "Specific failure modes in state cleanup and dry-run logic — informs design of robust heartbeat detection and summary output for auto-revert system"
+          }
+        ]
+      },
+      "timestamp": 1777620304,
+      "ttl": 1800
+    },
+    "a2ba07a461647ad506d6d3595af5a534": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure and conventions (node, vitest, commonjs) define constraints and requirements for the validation system design. Understanding test patterns and source organization prevents designing anti-patterns that conflict with existing conventions."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Real test failures from sw-cleanup.sh show anti-patterns in detection/validation logic: incomplete pattern matching, missing output validation strings, and insufficient dry-run feedback. These parallel the validation and revert system's requirements."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Successful patterns from this repo (iterative TDD, file organization, test strategies) provide design context. Understanding what works here informs which design approaches to avoid by understanding the project's successful methodology."
+          }
+        ]
+      },
+      "timestamp": 1777620329,
+      "ttl": 1800
+    },
+    "4e1573115c10915662a4db761b3bdec6": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-01)",
+            "relevance": 95,
+            "summary": "Current project metadata: node type, vitest runner, npm package manager, javascript language. Directly describes the build environment for this shipwright project."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a - Fix bug)",
+            "relevance": 70,
+            "summary": "Bug fix pattern with 3 iterations involving shell scripts and .claude/ artifacts. Relevant precedent for shipwright script modifications in build loops."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 65,
+            "summary": "Test failures in sw-cleanup.sh with stale heartbeat logic. Shows known issues in shipwright core that could surface during build/test stages."
+          },
+          {
+            "file": "success-patterns.json (test1 - add auth module)",
+            "relevance": 50,
+            "summary": "Feature implementation with iterative TDD approach across multiple source/test files. Pattern shows file organization and testing strategy applicable to validation system."
+          },
+          {
+            "file": "failures.json (ENOENT no such file directory)",
+            "relevance": 45,
+            "summary": "Missing npm install failure. Common in nodejs projects during build stage; relevant fix pattern for dependency issues."
+          }
+        ]
+      },
+      "timestamp": 1777620430,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions (source_dir, test_runner: vitest, test_pattern, import_style) directly inform build and test execution during build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Historical successful builds show iteration counts (2-3 iterations), test strategies (npm test), timing (45-150s), and template patterns (standard) applicable to current build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent test failures in sw-cleanup.sh inform build stage about what tests fail and their root causes, enabling proactive fixes before test stage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object provides no actionable data for build stage planning or execution"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array provides no prior decisions to inform current build stage work"
+          }
+        ]
+      },
+      "timestamp": 1777620445,
+      "ttl": 1800
     }
   }
 }
