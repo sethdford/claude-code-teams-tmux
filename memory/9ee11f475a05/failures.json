@@ -5,17 +5,17 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
-      "seen_count": 5,
-      "last_seen": "2026-05-01T01:47:07Z",
+      "seen_count": 6,
+      "last_seen": "2026-05-01T07:34:26Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
-      "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
-      "seen_count": 1,
-      "last_seen": "2026-04-30T19:04:23Z",
+      "root_cause": "sed command missing -e flag causes substitution expression to be interpreted as a filename instead of a script",
+      "fix": "Add -e flag before the sed expression: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g' <file>",
+      "seen_count": 2,
+      "last_seen": "2026-05-01T07:36:41Z",
       "category": "test_failure"
     }
   ]
