@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my comprehensive review of the cumulative work, I've identified several critical issues:
+
+## Critical Issues
+
+1. **No Merge Blocking on Conflict Detection (Lines 544, 555)**
+   - When the code detects conflicts that are "too large" or when auto-resolution fails, it calls `error()` and `warn()` but **does not return from the function**
+   - The `error` function only prints a message and doesn't stop execution
+   - The merge stage continues and proceeds with `gh pr merge`, which will fail
+   - **This defeats the core goal of "Merge Conflict Prevention"** — the system reports conflicts but doesn't prevent them
+
+2. **Successful Resolution Not Applied (Lines 549-552)**
+   - When `mc_auto_resolve` succeeds (`_mc_resolve_rc == 0`), the code only logs success with `info "Auto-resolution succeeded..."`
+   - It does **not apply the resolved merge to the working tree**
+   - The actual merge still happens later with unresolved conflicts in the repository
+   - The resolved tree from the worktree is calculated (line 277 in merge-conflict.sh) but never used
+
+3. **Design Flaw: union Strategy Mapped to theirs (Line 263)**
+   - Maps `union` to `-X theirs` strategy with comment "closest builtin equivalent"
+   - `union` and `theirs` have different semantics; this could cause unexpected merge resolutions
+
+## Evidence
+
+The integration code at lines 544 and 555:
+```bash
+error "Conflict set too large (${_mc_n} files) — guided fallback written: $_mc_guide"
+# ... code continues without returning
+
+warn "Auto-resolution failed — guided fallback written: $_mc_guide"
+# ... code continues without returning
+```
+
+The merge stage proceeds to line 797+ where `gh pr merge` is invoked, ensuring the merge is attempted despite detected conflicts.
+
+## Test Status
+
+- ✅ All 16 merge-conflict library tests pass (correct library implementation)
+- ✅ Existing pipeline-stages tests still pass
+- ❌ npm test exits with code 3 (3 unrelated failures in sw-cleanup-test.sh, pre-existing)
+
+The library implementation is correct, but the integration is incomplete and non-functional.
+
+**AUDIT_FAIL**
+
+The system needs to:
+1. Return 1 from `stage_merge` when conflicts are detected and cannot be auto-resolved
+2. Either apply resolved merges to the working tree, or skip the actual merge and save the resolution for user intervention
+3. Update the union strategy mapping or document the semantic difference
