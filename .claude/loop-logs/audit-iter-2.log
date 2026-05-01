@@ -1,1 +1,56 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the evidence, I can now provide my audit assessment:
+
+## AUDIT FAILS
+
+The work shows meaningful progress toward the goal but has **critical blockers**:
+
+### 1. **CRITICAL: Test Failure (Acceptance Criterion Violated)**
+   - **npm test exits with code 3** (test failures)
+   - Specification states: "[testable] All existing tests continue to pass"
+   - This is NOT met. The cleanup-test.sh shows 3 failing tests:
+     - `dry-run detects stale heartbeat` 
+     - `summary shows found count`
+     - `summary shows --force hint`
+   - These appear to be pre-existing issues in `sw-cleanup-test.sh` (not caused by new code), but they're still failing in the test suite
+
+### 2. **Incomplete Implementation**
+   Agent explicitly states these tasks remain:
+   - Template flag wiring (not implemented — feature not actually usable in standard/full templates)
+   - `daemon-config.json` validation_timeout key integration (not implemented)
+   - End-to-end integration test for full merge → fail → revert → reopen path (not implemented)
+   - CHANGELOG and documentation updates (not implemented)
+
+### 3. **Missing Feature Configuration**
+   - No template flag wiring means the feature is:
+     - Not actually integrated into the pipeline configuration system
+     - Not skippable/configurable as designed
+     - Not enabled by default in full/standard templates as specified
+
+### 4. **Code Quality Issues in New Files**
+   Looking at pipeline-merge-validation.sh and pipeline-merge-checks.sh:
+   - No major security issues or obvious bugs detected
+   - The code follows good patterns (atomic writes, state machine)
+   - But the integration is incomplete
+
+### 5. **Test Coverage Gap**
+   - New orchestration tests pass (37 tests in merge-validation-test.sh)
+   - But no end-to-end test of the full validation → revert → reopen flow
+   - No integration test with actual pipeline stages
+
+## Summary of Status
+
+**Progress: ~60% complete**
+- ✓ Foundation libraries created and tested
+- ✓ Basic integration into validate stage 
+- ✓ New unit tests for components
+- ✗ Template configuration wiring
+- ✗ Daemon config integration
+- ✗ E2E integration test
+- ✗ Documentation
+- ✗ Existing tests passing (npm test = exit 3)
+
+The agent did good foundational work but left the feature in an incomplete, untested state with pre-existing test failures in the main suite.
