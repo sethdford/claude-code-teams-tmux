@@ -510,6 +510,55 @@ Pipeline duration so far: ${total_dur:-unknown}"
 stage_merge() {
     CURRENT_STAGE_ID="merge"
 
+    # ── Pre-merge conflict prediction & auto-resolution ──
+    # Runs even in --no-github mode so local pipelines get a guided artifact.
+    if [[ -f "$SCRIPT_DIR/lib/merge-conflict.sh" ]]; then
+        # shellcheck source=lib/merge-conflict.sh
+        source "$SCRIPT_DIR/lib/merge-conflict.sh"
+        local _mc_base="${BASE_BRANCH:-main}"
+        local _mc_head
+        _mc_head=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD")
+        local _mc_pred="${ARTIFACTS_DIR}/merge-prediction.json"
+        local _mc_res="${ARTIFACTS_DIR}/merge-resolution.json"
+        local _mc_report_file="${ARTIFACTS_DIR}/merge-conflict-report.json"
+        local _mc_guide="${ARTIFACTS_DIR}/guided-resolution.md"
+        local _mc_rc=0
+        # Make sure the base ref exists locally — fetch quietly if not (skip in NO_GITHUB).
+        if ! git rev-parse --verify "${_mc_base}^{commit}" >/dev/null 2>&1; then
+            if [[ "$NO_GITHUB" != "true" ]]; then
+                git fetch --quiet origin "$_mc_base" 2>/dev/null || true
+                git rev-parse --verify "origin/${_mc_base}^{commit}" >/dev/null 2>&1 && _mc_base="origin/${_mc_base}"
+            fi
+        fi
+        if git rev-parse --verify "${_mc_base}^{commit}" >/dev/null 2>&1 \
+           && git rev-parse --verify "${_mc_head}^{commit}" >/dev/null 2>&1; then
+            mc_predict "$_mc_base" "$_mc_head" --out "$_mc_pred" >/dev/null 2>&1 || _mc_rc=$?
+            if [[ "$_mc_rc" -eq 1 ]]; then
+                local _mc_n
+                _mc_n=$(jq -r '.conflict_count // 0' "$_mc_pred" 2>/dev/null || echo 0)
+                warn "Pre-merge analysis: ${_mc_n} potential conflict(s) detected"
+                local _mc_max="${MC_MAX_FILES:-5}"
+                if [[ "${_mc_n:-0}" -gt $((_mc_max * 4)) ]]; then
+                    emit_event "merge.conflict.too_large" "issue=${ISSUE_NUMBER:-0}" "files=${_mc_n}"
+                    mc_guided_fallback "$_mc_pred" --out "$_mc_guide" >/dev/null 2>&1 || true
+                    error "Conflict set too large (${_mc_n} files) — guided fallback written: $_mc_guide"
+                else
+                    local _mc_resolve_rc=0
+                    mc_auto_resolve "$_mc_base" "$_mc_head" --out "$_mc_res" >/dev/null 2>&1 || _mc_resolve_rc=$?
+                    mc_report "$_mc_pred" "$_mc_res" --out "$_mc_report_file" >/dev/null 2>&1 || true
+                    if [[ "$_mc_resolve_rc" -eq 0 ]]; then
+                        local _mc_strat
+                        _mc_strat=$(jq -r '.strategy // ""' "$_mc_res" 2>/dev/null || echo "")
+                        info "Auto-resolution succeeded with strategy: ${_mc_strat}"
+                    else
+                        mc_guided_fallback "$_mc_pred" --out "$_mc_guide" >/dev/null 2>&1 || true
+                        warn "Auto-resolution failed — guided fallback written: $_mc_guide"
+                    fi
+                fi
+            fi
+        fi
+    fi
+
     if [[ "$NO_GITHUB" == "true" ]]; then
         info "Merge stage skipped (--no-github)"
         return 0
