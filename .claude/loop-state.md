@@ -186,17 +186,22 @@ Your output MUST include these sections when this skill is active:
 4. **Versioning**: API version number and deprecation policy if breaking changes are possible
 
 If any section is not applicable, explicitly state why it's skipped.
-"
-iteration: 1
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-01T07:34:30Z
-last_iteration_at: 2026-05-01T07:34:30Z
+started_at: 2026-05-01T07:41:57Z
+last_iteration_at: 2026-05-01T07:41:57Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -211,4 +216,9 @@ max_extensions: 3
 - `pipeline-merge-validation.sh` — atomic state machine, flock locking with stale-break, safe revert with idempotency/
 - `pipeline-merge-checks.sh` — Checks API polling with exponential backoff and fail-open timeout
 - `sw-merge-validation-test.sh` — 32 passing unit tests covering all paths
+
+### Iteration 2 (2026-05-01T07:41:57Z)
+- New `post_merge_validate_and_revert()` orchestrator in `pipeline-stages-monitor.sh` runs the full flow: lock → state
+- `stage_validate()` calls the orchestrator before smoke tests; propagates rc=1 (revert succeeded) or rc=2 (manual escal
+- `stage_merge()` writes the merge SHA to `merge-commit.sha` so the validator targets the correct commit
 

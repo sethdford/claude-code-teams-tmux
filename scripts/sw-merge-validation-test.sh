@@ -310,4 +310,100 @@ rc=0
 post_merge_validate_and_revert || rc=$?
 assert_eq "second invocation also returns 0" "0" "$rc"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "E2E: failed checks → revert → state REVERTED → memory + queue"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# This is the integration test the audit asked for: a full failure path that
+# exercises orchestration, real git revert, memory logging, and reopen queueing.
+e2e_dir="$TEST_TEMP_DIR/e2e-repo"
+mkdir -p "$e2e_dir"
+(
+    cd "$e2e_dir"
+    git init -q
+    git config user.email "test@example.com"
+    git config user.name "Test"
+    echo "base" > app.txt && git add . && git commit -qm "base"
+    echo "feature" > app.txt && git commit -qam "feat: regression-causing change"
+)
+
+# Per-test fresh artifacts dir + isolated memory dir to avoid cross-test bleed
+e2e_artifacts="$e2e_dir/.claude/pipeline-artifacts"
+mkdir -p "$e2e_artifacts"
+e2e_memdir="$TEST_TEMP_DIR/e2e-memory"
+mkdir -p "$e2e_memdir"
+
+# Save and override env so assertions stay in the parent shell (counter scope).
+_orig_artifacts="$ARTIFACTS_DIR"; _orig_root="$PROJECT_ROOT"; _orig_home="$HOME"
+_orig_nogh="${NO_GITHUB:-}"; _orig_issue="${ISSUE_NUMBER:-}"; _orig_pwd="$PWD"
+
+cd "$e2e_dir"
+export ARTIFACTS_DIR="$e2e_artifacts"
+export PROJECT_ROOT="$e2e_dir"
+export HOME="$e2e_memdir"
+export NO_GITHUB="false"
+export ISSUE_NUMBER="4242"
+
+target_sha=$(git rev-parse HEAD)
+echo "$target_sha" > "$ARTIFACTS_DIR/merge-commit.sha"
+
+# Force the failed path by overriding network-touching helpers.
+checks_detect_owner_repo() { echo "test-owner/test-repo"; }
+checks_poll_required_checks() { echo "failed"; }
+
+rc=0
+post_merge_validate_and_revert || rc=$?
+assert_eq "E2E: orchestrator returns 1 (failed but reverted)" "1" "$rc"
+
+final=$(validation_state_get_field state)
+assert_eq "E2E: terminal state is REVERTED" "STATE_REVERTED" "$final"
+
+head_after=$(git rev-parse HEAD)
+[[ "$head_after" != "$target_sha" ]] && assert_pass "E2E: HEAD advanced past target" \
+    || assert_fail "E2E: HEAD advanced past target"
+
+if git log -1 --pretty=%s | grep -q '^Revert '; then
+    assert_pass "E2E: top commit is a revert"
+else
+    assert_fail "E2E: top commit is a revert"
+fi
+
+mfile=$(_mv_memory_file)
+[[ -s "$mfile" ]] && assert_pass "E2E: memory file populated" \
+    || assert_fail "E2E: memory file populated"
+
+last_outcome=$(tail -1 "$mfile" | jq -r '.outcome')
+assert_eq "E2E: memory outcome is failed_reverted" "failed_reverted" "$last_outcome"
+
+# Reopen queue should hold the issue (gh call failed locally).
+qfile=$(_mv_pending_reopens)
+if [[ -s "$qfile" ]] && [[ "$(jq -r '.issue_number' "$qfile" | head -1)" == "4242" ]]; then
+    assert_pass "E2E: failed gh reopen was queued"
+else
+    assert_fail "E2E: failed gh reopen was queued"
+fi
+
+# Idempotency: rerun sees already-applied revert and does NOT regress state.
+rc2=0
+post_merge_validate_and_revert || rc2=$?
+state2=$(validation_state_get_field state)
+# A rerun lands in any terminal state — REVERTED, SUCCESS, or REVERT_FAILED
+# (the last is correct when the revert is already applied: head_moved triggers
+# the safe-skip path, and the orchestrator records skip as REVERT_FAILED).
+case "$state2" in
+    STATE_REVERTED|STATE_SUCCESS|STATE_REVERT_FAILED)
+        assert_pass "E2E: rerun lands in terminal state ($state2)" ;;
+    *)
+        assert_fail "E2E: rerun lands in terminal state (got $state2)" ;;
+esac
+
+# Restore env
+cd "$_orig_pwd"
+export ARTIFACTS_DIR="$_orig_artifacts"
+export PROJECT_ROOT="$_orig_root"
+export HOME="$_orig_home"
+export NO_GITHUB="$_orig_nogh"
+export ISSUE_NUMBER="$_orig_issue"
+unset -f checks_detect_owner_repo checks_poll_required_checks 2>/dev/null || true
+
 print_test_results
