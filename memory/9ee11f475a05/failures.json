@@ -6,17 +6,26 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
       "seen_count": 2,
-      "last_seen": "2026-05-01T01:45:29Z",
+      "last_seen": "2026-05-01T00:55:06Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed receives substitution expression as a filename instead of an inline script — the '-e' flag is missing or quoting caused the 's|...|...|g' pattern to be parsed as a file path",
-      "fix": "Add '-e' before the sed expression: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` and ensure the variable is quoted correctly so the shell does not split the argument",
-      "seen_count": 1,
-      "last_seen": "2026-04-30T19:04:23Z",
+      "root_cause": "sed invoked without -e flag causes substitution expression to be treated as a filename: `sed 's|$TEST_TEMP_DIR|...|g'` missing `-e`",
+      "fix": "Add `-e` flag to sed call in test harness: `sed -e \"s|$TEST_TEMP_DIR|...|g\"`",
+      "seen_count": 3,
+      "last_seen": "2026-05-01T01:45:34Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
+      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory prefix to fall back to /tmp directly",
+      "seen_count": 1,
+      "last_seen": "2026-05-01T01:22:39Z",
+      "category": "config"
     }
   ]
 }
