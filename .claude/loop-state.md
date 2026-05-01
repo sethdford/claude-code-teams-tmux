@@ -206,17 +206,27 @@ INSTRUCTION: This error has occurred 2 times. The previous approach is not worki
 - If you were modifying existing code, try rewriting the function from scratch
 - If you were using one library, try a different one
 - If you were adding to a file, try creating a new file instead
+- Step back and reconsider the requirements
+
+## Failure Diagnosis (Iteration 5)
+Classification: unknown
+Strategy: alternative_approach
+Repeat count: 3
+INSTRUCTION: This error has occurred 3 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
+- If you were modifying existing code, try rewriting the function from scratch
+- If you were using one library, try a different one
+- If you were adding to a file, try creating a new file instead
 - Step back and reconsider the requirements"
-iteration: 4
+iteration: 5
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-01T07:52:41Z
-last_iteration_at: 2026-05-01T07:52:41Z
+started_at: 2026-05-01T07:56:30Z
+last_iteration_at: 2026-05-01T07:56:30Z
 consecutive_failures: 0
-total_commits: 4
+total_commits: 5
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -245,4 +255,9 @@ Note: the 3 sw-cleanup-test.sh failures shown in test results are pre-existing (
 - Auto-reverts on failure with idempotency guards (already-reverted, head-moved, conflict)
 - Reopens issue with `validation-failed` label (with async retry queue + circuit breaker)
 - Logs outcomes to memory
+
+### Iteration 5 (2026-05-01T07:56:30Z)
+- ✅ Memory logging for pattern intelligence
+- ✅ Enabled by default in `standard`/`full` templates, skippable via flag
+- ✅ E2E test covers full validation→revert→reopen flow
 
