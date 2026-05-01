@@ -5,17 +5,35 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
-      "seen_count": 7,
-      "last_seen": "2026-05-01T07:48:37Z",
+      "seen_count": 5,
+      "last_seen": "2026-05-01T01:47:07Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command in sw-code-review-test.sh references a literal string 'TEST_TEMP_DIR' as a filename instead of substituting it as a variable",
-      "fix": "Fix the sed invocation to use shell variable expansion: change `s|$TEST_TEMP_DIR|...|g` to use double quotes or pass the variable via -e flag with proper quoting",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
+      "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
       "seen_count": 2,
-      "last_seen": "2026-05-01T07:54:21Z",
+      "last_seen": "2026-05-01T07:59:23Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
+      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a custom base directory",
+      "seen_count": 1,
+      "last_seen": "2026-05-01T07:35:18Z",
+      "category": "config"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "jq fails parsing quality-profile.json at line 5 due to an empty value, causing learned rule generation to write invalid JSON with an empty confidence field",
+      "fix": "Add a default fallback (e.g. `// empty` or `// \"0\"`) in the jq expression that reads confidence from quality-profile.json, and validate the file is non-empty before parsing",
+      "seen_count": 1,
+      "last_seen": "2026-05-01T07:46:36Z",
       "category": "test_failure"
     }
   ]
