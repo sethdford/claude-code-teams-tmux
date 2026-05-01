@@ -187,16 +187,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-01T07:27:35Z
-last_iteration_at: 2026-05-01T07:27:35Z
+started_at: 2026-05-01T07:34:30Z
+last_iteration_at: 2026-05-01T07:34:30Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -207,4 +207,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-01T07:34:30Z)
+- `pipeline-merge-validation.sh` — atomic state machine, flock locking with stale-break, safe revert with idempotency/
+- `pipeline-merge-checks.sh` — Checks API polling with exponential backoff and fail-open timeout
+- `sw-merge-validation-test.sh` — 32 passing unit tests covering all paths
 

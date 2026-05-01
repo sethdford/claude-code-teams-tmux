@@ -3,6 +3,132 @@
 [[ -n "${_PIPELINE_STAGES_MONITOR_LOADED:-}" ]] && return 0
 _PIPELINE_STAGES_MONITOR_LOADED=1
 
+# Resolve the merge commit SHA to validate against. Order of precedence:
+#   1. $POST_MERGE_VALIDATE_SHA env override (test hook)
+#   2. .claude/pipeline-artifacts/merge-commit.sha (written by merge stage)
+#   3. git rev-parse HEAD (best effort fallback)
+_validate_resolve_merge_sha() {
+    if [[ -n "${POST_MERGE_VALIDATE_SHA:-}" ]]; then
+        echo "$POST_MERGE_VALIDATE_SHA"; return 0
+    fi
+    local f="${ARTIFACTS_DIR:-.claude/pipeline-artifacts}/merge-commit.sha"
+    if [[ -s "$f" ]]; then
+        head -n1 "$f" | tr -d '[:space:]'; return 0
+    fi
+    git rev-parse HEAD 2>/dev/null || true
+}
+
+# Run post-merge gate: poll Checks API on merge commit, auto-revert on failure,
+# reopen the source issue, log to memory. Returns:
+#   0 = validation passed (or no-op when disabled / fail-open)
+#   1 = validation failed AND revert succeeded (caller should treat as recoverable)
+#   2 = validation failed AND revert failed/skipped (caller should escalate)
+post_merge_validate_and_revert() {
+    if ! type validation_state_init >/dev/null 2>&1; then
+        return 0  # libs not loaded — silently no-op
+    fi
+
+    # Feature flag: explicit opt-out via env or config
+    if [[ "${POST_MERGE_VALIDATE_ENABLED:-true}" == "false" ]]; then
+        return 0
+    fi
+
+    local merge_sha
+    merge_sha=$(_validate_resolve_merge_sha)
+    if [[ -z "$merge_sha" ]]; then
+        info "Post-merge validation: no merge SHA available, skipping"
+        return 0
+    fi
+
+    if ! validation_lock_acquire; then
+        info "Post-merge validation: another validation in progress, skipping"
+        return 0
+    fi
+    # shellcheck disable=SC2064
+    trap 'validation_lock_release' RETURN
+
+    local start_epoch; start_epoch=$(_mv_now_epoch 2>/dev/null || date +%s)
+    validation_state_init "$merge_sha" "${ISSUE_NUMBER:-}" || {
+        warn "Post-merge validation: state init failed, continuing fail-open"
+        return 0
+    }
+
+    # Drain any previously-queued issue reopens before doing new work
+    issue_reopen_process_queue 2>/dev/null || true
+
+    # Poll required GitHub checks (fail-open on timeout)
+    local owner_repo classification="passed"
+    if [[ "${NO_GITHUB:-}" != "true" && "${NO_GITHUB:-}" != "1" ]]; then
+        owner_repo=$(checks_detect_owner_repo 2>/dev/null || true)
+        if [[ -n "$owner_repo" ]]; then
+            local owner repo
+            owner="${owner_repo%/*}"; repo="${owner_repo#*/}"
+            local timeout_s="${POST_MERGE_VALIDATE_TIMEOUT:-180}"
+            classification=$(checks_poll_required_checks "$owner" "$repo" "$merge_sha" "$timeout_s")
+        fi
+    fi
+
+    case "$classification" in
+        passed|timeout|empty)
+            validation_state_transition "$MV_STATE_SUCCESS" \
+                "$(jq -cn --arg c "$classification" '{checks_classification: $c}')" 2>/dev/null || true
+            local detect_s=$(( $(date +%s) - start_epoch ))
+            validation_memory_log "$merge_sha" "passed" "checks_${classification}" "" "$detect_s" 2>/dev/null || true
+            success "Post-merge validation passed (checks: ${classification})"
+            return 0
+            ;;
+        failed)
+            warn "Post-merge validation: required checks failed for $merge_sha"
+            ;;
+        *)
+            warn "Post-merge validation: unknown classification '$classification', failing-open"
+            return 0
+            ;;
+    esac
+
+    # Failed path: transition state, attempt revert, reopen issue, log memory
+    validation_state_transition "$MV_STATE_FAILED" \
+        '{"failure_reason":"required_checks_failed"}' 2>/dev/null || true
+    validation_state_transition "$MV_STATE_REVERTING" '{}' 2>/dev/null || true
+
+    local revert_sha rc
+    revert_sha=$(revert_commit "$merge_sha" 2>/dev/null); rc=$?
+    local detect_s=$(( $(date +%s) - start_epoch ))
+
+    case "$rc" in
+        0)
+            validation_state_transition "$MV_STATE_REVERTED" \
+                "$(jq -cn --arg r "$revert_sha" '{revert_commit_sha:$r}')" 2>/dev/null || true
+            success "Reverted merge commit $merge_sha → $revert_sha"
+            issue_reopen_with_context "${ISSUE_NUMBER:-}" "$merge_sha" "$revert_sha" \
+                "Post-merge required checks failed; merge automatically reverted." 2>/dev/null || true
+            validation_memory_log "$merge_sha" "failed_reverted" "required_checks_failed" \
+                "$revert_sha" "$detect_s" 2>/dev/null || true
+            return 1
+            ;;
+        2)
+            validation_state_transition "$MV_STATE_REVERT_FAILED" \
+                '{"revert_skipped":true}' 2>/dev/null || true
+            warn "Revert skipped (idempotent / head-moved / circuit-breaker)"
+            issue_reopen_with_context "${ISSUE_NUMBER:-}" "$merge_sha" "" \
+                "Post-merge checks failed; revert skipped — manual intervention required." 2>/dev/null || true
+            validation_memory_log "$merge_sha" "failed_revert_skipped" "required_checks_failed" \
+                "" "$detect_s" 2>/dev/null || true
+            return 2
+            ;;
+        *)
+            validation_state_transition "$MV_STATE_REVERT_FAILED" \
+                '{"revert_error":"conflict_or_failure"}' 2>/dev/null || true
+            error "Revert FAILED — manual intervention required for $merge_sha"
+            issue_reopen_with_context "${ISSUE_NUMBER:-}" "$merge_sha" "" \
+                "Post-merge checks failed AND auto-revert failed (conflict). Manual rollback required." 2>/dev/null || true
+            validation_memory_log "$merge_sha" "revert_failed" "revert_conflict" \
+                "" "$detect_s" 2>/dev/null || true
+            return 2
+            ;;
+    esac
+}
+
 stage_validate() {
     CURRENT_STAGE_ID="validate"
     # Consume retry context if this is a retry attempt
@@ -30,6 +156,26 @@ stage_validate() {
 
     local close_issue
     close_issue=$(jq -r --arg id "validate" '(.stages[] | select(.id == $id) | .config.close_issue) // false' "$PIPELINE_CONFIG" 2>/dev/null) || true
+
+    # Post-merge gate: poll Checks API, auto-revert + reopen issue on failure.
+    # Only runs when libs are loaded; fail-open on infrastructure errors.
+    if type post_merge_validate_and_revert >/dev/null 2>&1; then
+        local _pm_rc=0
+        post_merge_validate_and_revert || _pm_rc=$?
+        case "$_pm_rc" in
+            1)
+                # Validation failed but revert succeeded — recoverable.
+                # Skip the rest of validate (smoke/close/wiki) since merge is undone.
+                log_stage "validate" "Post-merge revert applied"
+                return 1
+                ;;
+            2)
+                # Validation failed and revert did NOT succeed — escalate.
+                error "Post-merge validation failed AND revert did not succeed"
+                return 1
+                ;;
+        esac
+    fi
 
     # Smoke tests
     if [[ -n "$smoke_cmd" ]]; then

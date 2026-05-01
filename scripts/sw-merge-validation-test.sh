@@ -264,4 +264,50 @@ print_test_section "Checks API: NO_GITHUB short-circuits to passed"
 result=$(checks_poll_required_checks "owner" "repo" "abc123" 5)
 assert_eq "NO_GITHUB returns passed immediately" "passed" "$result"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Orchestration: post_merge_validate_and_revert"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Stub out helpers normally provided by pipeline-stages.sh
+type info >/dev/null 2>&1 || info() { :; }
+type warn >/dev/null 2>&1 || warn() { :; }
+type error >/dev/null 2>&1 || error() { :; }
+type success >/dev/null 2>&1 || success() { :; }
+type log_stage >/dev/null 2>&1 || log_stage() { :; }
+
+# Source the monitor stage (which defines post_merge_validate_and_revert)
+# We need to provide ARTIFACTS_DIR + minimal env it expects.
+source "$SCRIPT_DIR/lib/pipeline-stages-monitor.sh"
+
+# Test 1: feature flag disable returns 0 immediately
+rc=0
+( POST_MERGE_VALIDATE_ENABLED=false post_merge_validate_and_revert ) || rc=$?
+assert_eq "disabled flag returns 0" "0" "$rc"
+
+# Test 2: no merge SHA available → returns 0 (skip)
+rm -f "$ARTIFACTS_DIR/merge-commit.sha"
+unset POST_MERGE_VALIDATE_SHA
+# Run from a non-git dir to ensure git rev-parse fails
+(
+    cd "$TEST_TEMP_DIR"
+    rm -rf .git 2>/dev/null
+    rc=0
+    post_merge_validate_and_revert || rc=$?
+    [[ "$rc" -eq 0 ]] && exit 0 || exit 1
+) && assert_pass "no merge SHA → skip with rc=0" || assert_fail "no merge SHA → skip with rc=0"
+
+# Test 3: NO_GITHUB + merge SHA → fail-open passed path; state transitions to SUCCESS
+rm -f "$ARTIFACTS_DIR/validation-state.json" "$ARTIFACTS_DIR/validation-lock"
+echo "deadbeef1234567" > "$ARTIFACTS_DIR/merge-commit.sha"
+rc=0
+post_merge_validate_and_revert || rc=$?
+assert_eq "NO_GITHUB happy-path returns 0" "0" "$rc"
+final_state=$(validation_state_get_field state)
+assert_eq "state SUCCESS after fail-open pass" "STATE_SUCCESS" "$final_state"
+
+# Test 4: idempotent — second invocation reuses lock cleanly
+rc=0
+post_merge_validate_and_revert || rc=$?
+assert_eq "second invocation also returns 0" "0" "$rc"
+
 print_test_results

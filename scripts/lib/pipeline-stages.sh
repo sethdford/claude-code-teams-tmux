@@ -204,5 +204,11 @@ _PIPELINE_STAGES_REVIEW_SH="${SCRIPT_DIR}/lib/pipeline-stages-review.sh"
 _PIPELINE_STAGES_DELIVERY_SH="${SCRIPT_DIR}/lib/pipeline-stages-delivery.sh"
 [[ -f "$_PIPELINE_STAGES_DELIVERY_SH" ]] && source "$_PIPELINE_STAGES_DELIVERY_SH"
 
+_PIPELINE_MERGE_VALIDATION_SH="${SCRIPT_DIR}/lib/pipeline-merge-validation.sh"
+[[ -f "$_PIPELINE_MERGE_VALIDATION_SH" ]] && source "$_PIPELINE_MERGE_VALIDATION_SH"
+
+_PIPELINE_MERGE_CHECKS_SH="${SCRIPT_DIR}/lib/pipeline-merge-checks.sh"
+[[ -f "$_PIPELINE_MERGE_CHECKS_SH" ]] && source "$_PIPELINE_MERGE_CHECKS_SH"
+
 _PIPELINE_STAGES_MONITOR_SH="${SCRIPT_DIR}/lib/pipeline-stages-monitor.sh"
 [[ -f "$_PIPELINE_STAGES_MONITOR_SH" ]] && source "$_PIPELINE_STAGES_MONITOR_SH"

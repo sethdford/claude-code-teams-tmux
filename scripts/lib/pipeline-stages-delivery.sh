@@ -748,6 +748,19 @@ stage_merge() {
         fi
     fi
 
+    # Capture the merge commit SHA so post-merge validation can target it.
+    # Best-effort: pull latest and read HEAD on the default branch.
+    (
+        local _base_branch _sha
+        _base_branch=$(gh pr view "$pr_number" --json baseRefName -q '.baseRefName' 2>/dev/null || echo "main")
+        git fetch origin "$_base_branch" >/dev/null 2>&1 || true
+        _sha=$(git rev-parse "origin/${_base_branch}" 2>/dev/null || git rev-parse HEAD 2>/dev/null || echo "")
+        if [[ -n "$_sha" ]]; then
+            mkdir -p "$ARTIFACTS_DIR" 2>/dev/null || true
+            printf '%s\n' "$_sha" > "${ARTIFACTS_DIR}/merge-commit.sha"
+        fi
+    ) 2>/dev/null || true
+
     log_stage "merge" "PR #${pr_number} merged (strategy: ${merge_method}, auto_merge: ${auto_merge})"
 }
 
