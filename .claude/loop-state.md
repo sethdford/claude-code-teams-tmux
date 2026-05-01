@@ -186,47 +186,17 @@ Your output MUST include these sections when this skill is active:
 4. **Versioning**: API version number and deprecation policy if breaking changes are possible
 
 If any section is not applicable, explicitly state why it's skipped.
-
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
-
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 2
-INSTRUCTION: This error has occurred 2 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements
-
-## Failure Diagnosis (Iteration 5)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 3
-INSTRUCTION: This error has occurred 3 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements"
-iteration: 5
+"
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-05-01T07:56:30Z
-last_iteration_at: 2026-05-01T07:56:30Z
+started_at: 2026-05-01T07:59:31Z
+last_iteration_at: 2026-05-01T07:59:31Z
 consecutive_failures: 0
-total_commits: 5
+total_commits: 6
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -237,27 +207,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-05-01T07:34:30Z)
-- `pipeline-merge-validation.sh` — atomic state machine, flock locking with stale-break, safe revert with idempotency/
-- `pipeline-merge-checks.sh` — Checks API polling with exponential backoff and fail-open timeout
-- `sw-merge-validation-test.sh` — 32 passing unit tests covering all paths
-
-### Iteration 2 (2026-05-01T07:41:57Z)
-- New `post_merge_validate_and_revert()` orchestrator in `pipeline-stages-monitor.sh` runs the full flow: lock → state
-- `stage_validate()` calls the orchestrator before smoke tests; propagates rc=1 (revert succeeded) or rc=2 (manual escal
-- `stage_merge()` writes the merge SHA to `merge-commit.sha` so the validator targets the correct commit
-
-### Iteration 3 (2026-05-01T07:47:48Z)
-Iteration 3 complete. Added E2E integration test (8 new tests) exercising the full validation→revert→reopen orchestr
-Note: the 3 sw-cleanup-test.sh failures shown in test results are pre-existing (per memory `failures.json`) and unrelate
-
-### Iteration 4 (2026-05-01T07:52:41Z)
-- Auto-reverts on failure with idempotency guards (already-reverted, head-moved, conflict)
-- Reopens issue with `validation-failed` label (with async retry queue + circuit breaker)
-- Logs outcomes to memory
-
-### Iteration 5 (2026-05-01T07:56:30Z)
-- ✅ Memory logging for pattern intelligence
-- ✅ Enabled by default in `standard`/`full` templates, skippable via flag
-- ✅ E2E test covers full validation→revert→reopen flow
 
