@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
       "seen_count": 7,
-      "last_seen": "2026-05-01T18:59:55Z",
+      "last_seen": "2026-05-01T18:55:34Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
       "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
       "seen_count": 3,
-      "last_seen": "2026-05-01T19:06:20Z",
+      "last_seen": "2026-05-01T19:03:12Z",
       "category": "test_failure"
     },
     {
@@ -30,10 +30,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sed command receives malformed argument - the substitution pattern string is being passed as a filename instead of a sed expression, likely due to missing -e flag or improper quoting",
-      "fix": "add -e flag before the sed expression: `sed -e 's|$TEST_TEMP_DIR|...|g'` and ensure the variable is properly quoted or escaped in the sed argument",
+      "root_cause": "sed command references a file path instead of using inline substitution — 's|$TEST_TEMP_DIR|...|g' was passed as a filename argument rather than an expression",
+      "fix": "change `sed s|$TEST_TEMP_DIR|...|g file` to `sed \"s|$TEST_TEMP_DIR|...|g\" file` or use `-e` flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\" file`",
       "seen_count": 1,
       "last_seen": "2026-05-01T07:46:36Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
+      "root_cause": "daemon_on_failure does not call classify_failure, so failure classification is not wired into the retry logic path",
+      "fix": "Add a classify_failure call inside daemon_on_failure and use its result to gate retry decisions (skip retry for auth_error/invalid_issue, apply extended backoff for api_error)",
+      "seen_count": 1,
+      "last_seen": "2026-05-01T19:08:06Z",
       "category": "test_failure"
     }
   ]
