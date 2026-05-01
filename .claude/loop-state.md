@@ -191,17 +191,22 @@ If any section is not applicable, explicitly state why it's skipped.
 ## Failure Diagnosis (Iteration 2)
 Classification: unknown
 Strategy: retry_with_context
-Repeat count: 0"
-iteration: 2
+Repeat count: 0
+
+## Failure Diagnosis (Iteration 3)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 1"
+iteration: 3
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-01T07:41:57Z
-last_iteration_at: 2026-05-01T07:41:57Z
+started_at: 2026-05-01T07:47:48Z
+last_iteration_at: 2026-05-01T07:47:48Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 3
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -221,4 +226,8 @@ max_extensions: 3
 - New `post_merge_validate_and_revert()` orchestrator in `pipeline-stages-monitor.sh` runs the full flow: lock → state
 - `stage_validate()` calls the orchestrator before smoke tests; propagates rc=1 (revert succeeded) or rc=2 (manual escal
 - `stage_merge()` writes the merge SHA to `merge-commit.sha` so the validator targets the correct commit
+
+### Iteration 3 (2026-05-01T07:47:48Z)
+Iteration 3 complete. Added E2E integration test (8 new tests) exercising the full validation→revert→reopen orchestr
+Note: the 3 sw-cleanup-test.sh failures shown in test results are pre-existing (per memory `failures.json`) and unrelate
 

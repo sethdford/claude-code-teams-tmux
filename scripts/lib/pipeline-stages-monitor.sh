@@ -159,9 +159,12 @@ stage_validate() {
 
     # Post-merge gate: poll Checks API, auto-revert + reopen issue on failure.
     # Only runs when libs are loaded; fail-open on infrastructure errors.
-    if type post_merge_validate_and_revert >/dev/null 2>&1; then
+    local pm_enabled
+    pm_enabled=$(jq -r --arg id "validate" '(.stages[] | select(.id == $id) | .config.post_merge_validation) // true' "$PIPELINE_CONFIG" 2>/dev/null) || pm_enabled="true"
+    [[ "$pm_enabled" == "null" ]] && pm_enabled="true"
+    if [[ "$pm_enabled" != "false" ]] && type post_merge_validate_and_revert >/dev/null 2>&1; then
         local _pm_rc=0
-        post_merge_validate_and_revert || _pm_rc=$?
+        POST_MERGE_VALIDATE_ENABLED="$pm_enabled" post_merge_validate_and_revert || _pm_rc=$?
         case "$_pm_rc" in
             1)
                 # Validation failed but revert succeeded — recoverable.
