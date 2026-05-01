@@ -6,26 +6,26 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
       "seen_count": 6,
-      "last_seen": "2026-05-01T07:35:35Z",
+      "last_seen": "2026-05-01T07:35:45Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test fails because the output is not valid JSON or the JSON validation check is incorrect",
-      "fix": "inspect sw-feedback.sh regression detection output to ensure it produces valid JSON and update the test assertion to match actual output format",
+      "root_cause": "sed command uses literal '$TEST_TEMP_DIR' as a filename instead of a sed expression, caused by incorrect argument quoting or missing -e flag",
+      "fix": "Change `sed s|$TEST_TEMP_DIR|...|g` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` and ensure the variable is properly expanded before being passed to sed",
       "seen_count": 3,
-      "last_seen": "2026-05-01T07:45:36Z",
+      "last_seen": "2026-05-01T07:54:11Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory prefix to let mktemp use /tmp directly",
+      "root_cause": "mktemp -d requires parent directory /tmp/claude to exist before creating subdirectories with that template",
+      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory path prefix",
       "seen_count": 1,
-      "last_seen": "2026-05-01T07:54:44Z",
-      "category": "config"
+      "last_seen": "2026-05-01T07:50:29Z",
+      "category": "test_failure"
     }
   ]
 }
