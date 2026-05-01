@@ -260,9 +260,18 @@ mc_auto_resolve() {
             patience)  merge_args="-X patience" ;;
             ours)      merge_args="-X ours" ;;
             theirs)    merge_args="-X theirs" ;;
-            union)     merge_args="-X theirs" ;;  # closest builtin equivalent
+            union)     merge_args="" ;;  # union: handled via .gitattributes merge driver below
             *) merge_args="-X $strat" ;;
         esac
+
+        # For union strategy, install a per-worktree merge driver via .gitattributes
+        # so git's built-in `union` driver concatenates both sides instead of leaving markers.
+        if [[ "$strat" == "union" ]]; then
+            printf '* merge=union\n' > "$wt/.gitattributes"
+            git -C "$wt" add .gitattributes >/dev/null 2>&1 || true
+            git -C "$wt" -c user.email=mc@local -c user.name=mc \
+                commit --no-verify --quiet -m "mc: temp union attributes" >/dev/null 2>&1 || true
+        fi
 
         local rc=0
         # shellcheck disable=SC2086

@@ -542,6 +542,8 @@ stage_merge() {
                     emit_event "merge.conflict.too_large" "issue=${ISSUE_NUMBER:-0}" "files=${_mc_n}"
                     mc_guided_fallback "$_mc_pred" --out "$_mc_guide" >/dev/null 2>&1 || true
                     error "Conflict set too large (${_mc_n} files) — guided fallback written: $_mc_guide"
+                    log_stage "merge" "BLOCKED: conflict set too large (${_mc_n} files)"
+                    return 1
                 else
                     local _mc_resolve_rc=0
                     mc_auto_resolve "$_mc_base" "$_mc_head" --out "$_mc_res" >/dev/null 2>&1 || _mc_resolve_rc=$?
@@ -553,6 +555,9 @@ stage_merge() {
                     else
                         mc_guided_fallback "$_mc_pred" --out "$_mc_guide" >/dev/null 2>&1 || true
                         warn "Auto-resolution failed — guided fallback written: $_mc_guide"
+                        emit_event "merge.conflict.guided_written" "issue=${ISSUE_NUMBER:-0}" "files=${_mc_n}"
+                        log_stage "merge" "BLOCKED: auto-resolution failed, guided fallback at $_mc_guide"
+                        return 1
                     fi
                 fi
             fi

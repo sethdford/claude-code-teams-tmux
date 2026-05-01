@@ -1,9 +1,1 @@
-Iteration 1 complete. Summary:
-
-- Created `scripts/lib/merge-conflict.sh` (~330 lines) with 4 public functions: `mc_predict`, `mc_auto_resolve`, `mc_report`, `mc_guided_fallback`.
-- Modern path uses `git merge-tree --write-tree`; legacy path uses throw-away worktrees. `MC_FORCE_LEGACY=1` exercises the fallback.
-- Aggressive `ours`/`theirs`/`union` strategies gated behind safety check (skips lockfiles, binary diffs, sets > `MC_MAX_FILES`).
-- All worktree mutation in `mktemp -d` directories with EXIT-trap cleanup. Tests verify the user's working tree stays clean.
-- Wired `mc_predict` → `mc_auto_resolve` → `mc_report` (or `mc_guided_fallback`) into `stage_merge` in `pipeline-stages-delivery.sh`, gated to run only when the lib exists. Emits `merge.conflict.predicted` / `resolved` / `auto_resolve_failed` / `guided_written` / `too_large` events.
-- Created `scripts/sw-merge-conflict-test.sh` (8 tests, 16 assertions, all pass) and registered it in `package.json`.
-- `sw-lib-pipeline-stages-test.sh` and `sw-pipeline-test.sh` both still green.
+You've hit your limit · resets 5:20am (UTC)

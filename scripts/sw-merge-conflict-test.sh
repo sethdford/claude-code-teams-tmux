@@ -160,6 +160,33 @@ test_lockfile_skip() {
     cleanup_repo "$repo"
 }
 
+# ─── Test 5b: union strategy keeps lines from both sides ─────────────────────
+test_union_strategy() {
+    local repo; repo=$(make_repo)
+    cd "$repo"
+    printf 'a\n' > u.txt
+    git add u.txt; git commit -q -m "base"
+    local default_branch; default_branch=$(git symbolic-ref --short HEAD)
+    git branch feat
+    printf 'a\nfrom-default\n' > u.txt
+    git add u.txt; git commit -q -m "default"
+    git checkout -q feat
+    printf 'a\nfrom-feat\n' > u.txt
+    git add u.txt; git commit -q -m "feat"
+    export MC_AGGRESSIVE=true
+    reload_lib
+    local out="$repo/union-res.json"
+    local rc=0
+    mc_auto_resolve "$default_branch" feat --strategies "union" --out "$out" >/dev/null 2>&1 || rc=$?
+    unset MC_AGGRESSIVE
+    if [[ "$rc" -eq 0 ]] && [[ "$(jq -r '.strategy' "$out")" == "union" ]]; then
+        assert_pass "union strategy resolves end-of-file divergent lines"
+    else
+        assert_fail "union strategy resolves" "rc=$rc strategy=$(jq -r '.strategy' "$out" 2>/dev/null)"
+    fi
+    cleanup_repo "$repo"
+}
+
 # ─── Test 6: legacy fallback path via MC_FORCE_LEGACY=1 ──────────────────────
 test_legacy_fallback() {
     local repo; repo=$(make_repo)
