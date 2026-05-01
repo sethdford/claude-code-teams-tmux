@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
-      "seen_count": 7,
-      "last_seen": "2026-05-01T18:55:34Z",
+      "seen_count": 9,
+      "last_seen": "2026-05-01T19:09:40Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
       "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
-      "seen_count": 3,
-      "last_seen": "2026-05-01T19:03:12Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-01T07:59:23Z",
       "category": "test_failure"
     },
     {
@@ -30,19 +30,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sed command references a file path instead of using inline substitution — 's|$TEST_TEMP_DIR|...|g' was passed as a filename argument rather than an expression",
-      "fix": "change `sed s|$TEST_TEMP_DIR|...|g file` to `sed \"s|$TEST_TEMP_DIR|...|g\" file` or use `-e` flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\" file`",
+      "root_cause": "sw-cleanup-test.sh heartbeat detection and summary output tests fail because the cleanup script's dry-run mode does not output 'agent-1', 'Found', or '--force' hint when stale heartbeats are present",
+      "fix": "Update sw-cleanup.sh dry-run mode to detect stale heartbeat files, print their agent IDs, show a 'Found N item(s)' summary count, and include a '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-05-01T07:46:36Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "daemon_on_failure does not call classify_failure, so failure classification is not wired into the retry logic path",
-      "fix": "Add a classify_failure call inside daemon_on_failure and use its result to gate retry decisions (skip retry for auth_error/invalid_issue, apply extended backoff for api_error)",
-      "seen_count": 1,
-      "last_seen": "2026-05-01T19:08:06Z",
       "category": "test_failure"
     }
   ]
