@@ -33,14 +33,16 @@
         "primary_role": "builder",
         "secondary_roles": [
           "tester",
-          "reviewer"
+          "security-auditor",
+          "reviewer",
+          "docs-writer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Build stage requires primary builder for feature implementation; secondary roles for comprehensive conflict scenario testing, auto-resolution security review, quality gate, and user documentation",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1777599061,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1403,310 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "1e3614f5d332aac358bd6436a535e7bb": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Incorrect auto-resolution corrupting code quality or logic",
+          "Merge strategy selection failures on complex multi-parent conflicts",
+          "Performance degradation on large diffs requiring full repo merge simulation",
+          "Edge cases in conflict marker parsing causing malformed resolution",
+          "Integration complexity with existing merge stage and atomic write guarantees",
+          "Fallback guided resolution UI might overwhelm users with unresolvable conflicts"
+        ],
+        "implementation_hints": [
+          "Use git merge --no-commit --no-ff for safe dry-run before actual merge",
+          "Try strategies in precedence order: recursive → patience → union → manual",
+          "Parse conflict markers with regex to extract file, line number, and both versions",
+          "Cache merge simulation results per branch pair to avoid redundant analysis",
+          "Store successful resolutions in memory system with strategy used for pattern learning",
+          "Provide structured JSON report (file path, conflict range, suggested fixes) for guided mode",
+          "Add timeout/skip for merge simulation on files > 10MB or 10k+ line changes",
+          "Integrate as pre-merge stage running atomically before actual merge attempt"
+        ]
+      },
+      "timestamp": 1777598350,
+      "ttl": 3600
+    },
+    "3c3bdf4fa2bcb3f8b4d14d146297f8d7": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1777598359,
+      "ttl": 1800
+    },
+    "995b6382edaa75482eb3039af58e42d7": {
+      "result": {
+        "estimated_cost_usd": 2.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 112000,
+        "likely_failure_stage": "build",
+        "confidence": 65
+      },
+      "timestamp": 1777598375,
+      "ttl": 3600
+    },
+    "cbc08a6535f3f047407898d7ecd8d75d": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "reliability",
+          "observability",
+          "git-operations"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires understanding of git merge semantics and multiple resolution strategies, integration with merge stage, and edge case handling. Problem is well-scoped but involves safety-critical logic that could drop code if auto-resolution fails silently."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design"
+          ],
+          "build": [],
+          "review": [
+            "security-audit",
+            "adversarial-quality",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "testing-strategy",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about which merge strategies will work across different conflict types and repository configurations before designing the system.",
+          "architecture-design": "Design how the conflict detection and resolution system integrates into the existing merge stage and pipeline architecture, including fallback to guided resolution mode.",
+          "security-audit": "Audit auto-resolution logic to prevent scenarios where merge strategies like 'ours' or 'theirs' silently discard important code changes without human review.",
+          "adversarial-quality": "Identify failure modes where auto-resolution produces incorrect merges, loses code, or masks underlying conflicts that should block the merge.",
+          "two-stage-review": "Implement careful two-pass review for this safety-critical feature: first pass validates architecture and strategy selection logic, second pass exhaustively tests edge cases and failure modes.",
+          "validation-thoroughness": "Go beyond unit tests to validate actual merge scenarios with realistic conflict patterns, ensuring strategies work correctly across different file types and conflict structures.",
+          "testing-strategy": "Plan and implement comprehensive test coverage for multiple merge strategies (recursive, patience, union, ours, theirs) and conflict scenarios to prevent silent code loss.",
+          "pr-quality": "Structure the PR with strategy comparison matrix, test results for each strategy, and clear documentation of when auto-resolution applies versus fallback to guided mode.",
+          "deploy-safety": "Treat as a controlled experiment: deploy conflict detection first without auto-resolution enabled, monitor false positive/negative rates before enabling auto-resolution in production.",
+          "observability": "Log all merge operations including strategy used, conflicts detected, auto-resolution success/failure, and when guided resolution was required; feed patterns back into system memory."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Auto-resolution safety: verify no code is silently dropped by merge strategies (especially ours/theirs)",
+          "Strategy selection logic: ensure correct strategy is chosen for different conflict types and repository states",
+          "Fallback mechanism: validate guided resolution is triggered when auto-resolution produces suspicious results",
+          "Pipeline merge stage integration: ensure pre-check runs and aborts before attempting actual merge if conflicts cannot be auto-resolved",
+          "Memory pattern learning: validate conflict resolution patterns are correctly captured and accessible for future learning",
+          "Edge cases: binary files, large diffs, multiple overlapping conflicts, file renames, git version compatibility"
+        ],
+        "risk_areas": [
+          "Silent data loss: merge strategy could discard legitimate changes without alerting operators",
+          "False negatives: conflict detector misses actual merge conflicts, allowing broken merges to proceed",
+          "Git version incompatibility: merge strategies unavailable or behave differently across git versions",
+          "Incorrect fallback triggering: guided resolution not invoked when auto-resolution produces suspicious results",
+          "Performance degradation: simulating merge on large repositories could significantly slow pipeline throughput",
+          "Pattern over-generalization: learned resolution patterns from one repo type may incorrectly apply to another context"
+        ]
+      },
+      "timestamp": 1777598500,
+      "ttl": 3600
+    },
+    "6c5959f623d5397acaa028a9f6d3070d": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright repo, 2026-05-01T01:21:42Z)",
+            "relevance": 95,
+            "summary": "Critical project context: identifies Node.js, vitest test runner, npm package manager, src/ source dir, commonjs imports. Essential for planning file structure and test approach for merge conflict system."
+          },
+          {
+            "file": "success-patterns.json (two patterns: bug fix and auth feature)",
+            "relevance": 75,
+            "summary": "Shows successful feature delivery patterns with 3-5 iterations, file change patterns, test strategy (npm test), and TDD approach. Directly applicable to planning complexity and iteration strategy."
+          },
+          {
+            "file": "success-patterns.json (add auth module pattern)",
+            "relevance": 70,
+            "summary": "Demonstrates iterative TDD approach with module isolation, unit+integration tests, and file organization (src/, test/). Relevant template for planning merge conflict module structure."
+          },
+          {
+            "file": "patterns.json (nodejs project_type, 2026-02-21T20:10:46Z)",
+            "relevance": 55,
+            "summary": "Confirms Node.js project type and baseline conventions. Less specific than recent patterns.json but establishes project category for planning considerations."
+          },
+          {
+            "file": "failures.json (test failures: sw-cleanup.sh, sed issues)",
+            "relevance": 40,
+            "summary": "Reveals test infrastructure patterns and shell scripting conventions used in project. Understanding test failures informs planning for robust test coverage."
+          }
+        ]
+      },
+      "timestamp": 1777598604,
+      "ttl": 1800
+    },
+    "9b36d84ecde9d8f5af93e016eb4d131c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-05-01, sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project detection captured today shows Node.js/Vitest setup, CommonJS imports, and test patterns — essential context for validating a plan that must integrate with this exact repo's build system and conventions"
+          },
+          {
+            "file": "failures.json (2026-04-30 test stage failures)",
+            "relevance": 85,
+            "summary": "Recent test failures in this Shipwright repo (sw-cleanup.sh output mismatch, sed quoting) show actual validation breakpoints; patterns for 'output missing' and argument parsing errors directly inform what plan validation should guard against"
+          },
+          {
+            "file": "success-patterns.json (2026-03-29, bug fix pattern)",
+            "relevance": 72,
+            "summary": "Shows successful bug fix delivery in 3 iterations (45s duration) with similar complexity (60) to merge conflict work; demonstrates iteration strategy, test approach (npm test), and file change patterns that planning stage can reference"
+          }
+        ]
+      },
+      "timestamp": 1777598863,
+      "ttl": 1800
+    },
+    "88ce3963de40bab316c816bd84f12283": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project architecture for sethdford/shipwright (2026-05-01): Node.js project with vitest, npm, JavaScript, conventions for src/, test patterns, and commonjs imports — essential baseline for design decisions"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Comprehensive patterns from completed features/bugs showing iterative approach (3-5 iterations), TDD strategies, file organization patterns, and test frameworks used in this project — directly applicable to new system design"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent test failures from 2026-04-30 (sw-cleanup.sh output format, sed substitution quoting) reveal shell scripting pitfalls and edge cases to avoid in merge conflict system design"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Auth module feature pattern (complexity 60, TDD-driven, 5 iterations) provides architectural reference for similar-scope feature development with proven file organization and test strategy"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Existing project architecture rules provide constraint framework for new system design — ensures merge conflict system conforms to established architectural boundaries and patterns"
+          }
+        ]
+      },
+      "timestamp": 1777598916,
+      "ttl": 1800
+    },
+    "e148dbd8500c47b2474bc1f7eebdede1": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-01)",
+            "relevance": 95,
+            "summary": "Current project structure, conventions (source_dir: src/, test pattern, commonjs imports, vitest) directly inform what design approaches are feasible and align with codebase norms"
+          },
+          {
+            "file": "failures.json (test failures, 2026-04-30)",
+            "relevance": 75,
+            "summary": "Repo-specific test failures (sed quoting, heartbeat detection output format) show anti-patterns and pitfalls in testing approach that should be avoided in merge conflict system design"
+          },
+          {
+            "file": "success-patterns.json (auth module with TDD, 2026-04-01)",
+            "relevance": 68,
+            "summary": "Iterative TDD approach with module isolation and file pattern discipline for similar-complexity feature (60 complexity) provides design template; file_patterns and test_strategy reveal what structure succeeds"
+          }
+        ]
+      },
+      "timestamp": 1777598942,
+      "ttl": 1800
+    },
+    "596c79e32908bf016ca64b727a547e49": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, captured 2026-05-01)",
+            "relevance": 95,
+            "summary": "Project conventions for this repo: vitest test runner, npm package manager, src/ directory, *.test.js pattern, commonjs imports. Essential for build stage to know how to run tests and structure code."
+          },
+          {
+            "file": "failures.json (stage: test, 2026-04-30, sw-cleanup.sh and sed issues)",
+            "relevance": 75,
+            "summary": "Recent test failures in this exact project. Shows known issues with stale heartbeat detection output formatting and sed expression quoting. Directly relevant to avoid repeating these failures."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a..., 'Fix bug', captured 2026-03-29)",
+            "relevance": 72,
+            "summary": "Recent successful build pattern: 3 iterations, npm test strategy, modified scripts/lib/*.sh files. Shows typical iteration count and test approach that worked in this codebase."
+          },
+          {
+            "file": "success-patterns.json (test1, 'add auth module', 5 iterations, TDD approach)",
+            "relevance": 60,
+            "summary": "Feature development success pattern showing iterative TDD with src/ and test/ file changes. Relevant for understanding this project's development methodology."
+          },
+          {
+            "file": "failures.json ('cannot read property' and 'ENOENT' patterns)",
+            "relevance": 48,
+            "summary": "Generic failure patterns (uninitialized variables, missing dependencies). Lower priority generic patterns but useful as preventive checks during build."
+          }
+        ]
+      },
+      "timestamp": 1777599035,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Shows successful build approaches with iterations, file patterns changed, test strategies, and costs — directly informs how to approach the current build phase"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Documents project conventions (source_dir, test_pattern, import_style, commonjs) and project type (node/vitest) — essential for understanding how to build and test"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Captures recent test stage failures and their root causes/fixes — helps anticipate and avoid similar failures during current build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 35,
+            "summary": "Contains baselines but is empty — would be relevant if populated with build success criteria and performance targets"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Decisions list is empty — would be relevant if it contained build-related decisions but currently provides no actionable context"
+          }
+        ]
+      },
+      "timestamp": 1777599046,
+      "ttl": 1800
     }
   }
 }
