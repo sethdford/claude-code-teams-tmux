@@ -9339,3 +9339,15 @@
 {"ts":"2026-05-02T01:54:35Z","ts_epoch":1777686875,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":19566,"trimmed_prompt_chars":19566,"trim_ratio":0.0,"budget_utilization":9.8,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-05-02T01:54:38Z","ts_epoch":1777686878,"type":"pipeline.context_exhaustion","issue":438,"stage":"build"}
 {"ts":"2026-05-02T01:54:40Z","ts_epoch":1777686880,"type":"stage.failed","event_id":"evt-1777686880-2117811811","payload":"{\"stage\":\"build\",\"issue\":\"438\",\"timing\":\"32m 10s\"}"}
+{"ts":"2026-05-02T06:42:58Z","ts_epoch":1777704178,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-05-02T06:43:00Z","ts_epoch":1777704180,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-05-02T06:43:06Z","ts_epoch":1777704186,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":7}
+{"ts":"2026-05-02T06:43:07Z","ts_epoch":1777704187,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-05-02T06:43:07Z","ts_epoch":1777704187,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly..","seen_count":4}
+{"ts":"2026-05-02T06:43:08Z","ts_epoch":1777704188,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly.."}
+{"ts":"2026-05-02T06:43:09Z","ts_epoch":1777704189,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-05-02T06:43:09Z","ts_epoch":1777704189,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-05-02T06:43:09Z","ts_epoch":1777704189,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-05-02T06:43:09Z","ts_epoch":1777704189,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-05-02T06:43:09Z","ts_epoch":1777704189,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
+{"ts":"2026-05-02T06:43:10Z","ts_epoch":1777704190,"type":"patrol.issue_created","check":"untested_scripts","count":5}
