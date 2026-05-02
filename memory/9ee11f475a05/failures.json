@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
-      "seen_count": 9,
-      "last_seen": "2026-05-02T01:37:08Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-02T01:52:59Z",
       "category": "test_failure"
     },
     {
@@ -39,19 +39,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m3 of 24 tests failed\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match test expectations: stale heartbeat files not shown with agent name, and summary missing 'Found' count and '--force' hint text",
-      "fix": "Update sw-cleanup.sh to output the heartbeat filename/agent-id when detecting stale heartbeats, and add 'Found N item(s)' summary line with '--force' hint in dry-run mode",
+      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeats or display 'Found'/'--force' summary text",
+      "fix": "Update sw-cleanup.sh to scan heartbeat files and include 'Found' count and '--force' hint in dry-run output",
       "seen_count": 1,
       "last_seen": "2026-05-01T19:02:48Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "FAIL: 0",
-      "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename instead of a script — missing -e flag causes 'can't read s|...|g: No such file or directory'",
-      "fix": "add -e flag before the sed expression: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of passing the expression as a positional argument",
-      "seen_count": 2,
-      "last_seen": "2026-05-02T01:50:23Z",
       "category": "test_failure"
     }
   ]
