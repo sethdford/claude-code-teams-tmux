@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
-      "seen_count": 7,
-      "last_seen": "2026-05-01T19:05:59Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-02T01:40:23Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
       "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
-      "seen_count": 3,
-      "last_seen": "2026-05-01T19:10:20Z",
+      "seen_count": 4,
+      "last_seen": "2026-05-02T01:51:07Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m3 of 24 tests failed\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count, --force hint) not producing expected output in dry-run mode",
-      "fix": "Fix sw-cleanup.sh dry-run path to detect stale heartbeats by age and output 'Found N items' summary with '--force' hint when items are detected",
+      "root_cause": "sed command references a non-existent file path pattern instead of an inline expression — missing -e flag or incorrect argument order",
+      "fix": "Fix the sed invocation in sw-code-review-test.sh to use 'sed -e \"s|$TEST_TEMP_DIR|...|g\"' (inline expression) instead of passing the substitution as a file argument",
       "seen_count": 1,
       "last_seen": "2026-05-01T19:02:48Z",
       "category": "test_failure"
