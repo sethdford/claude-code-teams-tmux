@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output not matching expected strings 'agent-1', 'Found', and '--force'",
       "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint in dry-run mode",
       "seen_count": 8,
-      "last_seen": "2026-05-02T01:27:53Z",
+      "last_seen": "2026-05-02T01:27:14Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected patterns in the test",
       "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure summary output includes 'Found' count and '--force' hint text",
       "seen_count": 5,
-      "last_seen": "2026-05-02T01:52:25Z",
+      "last_seen": "2026-05-02T01:41:52Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m3 of 24 tests failed\u001b[0m",
-      "root_cause": "sed invoked without -e flag, causing the substitution expression to be interpreted as a filename",
-      "fix": "add -e flag to sed call: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
+      "root_cause": "sed command references a non-existent file path instead of using inline expression syntax — the -e flag is missing, causing sed to treat the substitution pattern as a filename",
+      "fix": "change `sed 's|...|...|g' filepath` to `sed -e 's|...|...|g'` or ensure the sed invocation uses `-i` with a proper file argument",
       "seen_count": 1,
       "last_seen": "2026-05-01T19:02:48Z",
       "category": "test_failure"
