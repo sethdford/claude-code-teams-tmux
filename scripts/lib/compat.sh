@@ -196,7 +196,9 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    # GNU stat (Linux): -c '%Y'. BSD stat (macOS): -f '%m'.
+    # GNU stat -f means filesystem info (not modification time), so try -c first.
+    stat -c '%Y' "$file" 2>/dev/null || stat -f '%m' "$file" 2>/dev/null || echo "0"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
