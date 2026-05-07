@@ -61,6 +61,7 @@ show_help() {
     echo -e "  ${DIM}--dry-run${RESET}                 Show what would happen without executing"
     echo -e "  ${DIM}--slack-webhook <url>${RESET}     Send notifications to Slack"
     echo -e "  ${DIM}--self-heal <n>${RESET}            Build→test retry cycles on failure (default: 2)"
+    echo -e "  ${DIM}--force-timeout <seconds>${RESET}  Override adaptive timeouts (for testing/emergency)"
     echo -e "  ${DIM}--max-iterations <n>${RESET}       Override max build loop iterations"
     echo -e "  ${DIM}--max-restarts <n>${RESET}         Max session restarts in build loop"
     echo -e "  ${DIM}--fast-test-cmd <cmd>${RESET}      Fast/subset test for build loop"
@@ -149,6 +150,7 @@ parse_args() {
             --dry-run)     DRY_RUN=true; shift ;;
             --slack-webhook) SLACK_WEBHOOK="$2"; shift 2 ;;
             --self-heal)   BUILD_TEST_RETRIES="${2:-3}"; shift 2 ;;
+            --force-timeout) FORCE_TIMEOUT="$2"; shift 2 ;;
             --max-restarts)
                 MAX_RESTARTS_OVERRIDE="$2"
                 if ! [[ "$MAX_RESTARTS_OVERRIDE" =~ ^[0-9]+$ ]]; then

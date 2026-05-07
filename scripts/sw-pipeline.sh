@@ -215,6 +215,9 @@ TOTAL_OUTPUT_TOKENS=0
 # Build-test retry limit (configurable via --self-heal)
 BUILD_TEST_RETRIES="${BUILD_TEST_RETRIES:-2}"
 
+# Force timeout override (configurable via --force-timeout, for testing/emergency)
+FORCE_TIMEOUT="${FORCE_TIMEOUT:-}"
+
 # TDD mode flag (enable via --tdd or pipeline template)
 TDD_ENABLED=false
 PIPELINE_TDD=false

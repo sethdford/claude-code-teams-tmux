@@ -44,11 +44,16 @@ run_stage_with_retry() {
     max_retries=$(jq -r --arg id "$stage_id" '(.stages[] | select(.id == $id) | .config.retries) // 0' "$PIPELINE_CONFIG" 2>/dev/null) || true
     [[ -z "$max_retries" || "$max_retries" == "null" ]] && max_retries=0
 
-    # Get adaptive timeout for this stage
-    local adaptive_timeout
-    adaptive_timeout=$(timeout_get "$stage_id") || adaptive_timeout=""
-    if [[ -n "$adaptive_timeout" ]]; then
-        info "Stage $stage_id: using adaptive timeout of ${adaptive_timeout}s"
+    # Get timeout for this stage: CLI override > adaptive > default
+    local stage_timeout
+    if [[ -n "${FORCE_TIMEOUT:-}" ]] && [[ "$FORCE_TIMEOUT" =~ ^[0-9]+$ ]]; then
+        stage_timeout="$FORCE_TIMEOUT"
+        info "Stage $stage_id: using CLI override timeout of ${stage_timeout}s"
+    else
+        stage_timeout=$(timeout_get "$stage_id") || stage_timeout=""
+        if [[ -n "$stage_timeout" ]]; then
+            info "Stage $stage_id: using adaptive timeout of ${stage_timeout}s"
+        fi
     fi
 
     local attempt=0
