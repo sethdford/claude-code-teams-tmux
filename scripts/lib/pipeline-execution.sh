@@ -23,6 +23,7 @@ HEARTBEAT_PID="${HEARTBEAT_PID:-}"
 
 # Ensure helpers are loaded
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/adaptive-timeout.sh" ]] && source "$SCRIPT_DIR/lib/adaptive-timeout.sh" 2>/dev/null || true
 [[ "$(type -t info 2>/dev/null)" == "function" ]] || info() { echo "$*"; }
 [[ "$(type -t warn 2>/dev/null)" == "function" ]] || warn() { echo "$*"; }
 [[ "$(type -t error 2>/dev/null)" == "function" ]] || error() { echo "$*" >&2; }
@@ -43,10 +44,25 @@ run_stage_with_retry() {
     max_retries=$(jq -r --arg id "$stage_id" '(.stages[] | select(.id == $id) | .config.retries) // 0' "$PIPELINE_CONFIG" 2>/dev/null) || true
     [[ -z "$max_retries" || "$max_retries" == "null" ]] && max_retries=0
 
+    # Get adaptive timeout for this stage
+    local adaptive_timeout
+    adaptive_timeout=$(timeout_get "$stage_id") || adaptive_timeout=""
+    if [[ -n "$adaptive_timeout" ]]; then
+        info "Stage $stage_id: using adaptive timeout of ${adaptive_timeout}s"
+    fi
+
     local attempt=0
     local prev_error_class=""
+    local stage_start_time
+    stage_start_time=$(date +%s)
     while true; do
         if "stage_${stage_id}"; then
+            # Stage succeeded - record duration
+            local stage_end_time duration_seconds
+            stage_end_time=$(date +%s)
+            duration_seconds=$((stage_end_time - stage_start_time))
+            timeout_record "$stage_id" "$duration_seconds" "${PIPELINE_TEMPLATE:-standard}" "${COMPLEXITY:-medium}" 2>/dev/null || true
+            timeout_check_anomaly "$stage_id" "$duration_seconds" 2>/dev/null || true
             return 0
         fi
 
@@ -82,6 +98,12 @@ run_stage_with_retry() {
         fi
 
         if [[ "$attempt" -gt "$max_retries" ]]; then
+            # Stage failed after retries - still record the duration
+            local stage_end_time duration_seconds
+            stage_end_time=$(date +%s)
+            duration_seconds=$((stage_end_time - stage_start_time))
+            timeout_record "$stage_id" "$duration_seconds" "${PIPELINE_TEMPLATE:-standard}" "${COMPLEXITY:-medium}" 2>/dev/null || true
+            timeout_check_anomaly "$stage_id" "$duration_seconds" 2>/dev/null || true
             return 1
         fi
 

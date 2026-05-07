@@ -316,6 +316,49 @@ timeout_reset() {
     return 0
 }
 
+# ─── Anomaly Detection ──────────────────────────────────────────────────────
+
+# timeout_check_anomaly(stage, duration) — Check if duration is anomalous.
+# Emits warnings if duration > P90 percentile.
+# Returns: 0 if within normal range, 1 if anomalous
+timeout_check_anomaly() {
+    local stage="${1:-unknown}"
+    local duration="${2:-0}"
+
+    # Validate inputs
+    if ! [[ "$duration" =~ ^[0-9]+$ ]]; then
+        return 0  # Skip invalid durations
+    fi
+
+    timeout_init
+
+    local sample_count
+    sample_count=$(timeout_sample_count "$stage") || sample_count=0
+
+    # Need at least MIN_SAMPLES to have reliable P90
+    if [[ "$sample_count" -lt "$TIMEOUT_MIN_SAMPLES" ]]; then
+        return 0  # Not enough data
+    fi
+
+    local p90
+    p90=$(timeout_calculate_p95 "$stage") || p90=""
+
+    if [[ -z "$p90" || "$p90" -le 0 ]]; then
+        return 0  # Could not calculate P90
+    fi
+
+    # Check if duration exceeds P90
+    if [[ "$duration" -gt "$p90" ]]; then
+        local excess_pct
+        excess_pct=$(( (duration - p90) * 100 / p90 ))
+        warn "$stage: Duration $duration exceeds P90 threshold ($p90) by ${excess_pct}%"
+        emit_event "timeout_anomaly" "stage=$stage" "duration_s=$duration" "p90=$p90" "excess_pct=$excess_pct"
+        return 1  # Anomaly detected
+    fi
+
+    return 0  # Normal
+}
+
 # ─── Initialization on load ──────────────────────────────────────────────────
 
 timeout_init
