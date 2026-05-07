@@ -1,3 +1,0 @@
-Fixed the failing tests. The root cause wasn't in the showcase command — it was a cross-platform bug in `file_mtime()` in `scripts/lib/compat.sh`. GNU `stat -f` outputs filesystem info (not mtime) and exits 0, so the BSD-fallback never ran on Linux. The cleanup script's stale-heartbeat detection silently received multi-line filesystem stats instead of an epoch number, breaking three downstream tests. Reordered to try GNU `-c '%Y'` first.
-
-All 24 cleanup tests now pass; compat lib tests still green.
