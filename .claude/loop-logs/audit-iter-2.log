@@ -1,1 +1,43 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my comprehensive review of the cumulative work across iterations 1 and 2, I've identified a critical issue:
+
+## Critical Issue: Missing Test Registration
+
+The new test file `scripts/sw-adaptive-timeout-test.sh` (26 passing tests) **is not registered in package.json**. This means:
+- The feature's entire test suite is **not run by `npm test`**
+- Future regressions could slip through undetected
+- CI/CD will never run the adaptive timeout tests
+
+**Fix required**: Add `sw-adaptive-timeout-test.sh` to the test list in package.json (following `sw-auto-recovery-test.sh`)
+
+## Secondary Issue: Code Review Test Failure
+
+Pre-existing (not caused by this agent): `sw-code-review-test.sh` fails with sed error on Linux due to incorrect sed syntax in the test file (line 40 uses macOS `-i ''` format).
+
+## Positive Findings
+
+**Feature Implementation** — Complete and well-designed:
+- ✅ Core library: 365-line module with P95 calculation, recording, anomaly detection
+- ✅ CLI script: All 5 commands implemented (learn, report, reset, record, check-anomaly)  
+- ✅ Pipeline integration: Properly wired into `run_stage_with_retry()` with timeout recording and anomaly checking
+- ✅ CLI flag support: `--force-timeout` properly parsed and takes precedence  
+- ✅ No incomplete code: No TODOs, proper error handling, atomic file operations
+- ✅ File_mtime() fix: Correctly filters Linux verbose output
+
+**Test Results**:
+- 26 adaptive timeout unit tests — all passing
+- 24 cleanup integration tests — all passing
+- 17 heartbeat tests — all passing
+
+**Code Quality**:
+- Bash 3.2 compatible (no modern bash features)
+- Proper escape handling in JSONL operations
+- Safe atomic writes with `mktemp + mv`
+- Consistent with codebase patterns
+
+---
+
+AUDIT_FAIL — Missing test integration is a breaking oversight that violates the acceptance criterion "all existing tests continue to pass" by not running the new feature's tests. This must be fixed before the work is complete.
