@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "optimizer",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Adaptive timeout engine requires system design (data collection, metrics aggregation, timeout computation algorithm), implementation with performance analysis, and comprehensive testing of adaptive behavior.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778186290,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,327 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "a36eb8dcaf1c6cf0ed934f7ca908ab00": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Insufficient historical data during initial deployment and fallback logic coverage",
+          "Outlier data and statistical anomalies skewing percentile calculations",
+          "Time series performance drift as codebase evolves",
+          "Configuration validation and bounds enforcement for learned timeouts",
+          "Data persistence and recovery if daemon-config.json is corrupted or lost"
+        ],
+        "implementation_hints": [
+          "Store learned timeout data separately from daemon-config.json, merge on read to avoid conflicts",
+          "Implement outlier detection (IQR method) before percentile calculation to handle anomalous runs",
+          "Add validation bounds (min/max thresholds) to prevent unreasonable timeout values",
+          "Create migration script to bootstrap learned timeouts from historical pipeline artifacts",
+          "Track timeout accuracy metrics (p90 warning rate, false timeout rate) for monitoring",
+          "Implement gradual timeout adjustment (weighted moving average) to avoid sudden changes",
+          "Add --verbose flag to inspect p75/p90/p99 calculations per stage for debugging"
+        ]
+      },
+      "timestamp": 1778185674,
+      "ttl": 3600
+    },
+    "0aa49aabcaf49c7a4a5f065ff911f524": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1778185687,
+      "ttl": 1800
+    },
+    "3d6bf3746e8493db8ef2328658607ea8": {
+      "result": {
+        "estimated_cost_usd": 3.85,
+        "estimated_iterations": 1.5,
+        "estimated_tokens": 168000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1778185698,
+      "ttl": 3600
+    },
+    "94fa357f943e7c219e4fa4089ddf041e": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "performance",
+          "observability",
+          "data-pipeline"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires statistical data aggregation, percentile calculations, incremental learning logic, and careful fallback handling for edge cases (cold start, data insufficiency, corrupted state). Moderate complexity due to integration points with daemon config and pipeline runtime."
+        },
+        "skill_plan": {
+          "plan": [
+            "data-pipeline",
+            "performance",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "api-design"
+          ],
+          "build": [
+            "testing-strategy",
+            "adaptive-timeout-learning"
+          ],
+          "review": [
+            "adversarial-quality",
+            "performance",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "observability",
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "data-pipeline": "Historical run data collection and aggregation (50 runs per stage) requires solid data engineering practices to ensure accuracy of p75/p90/p99 percentile calculations.",
+          "performance": "Timeout optimization directly impacts pipeline efficiency; wrong thresholds cause either premature failures or wasted compute, making review of the calculation algorithm critical.",
+          "brainstorming": "Challenge assumptions early: Is p75+20% the right formula? Should learning be per-project-type? How do we handle high variance stages? What if one outlier skews all percentiles?",
+          "architecture-design": "Adaptive timeout learning is a foundational daemon feature; document the decision to store state in daemon-config.json, versioning strategy, and how this integrates with existing timeout fallbacks.",
+          "api-design": "The --force-timeout CLI flag, daemon-config.json schema for adaptive_timeouts section, and fallback precedence (learned timeout > hardcoded > default) need explicit design.",
+          "testing-strategy": "Edge cases are numerous: insufficient data (<50 runs), percentile calculation accuracy, atomic config updates, override flag interactions, and incremental learning stability under concurrent pipeline runs.",
+          "adaptive-timeout-learning": "This specialized skill covers the core pattern: statistical aggregation from time-series pipeline data, incremental learning with drift detection, cold-start handling, and anomaly thresholds for p90 overage warnings.",
+          "adversarial-quality": "Think like chaos: What breaks if daemon-config.json is corrupted? What if percentiles are NaN? What if multiple pipelines update timeouts simultaneously (race condition)? Can we force a timeout cascade?",
+          "security-audit": "daemon-config.json modifications and reads must be atomic and safe; validate that no untrusted data (e.g., from external pipelines) can corrupt timeout values.",
+          "validation-thoroughness": "Unit tests verify calculations, but real validation requires running actual pipelines and observing that adaptive timeouts reduce timeout failures without introducing new failures or false anomaly warnings.",
+          "observability": "Monitor timeout effectiveness post-deployment: actual stage durations vs. predicted timeouts, anomaly warning frequency, fallback activation rate, and whether timeout changes correlate with success rate improvements.",
+          "pr-quality": "Reviewers need to understand the percentile logic, config schema, and fallback precedence in under 5 minutes—use well-commented code and clear examples.",
+          "deploy-safety": "Timeout changes affect all pipelines; roll out incrementally by enabling adaptive timeouts for subset of projects first, monitoring for regressions before fleet-wide rollout."
+        },
+        "generated_skills": [
+          {
+            "name": "adaptive-timeout-learning",
+            "reason": "No existing skill specifically addresses the pattern of learning timeout values from historical pipeline run data with incremental updates, cold-start fallback logic, and anomaly detection—this is the core of the issue and requires specialized guidance.",
+            "content": "## Adaptive Timeout Learning from Pipeline History\n\n### Pattern Overview\nAdaptive timeouts replace hardcoded values by analyzing historical pipeline performance. Collect successful run durations, compute percentiles (p75/p90/p99), and use these as runtime thresholds with a safety buffer.\n\n### Data Collection Strategy\n- Store completed run durations per stage in `.claude/pipeline-artifacts/performance-history.json` or similar\n- Maintain a rolling window of last 50 runs per stage (FIFO queue to prevent unbounded growth)\n- Record only successful runs (failed runs skew the data and don't represent normal behavior)\n- Include run metadata: project type, stage name, duration_ms, timestamp\n\n### Percentile Calculation\n```\np75 = 75th percentile of durations\np90 = 90th percentile of durations  \np99 = 99th percentile of durations\nadaptive_timeout = p90 + (p90 * 0.20)  # p90 + 20% buffer\n```\nIf < 50 samples: fall back to hardcoded timeout or CLI override.\n\n### Incremental Learning\n- After each successful pipeline run, add its stage durations to history\n- Recompute percentiles and update `daemon-config.json` adaptive_timeouts section\n- Use atomic writes (write to temp file, then `mv`) to prevent corrupted state\n- Maintain version number in adaptive_timeouts to detect stale data\n\n### Cold Start Fallback\n- If adaptive_timeouts section missing or insufficient data: use hardcoded timeout\n- Emit `info` log: \"Using hardcoded timeout (15 samples available, 50 required)\"\n- Do NOT fail—always have a safe fallback\n\n### Anomaly Detection\n- During stage execution, if duration > p90: emit `warn` log\n- Example: \"Build stage exceeded p90 threshold (actual: 45s, p90: 40s)\"\n- Do NOT auto-adjust timeout mid-run; collect data for next learning cycle\n- Track anomaly frequency; if > 20% of runs exceed p90, flag the data as unreliable\n\n### CLI Override\n- `--force-timeout <ms>` sets a runtime timeout regardless of adaptive or hardcoded values\n- Used for testing and emergency overrides\n- Takes precedence over both adaptive and hardcoded timeouts\n- Document precedence: CLI flag > adaptive > hardcoded > 30m default\n\n### Edge Cases\n1. **High variance stages** (some runs 10s, others 5m): p75+20% may still timeout frequently; monitor anomaly rate and alert if unreliable\n2. **New project types**: Insufficient history; fall back to hardcoded until 50 samples collected\n3. **Outliers**: One 10m run skews p99 for a normally 1m stage; consider p95 or trimmed mean for better robustness\n4. **Concurrent updates**: Multiple pipelines finishing simultaneously; use file locking or atomic operations to prevent race conditions\n5. **Corrupted history**: If parsing fails, reset history and fall back; log error for investigation\n\n### Testing Checklist\n- ✓ Percentile calculations match expected values (use known datasets)\n- ✓ Fallback to hardcoded when < 50 samples\n- ✓ CLI override takes precedence\n- ✓ Atomic writes don't corrupt config\n- ✓ Anomaly warnings emit at p90 threshold\n- ✓ History file grows only to 50 runs per stage\n- ✓ Works with zero initial history (cold start)\n- ✓ Handles NaN/Infinity gracefully"
+          }
+        ],
+        "review_focus": [
+          "Percentile calculation correctness with edge cases (< 50 samples, all identical durations, NaN values)",
+          "Atomic writes to daemon-config.json to prevent corruption under concurrent pipeline runs",
+          "Fallback logic precedence: CLI flag > adaptive > hardcoded > default",
+          "Anomaly detection threshold justification (why p90, why 20% buffer, why warn vs. auto-adjust?)",
+          "Cold start behavior and transition from hardcoded to adaptive timeouts",
+          "Historical data retention strategy (50-run window, removal of failed runs, handling of outliers)",
+          "Incremental learning stability (avoid timeout thrashing when data is noisy or shifting)",
+          "Integration with existing pipeline timeout system (no breaking changes to hardcoded fallback)"
+        ],
+        "risk_areas": [
+          "Race condition: Multiple pipelines updating adaptive_timeouts simultaneously could corrupt config or lose updates",
+          "Data quality: Outlier runs (e.g., CI slowdown, resource contention) can skew percentiles and make adaptive timeouts unreliable",
+          "Cold start problem: First 49 runs use fallback; unclear when adaptive mode activates and if users notice the transition",
+          "Anomaly false positives: Warning too frequently (high variance stages) creates alert fatigue; unclear threshold for marking data as unreliable",
+          "Timeout cascade: If adaptive timeout is set too aggressively, could cause cascading failures; no mechanism to detect and auto-correct",
+          "Backward compatibility: Existing pipelines with hardcoded timeouts; ensure smooth migration without unexpected timeouts",
+          "Data corruption recovery: If daemon-config.json adaptive_timeouts section is malformed, does system degrade gracefully or fail?",
+          "Statistical validity: Small sample size + high variance = unreliable percentiles; no minimum variance check before using adaptive values"
+        ]
+      },
+      "timestamp": 1778185880,
+      "ttl": 3600
+    },
+    "014108c6da183050f067d62af8c067b1": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-07T20:31:22Z)",
+            "relevance": 95,
+            "summary": "Current project metadata (Node.js, vitest, npm, JS) and conventions (src/, test patterns, commonjs). Essential for understanding the baseline implementation context for the timeout engine."
+          },
+          {
+            "file": "success-patterns.json (2026-04-01T00:00:00Z with detailed patterns)",
+            "relevance": 85,
+            "summary": "Historical performance data showing duration_s, iterations, and complexity. Directly relevant: demonstrates typical runtimes (45s for bugs, 150-300s for features) which are the foundation for timeout baselines."
+          },
+          {
+            "file": "success-patterns.json (2026-03-29T02:20:18Z with bug/auth patterns)",
+            "relevance": 70,
+            "summary": "Additional historical performance data with cost and iteration patterns. Shows real pipeline execution times that inform timeout strategy and adaptive thresholds."
+          },
+          {
+            "file": "failures.json (with ENOENT and property read patterns)",
+            "relevance": 45,
+            "summary": "Common failure signatures (missing dependencies, uninitialized variables) and fixes. Helps identify failure modes that might occur under timeout stress and inform recovery strategies."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 25,
+            "summary": "Generic architecture rules. May provide context for enforcing timeout engine design patterns, but not directly applicable to timeout planning."
+          }
+        ]
+      },
+      "timestamp": 1778185969,
+      "ttl": 1800
+    },
+    "e0f373adbcad2d2f77f15b948d276888": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Current project structure (sethdford/shipwright, node, vitest, npm, commonjs) captured today (2026-05-07). Critical context for understanding conventions, file organization, and test patterns needed to validate the adaptive timeout engine plan."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Shows authentication feature successfully completed in 3 iterations (150s, complexity 65). Demonstrates standard template performance, test strategy effectiveness, and file change patterns for complex Node.js features—directly applicable to planning the adaptive timeout engine."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Common failure signatures in this project (EONENT npm install, uninitialized variables). Provides defensive context—plan validation should account for these known failure modes to avoid rejected stages."
+          }
+        ]
+      },
+      "timestamp": 1778186102,
+      "ttl": 1800
+    },
+    "07dd369ab34029d86a0ed276200cd507": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-05-07 capture)",
+            "relevance": 95,
+            "summary": "Current project structure and conventions (node, vitest, npm, src/ layout, commonjs imports) directly inform architecture decisions for timeout engine design"
+          },
+          {
+            "file": "success-patterns.json (multi-pattern capture)",
+            "relevance": 75,
+            "summary": "Captured patterns from bug fixes and feature additions show iteration counts, file organization patterns, test strategies, and complexity handling for similar Shipwright work"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Existing architecture rules and constraints must be respected in timeout engine design to maintain consistency with established patterns"
+          },
+          {
+            "file": "failures.json (with signatures)",
+            "relevance": 35,
+            "summary": "Common failure patterns (file not found, missing initialization) inform defensive design decisions for timeout calculation edge cases"
+          },
+          {
+            "file": "patterns.json (2026-02-21 capture)",
+            "relevance": 25,
+            "summary": "Generic project type detection provides baseline context but lacks specificity of current patterns and conventions"
+          }
+        ]
+      },
+      "timestamp": 1778186150,
+      "ttl": 1800
+    },
+    "2905f9ba3ddeb1c7d47ab2e548e5556f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (entries with iterations/durations from 2026-03-29)",
+            "relevance": 95,
+            "summary": "Historical performance data showing duration (45-150s), iteration counts (3-5), and complexity scores (60-65) directly informs what timeout ranges succeed for different work types—critical input for an adaptive engine"
+          },
+          {
+            "file": "patterns.json (project context from 2026-05-07T20:31:22Z)",
+            "relevance": 72,
+            "summary": "Current project structure (node/vitest/npm, test_pattern, source_dir conventions) provides context needed to apply adaptive timeouts per stage and understand which metrics to monitor"
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency pattern from 2026-03-*)",
+            "relevance": 48,
+            "summary": "Failure pattern data reveals common failure modes (missing setup, initialization) that inform timeout strategy—shows which errors are transient/fixable vs indicative of deeper problems"
+          }
+        ]
+      },
+      "timestamp": 1778186173,
+      "ttl": 1800
+    },
+    "7e4f3b292807734709c8690f78282837": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-07)",
+            "relevance": 90,
+            "summary": "Current project metadata showing Node.js + vitest + npm configuration; essential for understanding build environment constraints for timeout engine"
+          },
+          {
+            "file": "success-patterns.json (bug fix and auth feature, 2026-03-29)",
+            "relevance": 88,
+            "summary": "Real build patterns from this repo showing 3-5 iterations, 45-150s durations, specific file change patterns; directly informs timeout baseline calibration"
+          },
+          {
+            "file": "success-patterns.json (add auth module, 2026-04-01)",
+            "relevance": 80,
+            "summary": "Feature build pattern with TDD approach, 5 iterations, 300s duration, unit+integration test strategy; demonstrates typical feature build timeline for timeout estimates"
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency, effectiveness 95%)",
+            "relevance": 72,
+            "summary": "Common build failure (npm install) with high fix effectiveness; impacts stage timeout calculations for dependency resolution phase"
+          },
+          {
+            "file": "failures.json (cannot read property, effectiveness 100%)",
+            "relevance": 68,
+            "summary": "Frequent initialization error with reliable fix; affects test phase timeout estimation due to variable state issues"
+          }
+        ]
+      },
+      "timestamp": 1778186268,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 100,
+            "summary": "Describes project conventions (Node.js, vitest, npm, commonjs imports, src/ directory) that directly inform build stage decisions on file structure, test execution, and code style"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Shows previous successful builds took 3-4 iterations with npm test strategy; file patterns indicate changes to .claude configs, scripts/, and tests. Provides iteration baseline and test command precedent"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 0,
+            "summary": "Empty array; no failure patterns captured yet to inform recovery strategies"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 0,
+            "summary": "Empty array; no prior decisions to reference for this build stage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 0,
+            "summary": "Empty baselines object; no historical performance data available yet"
+          }
+        ]
+      },
+      "timestamp": 1778186279,
+      "ttl": 1800
     }
   }
 }

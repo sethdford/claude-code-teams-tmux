@@ -357,6 +357,9 @@ main() {
         adaptive)
             exec "$SCRIPT_DIR/sw-adaptive.sh" "$@"
             ;;
+        adaptive-timeout)
+            exec "$SCRIPT_DIR/sw-adaptive-timeout.sh" "$@"
+            ;;
         regression)
             exec "$SCRIPT_DIR/sw-regression.sh" "$@"
             ;;

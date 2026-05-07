@@ -185,11 +185,16 @@ timeout_record() {
 # Returns: number of samples
 timeout_sample_count() {
     local stage="${1:-unknown}"
+    local count
 
-    [[ ! -f "$TIMEOUT_HISTORY_FILE" ]] && echo "0" && return 0
+    if [[ ! -f "$TIMEOUT_HISTORY_FILE" ]]; then
+        echo "0"
+        return 0
+    fi
 
-    # Count lines where .stage == arg1
-    grep -c "\"stage\":\"$stage\"" "$TIMEOUT_HISTORY_FILE" 2>/dev/null | xargs || echo "0"
+    # Count lines where .stage == arg1 (grep -c returns 1 if no matches found, so suppress exit code)
+    count=$(grep -c "\"stage\":\"$stage\"" "$TIMEOUT_HISTORY_FILE" 2>/dev/null || true)
+    echo "${count:-0}"
 }
 
 # timeout_calculate_p95(stage) — Calculate P95 duration from historical data.
