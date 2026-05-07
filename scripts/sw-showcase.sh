@@ -270,7 +270,7 @@ main() {
         go)     write_go "$out" ;;
     esac
 
-    emit_event "showcase_generated" "stack=$stack" "out=$out"
+    emit_event "showcase.generated" "stack=$stack" "out=$out"
     success "Showcase generated: $out"
     info "  Stack:  $stack"
     info "  Files:  $(find "$out" -type f | wc -l | tr -d ' ')"
