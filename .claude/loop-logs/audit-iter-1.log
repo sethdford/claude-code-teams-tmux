@@ -1,1 +1,53 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Summary
+
+Based on my comprehensive review of the cumulative work on the Adaptive Stage Timeout Engine (Issue #447), I found **one critical specification violation** that needs fixing.
+
+### Issues Identified
+
+**CRITICAL: Recording Both Successful AND Failed Runs (Spec Violation)**
+
+- **Locations**: `scripts/lib/pipeline-execution.sh` lines 65-71 (success path) and 105-113 (failure path)
+- **The Problem**: The specification explicitly states: _"Record only successful runs (failed runs skew the data and don't represent normal behavior)"_
+- **Current Behavior**: The implementation records stage durations for BOTH successful AND failed runs, with an explicit comment "Stage failed after retries - still record the duration" at line 106
+- **Evidence of Intent**: The agent explicitly chose this in commit `91500b1`, which documented: "Records both successful and failed stage durations" as an intentional design choice, deviating from spec
+- **Impact**: This causes failed/timeout/hanging stages to inflate P95/P99 percentile values, artificially increasing timeouts unnecessarily and wasting compute resources. For flaky stages, this creates a negative feedback loop where failures cause timeouts to increase.
+- **Fix Required**: Remove the timeout recording from the failure path (lines 105-113) so durations are only recorded when stages succeed
+
+### Positive Findings
+
+✅ All 4 implementation tasks completed:
+- ✅ Main CLI script created (`sw-adaptive-timeout.sh` - 219 lines, fully functional)
+- ✅ Anomaly detection implemented (`timeout_check_anomaly()` function)
+- ✅ Pipeline integration complete with duration tracking
+- ✅ `--force-timeout` CLI flag properly parsed and integrated
+
+✅ Code Quality:
+- No TODOs or incomplete code
+- 26/26 adaptive timeout unit tests passing
+- Proper bash 3.2 compatibility
+- Atomic writes using `mktemp + mv` pattern
+- Good error handling with fallbacks
+- History file rotation implemented (prevents unbounded growth)
+- Correct precedence: CLI flag > adaptive > hardcoded
+
+✅ Features Working:
+- P95 percentile calculation correct
+- 20% buffer applied correctly
+- Min/max bounds enforced (30s-7200s)
+- Cold-start fallback to hardcoded defaults
+- History rotation at 10K entries
+- Metadata recording (template, complexity)
+
+### Minor Issue
+
+**Inconsistent Naming** (cosmetic, not functional):
+- The `timeout_check_anomaly()` function comment says "Emits warnings if duration > P90" but actually calculates and uses P95
+- This is confusing but functionally correct since both are percentiles
+
+---
+
+**AUDIT_FAIL** — One critical specification violation must be fixed before merge. The implementation must record ONLY successful stage runs, not failed ones, per the spec requirement "Record only successful runs (failed runs skew the data and don't represent normal behavior)".
