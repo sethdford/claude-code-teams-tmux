@@ -32,15 +32,17 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
+          "architect",
           "tester",
-          "reviewer"
+          "security-auditor",
+          "docs-writer"
         ],
         "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "reasoning": "Task requires designing a generator system (architect), implementing the automated tool (builder), validating generated example repos work correctly (tester), ensuring generated examples follow security best practices for adoption (security-auditor), and documenting the tool and examples (docs-writer).",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778187302,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1403,258 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "671b869bfd82d372e252e146affaf8c3": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "External dependencies for 5 tech stacks (Go, Python, Rust, Node) may not be available in all environments",
+          "Cost of running 5 full Shipwright pipelines could be significant",
+          "API rate limiting or failures during concurrent pipeline runs",
+          "Stack-specific setup and configuration issues",
+          "Maintenance burden keeping examples current with new Shipwright versions"
+        ],
+        "implementation_hints": [
+          "Create a template-driven generator to minimize duplication across stacks",
+          "Use git worktrees with --worktree flag for parallel, isolated execution of pipelines",
+          "Pre-define stack-specific pipeline parameters and goal templates",
+          "Implement dry-run/validation mode that checks environment without running full pipelines",
+          "Cache and reuse example artifacts from successful runs to reduce cost",
+          "Create per-stack documentation with prerequisites and troubleshooting",
+          "Design test suite as a single-stack validation rather than full 5-stack run for CI efficiency"
+        ]
+      },
+      "timestamp": 1778186913,
+      "ttl": 3600
+    },
+    "2f3f5604434c755ad97f5b0225093387": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1778186925,
+      "ttl": 1800
+    },
+    "e4162b4809875d7d4dda3ca37136b4e7": {
+      "result": {
+        "estimated_cost_usd": 1.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 112000,
+        "likely_failure_stage": "build",
+        "confidence": 65,
+        "cost_breakdown": {
+          "intake": 0.12,
+          "plan": 0.34,
+          "build": 0.89,
+          "test": 0.31,
+          "review": 0.16,
+          "pr": 0.03
+        },
+        "token_breakdown": {
+          "intake": 5000,
+          "plan": 8000,
+          "build": 50000,
+          "test": 30000,
+          "review": 12000,
+          "pr": 5000,
+          "overhead": 2000
+        },
+        "risk_factors": [
+          "5 concurrent stacks increase build complexity",
+          "External dependency availability across environments",
+          "Potential API rate limiting during parallel worktree runs",
+          "Stack-specific environment setup failures (most likely cause of iteration)"
+        ],
+        "optimization_recommendations": [
+          "Use --worktree flag to parallelize 5 stack pipelines (reduces wall-clock time, increases concurrent token usage ~20%)",
+          "Pre-validate stack toolchain availability in intake stage to fail fast",
+          "Cache stack-specific artifacts between iterations",
+          "Use cost-aware template if budget constrained (route haiku to simple validation tasks)"
+        ]
+      },
+      "timestamp": 1778186939,
+      "ttl": 3600
+    },
+    "d737cd15630e4114eec28428858ef1c1": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-03)",
+            "relevance": 95,
+            "summary": "Exact repo conventions: node project, vitest test runner, npm package manager, javascript language, src/ source directory, commonjs imports. Essential for planning features in this codebase."
+          },
+          {
+            "file": "success-patterns.json (auth module feature, 5 iterations)",
+            "relevance": 75,
+            "summary": "Feature implementation pattern showing iterative TDD approach with unit+integration testing strategy. Demonstrates multi-file changes (src/auth.ts, test/auth.test.ts), relevant complexity level (60), and successful test strategy applicable to new features."
+          },
+          {
+            "file": "success-patterns.json (authentication feature, 4 iterations)",
+            "relevance": 70,
+            "summary": "Larger feature work (complexity 65) showing iteration scaling and integration test patterns. Demonstrates how npm test strategy scales across multiple iterations, relevant for medium-complexity feature planning."
+          },
+          {
+            "file": "patterns.json (nodejs, 2026-02-21)",
+            "relevance": 50,
+            "summary": "Generic nodejs project detection pattern. Confirms project type but less specific than shipwright-specific patterns. Useful as general node.js context."
+          },
+          {
+            "file": "success-patterns.json (Fix bug, 3 iterations)",
+            "relevance": 45,
+            "summary": "Shows iteration and testing strategy patterns with npm test framework. While this is bug-fix work rather than feature work, the loop iteration approach and test execution strategy are applicable to feature planning."
+          }
+        ]
+      },
+      "timestamp": 1778186998,
+      "ttl": 1800
+    },
+    "12b5406e75ebc2599eb466f81e7400ea": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Contains project-specific conventions (node, vitest, npm, javascript, src/, commonjs) essential for validating plan structure and implementation strategy"
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 85,
+            "summary": "Shows successful feature delivery pattern with complexity scoring, iterations, file patterns, and test strategy that serve as validation baseline for plan quality"
+          },
+          {
+            "file": "failures.json (EONENT, cannot read property)",
+            "relevance": 72,
+            "summary": "Documents common failure signatures (missing dependencies, uninitialized variables) with high fix effectiveness rates — plan validation should ensure these are mitigated"
+          }
+        ]
+      },
+      "timestamp": 1778187141,
+      "ttl": 1800
+    },
+    "7919e433e21c9f02a41070c3d3e90db5": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current repo's technical stack (Node.js, vitest, npm, JavaScript) and conventions (src/, test patterns, commonjs) directly inform architectural decisions for the example generator"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 90,
+            "summary": "Architecture rules framework is critical input for design stage — defines guardrails and patterns the generator should enforce/exemplify"
+          },
+          {
+            "file": "success-patterns.json (add auth module feature)",
+            "relevance": 75,
+            "summary": "Shows successful feature implementation with TDD approach, complexity scoring (60), and file pattern conventions — relevant for designing generator templates"
+          },
+          {
+            "file": "success-patterns.json (bug fix pattern)",
+            "relevance": 70,
+            "summary": "Demonstrates iteration patterns, complexity assessment, and approach documentation useful for designing the generator's architectural guidance"
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency)",
+            "relevance": 60,
+            "summary": "Common Node.js failure pattern to anticipate in design — generator should help examples avoid dependency installation issues"
+          }
+        ]
+      },
+      "timestamp": 1778187168,
+      "ttl": 1800
+    },
+    "bf79e15638ff417537665a9513f00719": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (id: 0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a)",
+            "relevance": 85,
+            "summary": "Detailed successful feature delivery pattern showing 3 iterations for authentication, file patterns (loop logs, shell scripts), and test strategy. Inverted, shows design anti-patterns to avoid: excessive iteration count, poor initial planning, scattered file organization."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, captured 2026-05-03)",
+            "relevance": 82,
+            "summary": "Current project conventions and structure (Node, vitest, CommonJS, src/ directory, *.test.js pattern). Critical baseline for design decisions—informs what architectural patterns already exist and what design approaches would conflict with established conventions."
+          },
+          {
+            "file": "failures.json (EONENT signature)",
+            "relevance": 71,
+            "summary": "Shows common failure: missing dependency installation before testing. Informs anti-patterns in design: failing to account for setup/initialization steps, assuming dependencies are pre-installed, not documenting prerequisites."
+          }
+        ]
+      },
+      "timestamp": 1778187186,
+      "ttl": 1800
+    },
+    "c11bb1ca43932146651e16866aca8c09": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-03)",
+            "relevance": 95,
+            "summary": "Exact repo configuration: Node project, vitest test runner, npm package manager, commonjs imports, src/ source dir. Directly applicable to current build stage."
+          },
+          {
+            "file": "success-patterns.json (auth module feature)",
+            "relevance": 85,
+            "summary": "Feature implementation in Node with complexity 60, TDD approach, unit+integration tests, 5 iterations. Directly relevant pattern for building new features in this project type."
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency)",
+            "relevance": 80,
+            "summary": "Critical build-stage failure: missing npm install. Shows 95% fix effectiveness. Highly relevant for preventing common npm-based build failures."
+          },
+          {
+            "file": "success-patterns.json (bug fixes, iterations 3)",
+            "relevance": 60,
+            "summary": "Shows successful iteration and audit cleanup patterns for this repo. Demonstrates post-audit cleanup approach and loop-state management relevant to build stage recovery."
+          },
+          {
+            "file": "failures.json (cannot read property)",
+            "relevance": 50,
+            "summary": "Common Node.js initialization bug with 100% fix effectiveness. Useful reference pattern for debugging runtime errors that may occur during build."
+          }
+        ]
+      },
+      "timestamp": 1778187278,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Critical for build stage: specifies project type (Node), test runner (vitest), package manager (npm), test patterns (*.test.js), source layout (src/), and import style (commonjs) — essential for understanding how to build and test this codebase"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Moderate relevance: contains two successful bug-fix and feature-addition patterns from this repo showing loop iterations, test strategy (npm test), template choice (standard), and duration estimates — useful for understanding what approaches have worked before"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Low relevance: baselines are empty, so no historical build performance or metrics available to inform current build stage optimization"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Low relevance: decisions array is empty, no prior architectural or implementation decisions captured to guide current build work"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 10,
+            "summary": "Minimal relevance: failures array is empty, no failure patterns or root causes available to avoid in this build iteration"
+          }
+        ]
+      },
+      "timestamp": 1778187290,
+      "ttl": 1800
     }
   }
 }

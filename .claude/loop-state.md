@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Automated Tech Stack Example Repository Generator for Adoption Showcase
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan: Automated Tech Stack Example Repository Generator for Adoption Showcase
+
+**Issue:** #441
+**Stage:** plan
+**Complexity:** simple
+**Date:** 2026-05-07
+
+## Goal
+
+Add a new Shipwright command that generates a minimal tech-stack example repository (scaffold) demonstrating Shipwright adoption for a target stack (Node, Python, Go). The artifact is a directory of files that a new user can copy/clone to see Shipwright integrated into a representative project.
+
+## Socratic Refinement (Self-Answered)
+
+### Requirements Clarity
+- **Minimum viable change:** A single new bash module `scripts/sw-showcase.sh` plus CLI router wiring that, given `--stack <node|python|go>` and `--out <dir>`, writes a reproducible scaffold (README, sample source file, sample test, `.claude/CLAUDE.md` stub, and a `daemon-config.json`).
+- **Implicit requirements:** Idempotent regeneration, atomic writes, `NO_GITHUB`-safe (purely local), no destructive overwrite without `--force`.
+- **Acceptance criteria (defined since none provided):**
+  1. `shipwright showcase --stack node --out /tmp/x` exits 0 and produces a directory with at least: `README.md`, `package.json`, `src/index.js`, `test/index.test.js`, `.claude/CLAUDE.md`, `.claude/daemon-config.json`.
+  2. The same command refuses to overwrite an existing non-empty `--out` unless `--force` is passed.
+  3. `shipwright showcase --stack python --out X` produces analogous Python scaffold (`pyproject.toml`, `src/`, `tests/`).
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Automated Tech Stack Example Repository Generator for Adoption Showcase
+## Context
+## Decision
+### Component Diagram
+### Interface Contracts
+# Public entry point (invoked by router)
+# Internal contracts (in script scope)
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Automated Tech Stack Example Repository Generator for Adoption Showcase
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Automated Tech Stack Example Repository Generator for Adoption Showcase
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "patterns.json (sethdford/shipwright, 2026-05-03)",
       "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "summary": "Exact repo configuration: Node project, vitest test runner, npm package manager, commonjs imports, src/ source dir. Directly applicable to current build stage."
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "success-patterns.json (auth module feature)",
+      "relevance": 85,
+      "summary": "Feature implementation in Node with complexity 60, TDD approach, unit+integration tests, 5 iterations. Directly relevant pattern for building new features in this project type."
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "failures.json (ENOENT missing dependency)",
+      "relevance": 80,
+      "summary": "Critical build-stage failure: missing npm install. Shows 95% fix effectiveness. Highly relevant for preventing common npm-based build failures."
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "success-patterns.json (bug fixes, iterations 3)",
+      "relevance": 60,
+      "summary": "Shows successful iteration and audit cleanup patterns for this repo. Demonstrates post-audit cleanup approach and loop-state management relevant to build stage recovery."
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "failures.json (cannot read property)",
+      "relevance": 50,
+      "summary": "Common Node.js initialization bug with 100% fix effectiveness. Useful reference pattern for debugging runtime errors that may occur during build."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Automated Tech Stack Example Repository Generator for Adoption Showcase — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Automated Tech Stack Example Repository Generator for Adoption Showcase
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/sw-showcase.sh` skeleton (shebang, pipefail, VERSION, usage)
+- [ ] Task 2: Implement argument parsing with validation
+- [ ] Task 3: Implement pre-flight + force-overwrite guard
+- [ ] Task 4: Implement Node stack writer (atomic, jq-built JSON)
+- [ ] Task 5: Implement Python stack writer
+- [ ] Task 6: Implement Go stack writer
+- [ ] Task 7: Implement common file writer (.claude/, README, .gitignore)
+- [ ] Task 8: Add `emit_event` and success summary
+- [ ] Task 9: Wire `showcase` subcommand into `scripts/sw` router
+- [ ] Task 10: Create `scripts/sw-showcase-test.sh` with ≥6 PASS/FAIL cases
+- [ ] Task 11: Register test in `package.json` test chain
+- [ ] Task 12: Run `npm test` locally, fix regressions
+- [ ] Task 13: Run `shipwright docs sync` to update AUTO sections
+- [ ] `shipwright showcase --help` prints usage
+- [ ] `shipwright showcase --stack node --out /tmp/sw-demo` writes ≥6 files
+- [ ] Generated `package.json` parses with `jq`
+- [ ] Refuses overwrite without `--force`; honors `--force`
+- [ ] All three stacks (node, python, go) supported
+- [ ] `scripts/sw-showcase-test.sh` passes with PASS=N, FAIL=0
+- [ ] `npm test` exits 0
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-441
+- Issue: none
+- Generated: 2026-05-07T20:52:07Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-05-07T20:55:03Z
+last_iteration_at: 2026-05-07T20:55:03Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
