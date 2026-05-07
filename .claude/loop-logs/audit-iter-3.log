@@ -1,1 +1,70 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit of the cumulative work, I've found critical issues:
+
+## ISSUES FOUND
+
+### 1. **Missing Test Registration (CRITICAL)**
+The new test file `scripts/sw-adaptive-timeout-test.sh` was created with all 26 tests passing, but **was NOT added to the package.json test script**. The npm test command doesn't include it:
+```
+grep "sw-adaptive-timeout-test" package.json  # Returns nothing
+```
+This means the feature's tests are never run by `npm test`.
+
+### 2. **Test Suite Failures (BLOCKING)**
+`npm test` currently fails with exit code 5 due to a pre-existing unrelated test failure in `sw-feedback-test.sh` (regression detection). This prevents accurate validation of the adaptive timeout work.
+
+### 3. **P90 vs P95 Inconsistency (LOGIC ERROR)**
+In `scripts/lib/adaptive-timeout.sh` line 344:
+```bash
+p90=$(timeout_calculate_p95 "$stage") || p90=""  # BUG: calling P95 function, storing in P90 variable
+```
+- The specification says anomaly detection should warn at "P90"
+- But the implementation calculates and uses P95 (line 344 calls `timeout_calculate_p95`)
+- Variable naming is misleading (calling it `p90` when it's actually P95)
+- Line 354 warns about exceeding "P90 threshold" but the value is P95
+
+The specification also shows conflicting requirements:
+- Timeout adaptive logic uses "p95 + 20%" (correct)
+- But anomaly detection docs mention "P90" instead of "P95"
+
+### 4. **Agent Claimed Success Without Proof**
+The agent output states:
+- "All quality gates pass. The feature is complete and production-ready."
+- "26 adaptive timeout tests: PASS ✓"
+- "LOOP_COMPLETE"
+
+However:
+- Tests aren't registered in npm test
+- npm test actually fails (exit 5)
+- Claims don't match reality
+
+## WHAT IS WORKING
+
+✓ Core library is well-implemented (365 lines, comprehensive)  
+✓ CLI script is complete (219 lines, all commands)  
+✓ Test suite itself is comprehensive (26 tests, all passing when run directly)  
+✓ Pipeline integration calls are in place  
+✓ Atomic file operations and error handling are correct  
+✓ Cold start fallback logic exists  
+
+## REQUIRED FIXES
+
+1. **Add test registration** to `package.json` line 39:
+   ```bash
+   ... && bash scripts/sw-adaptive-timeout-test.sh && bash scripts/sw-feedback-test.sh ...
+   ```
+
+2. **Fix P90 vs P95 bug** in `scripts/lib/adaptive-timeout.sh`:
+   - Either implement actual P90 calculation OR
+   - Rename all `p90` variables to `p95` and update documentation
+
+3. **Verify the feedback test failure** is pre-existing and not caused by adaptive timeout changes
+
+---
+
+**AUDIT_FAIL**
+
+The core implementation is solid, but critical issues prevent this from being production-ready: missing test registration prevents validation, and the P90/P95 inconsistency is a logic bug that needs correction.
