@@ -49,6 +49,15 @@
   "max_turns": {
     "pipeline_stage": 30
   },
+  "test_prioritization": {
+    "enabled": false,
+    "fast_fail_mode": true,
+    "history_window_runs": 50,
+    "affected_only": false,
+    "max_priority_tests": 0,
+    "affected_weight": 60,
+    "failrate_weight": 40
+  },
   "last_optimization": {
     "timestamp": "2026-04-04T18:44:56Z",
     "adjustments": "compound_quality enabled (CFR 25% > 20%); merge stage recommended (deploy freq 3.0/week); "

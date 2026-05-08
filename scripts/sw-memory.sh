@@ -2015,6 +2015,77 @@ cmd_memory_ab_report() {
     echo ""
 }
 
+# ─── Test Outcome Tracking (for test-prioritization engine) ────────────────
+
+# Append a test outcome record to per-repo history.
+# memory_record_test_outcome <test_file> <pass|fail> <duration_s> [changed_files_csv]
+memory_record_test_outcome() {
+    local test_file="${1:-}"
+    local result="${2:-}"
+    local duration="${3:-0}"
+    local changed_csv="${4:-}"
+
+    [[ -z "$test_file" ]] && return 1
+    [[ "$result" != "pass" && "$result" != "fail" ]] && return 1
+
+    ensure_memory_dir >/dev/null 2>&1 || true
+    local dir history
+    dir=$(repo_memory_dir)
+    history="$dir/test-history.jsonl"
+
+    local changed_json="[]"
+    if [[ -n "$changed_csv" ]] && command -v jq >/dev/null 2>&1; then
+        changed_json=$(echo "$changed_csv" | tr ',' '\n' | grep -v '^$' | jq -R . | jq -s .)
+    fi
+
+    local line
+    if command -v jq >/dev/null 2>&1; then
+        line=$(jq -c -n \
+            --arg t "$test_file" \
+            --arg r "$result" \
+            --argjson d "$duration" \
+            --argjson c "$changed_json" \
+            --arg ts "$(now_iso)" \
+            '{test_file:$t, result:$r, duration_s:$d, changed_files:$c, ts:$ts}')
+    else
+        line="{\"test_file\":\"$test_file\",\"result\":\"$result\",\"duration_s\":$duration,\"ts\":\"$(now_iso)\"}"
+    fi
+
+    # Concurrency guard via flock when available
+    if command -v flock >/dev/null 2>&1; then
+        ( flock -x 200; echo "$line" >> "$history" ) 200>"$history.lock"
+    else
+        echo "$line" >> "$history"
+    fi
+}
+
+# Compute fail rate (0.0–1.0) for a test over the last N records.
+# memory_get_test_failure_rate <test_file> [window=50]
+memory_get_test_failure_rate() {
+    local test_file="${1:-}"
+    local window="${2:-50}"
+    [[ -z "$test_file" ]] && { echo "0.0"; return 0; }
+
+    local history
+    history="$(repo_memory_dir)/test-history.jsonl"
+    [[ ! -f "$history" ]] && { echo "0.0"; return 0; }
+    command -v jq >/dev/null 2>&1 || { echo "0.0"; return 0; }
+
+    local matches
+    matches=$(grep -F "\"test_file\":\"$test_file\"" "$history" 2>/dev/null | tail -n "$window" || true)
+    if [[ -z "$matches" ]]; then
+        echo "0.000"
+        return 0
+    fi
+    echo "$matches" | jq -s --arg t "$test_file" '
+        [.[] | select(.test_file == $t)] as $entries
+        | ($entries | length) as $total
+        | ([$entries[] | select(.result == "fail")] | length) as $fails
+        | if $total == 0 then 0.0 else ($fails / $total) end
+    ' 2>/dev/null \
+        | awk 'NR==1 { printf "%.3f", $1 }'
+}
+
 # ─── Help ──────────────────────────────────────────────────────────────────
 
 show_help() {
