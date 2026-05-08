@@ -1,11 +1,1 @@
-Iteration 1 delivered the core waste detector:
-
-- `scripts/lib/loop-waste-detector.sh` — circular edit detection, semantic similarity, zero-progress, orchestrator, atomic JSON report writer, cost estimation
-- `scripts/sw-waste-detector-test.sh` — 12 tests, all passing (zero progress, circular edits, no-repeat negative case, semantic similarity, report writer w/ valid JSON schema, event emission, disabled flag, termination threshold, graceful no-git)
-- Wired into `scripts/sw-loop.sh` — per-iteration `waste_detect`, early termination at `waste_termination_threshold` consecutive waste iterations, `waste-report.json` written on termination
-- `loop-convergence.sh` — three hardcoded thresholds (90/5/2) now read via `_smart_int` with same defaults
-- `dashboard/server.ts` — `GET /api/waste-metrics` endpoint with proper error envelope
-- `.claude/CLAUDE.md` — new "Iteration waste detection" bullet under Build Loop Capabilities + 6 new config keys documented in Loop Configuration table
-- `package.json` — test registered between `sw-loop-test.sh` and `sw-memory-test.sh`
-
-Loop, convergence, dashboard, pipeline-state, and pipeline-vitals tests all green. Frontend dashboard panel (Task 11) deferred — endpoint is live; the UI can consume it separately.
+You're out of extra usage · resets 12:20am (UTC)
