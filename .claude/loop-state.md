@@ -172,16 +172,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-08T19:42:16Z
-last_iteration_at: 2026-05-08T19:42:16Z
+started_at: 2026-05-08T19:49:55Z
+last_iteration_at: 2026-05-08T19:49:55Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -192,4 +192,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-08T19:49:55Z)
+- **`scripts/lib/session-restart.sh`** — added `restart_generate_brief_json()`, `restart_track_outcome()`, `restart_su
+- **`scripts/lib/loop-iteration.sh`** — `compose_prompt()` now reads `restart-brief.json` and injects "What NOT to Rep
+- **`scripts/sw-loop.sh`** — calls `restart_track_outcome` on successful completion and on each failure exit path.
 
