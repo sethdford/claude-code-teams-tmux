@@ -1,1 +1,84 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox.enabled is set but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my comprehensive review of the cumulative work, here are the critical findings:
+
+## AUDIT FINDINGS
+
+### Major Issues (Feature Not Functional)
+
+**1. CRITICAL: Integration Not Complete (Task 6 Missing)**
+- `test-priority.sh` functions (`tp_run_prioritized`) are **not wired into `sw-loop.sh`**
+- The `run_test_gate` function in sw-loop.sh (line ~974–1028 per plan) shows no calls to test-priority
+- Feature exists but cannot be used
+
+**2. CRITICAL: Dashboard Metrics Not Added (Task 9 Missing)**
+- `dashboard/server.ts` has no handling of `testTimeSavedSeconds`, `testsSkippedByPrioritization`, or `test_priority_run_complete` events
+- Pipeline logs don't parse or display prioritization metrics
+
+**3. CRITICAL: Documentation Missing (Task 10 Missing)**
+- `.claude/CLAUDE.md` has NO section on test prioritization under Build Loop Capabilities or Intelligence Layer
+- Users cannot discover or understand this feature
+
+### Code Quality Issues
+
+**4. Inefficient jq Batching (test-priority.sh lines 55–61)**
+```bash
+TP_ENABLED=$(echo "$block" | jq -r 'if has("enabled") then .enabled else false end')
+TP_FAST_FAIL_MODE=$(echo "$block" | jq -r 'if has("fast_fail_mode") then .fast_fail_mode else true end')
+...  # 7 separate jq invocations on the same object
+```
+Should batch into single jq call with multiple outputs.
+
+**5. Fragile Null Handling (test-priority.sh line 50)**
+```bash
+block=$(jq -c '.test_prioritization // {}' "$cfg" 2>/dev/null || echo '{}')
+[[ "$block" == "null" || "$block" == "{}" ]] && return 0
+```
+jq's `//` operator doesn't convert explicit `null` to `{}`. Should use `jq -c '(.test_prioritization // {})'` or handle the null case.
+
+**6. Over-broad File Matching (test-dep-map.sh line 61)**
+```bash
+find "$project_root" -name "$base" -type f 2>/dev/null | head -1
+```
+This matches ANY file named "foo" anywhere in the project. For a test library, should restrict to `src/`, `lib/`, `test/` directories to avoid false matches in unrelated code.
+
+**7. Missing Function Existence Check (test-priority.sh line 192)**
+```bash
+local d
+d=$(testopt_get_historical_duration "$tf2" 2>/dev/null || echo 0)
+```
+Calls `testopt_get_historical_duration` without checking `type -t`. The memory functions properly check (`if [[ "$(type -t memory_get_test_failure_rate 2>/dev/null)" == "function" ]]`), but this doesn't.
+
+**8. Edge Case: Empty Affected Set Syntax (test-priority.sh lines 112–113)**
+```bash
+affected_set=" "
+for a in "${affected[@]:-}"; do affected_set+="$a "; done
+[[ "$affected_set" == *" $tf "* ]]
+```
+The space-padding approach works but is fragile. An associative array (when bash 4.0+) or simple grep on a newline-delimited list would be clearer.
+
+### Positive Findings
+
+✓ Test suite (sw-test-priority-test.sh) is well-written with 19 passing tests  
+✓ Memory integration points (flock concurrency guard, JSONL format) are sound  
+✓ Config loading handles missing/malformed configs gracefully  
+✓ Dependency map caching with atomic writes is correct  
+✓ New test suite properly registered in package.json
+
+---
+
+## VERDICT
+
+The agent completed foundation tasks 1–5, 7–8, 11–12 but **left the feature non-functional** by skipping critical integration (Task 6), metrics (Task 9), and documentation (Task 10). The code quality issues are minor and would be caught in a review pass, but the missing integration is a blocker. The feature exists as isolated libraries but has **zero integration into the build loop**.
+
+**AUDIT_FAIL**
+
+**Specific issues to fix in next iteration:**
+1. Wire `tp_run_prioritized` into `sw-loop.sh:run_test_gate` 
+2. Add dashboard event parsing and metrics display
+3. Document test prioritization in CLAUDE.md Build Loop section
+4. Fix jq batching in config loading
+5. Fix file-matching scope in test-dep-map.sh
+6. Add function-existence checks in test-priority.sh
