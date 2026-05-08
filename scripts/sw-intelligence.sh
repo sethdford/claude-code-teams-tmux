@@ -1437,11 +1437,19 @@ cmd_status() {
         fi
     fi
 
+    # Fleet pattern library size (cross-repo knowledge sharing)
+    local fleet_patterns_count=0
+    local fleet_patterns_file="${HOME}/.shipwright/fleet-patterns.json"
+    if [[ -f "$fleet_patterns_file" ]]; then
+        fleet_patterns_count=$(jq '.patterns | length' "$fleet_patterns_file" 2>/dev/null || echo "0")
+    fi
+
     echo ""
     echo -e "${BOLD}Intelligence Status${RESET}"
     echo -e "  Config:           ${CYAN}${intel_enabled}${RESET} — resolved: ${resolved}"
     echo -e "  Cached analyses:  ${CYAN}${cached_count}${RESET}"
     echo -e "  Memory entries:   ${CYAN}${memory_count}${RESET}"
+    echo -e "  Fleet patterns:   ${CYAN}${fleet_patterns_count}${RESET}"
     echo -e "  Claude auth:      ${claude_ok}"
     echo -e "  Last call:       ${DIM}${last_ts}${RESET}"
     echo ""

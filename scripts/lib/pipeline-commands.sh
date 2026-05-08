@@ -1018,6 +1018,21 @@ pipeline_start() {
         if [[ -x "$SCRIPT_DIR/sw-memory.sh" ]]; then
             bash "$SCRIPT_DIR/sw-memory.sh" capture "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
         fi
+        # Fleet-wide pattern extraction (cross-repo knowledge sharing)
+        if [[ -x "$SCRIPT_DIR/sw-fleet-patterns.sh" ]]; then
+            local _fp_tech="${INTELLIGENCE_LANGUAGE:-}"
+            [[ -z "$_fp_tech" && -f "package.json" ]] && _fp_tech="node npm"
+            local _fp_repo
+            _fp_repo=$(git config --get remote.origin.url 2>/dev/null | sed 's|.*[:/]||;s|\.git$||' || echo "local")
+            bash "$SCRIPT_DIR/sw-fleet-patterns.sh" extract \
+                --tech-stack "$_fp_tech" \
+                --issue-signature "${GOAL:-}" \
+                --error-signature "" \
+                --repo "$_fp_repo" \
+                --cost "${total_cost:-0}" \
+                --iterations "$((SELF_HEAL_COUNT + 1))" \
+                --outcome "success" 2>/dev/null || true
+        fi
         # Record RL episode for cross-session learning (Phase 7)
         if type rl_record_from_pipeline >/dev/null 2>&1; then
             rl_record_from_pipeline true "$((SELF_HEAL_COUNT + 1))" "${total_cost:-0}" \

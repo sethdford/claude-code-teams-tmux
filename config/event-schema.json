@@ -213,6 +213,18 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "fleet_patterns_extract": {
+      "required": ["id"],
+      "optional": ["tech", "outcome"]
+    },
+    "fleet_patterns_use": {
+      "required": ["id"],
+      "optional": ["outcome"]
+    },
+    "fleet_patterns_prune": {
+      "required": [],
+      "optional": ["removed", "kept"]
     }
   }
 }

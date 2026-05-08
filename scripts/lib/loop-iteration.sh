@@ -143,6 +143,34 @@ Fix these specific errors. Each line above is one distinct error from the test o
         fi
     fi
 
+    # Fleet-wide pattern injection (cross-repo knowledge sharing)
+    local fleet_patterns_section=""
+    if [[ -x "$SCRIPT_DIR/sw-fleet-patterns.sh" ]] && command -v jq >/dev/null 2>&1; then
+        local fp_tech="${TECH_STACK:-}"
+        if [[ -z "$fp_tech" && -f "package.json" ]]; then fp_tech="node npm"; fi
+        local fp_issue="${GOAL:-}"
+        local fp_err=""
+        if [[ -f ".claude/pipeline-artifacts/error-summary.json" ]]; then
+            fp_err=$(jq -r '.errors[]? // empty' .claude/pipeline-artifacts/error-summary.json 2>/dev/null | head -3 | tr '\n' ' ')
+        fi
+        local fp_matches
+        fp_matches=$("$SCRIPT_DIR/sw-fleet-patterns.sh" query \
+            --tech-stack "$fp_tech" \
+            --issue-signature "$fp_issue" \
+            --error-signature "$fp_err" \
+            --top 3 --threshold 60 --json 2>/dev/null || echo '{"matches":[]}')
+        local fp_n
+        fp_n=$(echo "$fp_matches" | jq '.matches | length' 2>/dev/null || echo 0)
+        if [[ "$fp_n" -gt 0 ]]; then
+            fleet_patterns_section="## Fleet-Wide Pattern Matches (cross-repo knowledge)
+The following patterns from successful runs in other repos may be relevant:
+$(echo "$fp_matches" | jq -r '.matches[] |
+    "- [score: \(.match_score)] tech=\(.tech_stack)\n  issue: \(.issue_signature)\n  root cause: \(.root_cause // \"(unknown)\")\n  fix: \(.fix // \"(unknown)\")\n  effectiveness: \(.effectiveness * 100 | floor)% over \(.uses) uses"')
+
+Treat these as suggestions, not facts. Validate against current context before applying."
+        fi
+    fi
+
     # DORA baselines for context
     local dora_section=""
     if type memory_get_dora_baseline >/dev/null 2>&1; then
@@ -396,6 +424,8 @@ $memory_section
 }
 ${discovery_section:+## Cross-Pipeline Learnings
 $discovery_section
+}
+${fleet_patterns_section:+$fleet_patterns_section
 }
 ${reward_section:+$reward_section
 }

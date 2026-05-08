@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "pm",
+          "docs-writer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Fleet-wide pattern learning system requires architectural design for cross-repo knowledge capture/sharing at scale; builder for implementation, PM for decomposition, docs-writer for knowledge system documentation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778269124,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,335 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "78beaa5c32f05224185741046fe087d3": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern extraction may miss critical context, leading to misapplication across dissimilar repos",
+          "Centralized fleet-patterns.json could become performance bottleneck or single point of failure",
+          "Pattern matching algorithm needs careful tuning to avoid false positives that harm build quality",
+          "Metrics design for effectiveness tracking is non-trivial and could bias pattern selection toward outliers",
+          "Patterns optimized for one tech stack may not generalize to diverse repo architectures",
+          "Integration with existing intelligence engine and build loop could introduce unexpected conflicts"
+        ],
+        "implementation_hints": [
+          "Start with simple, well-understood patterns (iteration recovery, test approaches) before complex architectural patterns",
+          "Implement fuzzy matching and similarity scoring for flexible pattern queries across repo differences",
+          "Add pattern versioning and lineage tracking to audit which repo/run produced each pattern",
+          "Include human validation gates for high-impact patterns before fleet-wide application",
+          "Design pattern schema to be versioned and backward-compatible for fleet growth",
+          "Implement usage analytics and real-time effectiveness scoring tied to downstream pipeline outcomes",
+          "Consider opt-in pattern matching initially to build confidence before making it default behavior",
+          "Cache frequently-matched patterns locally to prevent centralized storage queries from becoming latency bottleneck"
+        ]
+      },
+      "timestamp": 1778268563,
+      "ttl": 3600
+    },
+    "58973b757092d64f6d7675141e72d9ea": {
+      "result": {
+        "estimated_iterations": 12
+      },
+      "timestamp": 1778268573,
+      "ttl": 1800
+    },
+    "ce70bf5151cfd20f2039dd34c1ace0cf": {
+      "result": {
+        "estimated_cost_usd": 22.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 95000,
+        "likely_failure_stage": "build",
+        "confidence": 71
+      },
+      "timestamp": 1778268585,
+      "ttl": 3600
+    },
+    "2332c33819748588d5961488501dc429": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.90,
+        "secondary_domains": [
+          "backend",
+          "data-pipeline",
+          "observability",
+          "machine-learning"
+        ],
+        "complexity_assessment": {
+          "score": 8,
+          "reasoning": "Requires designing a sophisticated pattern extraction engine from heterogeneous sources (events.jsonl, memory, git history), implementing a pattern matching API with similarity scoring, integrating with build loop and intelligence engine, tracking pattern effectiveness metrics, and building dashboard visualization. Pattern generalization across different tech stacks and error signatures presents non-trivial algorithm design challenges."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "data-pipeline",
+            "pattern-matching-similarity-scoring"
+          ],
+          "review": [
+            "adversarial-quality",
+            "pattern-matching-similarity-scoring"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "collection-system-validation",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge critical assumptions about pattern generalization (will a fix from a Python repo help a Go repo?), feasibility of similarity scoring across heterogeneous codebases, and whether cold-start problem is solvable for new repos.",
+          "architecture-design": "Design the fleet-patterns.json schema with versioning strategy, document integration points with build loop and intelligence engine, create ADR for pattern lifecycle and effectiveness tracking.",
+          "api-design": "Pattern matching query API must support multiple filter dimensions (tech stack, issue type, error signature, architecture patterns) and return ranked results with confidence scores—careful API design prevents downstream coupling.",
+          "data-pipeline": "Extract patterns from three heterogeneous sources (events.jsonl for outcomes, memory for solutions, git history for decisions); design the extraction pipeline to handle schema evolution and missing data gracefully.",
+          "pattern-matching-similarity-scoring": "Core feature implementation—similarity scoring algorithm must correctly match patterns across different contexts; this skill directly applies to algorithm design, edge case handling, and validation.",
+          "adversarial-quality": "Probe the pattern extraction for contamination from failed runs, test whether over-generalized patterns could harm repos with different architectures, verify pattern matching doesn't introduce false positives.",
+          "testing-strategy": "Pattern extraction is a critical path—comprehensive tests needed for each data source, similarity scoring edge cases, schema versioning, and integration points with build loop and intelligence engine.",
+          "collection-system-validation": "Pattern extraction aggregates data from events.jsonl (unstructured), memory (variable schemas), and git history (sparse); validators ensure data quality before patterns are stored in centralized library.",
+          "observability": "Monitor pattern library growth, effectiveness distribution, and usage patterns across fleet; detect when pattern matching is expensive or when certain patterns are never used (signal for cleanup).",
+          "pr-quality": "A complex feature like this needs a PR reviewers can understand—clear breakdown of extraction engine, schema changes, API surface, and integration points.",
+          "documentation": "Acceptance criteria explicitly requires CLAUDE.md updates to intelligence layer and fleet mode sections; patterns become part of the system's decision logic.",
+          "deploy-safety": "Fleet-patterns.json is shared across all repos—any schema bug or extraction failure cascades across fleet; controlled rollout with feature flag and rollback plan is essential.",
+          "validation-thoroughness": "Verify patterns are actually being captured from pipeline runs, that build loop correctly queries and applies patterns, and that intelligence engine integration is working end-to-end."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Pattern extraction correctness: Does extraction engine capture the right signals from events.jsonl, memory, and git history? Are failed runs filtered out?",
+          "Similarity scoring algorithm: Is pattern matching correctly scoring similarity across different tech stacks (Python → Go), frameworks, and error signatures? Validate edge cases where patterns shouldn't generalize.",
+          "Schema versioning and evolution: Can fleet-patterns.json schema evolve without breaking existing pattern queries? Migration strategy for library upgrades?",
+          "Integration correctness: Do build loop and intelligence engine correctly query patterns? Are patterns applied at the right decision points? No double-counting or conflicting patterns?",
+          "Data quality and validation: Are extracted patterns validated before storage? Are false or low-confidence patterns filtered? What confidence threshold gates pattern inclusion?",
+          "Performance at scale: Pattern matching algorithm performance with large pattern libraries (100+). Does querying patterns become a bottleneck in build loop?",
+          "Effectiveness measurement: How is pattern effectiveness tracked? Success rate calculation—control for confounding factors (complexity, team skill, other changes)?"
+        ],
+        "risk_areas": [
+          "Pattern contamination: Faulty patterns extracted from failed runs could mislead other repos. False positives in pattern matching cause build loop to pursue ineffective strategies.",
+          "Over-generalization: Pattern from a monorepo may not apply to a microservices architecture. Language-specific patterns leaking across polyglot teams.",
+          "Schema lock-in: Early design mistakes in fleet-patterns.json schema lock in the fleet. Changes require migration and coordination across all repos.",
+          "Cold-start problem: New repos with no pipeline history cannot query patterns effectively. Bootstrapping fleet patterns from one repo into another needs validation.",
+          "Computational cost: Pattern matching during build loop or intelligence engine decision-making could add latency. Caching strategy required.",
+          "Stale pattern detection: Patterns that worked in 2025 may be obsolete by 2026 (new language versions, framework changes, team churn). No mechanism to retire old patterns.",
+          "False negatives: Build loop fails to find a relevant pattern, leading to repeated failures across fleet. Query API missing important similarity dimensions."
+        ]
+      },
+      "timestamp": 1778268772,
+      "ttl": 3600
+    },
+    "b6769df4a7aacf21434723bf2231f062": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 95,
+            "summary": "Directly implements fleet-wide knowledge system with version, entries, publish/query/injection metrics, and time-saved tracking — the core data structure for the feature"
+          },
+          {
+            "file": "global.json",
+            "relevance": 90,
+            "summary": "Contains explicit cross_repo_learnings field designed for capturing and sharing patterns across repositories — foundational for cross-repo knowledge sharing"
+          },
+          {
+            "file": "success-patterns.json (multi-iteration features)",
+            "relevance": 75,
+            "summary": "Detailed success patterns with iterations, file changes, approaches, and test strategies — exemplifies what knowledge should be extracted and shared fleet-wide"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright project details)",
+            "relevance": 70,
+            "summary": "Project-specific conventions (source_dir, test_pattern, import_style) that represent reusable patterns for Node.js projects — candidates for fleet normalization"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Architecture rules that can be extracted and shared across repos as design standards — enables architecture consistency across the fleet"
+          }
+        ]
+      },
+      "timestamp": 1778268853,
+      "ttl": 1800
+    },
+    "8e36321e1557f529e7ecdd3265ad5e24": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 92,
+            "summary": "Directly models the fleet-wide pattern learning system with entries, publish/query/injection metrics, and time-saved tracking — core infrastructure for the goal"
+          },
+          {
+            "file": "global.json",
+            "relevance": 88,
+            "summary": "Contains cross_repo_learnings field which is the primary output of a fleet-wide pattern sharing system — essential for understanding what patterns should be captured and shared"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 75,
+            "summary": "Current repo project detection and conventions (node/vitest/npm/commonjs) provides context needed for plan validation in this specific repository"
+          }
+        ]
+      },
+      "timestamp": 1778268939,
+      "ttl": 1800
+    },
+    "90edc5a0ce62210c4e7d133bc314518d": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 95,
+            "summary": "Contains cross_repo_learnings field that directly aligns with the core feature goal of sharing knowledge across repositories. Provides the data structure model for fleet-wide pattern storage."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 92,
+            "summary": "Directly models fleet-wide pattern metrics: publishes, queries, matches, injections, and time saved. Provides metrics design and demonstrates pattern lifecycle tracking across repos."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-08)",
+            "relevance": 85,
+            "summary": "Current repo's detected patterns including project type (node), test runner (vitest), and conventions (src/, commonjs). Essential context for designing pattern schema that captures repo-specific conventions."
+          },
+          {
+            "file": "success-patterns.json (test1)",
+            "relevance": 70,
+            "summary": "Demonstrates successful pattern capture structure with file_patterns, test_strategy, approach, and iterations. Provides template for what pattern metadata should be collected during learning."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Contains architecture rules that the pattern learning system should respect. Informs design decisions around constraint enforcement and pattern validation."
+          }
+        ]
+      },
+      "timestamp": 1778268967,
+      "ttl": 1800
+    },
+    "5c0aaa16e0ed824e0a84fc886651a730": {
+      "result": {
+        "results": [
+          {
+            "file": "global.json",
+            "relevance": 95,
+            "summary": "Contains cross_repo_learnings array, directly applicable to fleet-wide pattern learning system design. Shows what patterns and knowledge should be shared across repos to avoid redundant learning."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 92,
+            "summary": "Explicitly models a fleet-wide knowledge system with version, entries, and metrics (publishes, queries, matches, injections). Empty state reveals potential design gaps and ineffectiveness patterns to avoid in the new system."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 78,
+            "summary": "Shows what approaches succeeded in previous work (TDD, module isolation, iterative approaches). Understanding successes helps identify their inverses as anti-patterns to reject in fleet-wide design."
+          }
+        ]
+      },
+      "timestamp": 1778268982,
+      "ttl": 1800
+    },
+    "bbff70e41212b76bce1bff450aa65913": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 95,
+            "summary": "This IS the core data structure for the fleet-wide pattern learning system being built - entries, metrics tracking, publishes/queries/matches/injections counts. Directly defines the schema for the feature."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 92,
+            "summary": "Current project configuration - Node.js with vitest, npm, JavaScript. Essential context for building compatible patterns in this codebase."
+          },
+          {
+            "file": "global.json",
+            "relevance": 88,
+            "summary": "Global cross-repo learnings storage - the knowledge destination for the fleet-wide system. Shows where captured patterns will be aggregated across repos."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 78,
+            "summary": "Demonstrates successful feature implementation capturing: iterations, file patterns, test strategy, complexity scoring. Provides reference for pattern schema design and what metadata to track."
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency)",
+            "relevance": 75,
+            "summary": "Common Node.js failure pattern with root cause and fix. Shows failure pattern tracking that the fleet learning system should capture and surface to prevent recurrence across repos."
+          }
+        ]
+      },
+      "timestamp": 1778269100,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 100,
+            "summary": "Project conventions essential for build: source_dir (src/), test_pattern (*.test.js), import_style (commonjs), test_runner (vitest), package_manager (npm) — directly guides code organization and testing during build"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two successful builds (bug fix: 3 iterations/45s, feature: 3 iterations/150s) using standard template matching current pipeline — demonstrates iteration strategies and expected build complexity"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recurring test-stage failure (3 occurrences) in sw-cleanup.sh heartbeat detection — relevant for avoiding this failure when build loop runs tests"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 15,
+            "summary": "Empty baselines object — no historical performance data to inform build decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array — no prior architectural decisions to reference during build"
+          }
+        ]
+      },
+      "timestamp": 1778269112,
+      "ttl": 1800
+    },
+    "e19d6da7441584421780cc0f0b0dddd4": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1778269513,
+      "ttl": 1800
     }
   }
 }
