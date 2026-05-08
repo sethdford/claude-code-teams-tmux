@@ -1,1 +1,0 @@
-Fixed the `file_mtime` cross-platform bug that was causing 3 sw-cleanup tests to fail. On Linux, GNU stat treats `-f` as "display filesystem status" rather than "format string", so the BSD-first chain returned non-numeric output. Reordered to try GNU `-c '%Y'` first and validate result is numeric. All 24 cleanup tests + 17 session-restart tests now pass.
