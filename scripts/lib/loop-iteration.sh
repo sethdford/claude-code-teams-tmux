@@ -281,11 +281,38 @@ ${alt_strategy}"
     local restart_section=""
     if [[ "$SESSION_RESTART" == "true" ]]; then
         local briefing_file="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-briefing.md"
+        local brief_json="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-brief.json"
+
+        # Build "What NOT to Repeat" section from structured brief JSON
+        local do_not_repeat_block=""
+        if [[ -f "$brief_json" ]]; then
+            local dnr_lines
+            dnr_lines=$(jq -r '.do_not_repeat[]? // empty' "$brief_json" 2>/dev/null | sed 's/^/- /' | head -10 || true)
+            local next_dir
+            next_dir=$(jq -r '.next_direction // empty' "$brief_json" 2>/dev/null || true)
+            local focus_files
+            focus_files=$(jq -r '.focus_files[]? // empty' "$brief_json" 2>/dev/null | sed 's/^/- /' | head -10 || true)
+            if [[ -n "$dnr_lines" || -n "$next_dir" || -n "$focus_files" ]]; then
+                do_not_repeat_block="
+## What NOT to Repeat (from previous session analysis)
+${dnr_lines:-- (no specific anti-patterns detected)}
+"
+                [[ -n "$next_dir" ]] && do_not_repeat_block="${do_not_repeat_block}
+## Recommended Next Direction
+${next_dir}
+"
+                [[ -n "$focus_files" ]] && do_not_repeat_block="${do_not_repeat_block}
+## Files to Focus On
+${focus_files}
+"
+            fi
+        fi
+
         if [[ -f "$briefing_file" ]]; then
             # Inject intelligent briefing from session-restart.sh
             restart_section="## Session Restart Briefing
 $(cat "$briefing_file")
-
+${do_not_repeat_block}
 You are starting a FRESH session after the previous one exhausted its context.
 Read the briefing above carefully and continue from where the previous session left off.
 Do NOT repeat work already done. Focus on what's failing and what to try next."
@@ -293,7 +320,7 @@ Do NOT repeat work already done. Focus on what's failing and what to try next."
             # Fallback to basic progress.md
             restart_section="## Previous Session Progress
 $(cat "$LOG_DIR/progress.md")
-
+${do_not_repeat_block}
 You are starting a FRESH session after the previous one exhausted its iterations.
 Read the progress above and continue from where it left off. Do NOT repeat work already done."
         fi

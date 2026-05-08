@@ -927,6 +927,30 @@ vitals_dashboard() {
         echo ""
     fi
 
+    # ── Session Restart Intelligence ──
+    local outcomes_file="${artifacts_dir}/restart-outcomes.json"
+    local history_file="${artifacts_dir}/restart-history.json"
+    if [[ -f "$outcomes_file" || -f "$history_file" ]]; then
+        local restart_total=0 restart_success_pct="n/a"
+        if [[ -f "$outcomes_file" ]]; then
+            restart_total=$(jq 'length' "$outcomes_file" 2>/dev/null || echo "0")
+            restart_total=$(_safe_num "$restart_total")
+            if [[ "$restart_total" -gt 0 ]]; then
+                local successes
+                successes=$(jq '[.[] | select(.outcome == "success")] | length' "$outcomes_file" 2>/dev/null || echo "0")
+                restart_success_pct=$(awk -v s="$successes" -v t="$restart_total" 'BEGIN { printf "%d%%", (s/t)*100 }')
+            fi
+        fi
+        local history_count=0
+        [[ -f "$history_file" ]] && history_count=$(jq 'length' "$history_file" 2>/dev/null || echo "0")
+        history_count=$(_safe_num "$history_count")
+
+        printf "  ${BOLD}Restart Intelligence:${RESET}\n"
+        printf "    ${DIM}Restarts (history): %d, success rate: %s (n=%d)${RESET}\n" \
+            "$history_count" "$restart_success_pct" "$restart_total"
+        echo ""
+    fi
+
     # ── Budget trajectory ──
     local bt
     bt=$(pipeline_budget_trajectory "$state_file")

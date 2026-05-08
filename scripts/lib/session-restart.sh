@@ -472,11 +472,174 @@ restart_before_restart() {
         warn "Failed to enhance progress.md (continuing anyway)"
     }
 
+    # Generate structured brief JSON for prompt injection
+    restart_generate_brief_json "$state_file" "$reason" "$strategy" || {
+        warn "Failed to generate restart brief JSON (continuing anyway)"
+    }
+
     success "Restart preparation complete"
     info "State: $state_file"
     info "Briefing: $briefing_file"
     info "Strategy: $strategy"
 
+    return 0
+}
+
+# ─── Structured Brief JSON ────────────────────────────────────────────────
+# Generate machine-readable restart-brief.json with actionable "what NOT to
+# repeat" guidance. Consumed by loop-iteration.sh compose_prompt().
+restart_generate_brief_json() {
+    local state_file="${1:-${ARTIFACTS_DIR:-${LOG_DIR}}/restart-state.json}"
+    local reason="${2:-unknown}"
+    local strategy="${3:-}"
+    local brief_file="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-brief.json"
+    local tmp_brief="${brief_file}.tmp.$$"
+
+    [[ ! -f "$state_file" ]] && {
+        warn "Cannot generate brief JSON: state file missing ($state_file)"
+        return 1
+    }
+
+    # Pull from state
+    local goal modified_files recent_error tests_failed
+    goal=$(jq -r '.goal // ""' "$state_file" 2>/dev/null || echo "")
+    modified_files=$(jq -r '.files.modified // ""' "$state_file" 2>/dev/null || echo "")
+    recent_error=$(jq -r '.errors // ""' "$state_file" 2>/dev/null || echo "")
+    tests_failed=$(jq -r '.progress.tests_failed // 0' "$state_file" 2>/dev/null || echo "0")
+
+    # Attempted approaches (from strategy attempt log)
+    local strategy_log="${LOG_DIR}/strategy-attempts.txt"
+    local attempted_json="[]"
+    if [[ -f "$strategy_log" ]]; then
+        attempted_json=$(jq -Rsn '[inputs | select(length>0)]' < "$strategy_log" 2>/dev/null || echo "[]")
+    fi
+
+    # Files to focus on (top modified) and avoid (already-committed if tests pass)
+    local focus_files_json avoid_files_json
+    focus_files_json=$(printf '%s\n' "$modified_files" | jq -Rsn '[inputs | select(length>0)] | .[0:10]' 2>/dev/null || echo "[]")
+    avoid_files_json="[]"
+
+    # Failure patterns from error-summary.json
+    local failure_patterns_json="[]"
+    if [[ -f "$LOG_DIR/error-summary.json" ]]; then
+        failure_patterns_json=$(jq -c '[.error_lines[]? // empty] | .[0:5]' "$LOG_DIR/error-summary.json" 2>/dev/null || echo "[]")
+        [[ -z "$failure_patterns_json" || "$failure_patterns_json" == "null" ]] && failure_patterns_json="[]"
+    fi
+
+    # "What NOT to repeat" — concrete actionable items derived from the above
+    local do_not_repeat_json
+    do_not_repeat_json=$(jq -n \
+        --argjson attempted "$attempted_json" \
+        --argjson failures "$failure_patterns_json" \
+        --arg reason "$reason" \
+        '
+        ([$attempted[] | "Strategy already tried: " + .]) +
+        ([$failures[] | "Error already encountered: " + .]) +
+        (if $reason == "context_exhaustion" then ["Re-reading entire files already explored — use targeted reads"] else [] end) +
+        (if $reason == "stuck_loop" then ["Repeating the same fix that did not work — try a different approach"] else [] end)
+        ' 2>/dev/null || echo "[]")
+
+    # Recommended next direction
+    local next_direction
+    case "$reason" in
+        context_exhaustion) next_direction="Focus on incomplete work; avoid re-exploring committed files" ;;
+        stuck_loop)         next_direction="Try a fundamentally different approach to the failing area" ;;
+        iteration_limit)    next_direction="Prioritize highest-impact remaining work for goal completion" ;;
+        manual)             next_direction="Continue from where the previous session left off" ;;
+        *)                  next_direction="Make measurable progress toward the goal" ;;
+    esac
+
+    # Compose final brief atomically
+    jq -n \
+        --arg ts "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+        --arg reason "$reason" \
+        --arg goal "$goal" \
+        --arg strategy "$strategy" \
+        --arg next_direction "$next_direction" \
+        --argjson restart_count "${RESTART_COUNT:-0}" \
+        --argjson tests_failed "$tests_failed" \
+        --argjson attempted "$attempted_json" \
+        --argjson failure_patterns "$failure_patterns_json" \
+        --argjson do_not_repeat "$do_not_repeat_json" \
+        --argjson focus_files "$focus_files_json" \
+        --argjson avoid_files "$avoid_files_json" \
+        '{
+            timestamp: $ts,
+            restart_count: $restart_count,
+            reason: $reason,
+            goal: $goal,
+            strategy: $strategy,
+            next_direction: $next_direction,
+            attempted_approaches: $attempted,
+            failure_patterns: $failure_patterns,
+            do_not_repeat: $do_not_repeat,
+            focus_files: $focus_files,
+            avoid_files: $avoid_files,
+            tests_failed: $tests_failed
+        }' > "$tmp_brief" 2>/dev/null || {
+            warn "Failed to compose restart brief JSON"
+            rm -f "$tmp_brief"
+            return 1
+        }
+
+    if mv "$tmp_brief" "$brief_file" 2>/dev/null; then
+        emit_event "session.brief_generated" "brief_file=$brief_file" "reason=$reason" 2>/dev/null || true
+        echo "$brief_file"
+        return 0
+    fi
+    rm -f "$tmp_brief"
+    return 1
+}
+
+# ─── Outcome Tracking ─────────────────────────────────────────────────────
+# Record success/failure of a restart so we can compute success-rate metrics.
+# Call after the loop ends following a restart.
+restart_track_outcome() {
+    local outcome="${1:-unknown}"   # success | failure | unknown
+    local restart_count="${2:-${RESTART_COUNT:-0}}"
+    local final_iteration="${3:-${ITERATION:-0}}"
+
+    # Only meaningful when at least one restart happened
+    [[ "$restart_count" -le 0 ]] && return 0
+
+    local outcomes_file="${ARTIFACTS_DIR:-${LOG_DIR}}/restart-outcomes.json"
+    mkdir -p "${ARTIFACTS_DIR:-${LOG_DIR}}" 2>/dev/null || true
+
+    local existing="[]"
+    [[ -f "$outcomes_file" ]] && jq . "$outcomes_file" >/dev/null 2>&1 && existing=$(cat "$outcomes_file")
+
+    local entry
+    entry=$(jq -n \
+        --arg ts "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+        --arg outcome "$outcome" \
+        --argjson restart_count "$restart_count" \
+        --argjson final_iteration "$final_iteration" \
+        --arg goal "${GOAL:-${ORIGINAL_GOAL:-}}" \
+        '{timestamp: $ts, outcome: $outcome, restart_count: $restart_count, final_iteration: $final_iteration, goal: $goal}')
+
+    local tmp="${outcomes_file}.tmp.$$"
+    if echo "$existing" | jq --argjson entry "$entry" '. += [$entry]' > "$tmp" 2>/dev/null; then
+        if mv "$tmp" "$outcomes_file" 2>/dev/null; then
+            emit_event "session.outcome_tracked" "outcome=$outcome" "restart_count=$restart_count" 2>/dev/null || true
+            return 0
+        fi
+    fi
+    rm -f "$tmp"
+    return 1
+}
+
+# Compute restart success rate from outcomes file. Echoes a fraction (0.0–1.0)
+# or "n/a" when no outcomes recorded.
+restart_success_rate() {
+    local outcomes_file="${1:-${ARTIFACTS_DIR:-${LOG_DIR}}/restart-outcomes.json}"
+    [[ ! -f "$outcomes_file" ]] && { echo "n/a"; return 0; }
+
+    local total successes
+    total=$(jq 'length' "$outcomes_file" 2>/dev/null || echo "0")
+    [[ "$total" -le 0 ]] && { echo "n/a"; return 0; }
+    successes=$(jq '[.[] | select(.outcome == "success")] | length' "$outcomes_file" 2>/dev/null || echo "0")
+
+    awk -v s="$successes" -v t="$total" 'BEGIN { printf "%.2f", s/t }'
     return 0
 }
 

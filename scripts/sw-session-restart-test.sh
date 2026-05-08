@@ -438,6 +438,121 @@ test_state_capture_includes_git_info() {
     return 0
 }
 
+test_brief_json_generation_produces_valid_json() {
+    setup_test_env
+    echo -n "Testing brief JSON generation produces valid JSON... "
+
+    # Create state file
+    local state_file="$ARTIFACTS_DIR/restart-state.json"
+    {
+        printf '{\n'
+        printf '  "goal": "Test goal",\n'
+        printf '  "progress": {\n'
+        printf '    "iteration": 5, "max_iterations": 10,\n'
+        printf '    "test_status": "false", "tests_passed": 2, "tests_failed": 3\n'
+        printf '  },\n'
+        printf '  "files": {"modified": "a.sh\\nb.sh"},\n'
+        printf '  "errors": "TypeError on line 42"\n'
+        printf '}\n'
+    } > "$state_file"
+
+    RESTART_COUNT=1
+    local brief_file
+    brief_file=$(restart_generate_brief_json "$state_file" "context_exhaustion" "Focus remaining tests")
+
+    [[ ! -f "$brief_file" ]] && { echo "FAIL: Brief file not created"; return 1; }
+    jq . "$brief_file" >/dev/null 2>&1 || { echo "FAIL: Brief is not valid JSON"; return 1; }
+
+    local reason next_dir
+    reason=$(jq -r '.reason' "$brief_file")
+    next_dir=$(jq -r '.next_direction' "$brief_file")
+    [[ "$reason" != "context_exhaustion" ]] && { echo "FAIL: reason wrong ($reason)"; return 1; }
+    [[ -z "$next_dir" || "$next_dir" == "null" ]] && { echo "FAIL: next_direction missing"; return 1; }
+
+    # do_not_repeat should be an array
+    local dnr_type
+    dnr_type=$(jq -r '.do_not_repeat | type' "$brief_file")
+    [[ "$dnr_type" != "array" ]] && { echo "FAIL: do_not_repeat not array ($dnr_type)"; return 1; }
+
+    echo "PASS"
+    return 0
+}
+
+test_brief_json_includes_actionable_guidance() {
+    setup_test_env
+    echo -n "Testing brief JSON includes actionable guidance for stuck loop... "
+
+    local state_file="$ARTIFACTS_DIR/restart-state.json"
+    echo '{"goal":"g","progress":{"iteration":3,"max_iterations":10,"test_status":"false","tests_passed":0,"tests_failed":5},"files":{"modified":""},"errors":""}' > "$state_file"
+
+    RESTART_COUNT=2
+    local brief_file
+    brief_file=$(restart_generate_brief_json "$state_file" "stuck_loop" "Try different approach")
+
+    local has_stuck_guidance
+    has_stuck_guidance=$(jq '[.do_not_repeat[] | select(test("different approach"; "i"))] | length' "$brief_file")
+    [[ "$has_stuck_guidance" -lt 1 ]] && { echo "FAIL: Missing stuck-loop guidance"; return 1; }
+
+    echo "PASS"
+    return 0
+}
+
+test_outcome_tracking_records_success() {
+    setup_test_env
+    echo -n "Testing outcome tracking records success... "
+
+    RESTART_COUNT=1
+    ITERATION=4
+    GOAL="test"
+    restart_track_outcome "success" 1 4 || { echo "FAIL: tracking returned non-zero"; return 1; }
+
+    local outcomes_file="$ARTIFACTS_DIR/restart-outcomes.json"
+    [[ ! -f "$outcomes_file" ]] && { echo "FAIL: outcomes file not created"; return 1; }
+    jq . "$outcomes_file" >/dev/null 2>&1 || { echo "FAIL: outcomes not valid JSON"; return 1; }
+
+    local count outcome
+    count=$(jq 'length' "$outcomes_file")
+    outcome=$(jq -r '.[0].outcome' "$outcomes_file")
+    [[ "$count" != "1" ]] && { echo "FAIL: expected 1 entry, got $count"; return 1; }
+    [[ "$outcome" != "success" ]] && { echo "FAIL: expected success, got $outcome"; return 1; }
+
+    echo "PASS"
+    return 0
+}
+
+test_outcome_tracking_skips_when_no_restart() {
+    setup_test_env
+    echo -n "Testing outcome tracking is no-op when restart_count=0... "
+
+    restart_track_outcome "success" 0 4 || { echo "FAIL: tracking errored"; return 1; }
+    local outcomes_file="$ARTIFACTS_DIR/restart-outcomes.json"
+    [[ -f "$outcomes_file" ]] && { echo "FAIL: outcomes file should not exist for restart_count=0"; return 1; }
+
+    echo "PASS"
+    return 0
+}
+
+test_success_rate_computation() {
+    setup_test_env
+    echo -n "Testing success rate computation... "
+
+    RESTART_COUNT=1
+    restart_track_outcome "success" 1 4 || true
+    restart_track_outcome "failure" 1 4 || true
+    restart_track_outcome "success" 1 4 || true
+
+    local rate
+    rate=$(restart_success_rate "$ARTIFACTS_DIR/restart-outcomes.json")
+    # Expect 2/3 ≈ 0.67
+    if ! awk -v r="$rate" 'BEGIN { exit !(r > 0.6 && r < 0.7) }'; then
+        echo "FAIL: expected ~0.67, got $rate"
+        return 1
+    fi
+
+    echo "PASS"
+    return 0
+}
+
 test_briefing_token_limit() {
     setup_test_env
     echo -n "Testing briefing stays under 2000 token budget... "
@@ -494,6 +609,11 @@ TESTS=(
     "test_enhanced_progress_md_backward_compatible"
     "test_enhanced_progress_md_shows_antipatterns"
     "test_state_capture_includes_git_info"
+    "test_brief_json_generation_produces_valid_json"
+    "test_brief_json_includes_actionable_guidance"
+    "test_outcome_tracking_records_success"
+    "test_outcome_tracking_skips_when_no_restart"
+    "test_success_rate_computation"
     "test_briefing_token_limit"
 )
 
@@ -502,9 +622,9 @@ FAIL=0
 
 for test in "${TESTS[@]}"; do
     if $test; then
-        ((PASS++))
+        PASS=$((PASS + 1))
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
     fi
 done
 

@@ -2455,6 +2455,9 @@ ${GOAL}"
             write_state
             write_progress
             show_summary
+            if type restart_track_outcome >/dev/null 2>&1; then
+                restart_track_outcome "success" "$RESTART_COUNT" "$ITERATION" || true
+            fi
             return 0
         fi
 
@@ -2585,15 +2588,24 @@ run_loop_with_restarts() {
                 continue
             else
                 warn "Context exhaustion limit reached — failing build"
+                if type restart_track_outcome >/dev/null 2>&1; then
+                    restart_track_outcome "failure" "$RESTART_COUNT" "$ITERATION" || true
+                fi
                 return "$loop_exit"
             fi
         fi
 
         if [[ "$MAX_RESTARTS" -le 0 ]]; then
+            if type restart_track_outcome >/dev/null 2>&1; then
+                restart_track_outcome "failure" "$RESTART_COUNT" "$ITERATION" || true
+            fi
             return "$loop_exit"
         fi
         if [[ "$RESTART_COUNT" -ge "$MAX_RESTARTS" ]]; then
             warn "Max restarts ($MAX_RESTARTS) reached — stopping"
+            if type restart_track_outcome >/dev/null 2>&1; then
+                restart_track_outcome "failure" "$RESTART_COUNT" "$ITERATION" || true
+            fi
             return "$loop_exit"
         fi
         # Hard cap safety net (configurable)
@@ -2601,6 +2613,9 @@ run_loop_with_restarts() {
         _hard_cap=$(_smart_int "loop.hard_restart_cap" 5)
         if [[ "$RESTART_COUNT" -ge "$_hard_cap" ]]; then
             warn "Hard restart cap ($_hard_cap) reached — stopping"
+            if type restart_track_outcome >/dev/null 2>&1; then
+                restart_track_outcome "failure" "$RESTART_COUNT" "$ITERATION" || true
+            fi
             return "$loop_exit"
         fi
 

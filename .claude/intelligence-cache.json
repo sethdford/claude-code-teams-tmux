@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Design intelligent session restart system with context-aware briefing and recovery state management; builder implements, tester validates edge cases",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778269335,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,229 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "9f8d36035d2be5f87de3470b6dd39227": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Restart prompt injection could degrade restart quality if analysis is inaccurate",
+          "Measuring restart success rate requires reliable baseline and A/B test framework",
+          "Analyzing memory patterns early in system lifecycle may have insufficient data",
+          "Over-detailed briefing could itself trigger context exhaustion on next restart",
+          "False pattern detection could mislead agent away from viable approaches"
+        ],
+        "implementation_hints": [
+          "Reuse existing memory system pattern-matching logic for failure analysis",
+          "Version restart-brief.json schema early to support future ML-based recommendations",
+          "Start with rule-based approach (file hotspots, error signatures) before adding learned patterns",
+          "Add checkpoint-based A/B testing: tag restarts with/without briefing for statistical comparison",
+          "Bound briefing size (max 500 tokens) to prevent context amplification on cascading restarts",
+          "Cache analysis results per (git-state, error-summary) tuple to avoid re-analysis on rapid retries"
+        ]
+      },
+      "timestamp": 1778268560,
+      "ttl": 3600
+    },
+    "419e818c0b6f028441d9a157e15df052": {
+      "result": {
+        "estimated_iterations": 6,
+        "reasoning": "Infrastructure complexity 7 with high risk; requires iterative development of rule-based restart briefing system, edge case handling, memory integration, and context exhaustion validation. 72% success probability suggests one retry cycle."
+      },
+      "timestamp": 1778268569,
+      "ttl": 1800
+    },
+    "5e0d2932abb28bfc19dad464095c66bb": {
+      "result": {
+        "estimated_cost_usd": 5.2,
+        "estimated_iterations": 2,
+        "estimated_tokens": 125000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1778268580,
+      "ttl": 3600
+    },
+    "2839ff40b9174ab8c6602741dd7ce014": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-05-08)",
+            "relevance": 95,
+            "summary": "Current project structure: nodejs, vitest test runner, npm, javascript, commonjs imports, src/ source dir. Essential context for planning any feature in this repo."
+          },
+          {
+            "file": "success-patterns.json (detailed entries)",
+            "relevance": 85,
+            "summary": "Two successful feature deliveries: bug fix (3 iterations, 45s) and auth feature (3 iterations, 150s, complexity 65). Provides iteration estimates, complexity baselines, and TDD approach patterns relevant for planning scope."
+          },
+          {
+            "file": "failures.json (sw-cleanup heartbeat detection)",
+            "relevance": 72,
+            "summary": "Session restart intelligence inherently involves heartbeat tracking and checkpoint detection. This failure pattern (heartbeat file detection in sw-cleanup.sh) is directly relevant to restart mechanism reliability."
+          },
+          {
+            "file": "patterns.json (2026-02-21)",
+            "relevance": 55,
+            "summary": "Earlier project type detection confirms nodejs baseline. Less current than 2026-05-08 entry but validates consistency of project structure."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 40,
+            "summary": "Generic architecture rules. Minimally relevant without specific rule details, but provides framework constraints to consider during design phase."
+          }
+        ]
+      },
+      "timestamp": 1778268841,
+      "ttl": 1800
+    },
+    "5746099cbfceb012f6997d01fd7dc9aa": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Captures current project tech stack (Node.js, vitest, npm, commonjs) and conventions (src/, *.test.js) — essential for planning architecture decisions for this specific codebase"
+          },
+          {
+            "file": "success-patterns.json (Fix bug + Add authentication patterns)",
+            "relevance": 90,
+            "summary": "Shows proven iteration patterns (3-5 iterations, 45-150s duration) and TDD approach with module isolation for similar complexity features (complexity 60-65) in this exact repo"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh dry-run mode)",
+            "relevance": 70,
+            "summary": "Recent failure (2026-05-08) in this repo identifying heartbeat file detection issues — relevant to understanding system state management concerns for session restart intelligence"
+          }
+        ]
+      },
+      "timestamp": 1778269164,
+      "ttl": 1800
+    },
+    "193c0aee471583a1c1956ca117c60dda": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Contains detailed iteration patterns showing complexity levels, iteration counts, approach strategies, file patterns, and duration metrics — essential for understanding when/how sessions exhaust context and when restarts should be triggered"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Current project structure (sethdford/shipwright, vitest, nodejs) from 2026-05-08 provides design context: test strategy, import style, source directory patterns needed for restart briefing system"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 78,
+            "summary": "Existing architecture rules (rule1, rule2, rule3) constrain design decisions; restart intelligence system must respect these rules when generating briefing context"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 68,
+            "summary": "Heartbeat file detection failure pattern (sw-cleanup.sh, 2026-05-08) reveals state management challenges relevant to session restart detection and cleanup logic"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 42,
+            "summary": "Cross-repo learning metrics provide baseline for understanding how restart intelligence could improve efficiency across multiple repositories (currently no data captured)"
+          }
+        ]
+      },
+      "timestamp": 1778269209,
+      "ttl": 1800
+    },
+    "37da0e50e51d376b719418fef1a5b857": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Shows multi-iteration approach patterns (3-5 iterations, 45-300s duration) with detailed approaches. Critical for understanding iteration limits, when restarts occur, and what constitutes measurable progress — directly informs context-aware briefing design."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions (test runner: vitest, source_dir: src/, import_style: commonjs) provide context for the briefing system to summarize project state, test strategy, and recent changes in a way that's meaningful to the restarted session."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Captures failure patterns (missing properties, missing dependencies) that inform anti-patterns: what went wrong in prior iterations that the restart briefing should highlight or warn about in context injection."
+          }
+        ]
+      },
+      "timestamp": 1778269227,
+      "ttl": 1800
+    },
+    "dad21da5e4ed419cda44f88018bc90a8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project configuration: Node.js, vitest test runner, npm package manager, JavaScript with commonjs imports, src/ source dir, *.test.js test pattern. Critical for build stage context."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh dry-run)",
+            "relevance": 85,
+            "summary": "Recent test failure from 2026-05-08 (today) in sw-cleanup.sh heartbeat detection. Specific failure pattern showing missing --force hint in dry-run mode. Relevant to test stage decisions."
+          },
+          {
+            "file": "success-patterns.json (outcome-feedback fix)",
+            "relevance": 75,
+            "summary": "3-iteration successful bug fix with npm test strategy, shell script modifications to .claude/intelligence-cache.json (matching current git status). Demonstrates iteration approach for similar complexity work."
+          },
+          {
+            "file": "success-patterns.json (add auth module feature)",
+            "relevance": 70,
+            "summary": "3-4 iteration feature pattern showing iterative TDD with unit+integration testing strategy. Demonstrates multi-iteration approach for feature development at complexity 65."
+          },
+          {
+            "file": "patterns.json (nodejs project type)",
+            "relevance": 60,
+            "summary": "Project type detection from bootstrap showing Node.js context. Provides baseline project classification relevant to build tooling and dependency management decisions."
+          }
+        ]
+      },
+      "timestamp": 1778269312,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions are essential for build stage: defines test_runner (vitest), package_manager (npm), source structure (src/), and import style (commonjs) — directly informs how to build and test this Node.js project"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Two successful build patterns on this repo (3 iterations each) provide proven approaches and file change patterns; shows iteration strategy and typical test/cleanup sequences for similar bug fixes and features"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Known test failure pattern (sw-cleanup.sh heartbeat detection) with root cause and fix; informs what may fail during test phase after build, enabling proactive prevention"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 35,
+            "summary": "Empty baselines object; could establish performance benchmarks for build/test phases but currently unused"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 20,
+            "summary": "Empty decisions array; could track build-time decisions but contains no actionable context"
+          }
+        ]
+      },
+      "timestamp": 1778269323,
+      "ttl": 1800
     }
   }
 }
