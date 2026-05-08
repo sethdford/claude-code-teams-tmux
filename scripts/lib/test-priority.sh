@@ -108,9 +108,11 @@ tp_order_tests() {
         pool=("${DISCOVERED_TESTS[@]:-}")
     fi
 
-    # Build affected lookup
-    local affected_set=" "
-    for a in "${affected[@]:-}"; do affected_set+="$a "; done
+    # Build affected lookup as newline-delimited list (bash 3.2 — no associative arrays).
+    local affected_list=""
+    if [[ ${#affected[@]} -gt 0 ]]; then
+        affected_list=$(printf '%s\n' "${affected[@]}")
+    fi
 
     # Score each test → "<score> <path>" lines
     local tmp
@@ -119,7 +121,9 @@ tp_order_tests() {
     for tf in "${pool[@]:-}"; do
         [[ -z "$tf" ]] && continue
         local is_aff=0
-        [[ "$affected_set" == *" $tf "* ]] && is_aff=1
+        if [[ -n "$affected_list" ]] && grep -Fxq -- "$tf" <<< "$affected_list"; then
+            is_aff=1
+        fi
         local score
         score=$(_tp_score_test "$tf" "$is_aff")
         printf '%s %s\n' "$score" "$tf" >> "$tmp"

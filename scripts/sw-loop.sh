@@ -971,10 +971,63 @@ INSTRUCTION: This error has occurred $repeat_count times. The previous approach 
 
 # ─── Test Gate ────────────────────────────────────────────────────────────────
 
+# Attempt prioritized test execution. Returns 0 if it ran (TEST_PASSED/TEST_OUTPUT populated),
+# 1 if it should fall through to the standard test command path.
+_try_run_prioritized_tests() {
+    # Quick guard: only activate when config explicitly enables it.
+    local cfg=".claude/daemon-config.json"
+    [[ ! -f "$cfg" ]] && return 1
+    command -v jq >/dev/null 2>&1 || return 1
+    local enabled
+    enabled=$(jq -r '.test_prioritization.enabled // false' "$cfg" 2>/dev/null)
+    [[ "$enabled" != "true" ]] && return 1
+
+    local tp_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/test-priority.sh"
+    [[ ! -f "$tp_lib" ]] && return 1
+    # shellcheck source=lib/test-priority.sh
+    source "$tp_lib" 2>/dev/null || return 1
+    tp_load_config "$cfg" 2>/dev/null || true
+    [[ "${TP_ENABLED:-false}" != "true" ]] && return 1
+
+    # Compute changed files since loop start (or HEAD~1 if unset)
+    local since_ref="${LOOP_START_COMMIT:-HEAD~1}"
+    local changed_csv=""
+    if git rev-parse --verify "$since_ref" >/dev/null 2>&1; then
+        changed_csv=$(git diff --name-only "$since_ref" 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+    fi
+
+    local tp_log="$LOG_DIR/tests-prioritized-iter-${ITERATION:-0}.log"
+    echo -e "  ${DIM:-}Running prioritized tests (fast_fail=${TP_FAST_FAIL_MODE})...${RESET:-}"
+
+    local tp_exit=0
+    tp_run_prioritized "$changed_csv" > "$tp_log" 2>&1 || tp_exit=$?
+
+    if [[ "${TP_TESTS_TOTAL:-0}" -eq 0 ]]; then
+        # No discovered tests — fall through to standard path.
+        return 1
+    fi
+
+    if [[ "$tp_exit" -eq 0 ]]; then
+        TEST_PASSED=true
+    else
+        TEST_PASSED=false
+    fi
+    TEST_OUTPUT="$(tail -50 "$tp_log" 2>/dev/null)"
+    TEST_LOG_FILE="$tp_log"
+    return 0
+}
+
 run_test_gate() {
     if [[ -z "$TEST_CMD" ]] && [[ ${#ADDITIONAL_TEST_CMDS[@]} -eq 0 ]]; then
         TEST_PASSED=""
         TEST_OUTPUT=""
+        return
+    fi
+
+    # Intelligent test prioritization (opt-in via daemon-config.json test_prioritization.enabled).
+    # When enabled, runs discovered test files in priority order with optional fast-fail.
+    # Falls through to the standard test command if disabled, unconfigured, or returns no tests.
+    if _try_run_prioritized_tests; then
         return
     fi
 
