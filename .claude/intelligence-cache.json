@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Detector logic requires sophisticated algorithmic design for iteration metrics, convergence heuristics, and early termination thresholds integrated with loop infrastructure; implementation, testing, and review as supporting roles.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778269275,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,261 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "314e3177804e9a85692bda985a2d687e": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "performance",
+        "key_risks": [
+          "Semantic similarity detection false positives causing premature termination of legitimate loops",
+          "Configuration threshold complexity - incorrect settings could block necessary retry behavior",
+          "Performance overhead from continuous error signature tracking and file change monitoring",
+          "Testing difficulty - hard to reliably reproduce stuck loop scenarios for validation",
+          "Integration complexity across loop harness, daemon config, events system, and dashboard",
+          "Risk of false negatives allowing actual stuck loops to consume full iteration budget"
+        ],
+        "implementation_hints": [
+          "Start with error signature hashing (MD5) instead of full semantic similarity to reduce complexity",
+          "Leverage existing error-summary.json structure from build loop system as foundation",
+          "Implement circular file edit detection first - simpler algorithm with measurable cost ROI",
+          "Use Levenshtein distance for semantic similarity v1, evolve to embeddings only if needed",
+          "Add configurable thresholds to daemon-config.json with conservative defaults to prevent false positives",
+          "Create test suite with mock iterations demonstrating each waste signal (errors, circular edits, zero changes)",
+          "Build dashboard metrics incrementally - start with detection count, cost savings, false positive rates",
+          "Implement in loop.sh at iteration boundary check to minimize overhead",
+          "Use existing events.jsonl infrastructure for waste_detected events with iteration context",
+          "Add sampling to reduce overhead of continuous error/file tracking on long-running loops"
+        ]
+      },
+      "timestamp": 1778268589,
+      "ttl": 3600
+    },
+    "405870d67b2dc10ca07178fef51e4bcb": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1778268600,
+      "ttl": 1800
+    },
+    "ff86891098f8d65f54d4ef5fa37acd85": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 11,
+        "estimated_tokens": 520000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1778268609,
+      "ttl": 3600
+    },
+    "a2c5012044218078121a871304a66517": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains two detailed success patterns (bug fix with 3 iterations/45s, feature with 3 iterations/150s). Establishes baseline iteration metrics and durations to distinguish normal builds from stuck loops."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 93,
+            "summary": "Project configuration showing Node/vitest/npm environment with commonjs imports. Critical context for understanding the build loop detector's operational environment and test execution patterns."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat)",
+            "relevance": 75,
+            "summary": "Shows detection and reporting pattern for stale heartbeat files in dry-run mode. Relevant to how the stuck loop detector should identify and report problematic conditions."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 70,
+            "summary": "Shows feature complexity 65 requiring 5 iterations over 300s with TDD approach. Helps establish iteration thresholds and duration expectations for detecting when a build is stuck."
+          },
+          {
+            "file": "failures.json (cannot read property)",
+            "relevance": 45,
+            "summary": "Generic error pattern with 100% fix effectiveness showing variable initialization issues. Represents common errors that might indicate stalled or stuck build conditions."
+          }
+        ]
+      },
+      "timestamp": 1778268810,
+      "ttl": 1800
+    },
+    "551c3bccbffef22a5601ac4c87dc9820": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current repo project structure (Node/vitest/npm) and conventions. Essential context for plan validation—defines the codebase environment where iteration waste detection will operate."
+          },
+          {
+            "file": "success-patterns.json (auth feature 0bcf...)",
+            "relevance": 85,
+            "summary": "Feature with 3 iterations, 150s duration showing iteration patterns and file change clustering. Demonstrates typical iteration behavior for complex features—directly relevant to understanding what constitutes wasteful iterations."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 78,
+            "summary": "Stuck loop detection would benefit from understanding heartbeat/cleanup patterns. This failure shows how stuck state detection can fail—relevant to designing early termination logic."
+          }
+        ]
+      },
+      "timestamp": 1778269084,
+      "ttl": 1800
+    },
+    "3f043461868b792a3d8c4a4961640b43": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Project conventions and structure (Node.js, vitest, npm, src/ layout) are essential for designing the detector architecture for this specific codebase"
+          },
+          {
+            "file": "success-patterns.json (0bcf0637 - auth feature)",
+            "relevance": 80,
+            "summary": "Shows successful 3-iteration feature delivery with 150s duration; provides baseline for normal iteration duration and complexity patterns"
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a - bug fix)",
+            "relevance": 75,
+            "summary": "Demonstrates bug fix iteration patterns (3 iterations, 45s duration, specific file patterns); useful for understanding what constitutes successful vs. stuck iterations"
+          },
+          {
+            "file": "success-patterns.json (test1 - auth module)",
+            "relevance": 70,
+            "summary": "Shows feature with 5 iterations over 300s using iterative TDD; demonstrates iteration count and duration patterns that could indicate waste or stuck loops"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh detection issue)",
+            "relevance": 65,
+            "summary": "Demonstrates detection/reporting failure in this codebase; relevant to understanding how stuck loops might manifest and how to design effective detection"
+          }
+        ]
+      },
+      "timestamp": 1778269113,
+      "ttl": 1800
+    },
+    "3dfd7fa92cd4f8ba16448cf22810a76e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (with f4af3e2a and 0bcf0637 patterns)",
+            "relevance": 88,
+            "summary": "Shows actual iteration histories with detailed approach tracking across 3-4 iterations. The 'approach' field explicitly documents iteration-by-iteration progress (e.g., 'loop: iteration 3 — post-audit cleanup'). Directly relevant for understanding iteration patterns, complexity scoring, duration, and what constitutes productive vs wasted iterations."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 45,
+            "summary": "Documents detection of stale heartbeat files and stuck process state. Relevant for understanding how to identify and detect problematic pipeline state, which relates to early termination and stuck loop detection patterns."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright with conventions)",
+            "relevance": 38,
+            "summary": "Provides project context (Node.js, vitest, commonjs). Useful for understanding where and how to integrate the iteration waste detector into the existing codebase structure."
+          }
+        ]
+      },
+      "timestamp": 1778269130,
+      "ttl": 1800
+    },
+    "40b3aec14ebc07d23bc679c917a25683": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project context (sethdford/shipwright) with exact conventions: vitest test runner, npm, JavaScript, src/ source dir, commonjs imports—directly applicable to this build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Bug fix pattern showing 3-iteration successful build with .claude/*.json and scripts/lib/*.sh files changed—matches this repo's structure and iteration complexity"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Feature implementation pattern with 3 iterations, .claude/loop-logs and scripts modifications—demonstrates multi-iteration build strategies for complex features"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "TDD feature approach (add auth module) with 5 iterations, unit+integration tests, src/ and test/ patterns—shows successful iterative development strategy for feature work"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "ENOENT failure pattern with 95% fix effectiveness (npm install)—common Node.js dependency issue relevant to build stage test execution"
+          }
+        ]
+      },
+      "timestamp": 1778269244,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure and build configuration (source_dir, test_pattern, test_runner, package_manager) directly inform build stage decisions about where to find code and how to run tests"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Prior successful builds show iteration counts (3), test strategy (npm test), and file change patterns that inform expected scope and approach for current build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Test stage failure pattern provides context about known breakages in sw-cleanup.sh that may surface during current build's test phase"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 20,
+            "summary": "Empty baselines structure exists but contains no data to inform build stage decisions"
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 10,
+            "summary": "Empty decisions array provides no prior architectural or build strategy guidance"
+          }
+        ]
+      },
+      "timestamp": 1778269258,
+      "ttl": 1800
+    },
+    "3c7ebafa838a02a84e1a499e685a75b3": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1778269609,
+      "ttl": 1800
+    },
+    "bb907ba36f6b7e68c5c4ab6eb85eda5a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1778269766,
+      "ttl": 1800
     }
   }
 }
