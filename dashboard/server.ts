@@ -27,6 +27,7 @@ const MACHINES_FILE = join(HOME, ".shipwright", "machines.json");
 const COSTS_FILE = join(HOME, ".shipwright", "costs.json");
 const BUDGET_FILE = join(HOME, ".shipwright", "budget.json");
 const MEMORY_DIR = join(HOME, ".shipwright", "memory");
+const FLEET_PATTERNS_FILE = join(HOME, ".shipwright", "fleet-patterns.json");
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const WS_PUSH_INTERVAL_MS = 2000;
 
@@ -1627,6 +1628,80 @@ interface AgentInfo {
   elapsed_s: number;
 }
 
+interface FleetPatternsStats {
+  total: number;
+  schema_version: string;
+  updated_at: string | null;
+  total_uses: number;
+  total_successes: number;
+  total_failures: number;
+  avg_effectiveness: number;
+  growth_7d: number;
+  top: Array<{
+    id: string;
+    tech_stack: string;
+    issue_signature: string;
+    uses: number;
+    effectiveness: number;
+  }>;
+}
+
+function getFleetPatternsStats(): FleetPatternsStats {
+  const empty: FleetPatternsStats = {
+    total: 0,
+    schema_version: "0",
+    updated_at: null,
+    total_uses: 0,
+    total_successes: 0,
+    total_failures: 0,
+    avg_effectiveness: 0,
+    growth_7d: 0,
+    top: [],
+  };
+  if (!existsSync(FLEET_PATTERNS_FILE)) return empty;
+  try {
+    const raw = readFileSync(FLEET_PATTERNS_FILE, "utf-8");
+    const data = JSON.parse(raw);
+    const patterns = Array.isArray(data.patterns) ? data.patterns : [];
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let totalUses = 0,
+      totalSucc = 0,
+      totalFail = 0,
+      effSum = 0,
+      growth = 0;
+    for (const p of patterns) {
+      totalUses += Number(p.uses || 0);
+      totalSucc += Number(p.successes || 0);
+      totalFail += Number(p.failures || 0);
+      effSum += Number(p.effectiveness || 0);
+      if (p.created_at && Date.parse(p.created_at) >= cutoff) growth++;
+    }
+    const top = [...patterns]
+      .sort((a: any, b: any) => Number(b.uses || 0) - Number(a.uses || 0))
+      .slice(0, 5)
+      .map((p: any) => ({
+        id: String(p.id || ""),
+        tech_stack: String(p.tech_stack || ""),
+        issue_signature: String(p.issue_signature || ""),
+        uses: Number(p.uses || 0),
+        effectiveness: Number(p.effectiveness || 0),
+      }));
+    return {
+      total: patterns.length,
+      schema_version: String(data.schema_version || "0"),
+      updated_at: data.updated_at || null,
+      total_uses: totalUses,
+      total_successes: totalSucc,
+      total_failures: totalFail,
+      avg_effectiveness: patterns.length > 0 ? effSum / patterns.length : 0,
+      growth_7d: growth,
+      top,
+    };
+  } catch {
+    return empty;
+  }
+}
+
 function getAgents(): AgentInfo[] {
   const agents: AgentInfo[] = [];
   const daemonState = readDaemonState();
@@ -2812,6 +2887,13 @@ const server = Bun.serve({
         JSON.stringify(getActivityFeed(limit, offset, typeFilter, issueFilter)),
         { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
       );
+    }
+
+    // REST: Fleet pattern library stats (size, growth, effectiveness)
+    if (pathname === "/api/fleet-patterns/stats") {
+      return new Response(JSON.stringify(getFleetPatternsStats()), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
 
     // REST: Agent heartbeats

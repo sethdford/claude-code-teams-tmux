@@ -48,6 +48,7 @@ SCHEMA_VERSION="1"
 _require_jq() {
     if ! command -v jq >/dev/null 2>&1; then
         error "jq is required for fleet-patterns"
+        emit_event "fleet_patterns_error" "reason=jq_missing" || true
         return 1
     fi
 }
