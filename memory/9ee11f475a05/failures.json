@@ -3,19 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, missing 'agent-1', 'Found', and '--force' strings in dry-run output",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a summary line with 'Found N items' and '--force hint' in dry-run mode, or update the test expectations to match current output format",
-      "seen_count": 5,
-      "last_seen": "2026-05-08T19:49:39Z",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, no longer printing 'agent-1', 'Found', or '--force' hint in dry-run mode",
+      "fix": "Check sw-cleanup.sh heartbeat scan and summary logic to restore 'Found N items' count and '--force' hint output when items are detected in dry-run mode",
+      "seen_count": 4,
+      "last_seen": "2026-05-08T19:49:57Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command in sw-code-review-test.sh uses a file argument syntax instead of inline expression, passing the substitution pattern as a filename",
-      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g' filename` to use `-e` flag: `sed -e 's|$TEST_TEMP_DIR|...|g' filename` or fix the argument order so the pattern is passed correctly",
-      "seen_count": 1,
-      "last_seen": "2026-05-08T19:53:17Z",
+      "root_cause": "sed invoked without -e flag causes substitution expression to be treated as a filename; $TEST_TEMP_DIR unexpanded in sed pattern indicates single-quote or argument-order bug in sw-code-review-test.sh",
+      "fix": "change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` so the variable expands and sed receives -e to treat the argument as a script, not a file",
+      "seen_count": 2,
+      "last_seen": "2026-05-08T19:56:49Z",
       "category": "test_failure"
     }
   ]
