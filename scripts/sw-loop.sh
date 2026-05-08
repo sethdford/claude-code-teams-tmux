@@ -36,6 +36,7 @@ fi
 # Source loop sub-modules for modular iteration management
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
+[[ -f "$SCRIPT_DIR/lib/loop-waste-detector.sh" ]] && source "$SCRIPT_DIR/lib/loop-waste-detector.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
 # Intelligent session restart with enhanced briefings and cross-session tracking
@@ -2144,6 +2145,7 @@ run_single_agent_loop() {
     STUCKNESS_TRACKING_FILE="$LOG_DIR/stuckness-tracking.txt"
     : > "$STUCKNESS_TRACKING_FILE" 2>/dev/null || true
     : > "${LOG_DIR}/strategy-attempts.txt" 2>/dev/null || true
+    type waste_detector_init >/dev/null 2>&1 && waste_detector_init || true
 
     show_banner
 
@@ -2511,6 +2513,23 @@ $summary
 
 HUMAN FEEDBACK (received after iteration $ITERATION): $human_msg"
                 rm -f "$human_msg_file"
+            fi
+        fi
+
+        # Iteration waste detection: record per-iter file edits and check for early termination.
+        if type waste_record_file_edits >/dev/null 2>&1; then
+            waste_record_file_edits "$ITERATION" || true
+        fi
+        if type waste_detect >/dev/null 2>&1; then
+            waste_detect "$ITERATION" || true
+            if type waste_should_terminate >/dev/null 2>&1 && waste_should_terminate; then
+                local _waste_report
+                _waste_report="$(waste_write_report "$ITERATION" 2>/dev/null || true)"
+                STATUS="waste_terminated"
+                write_state
+                write_progress
+                warn "Iteration waste/stuck loop detected ${WASTE_CONSECUTIVE}× consecutively — terminating early. Report: ${_waste_report}"
+                break
             fi
         fi
 

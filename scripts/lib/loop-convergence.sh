@@ -210,7 +210,9 @@ detect_stuckness() {
                 else
                     overlap_pct=0
                 fi
-                if [[ "${overlap_pct:-0}" -ge 90 ]]; then
+                local _overlap_threshold
+                _overlap_threshold="$( (type _smart_int >/dev/null 2>&1 && _smart_int "loop.semantic_similarity_threshold" 90) || echo 90 )"
+                if [[ "${overlap_pct:-0}" -ge "${_overlap_threshold:-90}" ]]; then
                     stuckness_signals=$((stuckness_signals + 1))
                     stuckness_reasons+=("high text overlap (${overlap_pct}%) between iterations")
                 fi
@@ -278,7 +280,9 @@ detect_stuckness() {
     local diff_lines
     diff_lines=$(git -C "${PROJECT_ROOT:-.}" diff HEAD 2>/dev/null | wc -l | tr -d ' ' || true)
     diff_lines="${diff_lines:-0}"
-    if [[ "${diff_lines:-0}" -lt 5 ]] && [[ "$iteration" -gt 2 ]]; then
+    local _min_progress
+    _min_progress="$( (type _smart_int >/dev/null 2>&1 && _smart_int "loop.min_progress_threshold" 5) || echo 5 )"
+    if [[ "${diff_lines:-0}" -lt "${_min_progress:-5}" ]] && [[ "$iteration" -gt 2 ]]; then
         stuckness_signals=$((stuckness_signals + 1))
         stuckness_reasons+=("no code changes in last iteration")
     fi
@@ -305,8 +309,10 @@ detect_stuckness() {
         fi
     fi
 
-    # Decision: 2+ signals = stuck
-    if [[ "$stuckness_signals" -ge 2 ]]; then
+    # Decision: N+ signals = stuck (config-driven, default 2)
+    local _signal_threshold
+    _signal_threshold="$( (type _smart_int >/dev/null 2>&1 && _smart_int "loop.stuckness_signal_threshold" 2) || echo 2 )"
+    if [[ "$stuckness_signals" -ge "${_signal_threshold:-2}" ]]; then
         STUCKNESS_COUNT=$(( STUCKNESS_COUNT + 1 ))
         STUCKNESS_DIAGNOSIS="${stuckness_reasons[*]}"
         if type emit_event >/dev/null 2>&1; then

@@ -503,6 +503,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/login" ||
     pathname.startsWith("/auth/") ||
     pathname === "/api/health" ||
+    pathname === "/api/waste-metrics" ||
     pathname === "/api/ws-status" ||
     pathname.startsWith("/api/join/") ||
     pathname.startsWith("/api/connect/") ||
@@ -2600,6 +2601,77 @@ const server = Bun.serve({
       return new Response(JSON.stringify(health), {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
+    }
+
+    // GET /api/waste-metrics — Iteration waste detector aggregate stats (Issue #460)
+    if (pathname === "/api/waste-metrics" && req.method === "GET") {
+      try {
+        const eventsFile =
+          process.env.EVENTS_FILE ||
+          `${process.env.HOME}/.shipwright/events.jsonl`;
+        let totalTerminations = 0;
+        let last24h = 0;
+        let totalCostSavedUsd = 0;
+        const recentReasons: string[] = [];
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        try {
+          const fs = await import("fs");
+          if (fs.existsSync(eventsFile)) {
+            const lines = fs.readFileSync(eventsFile, "utf-8").split("\n");
+            for (const line of lines) {
+              if (!line.includes('"waste_detected"')) continue;
+              try {
+                const ev = JSON.parse(line);
+                if (ev.type !== "waste_detected") continue;
+                totalTerminations += 1;
+                const cost = parseFloat(
+                  String(ev.estimated_cost_saved_usd || 0),
+                );
+                if (!isNaN(cost)) totalCostSavedUsd += cost;
+                const ts = ev.timestamp ? Date.parse(ev.timestamp) : 0;
+                if (ts >= cutoff) last24h += 1;
+                if (ev.reasons && recentReasons.length < 10) {
+                  recentReasons.push(String(ev.reasons));
+                }
+              } catch {
+                // skip malformed line
+              }
+            }
+          }
+        } catch {
+          // events file unreadable — return zeroed metrics
+        }
+        return new Response(
+          JSON.stringify({
+            totalTerminations,
+            last24h,
+            totalCostSavedUsd: Number(totalCostSavedUsd.toFixed(2)),
+            recentReasons,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...CORS_HEADERS,
+            },
+          },
+        );
+      } catch (err) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: "internal",
+              message: String((err as Error)?.message || err),
+            },
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              ...CORS_HEADERS,
+            },
+          },
+        );
+      }
     }
 
     // GET /api/ws-status — WebSocket connection status (for evidence collection)
