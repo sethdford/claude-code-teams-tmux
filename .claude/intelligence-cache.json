@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "test-specialist",
+          "optimizer",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Intelligent prioritization engine requires strong system design; test specialist brings domain expertise, optimizer handles efficiency, builder executes.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778269306,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,366 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "b4026f0a5ca42279f9a0e9752a409712": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Incorrect test-to-file dependency mapping could hide bugs",
+          "Test ordering algorithm complexity and edge cases",
+          "Fast-fail mode aggressiveness causing premature pipeline abort",
+          "Cold-start problem: insufficient historical data initially",
+          "Memory system scalability with large test suites",
+          "Integration with multiple test runners without breaking them"
+        ],
+        "implementation_hints": [
+          "Use static analysis (AST/grep) to build initial test-to-file map from test imports",
+          "Store failure rates per test in memory system with decay function for recent data",
+          "Implement ordering algorithm: prioritize tests covering changed files, then by failure rate",
+          "Fast-fail flag in daemon-config.json controls abort-on-first-failure behavior",
+          "Extend loop telemetry to track test execution order and time savings",
+          "Add dashboard widget showing prioritization effectiveness (time saved vs full suite)",
+          "Validate ordering doesn't skip tests accidentally (test to file mapping accuracy)"
+        ]
+      },
+      "timestamp": 1778268564,
+      "ttl": 3600
+    },
+    "9dfee33e1e0dde8cc745ae880523728d": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1778268573,
+      "ttl": 1800
+    },
+    "86460796b04aa3041405ff92f6be7f68": {
+      "result": {
+        "estimated_cost_usd": 0.82,
+        "estimated_iterations": 4,
+        "estimated_tokens": 185000,
+        "likely_failure_stage": "test",
+        "confidence": 68,
+        "breakdown": {
+          "plan_stage": {
+            "cost_usd": 0.12,
+            "tokens": 28000,
+            "duration_minutes": 8
+          },
+          "build_stage": {
+            "cost_usd": 0.18,
+            "tokens": 42000,
+            "duration_minutes": 12,
+            "iterations": 4
+          },
+          "test_stage": {
+            "cost_usd": 0.35,
+            "tokens": 85000,
+            "duration_minutes": 35,
+            "high_risk": true
+          },
+          "review_stage": {
+            "cost_usd": 0.12,
+            "tokens": 28000,
+            "duration_minutes": 10
+          },
+          "pr_stage": {
+            "cost_usd": 0.05,
+            "tokens": 12000,
+            "duration_minutes": 4
+          }
+        },
+        "risk_factors": {
+          "algorithm_correctness": "high",
+          "test_dependency_mapping": "high",
+          "memory_system_scalability": "medium",
+          "fast_fail_edge_cases": "medium"
+        },
+        "model_routing": {
+          "intake": "haiku",
+          "plan": "opus",
+          "build": "sonnet",
+          "test": "opus",
+          "review": "opus"
+        },
+        "context_window_usage_percent": 62,
+        "estimated_total_duration_minutes": 69,
+        "success_probability_percent": 72
+      },
+      "timestamp": 1778268584,
+      "ttl": 3600
+    },
+    "e5b098edb78a044ae12db2b1e3574959": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "infrastructure",
+          "performance",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires algorithm design for test prioritization, integration with memory system and daemon-config, historical data tracking, and dashboard metrics. Medium-high complexity due to cross-system dependencies and correctness requirements."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "performance",
+            "data-pipeline"
+          ],
+          "design": [
+            "architecture-design",
+            "collection-system-validation"
+          ],
+          "build": [
+            "testing-strategy",
+            "performance"
+          ],
+          "review": [
+            "adversarial-quality",
+            "testing-strategy",
+            "performance"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "testing-strategy": "Essential for designing test execution patterns, failure detection logic, and ensuring fast-fail behavior integrates correctly with existing test harness without breaking existing workflows.",
+          "performance": "Required to design and validate the smart ordering algorithm and measure the 30-50% time savings claim across different failure scenarios and code change patterns.",
+          "data-pipeline": "Historical failure rate tracking requires data collection, storage in memory system, and pattern analysis—apply data engineering patterns for reliable tracking across pipeline runs.",
+          "architecture-design": "Test prioritization must integrate with daemon-config, memory system, and test harness without creating circular dependencies or side effects—need clear ADR for integration points.",
+          "collection-system-validation": "Validate that test-to-file dependency mapping, historical failure data, and test execution metrics are collected accurately and consistently across heterogeneous sources.",
+          "adversarial-quality": "Fast-fail mode has sharp edge cases: flaky tests that fail early, new tests with no history, changed files with zero test coverage—identify failure modes before production.",
+          "validation-thoroughness": "Verify actual time savings on real workloads; smoke tests of the prioritization logic are insufficient—measure wall-clock improvement across passing/failing scenarios.",
+          "observability": "Dashboard metrics showing test execution savings must track accurately; production monitoring ensures prioritization effectiveness doesn't degrade as codebase evolves.",
+          "deploy-safety": "Controlled rollout with fallback to standard execution mode if prioritization causes regressions—allows teams to validate savings before full adoption.",
+          "pr-quality": "Complex algorithm deserves clear explanation in PR: rationale for ordering heuristic, configuration schema, performance trade-offs, and measured impact."
+        },
+        "generated_skills": [
+          {
+            "name": "memory-driven-optimization",
+            "reason": "The issue requires integrating with Shipwright's memory system to track and persist historical test failure rates, but no existing skill guides designing memory-backed optimization systems that learn from past pipeline runs.",
+            "content": "## Memory-Driven Optimization: Designing Learnable Systems\n\nWhen building features that improve over time using historical data, follow these patterns:\n\n### 1. Data Model Design\n- **Schema clarity**: Define what you're tracking (test name, failure rate, file coverage, timestamp, runner context)\n- **Versioning**: Memory entries may evolve—include a schema version so future code can migrate\n- **Granularity**: Track at the right level (per-test, per-file, per-commit-range). Too fine-grained = storage bloat; too coarse = loss of signal\n- **Retention policy**: Decide how long historical data matters (e.g., failure rates from 6 months ago may not predict today)\n\n### 2. Integration with Shipwright Memory\n- Use `shipwright memory show` format for human-readability\n- Store structured data in `.claude/intelligence-cache.json` or daemon state for fast queries\n- Include provenance (which pipeline run, which agent) so memory entries can be audited\n- Implement atomic writes (tmp file + `mv`) to prevent corruption during concurrent updates\n\n### 3. Learning Algorithm\n- **Bootstrapping**: What happens on first run when there's no history? (Fall back to heuristic: run slow tests last, run tests covering changed files first)\n- **Decay/refresh**: Old history can be stale; implement exponential decay or time windows\n- **Confidence scoring**: Not all historical data is equally predictive. Low-confidence entries should be ignored\n- **Validation**: Cross-check learned patterns against reality (\"we predicted this test fails 80% but it passed\"—adjust confidence)\n\n### 4. Measurement & Feedback Loop\n- Emit events for every learning iteration (test scheduled, result observed, pattern updated)\n- Dashboard metrics must show: confidence in current ordering, actual time saved vs. predicted\n- Use A/B testing if possible (\"run tests in smart order 80% of time, random order 20%\" to measure baseline)\n\n### 5. Edge Cases\n- **New tests**: No history yet. Start with neutral/low priority, then refine based on first few runs\n- **Deleted tests**: Prune historical entries periodically\n- **Flaky tests**: High variance in failure rate. Flag as unreliable for ordering purposes\n- **Conflicting signals**: File A changed but tests for A have low failure rate historically, while tests for B have high rate. Resolve with weighted scoring\n\n### 6. Transparency\n- Expose the learned model in a readable format (\"top 10 high-risk tests\", \"tests that predict this file change\")\n- Allow manual overrides (\"force this test first\", \"skip history for this test\")\n- Log ordering decisions so humans can debug why tests run in this order\n"
+          }
+        ],
+        "review_focus": [
+          "Test ordering algorithm correctness: Does it accurately prioritize based on file changes and historical failure rate? Test with edge cases (new tests, zero-coverage changes, flaky tests).",
+          "Fast-fail behavior: Does early termination correctly abort the suite without leaving processes hanging? Verify signal handling and cleanup.",
+          "Memory system integration: Historical data persisted correctly? Atomic writes prevent corruption under concurrent access? Data migrations work if schema evolves?",
+          "Performance measurement: Is wall-clock time savings actually 30-50% or is there measurement error? Test on both passing and failing runs.",
+          "Configuration validation: Does daemon-config.json schema allow enable_test_prioritization and fast_fail_mode? Defaults are sensible?",
+          "Backward compatibility: Can old daemon-config without these options work? Does fallback to standard execution work cleanly?",
+          "Dashboard metrics accuracy: Test execution time savings calculation correct? Metrics update in real-time as tests execute?"
+        ],
+        "risk_areas": [
+          "Flaky tests failing early could cause false negatives in prioritization confidence scoring, making the system gradually degrade effectiveness.",
+          "Historical failure data staleness: If a high-failure-rate test gets fixed, the memory system should forget the old pattern; without decay, it will keep prioritizing a now-reliable test.",
+          "Integration with daemon-config: Misaligned configuration defaults could cause prioritization to kick in unexpectedly or break existing workflows that rely on standard test execution order.",
+          "Algorithm overhead: Sorting tests and reading historical data might introduce latency; if overhead > saved time on small test suites, actual ROI is negative.",
+          "File change mapping accuracy: If test-to-file dependency mapping is incomplete, high-risk tests won't be prioritized, defeating the core purpose.",
+          "Concurrent access to memory: Multiple pipeline runs updating historical data simultaneously could corrupt state if atomic writes aren't enforced everywhere."
+        ]
+      },
+      "timestamp": 1778268758,
+      "ttl": 3600
+    },
+    "a89afef15be99f4ab8153b8eb4a89aeb": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-08)",
+            "relevance": 95,
+            "summary": "Current project configuration with test_runner: vitest, test_pattern: *.test.js, and import conventions. Essential baseline for planning test prioritization logic."
+          },
+          {
+            "file": "success-patterns.json (test1 pattern: add auth module)",
+            "relevance": 85,
+            "summary": "Demonstrates successful test strategy combining unit + integration tests with TDD approach. Shows file patterns (src/, test/) and complexity metrics (60) relevant to test prioritization design."
+          },
+          {
+            "file": "success-patterns.json (bug fix and auth feature patterns)",
+            "relevance": 75,
+            "summary": "Shows iteration counts, file change patterns, and test strategies used in past feature work. Provides empirical data on how many iterations tests typically require and which files change together."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat file detection)",
+            "relevance": 60,
+            "summary": "Test infrastructure failure showing stale heartbeat detection issues. Reveals gaps in test file discovery that a prioritization engine should account for."
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency)",
+            "relevance": 55,
+            "summary": "Common test failure pattern (missing npm install). Understanding dependency-related test failures is relevant for prioritization strategy and fail-fast feedback design."
+          }
+        ]
+      },
+      "timestamp": 1778268845,
+      "ttl": 1800
+    },
+    "a83363b9d22244c40fb95d77b3f1d0c8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-05-08T19:32:40Z)",
+            "relevance": 95,
+            "summary": "Current project metadata (node/vitest/npm/commonjs). Essential for understanding project conventions that inform plan validation requirements."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh, 2026-05-08)",
+            "relevance": 85,
+            "summary": "Recent test failure from this project (today) showing detection issues in test validation. Directly relevant to what causes plan/test validation to fail."
+          },
+          {
+            "file": "success-patterns.json (Auth/Bug feature patterns)",
+            "relevance": 75,
+            "summary": "Successful feature patterns from this project (3-5 iterations, TDD approach, multiple file changes). Informs what iteration count and file patterns are realistic for plan validation."
+          }
+        ]
+      },
+      "timestamp": 1778269101,
+      "ttl": 1800
+    },
+    "d7d455fc2a8c712275f6111b4b87afac": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Describes the current project structure: Node.js, vitest test runner, npm, src/ conventions, *.test.js pattern. Critical for designing test prioritization engine architecture that must operate within this project's test execution model."
+          },
+          {
+            "file": "success-patterns.json (multiple patterns)",
+            "relevance": 80,
+            "summary": "Shows successful delivery patterns with iteration counts, test strategies (npm test, unit+integration), and file change patterns. Directly informs what test execution strategies work in this codebase and how many iterations typically succeed."
+          },
+          {
+            "file": "success-patterns.json (auth module feature)",
+            "relevance": 75,
+            "summary": "Demonstrates feature development patterns with TDD approach, module isolation, and iterative test strategy. Reveals test execution patterns and durations (300s) that should inform test prioritization decisions."
+          },
+          {
+            "file": "failures.json (cannot read property)",
+            "relevance": 55,
+            "summary": "Common error pattern with high fix effectiveness (100%). Informs which test types catch initialization/variable errors early - valuable for fail-fast prioritization strategy."
+          },
+          {
+            "file": "failures.json (EONENT no such file directory)",
+            "relevance": 50,
+            "summary": "Dependency installation failure pattern (95% fix effectiveness). Suggests build/setup tests should run first in prioritization order to enable downstream tests."
+          }
+        ]
+      },
+      "timestamp": 1778269132,
+      "ttl": 1800
+    },
+    "d67e2702c10a3becc7b9d9b2b9e8867c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 85,
+            "summary": "Project context essential for test prioritization design: Node.js runtime, vitest test runner, *.test.js naming convention, and src/ directory structure inform how a prioritization engine should inspect and classify tests"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Documents successful approaches including test strategies (unit, integration, npm test), complexity scoring, and file pattern analysis that inform which design approaches have proven effective in similar build contexts"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 50,
+            "summary": "Real failure pattern from Shipwright itself—detection logic missing items in dry-run mode—illustrates anti-pattern of incomplete state scanning that a prioritization engine must avoid when analyzing test state"
+          }
+        ]
+      },
+      "timestamp": 1778269149,
+      "ttl": 1800
+    },
+    "0281b91a99c28895cc0d555355b26654": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Current project configuration (Node.js, vitest, npm, src/ dir, commonjs imports) essential for understanding build environment and test patterns"
+          },
+          {
+            "file": "success-patterns.json (add auth module + bug fixes)",
+            "relevance": 85,
+            "summary": "Successful builds with similar complexity (60-65) showing 3-5 iteration patterns, TDD approach, and npm test strategies directly applicable to build stage"
+          },
+          {
+            "file": "failures.json (cannot read property + ENOENT)",
+            "relevance": 78,
+            "summary": "Common runtime failures with proven fixes (variable initialization 100% effective, npm install 95% effective) applicable to build/test execution"
+          },
+          {
+            "file": "success-patterns.json (Fix bug - outcome-feedback)",
+            "relevance": 70,
+            "summary": "Recent 3-iteration successful bug fix showing file change patterns, commit strategy, and test execution approach for similar complexity work"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh test failure)",
+            "relevance": 55,
+            "summary": "Recent infrastructure test failure (seen 3 times) documenting test execution issues and detection logic problems relevant to test runner behavior"
+          }
+        ]
+      },
+      "timestamp": 1778269277,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project structure essentials: vitest test runner, npm package manager, src/ source dir, *.test.js test pattern. Critical for configuring build-stage execution and understanding test invocation conventions."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Two successful builds show iteration patterns (3 iterations typical), file change locations (.claude/, scripts/), test strategy (npm test), and complexity 60-65. Informs build loop configuration and expected iteration count."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Documents sw-cleanup.sh heartbeat detection bug in test stage. Relevant for understanding downstream test failures that may occur after build succeeds, aids in failure root-cause analysis."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 5,
+            "summary": "Empty decisions array contains no actionable information for build stage planning."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No historical metrics available to inform build-stage decisions or tuning."
+          }
+        ]
+      },
+      "timestamp": 1778269289,
+      "ttl": 1800
     }
   }
 }
