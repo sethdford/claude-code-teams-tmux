@@ -1,3 +1,0 @@
-Iteration 2 progress: wired `tp_run_prioritized` into `sw-loop.sh:run_test_gate` (Task 6) behind the `test_prioritization.enabled` flag (default off — zero behavior change), and addressed audit feedback by replacing the space-padded set membership check with `grep -Fxq` against a newline-delimited list. Loop tests (68) and test-priority tests (19) all pass. Pre-existing cleanup test failures are unrelated.
-
-Remaining work: dashboard parser metrics (Task 9), CLAUDE.md docs (Task 10), and an integration test exercising the new wire-up.
