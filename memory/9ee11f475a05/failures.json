@@ -6,16 +6,16 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeats or print Found/--force summary hints",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files from the temp dir and print a summary line with 'Found N item(s)' and '--force' hint when items are found in dry-run mode",
       "seen_count": 6,
-      "last_seen": "2026-05-09T07:37:41Z",
+      "last_seen": "2026-05-09T07:36:00Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
-      "fix": "fix the regression detection subcommand in sw-feedback.sh to output valid JSON when detecting regressions",
+      "fix": "update sw-feedback.sh regression detection to output valid JSON, or fix the test assertion to match actual output format",
       "seen_count": 3,
-      "last_seen": "2026-05-09T07:50:38Z",
+      "last_seen": "2026-05-09T07:48:28Z",
       "category": "test_failure"
     }
   ]
