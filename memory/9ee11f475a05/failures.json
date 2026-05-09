@@ -6,16 +6,16 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeats or print Found/--force summary hints",
       "fix": "Fix sw-cleanup.sh to detect stale heartbeat files from the temp dir and print a summary line with 'Found N item(s)' and '--force' hint when items are found in dry-run mode",
       "seen_count": 6,
-      "last_seen": "2026-05-09T07:36:00Z",
+      "last_seen": "2026-05-09T07:39:10Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
-      "fix": "update sw-feedback.sh regression detection to output valid JSON, or fix the test assertion to match actual output format",
-      "seen_count": 3,
-      "last_seen": "2026-05-09T07:48:28Z",
+      "root_cause": "sed command attempting to read a file path instead of an inline expression — missing -e flag or incorrect argument order caused sed to interpret the substitution string as a filename",
+      "fix": "change `sed 's|...|...|g'` call to use `-e` flag or ensure the expression is passed as an argument rather than a filename: `sed -e 's|$TEST_TEMP_DIR|...|g'`",
+      "seen_count": 2,
+      "last_seen": "2026-05-09T07:48:58Z",
       "category": "test_failure"
     }
   ]
