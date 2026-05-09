@@ -8,15 +8,6 @@
       "seen_count": 5,
       "last_seen": "2026-05-08T19:58:13Z",
       "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command references a file path instead of using -e flag for inline expression, causing 'No such file or directory' error",
-      "fix": "change 'sed s|$VAR|value|g filename' to 'sed -e s|$VAR|value|g filename' or use 'sed \"s|$VAR|value|g\"' with proper quoting",
-      "seen_count": 1,
-      "last_seen": "2026-05-09T05:10:19Z",
-      "category": "build_error"
     }
   ]
 }
