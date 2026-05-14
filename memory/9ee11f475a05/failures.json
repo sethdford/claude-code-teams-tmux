@@ -3,19 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or show 'Found N items' summary with '--force' hint",
-      "fix": "Fix sw-cleanup.sh to scan for stale heartbeat files in dry-run mode and output a summary line showing 'Found N' items with a '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output are not matching expected strings 'agent-1', 'Found', and '--force' in dry-run mode",
+      "fix": "Fix sw-cleanup.sh dry-run to correctly detect stale heartbeat files by name and output 'Found N item(s)' summary with '--force' hint when items are detected",
       "seen_count": 1,
-      "last_seen": "2026-05-14T19:16:15Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed invoked without -e flag causing the substitution expression to be treated as a filename",
-      "fix": "add -e before the sed expression: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of passing expression as positional argument",
-      "seen_count": 1,
-      "last_seen": "2026-05-14T19:20:49Z",
+      "last_seen": "2026-05-14T19:21:30Z",
       "category": "test_failure"
     }
   ]
