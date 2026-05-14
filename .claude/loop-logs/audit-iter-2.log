@@ -1,1 +1,53 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit review, I found a critical issue blocking task completion:
+
+## Issue Found: npm test Fails Due to Pre-existing sed Regression
+
+**Status:** FAILING
+
+**Root Cause:** The sed command in `scripts/sw-code-review-test.sh:33` uses BSD syntax (`sed -i ''`) which fails on Linux with GNU sed:
+
+```bash
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+# Error: sed: can't read s|$TEST_TEMP_DIR|/tmp/sw-test-auto.XXXXX|g: No such file or directory
+```
+
+**Pre-existing:** This is a regression—commit `45de49fb` had proper conditional handling for BSD vs. GNU sed. That logic was lost.
+
+---
+
+## Agent's Work Assessment
+
+**What the agent completed correctly:**
+- ✓ Created 3 new test files (168 + 216 + 312 lines)
+- ✓ All 3 suites pass individually (18/18, 16/16, 21/21 = 55 tests)
+- ✓ Proper test harness pattern (set -euo pipefail, ERR trap, PASS/FAIL counters, cleanup traps)
+- ✓ Registered in package.json
+- ✓ Fixed bonus bug in `scripts/lib/compat.sh` (file_mtime concatenation on Linux)
+
+**What's blocking completion:**
+- ✗ **Acceptance criterion not met:** Plan requires "npm test exits 0 end-to-end" 
+- npm test exits 2 due to sed error in sw-code-review-test.sh (pre-existing, not caused by agent)
+
+---
+
+## Required Fix
+
+Fix `scripts/sw-code-review-test.sh:33` to use portable sed:
+
+```bash
+# Current (broken on Linux):
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+
+# Should be:
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+else
+    sed -i "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+fi
+```
+
+Once this pre-existing bug is fixed, npm test will pass and the task will be complete.
