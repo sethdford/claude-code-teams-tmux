@@ -1,1 +1,38 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Results
+
+Based on my review of the cumulative work in iteration 1, I've identified the following issues:
+
+**CRITICAL ISSUE - Test Failures:**
+- `npm test` exits with code 3 (FAILING)
+- 3 tests failed in `scripts/sw-cleanup-test.sh`:
+  - "dry-run detects stale heartbeat"
+  - "summary shows found count"  
+  - "summary shows --force hint"
+- These are pre-existing failures, not caused by policy work, but the goal requires passing tests
+
+**INCOMPLETE IMPLEMENTATION:**
+1. **No production use of new functions**: `policy_get_with_override()` is implemented and tested, but NOT used in any production scripts (only in tests). The function's entire purpose is to provide env-var override capability, yet no scripts actually call it.
+
+2. **Migration not started**: The plan requires migrating 5+ critical scripts (loop, daemon, intelligence, pipeline, adaptive) to use `policy_get_with_override()`. Zero scripts have been migrated beyond what was already there.
+
+3. **Missing pipeline integration**: No `validate_policy()` call added to scripts/sw-pipeline.sh startup despite being Task 3 in the plan.
+
+4. **No hygiene scan implementation**: Task 10 (automated hygiene scan for new hardcoded policy values) is not implemented.
+
+5. **Plan checklist inconsistency**: `.claude/pipeline-tasks.md` shows ALL 15 tasks unchecked, yet agent claims "Iteration 1 complete" with "all 35 tests pass" - the 35 tests are correct (policy tests), but the completion status is misleading.
+
+**WHAT WAS DONE WELL:**
+- ✓ `config/policy.json` is comprehensive (235 lines, 10+ sections)
+- ✓ `scripts/lib/policy.sh` correctly implements policy loading with fallback chain
+- ✓ `docs/POLICY_MIGRATION_GUIDE.md` is well-written with clear examples
+- ✓ `scripts/sw-policy-e2e-test.sh` has 35 thorough tests, all passing
+- ✓ `scripts/lib/pipeline-quality.sh` correctly uses policy_get()
+- ✓ Test coverage includes edge cases (empty env, missing keys, invalid JSON, range validation)
+
+**VERDICT:**
+
+**AUDIT_FAIL** — The foundation work is solid, but the implementation is incomplete and unintegrated. The goal explicitly states "migrate scripts to use policy-loader" — that hasn't happened. `policy_get_with_override()` was implemented but is unused. The npm test suite is also failing, indicating regressions in unrelated code. The agent should complete the migration work (Tasks 3-6) and fix the cleanup-test failures before the PR is ready.
