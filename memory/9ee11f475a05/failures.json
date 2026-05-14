@@ -3,10 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or display 'Found N items' summary with '--force' hint",
-      "fix": "Fix the heartbeat detection logic and summary output in sw-cleanup.sh to scan for stale heartbeat files and print 'Found N' count with '--force' hint in dry-run mode",
+      "root_cause": "sw-cost-test.sh tests for CONTEXT EFFICIENCY dashboard rendering with real event data, but the cost dashboard finds no cost entries in the last 30 days so the section renders a warning instead of event-driven content",
+      "fix": "Seed a mock cost entry and loop.context_efficiency event in the test setup before asserting dashboard output, so the dashboard has data to render",
       "seen_count": 1,
-      "last_seen": "2026-05-14T19:18:08Z",
+      "last_seen": "2026-05-14T19:20:17Z",
       "category": "test_failure"
     }
   ]
