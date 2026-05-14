@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Migration from hardcoded policies to config-driven approach requires upfront architecture design (schema, config structure, integration points), then implementation, testing, and review.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778785862,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,324 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "b63796bb5aa782ae329b11d07354aa67": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete audit of hardcoded values - missing or incorrectly identified policy values during migration",
+          "Policy loader bugs causing incorrect value retrieval at runtime, breaking daemon/pipeline behavior",
+          "Scripts updated with wrong policy keys or incorrect config references breaking functionality",
+          "Environment variable override mechanism edge cases not covered (parsing, precedence, validation)",
+          "Insufficient test coverage for policy validation, fallback behavior, and schema compliance",
+          "Policy schema changes required post-launch causing backward compatibility issues",
+          "Rollback complexity if policy loading failure affects critical platform functions"
+        ],
+        "implementation_hints": [
+          "Perform systematic audit using grep patterns to identify all 48 hardcoded values across scripts (timeouts, retries, limits)",
+          "Create comprehensive reference checklist mapping each hardcoded value to policy key before implementation",
+          "Design config/policy.json schema with clear categories (timeouts, limits, retry, cost, quality) and validation rules",
+          "Start policy-loader.sh with three core functions: get_policy(), get_policy_with_override(), validate_policy()",
+          "Generate initial policy.json from current hardcoded values to ensure behavioral compatibility and zero regressions",
+          "Implement staged migration starting with non-critical scripts to validate pattern before updating daemon/pipeline core",
+          "Write integration tests verifying policy loader returns identical values to previous hardcoded behavior for all 48 values",
+          "Add defensive error handling - loader should gracefully degrade with sane defaults if config.json missing/corrupt",
+          "Document each policy key with purpose, valid ranges, defaults, and rationale to prevent misuse",
+          "Test environment variable override precedence, parsing, and validation to handle edge cases (empty values, invalid types)"
+        ]
+      },
+      "timestamp": 1778785288,
+      "ttl": 3600
+    },
+    "e5648c7025118dea64ddd400b8715f6a": {
+      "result": {
+        "estimated_iterations": 11
+      },
+      "timestamp": 1778785302,
+      "ttl": 1800
+    },
+    "0adbd3bb01ed4dd119668d40d963b814": {
+      "result": {
+        "estimated_cost_usd": 62.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 185000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1778785315,
+      "ttl": 3600
+    },
+    "0684900da0170f9470a0225b3794c3ae": {
+      "result": {
+        "issue_type": "refactoring/infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "configuration-management",
+          "platform-optimization"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires identifying 48+ hardcoded values across multiple scripts, designing a comprehensive policy schema with multiple categories, implementing a loader library, migrating all scripts, and validating zero new hardcoded values remain. High risk of incomplete migration if patterns aren't systematically identified."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "api-design",
+            "architecture-design"
+          ],
+          "build": [
+            "hardcoded-value-migration-at-scale",
+            "testing-strategy"
+          ],
+          "review": [
+            "pr-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Create an ADR documenting the policy loader pattern, how it enables adaptive tuning and A/B testing, and its role in platform self-optimization—this is foundational for future evolution.",
+          "brainstorming": "Challenge assumptions about policy categories, override precedence (env var vs file vs default), and edge cases like missing policies—critical before building to avoid redesign.",
+          "api-design": "Design the three loader functions (get_policy, get_policy_with_override, validate_policy) to be clear, predictable, and type-safe across 100+ calling sites.",
+          "hardcoded-value-migration-at-scale": "Systematically identify all 48+ scattered hardcoded values using grep patterns, extract safely with validation, and prevent new ones from being introduced—the core execution challenge.",
+          "testing-strategy": "Plan tests for policy loading with missing keys, environment overrides, schema validation failures, and fallback chains—edge cases are where migration bugs hide.",
+          "pr-quality": "Make the migration reviewable: show side-by-side before/after in key files, explain schema categories clearly, and document the search patterns used to find all hardcoded values.",
+          "security-audit": "Ensure policy defaults don't expose sensitive thresholds (e.g., retry limits that enable brute force), validate that overrides respect environment isolation, and check for injection vectors in policy keys.",
+          "validation-thoroughness": "Verify the platform hygiene scan reports 0 new hardcoded policy values and that all 48 original values are migrated—automated checks aren't enough; manual spot-checks required.",
+          "deploy-safety": "Roll out in phases: first load policies alongside hardcoded fallbacks, monitor policy load errors via logs, then deprecate hardcoded values in a follow-up.",
+          "observability": "Instrument policy loader to log cache hits, override sources, schema validation errors, and missing policies—real traffic reveals which policies are actually used vs. theoretical."
+        },
+        "generated_skills": [
+          {
+            "name": "hardcoded-value-migration-at-scale",
+            "reason": "No existing skill covers the systematic challenge of identifying, extracting, and validating all hardcoded policy values across 100+ scripts with high confidence of completeness. This requires specialized patterns and validation strategies.",
+            "content": "## Hardcoded Value Migration at Scale\n\nWhen extracting 48+ scattered hardcoded values (timeouts, limits, thresholds, retry counts) across a large bash codebase into a centralized `config/policy.json`, use this four-phase approach to ensure completeness and prevent regressions.\n\n### Phase 1: Systematic Identification\n\n1. **Run platform health scan** — Use the existing scan that identified 48 hardcoded values; capture its methodology (grep patterns, AST analysis, or manual audit).\n2. **Map by category** — Group findings into: timeouts (sleep, wait, deadlines), limits (max iterations, queue size, retry count), thresholds (cost triggers, percentage checks), quality gates (coverage %, score cutoffs), and cost policies.\n3. **Grep validation** — For each identified value, write a grep pattern that finds it and all similar values. Example: `grep -rn '\\b30\\b' scripts/ | grep -i timeout` to find potential timeout values.\n4. **Create extraction checklist** — One row per hardcoded value: location, current value, category, rationale, proposed default in policy.json.\n\n### Phase 2: Safe Extraction with Validation\n\n1. **Add validation layer first** — Implement `validate_policy()` function before refactoring any callers. Test that it rejects invalid schema.\n2. **Migrate by category, not by file** — Update all timeout usages together, then all retry limits, etc. This reduces the risk of partial migrations.\n3. **Use intermediate markers** — In scripts, add a comment `# POLICY: category.key` above every `get_policy()` call so auditors can grep for migration completeness: `grep -r '# POLICY:' scripts/ | wc -l` should match your checklist size.\n4. **Validate each batch** — After migrating one category, run tests specific to that category before moving to the next.\n\n### Phase 3: Prevent New Hardcoded Values\n\n1. **Pre-commit hook** — Add a grep that flags numeric literals in scripts (with whitelist for line numbers, exit codes, etc.).\n2. **Code review checklist** — Reviewers specifically audit for new magic numbers; make it a required approval criterion.\n3. **Platform health scan in CI** — Run the original scan on each PR to ensure hardcoded count doesn't increase.\n\n### Phase 4: Validation and Documentation\n\n1. **Completeness audit** — After migration, re-run the original health scan. It must report 0 new hardcoded policy values.\n2. **Spot-check 10% of migrations** — Manually verify that 5 random scripts now call `get_policy()` instead of using hardcoded values.\n3. **Migration guide** — Document every key extracted: current default, category, rationale, and how to override via environment variable.\n4. **Before/after test** — Show a real example: \"Old: `sleep 30` → New: `get_policy 'timeouts.poll_interval' || sleep 30`\".\n\n### Common Pitfalls\n\n- **Incomplete grep patterns**: `grep '30'` finds false positives (line 30, exit code 30). Use word boundaries and context.\n- **Missing fallbacks**: When a policy is new/missing, scripts should fall back to the old hardcoded value, not error. Use `get_policy 'key' || fallback_value`.\n- **Silent failures**: If policy validation fails, the error must bubble up (not silently use a default). Developers need to know their policies are broken.\n- **Scope creep**: Don't extract values that aren't policies (magic numbers in algorithms, formatting constants). Only extract runtime configuration.\n"
+          }
+        ],
+        "review_focus": [
+          "Completeness: All 48 hardcoded values identified and extracted; no new ones remain in scripts",
+          "Schema design: All five categories (timeouts, limits, retry, cost, quality) covered with clear key naming and defaults",
+          "Override mechanism: Environment variables correctly override file values; precedence is documented",
+          "Migration correctness: All updated scripts still function identically; 10% spot-check of migrated files",
+          "Fallback behavior: Missing policies degrade gracefully without silent failures; error messages are clear",
+          "Policy validation: Schema validation catches invalid configurations early; rejected invalid policies logged",
+          "Performance: Policy lookups are cached to avoid repeated file reads; no latency regressions",
+          "Documentation: Migration guide includes before/after examples, all keys documented, troubleshooting guide"
+        ],
+        "risk_areas": [
+          "Incomplete extraction: If 48 values are just a subset and more are discovered post-migration, scripts will continue using hardcoded values unintentionally",
+          "Breaking changes: Scripts may have subtle behavioral differences if fallback values don't match old hardcoded values exactly",
+          "Schema rigidity: If categories (timeouts, limits, retry, cost, quality) are too narrow, new policies can't be added without schema redesign",
+          "Performance regression: Policy file I/O on every lookup could introduce latency in hot paths; caching strategy must be sound",
+          "Validation bypass: If policy validation is optional or not enforced, invalid configs in production could cascade failures",
+          "Migration inconsistency: Some scripts updated while others still use hardcoded values could lead to confusion and bugs",
+          "Silent policy failures: Missing policies should error loudly, not fall back to hardcoded defaults, or old hardcoded behavior resurfaces invisibly"
+        ]
+      },
+      "timestamp": 1778785438,
+      "ttl": 3600
+    },
+    "539fe67035cb29ef002c0f73f448e9fb": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Detailed project structure (Node.js, vitest, npm, src/ dir, test patterns, import style) is critical for planning migration architecture and configuration file placement"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Successful feature patterns show iteration strategy, test approach, file patterns, and typical scope (3-4 iterations, ~45-150 seconds) useful for estimating migration effort"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "ENOENT/missing dependency pattern highlights setup validation needed before and after migration to ensure config/policy.json availability"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Variable initialization errors (cannot read property) relevant for planning defensive checks when reading new config structure"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 30,
+            "summary": "Issue tracking patterns and gotchas (timeout semaphore example) provide context for planning migration validation steps"
+          }
+        ]
+      },
+      "timestamp": 1778785551,
+      "ttl": 1800
+    },
+    "f9043a7b70fc1e145fe7b37de80208de": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (captured_at: 2026-05-14T19:04:00Z)",
+            "relevance": 95,
+            "summary": "Project structure and conventions for Node.js/JavaScript codebase: src/ source dir, vitest runner, CommonJS imports. Essential for understanding where config/policy.json should live and how to structure the migration within project conventions."
+          },
+          {
+            "file": "success-patterns.json (first entry, id: f4af3e2a...)",
+            "relevance": 72,
+            "summary": "Prior success pattern for similar complexity (60) work in this codebase: bug fix requiring 3 iterations with loop-based autonomous progress. Demonstrates iteration strategy and file patterns (.claude/*.json, scripts/lib/*.sh) relevant to config migration work."
+          },
+          {
+            "file": "issues.json (test-issue-1)",
+            "relevance": 58,
+            "summary": "Recorded gotcha about timeout handling in daemon code with 'check backoff' warning. Relevant if plan validation failed on daemon-related concerns during policy migration design."
+          }
+        ]
+      },
+      "timestamp": 1778785676,
+      "ttl": 1800
+    },
+    "66397ec764ef90fab1404d7578907b27": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (detailed: sethdford/shipwright project conventions)",
+            "relevance": 90,
+            "summary": "Shows project structure (src/ source dir, vitest tests, commonjs imports, npm package manager) and tech stack (Node.js, JavaScript) — essential reference for architecture design decisions and file organization patterns"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Contains successful patterns from 'Add authentication feature' (complexity 65, 3 iterations) and 'Fix bug' work — demonstrates proven iteration strategy, standard template usage, and file change patterns relevant to complex feature work"
+          },
+          {
+            "file": "patterns.json (nodejs bootstrap detection)",
+            "relevance": 30,
+            "summary": "Confirms Node.js project type detected via bootstrap — useful context for understanding project detection and classification"
+          },
+          {
+            "file": "failures.json (ENOENT + npm install)",
+            "relevance": 25,
+            "summary": "Shows common dependency installation failures — relevant for design phase to anticipate setup and initialization requirements in the migration architecture"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 20,
+            "summary": "Daemon timeout resolution using semaphore pattern — demonstrates problem-solving approach but only tangentially related to policy configuration migration"
+          }
+        ]
+      },
+      "timestamp": 1778785748,
+      "ttl": 1800
+    },
+    "2bf8894d948a0851f569d75a05c54287": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 80,
+            "summary": "Contains recorded issue with 'gotchas: check backoff' — directly documents anti-patterns and edge cases for config-driven timeout behavior relevant to policy migration"
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 75,
+            "summary": "Documented successful feature approach with 3 iterations, file patterns, and files changed — shows what working migration strategy looks like, enabling inference of anti-patterns to avoid"
+          },
+          {
+            "file": "failures.json (with EONENT signature)",
+            "relevance": 65,
+            "summary": "Records 'Missing dependency installation' root cause with npm install fix (95% effectiveness) — anti-pattern of incomplete setup that commonly breaks migrations"
+          }
+        ]
+      },
+      "timestamp": 1778785767,
+      "ttl": 1800
+    },
+    "373960d0a2468e15a2611f6a535750f0": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Contains exact project configuration (sethdford/shipwright, Node.js, vitest, npm, commonjs imports, src/ structure) — directly applicable to build stage conventions and testing approach"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful patterns for feature development and bug fixes in this codebase with similar test strategies (npm test, standard template) — useful guidance for build iteration"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Contains ENOENT error pattern with npm install fix — common blocker in build stage that prevents test execution"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Pattern for 'cannot read property' with initialization fix — generic JavaScript error relevant to config migration work"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Example of recorded issue resolution with success patterns and gotchas — provides reference for how similar work was completed"
+          }
+        ]
+      },
+      "timestamp": 1778785841,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Contains critical project metadata: test runner (vitest), test pattern (*.test.js), source directory, and import style. Essential for configuring and running the build correctly."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Documents past successful build approaches from similar complexity issues, showing iteration counts, test strategies (npm test), file patterns, and templates used. Directly applicable to current build stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Tracks failure patterns from previous builds. Currently empty but important structure for understanding what went wrong before and avoiding regression during build execution."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Contains recorded issue outcomes (e.g., timeout bug fix with semaphore solution) and gotchas (check backoff). Provides context on specific problems and their resolutions."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 15,
+            "summary": "Currently empty. Would track architectural or technical decisions made during build, but no historical data available."
+          }
+        ]
+      },
+      "timestamp": 1778785854,
+      "ttl": 1800
     }
   }
 }
