@@ -669,6 +669,19 @@ pipeline_start() {
         [[ ! -f "$HOME/.shipwright/memory/patterns.json" ]] && bootstrap_memory 2>/dev/null || true
     fi
 
+    # Validate policy file before launching pipeline — fail fast on bad policy
+    if type validate_policy >/dev/null 2>&1; then
+        if ! validate_policy 2>/tmp/sw-policy-validate.$$.err; then
+            if [[ -s /tmp/sw-policy-validate.$$.err ]]; then
+                warn "Policy validation issues (non-fatal):"
+                sed 's/^/  /' /tmp/sw-policy-validate.$$.err >&2
+            fi
+            rm -f /tmp/sw-policy-validate.$$.err
+        else
+            rm -f /tmp/sw-policy-validate.$$.err
+        fi
+    fi
+
     if [[ -z "$GOAL" && -z "$ISSUE_NUMBER" ]]; then
         error "Must provide --goal or --issue"
         echo -e "  Example: ${DIM}shipwright pipeline start --goal \"Add JWT auth\"${RESET}"

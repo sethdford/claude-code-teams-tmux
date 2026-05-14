@@ -195,7 +195,9 @@ WORKTREE_DIR=""
 # Config defaults (overridden by daemon-config.json; policy overrides when present)
 WATCH_LABEL="$(_config_get "labels.watch" "shipwright" 2>/dev/null || echo "shipwright")"
 POLL_INTERVAL=$(_config_get_int "daemon.poll_interval" 60 2>/dev/null || echo 60)
-if type policy_get >/dev/null 2>&1; then
+if type policy_get_with_override >/dev/null 2>&1; then
+    POLL_INTERVAL=$(policy_get_with_override "DAEMON_POLL_INTERVAL" ".daemon.poll_interval_seconds" "$POLL_INTERVAL")
+elif type policy_get >/dev/null 2>&1; then
     POLL_INTERVAL=$(policy_get ".daemon.poll_interval_seconds" "60")
 fi
 MAX_PARALLEL=$(_config_get_int "daemon.max_parallel" 4 2>/dev/null || echo 4)
@@ -226,7 +228,9 @@ REPO_FILTER=""
 # Auto-scaling defaults (policy overrides when present)
 AUTO_SCALE=false
 AUTO_SCALE_INTERVAL=5
-if type policy_get >/dev/null 2>&1; then
+if type policy_get_with_override >/dev/null 2>&1; then
+    AUTO_SCALE_INTERVAL=$(policy_get_with_override "DAEMON_AUTO_SCALE_INTERVAL" ".daemon.auto_scale_interval_cycles" "5")
+elif type policy_get >/dev/null 2>&1; then
     AUTO_SCALE_INTERVAL=$(policy_get ".daemon.auto_scale_interval_cycles" "5")
 fi
 MAX_WORKERS=8

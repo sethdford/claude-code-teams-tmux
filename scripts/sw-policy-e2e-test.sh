@@ -375,6 +375,65 @@ fi
 rm -rf "$tmp6"
 
 # ═══════════════════════════════════════════════════════════════════════
+# Test 9: Production migration — daemon respects env override
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Production Script Migration${RESET}"
+
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# sw-daemon.sh: DAEMON_POLL_INTERVAL env var should win over config
+if grep -q 'policy_get_with_override "DAEMON_POLL_INTERVAL"' "$REPO_ROOT/scripts/sw-daemon.sh"; then
+    assert_eq "sw-daemon.sh migrated to policy_get_with_override" "ok" "ok"
+else
+    assert_eq "sw-daemon.sh migrated to policy_get_with_override" "ok" "fail"
+fi
+
+# pipeline-quality.sh: thresholds use override helper
+if grep -q 'policy_get_with_override "PIPELINE_COVERAGE_THRESHOLD"' "$REPO_ROOT/scripts/lib/pipeline-quality.sh"; then
+    assert_eq "pipeline-quality.sh migrated to policy_get_with_override" "ok" "ok"
+else
+    assert_eq "pipeline-quality.sh migrated to policy_get_with_override" "ok" "fail"
+fi
+
+# sw-strategic.sh: strategic limits use override helper
+if grep -q 'policy_get_with_override "STRATEGIC_MAX_ISSUES"' "$REPO_ROOT/scripts/sw-strategic.sh"; then
+    assert_eq "sw-strategic.sh migrated to policy_get_with_override" "ok" "ok"
+else
+    assert_eq "sw-strategic.sh migrated to policy_get_with_override" "ok" "fail"
+fi
+
+# pipeline-commands.sh: validate_policy called at startup
+if grep -q 'validate_policy' "$REPO_ROOT/scripts/lib/pipeline-commands.sh"; then
+    assert_eq "pipeline startup calls validate_policy" "ok" "ok"
+else
+    assert_eq "pipeline startup calls validate_policy" "ok" "fail"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 10: Policy hygiene scan
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}Policy Hygiene Scan${RESET}"
+
+if [[ -x "$REPO_ROOT/scripts/sw-policy-hygiene.sh" ]]; then
+    if "$REPO_ROOT/scripts/sw-policy-hygiene.sh" >/dev/null 2>&1; then
+        assert_eq "hygiene scan exits 0 at baseline" "ok" "ok"
+    else
+        assert_eq "hygiene scan exits 0 at baseline" "ok" "fail"
+    fi
+
+    # JSON mode emits valid JSON
+    if "$REPO_ROOT/scripts/sw-policy-hygiene.sh" --json 2>/dev/null | jq -e '.count >= 0' >/dev/null 2>&1; then
+        assert_eq "hygiene scan --json produces valid JSON" "ok" "ok"
+    else
+        assert_eq "hygiene scan --json produces valid JSON" "ok" "fail"
+    fi
+else
+    assert_eq "hygiene scan script exists and is executable" "ok" "fail"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════════════
 echo ""

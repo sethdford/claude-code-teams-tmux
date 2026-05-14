@@ -336,6 +336,9 @@ main() {
         hygiene)
             exec "$SCRIPT_DIR/sw-hygiene.sh" "$@"
             ;;
+        policy-hygiene)
+            exec "$SCRIPT_DIR/sw-policy-hygiene.sh" "$@"
+            ;;
         daemon)
             exec "$SCRIPT_DIR/sw-daemon.sh" "$@"
             ;;

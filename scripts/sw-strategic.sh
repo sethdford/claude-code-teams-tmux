@@ -53,7 +53,12 @@ STRATEGIC_STRATEGY_LINES=200
 STRATEGIC_LABELS="auto-patrol,ready-to-build,strategic,shipwright"
 STRATEGIC_OVERLAP_THRESHOLD=60  # Skip if >60% word overlap
 [[ -f "${SCRIPT_DIR:-}/lib/policy.sh" ]] && source "${SCRIPT_DIR:-}/lib/policy.sh"
-if type policy_get >/dev/null 2>&1; then
+if type policy_get_with_override >/dev/null 2>&1; then
+    STRATEGIC_MAX_ISSUES=$(policy_get_with_override "STRATEGIC_MAX_ISSUES" ".strategic.max_issues_per_cycle" "5")
+    STRATEGIC_COOLDOWN_SECONDS=$(policy_get_with_override "STRATEGIC_COOLDOWN_SECONDS" ".strategic.cooldown_seconds" "14400")
+    STRATEGIC_STRATEGY_LINES=$(policy_get_with_override "STRATEGIC_STRATEGY_LINES" ".strategic.strategy_lines" "200")
+    STRATEGIC_OVERLAP_THRESHOLD=$(policy_get_with_override "STRATEGIC_OVERLAP_THRESHOLD" ".strategic.overlap_threshold_percent" "60")
+elif type policy_get >/dev/null 2>&1; then
     STRATEGIC_MAX_ISSUES=$(policy_get ".strategic.max_issues_per_cycle" "5")
     STRATEGIC_COOLDOWN_SECONDS=$(policy_get ".strategic.cooldown_seconds" "14400")
     STRATEGIC_STRATEGY_LINES=$(policy_get ".strategic.strategy_lines" "200")
