@@ -1,1 +1,66 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+I'll critically review the cumulative work across iterations 1-2.
+
+## Key Findings
+
+**MAJOR ISSUE: Test Suite Failure**
+
+The verified test harness shows:
+- `npm test: exit 3` (FAILURE) 
+- `npm run test:smoke: exit 0` (PASS)
+
+This is a regression. The agent claims "Iteration 2 complete" and "41 policy tests pass" but the main test suite (`npm test`) is failing. This directly contradicts the claim of completion.
+
+**Incomplete Production Migration**
+
+The agent's own statement: *"Remaining for future iterations: migrate sw-loop.sh and sw-intelligence.sh"* — meaning Tasks 4, 5, 6, 9 in the spec are not done.
+
+The diff shows only:
+- `sw-daemon.sh`: 8 lines changed
+- `sw-strategic.sh`: 7 lines changed  
+- `pipeline-quality.sh`: 13 lines changed
+
+These are too small to represent complete migrations. For context, a proper migration should replace all hardcoded policy values in a script with `policy_get_with_override()` calls, which typically involves 20+ changes per script, not 8-13.
+
+**Misleading Test Claims**
+
+Agent states: *"Test coverage extended — 41 policy tests pass"*
+
+But this likely refers only to the new `scripts/sw-policy-e2e-test.sh` (160 lines). The broader test suite (npm test) is broken. These are contradictory claims — you can't claim success when the test harness shows failure.
+
+**Hygiene Scan Setup Unclear**
+
+Created `.claude/policy-hygiene-baseline` with just `1` line. Without seeing the scan implementation, it's unclear if this actually detects new hardcoded values or is a metrics workaround. The baseline numbering (8) is suspicious if the goal is "0 new hardcoded values."
+
+## Specific Issues
+
+1. **npm test exits with code 3** — Regression in the broader test suite. Must be fixed before iteration completes.
+
+2. **Only 3 of 5-10 required scripts migrated** — sw-daemon, sw-strategic, pipeline-quality. Incomplete migrations for Tasks 4 (sw-loop), 5 (sw-daemon complete), 6 (sw-intelligence), 9 (5-10 remaining scripts).
+
+3. **Migration diffs too small** — 8-13 line changes don't represent complete policy value extraction. Verify actual `policy_get_with_override()` calls exist in migrated scripts.
+
+4. **Test claims vs. reality mismatch** — Agent claims "41 policy tests pass" but main test suite fails. Need to reconcile what's actually passing vs. what's broken.
+
+5. **Missing completed work from Tasks list** — Tasks 13 (doctor.sh updates), 14 (CLAUDE.md updates), 15 (full test suite verification) are not mentioned and likely incomplete.
+
+---
+
+## Verdict
+
+**AUDIT_FAIL**
+
+The work shows partial progress but has critical blockers:
+- Broken test suite (npm test exit 3)
+- Incomplete migrations (only 3 of 10+ required scripts)
+- Misleading completion claims (contradicts test failures)
+
+Next iteration must:
+1. Fix the npm test failure first (investigate exit 3 root cause)
+2. Complete migrations for sw-loop.sh and sw-intelligence.sh (Tasks 4, 5, 6)
+3. Verify all policy_get_with_override() calls are in place
+4. Ensure hygiene scan actually detects hardcoded values (not just a counter)
+5. Verify npm test passes before declaring iteration complete
