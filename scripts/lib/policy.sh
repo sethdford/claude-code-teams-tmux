@@ -13,7 +13,8 @@ _POLICY_FILE=""
 [[ -n "$_REPO_DIR" && -f "$_REPO_DIR/config/policy.json" ]] && _POLICY_FILE="$_REPO_DIR/config/policy.json"
 [[ -f "${HOME}/.shipwright/policy.json" ]] && _POLICY_FILE="${HOME}/.shipwright/policy.json"
 
-# Export a single helper: policy_get <json_path> [default]
+# policy_get <json_path> [default]
+# Returns policy value from config file. Never fails. Falls back to default.
 # e.g. policy_get ".daemon.poll_interval_seconds" 60
 policy_get() {
     local path="$1"
@@ -29,4 +30,72 @@ policy_get() {
     else
         echo "$val"
     fi
+}
+
+# policy_get_with_override <env_var_name> <json_path> [default]
+# Precedence: $env_var (if set & non-empty) > config file > hardcoded default
+# e.g. policy_get_with_override "POLL_INTERVAL" ".daemon.poll_interval_seconds" 60
+policy_get_with_override() {
+    local env_var="$1"
+    local path="$2"
+    local default="${3:-}"
+    # Use eval-free indirect expansion (bash 3.2 compatible)
+    local env_val="${!env_var:-}"
+    if [[ -n "$env_val" ]]; then
+        echo "$env_val"
+        return 0
+    fi
+    policy_get "$path" "$default"
+}
+
+# validate_policy [policy_file]
+# Validates policy file structure. Returns 0 if valid, 1 with errors on stderr.
+# Checks: valid JSON, required top-level sections, sane value ranges.
+validate_policy() {
+    local file="${1:-$_POLICY_FILE}"
+    local errors=0
+
+    if [[ -z "$file" || ! -f "$file" ]]; then
+        echo "validate_policy: policy file not found: ${file:-<none>}" >&2
+        return 1
+    fi
+
+    if ! jq empty "$file" 2>/dev/null; then
+        echo "validate_policy: invalid JSON in $file" >&2
+        return 1
+    fi
+
+    # Required top-level sections
+    local section
+    for section in daemon pipeline quality; do
+        if [[ "$(jq -r ".$section // \"missing\"" "$file" 2>/dev/null)" == "missing" ]]; then
+            echo "validate_policy: missing required section .$section" >&2
+            errors=$((errors + 1))
+        fi
+    done
+
+    # Sane numeric ranges for critical values
+    local poll
+    poll=$(jq -r '.daemon.poll_interval_seconds // 0' "$file" 2>/dev/null)
+    if [[ -n "$poll" && "$poll" != "null" ]] && ! [[ "$poll" =~ ^[0-9]+$ ]]; then
+        echo "validate_policy: daemon.poll_interval_seconds must be a positive integer (got: $poll)" >&2
+        errors=$((errors + 1))
+    elif [[ "$poll" -lt 1 ]]; then
+        echo "validate_policy: daemon.poll_interval_seconds must be >= 1 (got: $poll)" >&2
+        errors=$((errors + 1))
+    fi
+
+    local cov
+    cov=$(jq -r '.pipeline.coverage_threshold_percent // 0' "$file" 2>/dev/null)
+    if [[ "$cov" =~ ^[0-9]+$ ]] && [[ "$cov" -gt 100 ]]; then
+        echo "validate_policy: pipeline.coverage_threshold_percent must be 0-100 (got: $cov)" >&2
+        errors=$((errors + 1))
+    fi
+
+    [[ "$errors" -eq 0 ]]
+}
+
+# policy_file — print path to the active policy file (or empty if none)
+policy_file() {
+    echo "$_POLICY_FILE"
 }

@@ -274,6 +274,107 @@ assert_eq "policy_get falls back to HOME policy.json" "30" "$got"
 rm -rf "$tmp4"
 
 # ═══════════════════════════════════════════════════════════════════════
+# Test 7: policy_get_with_override — env > config > default
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}policy_get_with_override Function${RESET}"
+
+tmp5=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp5/config"
+cat > "$tmp5/config/policy.json" <<'POLICY'
+{"daemon":{"poll_interval_seconds":120}}
+POLICY
+
+# Env var wins over config
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" MY_POLL=999 bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; policy_get_with_override MY_POLL \".daemon.poll_interval_seconds\" 60")
+assert_eq "policy_get_with_override: env var wins" "999" "$got"
+
+# Config wins when env is unset
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "unset MY_POLL; source \"$SCRIPT_DIR/lib/policy.sh\"; policy_get_with_override MY_POLL \".daemon.poll_interval_seconds\" 60")
+assert_eq "policy_get_with_override: config wins when env unset" "120" "$got"
+
+# Default wins when env unset AND config missing key
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "unset MY_POLL; source \"$SCRIPT_DIR/lib/policy.sh\"; policy_get_with_override MY_POLL \".nonexistent.key\" fallback")
+assert_eq "policy_get_with_override: default wins when nothing set" "fallback" "$got"
+
+# Empty env var treated as unset
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" MY_POLL="" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; policy_get_with_override MY_POLL \".daemon.poll_interval_seconds\" 60")
+assert_eq "policy_get_with_override: empty env treated as unset" "120" "$got"
+
+rm -rf "$tmp5"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Test 8: validate_policy — schema validation
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}validate_policy Function${RESET}"
+
+tmp6=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp6/config"
+
+# Valid policy passes
+cat > "$tmp6/config/policy.json" <<'POLICY'
+{
+  "daemon":{"poll_interval_seconds":60},
+  "pipeline":{"coverage_threshold_percent":60},
+  "quality":{"coverage_threshold":60}
+}
+POLICY
+# shellcheck disable=SC2097,SC2098
+if REPO_DIR="$tmp6" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; validate_policy" 2>/dev/null; then
+    assert_eq "validate_policy: valid policy passes" "ok" "ok"
+else
+    assert_eq "validate_policy: valid policy passes" "ok" "fail"
+fi
+
+# Invalid JSON fails
+echo '{not json' > "$tmp6/config/policy.json"
+# shellcheck disable=SC2097,SC2098
+if REPO_DIR="$tmp6" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; validate_policy" 2>/dev/null; then
+    assert_eq "validate_policy: invalid JSON fails" "fail" "ok"
+else
+    assert_eq "validate_policy: invalid JSON fails" "fail" "fail"
+fi
+
+# Missing required section fails
+echo '{"daemon":{"poll_interval_seconds":60}}' > "$tmp6/config/policy.json"
+# shellcheck disable=SC2097,SC2098
+if REPO_DIR="$tmp6" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; validate_policy" 2>/dev/null; then
+    assert_eq "validate_policy: missing pipeline section fails" "fail" "ok"
+else
+    assert_eq "validate_policy: missing pipeline section fails" "fail" "fail"
+fi
+
+# Coverage > 100 fails
+cat > "$tmp6/config/policy.json" <<'POLICY'
+{
+  "daemon":{"poll_interval_seconds":60},
+  "pipeline":{"coverage_threshold_percent":150},
+  "quality":{"coverage_threshold":60}
+}
+POLICY
+# shellcheck disable=SC2097,SC2098
+if REPO_DIR="$tmp6" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; validate_policy" 2>/dev/null; then
+    assert_eq "validate_policy: out-of-range coverage fails" "fail" "ok"
+else
+    assert_eq "validate_policy: out-of-range coverage fails" "fail" "fail"
+fi
+
+# Real config/policy.json validates
+# shellcheck disable=SC2097,SC2098
+if REPO_DIR="$REPO_DIR" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/policy.sh\"; validate_policy" 2>/dev/null; then
+    assert_eq "validate_policy: real config/policy.json validates" "ok" "ok"
+else
+    assert_eq "validate_policy: real config/policy.json validates" "ok" "fail"
+fi
+
+rm -rf "$tmp6"
+
+# ═══════════════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════════════
 echo ""
