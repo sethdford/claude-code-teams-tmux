@@ -233,14 +233,14 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-05-14T19:15:34Z
-last_iteration_at: 2026-05-14T19:15:34Z
+started_at: 2026-05-14T19:23:52Z
+last_iteration_at: 2026-05-14T19:23:52Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -251,8 +251,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-05-14T19:15:34Z)
-- **sw-tmux-role-color-test.sh** — 18/18 PASS (all 8 role→color mappings, fallback, case-insensitive)
-- **sw-tmux-status-test.sh** — 16/16 PASS (pipeline widget per stage, heartbeat counting fresh/stale, combined mode, d
-- **sw-tracker-github-test.sh** — 21/21 PASS (all 8 provider_* functions, NO_GITHUB guard, JSON normalization, missing
 

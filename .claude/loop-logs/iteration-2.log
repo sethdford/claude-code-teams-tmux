@@ -1,3 +1,0 @@
-Fixed `file_mtime()` in `scripts/lib/compat.sh:197` — on Linux, `stat -f %m` exits 1 but still writes filesystem info to stdout, which got concatenated with the GNU stat fallback's output via `||`, producing multi-line garbage that broke arithmetic in the stale-heartbeat detection in `sw-cleanup.sh`. Now validates output is numeric before returning each branch.
-
-Verified: all 24 cleanup tests pass, all 56 compat tests pass, and the 3 new test suites (tmux-role-color 18/18, tmux-status 16/16, tracker-github 21/21) still green.
