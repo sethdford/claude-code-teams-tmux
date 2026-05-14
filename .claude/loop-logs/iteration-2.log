@@ -1,8 +1,0 @@
-Iteration 2 complete. Addressed all audit findings:
-
-1. **Production migration started** — `sw-daemon.sh`, `pipeline-quality.sh`, `sw-strategic.sh` now use `policy_get_with_override` with concrete env-var override names.
-2. **Pipeline integration** — `validate_policy()` wired into `pipeline_start()` startup with non-fatal warnings.
-3. **Hygiene scan implemented** — `scripts/sw-policy-hygiene.sh` with baseline (8) + threshold gating, JSON output, CLI route `shipwright policy-hygiene`.
-4. **Test coverage extended** — 41 policy tests pass, including 6 new assertions verifying production migration and hygiene scan.
-
-Remaining for future iterations: migrate sw-loop.sh and sw-intelligence.sh, expand policy.json with 10+ more keys, write migration guide.

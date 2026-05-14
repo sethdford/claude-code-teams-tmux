@@ -196,7 +196,14 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    # Linux GNU stat: -c '%Y' prints mtime; macOS BSD stat: -f %m prints mtime.
+    # Note: GNU `stat -f <file>` prints filesystem info (different semantics),
+    # so we must dispatch by platform rather than chain with ||.
+    if [[ "$(uname -s)" == "Darwin" ]] || [[ "$(uname -s)" == *BSD* ]]; then
+        stat -f %m "$file" 2>/dev/null || echo "0"
+    else
+        stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    fi
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
