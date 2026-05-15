@@ -3,38 +3,37 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force'",
-      "fix": "Fix sw-cleanup.sh to output 'agent-1' when detecting stale heartbeats in dry-run mode, include 'Found N items' summary line, and print '--force' hint when items are found",
-      "seen_count": 3,
-      "last_seen": "2026-05-15T07:54:52Z",
+      "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
+      "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
+      "seen_count": 2,
+      "last_seen": "2026-05-15T01:35:31Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command references a non-existent file path instead of using inline substitution syntax",
-      "fix": "fix the sed invocation to use -e flag for inline expression: `sed -e 's|$TEST_TEMP_DIR|...|g'` instead of passing the pattern as a file argument",
-      "seen_count": 4,
-      "last_seen": "2026-05-15T08:33:38Z",
+      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
+      "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
+      "seen_count": 3,
+      "last_seen": "2026-05-15T08:05:56Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist before test temp dirs are created",
+      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in the test harness, or change the mktemp template to use /tmp directly (mktemp -d /tmp/sw-test-XXXXXX)",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T08:14:25Z",
+      "category": "config"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
-      "fix": "fix the regression detection subcommand in sw-feedback.sh to output valid JSON when detecting regressions",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:02:50Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails to parse quality-profile.json because a field value is empty string, causing learned rule generation to produce invalid JSON",
-      "fix": "Guard the jq expression in the learned rules generation code to handle empty/null confidence values before writing to quality-profile.json",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T08:26:38Z",
-      "category": "test_failure"
+      "last_seen": "2026-05-15T08:34:08Z"
     }
   ]
 }
