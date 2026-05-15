@@ -503,8 +503,50 @@ auto_rebase() {
     fi
 }
 
+# ─── _run_one_stage ────────────────────────────────────────────────
+# Minimal wrapper used by the parallel executor. Sequential path uses the
+# inline body of run_pipeline() unchanged. Keeps update_status/event/audit
+# calls consistent with the sequential body, but skips gate prompts and
+# A/B model routing (parallel mode requires non-interactive auto gates).
+_run_one_stage() {
+    local id="$1"
+    CURRENT_STAGE_ID="$id"
+    update_status "running" "$id" 2>/dev/null || true
+    record_stage_start "$id" 2>/dev/null || true
+    local start_epoch
+    start_epoch=$(now_epoch 2>/dev/null || date +%s)
+    emit_event "stage.started" "issue=${ISSUE_NUMBER:-0}" "stage=$id" 2>/dev/null || true
+    if run_stage_with_retry "$id"; then
+        mark_stage_complete "$id" 2>/dev/null || true
+        local dur=$(( $(now_epoch 2>/dev/null || date +%s) - start_epoch ))
+        emit_event "stage.completed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "duration_s=$dur" "result=success" 2>/dev/null || true
+        return 0
+    fi
+    mark_stage_failed "$id" 2>/dev/null || true
+    local dur=$(( $(now_epoch 2>/dev/null || date +%s) - start_epoch ))
+    emit_event "stage.failed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "duration_s=$dur" "error=${LAST_STAGE_ERROR:-unknown}" 2>/dev/null || true
+    return 1
+}
+
 # ─── Main Pipeline Orchestration ───────────────────────────────────
 run_pipeline() {
+    # Optional: dependency-DAG parallel executor. Off by default; engaged
+    # only when both PIPELINE_PARALLEL_ENABLED=true AND the template
+    # declares at least one `depends_on` edge.
+    if [[ "${PIPELINE_PARALLEL_ENABLED:-false}" == "true" ]]; then
+        # shellcheck disable=SC1091
+        [[ -z "${_PIPELINE_DAG_LOADED:-}"      ]] && source "$SCRIPT_DIR/lib/pipeline-dag.sh"      2>/dev/null || true
+        # shellcheck disable=SC1091
+        [[ -z "${_PIPELINE_PARALLEL_LOADED:-}" ]] && source "$SCRIPT_DIR/lib/pipeline-parallel.sh" 2>/dev/null || true
+        if type dag_has_depends_on >/dev/null 2>&1 && dag_has_depends_on "$PIPELINE_CONFIG"; then
+            info "Pipeline parallel execution enabled (DAG mode)"
+            rotate_event_log_if_needed
+            type audit_init >/dev/null 2>&1 && audit_init || true
+            run_pipeline_parallel "$PIPELINE_CONFIG"
+            return $?
+        fi
+    fi
+
     # Rotate event log if needed (standalone mode)
     rotate_event_log_if_needed
 
