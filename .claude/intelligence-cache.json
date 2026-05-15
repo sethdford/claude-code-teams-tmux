@@ -1624,33 +1624,33 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains 4 known test failures (sw-cleanup heartbeat detection, sw-feedback JSON output, mktemp /tmp/claude issue, classify_failure wiring). Build stage will run tests; these are documented pitfalls to avoid or expect."
-          },
-          {
             "file": "success-patterns.json",
             "relevance": 90,
-            "summary": "Shows 2 past successful builds: iteration counts (3-4), test strategy (npm test), commit patterns (5-6 commits), typical duration (45-150s), file patterns modified. Provides proven approach templates for similar complexity issues."
+            "summary": "Shows previous successful build patterns (3 iterations per fix, file patterns touched, test strategies). Directly informs what worked before during similar build/fix work."
           },
           {
             "file": "patterns.json",
-            "relevance": 88,
-            "summary": "Project conventions critical for build stage: source_dir=src/, test_pattern=*.test.js, test_runner=vitest, import_style=commonjs. Agent needs these to write code correctly and understand where to place files."
+            "relevance": 80,
+            "summary": "Project structure (Node, vitest, CommonJS, src/ source dir) and conventions are critical for building code correctly in this repo."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Test stage failures reveal patterns (mktemp issues, sed bugs, JSON output bugs) that the build stage could trigger. Particularly mktemp /tmp/claude issue affects test execution."
           },
           {
             "file": "issues.json",
             "relevance": 55,
-            "summary": "Documents 1 past issue (daemon timeout bug fixed via semaphore). Shows success outcome and gotcha (check backoff). Moderately relevant as a solved example, though specific to daemon, not generic build patterns."
+            "summary": "Recorded timeout bug fix with semaphore solution. Relevant if build stage encounters similar concurrency or timeout issues in daemon-related code."
           },
           {
             "file": "metrics.json",
-            "relevance": 20,
-            "summary": "Contains empty baselines object. Minimal relevance—no historical performance data to inform current build decisions or iteration strategy."
+            "relevance": 15,
+            "summary": "Empty baselines provide no actionable context for the current build stage."
           }
         ]
       },
-      "timestamp": 1778871966,
+      "timestamp": 1778873909,
       "ttl": 1800
     },
     "81b5ab6b923defb0750965e1c4602986": {
