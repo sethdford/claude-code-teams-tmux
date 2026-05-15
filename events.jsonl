@@ -6460,3 +6460,33 @@
 {"ts":"2026-05-15T20:27:18Z","ts_epoch":1778876838,"type":"strategic.issue_created","title":"Change Impact Analyzer with Smart Test Selection Engine","priority":"P3","complexity":"standard"}
 {"ts":"2026-05-15T20:27:21Z","ts_epoch":1778876841,"type":"strategic.issue_created","title":"Automated End-to-End Pipeline Integration Test Suite with Canonical Test Repositories","priority":"P0","complexity":"standard"}
 {"ts":"2026-05-15T20:27:21Z","ts_epoch":1778876841,"type":"strategic.cycle_complete","issues_created":5,"issues_skipped":0}
+{"ts":"2026-05-15T20:43:52Z","ts_epoch":1778877832,"type":"intelligence.analysis","complexity":7,"risk_level":"high","success_probability":72,"recommended_template":"cost-aware","issue_type":"performance"}
+{"ts":"2026-05-15T20:43:52Z","ts_epoch":1778877832,"type":"reasoning.trace","job_id":"pipeline-3750-498","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-15T20:44:14Z","ts_epoch":1778877854,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":76,"recommended_template":"cost-aware","issue_type":"performance"}
+{"ts":"2026-05-15T20:44:25Z","ts_epoch":1778877865,"type":"intelligence.estimate_iterations","estimate":8,"complexity":5,"source":"claude"}
+{"ts":"2026-05-15T20:44:37Z","ts_epoch":1778877877,"type":"intelligence.prediction","estimated_cost":12.50,"estimated_iterations":4,"complexity":5}
+{"ts":"2026-05-15T20:44:40Z","ts_epoch":1778877880,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-05-15T20:44:40Z","ts_epoch":1778877880,"type":"pipeline.started","issue":498,"template":"standard","complexity":5,"machine":"runnervmrw5os","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-05-15T20:44:40Z","ts_epoch":1778877880,"type":"pipeline.started","event_id":"evt-1778877880-3848329727","payload":"{\"issue\":\"498\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-05-15T20:44:41Z","ts_epoch":1778877881,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-15T20:44:41Z","ts_epoch":1778877881,"type":"intelligence.model_ab","issue":498,"stage":"intake","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-05-15T20:44:41Z","ts_epoch":1778877881,"type":"stage.started","issue":498,"stage":"intake"}
+{"ts":"2026-05-15T20:46:57Z","ts_epoch":1778878017,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/aggressive-model-downshift-engine-for-sub-5-cost-per-pipelin.json","complexity":"very_complex","issue":498}
+{"ts":"2026-05-15T20:46:57Z","ts_epoch":1778878017,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"stage.complete","event_id":"evt-1778878019-4252298821","payload":"{\"stage\":\"intake\",\"issue\":\"498\",\"timing\":\"2m 16s\"}"}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"stage.completed","issue":498,"stage":"intake","duration_s":138,"result":"success"}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"vitals.snapshot","issue":498,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"intelligence.model","stage":"spec_generation","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-15T20:46:59Z","ts_epoch":1778878019,"type":"intelligence.model_ab","issue":498,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-15T20:47:00Z","ts_epoch":1778878020,"type":"stage.started","issue":498,"stage":"spec_generation"}
+{"ts":"2026-05-15T20:48:05Z","ts_epoch":1778878085,"type":"spec_generation.completed","issue":498,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"stage.complete","event_id":"evt-1778878087-2188421485","payload":"{\"stage\":\"spec_generation\",\"issue\":\"498\",\"timing\":\"1m 6s\"}"}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"stage.completed","issue":498,"stage":"spec_generation","duration_s":68,"result":"success"}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"vitals.snapshot","issue":498,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"intelligence.model","stage":"plan","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"intelligence.model_ab","issue":498,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-15T20:48:07Z","ts_epoch":1778878087,"type":"stage.started","issue":498,"stage":"plan"}
+{"ts":"2026-05-15T20:48:32Z","ts_epoch":1778878112,"type":"stage.failed","event_id":"evt-1778878112-1445999529","payload":"{\"stage\":\"plan\",\"issue\":\"498\",\"timing\":\"23s\"}"}
+{"ts":"2026-05-15T20:48:32Z","ts_epoch":1778878112,"type":"stage.failed","issue":498,"stage":"plan","duration_s":25,"error":"unknown","error_class":"unknown"}
+{"ts":"2026-05-15T20:48:32Z","ts_epoch":1778878112,"type":"vitals.snapshot","issue":498,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
