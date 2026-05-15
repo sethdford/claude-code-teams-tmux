@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.92,
+        "reasoning": "Requires system design for detection algorithm and recommendation logic; builder implements core feature; tester validates accuracy across project types.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778808322,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,310 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "5d528435c2e0af45267315883c732e71": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Detection accuracy variance across mono-repos and custom project structures",
+          "Template recommendation logic may not match user expectations in edge cases",
+          "Framework detection rules require maintenance as frameworks evolve",
+          "Performance impact on projects with deep directory structures",
+          "Handling projects with multiple frameworks or non-standard configurations"
+        ],
+        "implementation_hints": [
+          "Implement file-based detection registry with pluggable formatters for each project type",
+          "Use heuristic scoring (file presence, key dependencies, package count) for complexity assessment",
+          "Create sample project fixtures for each of the 10+ types to validate detection accuracy",
+          "Integrate detection into existing shipwright prep flow rather than new command",
+          "Store detection results in daemon-config.json with confidence scores for transparency",
+          "Provide --force-type override flag for misdetected projects",
+          "Test edge cases: monorepos, workspaces, nested projects, mixed-language repos"
+        ]
+      },
+      "timestamp": 1778807874,
+      "ttl": 3600
+    },
+    "b482efd515e0cce70ff1aa5a7c7ad7ae": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1778807888,
+      "ttl": 1800
+    },
+    "13621079399bf497e92921856c0adc09": {
+      "result": {
+        "estimated_cost_usd": 3.75,
+        "estimated_iterations": 3,
+        "estimated_tokens": 160000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1778807903,
+      "ttl": 3600
+    },
+    "00a825729076192d25c440cbff6809f6": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "backend",
+          "testing",
+          "developer-experience"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires supporting 10+ framework detection patterns with diverse package manifest formats, building accurate test coverage, handling edge cases (monorepos, missing files), and designing template recommendation logic that balances type + complexity scoring."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "product-thinking"
+          ],
+          "build": [
+            "testing-strategy",
+            "performance"
+          ],
+          "review": [
+            "security-audit",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about detection heuristics and edge cases before committing to implementation (e.g., how to handle monorepos, workspaces, false positives).",
+          "architecture-design": "Create ADR documenting detection strategy (priority order of package manifest checks, confidence scoring, fallback behavior) for maintainability across 10+ project types.",
+          "product-thinking": "Ensure the detection flow and recommendations reduce setup friction (currently 30 min → <5 min goal) and align with actual developer workflows.",
+          "testing-strategy": "Design test coverage across 10+ project type samples with realistic edge cases (missing files, mixed frameworks, non-standard setups) to validate accuracy criterion.",
+          "performance": "Detection logic must execute in <2 seconds during `shipwright prep --interactive` to meet the UX goal of minimal friction.",
+          "security-audit": "File parsing (requirements.txt, Gemfile, package.json, go.mod, etc.) must safely handle edge cases without injection vulnerabilities or crashes.",
+          "adversarial-quality": "Identify failure modes where detection produces wrong results (e.g., monorepo misidentification, custom framework variants, missing manifest files).",
+          "validation-thoroughness": "Verify detection accuracy against real project samples of each type, not just mock test cases, ensuring the 10+ detection patterns work in practice.",
+          "pr-quality": "PR should clearly document the detection heuristics, confidence scoring, and test results across all 10+ project types so reviewers can validate completeness."
+        },
+        "generated_skills": [
+          {
+            "name": "project-type-detection-engine",
+            "reason": "No existing skill specifically covers the core challenge of building multi-framework detection logic with confidence scoring, file parsing, edge case handling, and template recommendation—critical for this issue.",
+            "content": "## Project Type Detection Engine\n\n### Overview\nDesign and implement framework detection that identifies 10+ project types (Node.js, Rails, Django, Go, Rust, Python, Java/Maven, Next.js, React, Vue) by analyzing project structure and manifests. Output includes detected type, language, framework, and recommended pipeline template.\n\n### Detection Strategy\n\n**Priority-based manifest checks** (fail-safe ordering):\n1. **Node.js ecosystem**: package.json → extract `name`, `type`, check for frameworks (Next.js, React, Vue via dependencies)\n2. **Ruby**: Gemfile → check for Rails, Sinatra, or plain Ruby\n3. **Python**: requirements.txt/pyproject.toml/setup.py → detect Django, Flask, FastAPI, or plain Python\n4. **Go**: go.mod → always detected as Go\n5. **Rust**: Cargo.toml → always detected as Rust\n6. **Java**: pom.xml or build.gradle → detected as Java/Maven or Java/Gradle\n7. **PHP**: composer.json → detect Laravel, Symfony, or plain PHP\n8. **C#/.NET**: .csproj or .sln → detected as C#/.NET\n9. **Other**: Fallback to language detection from file extensions\n\n**Confidence scoring** (0.0–1.0):\n- Primary manifest found: +0.8 (high confidence)\n- Framework indicators in dependencies: +0.15 (e.g., `next`, `rails`, `django` in deps)\n- Multiple confirming signals: +0.05 bonus\n- Missing primary manifest: -0.3 (lower confidence, fallback to secondary detection)\n\n### Edge Cases & Fallbacks\n\n1. **Monorepos** (Lerna, Yarn workspaces, pnpm, Turborepo):\n   - Detect `lerna.json`, root package.json with `workspaces` field, `pnpm-workspace.yaml`, or `turbo.json`\n   - Tag as `monorepo` in output; recommend `standard` template regardless of single-project type\n   - Scan first workspace for actual project type\n\n2. **Missing primary manifest**:\n   - Fall back to secondary detection: scan source files for import statements\n   - If nothing found, default to language detected from file extensions\n\n3. **Mixed frameworks** (e.g., Node backend + React frontend):\n   - Detect both; recommend template based on primary (most impactful) framework\n   - Flag in output: `\"frameworks\": [\"node\", \"react\"]`\n\n4. **Non-standard setups** (custom scripts, no manifest):\n   - Scan first 5 source files for shebang or language hint\n   - If ambiguous, prompt user for confirmation\n\n### Template Recommendation Logic\n\n**Input**: detected type + complexity (LOC, test count, dependency count)\n\n**Output**: recommended template name (fast/standard/full)\n\n**Rules**:\n- Small projects (<5K LOC, <20 dependencies, no tests): `fast`\n- Medium projects (5K–50K LOC, 20–100 dependencies, basic tests): `standard`\n- Large projects (>50K LOC, >100 dependencies, comprehensive tests): `full`\n- New projects (no tests detected): `fast` → scale up after first run\n- Enterprise frameworks (Java/Maven, .NET): skip `fast`, recommend `standard` minimum\n\n### Implementation Checklist\n\n- [ ] Bash functions for each manifest type (parse_node, parse_python, parse_go, etc.)\n- [ ] Confidence scoring with weighted sum\n- [ ] Monorepo detection and handling\n- [ ] Fallback detection (source file scanning)\n- [ ] Template recommendation based on type + complexity\n- [ ] Safe file I/O (handle missing/malformed manifests without crashing)\n- [ ] Test suite: one sample project per type (10+ total), validate detection accuracy\n- [ ] Performance: complete detection in <2 seconds on typical projects\n- [ ] Output: JSON with `type`, `language`, `framework`, `confidence`, `template`, `build_cmd`, `test_cmd`\n\n### Security Considerations\n\n- Parse JSON/YAML safely using `jq`/`yq` (not regex)\n- Never execute manifest files (no `eval`, no dynamic sourcing)\n- Validate file paths before reading (no path traversal)\n- Handle large files gracefully (read first N lines only for source scanning)\n"
+          }
+        ],
+        "review_focus": [
+          "Detection accuracy across all 10+ project type samples—each type must be correctly identified with high confidence",
+          "Monorepo handling: detection must not fail or misidentify when Lerna, Yarn workspaces, Turborepo, or pnpm workspaces are present",
+          "Edge case coverage: missing manifests, mixed frameworks, custom non-standard setups, and malformed package files must not crash or produce false negatives",
+          "Template recommendation logic: verify the fast/standard/full recommendations align with project complexity scoring",
+          "Performance: confirm detection completes in <2 seconds (meets <5 min setup goal)",
+          "Safe file parsing: YAML, JSON, and source file reads use proper parsers (jq, yq) with error handling, no eval or dynamic sourcing"
+        ],
+        "risk_areas": [
+          "Detection reliability: false negatives or misidentification break the entire UX value; detection accuracy must be validated against real projects, not just mocks",
+          "File parsing robustness: malformed or non-standard manifests (comments in JSON, YAML anchors, etc.) could crash the parser",
+          "Monorepo complexity: detection logic must handle workspace structures correctly; incorrect detection in monorepos could recommend wrong template for entire project",
+          "Template recommendation accuracy: recommendations based on heuristics (LOC, dependency count) may not match actual project complexity; needs validation with sample projects",
+          "Maintenance burden: adding new project types requires test cases and detection logic updates; pattern must be extensible",
+          "Confidence threshold: low-confidence detections could mislead users; interactive confirmation is critical but adds friction"
+        ]
+      },
+      "timestamp": 1778808012,
+      "ttl": 3600
+    },
+    "7c2265d7455e043e3a794c9fff1fa58e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Live project type detection for current repo showing detected type=node, framework='', test_runner=vitest, package_manager=npm, language=javascript — directly demonstrates the detection output format this feature produces"
+          },
+          {
+            "file": "patterns.json (project_type nodejs)",
+            "relevance": 80,
+            "summary": "Previous successful project type detection capturing nodejs type from bootstrap source — shows detection working in practice with captured_at timestamp"
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 60,
+            "summary": "Feature development pattern with complexity=60, iterative TDD approach, 5 iterations over 300s — provides reference for iteration count, duration, and test strategy for feature-class work"
+          },
+          {
+            "file": "success-patterns.json (bug fix and auth feature)",
+            "relevance": 55,
+            "summary": "Two successful patterns showing multi-iteration approaches (3-4 iterations), file patterns across .claude/ and scripts/, and npm test strategy — informs expected iteration count and file patterns for this feature"
+          },
+          {
+            "file": "issues.json (timeout bug in daemon)",
+            "relevance": 40,
+            "summary": "Recent success (2026-05-09) with semaphore fix in daemon/dispatch files — shows backoff patterns relevant to multi-detection scenarios"
+          }
+        ]
+      },
+      "timestamp": 1778808091,
+      "ttl": 1800
+    },
+    "e44b6ca4052a24da5e2e29be879a5804": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright project)",
+            "relevance": 90,
+            "summary": "Shows actual project type auto-detection output for this repo (node/javascript/vitest/npm/conventions), directly demonstrating what the feature should produce"
+          },
+          {
+            "file": "success-patterns.json (feature implementations)",
+            "relevance": 72,
+            "summary": "Contains successful feature delivery patterns showing template selection based on complexity/issue_type, which informs the smart template recommendation engine logic"
+          },
+          {
+            "file": "patterns.json (nodejs detected at bootstrap)",
+            "relevance": 68,
+            "summary": "Shows project type detection patterns and methodology from source='bootstrap', provides baseline for what auto-detection validation should verify"
+          }
+        ]
+      },
+      "timestamp": 1778808164,
+      "ttl": 1800
+    },
+    "6561067cea9dfeb9fc969cfb0e95d65e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Shows actual project detection output for this repo with type/framework/test_runner/language/conventions — directly exemplifies what auto-detection engine should discover"
+          },
+          {
+            "file": "patterns.json (project_type nodejs)",
+            "relevance": 85,
+            "summary": "Demonstrates project type detection with bootstrap source tracking — shows detection mechanism and metadata capture pattern"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Contains file_patterns, test_strategy, template selection, complexity scoring — informs recommendation engine design and what metadata to extract"
+          },
+          {
+            "file": "failures.json (sw-cleanup stale heartbeat)",
+            "relevance": 40,
+            "summary": "Shows test failure pattern matching issues — edge case for detection system state management"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 35,
+            "summary": "Documents timeout semaphore pattern and gotchas — architectural consideration for long-running detection operations"
+          }
+        ]
+      },
+      "timestamp": 1778808192,
+      "ttl": 1800
+    },
+    "8fbfa5de11c105c5a1b0e06605e7eb34": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (repo: sethdford/shipwright, 2026-05-15)",
+            "relevance": 65,
+            "summary": "Shows successful project type detection output for current repo (node, vitest, npm, javascript with conventions). Demonstrates what auto-detection currently produces, informing design constraints and successful patterns."
+          },
+          {
+            "file": "patterns.json (project_type: nodejs, 2026-02-21)",
+            "relevance": 50,
+            "summary": "Earlier project type detection snapshot showing bootstrap-sourced detection. Could indicate evolution of detection approach or historical baselines for comparison."
+          },
+          {
+            "file": "success-patterns.json (authentication feature, complexity 65)",
+            "relevance": 35,
+            "summary": "Documents iterative feature development with TDD approach. While not specific to auto-detection, the iterative methodology and file pattern tracking could inform detection engine implementation approaches."
+          }
+        ]
+      },
+      "timestamp": 1778808206,
+      "ttl": 1800
+    },
+    "bdc819ff6bdca1ceab0e28d57a0eaae0": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current repo detection (sethdford/shipwright): Node.js, vitest, npm, javascript with source_dir src/, commonjs imports. Most recent capture 2026-05-15T01:20:14Z. Directly applicable to build stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Recent test stage failure (2026-05-14) in sw-cleanup.sh dry-run detection. Shows patterns for debugging test failures in this repo's test harness."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 61,
+            "summary": "Authentication feature pattern: 3 iterations, npm test strategy, standard template. Shows typical iteration cycle and test approach for features in this codebase."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 54,
+            "summary": "Daemon timeout fix pattern (2026-05-09) with semaphore solution. Relevant for understanding successful debugging patterns and gotchas in daemon-related code."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Bug fix pattern: 3 iterations, standard template, npm test, 6 commits. Shows file change patterns (.claude/, scripts/lib/) and iteration costs for this repo."
+          }
+        ]
+      },
+      "timestamp": 1778808291,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Proven iteration strategies with loop-based approaches, test strategies (npm test), and file patterns. Shows successful build/fix patterns including cost metrics and multi-iteration resolution that directly informs current build stage."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project conventions (vitest runner, commonjs imports, src/ source dir, *.test.js pattern) are essential for build stage to properly execute tests and understand code structure during iterations."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Recent test stage failure shows sw-cleanup.sh dry-run issues. While from test stage, it provides context on what can break and informs build stage decisions about script quality and edge cases."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Historical daemon timeout issue with semaphore fix demonstrates common patterns (TIMEOUT errors, backoff considerations) that may be encountered during build iteration."
+          },
+          {
+            "file": "decisions.json",
+            "relevance": 12,
+            "summary": "Currently empty, but provides storage for recording build-stage decisions (e.g., iteration limits, model choices, retry strategies) for future reference."
+          }
+        ]
+      },
+      "timestamp": 1778808307,
+      "ttl": 1800
     }
   }
 }
