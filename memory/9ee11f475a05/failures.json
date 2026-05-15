@@ -3,19 +3,29 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output are broken — dry-run does not report stale heartbeats or emit 'Found N' / '--force' summary lines",
-      "fix": "Fix the heartbeat age-detection logic and summary reporting in sw-cleanup.sh to correctly identify stale heartbeat files and print the Found count with --force hint when items are detected",
-      "seen_count": 3,
-      "last_seen": "2026-05-15T08:08:56Z",
+      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or output 'Found N' summary with '--force' hint",
+      "fix": "Update sw-cleanup.sh to scan heartbeat files for staleness in dry-run mode and output a summary line with 'Found N items' and '--force' hint when items are detected",
+      "seen_count": 4,
+      "last_seen": "2026-05-15T08:00:18Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113mFailed:\u001b[0m 1",
-      "root_cause": "",
-      "fix": "",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command uses a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of as an expression, missing the -e flag",
+      "fix": "Change 'sed s|...|g' to 'sed -e s|...|g' or quote the expression correctly so sed treats it as a substitution command",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:33:09Z"
+      "last_seen": "2026-05-15T08:13:43Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "Test script attempts to create temp directory under /tmp/claude/ which does not exist",
+      "fix": "Create /tmp/claude/ before running tests, or change mktemp template to use /tmp/sw-test-XXXXXX instead",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T08:24:14Z",
+      "category": "config"
     }
   ]
 }
