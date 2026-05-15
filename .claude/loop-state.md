@@ -109,16 +109,16 @@ Task tracking (check off items as you complete them):
 - Branch: ci/issue-486
 - Issue: none
 - Generated: 2026-05-15T13:15:52Z"
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-15T13:19:21Z
-last_iteration_at: 2026-05-15T13:19:21Z
+started_at: 2026-05-15T13:26:20Z
+last_iteration_at: 2026-05-15T13:26:20Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -129,4 +129,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-15T13:26:20Z)
+- **`scripts/sw-abtest-test.sh`** — 32 assertions covering assignment, recording, aggregation, CLI integration, and 8-
+- Router (`scripts/sw`) accepts `abtest` and `ab` aliases.
+- `package.json` test suite includes new test; `sw-memory-test.sh` still passes (22/22) — backward compatible.
 
