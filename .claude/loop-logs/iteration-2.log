@@ -1,8 +1,0 @@
-Fixed the `file_mtime` Linux bug that was causing cleanup test failures (pre-existing, not from this branch). Project-detect goal is fully implemented:
-- `scripts/lib/project-detect.sh` exists with 10 detector functions
-- `scripts/sw-project-detect-test.sh` — all 43 tests pass
-- Registered in `package.json` test script
-- Integrated into `sw-prep.sh` flow
-- All related test suites pass (cleanup 24/24, lib-compat 56/56, prep 13/13, project-detect 43/43)
-
-Not declaring LOOP_COMPLETE yet — the audit asked for the full `npm test` suite to be verified. Next iteration should run the full suite to confirm no other latent failures.
