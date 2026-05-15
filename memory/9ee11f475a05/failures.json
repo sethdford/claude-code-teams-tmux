@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 3,
-      "last_seen": "2026-05-15T13:23:39Z",
+      "last_seen": "2026-05-15T13:31:05Z",
       "category": "test_failure"
     },
     {
@@ -30,11 +30,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, causing 3 cleanup tests to fail on missing 'agent-1', 'Found', and '--force' strings",
-      "fix": "Update sw-cleanup.sh to output heartbeat agent names and a summary line with 'Found N items' and '--force' hint when stale heartbeats or artifacts are detected in dry-run mode",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:34:08Z",
-      "category": "test_failure"
+      "last_seen": "2026-05-15T08:34:08Z"
     }
   ]
 }
