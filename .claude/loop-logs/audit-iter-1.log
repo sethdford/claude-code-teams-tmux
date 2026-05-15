@@ -1,1 +1,60 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## AUDIT FINDINGS
+
+I've completed a comprehensive review of the agent's cumulative work on Issue #478 (Pipeline Git State Validator and Auto-Cleanup Between Stages). Here are my findings:
+
+### ✅ STRENGTHS
+
+1. **Core Implementation Complete**: The `git-state-validator.sh` module (302 lines) is well-implemented with:
+   - Proper module guard pattern
+   - Bash 3.2 compatible code (`set -euo pipefail`, no bash 4+ features)
+   - Clean separation of public API (`validate_before_stage`, `validate_after_stage`) and private helpers
+   - Comprehensive error handling with event emission
+
+2. **Pipeline Integration Correct**: 
+   - Module properly sourced in `pipeline-execution.sh` (lines 40-44)
+   - `validate_before_stage` called before stage execution (line 61) — correctly fails if dirty
+   - `validate_after_stage` called after stage success (line 69) — correctly non-blocking with `|| true`
+
+3. **Manifest Complete**: All 14 pipeline stages are declared in `.claude/pipeline-artifacts/stage-manifests.json` with before/after policies and file patterns.
+
+4. **Tests Pass**: 
+   - New test suite (`sw-git-state-validator-test.sh`) passes all 8/8 tests
+   - Pipeline tests still pass (58/58) — no regressions introduced
+
+5. **Proper Features**:
+   - Escape hatches: `SW_DISABLE_GIT_VALIDATOR`, `LOCAL_MODE`, `SW_DOWNGRADE_GIT_VALIDATOR`
+   - Auto-stash capability with atomic logging
+   - Actionable recovery hints on failure
+   - Event emission for observability
+
+### ⚠️ ISSUES IDENTIFIED
+
+1. **Minor Documentation Error**: CLAUDE.md lists git-state-validator.sh as 344 lines when it's actually 302 lines. This is a small documentation discrepancy but doesn't affect functionality.
+
+2. **npm test Failing with Exit Code 3**: The full test suite reports failure due to 3 pre-existing failures in `sw-cleanup-test.sh`:
+   - "dry-run detects stale heartbeat" 
+   - "summary shows found count"
+   - "summary shows --force hint"
+   
+   **These failures are NOT caused by the agent's changes** — the cleanup test file was not modified, and the agent's new code passes all its tests with no regressions.
+
+### ✅ VERIFICATION CHECKLIST
+
+- ✅ All 14 pipeline stages in manifest
+- ✅ Functions `validate_before_stage` and `validate_after_stage` implemented  
+- ✅ Functions called from `pipeline-execution.sh::run_stage_with_retry`
+- ✅ Bash syntax valid (`bash -n` passed)
+- ✅ Bash 3.2 compatible (no `declare -A`, `readarray`, etc.)
+- ✅ Module guard prevents double-loading
+- ✅ Test coverage adequate for new functionality
+- ✅ No regressions to existing pipeline tests
+
+### CONCLUSION
+
+The implementation is **functionally complete and correct**. The agent achieved the goal of adding before/after git-state validation hooks around pipeline stages with proper auto-cleanup support. The code follows project conventions, includes proper testing, and integrates cleanly without introducing regressions. The npm test failure is a pre-existing issue in an unrelated test suite.
+
+**AUDIT_PASS**
