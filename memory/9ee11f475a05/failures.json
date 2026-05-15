@@ -3,28 +3,28 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or emit 'Found'/'--force' summary output",
-      "fix": "Update sw-cleanup.sh to scan heartbeat files in ~/.shipwright/heartbeats/ during dry-run and print a summary line with 'Found N item(s)' and '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or emit 'Found' count and '--force' hint in summary output",
+      "fix": "Fix the heartbeat detection logic and summary output in sw-cleanup.sh to scan for stale heartbeat files and print 'Found N item(s)' with a '--force' hint when items are detected in dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-05-15T07:54:38Z",
+      "last_seen": "2026-05-15T07:56:48Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command receives the substitution expression as a filename argument instead of -e flag, likely due to missing -e before the s|...|...|g expression",
-      "fix": "Add -e flag before the sed substitution expression: sed -e 's|$TEST_TEMP_DIR|...|g' or fix the variable expansion quoting in the test script",
-      "seen_count": 4,
-      "last_seen": "2026-05-15T08:18:44Z",
+      "root_cause": "sed command receives the substitution pattern as a filename argument instead of an inline expression, likely due to missing -e flag or incorrect quoting in the test script",
+      "fix": "change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` or use proper quoting so the pattern is treated as an expression not a file path",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T08:02:09Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "rm: cannot remove '/tmp/sw-agi-test.zVbhTg/swarm-home/.shipwright': Directory not empty",
-      "root_cause": "Test cleanup fails because rm -r is not used when removing the temp directory containing non-empty subdirectories like .shipwright",
-      "fix": "Replace `rm` with `rm -rf` when removing the temp test directory in sw-agi-roadmap-test.sh cleanup",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
+      "root_cause": "sw-hygiene.sh platform-refactor subcommand exits with code 1 instead of 0",
+      "fix": "Find the exit condition in the platform-refactor branch of sw-hygiene.sh and ensure it exits 0 on success",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:21:47Z",
+      "last_seen": "2026-05-15T08:23:47Z",
       "category": "test_failure"
     }
   ]
