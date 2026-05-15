@@ -1,1 +1,60 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my critical code review, I've identified real issues. Let me create a comprehensive summary:
+
+## AUDIT FINDINGS
+
+I found **1 critical bug** and **1 portability issue** in the preflight implementation:
+
+### 🔴 **CRITICAL BUG**: False-positive rejections for valid `package.json`
+
+**Location**: `scripts/lib/pipeline-preflight.sh` lines 141-149 (`_pf_check_test_command`)
+
+**Issue**: The quote balance heuristic rejects valid `package.json` files that contain apostrophes (single quotes) in the test script value. Example:
+
+```json
+{"scripts": {"test": "mocha --grep it's --reporter spec"}}
+```
+
+This is **valid JSON** but has 1 unpaired single quote in the script value, causing the preflight validator to **incorrectly BLOCK** the pipeline with "package.json test script has unbalanced quotes".
+
+**Proof**: I tested and confirmed this causes false rejections.
+
+**Impact**: Legitimate JavaScript projects using common test patterns (e.g., grep filters with contractions) would have pipelines incorrectly rejected before they even start, wasting quota and breaking the feasibility validator's purpose.
+
+**Fix needed**: Replace the quote-counting heuristic with proper JSON validation. Since `jq empty` already validates the JSON file itself, we should trust it rather than counting quotes.
+
+---
+
+### 🟡 **PORTABILITY ISSUE**: `\b` word boundary in grep
+
+**Location**: `scripts/lib/pipeline-preflight.sh` line 178
+
+**Issue**: Uses `grep -q "daemon-issue-${issue}\b"` which relies on `\b` word boundary. This works in basic GNU grep but is not POSIX-compliant and may fail on some systems (e.g., macOS with BSD grep).
+
+**Fix needed**: Use `grep -E` or escape the pattern for POSIX compatibility.
+
+---
+
+### ✅ **Positive Observations**
+
+- Architecture is clean: separate library with public API ✓
+- 27 unit tests passing (comprehensive coverage) ✓  
+- Integration wired into both daemon and pipeline ✓
+- `--force` / `--no-preflight` flags properly implemented ✓
+- Markdown reporting and memory logging working ✓
+- Event emission for observability present ✓
+
+---
+
+### ⚠️ **Test Status Note**
+
+The overall npm test suite exits with code 3 (test failures) but those failures are in **unrelated cleanup tests** that existed before this PR. The **preflight-specific tests all pass** (27/27). However, the critical bug would cause false rejections in production.
+
+---
+
+## AUDIT_FAIL
+
+**Reason**: The quote-counting validation bug is a critical defect that causes false-positive rejections of legitimate `package.json` files, defeating the validator's core purpose.
