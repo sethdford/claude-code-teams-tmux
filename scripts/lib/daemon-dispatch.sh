@@ -97,6 +97,23 @@ daemon_spawn_pipeline() {
 
     daemon_log INFO "Spawning pipeline for issue #${issue_num}: ${issue_title}"
 
+    # ── Pre-flight feasibility validator (#488) ──
+    if [[ -f "${SCRIPT_DIR}/lib/pipeline-preflight.sh" && "${SW_PREFLIGHT_ENABLED:-}" != "false" ]]; then
+        # shellcheck source=lib/pipeline-preflight.sh
+        source "${SCRIPT_DIR}/lib/pipeline-preflight.sh"
+        local _pf_artifacts="${WORKTREE_DIR}/.preflight-${issue_num}"
+        if ! preflight_validate "$issue_num" "${issue_title}" "$_pf_artifacts"; then
+            daemon_log WARN "Preflight BLOCK for issue #${issue_num} — refusing to spawn"
+            emit_event "preflight.reject" "issue=${issue_num}" "source=daemon" 2>/dev/null || true
+            if [[ "$NO_GITHUB" != "true" ]] && command -v gh >/dev/null 2>&1; then
+                local _pf_body
+                _pf_body="### Pipeline rejected by preflight validator"$'\n\n'"See \`$_pf_artifacts/preflight-report.md\` for the actionable rejection reasons."$'\n\n'"Fix the items flagged above, or re-run with \`--force\` to override."
+                _timeout "$gh_timeout" gh issue comment "$issue_num" --body "$_pf_body" >/dev/null 2>&1 || true
+            fi
+            return 1
+        fi
+    fi
+
     # ── Budget gate: hard-stop if daily budget exhausted ──
     if [[ -x "${SCRIPT_DIR}/sw-cost.sh" ]]; then
         local remaining

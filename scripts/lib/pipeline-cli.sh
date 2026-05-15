@@ -57,6 +57,8 @@ show_help() {
     echo -e "  ${DIM}--no-github-label${RESET}         Don't modify issue labels"
     echo -e "  ${DIM}--ci${RESET}                      CI mode (skip gates, non-interactive)"
     echo -e "  ${DIM}--ignore-budget${RESET}           Skip budget enforcement checks"
+    echo -e "  ${DIM}--force${RESET}                   Override preflight BLOCK (downgrades to WARN)"
+    echo -e "  ${DIM}--no-preflight${RESET}            Disable the preflight validator entirely"
     echo -e "  ${DIM}--worktree [=name]${RESET}         Run in isolated git worktree (parallel-safe)"
     echo -e "  ${DIM}--dry-run${RESET}                 Show what would happen without executing"
     echo -e "  ${DIM}--slack-webhook <url>${RESET}     Send notifications to Slack"
@@ -139,6 +141,8 @@ parse_args() {
             --no-github-label) NO_GITHUB_LABEL=true; shift ;;
             --ci)          CI_MODE=true; SKIP_GATES=true; shift ;;
             --ignore-budget) IGNORE_BUDGET=true; shift ;;
+            --force)       export SW_PREFLIGHT_FORCE=true; shift ;;
+            --no-preflight) export SW_PREFLIGHT_ENABLED=false; shift ;;
             --max-iterations) MAX_ITERATIONS_OVERRIDE="$2"; shift 2 ;;
             --completed-stages) COMPLETED_STAGES="$2"; shift 2 ;;
             --resume) RESUME_FROM_CHECKPOINT=true; shift ;;

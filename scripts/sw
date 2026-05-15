@@ -327,6 +327,9 @@ main() {
         pipeline)
             exec "$SCRIPT_DIR/sw-pipeline.sh" "$@"
             ;;
+        preflight)
+            exec "$SCRIPT_DIR/sw-preflight.sh" "$@"
+            ;;
         worktree)
             exec "$SCRIPT_DIR/sw-worktree.sh" "$@"
             ;;

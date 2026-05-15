@@ -729,6 +729,17 @@ pipeline_start() {
     # Pre-flight checks
     preflight_checks || exit 1
 
+    # Pre-flight feasibility validator (#488) — gate before any stage runs
+    if [[ -f "$SCRIPT_DIR/lib/pipeline-preflight.sh" ]]; then
+        # shellcheck source=lib/pipeline-preflight.sh
+        source "$SCRIPT_DIR/lib/pipeline-preflight.sh"
+        if ! preflight_validate "${ISSUE_NUMBER:-}" "${GOAL:-}" "$ARTIFACTS_DIR"; then
+            error "Pipeline rejected by preflight validator — see $ARTIFACTS_DIR/preflight-report.md"
+            echo -e "  Override with: ${DIM}--force${RESET}  or fix the items flagged above"
+            exit 1
+        fi
+    fi
+
     # Initialize GitHub integration
     gh_init
 
