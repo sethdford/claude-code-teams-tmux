@@ -1,1 +1,61 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Summary
+
+I've thoroughly reviewed the cumulative work across iterations 1-2 for the Project Type Auto-Detection feature. Here's my assessment:
+
+### ✅ **Core Implementation - Complete**
+1. **`scripts/lib/project-detect.sh`** (650 lines) ✓
+   - 10+ project type detectors (Node, Python, Rust, Go, Ruby, Java, .NET, C, Bash)
+   - Framework detection (React, Next, Django, Express, Fastapi, etc.)
+   - `project_detect_type()`, `project_detect_test_cmd()`, `project_detect_build_cmd()`
+   - `project_recommend_template()` with confidence scoring
+   - `project_detect_all()` with JSON caching
+   - Bash 3.2 compatible (no bash 4+ features)
+
+2. **Test Suite** (`scripts/sw-project-detect-test.sh`, 434 lines) ✓
+   - **43 tests, all passing** ✓
+   - Covers 10+ project types, edge cases, auto-detection, cache behavior
+
+3. **Integration into `scripts/sw-prep.sh`** ✓
+   - `prep_project_detect()` function cleanly integrated
+   - Calls `project_detect_all()` and displays results
+   - Proper error handling (fails gracefully if detection fails)
+
+4. **Registered in `package.json`** ✓
+   - Test suite properly included in npm test script
+
+### ✅ **Code Quality**
+- Proper error handling and exit codes
+- Good JSON output formatting via jq
+- Follows project conventions (VERSION, set -euo pipefail, ERR trap)
+- No regressions in related tests (prep: 13/13 ✓, lib-compat: 56/56 ✓, cleanup: 24/24 ✓)
+
+### ✅ **Feature Verification**
+I tested the feature on the current repo:
+```json
+{
+  "type": "nodejs",
+  "framework": "unknown",
+  "build_tool": "npm",
+  "test_runner": "vitest",
+  "test_cmd": "npm test",
+  "recommended_template": "deployed" (90% confidence)
+}
+```
+**Working correctly ✓**
+
+### ⚠️ **npm test Failure**
+`npm test` fails with exit 2 due to a **pre-existing bug** in `sw-code-review-test.sh` (line 40):
+```bash
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g"  # ← macOS syntax, fails on Linux
+```
+This is unrelated to project-detect. The agent correctly recognized this and did not falsely declare the loop complete.
+
+---
+
+**AUDIT_PASS**
+
+The project type auto-detection feature is fully implemented, properly tested (43/43 passing), well-integrated, and working correctly. The individual feature tests demonstrate no regressions. The npm test suite failure is a pre-existing infrastructure issue in an unrelated test file, not a result of this work.
