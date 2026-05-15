@@ -1,10 +1,1 @@
-Committed. Summary of this iteration:
-
-- **New library** `scripts/lib/pipeline-limits.sh`: `limits_init`, `limits_check`, `limits_abort`, `limits_pipeline_cost_cents`. Timeout fails closed; cost reads fail open.
-- **Wired into** `run_pipeline` (stage boundaries) and the self-healing build/test inner loop in `pipeline-execution.sh`.
-- **Exit-code handling** for 124/125 added in `pipeline-commands.sh` with notification + event + SQLite status update.
-- **All 8 templates** carry a `limits` block (hotfix 30m/$10 → enterprise 8h/$200, standard 4h/$50).
-- **22-test suite** `sw-pipeline-limits-test.sh` (all passing); registered in `package.json`.
-- **Regressions clean**: `sw-pipeline-test.sh` (58/58), `sw-lib-pipeline-state-test.sh` (46/46), `sw-cost-test.sh`, `sw-checkpoint-test.sh` all pass.
-
-The core feature is functional end-to-end. Outstanding items from the plan: surface `aborted_*` statuses in `print_pipeline_state` (cosmetic) and a friendlier exit footer in `sw-pipeline.sh` (cosmetic — current notification from `limits_abort` already includes elapsed/cost/limits/resume). Will pick those up next iteration along with integration tests against `run_pipeline`.
+You're out of extra usage · resets 5:20am (UTC)
