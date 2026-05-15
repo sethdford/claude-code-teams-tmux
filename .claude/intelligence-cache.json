@@ -30,42 +30,44 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "devops",
         "secondary_roles": [
-          "pm"
+          "architect",
+          "incident-responder"
         ],
-        "confidence": 0.55,
-        "reasoning": "Architect evaluates feasibility and system design; PM assesses scope/planning. But neither specializes in predictive pipeline risk analysis.",
+        "confidence": 0.65,
+        "reasoning": "Pipeline feasibility validation requires DevOps pipeline expertise + architecture understanding + failure mode analysis, but a specialized feasibility-validator role would be more precise.",
         "new_role_needed": true,
         "suggested_role": {
           "key": "feasibility-validator",
-          "title": "Pre-Flight Validator",
-          "description": "Pre-pipeline feasibility analysis, issue complexity scoring, risk assessment, blocker detection, and pipeline viability prediction to prevent doomed builds",
+          "title": "Pipeline Feasibility Validator",
+          "description": "Issue feasibility assessment, pipeline constraint validation, failure prediction, pre-flight analysis to identify doomed pipelines before execution",
           "required_skills": [
             "feasibility-analysis",
+            "constraint-checking",
+            "failure-prediction",
             "risk-assessment",
-            "complexity-scoring",
-            "dependency-analysis",
-            "pattern-detection"
+            "pipeline-architecture"
           ],
-          "recommended_model": "opus",
           "context_needs": [
-            "issue-requirements",
-            "codebase-complexity",
-            "past-pipeline-failures",
-            "dependency-graph",
-            "test-coverage-baseline"
+            "pipeline-stages",
+            "system-constraints",
+            "past-failures",
+            "complexity-metrics",
+            "resource-limits",
+            "failure-patterns"
           ],
           "success_metrics": [
-            "feasibility-prediction-accuracy",
+            "doomed-pipeline-detection-rate",
             "false-positive-rate",
-            "cost-savings-from-blocked-doomed-pipelines",
-            "pipeline-success-rate-improvement"
+            "early-warning-accuracy",
+            "prevention-rate"
           ],
-          "estimated_cost_per_task_usd": 1.8
+          "recommended_model": "opus",
+          "estimated_cost_per_task_usd": 2.0
         }
       },
-      "timestamp": 1778851197,
+      "timestamp": 1778871983,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1429,32 +1431,30 @@
     },
     "9b4a61627f6c5d65e917ab8ffd558b64": {
       "result": {
-        "complexity": 7,
+        "complexity": 6,
         "risk_level": "medium",
         "success_probability": 77,
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Over-blocking legitimate pipelines due to overly strict validation heuristics",
-          "Dependency check false positives (declaring unavailable when installable)",
-          "Timing integration - ensuring validator executes before daemon creates pipeline",
-          "Memory system write reliability for rejection pattern capture",
-          "Sequential feasibility checks causing noticeable daemon startup latency"
+          "False positives blocking valid pipelines undermines user confidence in automation",
+          "False negatives allow doomed builds through, defeating the validator's purpose",
+          "Issue clarity scoring (heuristic) may not generalize across diverse domain issues",
+          "Dependency checks miss transitive/environment-specific failures",
+          "Performance overhead during daemon spawn could slow high-throughput issue queues",
+          "Tight coupling to daemon spawn logic makes refactoring daemon harder"
         ],
         "implementation_hints": [
-          "Implement git state and test command validity checks first (lowest risk, immediate wins)",
-          "Use issue description structure and keyword matching as initial clarity proxy before NLP",
-          "Run dependency and conflict checks in parallel with timeout fallback",
-          "Define rejection codes (GIT_DIRTY, DEPS_FAIL, TEST_INVALID) for memory tagging and analysis",
-          "Add --skip-feasibility override flag for explicit user intent (prevents false-positive blocking)",
-          "Create integration test with mock pipelines showing before/after failure reduction percentage",
-          "Deploy in log-only mode first week before blocking to calibrate thresholds",
-          "Cache dependency check results per commit to avoid repeated installations",
-          "Ensure memory writes are atomic with fallback to prevent corruption on failure",
-          "Generate actionable rejection message (what failed + how to fix) not just reason codes"
+          "Decompose into modular check functions: git_state(), issue_clarity(), test_command_validity(), dependencies_available(), pipeline_conflicts()",
+          "Reuse existing dependency resolution from loop stages—don't reinvent",
+          "Store rejection data in memory system (reason, issue ID, suggested fix) for pattern analysis across runs",
+          "Add --dry-run flag to validator for safe testing without blocking real pipelines",
+          "Make clarity score configurable in daemon-config.json—allow overrides for trusted issue sources",
+          "Track validator accuracy: log false positive/negative rates per check type, feed back to adaptive tuning",
+          "Emit structured rejection reason (JSON) so daemon can format user-friendly messages with actionable fixes"
         ]
       },
-      "timestamp": 1778850581,
+      "timestamp": 1778871282,
       "ttl": 3600
     },
     "63285fa8c1424b20727c7432e995c4ec": {
@@ -1512,145 +1512,284 @@
       "result": {
         "results": [
           {
-            "file": "failures.json (test stage, 4 entries)",
-            "relevance": 75,
-            "summary": "Contains concrete test failure patterns (sw-cleanup heartbeat detection, JSON output format, mktemp directory issues, classify_failure wiring) that a feasibility validator should check for. Shows what breaks in practice and helps identify whether a plan is viable."
+            "file": "failures.json (2nd entry)",
+            "relevance": 95,
+            "summary": "Contains 4 recent test failures with documented root causes, fixes, and seen_count tracking. Directly applicable to a feasibility validator—shows actual failure patterns (heartbeat detection, JSON output, temp directory, classification logic) that the validator should detect and flag as doomed."
           },
           {
-            "file": "issues.json",
-            "relevance": 65,
-            "summary": "Demonstrates issue tracking with complexity assessment, error types, and success patterns (e.g., timeout bug fixed by adding semaphore). Relevant for validating that a plan appropriately scopes issue complexity and feasibility."
+            "file": "patterns.json (1st entry)",
+            "relevance": 85,
+            "summary": "Project conventions: Node.js, vitest test runner, CommonJS imports. Essential for feasibility validator to understand tech stack constraints and validate whether proposed changes can work within project structure."
           },
           {
-            "file": "patterns.json (project structure)",
-            "relevance": 62,
-            "summary": "Confirms project type (Node.js, vitest, npm, CommonJS) and conventions. Essential context for validating that a plan's test strategy and file patterns match the actual project structure."
+            "file": "success-patterns.json (1st entry)",
+            "relevance": 80,
+            "summary": "Two successful patterns with complexity scores (60, 65), iteration counts (3), and duration estimates. Provides baseline for validator to assess whether proposed issues fall within feasible scope and likely execution time."
           }
         ]
       },
-      "timestamp": 1778851003,
+      "timestamp": 1778871798,
       "ttl": 1800
     },
     "57133360bb95c45cb51638a7caf6e7a0": {
       "result": {
         "results": [
           {
-            "file": "failures.json (with 4 detailed stage failures)",
+            "file": "failures.json (with stage/pattern/root_cause fields)",
+            "relevance": 92,
+            "summary": "Contains recent failure patterns from 2026-05-15 (today) including heartbeat detection, JSON output, mktemp issues, and intelligence wiring — precisely the types of feasibility blockers the validator should detect pre-flight"
+          },
+          {
+            "file": "patterns.json (with project/conventions fields)",
             "relevance": 80,
-            "summary": "Shows concrete failure patterns (heartbeat detection, JSON output, mktemp, classify_failure wiring) with root causes and fixes—essential input for pre-flight validator logic to identify high-risk patterns"
+            "summary": "Project structure and conventions (Node, vitest, CommonJS, src/ dir, test patterns) essential for understanding what the validator validates against and designing compatible architecture"
           },
           {
-            "file": "success-patterns.json (first entry with F4AF3E2A...)",
-            "relevance": 78,
-            "summary": "Captures successful bug fix (complexity 60, 3 iterations, 45s) with file patterns and test strategy—provides baseline complexity assessment and iteration/duration profiles needed for feasibility scoring"
-          },
-          {
-            "file": "success-patterns.json (second entry with 0BCF0637...)",
-            "relevance": 75,
-            "summary": "Records successful feature work (complexity 65, 3 iterations, 150s)—extends success patterns to show iteration scaling for different issue types, informing feasibility thresholds"
-          },
-          {
-            "file": "patterns.json (with project conventions)",
-            "relevance": 48,
-            "summary": "Documents project type (Node, vitest, CommonJS) and source structure—provides architectural baseline and testing conventions that influence feasibility assessment"
+            "file": "success-patterns.json (first entry)",
+            "relevance": 72,
+            "summary": "Shows proven file patterns, test strategies, iteration counts, and cost baselines that define feasible pipeline configurations — informs what constitutes a valid pipeline state"
           },
           {
             "file": "issues.json",
-            "relevance": 38,
-            "summary": "Real issue record (timeout bug, success outcome with 'added semaphore' pattern)—shows correlation between gotchas and outcomes, useful for risk pattern matching in validator"
+            "relevance": 65,
+            "summary": "Records past issues with root causes (timeout bugs, required flags, backoff logic) and success patterns — represents the feasibility checks the validator should perform"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 58,
+            "summary": "Contains architecture rules framework — provides structural guidance for designing the validator's rule definitions and interfaces"
           }
         ]
       },
-      "timestamp": 1778851039,
+      "timestamp": 1778871834,
       "ttl": 1800
     },
     "d6e5c9f619cdcb159f7021b76febbb52": {
       "result": {
         "results": [
           {
-            "file": "failures.json (second entry - multi-stage failures)",
-            "relevance": 70,
-            "summary": "Contains specific test stage failure patterns with root causes and fixes. Critical for identifying anti-patterns: heartbeat detection logic, JSON output validation, mktemp failures, and wiring issues. Directly informs what design approaches fail in pipeline validation."
+            "file": "failures.json (second entry with stage/pattern/root_cause)",
+            "relevance": 85,
+            "summary": "Contains specific test stage failures with root causes and fixes (heartbeat detection logic, JSON output validation, mktemp directory issues, daemon retry wiring). These document anti-patterns and design mistakes to avoid in the validator."
           },
           {
             "file": "success-patterns.json (first entry)",
-            "relevance": 55,
-            "summary": "Captures two successful patterns (bug fix and feature addition) with iteration counts, test strategies, and file patterns. Provides counterpoint to failures—shows what feasibility validation should allow through. Demonstrates 3-iteration standard for success."
+            "relevance": 70,
+            "summary": "Shows successful bug fix approaches that used loop iterations and post-audit cleanup. Understanding what worked successfully provides contrast to anti-patterns and informs what design approaches are validated in similar complexity scenarios."
           },
           {
             "file": "issues.json",
-            "relevance": 40,
-            "summary": "Documents specific issue with 'gotchas' (e.g., 'check backoff') and success criteria. Shows practical feasibility considerations like timeout bugs that a pre-flight validator must catch before pipeline execution."
+            "relevance": 60,
+            "summary": "Contains concrete issue example (timeout bug in daemon) with working solution pattern (semaphore). Demonstrates specific gotchas to check and anti-patterns that led to timeouts—directly applicable to feasibility validation."
           }
         ]
       },
-      "timestamp": 1778851055,
+      "timestamp": 1778871856,
       "ttl": 1800
     },
     "a72ae6146f2429513899ce975deed552": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
+            "file": "patterns.json",
             "relevance": 95,
-            "summary": "Contains recent test failures (sw-cleanup.sh detection, regression JSON output, mktemp /tmp/claude issue, daemon retry logic) directly applicable to build stage debugging and CI test failures"
+            "summary": "Project type detection showing Node.js/vitest/CommonJS environment (src/ source dir, package.json) — essential context for build stage setup"
           },
           {
-            "file": "patterns.json",
+            "file": "failures.json",
             "relevance": 90,
-            "summary": "Captures project structure: Node.js, vitest test runner, commonjs imports, src/ source directory—essential context for build stage execution and test configuration"
+            "summary": "EONENT/npm install failure — critical blocker showing missing dependency installation is common failure mode before tests run"
           },
           {
             "file": "failures.json",
             "relevance": 85,
-            "summary": "Documents ENOENT error and npm install fix—directly relevant to build stage dependency installation phase"
+            "summary": "Test stage failures (sw-cleanup heartbeat detection, regression output validation, mktemp /tmp/claude missing) — shows patterns of test harness issues that will surface during build/test phase"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 70,
-            "summary": "Shows successful bug fix approach using 3 iterations with complexity 60, affecting test and script files—patterns applicable to current build stage strategy"
+            "relevance": 75,
+            "summary": "Successful build patterns showing typical 3 iterations, 45-150s duration, 'npm test' strategy, and which file patterns change (.claude/loop-logs, scripts/lib/*.sh) — useful for iteration planning"
           },
           {
             "file": "issues.json",
-            "relevance": 40,
-            "summary": "Records daemon timeout bug fix using semaphore pattern—provides context for handling timing issues in async operations during build"
+            "relevance": 50,
+            "summary": "Historical issue data (timeout bug fix in daemon) shows repo has experienced semaphore/backoff issues — context for potential pitfalls in this codebase"
           }
         ]
       },
-      "timestamp": 1778851155,
+      "timestamp": 1778871949,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Essential project structure info: node/npm setup, vitest test runner, commonjs imports, src/ source dir. Directly informs build commands and file locations."
+            "summary": "Contains 4 known test failures (sw-cleanup heartbeat detection, sw-feedback JSON output, mktemp /tmp/claude issue, classify_failure wiring). Build stage will run tests; these are documented pitfalls to avoid or expect."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Past successful builds show proven approaches (standard template, 3-4 iterations typical, npm test strategy, ~45-150s duration). Guides expected build flow and testing patterns."
+            "relevance": 90,
+            "summary": "Shows 2 past successful builds: iteration counts (3-4), test strategy (npm test), commit patterns (5-6 commits), typical duration (45-150s), file patterns modified. Provides proven approach templates for similar complexity issues."
           },
           {
-            "file": "failures.json",
-            "relevance": 65,
-            "summary": "Past test failures including mktemp directory creation issue (/tmp/claude missing) and sw-cleanup.sh heartbeat detection — directly relevant to build/test setup and potential blockers."
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project conventions critical for build stage: source_dir=src/, test_pattern=*.test.js, test_runner=vitest, import_style=commonjs. Agent needs these to write code correctly and understand where to place files."
           },
           {
             "file": "issues.json",
-            "relevance": 50,
-            "summary": "Single recorded issue about daemon timeout bug with semaphore fix. Shows past gotchas (check backoff) that may recur during build of daemon-related code."
+            "relevance": 55,
+            "summary": "Documents 1 past issue (daemon timeout bug fixed via semaphore). Shows success outcome and gotcha (check backoff). Moderately relevant as a solved example, though specific to daemon, not generic build patterns."
           },
           {
             "file": "metrics.json",
-            "relevance": 15,
-            "summary": "Empty baselines object. No historical performance or cost metrics available yet to inform build optimization decisions."
+            "relevance": 20,
+            "summary": "Contains empty baselines object. Minimal relevance—no historical performance data to inform current build decisions or iteration strategy."
           }
         ]
       },
-      "timestamp": 1778851173,
+      "timestamp": 1778871966,
+      "ttl": 1800
+    },
+    "81b5ab6b923defb0750965e1c4602986": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1778871293,
+      "ttl": 1800
+    },
+    "ed82ad5573bf84f1f8686797e7238d75": {
+      "result": {
+        "estimated_cost_usd": 3.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 89000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1778871306,
+      "ttl": 3600
+    },
+    "91ad6983479d082e777d515dbfcb31e2": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "reliability",
+          "observability",
+          "automation"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires designing and integrating multi-check validation system with daemon spawn logic, pattern logging to memory, and clear error messaging. Not algorithmically complex but involves careful integration and edge case handling."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "pattern-matching-similarity-scoring",
+            "architecture-design"
+          ],
+          "build": [
+            "collection-system-validation",
+            "pre-flight-validation-pattern"
+          ],
+          "review": [
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about which checks are necessary and sufficient to prevent wasted pipeline runs before locking into implementation.",
+          "architecture-design": "Design how the validator integrates cleanly into daemon spawn logic without blocking the spawn path or creating circular dependencies.",
+          "pattern-matching-similarity-scoring": "Implement pattern-based failure detection by analyzing rejection reasons logged to memory, enabling proactive blocking of similar issues.",
+          "collection-system-validation": "Validate heterogeneous system state checks (git cleanliness, dependency availability, test command syntax, issue clarity) across different subsystems.",
+          "pre-flight-validation-pattern": "Implement pre-flight validation checks with actionable rejection reasons, integration with daemon spawn, and memory logging for pattern analysis.",
+          "adversarial-quality": "Find edge cases where the validator fails or creates false positives (git submodules, monorepos, conditional dependencies, race conditions in state checks).",
+          "pr-quality": "Ensure rejection messages are actionable, clear, and suggest specific fixes rather than cryptic error codes.",
+          "validation-thoroughness": "Verify the validator actually catches real pipeline failure modes without rejecting pipelines that would succeed.",
+          "observability": "Log rejection reasons in a format useful for memory system analysis; monitor the >30% reduction in failed pipeline starts as the success metric.",
+          "deploy-safety": "The validator itself is a safety mechanism; ensure it doesn't introduce new failure modes or performance regressions in daemon spawn."
+        },
+        "generated_skills": [
+          {
+            "name": "pre-flight-validation-pattern",
+            "reason": "No existing skill addresses the specific pattern of pre-flight pipeline validation with daemon spawn integration, actionable rejection messaging, and memory system logging for pattern analysis.",
+            "content": "## Pre-Flight Validation Pattern\n\nPre-flight validation catches fundamentally broken pipelines before they consume resources, time, and quota. This pattern guides implementing a multi-check validator that integrates cleanly with daemon spawn logic and provides actionable rejection feedback.\n\n### Core Checks\n\n**Git State Validation**\n- Verify working tree is clean (`git status --porcelain`)\n- Check no concurrent pipelines on the same branch\n- Validate repo is initialized and has commits\n- For monorepos: verify the target package exists\n\n**Issue Clarity Scoring**\n- Check issue title is present and >10 characters\n- Verify issue body exists and describes actionable scope\n- Score clarity as (title_length + body_word_count + criteria_count) / 3\n- Reject if score < 20 (too vague to execute reliably)\n\n**Dependency Availability**\n- Check `package.json` parse-able; `npm ls` succeeds without errors\n- Verify test runner exists (`vitest`, `jest`, `mocha` etc.)\n- Check lockfile consistency (`package-lock.json` or `yarn.lock` matches HEAD)\n- For compiled languages: verify build tools in PATH\n\n**Test Command Validity**\n- Parse test command from package.json `test` script\n- Validate test command syntax (no unmatched quotes, pipes)\n- Check test runner binary is executable\n- Dry-run test command with `--help` or `--list` to verify it's recognized\n\n### Rejection Messages\n\nEvery rejection must include:\n- What failed (specific check)\n- Why it matters (prevents what kind of failure)\n- How to fix it (actionable step)\n\n**Example**: \n```\n✗ Git working tree is dirty\n  Why: Daemon pipeline will fail during commit because there are uncommitted changes.\n  Fix: Run 'git status' and commit or stash your changes, then retry.\n```\n\n### Memory System Integration\n\nLog rejections with structured data:\n```json\n{\n  \"timestamp\": \"2026-05-15T18:55:10Z\",\n  \"check\": \"git_state\",\n  \"reason\": \"working_tree_dirty\",\n  \"issue_id\": \"488\",\n  \"count\": 1\n}\n```\n\nThe memory system aggregates these to detect patterns (e.g., \"80% of rejections are dirty git states on Monday mornings\" → suggest pre-commit hooks).\n\n### Daemon Spawn Integration\n\nRun validator in daemon spawn path BEFORE creating pipeline:\n```bash\n# In sw-daemon.sh, before spawn_pipeline:\nif ! validate_pre_flight \"$issue_id\" \"$branch\"; then\n  log_rejection \"$issue_id\" \"$reason\"\n  update_issue \"$issue_id\" \"Pipeline rejected: $reason. Fix and re-run.\"\n  continue  # Skip to next issue\nfi\n```\n\nDo NOT block the spawn thread — run validation in parallel and queue the result.\n\n### Edge Cases\n\n- **Monorepos**: Validate target package exists before checking dependencies\n- **Conditional dependencies**: If package.json has postinstall/prepare scripts, pre-flight must run them\n- **Flaky tests**: Don't reject based on test passing; only validate test command is valid\n- **Stale lockfiles**: Allow if lockfile is older than package.json (indicates dev hasn't committed yet)\n- **Private packages**: Skip npm registry checks; only validate local availability\n\n### Metrics\n\nTrack over time:\n- Rejection rate by check type\n- False positive rate (rejected pipelines that would have succeeded)\n- Time saved by preventing wasted runs\n- Convergence: as patterns improve, rejection rate should drop\n"
+          }
+        ],
+        "review_focus": [
+          "Daemon spawn integration point: Does validation block spawn or run asynchronously without deadlock?",
+          "Rejection message clarity: Are error messages specific enough for a developer to self-fix without asking for help?",
+          "Memory system logging: Is rejection data format useful for pattern analysis by sw-memory.sh?",
+          "False positive rate: Are there edge cases (monorepos, conditional deps, flaky tests) where legitimate pipelines get rejected?",
+          "Performance: Do validation checks add <500ms latency to spawn time even with slow git operations?",
+          "Coverage: Do the four checks (git state, clarity, dependencies, test command) actually prevent the failure modes that cause >30% of pipeline failures?",
+          "Rollback path: Can a developer easily bypass validation if they have a good reason (urgent hotfix, experimental branch)?"
+        ],
+        "risk_areas": [
+          "False positives blocking legitimate pipelines (especially in monorepos or with complex build setups)",
+          "Integration bugs in daemon spawn logic (validation could deadlock, crash spawn process, or leak file handles)",
+          "Incomplete clarity scoring logic leading to rejection of actual work (issue descriptions vary widely in style)",
+          "Race conditions in git state checks (developer pushing commits while validation runs)",
+          "Memory system integration: if logging format is wrong, pattern analysis fails and learning from rejections is impossible",
+          "Performance degradation if dependency checks are slow (npm ls on large dependency trees)",
+          "Backwards compatibility: existing daemon config might not have fields the validator needs"
+        ]
+      },
+      "timestamp": 1778871448,
+      "ttl": 3600
+    },
+    "d192cad0e016841aab53c522d1bfffab": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (first entry with 2 patterns)",
+            "relevance": 95,
+            "summary": "Shows successful complexity/iteration/duration patterns (60-65 complexity, 3 iterations, 45-150s, $2.50 cost) and file patterns - directly informs feasibility assessment during planning phase"
+          },
+          {
+            "file": "failures.json (second, detailed with 4 failure entries)",
+            "relevance": 80,
+            "summary": "Documents specific failure patterns (sw-cleanup heartbeat detection, regression output, mktemp /tmp/claude issue, classify_failure wiring) - informs what to validate in pre-flight checks"
+          },
+          {
+            "file": "patterns.json (first entry with project conventions)",
+            "relevance": 75,
+            "summary": "Project structure metadata (node/vitest/commonjs, src/ location, test patterns) - needed to understand codebase architecture during feasibility planning"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 70,
+            "summary": "Architecture rules for the codebase - relevant for validating whether proposed changes align with architecture constraints during planning"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Shows successful issue resolution pattern (timeout bug → semaphore fix) and error categories (TIMEOUT) - helps identify common issue types and solutions for feasibility assessment"
+          }
+        ]
+      },
+      "timestamp": 1778871523,
       "ttl": 1800
     }
   }
