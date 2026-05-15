@@ -585,6 +585,84 @@ prep_extract_patterns() {
     success "Patterns: ${NAMING_CONVENTION} naming${IMPORT_STYLE:+, ${IMPORT_STYLE}}${ROUTE_PATTERNS:+, ${ROUTE_PATTERNS}}"
 }
 
+# ─── prep_project_detect — Auto-detect project type & write daemon-config ──
+
+prep_project_detect() {
+    [[ -f "$SCRIPT_DIR/lib/project-detect.sh" ]] || return 0
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR/lib/project-detect.sh"
+
+    info "Detecting project type and recommending template..."
+
+    local detection
+    detection=$(project_detect_all "$PROJECT_ROOT" 2>/dev/null) || {
+        warn "Project detection failed — skipping"
+        return 0
+    }
+
+    local p_type p_framework p_test p_build p_template p_confidence p_reason
+    p_type=$(echo "$detection"     | jq -r '.type // "unknown"')
+    p_framework=$(echo "$detection"| jq -r '.framework // "unknown"')
+    p_test=$(echo "$detection"     | jq -r '.test_cmd // ""')
+    p_build=$(echo "$detection"    | jq -r '.build_cmd // ""')
+    p_template=$(echo "$detection" | jq -r '.recommended_template.template // "standard"')
+    p_confidence=$(echo "$detection" | jq -r '.recommended_template.confidence // 0')
+    p_reason=$(echo "$detection"   | jq -r '.recommended_template.reason // ""')
+
+    echo ""
+    echo -e "${CYAN}${BOLD}Project Detection${RESET}"
+    echo -e "  Type:        ${BOLD}${p_type}${RESET}"
+    echo -e "  Framework:   ${p_framework}"
+    [[ -n "$p_test"  ]] && echo -e "  Test cmd:    ${p_test}"
+    [[ -n "$p_build" ]] && echo -e "  Build cmd:   ${p_build}"
+    echo -e "  Template:    ${BOLD}${p_template}${RESET} ${DIM}(${p_confidence}% confidence — ${p_reason})${RESET}"
+    echo ""
+
+    if $INTERACTIVE; then
+        local confirm
+        read -p "Write these values to .claude/daemon-config.json? [Y/n] " confirm
+        confirm="${confirm:-Y}"
+        if [[ ! "$confirm" =~ ^[Yy] ]]; then
+            info "Skipped daemon-config.json update"
+            return 0
+        fi
+    fi
+
+    # Merge into daemon-config.json (preserve existing keys)
+    local config="${PROJECT_ROOT}/.claude/daemon-config.json"
+    mkdir -p "${PROJECT_ROOT}/.claude"
+    local current="{}"
+    [[ -f "$config" ]] && current=$(cat "$config" 2>/dev/null || echo "{}")
+    # Validate existing JSON
+    echo "$current" | jq -e . >/dev/null 2>&1 || current="{}"
+
+    local merged
+    merged=$(echo "$current" | jq \
+        --arg type "$p_type" \
+        --arg framework "$p_framework" \
+        --arg test_cmd "$p_test" \
+        --arg build_cmd "$p_build" \
+        --arg template "$p_template" \
+        '. + {
+            project: ((.project // {}) + {
+                type: $type,
+                framework: $framework,
+                test_cmd: $test_cmd,
+                build_cmd: $build_cmd
+            }),
+            pipeline_template: (.pipeline_template // $template)
+        }') || {
+        warn "Failed to merge detection into daemon-config.json"
+        return 0
+    }
+
+    # Atomic write
+    local tmp
+    tmp=$(mktemp "${config}.XXXXXX")
+    echo "$merged" > "$tmp" && mv "$tmp" "$config"
+    success "Updated $config"
+}
+
 # ─── Intelligence Check ──────────────────────────────────────────────────
 
 intelligence_available() {
@@ -1798,6 +1876,9 @@ main() {
     prep_detect_stack
     prep_scan_structure
     prep_extract_patterns
+
+    # Project type auto-detection + template recommendation
+    prep_project_detect
 
     # Smart detection (intelligence-gated)
     prep_smart_detect
