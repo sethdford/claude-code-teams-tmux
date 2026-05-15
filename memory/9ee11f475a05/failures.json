@@ -3,10 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not appearing in dry-run mode output",
-      "fix": "Fix the heartbeat staleness detection logic and ensure the dry-run summary prints 'Found N item(s)' with '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed — stale heartbeat files are not being detected or the output format no longer matches expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Fix sw-cleanup.sh to output stale heartbeat filenames and a summary line matching 'Found N item(s)' with a '--force' hint in dry-run mode",
       "seen_count": 2,
-      "last_seen": "2026-05-15T01:38:46Z",
+      "last_seen": "2026-05-15T01:41:12Z",
       "category": "test_failure"
     }
   ]
