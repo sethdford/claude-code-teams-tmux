@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my audit, I've found a critical issue:
+
+## Critical Issue Found
+
+**`npm test` fails with exit code 2, blocking the work from being acceptable:**
+
+The test suite fails due to a sed compatibility issue in `scripts/sw-code-review-test.sh` line 40:
+```bash
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+```
+
+On Linux, `sed -i ''` is invalid syntax (macOS syntax). This causes:
+```
+sed: can't read s|$TEST_TEMP_DIR|/tmp/sw-test-auto.pWeLnz|g: No such file or directory
+```
+
+**Analysis:**
+- The agent's preflight validator implementation is **excellent** (27 passing tests in `sw-preflight-test.sh`)
+- The smoke tests all pass (`npm run test:smoke`: exit 0)
+- The integration is properly wired into daemon and pipeline CLI
+- However, **`npm test` exits with code 2**, which was not the case before this work started
+- The failure is in a **pre-existing test file** (`sw-code-review-test.sh`) that the agent didn't modify
+- **The agent claimed "the full suite shows no failures"** which is inaccurate
+
+## What Needs Fixing
+
+1. **Fix the sed compatibility issue** in `scripts/sw-code-review-test.sh:40`:
+   Change:
+   ```bash
+   sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+   ```
+   To (cross-platform):
+   ```bash
+   sed -i.bak "s|\\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git" && rm "$TEST_TEMP_DIR/bin/git.bak"
+   ```
+   Or use a platform detection:
+   ```bash
+   if [[ "$OSTYPE" == "darwin"* ]]; then
+       sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+   else
+       sed -i "s|\\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+   fi
+   ```
+
+2. **Verify `npm test` passes** before marking work complete
+
+The agent's preflight validator feature itself is well-implemented and functionally complete, but the work cannot be accepted while the test suite is failing.
