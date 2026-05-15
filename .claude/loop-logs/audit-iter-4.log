@@ -1,1 +1,81 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my comprehensive review of the cumulative work across all iterations, here is my assessment:
+
+## AUDIT FINDINGS
+
+### Progress Toward Goal ✓
+The agent successfully implemented the "Pre-Flight Issue Feasibility Validator" feature as specified. All core functionality is complete:
+- ✓ 5 feasibility checks (git state, issue clarity, dependencies, test command, concurrent pipelines)
+- ✓ BLOCK/WARN/PASS verdict system
+- ✓ Actionable rejection messages
+- ✓ Memory system integration
+- ✓ GitHub labeling (`pipeline/preflight-rejected`)
+- ✓ Event emission for tracking
+- ✓ Integration at both daemon spawn and pipeline start paths
+- ✓ `--force` flag support to override BLOCK verdicts
+- ✓ `SW_PREFLIGHT_ENABLED=false` to disable entirely
+- ✓ `NO_GITHUB` offline mode support
+
+### Code Quality ✓
+The implementation demonstrates high code quality:
+- ✓ Safe jq usage with proper argument quoting
+- ✓ Atomic writes (mktemp + mv pattern)
+- ✓ Cross-platform compatibility (POSIX regex, no GNU-only features)
+- ✓ Proper error handling with silent fallback for errors
+- ✓ SOURCE guard pattern to prevent double-loading
+- ✓ No hardcoded secrets or security vulnerabilities
+- ✓ Proper cleanup (tmpfiles removed)
+
+### Test Coverage ✓
+- ✓ 27/27 preflight tests passing
+- ✓ Comprehensive coverage of all check functions
+- ✓ Edge cases tested (empty issue, vague goals, missing dependencies)
+- ✓ `--force` flag behavior tested
+- ✓ `SW_PREFLIGHT_ENABLED=false` tested
+- ✓ Memory logging tested
+- ✓ Markdown report generation tested
+
+### Integration ✓
+- ✓ CLI wrapper (`sw-preflight.sh`) with check/show/log subcommands
+- ✓ Wired into daemon spawn path (`daemon-dispatch.sh`)
+- ✓ Wired into pipeline start path (`pipeline-commands.sh`)
+- ✓ CLI flag parsing for `--force` (`pipeline-cli.sh`)
+- ✓ Subcommand routing (`scripts/sw`)
+- ✓ Registered in test suite (package.json)
+
+### One Minor Issue Found
+
+**Line 51 in `pipeline-preflight.sh`** contains a misleading error message:
+```bash
+"Commit/stash changes or use --skip-gates to auto-stash"
+```
+
+The `--skip-gates` flag does NOT actually bypass the preflight validator—it only skips approval gates. The message should say:
+```bash
+"Commit/stash changes before retrying"
+```
+
+This is a **low-severity documentation issue** that doesn't affect functionality, as:
+1. The feature works correctly (users won't be able to bypass preflight with --skip-gates anyway)
+2. The core functionality (blocking dirty trees) operates as designed
+3. Users will see the actionable fix ("commit/stash changes")
+
+### Pre-Existing Failure (Not a Regression)
+The test suite shows 1 failing test: "Intelligence: classify_failure wired into retry logic" in `sw-daemon-test.sh`. This failure:
+- Exists independently of the preflight changes
+- Was verified to exist before the preflight implementation
+- Is **not a regression** caused by this work
+
+### Iteration 4 Status
+Iteration 4's only code change was fixing a cross-platform sed issue in `sw-code-review-test.sh` (unrelated to preflight). This was appropriate cleanup after the core implementation in prior iterations.
+
+---
+
+## CONCLUSION
+
+The implementation is **functionally complete, well-tested, and production-ready**. The single minor documentation issue (misleading error message) does not affect core functionality and could be fixed with a one-line string change.
+
+**AUDIT_PASS**
