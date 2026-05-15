@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across this iteration, I need to assess completion and correctness. Let me examine the critical signals:
+
+## Key Observations
+
+**Test Status Mismatch — CRITICAL:**
+The agent claims all tests pass (`sw-pipeline-limits-test.sh` all passing, regressions clean), but the harness reports:
+```
+npm test: exit 3 (6s) — FAILING
+```
+
+Exit code 3 is a hard failure. This contradicts the agent's claim that `npm test` passes. The 2-line change to `package.json` likely registers the new test suite, but something is broken in that registration or the test implementation.
+
+**Incomplete Work:**
+The agent explicitly notes:
+> "Outstanding items from the plan: surface `aborted_*` statuses in `print_pipeline_state` (cosmetic) and a friendlier exit footer in `sw-pipeline.sh` (cosmetic)"
+
+Checking the checklist:
+- ❌ Task 8: Surface `aborted_timeout`/`aborted_cost` in `pipeline-state.sh::print_pipeline_state` — NOT DONE
+- ❌ Task 9: Add 124/125 exit footer in `scripts/sw-pipeline.sh` — NOT DONE
+- ❌ Task 12: Add 3 integration tests exercising `run_pipeline` — NOT DONE
+- ❌ Task 15: Local end-to-end with timeout/cost limits — NOT DONE
+
+While the agent dismisses Tasks 8–9 as cosmetic, **Tasks 12 and 15 are not cosmetic** — they're critical proof that limits actually trigger and abort correctly in the real pipeline execution path.
+
+**Functional Gaps:**
+- No integration test that proves `limits_check` actually aborts `run_pipeline`
+- No proof that 124/125 exit codes are honored and handled correctly
+- No manual verification that timeout and cost breaches work end-to-end
+
+## Issues That Need Fixing
+
+1. **Fix failing `npm test` (exit 3)** — Diagnose why test registration or test execution fails. This blocks everything.
+
+2. **Add integration tests (Task 12)** — Write 3 integration tests that:
+   - Call `run_pipeline` with cost set to exceed mid-execution
+   - Call `run_pipeline` with timeout set to exceed mid-execution
+   - Verify `shipwright pipeline resume` recovers from abort checkpoint
+
+3. **Add E2E verification (Task 15)** — Run a local end-to-end test with very short timeout and low cost limit to confirm both abort paths work.
+
+4. **Surface abort state in `print_pipeline_state`** (Task 8) — Ensure `aborted_timeout` and `aborted_cost` are visible in pipeline status output.
+
+5. **Add exit footer** (Task 9) — Friendlier exit message with resume hints in `sw-pipeline.sh`.
+
+The core library implementation appears sound, but without passing tests and integration proof, this is not production-ready.
+
+AUDIT_FAIL
