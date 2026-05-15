@@ -355,10 +355,15 @@ generate_learned_rules() {
         local count
         count=$(echo "$pattern" | jq -r '.count')
 
-        # Compute confidence (count / total_prs, capped at 0.95)
-        # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
+        # Compute confidence (count-based: 3 = 0.60, 5 = 0.80, 10+ = 0.95)
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        if [[ "$count" -ge 10 ]]; then
+            confidence="0.95"
+        elif [[ "$count" -ge 5 ]]; then
+            confidence="0.80"
+        else
+            confidence="0.60"
+        fi
 
         # Generate rule text based on category
         local rule_text
@@ -421,6 +426,7 @@ generate_learned_rules() {
                 inject_at: ["plan", "build", "review"]
             }]' \
             "$quality_profile" > "$tmp_file" && \
+            [[ -s "$tmp_file" ]] && \
             mv "$tmp_file" "$quality_profile"
 
         success "Added learned rule: ${category} (confidence: ${confidence})"
