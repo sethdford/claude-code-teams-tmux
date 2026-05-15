@@ -44,7 +44,9 @@
       "id": "test",
       "enabled": true,
       "gate": "auto",
-      "config": { "coverage_min": 0 }
+      "config": {
+        "coverage_min": 0
+      }
     },
     {
       "id": "review",
@@ -70,7 +72,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "auto",
-      "config": { "wait_ci": false }
+      "config": {
+        "wait_ci": false
+      }
     },
     {
       "id": "deploy",
@@ -84,5 +88,9 @@
       "gate": "auto",
       "config": {}
     }
-  ]
+  ],
+  "limits": {
+    "global_timeout_seconds": 1800,
+    "max_cost_usd": 10.0
+  }
 }

@@ -36,6 +36,13 @@ elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
     source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
 fi
 
+# Global timeout & cost circuit breaker
+if [[ -f "$SCRIPT_DIR/pipeline-limits.sh" ]]; then
+    source "$SCRIPT_DIR/pipeline-limits.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/lib/pipeline-limits.sh" ]]; then
+    source "$SCRIPT_DIR/lib/pipeline-limits.sh" 2>/dev/null || true
+fi
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -253,6 +260,16 @@ self_healing_build_test() {
 
     while [[ "$cycle" -le "$max_cycles" ]]; do
         cycle=$((cycle + 1))
+
+        # Honor global pipeline limits inside the self-healing inner loop
+        if type limits_check >/dev/null 2>&1; then
+            local _bt_rc=0
+            limits_check "build_test" || _bt_rc=$?
+            if [[ "$_bt_rc" -ne 0 ]]; then
+                limits_abort "$_bt_rc" "build_test" || true
+                return "$_bt_rc"
+            fi
+        fi
 
         if [[ "$cycle" -gt 1 ]]; then
             SELF_HEAL_COUNT=$((SELF_HEAL_COUNT + 1))
@@ -530,6 +547,11 @@ run_pipeline() {
         use_self_healing=true
     fi
 
+    # Initialize global timeout & cost circuit breaker
+    if type limits_init >/dev/null 2>&1; then
+        limits_init || true
+    fi
+
     while IFS= read -r -u 3 stage; do
         local id enabled gate
         id=$(echo "$stage" | jq -r '.id' 2>/dev/null)
@@ -537,6 +559,16 @@ run_pipeline() {
         gate=$(echo "$stage" | jq -r '.gate' 2>/dev/null)
 
         CURRENT_STAGE_ID="$id"
+
+        # Check global pipeline limits (timeout / cost) at every stage boundary
+        if type limits_check >/dev/null 2>&1; then
+            local _limits_rc=0
+            limits_check "$id" || _limits_rc=$?
+            if [[ "$_limits_rc" -ne 0 ]]; then
+                limits_abort "$_limits_rc" "$id" || true
+                return "$_limits_rc"
+            fi
+        fi
 
         # Human intervention: check for skip-stage directive
         if [[ -f "$ARTIFACTS_DIR/skip-stage.txt" ]]; then

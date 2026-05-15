@@ -28,13 +28,17 @@
       "id": "plan",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
     },
     {
       "id": "design",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
     },
     {
       "id": "build",
@@ -50,7 +54,9 @@
       "id": "test",
       "enabled": true,
       "gate": "approve",
-      "config": { "coverage_min": 90 }
+      "config": {
+        "coverage_min": 90
+      }
     },
     {
       "id": "review",
@@ -83,7 +89,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "approve",
-      "config": { "wait_ci": true }
+      "config": {
+        "wait_ci": true
+      }
     },
     {
       "id": "merge",
@@ -136,5 +144,9 @@
         "auto_rollback": true
       }
     }
-  ]
+  ],
+  "limits": {
+    "global_timeout_seconds": 28800,
+    "max_cost_usd": 200.0
+  }
 }

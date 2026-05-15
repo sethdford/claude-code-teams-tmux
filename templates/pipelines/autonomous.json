@@ -12,7 +12,12 @@
     "simulation_enabled": true
   },
   "stages": [
-    { "id": "intake", "enabled": true, "gate": "auto", "config": {} },
+    {
+      "id": "intake",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
     {
       "id": "spec_generation",
       "enabled": true,
@@ -23,27 +28,42 @@
       "id": "plan",
       "enabled": true,
       "gate": "auto",
-      "config": { "model": "claude-opus-4-6" }
+      "config": {
+        "model": "claude-opus-4-6"
+      }
     },
     {
       "id": "design",
       "enabled": true,
       "gate": "auto",
-      "config": { "model": "claude-opus-4-6" }
+      "config": {
+        "model": "claude-opus-4-6"
+      }
     },
     {
       "id": "build",
       "enabled": true,
       "gate": "auto",
-      "config": { "max_iterations": 20, "audit": true, "quality_gates": true }
+      "config": {
+        "max_iterations": 20,
+        "audit": true,
+        "quality_gates": true
+      }
     },
     {
       "id": "test",
       "enabled": true,
       "gate": "auto",
-      "config": { "coverage_min": 80 }
+      "config": {
+        "coverage_min": 80
+      }
     },
-    { "id": "review", "enabled": true, "gate": "auto", "config": {} },
+    {
+      "id": "review",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
     {
       "id": "spec_verification",
       "enabled": true,
@@ -80,7 +100,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "auto",
-      "config": { "wait_ci": false }
+      "config": {
+        "wait_ci": false
+      }
     },
     {
       "id": "merge",
@@ -98,13 +120,21 @@
       "id": "deploy",
       "enabled": false,
       "gate": "approve",
-      "config": { "staging_cmd": "", "production_cmd": "", "rollback_cmd": "" }
+      "config": {
+        "staging_cmd": "",
+        "production_cmd": "",
+        "rollback_cmd": ""
+      }
     },
     {
       "id": "validate",
       "enabled": false,
       "gate": "auto",
-      "config": { "smoke_cmd": "", "health_url": "", "close_issue": true }
+      "config": {
+        "smoke_cmd": "",
+        "health_url": "",
+        "close_issue": true
+      }
     },
     {
       "id": "monitor",
@@ -120,5 +150,9 @@
         "auto_rollback": false
       }
     }
-  ]
+  ],
+  "limits": {
+    "global_timeout_seconds": 14400,
+    "max_cost_usd": 50.0
+  }
 }

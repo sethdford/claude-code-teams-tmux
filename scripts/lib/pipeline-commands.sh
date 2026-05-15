@@ -1053,6 +1053,25 @@ pipeline_start() {
                 bash "$SCRIPT_DIR/sw-memory.sh" fix-outcome "$_success_sig" "true" "true" 2>/dev/null || true
             fi
         fi
+    elif [[ "$exit_code" -eq 124 || "$exit_code" -eq 125 ]]; then
+        local _abort_reason="timeout"
+        [[ "$exit_code" -eq 125 ]] && _abort_reason="cost"
+        notify "Pipeline Aborted" "Goal: ${GOAL}\nReason: ${_abort_reason} limit exceeded\nStage: ${CURRENT_STAGE_ID:-unknown}" "error"
+        emit_event "pipeline.completed" \
+            "issue=${ISSUE_NUMBER:-0}" \
+            "result=aborted_${_abort_reason}" \
+            "duration_s=${total_dur_s:-0}" \
+            "iterations=$((SELF_HEAL_COUNT + 1))" \
+            "template=${PIPELINE_NAME}" \
+            "failed_stage=${CURRENT_STAGE_ID:-unknown}" \
+            "exit_code=${exit_code}" \
+            "total_cost=$total_cost"
+        if type audit_finalize >/dev/null 2>&1; then
+            audit_finalize "aborted_${_abort_reason}" || true
+        fi
+        if type update_pipeline_status >/dev/null 2>&1; then
+            update_pipeline_status "${SHIPWRIGHT_PIPELINE_ID}" "aborted_${_abort_reason}" "${CURRENT_STAGE_ID:-unknown}" "aborted" "${total_dur_s:-0}" 2>/dev/null || true
+        fi
     else
         notify "Pipeline Failed" "Goal: ${GOAL}\nFailed at: ${CURRENT_STAGE_ID:-unknown}" "error"
         emit_event "pipeline.completed" \
