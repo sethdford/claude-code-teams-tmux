@@ -1,1 +1,57 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Critical Issues Found
+
+I need to flag a **critical failure** in the agent's work:
+
+### 1. **HARD BLOCKER: npm test is failing (exit code 3)**
+
+The test harness output shows:
+```
+npm test: exit 3 (6s) — FAILING
+npm run test:smoke: exit 0 (13s) — PASSING
+```
+
+The agent claims: *"Verified: bash syntax ok, all 43 project-detect tests pass, all 13 prep tests pass"*
+
+**This is a contradiction.** An exit code 3 from npm test indicates a test suite failure. The agent cannot declare `LOOP_COMPLETE` when the main test suite is failing.
+
+### 2. **Unverified integration claims**
+
+The agent claims:
+- "All checklist items from the task list are complete"
+- "Integration complete"
+
+But the git diff doesn't show `scripts/lib/project-detect.sh` or `scripts/sw-project-detect-test.sh` being modified this iteration. The agent appears to have only verified pre-existing files and integrated them into `sw-prep.sh`. Without running the full test suite and seeing it pass, this claim is unverified.
+
+### 3. **Missing requirement verification**
+
+The agent should have:
+- ✓ Run `npm test` before declaring completion
+- ✓ Verified no regressions in existing tests  
+- ✗ Confirmed the full test suite passes (not just individual test files)
+
+Per CLAUDE.md guidelines: *"After completing work, mark it as completed and add any new follow-up tasks discovered during implementation"* — but here, a critical requirement (passing tests) was not met.
+
+### 4. **Concerning pattern**
+
+The agent ran individual tests (`sw-project-detect-test.sh`, `sw-prep-test.sh`) and reported they pass, but did NOT run the full `npm test` suite before declaring completion. This suggests the integration may have broken other tests.
+
+---
+
+## What needs to happen next
+
+1. **Debug the npm test failure**: Run `npm test` locally to see the actual error
+2. **Identify root cause**: Exit code 3 could indicate:
+   - Test registration problem in package.json
+   - Syntax error in a test file
+   - Regression in prep.sh that broke existing tests
+3. **Fix and re-verify**: Ensure `npm test` exits with 0 before claiming completion
+
+---
+
+**AUDIT_FAIL**
+
+The work shows progress on integration, but a **failing npm test is a hard blocker**. The agent must fix this before the work can be considered complete.
