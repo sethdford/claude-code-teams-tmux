@@ -346,16 +346,16 @@ Track over time:
 - Time saved by preventing wasted runs
 - Convergence: as patterns improve, rejection rate should drop
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-05-15T20:19:17Z
-last_iteration_at: 2026-05-15T20:19:17Z
+started_at: 2026-05-15T20:34:08Z
+last_iteration_at: 2026-05-15T20:34:08Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -366,4 +366,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-15T20:34:08Z)
+- `scripts/sw-preflight.sh` — CLI wrapper (`shipwright preflight`)  
+- `scripts/sw-preflight-test.sh` — 27 tests, all passing
+- Integrated into daemon spawn and pipeline start with `--force` bypass support
 
