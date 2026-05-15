@@ -1783,9 +1783,11 @@ test_retry_args_passed_to_spawn() {
 }
 
 test_failure_classification_wired() {
-    local daemon_src
+    local daemon_src on_failure_ctx
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    # Capture to variable to avoid SIGPIPE race with grep -q under pipefail
+    on_failure_ctx="$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB 2>/dev/null || true)"
+    echo "$on_failure_ctx" | grep -q 'classify_failure' || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
@@ -1854,9 +1856,11 @@ test_retry_args_passed_to_spawn() {
 }
 
 test_failure_classification_wired() {
-    local daemon_src
+    local daemon_src on_failure_ctx
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    # Capture to variable to avoid SIGPIPE race with grep -q under pipefail
+    on_failure_ctx="$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB 2>/dev/null || true)"
+    echo "$on_failure_ctx" | grep -q 'classify_failure' || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
