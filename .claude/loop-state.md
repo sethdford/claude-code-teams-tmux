@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Plan: Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
+
+## Goal Summary
+
+The pipeline currently executes stages strictly sequentially via `run_pipeline()`
+in `scripts/lib/pipeline-execution.sh:507`, iterating stages in the order they
+appear in the template JSON. Many stages have no genuine dependency on one
+another (e.g. `security_audit`-style stages do not depend on `design`; doc/lint
+stages don't depend on each other) — they're just listed in linear order.
+
+This feature adds a **dependency DAG resolver** that:
+
+1. Reads an optional `depends_on: [stage_id, ...]` field per stage in the
+   template JSON.
+2. Computes a topological order, detects cycles, and groups stages into
+   **waves** of stages whose dependencies are all satisfied.
+3. Executes each wave's stages **in parallel** using bash background jobs,
+   joining on each wave before advancing.
+4. Falls back to the existing sequential path when parallelism is disabled or
+   no `depends_on` fields are present — i.e. **zero behavior change by default**.
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
+## Context
+## Decision
+## Alternatives Considered
+## Component Diagram
+## Interface Contracts
+## Data Flow
+## Error Boundaries
+## Implementation Plan
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "failures.json (detailed test failures)",
+      "relevance": 90,
+      "summary": "Contains actual failing test patterns from shipwright codebase including sw-cleanup.sh heartbeat detection, sw-feedback.sh JSON output, mktemp directory creation, and intelligence classification wiring. Directly informs what needs fixing during build stage."
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "patterns.json (project detection)",
+      "relevance": 85,
+      "summary": "Establishes project as Node.js/vitest/CommonJS with source in src/. Critical for understanding build environment, test patterns (*.test.js), and import conventions for implementing pipeline engine."
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "success-patterns.json (Fix bug pattern)",
+      "relevance": 75,
+      "summary": "Shows successful shipwright bug fix with 3 iterations, targeting scripts/lib/ files and using loop-based autonomous progress pattern. Demonstrates proven approach for iterative debugging and testing in this codebase."
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "issues.json (daemon timeout bug)",
+      "relevance": 65,
+      "summary": "Documents a timeout bug in parallel daemon execution fixed with semaphore pattern. Directly relevant to parallel execution engine work; shows concurrency control pattern that may apply to DAG resolver."
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "failures.json (ENOENT npm install)",
+      "relevance": 55,
+      "summary": "Node.js build-time dependency issue showing npm install is critical prerequisite. Generic but applicable—ensures build environment is properly initialized before compilation."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Pipeline Stage Parallel Execution Engine with Dependency DAG Resolver
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Audit shared-state writers; add `flock`/atomic-write where missing.
+- [ ] Task 2: Extract `_run_one_stage()` from `run_pipeline()` with zero behavior change.
+- [ ] Task 3: Implement `scripts/lib/pipeline-dag.sh` (build, validate, next_wave, mark_done, skip_descendants).
+- [ ] Task 4: Implement `scripts/lib/pipeline-parallel.sh` with bounded concurrency, gate-serial guard, and process-group trap.
+- [ ] Task 5: Wire `PIPELINE_PARALLEL_ENABLED` branch into `run_pipeline()`.
+- [ ] Task 6: Annotate `templates/pipelines/standard.json` with linear-equivalent `depends_on`.
+- [ ] Task 7: Write `scripts/sw-pipeline-dag-test.sh` (waves, cycle, unknown dep).
+- [ ] Task 8: Write `scripts/sw-pipeline-parallel-test.sh` (concurrency, failure propagation, gate serial).
+- [ ] Task 9: Register new test suites in `package.json`.
+- [ ] Task 10: Run `./scripts/sw-pipeline-test.sh` flag-off (regression) and flag-on (smoke).
+- [ ] Task 11: Update `.claude/CLAUDE.md` env-vars table (manual section, not AUTO).
+- [ ] Task 12: Run `npm test` and resolve any breakage.
+- [ ] All 102 existing test suites pass with the flag off.
+- [ ] All 102 existing test suites plus 2 new suites pass with the flag on
+- [ ] A cycle in a template prints a readable error naming the cycle nodes and
+- [ ] A failed stage marks descendants `skipped:upstream_failed`; in-wave
+- [ ] `shellcheck` clean on the two new libs and their tests.
+- [ ] `VERSION` constant at top of every new script.
+- [ ] No `declare -A`, `readarray`, `${var,,}`, or `${var^^}` in new code.
+- [ ] No `cd` outside subshells in new helpers.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-484
+- Issue: none
+- Generated: 2026-05-15T13:16:14Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-05-15T13:19:26Z
+last_iteration_at: 2026-05-15T13:19:26Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 

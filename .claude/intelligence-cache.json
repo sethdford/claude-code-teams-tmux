@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Task requires system design for parallel execution with DAG dependency resolution; secondary roles handle implementation, comprehensive concurrency/edge-case testing, and pipeline integration",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778851165,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,235 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "c8dde798367e8f52102e86580090486d": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 70,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Race conditions in concurrent stage execution and result aggregation",
+          "Incorrect dependency analysis leading to out-of-order stage execution",
+          "Atomic synchronization failures corrupting pipeline state",
+          "Insufficient test coverage for parallel execution scenarios",
+          "Regressions in existing sequential pipeline behavior",
+          "Resource exhaustion from uncontrolled concurrent stages",
+          "Debugging and monitoring complexity across parallel processes",
+          "Configuration edge cases and safety validation gaps"
+        ],
+        "implementation_hints": [
+          "Implement DAG using adjacency matrix or hash-based edges; topologically sort for parallel groups",
+          "Start with whitelisted safe pairs (intake+intelligence, test+security-audit) before general DAG",
+          "Use atomic file writes (tmp + mv) for result aggregation; implement write-ahead logging",
+          "Leverage existing worktree/tmux infrastructure for process isolation and monitoring",
+          "Add comprehensive logging per stage: timestamps, inputs/outputs, failure modes for debugging",
+          "Test with synthetic/mock stages first; gradually enable real stages with opt-in config",
+          "Implement stage dependency validation at startup; fail fast if config is invalid",
+          "Collect metrics: stage start/end times, duration per stage, concurrency overlap, success rate",
+          "Add fallback to sequential execution on parallel failures for reliability",
+          "Document which stage combinations are verified safe; require explicit config to add new pairs"
+        ]
+      },
+      "timestamp": 1778850631,
+      "ttl": 3600
+    },
+    "8a363e02dc9651171b26514971ccf52c": {
+      "result": {
+        "estimated_iterations": 18
+      },
+      "timestamp": 1778850642,
+      "ttl": 1800
+    },
+    "807aa95db4e9ca93498f13954d30f2cd": {
+      "result": {
+        "estimated_cost_usd": 5.20,
+        "estimated_iterations": 3,
+        "estimated_tokens": 950000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1778850666,
+      "ttl": 3600
+    },
+    "e290575a98f674bb90b9378644f77272": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Timeout bug fix using semaphore pattern — directly applicable to synchronization needs in parallel execution and DAG dependency resolution"
+          },
+          {
+            "file": "success-patterns.json (first entry: Fix bug)",
+            "relevance": 65,
+            "summary": "Complexity 60 bug fix with 3-iteration standard template approach; demonstrates loop behavior and progress patterns useful for planning similar complexity work"
+          },
+          {
+            "file": "success-patterns.json (second entry: Add authentication)",
+            "relevance": 60,
+            "summary": "Complexity 65 feature addition with 3-iteration standard template; shows multi-file coordination patterns relevant to parallel execution architecture"
+          },
+          {
+            "file": "patterns.json (first: project conventions)",
+            "relevance": 50,
+            "summary": "Node.js/vitest project structure, CommonJS imports, npm conventions — needed to understand codebase constraints for DAG resolver implementation"
+          },
+          {
+            "file": "failures.json (second: recent test failures)",
+            "relevance": 40,
+            "summary": "Recent test failures including daemon/cleanup issues and JSON output problems — captures failure modes to avoid when implementing parallel execution engine"
+          }
+        ]
+      },
+      "timestamp": 1778850766,
+      "ttl": 1800
+    },
+    "66a0039ff289d3eb4e52674431ca8f44": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains active test failures blocking pipeline validation: sw-cleanup.sh heartbeat detection, regression test JSON output, mktemp directory issue, and Intelligence classify_failure wiring. These are concrete blockers for plan validation."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Confirms project type (Node.js, vitest, CommonJS) and conventions. Essential context for understanding how to implement the DAG resolver in this codebase."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful bug fix approach using 3 iterations with standard template and npm test strategy. Relevant for understanding validated iteration and testing patterns in this project."
+          }
+        ]
+      },
+      "timestamp": 1778850991,
+      "ttl": 1800
+    },
+    "3cceea47b6cfaab5715f71119e04baf4": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Direct reference to daemon timeout bug with 'added semaphore' success pattern — semaphores are core synchronization primitives for parallel execution coordination"
+          },
+          {
+            "file": "failures.json (multiple entries with stage/pattern/root_cause)",
+            "relevance": 55,
+            "summary": "Real failures in Shipwright's pipeline test stage (cleanup, feedback, heartbeat detection) reveal operational constraints that parallel DAG engine must handle"
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 45,
+            "summary": "Shows successful approaches to complex features via iterative refinement — methodology relevant to designing parallel execution patterns"
+          },
+          {
+            "file": "patterns.json (project metadata)",
+            "relevance": 30,
+            "summary": "Node.js/vitest project structure and conventions provide context for architecture design decisions and testing strategy"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 20,
+            "summary": "Generic architecture rules framework, though lacking specific DAG/parallelization content"
+          }
+        ]
+      },
+      "timestamp": 1778851033,
+      "ttl": 1800
+    },
+    "3d590e17d7fbe33b682ac18172ce21ad": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains concrete test failures and root causes (heartbeat detection, JSON output, mktemp issues, classify_failure wiring) that reveal implementation pitfalls and what doesn't work in stage orchestration systems"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Documents a timeout bug in daemon resolved with semaphore synchronization — directly relevant to understanding concurrency and synchronization anti-patterns in parallel execution engines"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 48,
+            "summary": "Shows successful fix patterns with iteration counts and complexity metrics; understanding what worked informs which design approaches to avoid"
+          }
+        ]
+      },
+      "timestamp": 1778851050,
+      "ttl": 1800
+    },
+    "a14fdd72e081925a5b1400fe977b13ae": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (detailed test failures)",
+            "relevance": 90,
+            "summary": "Contains actual failing test patterns from shipwright codebase including sw-cleanup.sh heartbeat detection, sw-feedback.sh JSON output, mktemp directory creation, and intelligence classification wiring. Directly informs what needs fixing during build stage."
+          },
+          {
+            "file": "patterns.json (project detection)",
+            "relevance": 85,
+            "summary": "Establishes project as Node.js/vitest/CommonJS with source in src/. Critical for understanding build environment, test patterns (*.test.js), and import conventions for implementing pipeline engine."
+          },
+          {
+            "file": "success-patterns.json (Fix bug pattern)",
+            "relevance": 75,
+            "summary": "Shows successful shipwright bug fix with 3 iterations, targeting scripts/lib/ files and using loop-based autonomous progress pattern. Demonstrates proven approach for iterative debugging and testing in this codebase."
+          },
+          {
+            "file": "issues.json (daemon timeout bug)",
+            "relevance": 65,
+            "summary": "Documents a timeout bug in parallel daemon execution fixed with semaphore pattern. Directly relevant to parallel execution engine work; shows concurrency control pattern that may apply to DAG resolver."
+          },
+          {
+            "file": "failures.json (ENOENT npm install)",
+            "relevance": 55,
+            "summary": "Node.js build-time dependency issue showing npm install is critical prerequisite. Generic but applicable—ensures build environment is properly initialized before compilation."
+          }
+        ]
+      },
+      "timestamp": 1778851140,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 4 recent test failures blocking the build (sw-cleanup.sh heartbeat detection, regression detection JSON output, mktemp /tmp/claude directory, intelligence classify_failure wiring). Critical for understanding what breaks during test phase."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions (Node.js, vitest test runner, npm package manager, src/ source dir, *.test.js test pattern, commonjs imports). Essential for understanding the build environment and test execution."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Two successful build patterns from prior runs (bug fix in 3 iterations/45s, feature in 3 iterations/150s). Shows iteration counts, file patterns (scripts/lib/*.sh), and test strategies that worked before."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 35,
+            "summary": "One recorded issue about daemon timeout bug fixed with semaphore pattern. Provides minimal context; less immediately actionable than failures or success patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object provides no useful context for the current build stage."
+          }
+        ]
+      },
+      "timestamp": 1778851154,
+      "ttl": 1800
     }
   }
 }
