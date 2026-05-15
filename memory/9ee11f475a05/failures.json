@@ -8,6 +8,15 @@
       "seen_count": 1,
       "last_seen": "2026-05-14T19:21:30Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command references a temp directory path as a file argument instead of using -e flag for inline expression",
+      "fix": "fix the sed invocation to use 'sed -e s|$TEST_TEMP_DIR|...|g' instead of passing the substitution expression as a filename",
+      "seen_count": 2,
+      "last_seen": "2026-05-15T01:40:58Z",
+      "category": "test_failure"
     }
   ]
 }
