@@ -218,16 +218,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-15T01:25:23Z
-last_iteration_at: 2026-05-15T01:25:23Z
+started_at: 2026-05-15T01:28:48Z
+last_iteration_at: 2026-05-15T01:28:48Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -238,4 +238,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-15T01:28:48Z)
+   - Atomically merges results into `.claude/daemon-config.json` (preserves existing keys via `jq` merge)
+4. **Wired** the call into the main prep flow before `prep_smart_detect`
+5. **Verified**: bash syntax ok, all 43 project-detect tests pass, all 13 prep tests pass
 
