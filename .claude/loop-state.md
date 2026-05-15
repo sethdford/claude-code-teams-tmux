@@ -308,16 +308,16 @@ Track over time:
 - Time saved by preventing wasted runs
 - Convergence: as patterns improve, rejection rate should drop
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-15T19:06:24Z
-last_iteration_at: 2026-05-15T19:06:24Z
+started_at: 2026-05-15T19:22:21Z
+last_iteration_at: 2026-05-15T19:22:21Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -328,4 +328,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-05-15T19:22:21Z)
+- **`scripts/sw-preflight-test.sh`** — 27 tests, all passing
+- Wired into `pipeline_start` (with `--force` / `--no-preflight` flags) and `daemon_spawn_pipeline` (auto-labels `pipeli
+- Registered `preflight` subcommand in `scripts/sw` and the test in `package.json`
 

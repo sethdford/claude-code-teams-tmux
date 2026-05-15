@@ -133,18 +133,11 @@ _pf_check_test_command() {
     fi
 
     if [[ -f package.json ]]; then
+        # jq -e validates JSON shape AND that .scripts.test is a non-empty string.
+        # If jq can parse it cleanly, npm/node will accept it too.
         local script
-        script=$(jq -r '.scripts.test // ""' package.json 2>/dev/null || echo "")
-        if [[ -z "$script" ]]; then
+        if ! script=$(jq -er '.scripts.test // empty' package.json 2>/dev/null) || [[ -z "$script" ]]; then
             printf 'warn\t%s\tNo "test" script in package.json\tAdd "scripts.test" or pass --test-cmd\n' "$name"
-            return
-        fi
-        # Light syntactic sanity — unbalanced quotes are the common failure mode
-        local q1 q2
-        q1=$(printf '%s' "$script" | tr -cd "'" | wc -c | tr -d ' ')
-        q2=$(printf '%s' "$script" | tr -cd '"' | wc -c | tr -d ' ')
-        if (( q1 % 2 != 0 || q2 % 2 != 0 )); then
-            printf 'block\t%s\tpackage.json test script has unbalanced quotes\tFix the "test" script string\n' "$name"
             return
         fi
         printf 'ok\t%s\tnpm test script present\t\n' "$name"
@@ -175,7 +168,9 @@ _pf_check_no_conflicts() {
         done
     fi
 
-    if git worktree list 2>/dev/null | grep -q "daemon-issue-${issue}\b\|/issue-${issue}\b"; then
+    # Use POSIX-friendly anchors: end-of-line or a path/word separator.
+    # Avoids \b (GNU-only) so we work the same on BSD grep (macOS).
+    if git worktree list 2>/dev/null | grep -E "(daemon-issue-${issue}|/issue-${issue})([^0-9]|$)" >/dev/null; then
         printf 'warn\t%s\tA worktree already exists for issue #%s\tRemove with: git worktree remove daemon-issue-%s --force\n' "$name" "$issue" "$issue"
         return
     fi

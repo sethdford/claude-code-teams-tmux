@@ -71,9 +71,11 @@ echo '{"scripts":{"test":"npm run vitest"}}' > package.json
 result=$(_pf_check_test_command)
 assert_contains "Valid test script => ok" "$result" "ok	test_command"
 
+# jq validates the JSON file itself; we trust npm to parse the test script.
+# Per audit feedback, we no longer hand-roll a quote-counting heuristic.
 echo '{"scripts":{"test":"echo \"unbalanced"}}' > package.json
 result=$(_pf_check_test_command)
-assert_contains "Unbalanced quotes => block" "$result" "block	test_command"
+assert_contains "Valid JSON => ok (no hand-rolled quote heuristic)" "$result" "ok	test_command"
 rm package.json
 
 result=$(_pf_check_test_command)

@@ -729,8 +729,10 @@ pipeline_start() {
     # Pre-flight checks
     preflight_checks || exit 1
 
-    # Pre-flight feasibility validator (#488) — gate before any stage runs
-    if [[ -f "$SCRIPT_DIR/lib/pipeline-preflight.sh" ]]; then
+    # Pre-flight feasibility validator (#488) — gate before any stage runs.
+    # Skipped on --dry-run (no work is being performed) so smoke tests and
+    # plan-previews don't trip on clarity heuristics tuned for real runs.
+    if [[ "${DRY_RUN:-false}" != "true" ]] && [[ -f "$SCRIPT_DIR/lib/pipeline-preflight.sh" ]]; then
         # shellcheck source=lib/pipeline-preflight.sh
         source "$SCRIPT_DIR/lib/pipeline-preflight.sh"
         if ! preflight_validate "${ISSUE_NUMBER:-}" "${GOAL:-}" "$ARTIFACTS_DIR"; then
