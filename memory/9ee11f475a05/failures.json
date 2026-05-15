@@ -3,28 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output missing expected strings 'agent-1', 'Found', and '--force' in dry-run mode",
-      "fix": "Fix heartbeat stale detection logic and ensure dry-run summary outputs 'Found N item(s)' and '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output are broken — dry-run does not report stale heartbeats or emit 'Found N' / '--force' summary lines",
+      "fix": "Fix the heartbeat age-detection logic and summary reporting in sw-cleanup.sh to correctly identify stale heartbeat files and print the Found count with --force hint when items are detected",
       "seen_count": 3,
-      "last_seen": "2026-05-15T07:54:50Z",
+      "last_seen": "2026-05-15T08:08:56Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed called without -e flag in sw-code-review-test.sh — substitution pattern 's|$TEST_TEMP_DIR|...|g' treated as a filename instead of a script",
-      "fix": "Add -e flag before the substitution expression: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 2,
-      "last_seen": "2026-05-15T08:10:36Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
+      "pattern": "\u001b[38;2;248;113;113mFailed:\u001b[0m 1",
       "root_cause": "",
       "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:33:04Z"
+      "last_seen": "2026-05-15T08:33:09Z"
     }
   ]
 }
