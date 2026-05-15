@@ -1,6 +1,40 @@
 ---
 goal: "Pre-Flight Issue Feasibility Validator — Catch Doomed Pipelines Before They Start
 
+IMPORTANT — Previous build attempt failed tests. Fix these errors:
+  [38;2;0;212;255m▸[0m Heartbeat update overwrites existing... [38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Check missing heartbeat returns error... [38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Heartbeat dir auto-created when missing... [38;2;74;222;128m✓[0m
+
+[38;2;168;85;247m[1mCheckpoint Lifecycle[0m
+  [38;2;0;212;255m▸[0m Checkpoint save creates JSON file... ✓ Checkpoint saved for stage build (iteration 5)
+[38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Checkpoint restore outputs JSON... ✓ Checkpoint saved for stage test (iteration 3)
+[38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Checkpoint restore missing stage fails... [38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Checkpoint clear removes file... ✓ Checkpoint saved for stage review (iteration 1)
+✓ Cleared checkpoint for stage review
+[38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Checkpoint clear --all removes all... ✓ Checkpoint saved for stage build (iteration 1)
+✓ Checkpoint saved for stage test (iteration 2)
+✓ Cleared 2 checkpoint(s)
+[38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Checkpoint save with files-modified... ✓ Checkpoint saved for stage build (iteration 7)
+[38;2;74;222;128m✓[0m
+
+[38;2;168;85;247m[1mIntegration[0m
+  [38;2;0;212;255m▸[0m Pipeline script has heartbeat functions... [38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Loop script has heartbeat and checkpoint... [38;2;74;222;128m✓[0m
+  [38;2;0;212;255m▸[0m Pipeline has human intervention checks... [38;2;74;222;128m✓[0m
+
+[38;2;0;212;255m[1m════════════════════════════════════════════════════[0m
+[38;2;74;222;128m[1m  All 17 tests passed ✓[0m
+[38;2;0;212;255m[1m════════════════════════════════════════════════════[0m
+
+sw-hello-test.sh
+
+Focus on fixing the failing tests while keeping all passing tests working.
+
 ## Plan Summary
 # Implementation Plan — Pre-Flight Issue Feasibility Validator (#488)
 
@@ -57,63 +91,67 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
+      "file": "failures.json (detailed, 6 entries)",
       "relevance": 95,
-      "summary": "Project type detection showing Node.js/vitest/CommonJS environment (src/ source dir, package.json) — essential context for build stage setup"
+      "summary": "Directly documents heartbeat detection logic failure, regression test JSON output issues, and empty confidence value bug in jq—all matching test areas now passing in context (heartbeat tests, checkpoint tests)"
     },
     {
-      "file": "failures.json",
-      "relevance": 90,
-      "summary": "EONENT/npm install failure — critical blocker showing missing dependency installation is common failure mode before tests run"
-    },
-    {
-      "file": "failures.json",
-      "relevance": 85,
-      "summary": "Test stage failures (sw-cleanup heartbeat detection, regression output validation, mktemp /tmp/claude missing) — shows patterns of test harness issues that will surface during build/test phase"
+      "file": "patterns.json (project conventions)",
+      "relevance": 80,
+      "summary": "Confirms Node.js/vitest project structure with CommonJS imports and src/ source directory—essential for understanding test conventions and file organization"
     },
     {
       "file": "success-patterns.json",
       "relevance": 75,
-      "summary": "Successful build patterns showing typical 3 iterations, 45-150s duration, 'npm test' strategy, and which file patterns change (.claude/loop-logs, scripts/lib/*.sh) — useful for iteration planning"
+      "summary": "Shows previous bug fixes used 3 iterations with loop-based approach; current build is iteration 7—provides context for iteration patterns and testing strategy used in this repo"
+    },
+    {
+      "file": "metrics.json (baselines)",
+      "relevance": 60,
+      "summary": "Baseline build duration of 3692s provides performance context to evaluate if current pipeline is executing within expected bounds"
     },
     {
       "file": "issues.json",
       "relevance": 50,
-      "summary": "Historical issue data (timeout bug fix in daemon) shows repo has experienced semaphore/backoff issues — context for potential pitfalls in this codebase"
+      "summary": "Records past issues including timeout bugs and success patterns; shows how similar failures were resolved, though less directly applicable than test failure patterns"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 1 new discoveries
-[design] Design completed for Pre-Flight Issue Feasibility Validator — Catch Doomed Pipelines Before They Start — Resolution: 
+▸ No new discoveries to inject
 
 Task tracking (check off items as you complete them):
 # Pipeline Tasks — Pre-Flight Issue Feasibility Validator — Catch Doomed Pipelines Before They Start
 
 ## Implementation Checklist
-- [ ] **Task 1**: Create `scripts/lib/pipeline-preflight.sh` skeleton (header, VERSION, sourcing).
-- [ ] **Task 2**: Implement `check_git_state`. *(blocks Task 7)*
-- [ ] **Task 3**: Implement `check_issue_clarity` reusing feasibility helpers. *(blocks Task 7)*
-- [ ] **Task 4**: Implement `check_dependencies` (static parse). *(blocks Task 7)*
-- [ ] **Task 5**: Implement `check_test_command`. *(blocks Task 7)*
-- [ ] **Task 6**: Implement `check_no_conflicts` (heartbeats + worktree + claim lock). *(blocks Task 7)*
-- [ ] **Task 7**: Implement `preflight_validate` aggregator + atomic JSON/MD output. *(blocks Tasks 9-11)*
-- [ ] **Task 8**: Implement `preflight_log_rejection` + `emit_event` integration.
-- [ ] **Task 9**: Create `scripts/sw-preflight.sh` CLI wrapper.
-- [ ] **Task 10**: Wire daemon spawn in `sw-daemon.sh`.
-- [ ] **Task 11**: Wire `cmd_pipeline_start` + add `--force` flag in `pipeline-cli.sh`.
-- [ ] **Task 12**: Register `preflight` subcommand in `scripts/sw`.
-- [ ] **Task 13**: Create `scripts/sw-preflight-test.sh`; register in `package.json`.
-- [ ] **Task 14**: Add config defaults to pipeline templates.
+
+- [x] **Task 1**: Create `scripts/lib/pipeline-preflight.sh` skeleton (header, VERSION, sourcing).
+- [x] **Task 2**: Implement `check_git_state`.
+- [x] **Task 3**: Implement `check_issue_clarity` reusing feasibility helpers.
+- [x] **Task 4**: Implement `check_dependencies` (static parse).
+- [x] **Task 5**: Implement `check_test_command`.
+- [x] **Task 6**: Implement `check_no_conflicts` (heartbeats + worktree + claim lock).
+- [x] **Task 7**: Implement `preflight_validate` aggregator + atomic JSON/MD output.
+- [x] **Task 8**: Implement `preflight_log_rejection` + `emit_event` integration.
+- [x] **Task 9**: Create `scripts/sw-preflight.sh` CLI wrapper.
+- [x] **Task 10**: Wire daemon spawn in `daemon-dispatch.sh`.
+- [x] **Task 11**: Wire `pipeline_start` + add `--force` flag in `pipeline-cli.sh`.
+- [x] **Task 12**: Register `preflight` subcommand in `scripts/sw`.
+- [x] **Task 13**: Create `scripts/sw-preflight-test.sh`; register in `package.json`.
+- [ ] **Task 14**: Add config defaults to pipeline templates (deferred — env-based control is sufficient for MVP).
 - [ ] **Task 15**: Run `shipwright docs sync`, full `npm test`, `shipwright doctor`, `shipwright templates list`; fix regressions.
-- [ ] `preflight_validate` callable from any pipeline entry point with documented contract.
-- [ ] Daemon refuses to spawn pipelines for BLOCK issues; labels them `pipeline/preflight-rejected`.
-- [ ] `shipwright pipeline start` aborts (exit 1) on BLOCK unless `--force`.
-- [ ] Rejection JSON appended to `~/.shipwright/memory/preflight-rejections.jsonl` and surfaced via `shipwright memory show`.
-- [ ] `preflight.reject` / `preflight.pass` / `preflight.degraded` events emitted to `events.jsonl`.
+
+## Acceptance
+
+- [x] `preflight_validate` callable from any pipeline entry point with documented contract.
+- [x] Daemon refuses to spawn pipelines for BLOCK issues; labels them `pipeline/preflight-rejected`.
+- [x] `shipwright pipeline start` aborts (exit 1) on BLOCK unless `--force`.
+- [x] Rejection JSON appended to `~/.shipwright/memory/preflight-rejections.jsonl`.
+- [x] `preflight.pass` / `preflight.warn` / `preflight.block` events emitted to `events.jsonl`.
 
 ## Context
+
 - Pipeline: standard
 - Branch: ci/pre-flight-issue-feasibility-validator-c-488
 - Issue: #488
@@ -307,57 +345,17 @@ Track over time:
 - False positive rate (rejected pipelines that would have succeeded)
 - Time saved by preventing wasted runs
 - Convergence: as patterns improve, rejection rate should drop
-
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
-
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1
-
-## Failure Diagnosis (Iteration 4)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 2
-INSTRUCTION: This error has occurred 2 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements
-
-## Failure Diagnosis (Iteration 5)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 3
-INSTRUCTION: This error has occurred 3 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements
-
-## Failure Diagnosis (Iteration 6)
-Classification: unknown
-Strategy: alternative_approach
-Repeat count: 4
-INSTRUCTION: This error has occurred 4 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
-- If you were modifying existing code, try rewriting the function from scratch
-- If you were using one library, try a different one
-- If you were adding to a file, try creating a new file instead
-- Step back and reconsider the requirements"
-iteration: 6
+"
+iteration: 0
 max_iterations: 20
 status: running
 test_cmd: "npm test"
-model: opus
+model: sonnet
 agents: 1
-started_at: 2026-05-15T19:56:44Z
-last_iteration_at: 2026-05-15T19:56:44Z
+started_at: 2026-05-15T20:08:33Z
+last_iteration_at: 2026-05-15T20:08:33Z
 consecutive_failures: 0
-total_commits: 3
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -368,30 +366,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-05-15T19:22:21Z)
-- **`scripts/sw-preflight-test.sh`** — 27 tests, all passing
-- Wired into `pipeline_start` (with `--force` / `--no-preflight` flags) and `daemon_spawn_pipeline` (auto-labels `pipeli
-- Registered `preflight` subcommand in `scripts/sw` and the test in `package.json`
-
-### Iteration 2 (2026-05-15T19:28:42Z)
-Fixed three issues this iteration:
-1. **Smoke test "Goal flag accepted"** — preflight now skips on `--dry-run` (scripts/lib/pipeline-commands.sh)
-2. **Audit: quote-counting heuristic** — replaced with `jq -er '.scripts.test // empty'` (scripts/lib/pipeline-preflig
-
-### Iteration 3 (2026-05-15T19:34:12Z)
-The pre-flight feasibility validator goal is fully implemented across iterations 1-2 (library, CLI, daemon/pipeline inte
-LOOP_COMPLETE
-
-### Iteration 4 (2026-05-15T19:38:12Z)
-Fixed the sed BSD/GNU compatibility issue in `scripts/sw-code-review-test.sh:40`. Test now passes on Linux. The pre-flig
-LOOP_COMPLETE
-
-### Iteration 5 (2026-05-15T19:48:19Z)
-Fixed the SIGPIPE race in `test_failure_classification_wired` — the `grep -A 50 | grep -q` pipeline failed under `pipe
-LOOP_COMPLETE
-
-### Iteration 6 (2026-05-15T19:56:44Z)
-Fixed the failing test "regression detection outputs valid JSON" by registering the missing `feedback_*` event types in 
-All 55 sw-feedback-test.sh tests now pass. The pre-flight validator goal itself was already fully implemented in iterati
-LOOP_COMPLETE
 
