@@ -1,1 +1,0 @@
-Fixed `file_mtime` in `scripts/lib/compat.sh` — on Linux, `stat -f %m` is reinterpreted as filesystem mode and leaks "File: ..." text to stdout, which broke arithmetic comparisons in `sw-cleanup.sh` heartbeat detection. Reversing the order (try GNU `stat -c '%Y'` first, BSD `stat -f %m` fallback) fixes the 3 failing cleanup tests. Full suite now green.

@@ -111,14 +111,14 @@ Task tracking (check off items as you complete them):
 - Generated: 2026-05-15T13:15:52Z"
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-05-15T13:26:20Z
-last_iteration_at: 2026-05-15T13:26:20Z
+started_at: 2026-05-15T13:31:30Z
+last_iteration_at: 2026-05-15T13:31:30Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -129,8 +129,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-05-15T13:26:20Z)
-- **`scripts/sw-abtest-test.sh`** — 32 assertions covering assignment, recording, aggregation, CLI integration, and 8-
-- Router (`scripts/sw`) accepts `abtest` and `ab` aliases.
-- `package.json` test suite includes new test; `sw-memory-test.sh` still passes (22/22) — backward compatible.
 

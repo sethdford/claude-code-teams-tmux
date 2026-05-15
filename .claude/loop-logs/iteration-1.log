@@ -1,10 +1,1 @@
-Iteration 1 complete. Delivered the core foundation (plan tasks 1, 2, 3, 5, 10):
-
-- **`scripts/lib/ab-test.sh`** — experiment-agnostic primitives (`ab_assign`, `ab_record_result`, `ab_report`, `ab_aggregate`, `ab_status`, `ab_list`) with `flock`-based concurrent-append. Each experiment writes to `~/.shipwright/abtest/<experiment>.jsonl`.
-- **`scripts/sw-abtest.sh`** — CLI wrapper exposing 5 subcommands.
-- **`scripts/sw-abtest-test.sh`** — 32 assertions covering assignment, recording, aggregation, CLI integration, and 8-way concurrent writes; all pass.
-- Router (`scripts/sw`) accepts `abtest` and `ab` aliases.
-- `package.json` test suite includes new test; `sw-memory-test.sh` still passes (22/22) — backward compatible.
-- `config/event-schema.json` registers `abtest.assigned` / `abtest.result`.
-
-Remaining work for future iterations: refactor `memory_ab_*` to delegate to the library (task 4), wire `intelligence.experiments[]` config in `sw-daemon.sh` (task 6), env-var gating in adversarial/architecture/simulation/composer/predictive entry points (tasks 7–9), docs sync (task 11), end-to-end smoke (task 12). Not declaring `LOOP_COMPLETE` — significant integration work remains.
+You're out of extra usage · resets 5:30pm (UTC)
