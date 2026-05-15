@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
-      "seen_count": 2,
-      "last_seen": "2026-05-15T01:35:31Z",
+      "seen_count": 3,
+      "last_seen": "2026-05-15T19:28:44Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 3,
-      "last_seen": "2026-05-15T08:05:56Z",
+      "seen_count": 5,
+      "last_seen": "2026-05-15T19:48:21Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,35 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
       "root_cause": "",
       "fix": "",
+      "seen_count": 2,
+      "last_seen": "2026-05-15T19:38:14Z"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m✗ FAILED\u001b[0m",
+      "root_cause": "sw-feedback-test.sh regression detection test produces invalid JSON output",
+      "fix": "Fix the regression detection output in sw-feedback.sh to emit valid JSON",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:34:08Z"
+      "last_seen": "2026-05-15T19:22:24Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "jq fails to parse quality-profile.json because a field contains an empty string where JSON value is expected, causing learned rule generation to produce invalid JSON",
+      "fix": "Guard the jq learned rule generation against empty/null confidence values by adding a default filter (e.g., `// empty` or `// \"0\"`) before writing to quality-profile.json",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T19:56:46Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "All test suites shown in the log are passing (17/17, 12/12, 10/10, 20/20) — no actual test failure visible in the provided log excerpt",
+      "fix": "Review the full test output beyond these 200 lines to find the actual failing test suite; the pipeline exit code 1 likely comes from a test suite not shown in this excerpt",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T20:34:10Z",
+      "category": "unknown"
     }
   ]
 }
