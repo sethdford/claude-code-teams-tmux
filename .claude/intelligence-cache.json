@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Cross-pipeline A/B testing framework requires system design and architecture; builder for implementation; tester for statistical validation and edge cases; DevOps for pipeline integration",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778851160,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,227 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "7027f5d3dbd23d0045547eaff543c133": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 76,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Stable hashing inconsistency could cause variant assignment to vary for same issue",
+          "Statistical significance calculation errors could lead to incorrect variant graduation decisions",
+          "Incomplete outcome tracking across all DORA metrics could skew A/B test results"
+        ],
+        "implementation_hints": [
+          "Use deterministic hashing (e.g., SHA256(issue_id) % 100) for stable variant assignment",
+          "Extend daemon-config.json schema with experiments array containing variant configurations",
+          "Store outcomes in SQLite with variant_id, success status, duration, cost, and DORA metrics",
+          "Implement statistical significance testing with p-value and confidence interval calculations",
+          "Gate feature behind SHIPWRIGHT_AB_TEST_ENABLED flag for safe rollout",
+          "Design variant graduation logic to automatically promote winning variants after thresholds met",
+          "Integrate with intelligence engine to suggest experiments based on optimization opportunities"
+        ]
+      },
+      "timestamp": 1778850648,
+      "ttl": 3600
+    },
+    "fb0366fd71f010a83847840a366a8586": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1778850659,
+      "ttl": 1800
+    },
+    "8291cd0def43ead9af51d2f496446fe2": {
+      "result": {
+        "estimated_cost_usd": 13.75,
+        "estimated_iterations": 2,
+        "estimated_tokens": 720000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1778850674,
+      "ttl": 3600
+    },
+    "f7361dfabcd003da8483acc84782dc35": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 75,
+            "summary": "Shows successful patterns for feature implementation with iteration count, test strategy (npm test), template choice, cost tracking, and file change patterns. Directly informs how to structure and validate A/B testing feature development."
+          },
+          {
+            "file": "patterns.json (first with repo/conventions)",
+            "relevance": 65,
+            "summary": "Documents project conventions: Node.js with vitest, test pattern *.test.js, commonjs imports, src/ structure. Essential for planning test infrastructure for A/B testing validation."
+          },
+          {
+            "file": "failures.json (detailed with test patterns)",
+            "relevance": 60,
+            "summary": "Contains test-related failures including sw-feedback.sh regression detection JSON output expectations and daemon intelligence classification issues. Relevant patterns to avoid for robust A/B testing validation."
+          },
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 55,
+            "summary": "Additional successful pattern example showing authentication feature implementation with iterations and metrics. Provides reference for multi-iteration feature validation approach."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Shows example of captured success pattern (semaphore for timeout fix) and test outcomes. Demonstrates how validation results are recorded and used for future reference."
+          }
+        ]
+      },
+      "timestamp": 1778850777,
+      "ttl": 1800
+    },
+    "225ea82276146f69d4c4b9633deacd82": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (2nd entry - detailed test failures)",
+            "relevance": 95,
+            "summary": "Contains 4 specific test stage failures including sw-cleanup.sh detection logic, regression test JSON output, mktemp directory creation, and critically 'Intelligence: classify_failure not wired into retry logic' — directly relevant to A/B testing framework validation and intelligence feature integration"
+          },
+          {
+            "file": "success-patterns.json (1st entry)",
+            "relevance": 72,
+            "summary": "Shows successful bug fix pattern with 3 iterations, autonomous progress, and post-audit cleanup — directly applicable to understanding how to resolve plan validation failures through iterative debugging"
+          },
+          {
+            "file": "patterns.json (1st entry)",
+            "relevance": 68,
+            "summary": "Captures project conventions (vitest, npm, commonjs, src/ structure) and test patterns — essential for understanding validation failure context and designing fixes for this JavaScript/Node.js project"
+          }
+        ]
+      },
+      "timestamp": 1778850968,
+      "ttl": 1800
+    },
+    "c9aa55981450004e582d0a86b91f7c98": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 55,
+            "summary": "Shows feature development methodology with iteration patterns, test strategy, file organization, and cost tracking—directly applicable to designing a testable, measurable A/B testing framework"
+          },
+          {
+            "file": "success-patterns.json (Fix bug with outcome-feedback)",
+            "relevance": 50,
+            "summary": "Demonstrates intelligence cache usage and outcome-feedback patterns, directly relevant to designing validation mechanisms for intelligence features"
+          },
+          {
+            "file": "patterns.json (project conventions)",
+            "relevance": 45,
+            "summary": "Establishes Node/vitest/commonjs conventions—essential for designing interfaces that align with project standards and ensure team adoption"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Real-world architectural solution (semaphore for timeout handling) demonstrates patterns used successfully in this codebase for cross-pipeline concerns"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 30,
+            "summary": "Top-level architectural rules provide governance framework context, though minimal detail limits applicability to A/B testing framework design"
+          }
+        ]
+      },
+      "timestamp": 1778851001,
+      "ttl": 1800
+    },
+    "052f7a987927ae19a11235b3a13ef477": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains specific test failures with root causes: invalid JSON output when JSON expected (API contract anti-pattern), heartbeat detection logic issues (state management anti-pattern), and infrastructure failures. These directly inform what design approaches to reject for an A/B testing framework."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows successful patterns (complexity 60-65, 3 iterations, standard template) for similar feature work. Understanding what approaches succeeded helps identify anti-patterns to avoid, particularly around file organization and test strategy."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Documents a previous timeout bug solved with semaphore pattern. Informs concurrency and synchronization anti-patterns to avoid in multi-pipeline A/B testing framework design."
+          }
+        ]
+      },
+      "timestamp": 1778851022,
+      "ttl": 1800
+    },
+    "9ee507675e97c1f13944f4e9468622f1": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (second entry with test failures)",
+            "relevance": 95,
+            "summary": "Contains critical intelligence feature validation issues: classify_failure retry logic not wired, sw-feedback.sh regression detection JSON output validation, and /tmp/claude mktemp infrastructure problems—directly applicable to A/B testing framework build/test phase"
+          },
+          {
+            "file": "patterns.json (first entry with project conventions)",
+            "relevance": 85,
+            "summary": "Captures Node.js project conventions (vitest test runner, CommonJS imports, src/ source dir)—essential context for building and validating the framework code correctly"
+          },
+          {
+            "file": "success-patterns.json (first entry with bug fix approach)",
+            "relevance": 70,
+            "summary": "Demonstrates successful multi-iteration bug fix strategy using loop approach (3 iterations, npm test strategy)—directly relevant methodology for building and validating features"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Shows successful timeout bug fix using semaphore pattern in daemon code—relevant for reliability patterns in A/B testing framework infrastructure"
+          },
+          {
+            "file": "failures.json (third entry with ENOENT errors)",
+            "relevance": 55,
+            "summary": "Missing npm install dependency issues—foundational setup problem relevant to build stage preparation and test infrastructure"
+          }
+        ]
+      },
+      "timestamp": 1778851131,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure is critical: node type, vitest test runner, src/ source dir, commonjs imports. Build stage needs these conventions to properly execute build/test commands."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Contains 4 recent test failures including mktemp directory issue and regression detection JSON output problems. Build stage will run tests and should avoid these known failure patterns."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows 2 successful fix approaches with iteration counts (3 iterations), file patterns modified, and test strategies used. Demonstrates effective build/test cycle patterns for similar work."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Historical record of past issues (timeout bug in daemon) and success patterns applied. Provides context on gotchas and fixes that have worked before."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines object. No useful metrics or performance data to inform build stage decisions."
+          }
+        ]
+      },
+      "timestamp": 1778851145,
+      "ttl": 1800
     }
   }
 }

@@ -96,6 +96,14 @@
       "required": [],
       "optional": ["repo"]
     },
+    "abtest.assigned": {
+      "required": ["experiment", "pipeline_id", "group"],
+      "optional": ["timestamp"]
+    },
+    "abtest.result": {
+      "required": ["experiment", "pipeline_id", "group"],
+      "optional": ["iterations", "cost", "test_failures", "completion_status"]
+    },
     "cost.budget_unconfigured": {
       "required": ["status"],
       "optional": []

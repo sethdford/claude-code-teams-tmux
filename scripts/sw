@@ -345,6 +345,9 @@ main() {
         memory)
             exec "$SCRIPT_DIR/sw-memory.sh" "$@"
             ;;
+        abtest|ab)
+            exec "$SCRIPT_DIR/sw-abtest.sh" "$@"
+            ;;
         guild)
             exec "$SCRIPT_DIR/sw-guild.sh" "$@"
             ;;
