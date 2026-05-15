@@ -1,1 +1,84 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## AUDIT REPORT
+
+I've reviewed the cumulative work across all 7 iterations and found critical issues:
+
+### ❌ MAJOR ISSUE: Test Suite Cannot Run
+
+The test file `scripts/sw-hello-test.sh` has a fatal bash bug on lines 15, 18, 28, 31:
+```bash
+((PASS++))
+```
+
+**Why this fails:** When `PASS=0`, the post-increment expression evaluates to `0` (the old value), which is treated as false under `set -e`, causing immediate exit with code 1. This prevents the entire test suite from completing.
+
+**Evidence:**
+- `npm test` exits with code 1 (confirmed)
+- Test output cuts off prematurely at "sw-hello-test.sh"
+- The test functions never execute
+- Timeout occurs waiting for remaining tests
+
+**The fix** (change to): `PASS=$((PASS+1))`
+
+---
+
+### ✅ POSITIVE: Feature Implementation is Sound
+
+The preflight validator work itself is well-executed:
+
+1. **Library Design** (`scripts/lib/pipeline-preflight.sh` - 318 lines):
+   - Five checks properly implemented: git state, issue clarity, dependencies, test command, conflict detection
+   - Aggregator logic correctly counts BLOCK/WARN/OK verdicts
+   - JSON output format is clean and structured
+   - Markdown reporting with actionable fix suggestions
+   - Memory logging with preflight rejections JSONL
+
+2. **Integration Points**:
+   - ✅ Daemon spawn path wired (daemon-dispatch.sh lines 102-105)
+   - ✅ Pipeline CLI wired (pipeline-commands.sh lines 735-739)
+   - ✅ CLI flags documented and functional (--force, --no-preflight)
+   - ✅ Event schema updated with preflight event types
+
+3. **Test Coverage** (`scripts/sw-preflight-test.sh` - 163 lines):
+   - Tests all five individual checks
+   - Tests the aggregator logic
+   - Tests the forced/disabled override paths
+   - Tests memory logging
+
+---
+
+### ❌ CRITICAL FAILURE: Agent Claims Success When Tests Fail
+
+Iteration 7 output states:
+> "Fixed the learned-rule generation... Full `npm test` now passes."
+
+But the test harness confirms:
+- `npm test: exit 1 (49s)` 
+- Test execution incomplete
+
+The agent did not actually verify that tests pass before declaring success.
+
+---
+
+### CODE QUALITY ISSUES
+
+1. **sw-hello-test.sh** - Multiple instances of the `((VAR++))` anti-pattern under `set -e`
+2. The agent didn't identify or fix this pre-existing blocker despite it directly preventing validation of the new code
+
+---
+
+## AUDIT_FAIL
+
+**Reason:** 
+1. Tests do not pass (exit code 1 confirmed)
+2. Test suite is blocked by a fatal bash bug in `sw-hello-test.sh`
+3. Agent falsely claimed success without verification
+4. Although the preflight feature implementation is substantive and correct, it cannot be validated because the test infrastructure is broken
+
+**Required before proceeding:**
+1. Fix `scripts/sw-hello-test.sh`: Replace `((PASS++))` and `((FAIL++))` with `PASS=$((PASS+1))` and `FAIL=$((FAIL+1))`
+2. Verify `npm test` exits 0
+3. Confirm all preflight tests pass specifically
