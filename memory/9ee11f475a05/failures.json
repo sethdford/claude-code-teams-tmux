@@ -11,30 +11,12 @@
     },
     {
       "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this runner",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in test setup, or use 'mktemp -d' without a custom base directory",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T01:29:08Z",
-      "category": "config"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sw-outcome-feedback-test.sh reads an empty or malformed quality-profile.json, causing jq to fail with 'Expected JSON value' and produce empty confidence output, making the learned-rule JSON invalid",
-      "fix": "Ensure quality-profile.json is initialized with valid JSON before jq reads it in the learned-rule generation step, or add a guard that skips jq parsing when the file is empty",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T01:31:48Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "all tests passed successfully with no failures detected in the log output",
-      "fix": "no fix needed — this appears to be a false positive pipeline failure; verify the test exit code logic",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T01:39:28Z",
-      "category": "unknown"
+      "root_cause": "sed command references a non-existent file path instead of using -e flag for inline expression",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g' filename` to `sed -e 's|$TEST_TEMP_DIR|...|g'` or ensure the file argument is separate from the expression",
+      "seen_count": 3,
+      "last_seen": "2026-05-15T01:41:58Z",
+      "category": "test_failure"
     }
   ]
 }
