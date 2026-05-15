@@ -1,1 +1,79 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Review: Pre-Flight Issue Feasibility Validator
+
+### Summary
+The agent has completed most of the implementation work across iterations 1–6. The core preflight validator library, CLI wrapper, test suite, and integration points appear to be in place. However, **the cumulative work has a critical blocker**: the test suite is still failing.
+
+### Critical Issues
+
+**1. Test Suite Failing — Blocking Issue**
+- `npm test` exits with code 1 (test failure)
+- `npm run test:smoke` passes, but the full test suite does not
+- The agent claims "All 55 sw-feedback-test.sh tests now pass" and "preflight tests continue to pass," but does not report on the overall `npm test` status
+- **This violates the acceptance criterion**: "All existing tests continue to pass"
+- The agent appears to have debugged specific test suites without verifying the full suite passes
+- **Action needed**: Run `npm test` locally, capture full output, identify remaining failures, and fix them all before declaring completion
+
+### Code Quality Assessment
+
+**Positive observations:**
+- `scripts/lib/pipeline-preflight.sh` (318 lines) has a reasonable structure with distinct check functions
+- `scripts/sw-preflight.sh` (84 lines) follows the project's CLI pattern
+- `scripts/sw-preflight-test.sh` (163 lines) includes test coverage
+- Integration into daemon dispatch and pipeline CLI appears correct
+- Event schema registration (`config/event-schema.json`) for `feedback_*` types is appropriate and fixes the identified schema gap
+
+**Potential issues (require verification):**
+
+1. **Incomplete Git Dependency Handling** — In `pipeline-preflight.sh`, the git checks may not fully handle edge cases:
+   - No verification of `.git` directory existence before calling `git` commands
+   - Concurrent pipeline detection via heartbeats may have race conditions (TOCTOU)
+
+2. **Test Command Parsing** — The `check_test_command()` function needs inspection:
+   - Verify it correctly parses `scripts.test` from package.json
+   - Check handling of complex commands with pipes, env vars, flags
+
+3. **Dependency Validation** — The static parse approach is safer than running install, but verify:
+   - Does it detect missing dependencies that would fail at test time?
+   - Or does it only validate lockfile/manifest consistency?
+
+4. **Memory Integration** — Verify `preflight_log_rejection()` is actually called and writes to memory correctly:
+   - No evidence in the diff that `~/.shipwright/memory/preflight-rejections.jsonl` is created/validated
+   - Memory system integration is mentioned in the plan but not visibly tested
+
+5. **Daemon Integration** — The wiring in `scripts/lib/daemon-dispatch.sh` (17 added lines) needs verification:
+   - Does it actually call `preflight_validate` before spawning?
+   - Are rejections properly handled (labeled with `pipeline/preflight-rejected`)?
+
+### Specific Gaps
+
+1. **No visible memory system integration tests** — Plan says rejections should be logged to memory, but I don't see test coverage for this in the `sw-preflight-test.sh` snapshot
+2. **Config defaults** — Acceptance checklist mentions "Add config defaults to pipeline templates" but I don't see evidence this was done
+3. **`shipwright docs sync` not run** — Final acceptance checklist item mentions running `shipwright docs sync`; unclear if this was completed
+4. **Acceptance Criteria Gaps**:
+   - ">30% reduction in failed pipeline starts" — no metric to verify this
+   - "rejections labeled `pipeline/preflight-rejected` on GitHub" — needs verification
+   - "verdict + reasons written to memory" — needs test coverage
+
+### Verdict
+
+**The work is ~85% complete functionally, but blocked by failing tests.**
+
+The agent has implemented the core feature (validator library, CLI, integration), but:
+1. **Must fix `npm test` failures** before this can be marked as complete
+2. Should add explicit test coverage for memory system integration
+3. Should verify daemon integration actually rejects pipelines as designed
+4. Should verify GitHub labeling of rejected issues (if GitHub integration is intended)
+
+The agent declared `LOOP_COMPLETE` prematurely without verifying the full test suite passes.
+
+---
+
+**Recommendation**: Do not merge. Request that the agent:
+1. Run `npm test` and share the full output showing which tests fail
+2. Fix all failing tests (not just the ones they debugged)
+3. Re-run `npm test` to confirm all pass
+4. Verify the acceptance criteria checklist is complete
