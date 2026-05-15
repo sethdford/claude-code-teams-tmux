@@ -2,26 +2,26 @@
 goal: "Complete Test Coverage for Final 3 Untested Scripts
 
 ## Plan Summary
-# Implementation Plan: Test Coverage for Final 3 Untested Scripts
+# Implementation Plan — Complete Test Coverage for Final 3 Untested Scripts (#481)
 
-## Files to Modify
+## Status: Already Implemented (Verification + Hardening Plan)
 
-**Create:**
-- `scripts/sw-tmux-role-color-test.sh` — validates role→color mapping for sw-tmux-role-color.sh
-- `scripts/sw-tmux-status-test.sh` — validates pipeline/agent widgets for sw-tmux-status.sh
-- `scripts/sw-tracker-github-test.sh` — validates provider_* functions for sw-tracker-github.sh
+A prior pipeline iteration (commit `05d452c4 WIP: partial pipeline progress for #481`
+plus iterations 1–2) already created all three test suites. Current state:
 
-**Modify:**
-- `package.json` — append 3 new test invocations to `"test"` script
+| Test Suite | Lines | Result | VERSION | Registered in `npm test` |
+| --- | ---: | --- | --- | --- |
+| `scripts/sw-tmux-role-color-test.sh` | 168 | **18 / 18 PASS** | 1.0.0 | ✅ |
+| `scripts/sw-tmux-status-test.sh` | 216 | **16 / 16 PASS** | 1.0.0 | ✅ |
+| `scripts/sw-tracker-github-test.sh` | 312 | **21 / 21 PASS** | 1.0.0 | ✅ |
 
-## Implementation Steps
+All three already follow harness conventions: mock binaries in `$TMPDIR/bin`, PASS/FAIL
+counters, temp-dir isolation, ERR trap, `set -euo pipefail`, and are registered in
+`package.json`'s `test` script.
 
-### 1. `sw-tmux-role-color-test.sh`
-
-Test strategy: mock `tmux` as a script in `$TEMP_DIR/bin` that logs args and serves a configurable pane title via env var (`MOCK_PANE_TITLE`). Run sw-tmux-role-color.sh with `PATH=$TEMP_DIR/bin:$PATH`, then inspect logged `tmux set ...` calls to assert the correct color was applied.
-
-Test cases:
-- Role `builder-1` → `#0066ff` (blue)
+The remaining work is **verification + hardening** of those suites against the issue's
+acceptance criteria, plus closing one observed gap (a WARN about an unregistered event
+type emitted by `provider_notify`).
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
@@ -53,29 +53,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
+      "file": "patterns.json (sethdford/shipwright project metadata)",
       "relevance": 95,
-      "summary": "Defines repo structure for sethdford/shipwright: vitest test runner, npm package manager, JavaScript, src/ source dir, *.test.js pattern, commonjs imports — essential context for test coverage work"
+      "summary": "Exact project structure: vitest test runner, npm package manager, commonjs imports, test_pattern *.test.js in source_dir. Critical for understanding how to write tests in this specific project."
     },
     {
-      "file": "failures.json",
-      "relevance": 85,
-      "summary": "ENOENT/missing dependency failure — npm install fix with 95% effectiveness rate; critical for test coverage work since dependencies must be installed before running tests"
+      "file": "failures.json (sw-cleanup.sh test failure 2026-05-14)",
+      "relevance": 90,
+      "summary": "Recent test failure in this exact repo showing dry-run mode output issues. Demonstrates what test patterns fail and how to diagnose test coverage gaps in shipwright scripts."
     },
     {
-      "file": "success-patterns.json",
-      "relevance": 80,
-      "summary": "Shows proven test strategies (unit + integration, npm test), iteration counts (3-5 iterations), file patterns for scripts and tests, and approach details for fixing bugs in this repo"
+      "file": "success-patterns.json (fix bug pattern f4af3e2a...)",
+      "relevance": 75,
+      "summary": "Successful build loop pattern using npm test strategy with 3 iterations, shows file patterns (.claude/*.md, scripts/lib/*.sh) and iteration count typical for fixing test issues in this repo."
     },
     {
-      "file": "issues.json",
-      "relevance": 72,
-      "summary": "Records successful fix for daemon timeout bug in scripts/sw-daemon.sh and scripts/lib/daemon-dispatch.sh; demonstrates test-driven approaches and gotchas ('check backoff') relevant to untested scripts"
-    },
-    {
-      "file": "failures.json",
+      "file": "issues.json (daemon timeout fix recorded 2026-05-09)",
       "relevance": 70,
-      "summary": "Cannot read property / initialize variable error pattern with 100% fix effectiveness; common test failure when scripts lack proper initialization, directly relevant to covering untested code paths"
+      "summary": "Successful bug fix in this repo demonstrating iteration and testing approach. Shows gotchas (check backoff) and patterns (added semaphore) applicable to test coverage work."
+    },
+    {
+      "file": "failures.json (ENOENT missing dependency installation)",
+      "relevance": 65,
+      "summary": "Common test failure root cause: missing dependencies (npm install required). Critical prerequisite for test coverage work with 95% fix effectiveness rate."
     }
   ]
 }
@@ -88,33 +88,33 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Complete Test Coverage for Final 3 Untested Scripts
 
 ## Implementation Checklist
-- [ ] Task 1: Read `sw-tracker-providers-test.sh` setup pattern for gh mock reuse
-- [ ] Task 2: Create `sw-tmux-role-color-test.sh` with tmux mock + 13 assertions
-- [ ] Task 3: Create `sw-tmux-status-test.sh` with state file + heartbeat fixtures + 14 assertions
-- [ ] Task 4: Create `sw-tracker-github-test.sh` with gh mock + 18 assertions covering all 8 provider_* functions
-- [ ] Task 5: Make all 3 test scripts executable (`chmod +x`)
-- [ ] Task 6: Register all 3 in `package.json` `"test"` chain
-- [ ] Task 7: Run each new test in isolation — verify PASS, no FAIL
-- [ ] Task 8: Run `npm test` to confirm full suite still green
-- [ ] Task 9: Confirm test count is 103 (was 100, +3 new suites)
-- [ ] Task 10: Verify each test uses `set -euo pipefail`, ERR trap, PASS/FAIL counters, tmp dir cleanup trap
-- [ ] 3 new test files created, each follows the harness pattern (set -euo pipefail, ERR trap, PASS/FAIL counters, mktemp dir + cleanup trap)
-- [ ] Each suite has ≥10 assertions covering happy path + edge cases + NO_GITHUB guard (for tracker-github)
-- [ ] All 3 wired into `package.json` test chain
-- [ ] `npm test` exits 0 end-to-end
-- [ ] No real `gh`, real `tmux`, or real network calls in any test
-- [ ] No mutation of user's real `~/.shipwright/` (use `HOME=$TEMP_DIR`)
+- [ ] T1: Run all 3 target test suites individually; record PASS/FAIL totals and any WARN lines
+- [ ] T2: Inventory `sw-tmux-role-color.sh` branch coverage; add any missing role/edge tests
+- [ ] T3: Inventory `sw-tmux-status.sh` widget + dispatcher coverage; add missing branches
+- [ ] T4: Inventory `sw-tracker-github.sh` provider_* coverage (9 functions × {happy, error, NO_GITHUB})
+- [ ] T5: Verify `HOME=$TMPDIR/home` is exported in every test file (event isolation)
+- [ ] T6: Verify `PATH=$TMPDIR/bin:$PATH` exported so real `gh`/`tmux` never invoked
+- [ ] T7: If `tracker.notify` WARN persists, register event in `config/event-schema.json`
+- [ ] T8: Run `npm test` end-to-end; confirm zero new failures
+- [ ] T9: Produce scripts-without-tests audit and confirm empty result
+- [ ] T10: Commit changed test files (and event-schema if touched) with conventional message linking #481
+- [ ] All three test files parse cleanly (`bash -n`) and run under `set -euo pipefail`
+- [ ] All three exit 0 with PASS=total and FAIL=0
+- [ ] Full `npm test` passes with no new failures
+- [ ] No `scripts/sw-*.sh` (excluding `*-test.sh` and shared libs) lacks a matching `-test.sh`
+- [ ] No WARN lines from the test runs that point to schema gaps
+- [ ] Single commit on branch with body referencing #481
 
 ## Context
 - Pipeline: standard
 - Branch: test/complete-test-coverage-for-final-3-untes-481
 - Issue: #481
-- Generated: 2026-05-14T19:03:55Z
+- Generated: 2026-05-15T01:23:46Z
 
 ## Skill Guidance (testing issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **shell-script-test-patterns**: These 3 scripts use shell-specific patterns (color codes, file state, process management) that require careful mocking; this skill covers the harness patterns, mock binary conventions, and cleanup safety specific to Shipwright's test infrastructure
-- **testing-strategy**: Essential for designing test structure, coverage goals, and integration with npm test harness; these 3 test suites must follow existing patterns (PASS/FAIL counters, tmp dirs) and work within the automated test runner
+- **shell-script-test-patterns**: This is the canonical reference for Shipwright test suite structure (mock binaries, PASS/FAIL counting, tmp dir isolation, signal handling)—essential for all three suites to integrate seamlessly into npm test and pass linting.
+- **testing-strategy**: Guides identification of critical test scenarios for each script: role color mapping (all agent roles), status widget formatting (empty/partial/full state), and GitHub operations (fetch/update with auth and error cases).
 
 ## Shell Script Test Patterns & Harness Conventions
 
@@ -231,16 +231,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 1
-max_iterations: 20
-status: error
+iteration: 0
+max_iterations: 10
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-05-14T19:23:52Z
-last_iteration_at: 2026-05-14T19:23:52Z
+started_at: 2026-05-15T01:26:11Z
+last_iteration_at: 2026-05-15T01:26:11Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

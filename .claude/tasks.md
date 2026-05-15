@@ -4,23 +4,23 @@
 Pipeline: standard | Branch: test/complete-test-coverage-for-final-3-untes-481
 
 ## Checklist
-- [ ] Task 1: Read `sw-tracker-providers-test.sh` setup pattern for gh mock reuse
-- [ ] Task 2: Create `sw-tmux-role-color-test.sh` with tmux mock + 13 assertions
-- [ ] Task 3: Create `sw-tmux-status-test.sh` with state file + heartbeat fixtures + 14 assertions
-- [ ] Task 4: Create `sw-tracker-github-test.sh` with gh mock + 18 assertions covering all 8 provider_* functions
-- [ ] Task 5: Make all 3 test scripts executable (`chmod +x`)
-- [ ] Task 6: Register all 3 in `package.json` `"test"` chain
-- [ ] Task 7: Run each new test in isolation — verify PASS, no FAIL
-- [ ] Task 8: Run `npm test` to confirm full suite still green
-- [ ] Task 9: Confirm test count is 103 (was 100, +3 new suites)
-- [ ] Task 10: Verify each test uses `set -euo pipefail`, ERR trap, PASS/FAIL counters, tmp dir cleanup trap
-- [ ] 3 new test files created, each follows the harness pattern (set -euo pipefail, ERR trap, PASS/FAIL counters, mktemp dir + cleanup trap)
-- [ ] Each suite has ≥10 assertions covering happy path + edge cases + NO_GITHUB guard (for tracker-github)
-- [ ] All 3 wired into `package.json` test chain
-- [ ] `npm test` exits 0 end-to-end
-- [ ] No real `gh`, real `tmux`, or real network calls in any test
-- [ ] No mutation of user's real `~/.shipwright/` (use `HOME=$TEMP_DIR`)
+- [ ] T1: Run all 3 target test suites individually; record PASS/FAIL totals and any WARN lines
+- [ ] T2: Inventory `sw-tmux-role-color.sh` branch coverage; add any missing role/edge tests
+- [ ] T3: Inventory `sw-tmux-status.sh` widget + dispatcher coverage; add missing branches
+- [ ] T4: Inventory `sw-tracker-github.sh` provider_* coverage (9 functions × {happy, error, NO_GITHUB})
+- [ ] T5: Verify `HOME=$TMPDIR/home` is exported in every test file (event isolation)
+- [ ] T6: Verify `PATH=$TMPDIR/bin:$PATH` exported so real `gh`/`tmux` never invoked
+- [ ] T7: If `tracker.notify` WARN persists, register event in `config/event-schema.json`
+- [ ] T8: Run `npm test` end-to-end; confirm zero new failures
+- [ ] T9: Produce scripts-without-tests audit and confirm empty result
+- [ ] T10: Commit changed test files (and event-schema if touched) with conventional message linking #481
+- [ ] All three test files parse cleanly (`bash -n`) and run under `set -euo pipefail`
+- [ ] All three exit 0 with PASS=total and FAIL=0
+- [ ] Full `npm test` passes with no new failures
+- [ ] No `scripts/sw-*.sh` (excluding `*-test.sh` and shared libs) lacks a matching `-test.sh`
+- [ ] No WARN lines from the test runs that point to schema gaps
+- [ ] Single commit on branch with body referencing #481
 
 ## Notes
-- Generated from pipeline plan at 2026-05-14T19:03:56Z
+- Generated from pipeline plan at 2026-05-15T01:23:46Z
 - Pipeline will update status as tasks complete

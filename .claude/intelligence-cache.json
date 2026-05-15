@@ -35,12 +35,12 @@
           "builder",
           "reviewer"
         ],
-        "confidence": 0.90,
-        "reasoning": "Task requires test case generation, coverage analysis, edge case detection, and test automation for 3 untested scripts — core tester responsibilities. Builder and reviewer provide implementation and quality validation support.",
+        "confidence": 0.95,
+        "reasoning": "Test specialist needed to write comprehensive tests, analyze coverage metrics, and validate quality for final 3 untested scripts.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1778785621,
+      "timestamp": 1778808370,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1404,27 +1404,29 @@
     },
     "2694b483263e7bf0d99d458140ac76f0": {
       "result": {
-        "complexity": 4,
+        "complexity": 3,
         "risk_level": "low",
         "success_probability": 88,
         "recommended_template": "fast",
         "issue_type": "testing",
         "key_risks": [
-          "sw-tracker-github.sh may not exist or may be an undocumented adapter",
-          "tmux color assignment edge cases not fully specified in acceptance criteria",
-          "Mock binaries for GitHub API may need different setup than existing tracker tests",
-          "Status bar widget formatting requirements may vary by tmux version"
+          "GitHub API mocking complexity for sw-tracker-github.sh operations",
+          "Maintaining consistency with 100+ existing test suite patterns",
+          "Edge cases in tmux color assignments and status bar formatting",
+          "Ensuring mock binaries and temp directory cleanup work correctly"
         ],
         "implementation_hints": [
-          "Reference existing patterns from sw-tmux-test.sh (746 lines) and sw-tracker-test.sh (534 lines) for structure and conventions",
-          "For role colors, test all agent roles mentioned in CLAUDE.md (builder, reviewer, tester, optimizer, docs, security, etc.)",
-          "Use isolated tmp directories per test to avoid pane/session conflicts",
-          "Mock GitHub API responses for tracker-github tests using established patterns from sw-github-graphql-test.sh",
-          "Ensure each test suite increments PASS/FAIL counters and handles ERR traps consistently",
-          "Validate status bar widget output against expected tmux format strings"
+          "Reference sw-tmux-test.sh (625 lines) and sw-tracker-test.sh (534 lines) for established patterns",
+          "Mock GitHub GraphQL/REST API responses using existing mock infrastructure",
+          "Test all agent roles (builder, reviewer, tester, optimizer, docs, security) for color assignments",
+          "Validate status bar widget formatting against expected output strings",
+          "Use mock binaries in isolated temp directories per existing convention",
+          "Follow PASS/FAIL counter pattern and colored output formatting",
+          "Register test suites in package.json and update test runner references",
+          "Final verification: npm test must show 103/103 scripts tested"
         ]
       },
-      "timestamp": 1778785149,
+      "timestamp": 1778807852,
       "ttl": 3600
     },
     "d6abebbe734a846875dd4ae60209cc3b": {
@@ -1448,255 +1450,268 @@
     "74763b931a462c2d128311754075b972": {
       "result": {
         "issue_type": "testing",
-        "confidence": 0.88,
+        "confidence": 0.95,
         "secondary_domains": [
-          "shell-script-testing",
-          "tmux-integration",
-          "github-integration",
-          "test-automation"
+          "shell-scripting",
+          "test-infrastructure"
         ],
         "complexity_assessment": {
-          "score": 3.5,
-          "reasoning": "Procedural test suite creation following established patterns, but requires deep understanding of each script's behavior, tmux state management, GitHub API mocking, and race condition prevention in parallel test execution"
+          "score": 5,
+          "reasoning": "Three independent test suites for utility scripts with established patterns; straightforward mocking and assertion requirements; no novel architecture or algorithms needed—primarily pattern application work."
         },
         "skill_plan": {
           "plan": [
-            "testing-strategy",
-            "adversarial-quality"
+            "shell-script-test-patterns",
+            "testing-strategy"
           ],
           "design": [
-            "testing-strategy",
-            "shell-script-test-patterns"
+            "shell-script-test-patterns",
+            "test-parallelization-detection"
           ],
           "build": [
             "shell-script-test-patterns",
             "testing-strategy"
           ],
           "review": [
-            "test-parallelization-detection",
+            "shell-script-test-patterns",
             "adversarial-quality",
-            "validation-thoroughness"
+            "pr-quality"
           ],
           "compound_quality": [
+            "validation-thoroughness",
+            "test-parallelization-detection"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
             "validation-thoroughness"
           ],
-          "pr": [],
-          "deploy": [],
-          "validate": [],
           "monitor": []
         },
         "skill_rationale": {
-          "testing-strategy": "Essential for designing test structure, coverage goals, and integration with npm test harness; these 3 test suites must follow existing patterns (PASS/FAIL counters, tmp dirs) and work within the automated test runner",
-          "adversarial-quality": "Critical for identifying edge cases (invalid color names, missing tmux state, GitHub API failures) that functional testing might miss, ensuring tests catch real bugs not just happy paths",
-          "shell-script-test-patterns": "These 3 scripts use shell-specific patterns (color codes, file state, process management) that require careful mocking; this skill covers the harness patterns, mock binary conventions, and cleanup safety specific to Shipwright's test infrastructure",
-          "test-parallelization-detection": "npm test runs test suites in parallel; undetected shared state in temp files or mocks will cause flaky race conditions; this skill ensures test isolation so 100+ suites can run concurrently without interference",
-          "validation-thoroughness": "Achieving 100% test coverage requires validating that all code paths are exercised, not just that tests exist; this skill ensures coverage metrics align with actual behavioral testing"
+          "shell-script-test-patterns": "This is the canonical reference for Shipwright test suite structure (mock binaries, PASS/FAIL counting, tmp dir isolation, signal handling)—essential for all three suites to integrate seamlessly into npm test and pass linting.",
+          "testing-strategy": "Guides identification of critical test scenarios for each script: role color mapping (all agent roles), status widget formatting (empty/partial/full state), and GitHub operations (fetch/update with auth and error cases).",
+          "test-parallelization-detection": "Ensures the three new test suites have no shared state (temp file collisions, GitHub mock conflicts, global variables) when run in parallel via npm test—critical for preventing race conditions in CI.",
+          "adversarial-quality": "Uncover edge cases that could break the test harness itself: tmux unavailable, GitHub API timeouts, malformed role names, status refresh loops—tests must handle these gracefully.",
+          "pr-quality": "Test code must be readable and maintainable; clear variable names, consistent assertion style, and well-organized test cases help reviewers verify compliance with Shipwright patterns.",
+          "validation-thoroughness": "Verify actual test execution in the full npm test suite context; confirm mock binaries work, PASS/FAIL counts are accurate, and zero test interference occurs when run alongside all 102 existing suites."
         },
-        "generated_skills": [
-          {
-            "name": "shell-script-test-patterns",
-            "reason": "The issue explicitly requires tests to follow Shipwright patterns (mock binaries, PASS/FAIL counters, tmp directories), but no existing skill covers the shell-specific test harness conventions and parallelization safety unique to this codebase",
-            "content": "## Shell Script Test Patterns & Harness Conventions\n\nShipwright test suites for shell scripts follow a specific pattern designed for parallelization, isolation, and clarity. This skill covers the conventions, mock patterns, and safety practices for writing test suites that integrate cleanly with `npm test`.\n\n### Test File Structure\n\n- **Naming**: `scripts/{script}-test.sh`\n- **Registration**: Add entry to `package.json` scripts.test via `npm test` (runs via `npm test` with parallelization)\n- **Shebang**: `#!/usr/bin/env bash` with `set -euo pipefail`\n- **Version variable**: `VERSION=...` at top of file, matching script being tested\n\n### Mock Binary Conventions\n\n1. **Temp directory isolation**: Create `TMPDIR=$(mktemp -d)` per test, add cleanup trap\n   ```bash\n   trap 'rm -rf \"$TMPDIR\"' EXIT\n   ```\n\n2. **Mock binary structure**: Binaries go in `$TMPDIR/bin/` with predictable behavior\n   - Mock returns exit code based on input (e.g., invalid arg → exit 1)\n   - Mock outputs expected format (JSON, CSV, plain text)\n   - Never call real binaries; replace in PATH: `export PATH=\"$TMPDIR/bin:$PATH\"`\n\n3. **Mock files**: Use `$TMPDIR` for all file I/O (configs, logs, state)\n   - Never write to `/tmp` directly (other tests might collide)\n   - Never rely on real files from repo (tests must be self-contained)\n\n### Test Counting & Output\n\n- **Global counters**: `PASS=0 FAIL=0` at top\n- **Test function**: `test_name() { local result='...'; if [[ result == expected ]]; then ((PASS++)); else ((FAIL++)); echo \"FAIL: $description\"; fi; }`\n- **Summary**: Print `✓ PASS: N, FAIL: M` and exit 0 if M==0, exit 1 if M>0\n- **Colors**: Use `$green`, `$red`, `$cyan` (defined in test files) for readability\n\n### Parallelization Safety\n\n1. **No global state**: Each test uses its own `TMPDIR`; no shared files, env vars, or process state\n2. **Process isolation**: Kill background processes in trap to prevent zombie processes affecting other tests\n3. **Atomic writes**: Use `tmp_file=$(mktemp)` + `mv` pattern, never direct write\n4. **Test ordering**: Tests must pass in any order; no dependencies between test functions\n5. **Timeout protection**: Long-running operations should have timeouts (e.g., `timeout 5s mock_command`)\n\n### Common Pitfalls\n\n- **Forgetting cleanup trap**: Leftover files in shared /tmp cause race conditions\n- **Mock command substitution**: Ensure `$(mock_cmd)` output is captured, not piped (loses exit code)\n- **Hard-coded paths**: Use `$TMPDIR` for all files; never assume `/tmp` structure\n- **Subshell variable loss**: Use `while read; done < <(cmd)` not `cmd | while read` to preserve outer variables\n- **Color code validation**: Terminal colors in output need exact matching or regex; test for the pattern, not the literal escape code\n\n### Edge Cases to Test\n\nFor every script being tested:\n1. **Happy path**: Correct inputs → expected output\n2. **Missing inputs**: Empty args, missing files → error or graceful default\n3. **Invalid inputs**: Malformed JSON, invalid IDs, non-existent files → specific error code\n4. **State transitions**: Before/after state (e.g., pane created → border color applied)\n5. **Concurrent access**: Two tests accessing same mock simultaneously (shouldn't crash)\n6. **Cleanup**: Temp resources freed even if test fails midway\n\n### Integration with npm test\n\n- Test suite is discovered and run by `npm test` automatically\n- Test output should be parseable by CI (count PASS/FAIL, report failing test names)\n- Exit code must be 0 for success, 1 for any failures\n- Each test suite runs in its own process with isolated `TMPDIR` (no collisions)"
-          }
-        ],
+        "generated_skills": [],
         "review_focus": [
-          "Mock binary accuracy for tmux commands (tmux list-panes, tmux set-option) and GitHub API responses",
-          "Temporary directory isolation: each test creates own TMPDIR, no collisions between parallel test runs",
-          "Edge case coverage: invalid role names, missing panes, API errors, malformed JSON responses",
-          "Assertion clarity and specificity: tests check exact output format and exit codes, not just success/failure",
-          "Color code validation: terminal escape sequences handled correctly in output matching",
-          "Test ordering independence: all tests pass regardless of execution order (no dependencies)",
-          "Cleanup completeness: trap handlers properly remove temp files and kill background processes even on test failure"
+          "Mock binary completeness: Do all external syscalls (tmux socket ops, GitHub API calls) have corresponding mocks that prevent side effects?",
+          "Parallelization safety: Temp directories, mock state, and process IDs are uniquely scoped per test to prevent collisions in concurrent runs.",
+          "Pattern compliance: PASS/FAIL counter logic, ERR trap usage, signal handling, and cleanup follow exact structure from existing test suites (e.g., sw-tmux-test.sh).",
+          "Edge case coverage: All tmux roles tested, all GitHub operations (fetch, update, error states), all status bar conditions (pending, success, failure).",
+          "Integration point: Does each test suite properly register in package.json and integrate into the npm test harness without breaking existing tests?"
         ],
         "risk_areas": [
-          "Tmux mock complexity: tmux state is stateful; mocks must accurately reflect pane/window/session behavior or tests miss real bugs",
-          "GitHub API mocking accuracy: GitHub responses are versioned and structured; incomplete mocks cause false test passes",
-          "Race conditions in parallel execution: if tests share TMPDIR or temp files, npm test parallelization causes flaky failures",
-          "Color code assertion fragility: terminal escape sequences vary by shell/terminal; tests need regex or byte-sequence matching to avoid brittleness",
-          "Test isolation gaps: background processes from one test interfering with another if cleanup traps fail",
-          "Coverage metric blindness: 100% coverage reported but code paths untested (assertions on mock output instead of behavior)"
+          "Mock binary isolation failure: Real tmux or GitHub calls leak through mock layer, polluting test environment or actual infrastructure.",
+          "Shared state in parallel execution: Multiple test suites collide on temp file paths, GitHub mock credentials, or process IDs when npm test parallelizes.",
+          "Pattern drift: Test structure diverges from existing suites (different assertion style, PASS/FAIL counting, signal handling), causing maintenance debt and CI inconsistency.",
+          "Incomplete edge case coverage: Tests pass for happy path but fail in production with unexpected inputs (invalid role names, malformed GitHub responses, tmux unavailable).",
+          "Context window exhaustion in test suites: Large mock outputs or extensive logging consume available context during npm test, preventing full suite execution."
         ]
       },
-      "timestamp": 1778785271,
+      "timestamp": 1778807999,
       "ttl": 3600
     },
     "7d54c2fa2430e56eadc97430e17b4fd7": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-05-14)",
+            "file": "patterns.json (sethdford/shipwright project info)",
+            "relevance": 100,
+            "summary": "Contains exact project conventions for this repo: Node.js, vitest test runner, npm package manager, src/ source dir, *.test.js test pattern, commonjs imports. Essential for planning test coverage aligned with project standards."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh test failure)",
             "relevance": 95,
-            "summary": "Current project configuration showing vitest test runner, npm package manager, JavaScript language, and test conventions (*.test.js pattern). Directly informs test coverage implementation strategy."
+            "summary": "Recent test failure from 2026-05-14 in scripts/sw-cleanup.sh showing stale heartbeat detection issues. Demonstrates actual testing patterns and edge cases to consider when planning test coverage for shell scripts in this repo."
           },
           {
-            "file": "success-patterns.json (auth module TDD feature, goal: add auth module)",
+            "file": "success-patterns.json (2 patterns: bug fix + auth feature)",
             "relevance": 85,
-            "summary": "Proven TDD approach for feature development with 5 iterations, explicit test_strategy (unit + integration), and file patterns including src/ and test/. Directly applicable to adding test coverage for untested scripts."
+            "summary": "Shows successful test strategies from similar tasks: iterations count (3-5), test_strategy (npm test), file patterns (.claude/*.md scripts/*.sh), and iterative approaches. Valuable for planning test coverage strategy and scope."
           },
           {
-            "file": "failures.json (ENOENT no such file directory, fix: npm install)",
+            "file": "issues.json (test-issue-1)",
+            "relevance": 80,
+            "summary": "Successful testing of daemon script (sw-daemon.sh) with recorded gotchas and success pattern (added semaphore). Shows testing approach for complex shell scripts similar to the 3 untested scripts likely being addressed."
+          },
+          {
+            "file": "failures.json (ENOENT fix)",
             "relevance": 70,
-            "summary": "Common Node.js test execution blocker showing missing dependencies prevent tests from running. 95% fix effectiveness. Critical for planning test coverage work."
-          },
-          {
-            "file": "failures.json (cannot read property, fix: Initialize variable)",
-            "relevance": 65,
-            "summary": "Common JavaScript error pattern when tests aren't properly set up. 100% fix effectiveness by initializing variables. Relevant for anticipating test initialization issues during coverage work."
-          },
-          {
-            "file": "issues.json (Fix timeout bug in daemon, success outcome)",
-            "relevance": 55,
-            "summary": "Successful test/fix cycle for daemon script showing proven pattern (semaphore) and gotchas (check backoff). Demonstrates testing approach for complex scripts similar to the untested ones being covered."
+            "summary": "Common testing failure pattern (missing npm install) with 95% fix effectiveness. Relevant for planning test setup requirements and initial test environment validation."
           }
         ]
       },
-      "timestamp": 1778785342,
+      "timestamp": 1778808062,
       "ttl": 1800
     },
     "ba8caa58f3a99c51d812fe4085768216": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, 2026-05-14)",
+            "file": "failures.json (sw-cleanup.sh stale heartbeat detection)",
             "relevance": 95,
-            "summary": "Current project structure and conventions: vitest test runner, test pattern *.test.js, nodejs/javascript, npm, src/ source directory — directly applicable to completing test coverage"
+            "summary": "Recent test failure (2026-05-14) in this repo's test stage for sw-cleanup.sh showing missing output validation in dry-run mode. Directly relevant as this may be one of the 3 untested scripts requiring test coverage."
           },
           {
-            "file": "success-patterns.json (add auth module, 2026-04-01)",
-            "relevance": 80,
-            "summary": "Successful feature implementation with iterative TDD, 5 iterations to completion, unit+integration test strategy for complexity 60 — demonstrates effective approach for test generation in similar project"
+            "file": "patterns.json (sethdford/shipwright repo patterns)",
+            "relevance": 90,
+            "summary": "Project metadata for this repo showing vitest test runner, npm package manager, javascript language, src/ source structure, and *.test.js test pattern. Essential for understanding how to write tests that fit project conventions."
           },
           {
-            "file": "failures.json (ENOENT no such file directory)",
-            "relevance": 70,
-            "summary": "Common failure pattern when testing without dependency installation, shows proven fix (npm install) with 95% effectiveness — setup prerequisite for script testing"
+            "file": "success-patterns.json (add auth module with unit + integration tests)",
+            "relevance": 75,
+            "summary": "Successful test implementation pattern from this repo showing TDD approach with unit + integration test strategy, 5 iterations needed, file patterns covering src/ and test/. Provides template for adding test coverage to complex features."
           }
         ]
       },
-      "timestamp": 1778785464,
+      "timestamp": 1778808247,
       "ttl": 1800
     },
     "908037f2729ed9b5d428fcb64489115d": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (sethdford/shipwright)",
             "relevance": 95,
-            "summary": "Current project structure and conventions (Node.js, vitest, *.test.js pattern, src/ directory) for shipwright - essential architectural reference for designing test coverage patterns"
+            "summary": "Current project context: Node.js, vitest test runner, npm, src/ structure, *.test.js pattern, commonjs imports — directly applicable to test coverage design"
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 90,
-            "summary": "Iterative patterns showing successful modifications to scripts/lib/*.sh files with npm test execution - directly demonstrates testing approach for untested shell scripts"
+            "file": "success-patterns.json (auth module TDD)",
+            "relevance": 85,
+            "summary": "Shows successful testing approach in this codebase: 'Iterative TDD approach with module isolation' with 'unit + integration' strategy, 5 iterations, similar complexity (60)"
           },
           {
-            "file": "issues.json",
-            "relevance": 75,
-            "summary": "Real issue about timeout bug in scripts/sw-daemon.sh with successful semaphore fix pattern - indicates actual script testing requirements and common failure modes"
+            "file": "failures.json (sw-cleanup.sh test)",
+            "relevance": 80,
+            "summary": "Recent test failure (2026-05-14) in this repo's test stage showing output matching issues — reveals common test design pitfalls for script testing"
           },
           {
-            "file": "success-patterns.json",
+            "file": "success-patterns.json (bug fix patterns)",
             "relevance": 70,
-            "summary": "TDD approach with unit + integration test strategy for auth module - provides concrete test architecture and file layout patterns applicable to script coverage"
+            "summary": "Two documented success patterns showing test strategies ('npm test'), iteration counts (3-4), and file change patterns for fixing bugs in this codebase"
           },
           {
-            "file": "failures.json",
-            "relevance": 50,
-            "summary": "ENOENT (missing dependencies) failure pattern with 95% fix effectiveness - shows common setup and integration issues that comprehensive test coverage should prevent"
+            "file": "failures.json (ENOENT dependency)",
+            "relevance": 65,
+            "summary": "Common test setup failure ('npm install' required) with 95% fix effectiveness — relevant for ensuring test environment design includes dependency validation"
           }
         ]
       },
-      "timestamp": 1778785524,
+      "timestamp": 1778808277,
       "ttl": 1800
     },
     "ed76d4656834bbd2cacb7dd9ac3425f1": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright, captured 2026-05-14)",
+            "file": "patterns.json (sethdford/shipwright)",
             "relevance": 95,
-            "summary": "Current project conventions showing test_runner 'vitest', test_pattern '*.test.js', import_style 'commonjs', and source structure. Direct guidance for writing tests for the 3 scripts."
+            "summary": "Directly describes current repo's test environment (vitest runner, npm package manager, Node.js project) and code conventions (src/, commonjs imports) — essential context for designing test coverage for shipwright scripts"
           },
           {
-            "file": "failures.json (EONENT - missing npm install)",
+            "file": "success-patterns.json (detailed patterns with test strategies)",
+            "relevance": 85,
+            "summary": "Shows successful testing approaches used previously (unit + integration, npm test strategy, iterative TDD) with file pattern breakdowns — demonstrates anti-patterns to avoid and proven test strategies that worked"
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh test failure)",
             "relevance": 80,
-            "summary": "Anti-pattern showing common test setup failure: missing dependency installation before test execution. 95% effectiveness rate for 'npm install' fix—directly relevant to avoiding test failures."
-          },
-          {
-            "file": "success-patterns.json (issue f4af3e2a... and 0bcf0637...)",
-            "relevance": 75,
-            "summary": "Two successful patterns showing test strategy 'npm test' with standard template and multi-iteration approach. Files changed patterns (.claude/loop-logs, scripts/) show realistic test development patterns for this repo."
+            "summary": "Documents actual test failure in shipwright's sw-cleanup.sh with root cause (stale heartbeat detection mismatch) and fix applied — directly relevant anti-pattern for this specific codebase"
           }
         ]
       },
-      "timestamp": 1778785542,
+      "timestamp": 1778808291,
       "ttl": 1800
     },
     "c21b5998887bed0eae5314a06d6750d8": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (sethdford/shipwright project metadata)",
             "relevance": 95,
-            "summary": "Defines repo structure for sethdford/shipwright: vitest test runner, npm package manager, JavaScript, src/ source dir, *.test.js pattern, commonjs imports — essential context for test coverage work"
+            "summary": "Exact project structure: vitest test runner, npm package manager, commonjs imports, test_pattern *.test.js in source_dir. Critical for understanding how to write tests in this specific project."
           },
           {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "ENOENT/missing dependency failure — npm install fix with 95% effectiveness rate; critical for test coverage work since dependencies must be installed before running tests"
+            "file": "failures.json (sw-cleanup.sh test failure 2026-05-14)",
+            "relevance": 90,
+            "summary": "Recent test failure in this exact repo showing dry-run mode output issues. Demonstrates what test patterns fail and how to diagnose test coverage gaps in shipwright scripts."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 80,
-            "summary": "Shows proven test strategies (unit + integration, npm test), iteration counts (3-5 iterations), file patterns for scripts and tests, and approach details for fixing bugs in this repo"
+            "file": "success-patterns.json (fix bug pattern f4af3e2a...)",
+            "relevance": 75,
+            "summary": "Successful build loop pattern using npm test strategy with 3 iterations, shows file patterns (.claude/*.md, scripts/lib/*.sh) and iteration count typical for fixing test issues in this repo."
           },
           {
-            "file": "issues.json",
-            "relevance": 72,
-            "summary": "Records successful fix for daemon timeout bug in scripts/sw-daemon.sh and scripts/lib/daemon-dispatch.sh; demonstrates test-driven approaches and gotchas ('check backoff') relevant to untested scripts"
-          },
-          {
-            "file": "failures.json",
+            "file": "issues.json (daemon timeout fix recorded 2026-05-09)",
             "relevance": 70,
-            "summary": "Cannot read property / initialize variable error pattern with 100% fix effectiveness; common test failure when scripts lack proper initialization, directly relevant to covering untested code paths"
+            "summary": "Successful bug fix in this repo demonstrating iteration and testing approach. Shows gotchas (check backoff) and patterns (added semaphore) applicable to test coverage work."
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency installation)",
+            "relevance": 65,
+            "summary": "Common test failure root cause: missing dependencies (npm install required). Critical prerequisite for test coverage work with 95% fix effectiveness rate."
           }
         ]
       },
-      "timestamp": 1778785600,
+      "timestamp": 1778808344,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Project conventions (vitest, npm, src/, *.test.js, commonjs) are critical for build stage to write code correctly"
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 68,
-            "summary": "Prior success patterns show iteration strategies (3-4 iterations typical), npm test approach, and multi-file change patterns relevant to building test coverage"
+            "relevance": 95,
+            "summary": "Shows historical successful build patterns including iteration counts, duration, files changed patterns, test strategy (npm test), and complexity metrics — directly informs build approach and expectations"
           },
           {
-            "file": "issues.json",
-            "relevance": 28,
-            "summary": "Past daemon timeout issue shows debugging patterns and semaphore solutions, tangentially relevant if current test coverage work touches similar scripts"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 5,
-            "summary": "Empty baselines provide no guidance for current build stage"
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Defines project structure (src/, *.test.js pattern, vitest, npm, commonjs) — essential for understanding build conventions and test discovery"
           },
           {
             "file": "failures.json",
-            "relevance": 5,
-            "summary": "No captured failures to learn from, not applicable to build stage"
+            "relevance": 60,
+            "summary": "Records past test failure (sw-cleanup.sh dry-run detection) with root cause and fix — helps avoid repeating similar script failures during build"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Shows resolved timeout issues fixed with semaphore pattern — relevant if build encounters similar timeout or synchronization problems"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Contains empty baselines — would be useful if populated, but currently provides no actionable context for build stage"
           }
         ]
       },
-      "timestamp": 1778785611,
+      "timestamp": 1778808361,
       "ttl": 1800
+    },
+    "c717f2540bf442caaf7101b89100856e": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1778807862,
+      "ttl": 1800
+    },
+    "4d9782627f4cf7637607a9e720e7685b": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 2,
+        "estimated_tokens": 72000,
+        "likely_failure_stage": "test",
+        "confidence": 85
+      },
+      "timestamp": 1778807874,
+      "ttl": 3600
     }
   }
 }
