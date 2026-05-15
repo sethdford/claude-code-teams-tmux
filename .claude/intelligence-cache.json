@@ -33,14 +33,15 @@
         "primary_role": "builder",
         "secondary_roles": [
           "tester",
+          "optimizer",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Builder implements timeout and circuit breaker features; Tester validates edge cases and stress scenarios; Optimizer tunes thresholds and cost limits; Reviewer ensures code quality",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778808547,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,348 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "6f090a138fdbd95daad13d0c7e941a75": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Overly aggressive default limits could abort legitimate long-running pipelines prematurely",
+          "Real-time cost tracking overhead and accuracy of accumulated cost during execution",
+          "Checkpoint save could fail mid-abort, leaving incomplete or unresumable state",
+          "Emergency abort may leave partial artifacts, dangling processes, or incomplete cleanup",
+          "Potential timing conflicts between global timeout and existing per-stage timeout system"
+        ],
+        "implementation_hints": [
+          "Leverage existing sw-checkpoint.sh for state preservation on abort",
+          "Reuse cost tracking from sw-cost.sh; ensure costs are accurate at abort time",
+          "Monitor elapsed time and cost in main pipeline loop (sw-pipeline.sh), not individual stages",
+          "Add warning threshold at 80% of limits before triggering emergency abort for graceful degradation",
+          "Make limits easily overridable via CLI flags (--max-duration, --max-cost) and environment variables",
+          "Add configuration schema to daemon-config.json with documented defaults (4h timeout, $50 cost)",
+          "Test edge cases: timeout at stage boundaries, cost spikes mid-stage, resume from checkpoint, config hot-reload"
+        ]
+      },
+      "timestamp": 1778807880,
+      "ttl": 3600
+    },
+    "cdd5bdf9ff2023aa7020b5a360a55b85": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1778807892,
+      "ttl": 1800
+    },
+    "d244428cd3e697bfb4a04caeab917721": {
+      "result": {
+        "estimated_cost_usd": 0.45,
+        "estimated_iterations": 3,
+        "estimated_tokens": 105000,
+        "likely_failure_stage": "build",
+        "confidence": 78,
+        "reasoning": {
+          "cost_breakdown": {
+            "research_and_planning": 0.08,
+            "implementation": 0.24,
+            "testing": 0.10,
+            "review": 0.03
+          },
+          "token_distribution": {
+            "plan_stage": 12000,
+            "design_stage": 15000,
+            "build_stage": 50000,
+            "test_stage": 18000,
+            "review_stage": 10000
+          },
+          "iteration_factors": [
+            "Edge case handling for timeout at stage boundaries",
+            "Checkpoint save/restore validation during abort",
+            "Cost tracking accuracy verification mid-pipeline"
+          ],
+          "confidence_factors": {
+            "favorable": [
+              "Clear implementation hints provided",
+              "82% baseline success probability",
+              "Reusable existing checkpoint and cost modules"
+            ],
+            "risk_factors": [
+              "5/10 complexity with multiple integration points",
+              "Emergency abort path not well-tested in production",
+              "Potential timing conflicts with existing timeout system"
+            ]
+          }
+        }
+      },
+      "timestamp": 1778807905,
+      "ttl": 3600
+    },
+    "560590f2ff1910d7895c375a0019de0d": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "reliability",
+          "cost-management",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Config-driven limits and monitoring are straightforward; emergency abort with checkpoint save is moderate complexity; integration tests required but well-defined"
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design"
+          ],
+          "build": [
+            "cost-circuit-breaker-implementation"
+          ],
+          "review": [
+            "pr-quality",
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge default timeout (4h) and cost limit ($50) assumptions early—do they fit all repo types? What defines 'emergency abort' vs graceful shutdown?",
+          "architecture-design": "Document how global limits complement existing per-stage timeouts and #472 rate limiting to avoid redundant or conflicting policies",
+          "api-design": "Design config schema for timeout/cost that's intuitive, supports per-issue overrides, and integrates cleanly with daemon-config.json",
+          "cost-circuit-breaker-implementation": "Implement the monitoring loop, limit detection, graceful abort signals, checkpoint save, and resume path specific to Shipwright's pipeline architecture",
+          "pr-quality": "Present implementation clearly so reviewers can assess correctness of limit checks, cost accumulation, and abort behavior in under 5 minutes",
+          "adversarial-quality": "Attack the implementation: what if cost updates lag by 5 minutes? Clock skew? Checkpoint save fails during abort? Multiple processes checking limits simultaneously?",
+          "security-audit": "Verify emergency abort doesn't leak pipeline state, log secrets, or bypass access controls when shutting down mid-execution",
+          "testing-strategy": "Integration tests must prove timeout triggers within 1-2 minutes of limit, cost limit prevents overspend, and checkpoint preserves state for resume",
+          "validation-thoroughness": "Real-world validation: run pipelines with synthetic cost injection and verify actual abort behavior matches expected limits",
+          "deploy-safety": "Rollout strategy must preserve backward compatibility—existing pipelines without config should work safely with sensible defaults",
+          "observability": "Post-deploy monitoring of abort frequency, latency from limit exceeded to actual abort, and success rate of checkpoint-based resumes"
+        },
+        "generated_skills": [
+          {
+            "name": "cost-circuit-breaker-implementation",
+            "reason": "No existing skill covers implementing resource/cost-based circuit breakers for long-running agent pipelines—this requires specific guidance on monitoring loops, limit detection, abort signaling, and state preservation patterns unique to Shipwright's distributed architecture",
+            "content": "## Cost & Resource Circuit Breaker Implementation\n\n### Pattern Overview\n\nA circuit breaker for cost and duration limits must continuously monitor elapsed time and accumulated cost, detect when either limit is exceeded, trigger graceful abort (preserving state), and enable resume from the abort point.\n\n### Monitoring Loop Design\n\n**Check Frequency**: Sample limits every 30–60 seconds during pipeline execution. Balance overhead against detection latency: if stages are 5+ minutes, 60s is safe; if stages are under 2 minutes, use 30s.\n\n**Data Collection**:\n- **Elapsed time**: `$(date +%s) - $pipeline_start_time` (absolute, not wall-clock dependent)\n- **Accumulated cost**: Sum per-stage costs from `~/.shipwright/costs.json`, not live estimates\n- **Limit values**: Loaded at pipeline start, not live-updated (prevents limit-chasing mid-pipeline)\n\n**Atomicity**: Use file-based heartbeat markers (e.g., touching `.claude/pipeline-limit-check.json` with timestamp) to signal limit-exceeded conditions to the main pipeline process, avoiding race conditions from concurrent checks.\n\n### Limit Exceeded Detection\n\nCheck both limits at every monitoring interval:\n\n```bash\nelapsed_seconds=$(($(date +%s) - pipeline_start_time))\naccumulated_cost=$(jq -r '.total // 0' ~/.shipwright/costs.json)\n\nif [[ $elapsed_seconds -gt $global_timeout_seconds ]]; then\n  reason=\"Timeout: $elapsed_seconds seconds exceeds limit of $global_timeout_seconds\"\n  trigger_abort \"$reason\"\nfi\n\nif (( $(echo \"$accumulated_cost > $max_cost\" | bc) )); then\n  reason=\"Cost: \\$$accumulated_cost exceeds limit of \\$$max_cost\"\n  trigger_abort \"$reason\"\nfi\n```\n\n### Graceful Abort Signal\n\nDo NOT `kill -9` immediately. Follow this sequence:\n\n1. **Write abort signal**: Create `.claude/pipeline-abort.json` with reason, elapsed time, accumulated cost\n2. **Wait for clean exit**: Send SIGTERM to pipeline; stage loops must check for `.claude/pipeline-abort.json` between iterations and exit cleanly\n3. **Timeout escalation**: If process doesn't exit in 10 seconds, escalate to SIGKILL\n4. **Save checkpoint immediately**: Before cleanup, invoke `shipwright checkpoint save` to preserve state for resume\n\n```bash\ntrigger_abort() {\n  local reason=\"$1\"\n  \n  # Signal abort (pipeline reads abort.json and exits cleanly)\n  cat > .claude/pipeline-abort.json <<EOF\n{\"reason\":\"$reason\",\"elapsed_seconds\":$elapsed_seconds,\"accumulated_cost\":$accumulated_cost}\nEOF\n  \n  # Wait for graceful shutdown\n  wait $pipeline_pid || true\n  \n  # Save checkpoint BEFORE cleanup\n  shipwright checkpoint save \"Aborted: $reason\"\n  \n  exit 1\n}\n```\n\nStage loops must detect and respect abort:\n\n```bash\nwhile true; do\n  # Check for abort signal\n  if [[ -f .claude/pipeline-abort.json ]]; then\n    jq -r '.reason' .claude/pipeline-abort.json\n    exit 1\n  fi\n  \n  # Run stage work...\ndone\n```\n\n### Resume After Abort\n\nWhen user invokes `shipwright pipeline resume`:\n1. Load limits from config (may be updated since original abort)\n2. Load state from checkpoint\n3. Recalculate remaining budget: `$remaining_cost = $max_cost - $cost_at_checkpoint`\n4. Recalculate remaining time: `$remaining_seconds = $global_timeout - $elapsed_at_checkpoint`\n5. Continue from last completed stage with adjusted limits\n\nNotify operator:\n```\nPipeline aborted: Cost limit ($50) exceeded.\nAccumulated cost: $52.47\nElapsed time: 2h 15m\nCheckpoint saved. Resume with: shipwright pipeline resume\n```\n\n### Testing Checkpoints\n\n**Timeout Trigger Test**:\n- Start pipeline with `--timeout 30s` (very short for testing)\n- Verify abort fires between 30–35 seconds\n- Verify `pipeline-abort.json` contains timeout reason\n- Verify checkpoint saved and contains stage state\n- Verify `shipwright pipeline resume` restarts from same stage\n\n**Cost Limit Test**:\n- Mock cost system: inject staged cost updates via `~/.shipwright/costs.json`\n- Start pipeline with `--max-cost 40`; update costs to exceed at 50-second mark\n- Verify abort fires within 60 seconds of cost exceeding limit\n- Verify cost reason in abort.json\n- Verify cost in abort.json matches cost.json at abort time\n\n**Checkpoint Durability**:\n- Abort during build stage (not at start or end)\n- Verify `.claude/pipeline-artifacts/checkpoints/` contains complete stage state\n- Resume and verify it restores to exact same point (no re-run of completed stages)\n\n### Edge Cases & Mitigations\n\n**Cost update lag** (cost system delayed 5+ minutes): May exceed limit before detection triggers. Mitigation: Run limit checks 2× per average stage duration; use conservative cost estimates during lag windows.\n\n**Clock skew** (system clock jumps backward): Elapsed time goes negative. Mitigation: Use monotonic clock source (nanoseconds since boot, `/proc/uptime`) instead of wall-clock time.\n\n**Concurrent cost updates**: Multiple stages updating cost file. Mitigation: Enforce atomic writes (temp file + `mv`, never direct echo).\n\n**Abort during checkpoint save**: SIGTERM arrives while checkpoint writing. Mitigation: Checkpoint save is atomic (temp + mv); abort handler waits for in-flight checkpoints before SIGKILL escalation.\n\n**High-frequency limit checks**: Excessive file I/O. Mitigation: Batch checks every 60 seconds; use a background monitoring process rather than checking on every iteration.\n"
+          }
+        ],
+        "review_focus": [
+          "Correct limit detection logic—no off-by-one errors, proper comparison operators for cost (floating-point accuracy)",
+          "Cost accumulation accuracy—verify cost is summed from all sources, no missed stages, no double-counting",
+          "Checkpoint save reliability—ensure state is never lost even if abort signal arrives during checkpoint write",
+          "Default values appropriateness—4 hours and $50 fit typical repos? Document assumptions and provide override guidance",
+          "Resume path completeness—can operator always recover after abort? Cost and time limits honored on resume?",
+          "Integration test coverage—both timeout and cost limits tested, edge cases (lag, skew, concurrent updates) included",
+          "Backward compatibility—existing pipelines without global limits should work safely with sensible defaults"
+        ],
+        "risk_areas": [
+          "Cost data lag causing overspend (cost updated 5+ minutes late) before circuit breaker triggers",
+          "Checkpoint save failure during emergency abort resulting in lost pipeline state and unresumable failure",
+          "Clock skew or monotonic clock issues causing incorrect elapsed time and false/missed timeouts",
+          "Default limits too aggressive for some repos (4h too short for complex builds) or too conservative (overspend tolerance)",
+          "Race conditions if multiple monitoring processes check limits concurrently or checkpoint save races with abort",
+          "Cost floating-point comparison errors (use bc or equivalent, not bash arithmetic)"
+        ]
+      },
+      "timestamp": 1778808083,
+      "ttl": 3600
+    },
+    "b0511f4199cd9beb2e7dd5bf498b75da": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 90,
+            "summary": "Contains record of previous timeout bug fix in daemon with semaphore solution and backoff gotchas — directly applicable to global timeout feature design"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 55,
+            "summary": "Shows successful multi-iteration loop approaches (3 iterations, 45-150s duration) with bug fixes — relevant for planning iteration strategy and timeline estimation"
+          },
+          {
+            "file": "patterns.json (conventions)",
+            "relevance": 45,
+            "summary": "Documents project structure (Node/JavaScript/vitest) and file organization — essential context for planning where timeout and circuit breaker code will live"
+          },
+          {
+            "file": "failures.json (sw-cleanup heartbeat detection)",
+            "relevance": 35,
+            "summary": "Highlights heartbeat file detection and state summary output patterns — relevant for monitoring pipeline health during timeout/circuit-breaker implementation"
+          },
+          {
+            "file": "failures.json (ENOENT npm install)",
+            "relevance": 25,
+            "summary": "Shows common dependency setup failures — useful gotcha for planning test environment and ensuring prerequisites are addressed in implementation plan"
+          }
+        ]
+      },
+      "timestamp": 1778808147,
+      "ttl": 1800
+    },
+    "36d8ac0e970b71a72d8129de59df2416": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 85,
+            "summary": "Contains 'Fix timeout bug in daemon' issue with TIMEOUT error and files (sw-daemon.sh, daemon-dispatch.sh). Directly relevant to pipeline timeout feature; shows actual timeout problems and solutions from previous work."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 60,
+            "summary": "Demonstrates successful bug fix pattern using standard template with 3 iterations. Relevant for understanding what successful approaches to similar complexity issues look like and how many iterations were needed."
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 50,
+            "summary": "Project structure context (Node, vitest, JavaScript, CommonJS). Provides baseline understanding of test strategy and conventions that would apply to implementing the timeout/circuit breaker feature."
+          }
+        ]
+      },
+      "timestamp": 1778808371,
+      "ttl": 1800
+    },
+    "681bed6bb66512b821f1af9d8bf940d6": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 85,
+            "summary": "Contains timeout bug fix in daemon with semaphore solution pattern — directly applicable to designing timeout architecture and synchronization mechanisms"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 80,
+            "summary": "Defines architecture rules and patterns — foundational for ensuring circuit breaker and timeout design adheres to project architectural guidelines"
+          },
+          {
+            "file": "patterns.json (project info with conventions)",
+            "relevance": 50,
+            "summary": "Documents Node.js project structure, test patterns, and CommonJS conventions — essential context for placing timeout/circuit-breaker code in correct locations"
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a...)",
+            "relevance": 45,
+            "summary": "Shows successful bug fix implementation approach and file patterns used in similar complexity work — provides precedent for iterative development strategy"
+          },
+          {
+            "file": "metrics.json (baselines)",
+            "relevance": 38,
+            "summary": "Performance baseline data useful for establishing circuit breaker thresholds and timeout values backed by empirical metrics"
+          }
+        ]
+      },
+      "timestamp": 1778808404,
+      "ttl": 1800
+    },
+    "bc74c18ad12d2c22a17e15f0c71c1c79": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 95,
+            "summary": "Contains timeout bug fix pattern in daemon with 'added semaphore' success approach and 'check backoff' gotcha - directly informs timeout/circuit breaker design decisions"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 40,
+            "summary": "Architecture rules could constrain timeout/circuit breaker design, but specific rules not enumerated in provided content"
+          },
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 25,
+            "summary": "Project conventions (Node.js, vitest, commonjs) provide implementation context but not directly relevant to design anti-patterns"
+          }
+        ]
+      },
+      "timestamp": 1778808419,
+      "ttl": 1800
+    },
+    "7279691fdba63e897b3aa97daeef297d": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 90,
+            "summary": "Records timeout bug fix in sw-daemon.sh using semaphore solution. Directly addresses timeout handling pattern with emphasis on backoff checks—core to global timeout feature."
+          },
+          {
+            "file": "success-patterns.json (0bcf0637b6e487d7...)",
+            "relevance": 70,
+            "summary": "Feature implementation pattern showing 3-iteration loop approach with standard template. Demonstrates proven methodology for feature-stage work with comprehensive testing."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a8276951b...)",
+            "relevance": 65,
+            "summary": "Bug fix pattern with 3 iterations using loop approach. Shows file modification strategy (.claude state, scripts/) and test-driven iteration applicable to this build stage."
+          },
+          {
+            "file": "patterns.json (project info)",
+            "relevance": 55,
+            "summary": "Project structure: Node.js, vitest test runner, commonjs imports, src/ source directory. Essential for understanding where timeout/circuit-breaker code should live and how to test."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh)",
+            "relevance": 40,
+            "summary": "Dry-run detection and summary output pattern. Relevant for understanding how circuit breaker should detect stale/hung operations and communicate status."
+          }
+        ]
+      },
+      "timestamp": 1778808519,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions critical for build: Node.js with vitest, commonjs imports, src/ source dir, *.test.js test pattern. Directly informs build setup and test execution."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two successful prior builds show 3 iterations each, test strategy (npm test), file patterns touched (.claude/*, scripts/lib/*, .md), template (standard). Establishes baseline for current build expectations."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Prior timeout issue fixed with semaphore in daemon/dispatch code. Relevant for understanding timeout gotchas in build/test phases and proven resolution patterns."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Test failure in sw-cleanup.sh heartbeat detection. Shows what can break in test execution; helps avoid similar failures during current build's test phase."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 5,
+            "summary": "Empty baselines. Minimal relevance; would be useful if populated with build metrics from prior runs."
+          }
+        ]
+      },
+      "timestamp": 1778808533,
+      "ttl": 1800
     }
   }
 }
