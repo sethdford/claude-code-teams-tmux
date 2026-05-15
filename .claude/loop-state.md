@@ -307,15 +307,20 @@ Track over time:
 - False positive rate (rejected pipelines that would have succeeded)
 - Time saved by preventing wasted runs
 - Convergence: as patterns improve, rejection rate should drop
-"
-iteration: 1
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-15T19:22:21Z
-last_iteration_at: 2026-05-15T19:22:21Z
+started_at: 2026-05-15T19:28:42Z
+last_iteration_at: 2026-05-15T19:28:42Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -332,4 +337,9 @@ max_extensions: 3
 - **`scripts/sw-preflight-test.sh`** — 27 tests, all passing
 - Wired into `pipeline_start` (with `--force` / `--no-preflight` flags) and `daemon_spawn_pipeline` (auto-labels `pipeli
 - Registered `preflight` subcommand in `scripts/sw` and the test in `package.json`
+
+### Iteration 2 (2026-05-15T19:28:42Z)
+Fixed three issues this iteration:
+1. **Smoke test "Goal flag accepted"** — preflight now skips on `--dry-run` (scripts/lib/pipeline-commands.sh)
+2. **Audit: quote-counting heuristic** — replaced with `jq -er '.scripts.test // empty'` (scripts/lib/pipeline-preflig
 
