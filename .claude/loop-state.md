@@ -327,17 +327,27 @@ INSTRUCTION: This error has occurred 2 times. The previous approach is not worki
 - If you were modifying existing code, try rewriting the function from scratch
 - If you were using one library, try a different one
 - If you were adding to a file, try creating a new file instead
+- Step back and reconsider the requirements
+
+## Failure Diagnosis (Iteration 5)
+Classification: unknown
+Strategy: alternative_approach
+Repeat count: 3
+INSTRUCTION: This error has occurred 3 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
+- If you were modifying existing code, try rewriting the function from scratch
+- If you were using one library, try a different one
+- If you were adding to a file, try creating a new file instead
 - Step back and reconsider the requirements"
-iteration: 4
+iteration: 5
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-05-15T19:38:12Z
-last_iteration_at: 2026-05-15T19:38:12Z
+started_at: 2026-05-15T19:48:19Z
+last_iteration_at: 2026-05-15T19:48:19Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 3
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -364,5 +374,9 @@ LOOP_COMPLETE
 
 ### Iteration 4 (2026-05-15T19:38:12Z)
 Fixed the sed BSD/GNU compatibility issue in `scripts/sw-code-review-test.sh:40`. Test now passes on Linux. The pre-flig
+LOOP_COMPLETE
+
+### Iteration 5 (2026-05-15T19:48:19Z)
+Fixed the SIGPIPE race in `test_failure_classification_wired` — the `grep -A 50 | grep -q` pipeline failed under `pipe
 LOOP_COMPLETE
 
