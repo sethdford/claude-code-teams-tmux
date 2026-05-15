@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 3,
-      "last_seen": "2026-05-15T13:28:41Z",
+      "last_seen": "2026-05-15T13:31:17Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 4,
-      "last_seen": "2026-05-15T13:31:11Z",
+      "seen_count": 3,
+      "last_seen": "2026-05-15T08:05:56Z",
       "category": "test_failure"
     },
     {
@@ -30,11 +30,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeats or display 'Found N items' summary with '--force' hint",
-      "fix": "Update sw-cleanup.sh to scan heartbeat files and output stale heartbeat agent names, item count, and '--force' hint in dry-run mode",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-05-15T08:34:08Z",
-      "category": "test_failure"
+      "last_seen": "2026-05-15T08:34:08Z"
     }
   ]
 }
