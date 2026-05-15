@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Git state validation and pipeline stage cleanup is CI/CD infrastructure work. DevOps handles deployment pipelines and reliability; architect designs the validation strategy; builder implements the scripts.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1778808583,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,313 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "4394712d03f30f90ab7887860fbc487e": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 80,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Parallel stages with shared git state could cause stash conflicts",
+          "Over-aggressive cleanup could delete uncommitted developer work",
+          "Performance overhead of git operations before/after every stage",
+          "Manifest file synchronization complexity across 14 stages",
+          "Worktree isolation edge cases in multi-stage parallel execution",
+          "Atomicity guarantees when git operations fail in unusual states"
+        ],
+        "implementation_hints": [
+          "Create reusable git-state validation library (uncommitted, untracked, branch checks)",
+          "Generate stage manifests during build phase recording expected file changes",
+          "Use git stash with safety guards for auto-cleanup; provide clear rollback path",
+          "Integrate with checkpoint system for mid-pipeline recovery and audit trail",
+          "Store validation results in pipeline-state.md with actionable diagnostics",
+          "Test with concurrent worktree stages and dirty-state recovery scenarios",
+          "Add per-stage pre/post hooks calling validation before and after execution"
+        ]
+      },
+      "timestamp": 1778807897,
+      "ttl": 3600
+    },
+    "89a98c806a38f0bfd52f1f581f7dfab2": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1778807912,
+      "ttl": 1800
+    },
+    "21f0f6e950ff10d2b294104ee198d085": {
+      "result": {
+        "estimated_cost_usd": 3.8,
+        "estimated_iterations": 3,
+        "estimated_tokens": 480000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1778807923,
+      "ttl": 3600
+    },
+    "d7dfda91c7c8fd97127c6ef9047f001d": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "reliability",
+          "testing",
+          "quality"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Systematic changes across 14 pipeline stages with clear acceptance criteria, but requires careful state management and cross-platform compatibility. Integration testing complexity is moderate."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "git-state-validation-framework"
+          ],
+          "design": [
+            "architecture-design",
+            "git-state-validation-framework"
+          ],
+          "build": [
+            "git-state-validation-framework",
+            "testing-strategy"
+          ],
+          "review": [
+            "pr-quality",
+            "validation-thoroughness"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "collection-system-validation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about what 'clean git state' means across different stage types (build vs test vs deploy), platforms (Mac/Linux/CI), and concurrent execution (worktrees).",
+          "git-state-validation-framework": "Provides systematic patterns for before/after validation hooks, stage-specific manifest definition, auto-cleanup vs abort logic, and recovery strategies across all 14 stages.",
+          "architecture-design": "Document the validation framework architecture as an ADR so future developers understand why stages have specific manifests, when to auto-stash vs abort, and how to add validation to new stages.",
+          "testing-strategy": "Systematically test all validation paths including happy path (clean state), dirty state detection, false-positive handling, and platform-specific edge cases across different repo sizes.",
+          "pr-quality": "Changes touch 14+ stages and core pipeline logic—need a clear PR structure that explains the validation framework, manifest format, and per-stage changes without overwhelming reviewers.",
+          "validation-thoroughness": "Integration tests must go beyond detecting dirty state; validate that legitimate artifacts (node_modules, .build caches, IDE files) don't trigger false positives and that real-world pipelines still succeed.",
+          "adversarial-quality": "Find ways dirty state could bypass validation (race conditions in concurrent stages, worktree-specific files, CI environment artifacts) and test stash/abort logic for edge cases.",
+          "collection-system-validation": "Validation logic must check heterogeneous artifacts: uncommitted git changes, untracked files, branch state, and manifest-vs-reality divergence—similar challenge to validating complex event systems.",
+          "deploy-safety": "Validation is a safety mechanism; rollout should be careful (feature flag?), with monitoring for false positives before forcing all stages to validate."
+        },
+        "generated_skills": [
+          {
+            "name": "git-state-validation-framework",
+            "reason": "No existing skill covers the systematic design and implementation of multi-stage git validation with before/after hooks, manifest comparison, and recovery logic.",
+            "content": "## Git State Validation Framework\n\nThis skill guides design and implementation of git state validators that run before/after each pipeline stage, catching dirty state that could cascade into later failures.\n\n### Core Concepts\n\n**Validation Timing**:\n- **Before-stage validation**: Check for uncommitted changes, untracked files in src dirs, unexpected branches. Abort or auto-stash based on stage requirements.\n- **After-stage validation**: Compare actual file changes against stage manifest. Flag unexpected changes (dead code, leftover artifacts, IDE files) for manual review or auto-cleanup.\n\n**Stage Manifests**:\n- Each stage declares expected outputs: files that SHOULD change, patterns that MUST NOT change (node_modules, .env, dist/legacy)\n- Manifest examples: build stage expects src/**/*.js modified; test stage expects .coverage updated; review stage expects .github/CODEOWNERS or commits only\n- Manifests live in `.claude/pipeline-artifacts/stage-manifests.json` (generated at design time, audited per PR)\n\n**Recovery Strategies**:\n1. **Auto-stash** (safe stages): Preserve user changes, clear working tree. Example: before build, stash any local edits so clean build runs.\n2. **Abort with diagnostics** (gated stages): Don't proceed if state is dirty. Include: file list, branch status, suggested `git stash` or `git checkout -- .` commands.\n3. **Warn-only** (deploy stage): Log unexpected changes but proceed (human reviewer should inspect PR).\n\n**Implementation Patterns**:\n\n```bash\n# Before-stage check\nvalidate_before_stage \"build\" --allow-dirty-list \".env.local,.DS_Store\" || abort\n\n# After-stage check\nvalidate_after_stage \"build\" --manifest \".claude/pipeline-artifacts/stage-manifests.json\" || abort\n\n# Auto-stash on conflict\nif ! validate_before_stage \"test\"; then\n  git stash && git stash drop  # or: git checkout -- . for untracked\n  validate_before_stage \"test\" || abort  # re-check\nfi\n```\n\n**Cross-Platform Considerations**:\n- Line endings (CRLF vs LF) on Windows CI—use `git config core.autocrlf`\n- IDE-generated files (.vscode, .idea, .DS_Store)—allow-list in manifest\n- Docker/VM-specific paths in .gitignore—respect repo rules\n- Worktrees each have isolated git state—validate per worktree context\n\n**Manifest Evolution**:\n- Start with permissive manifests (only ban truly unexpected: node_modules, .env)\n- Tighten over time based on false positives (collect in pipeline metrics)\n- PRs that change manifests require explicit sign-off (safety gate)\n\n**Performance**:\n- Use `git status --porcelain` (fast) not `git diff` (slow on large repos)\n- Cache manifest parsing if validation runs multiple times per stage\n- For large repos, validate only changed files or use sparse checkout hints\n\n**Testing the Validators**:\n- Unit tests: validate() function with mock git state (dirty files, untracked, etc.)\n- Integration tests: real git repo with intentional dirty state, verify detection + recovery\n- Regression: run full pipeline with injected dirty state after each stage, confirm caught\n"
+          }
+        ],
+        "review_focus": [
+          "Manifest correctness: Does each stage's manifest accurately capture expected changes without over-specifying or under-specifying?",
+          "Auto-stash safety: Does stashing preserve user work and leave repo in a consistent state for the next stage?",
+          "False-positive rate: Do IDE files, build artifacts, and legitimate tool outputs trigger validation errors?",
+          "Abort clarity: When validation fails, are error messages actionable (which files are unexpected, suggested recovery commands)?",
+          "Cross-stage integration: Does validation in stage N prevent cascading failures in stages N+1...N+14?",
+          "Worktree isolation: Does git state validation work correctly with concurrent worktrees (each has own branch, working tree)?",
+          "CI/CD compatibility: Do validators work in Docker, GitHub Actions runners, and local dev environments without modification?"
+        ],
+        "risk_areas": [
+          "Over-aggressive validation breaks legitimate workflows (IDE auto-formatting, package manager lock file updates, build caches)",
+          "Stash/checkout logic accidentally discards user changes or fails atomically mid-operation",
+          "Manifest drift: manifests become out-of-sync with actual stage outputs, causing false positives in later runs",
+          "Performance regression: validation on large repos (100k+ files) slows pipeline unacceptably",
+          "Race conditions in concurrent worktrees: two stages validating same files simultaneously",
+          "CI environment detection: validators fail in exotic CI environments (GitHub Actions containers, cloud shells) due to missing git config or unusual PATH",
+          "Backward compatibility: adding validation to existing stages changes behavior in production pipelines mid-stream"
+        ]
+      },
+      "timestamp": 1778808036,
+      "ttl": 3600
+    },
+    "2fd56f5db0c0ae79f1649a0d374e7d96": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 85,
+            "summary": "Directly relevant to 'auto-cleanup' goal. Documents recent test failure in sw-cleanup.sh with specific root cause (stale heartbeat detection) and required fix (output 'Found N item(s)' with '--force' hint). Critical context for planning cleanup logic."
+          },
+          {
+            "file": "patterns.json (project conventions)",
+            "relevance": 80,
+            "summary": "Essential project structure context: Node.js, vitest test runner, commonjs imports, src/ source directory. Required knowledge for planning implementation in the correct architectural style."
+          },
+          {
+            "file": "issues.json (daemon timeout bug)",
+            "relevance": 62,
+            "summary": "Relevant to pipeline state management between stages. Documents a daemon timeout issue solved with semaphore pattern—applicable to git state validation coordination and avoiding concurrent conflicts."
+          },
+          {
+            "file": "success-patterns.json (fix bug pattern)",
+            "relevance": 48,
+            "summary": "Shows successful bug fix methodology: 3 iterations, npm test strategy, ~45 second duration, standard template. Provides reference for estimating similar-complexity work in the plan stage."
+          },
+          {
+            "file": "architecture.json (rules)",
+            "relevance": 42,
+            "summary": "Generic architecture rules (rule1, rule2, rule3—content not specified). May constrain design decisions during planning, but limited immediate context."
+          }
+        ]
+      },
+      "timestamp": 1778808110,
+      "ttl": 1800
+    },
+    "6b4bf3643b5f04e0376d59cdda27b2d8": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly addresses sw-cleanup.sh failures with stale heartbeat detection and dry-run output issues. Specific root cause: dry-run mode not detecting heartbeat files by name or outputting 'Found N item(s)' summary with '--force' hint. This is the exact cleanup component mentioned in the pipeline stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Shows successful loop-based iteration patterns (3-4 iterations) for fixing bugs with test strategies. Relevant for understanding how similar issues were resolved, file patterns changed, and commit strategies used."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 35,
+            "summary": "Documents daemon-related timeout bug fixes using semaphore pattern. Tangentially relevant for understanding daemon cleanup and state management issues, though not specific to git state validation."
+          }
+        ]
+      },
+      "timestamp": 1778808359,
+      "ttl": 1800
+    },
+    "8f7793049f4ca6d7ac6aae4d4057ab2b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sw-cleanup.sh dry-run)",
+            "relevance": 75,
+            "summary": "Directly relevant to auto-cleanup stage: documents sw-cleanup.sh stale heartbeat detection and output formatting patterns, which is core to the pipeline state validator task"
+          },
+          {
+            "file": "patterns.json (first entry with project conventions)",
+            "relevance": 50,
+            "summary": "Establishes project baseline: Node.js/vitest, CommonJS imports, test patterns in src/ — informs design decisions for git state validator implementation"
+          },
+          {
+            "file": "issues.json (daemon timeout pattern)",
+            "relevance": 45,
+            "summary": "Documents semaphore-based solution for daemon timeouts — relevant for understanding state management and synchronization patterns between pipeline stages"
+          },
+          {
+            "file": "success-patterns.json (first entry - bug fix pattern)",
+            "relevance": 40,
+            "summary": "Shows iteration and loop strategy patterns (npm test, 3+ iterations) — provides design context for how similar fixes are structured in this codebase"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 35,
+            "summary": "Architecture rules template (though currently empty) — placeholder for design-stage architecture patterns that should be populated during this stage"
+          }
+        ]
+      },
+      "timestamp": 1778808393,
+      "ttl": 1800
+    },
+    "1f8be875a4a41ccdd45061866f345a29": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sw-cleanup.sh stale heartbeat detection)",
+            "relevance": 95,
+            "summary": "Directly addresses anti-pattern in auto-cleanup logic: stale heartbeat detection not matching expected output format. Shows failure in dry-run mode where summary output and file detection were misaligned—critical insight for designing robust cleanup state validation."
+          },
+          {
+            "file": "issues.json (timeout bug in daemon)",
+            "relevance": 65,
+            "summary": "Demonstrates timeout/state management anti-pattern in daemon scheduling. Success pattern involved adding semaphores. Relevant to git state validation between pipeline stages to prevent race conditions and deadlocks."
+          },
+          {
+            "file": "success-patterns.json (Fix bug - outcome-feedback correction)",
+            "relevance": 55,
+            "summary": "Shows successful iteration pattern with post-audit cleanup phases. File patterns include .claude state files; demonstrates how to structure cleanup and validation logic across multiple iterations without leaving stale artifacts."
+          }
+        ]
+      },
+      "timestamp": 1778808405,
+      "ttl": 1800
+    },
+    "331d19bc1119cbe01ab2bd3c6f03e49b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (sw-cleanup.sh heartbeat detection)",
+            "relevance": 95,
+            "summary": "Directly addresses stale heartbeat detection and dry-run output in sw-cleanup.sh — the core component of auto-cleanup. Root cause and fix are documented for the exact failure pattern affecting this stage."
+          },
+          {
+            "file": "patterns.json (project conventions)",
+            "relevance": 80,
+            "summary": "Documents the project structure (src/, *.test.js pattern, vitest runner, commonjs imports) needed to understand how to build, test, and structure code for this Node.js project."
+          },
+          {
+            "file": "success-patterns.json (fix bug pattern)",
+            "relevance": 70,
+            "summary": "Shows successful 3-iteration build loop approach using npm test and standard template. Demonstrates proven iteration strategy and file patterns relevant to shell script fixes."
+          },
+          {
+            "file": "issues.json (daemon timeout fix)",
+            "relevance": 55,
+            "summary": "Related daemon issue showing successful semaphore pattern for solving timeout problems. Relevant to understanding daemon-related cleanup and state management issues."
+          },
+          {
+            "file": "failures.json (ENOENT missing dependency)",
+            "relevance": 40,
+            "summary": "Generic pattern for missing dependency failures. Could apply if test setup requires npm install, though lower priority than domain-specific cleanup patterns."
+          }
+        ]
+      },
+      "timestamp": 1778808558,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions (src/ directory, vitest test runner, commonjs imports) define how code must be written during build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Previous successful builds show iteration patterns, file modification locations (scripts/lib/*.sh, scripts/*.sh), and test strategies that inform current implementation"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Recorded gotchas from past work (timeout handling, semaphore usage, backoff logic) help avoid regressions during build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Previous test failure patterns (sw-cleanup.sh output format issues) alert to edge cases to handle during implementation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Empty baselines have minimal value for active build work; more useful post-build for comparison"
+          }
+        ]
+      },
+      "timestamp": 1778808572,
+      "ttl": 1800
     }
   }
 }

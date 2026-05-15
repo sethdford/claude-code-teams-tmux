@@ -36,6 +36,13 @@ elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
     source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
 fi
 
+# Ensure git-state-validator module is loaded
+if [[ -f "$SCRIPT_DIR/git-state-validator.sh" ]]; then
+    source "$SCRIPT_DIR/git-state-validator.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/lib/git-state-validator.sh" ]]; then
+    source "$SCRIPT_DIR/lib/git-state-validator.sh" 2>/dev/null || true
+fi
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -46,7 +53,20 @@ run_stage_with_retry() {
     local attempt=0
     local prev_error_class=""
     while true; do
+        # Capture git state before stage execution
+        local _pre_stage_sha
+        _pre_stage_sha=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+        # Validate git state before stage
+        if ! validate_before_stage "$stage_id"; then
+            LAST_STAGE_ERROR_CLASS="git_state_dirty"
+            return 1
+        fi
+
+        # Execute stage
         if "stage_${stage_id}"; then
+            # Validate git state after stage
+            validate_after_stage "$stage_id" "$_pre_stage_sha" || true
             return 0
         fi
 
