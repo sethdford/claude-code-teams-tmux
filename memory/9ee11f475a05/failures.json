@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 4,
-      "last_seen": "2026-05-16T17:52:55Z",
+      "last_seen": "2026-05-16T19:00:41Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 9,
-      "last_seen": "2026-05-16T19:10:58Z",
+      "seen_count": 8,
+      "last_seen": "2026-05-16T19:09:08Z",
       "category": "test_failure"
     },
     {
@@ -58,18 +58,18 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
       "fix": "fix the regression detection output in sw-feedback.sh to emit valid JSON when detecting regressions",
-      "seen_count": 3,
-      "last_seen": "2026-05-16T18:46:44Z",
+      "seen_count": 1,
+      "last_seen": "2026-05-15T20:34:10Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "All tests in the log output are passing — no actual test failure is present in the provided log",
-      "fix": "Check earlier log output or a different stage for the real failure; the provided 200 lines show only passing tests",
+      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or malformed output",
+      "fix": "fix the regression detection output in sw-feedback.sh to emit valid JSON when reporting regression detection results",
       "seen_count": 1,
       "last_seen": "2026-05-16T08:12:27Z",
-      "category": "unknown"
+      "category": "test_failure"
     }
   ]
 }
