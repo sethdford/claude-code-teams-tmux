@@ -1,1 +1,10 @@
-{"entries":[],"summary":{}}
+{
+  "entries": [
+    {"stage": "intake", "model": "haiku", "cost_usd": 0.05, "ts_epoch": 1778955371, "tokens": {"input": 100, "output": 50}},
+    {"stage": "build", "model": "opus", "cost_usd": 2.50, "ts_epoch": 1778955371, "tokens": {"input": 5000, "output": 2000}},
+    {"stage": "build", "model": "sonnet", "cost_usd": 0.80, "ts_epoch": 1778955371, "tokens": {"input": 2000, "output": 1000}},
+    {"stage": "test", "model": "sonnet", "cost_usd": 0.60, "ts_epoch": 1778955371, "tokens": {"input": 1500, "output": 500}},
+    {"stage": "review", "model": "opus", "cost_usd": 1.20, "ts_epoch": 1778955371, "tokens": {"input": 3000, "output": 1500}}
+  ],
+  "summary": {"total_cost": 5.15, "by_model": {"haiku": 0.05, "sonnet": 1.40, "opus": 3.70}}
+}
