@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 4,
-      "last_seen": "2026-05-16T13:21:16Z",
+      "last_seen": "2026-05-16T13:18:00Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
       "seen_count": 8,
-      "last_seen": "2026-05-16T13:35:45Z",
+      "last_seen": "2026-05-16T13:35:47Z",
       "category": "test_failure"
     },
     {
@@ -65,8 +65,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references TEST_TEMP_DIR variable that is not expanded before being passed as a sed script argument",
-      "fix": "ensure TEST_TEMP_DIR is exported or use double quotes around the sed expression so the variable expands before sed receives it",
+      "root_cause": "sed command fails because it receives a literal string 'g' as a file argument instead of being used as an inline substitution — likely a quoting/escaping issue where the -e flag was omitted or the sed expression was split incorrectly",
+      "fix": "Fix the sed invocation to use 'sed -e \"s|$TEST_TEMP_DIR|...|g\"' with the -e flag, or use a heredoc/variable expansion approach that avoids passing the expression as a filename",
       "seen_count": 1,
       "last_seen": "2026-05-16T08:12:27Z",
       "category": "test_failure"
