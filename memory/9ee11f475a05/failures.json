@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
-      "seen_count": 6,
-      "last_seen": "2026-05-16T07:47:22Z",
+      "seen_count": 3,
+      "last_seen": "2026-05-15T19:28:44Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 6,
-      "last_seen": "2026-05-16T07:52:55Z",
+      "seen_count": 7,
+      "last_seen": "2026-05-16T08:11:39Z",
       "category": "test_failure"
     },
     {
@@ -24,7 +24,7 @@
       "root_cause": "mktemp fails because /tmp/claude directory does not exist before test temp dirs are created",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in the test harness, or change the mktemp template to use /tmp directly (mktemp -d /tmp/sw-test-XXXXXX)",
       "seen_count": 2,
-      "last_seen": "2026-05-16T08:06:30Z",
+      "last_seen": "2026-05-16T07:32:12Z",
       "category": "config"
     },
     {
@@ -33,13 +33,7 @@
       "root_cause": "",
       "fix": "",
       "seen_count": 2,
-      "last_seen": "2026-05-15T19:38:14Z",
-      "category": "unknown",
-      "subcategory": "other",
-      "severity": "low",
-      "impact_weight": 0.3,
-      "fix_attempts": 0,
-      "fix_successes": 0
+      "last_seen": "2026-05-15T19:38:14Z"
     },
     {
       "stage": "test",
@@ -55,32 +49,18 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "jq fails to parse quality-profile.json because a field contains an empty string where JSON value is expected, causing learned rule generation to produce invalid JSON",
       "fix": "Guard the jq learned rule generation against empty/null confidence values by adding a default filter (e.g., `// empty` or `// \"0\"`) before writing to quality-profile.json",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T19:56:46Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-16T07:36:24Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "All test suites shown in the log are passing (17/17, 12/12, 10/10, 20/20) — no actual test failure visible in the provided log excerpt",
-      "fix": "Review the full test output beyond these 200 lines to find the actual failing test suite; the pipeline exit code 1 likely comes from a test suite not shown in this excerpt",
+      "root_cause": "Test suite exit code is 1 despite all individual tests passing, suggesting a test runner script returns failure when no tests are registered (e.g. sw-hello-test.sh runs 0 tests)",
+      "fix": "Ensure sw-hello-test.sh registers and runs at least one test, or fix the test runner to exit 0 when all registered tests pass even if count is 0",
       "seen_count": 1,
       "last_seen": "2026-05-15T20:34:10Z",
-      "category": "unknown"
-    },
-    {
-      "stage": "test",
-      "pattern": "AssertionError: expected 1 == 2",
-      "root_cause": "mktemp failed because /tmp/claude directory does not exist on the test host",
-      "fix": "Create /tmp/claude directory before running tests, or update test setup to use mktemp with a path that exists (e.g., /tmp/sw-test-XXXXXX)",
-      "seen_count": 3,
-      "last_seen": "2026-05-16T07:31:51Z",
-      "category": "config",
-      "subcategory": "assertion",
-      "severity": "high",
-      "impact_weight": 0.8,
-      "fix_attempts": 0,
-      "fix_successes": 0
+      "category": "test_failure"
     }
   ]
 }
