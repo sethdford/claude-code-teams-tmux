@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 4,
-      "last_seen": "2026-05-16T19:03:33Z",
+      "last_seen": "2026-05-16T18:57:58Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
       "seen_count": 7,
-      "last_seen": "2026-05-16T19:06:51Z",
+      "last_seen": "2026-05-16T19:03:18Z",
       "category": "test_failure"
     },
     {
@@ -65,8 +65,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded before being used as a filename argument",
-      "fix": "Quote the sed expression correctly using double quotes or pre-expand the variable before passing to sed",
+      "root_cause": "sed command references a literal variable name '$TEST_TEMP_DIR' as a filename instead of expanding it, causing 'No such file or directory'",
+      "fix": "Quote the sed expression correctly so $TEST_TEMP_DIR is expanded by the shell before sed receives it, e.g. use double quotes: sed \"s|$TEST_TEMP_DIR|/tmp/...|g\"",
       "seen_count": 1,
       "last_seen": "2026-05-16T08:12:27Z",
       "category": "test_failure"
