@@ -7039,3 +7039,27 @@
 {"ts":"2026-05-16T13:42:15Z","ts_epoch":1778938935,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":16986,"trimmed_prompt_chars":16986,"trim_ratio":0.0,"budget_utilization":8.5,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-05-16T13:42:18Z","ts_epoch":1778938938,"type":"pipeline.context_exhaustion","issue":504,"stage":"build"}
 {"ts":"2026-05-16T13:42:21Z","ts_epoch":1778938941,"type":"stage.failed","event_id":"evt-1778938941-3561854298","payload":"{\"stage\":\"build\",\"issue\":\"504\",\"timing\":\"31m 15s\"}"}
+{"ts":"2026-05-16T18:10:18Z","ts_epoch":1778955018,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"infrastructure"}
+{"ts":"2026-05-16T18:10:18Z","ts_epoch":1778955018,"type":"reasoning.trace","job_id":"pipeline-3856-509","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-16T18:10:43Z","ts_epoch":1778955043,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"infrastructure"}
+{"ts":"2026-05-16T18:11:03Z","ts_epoch":1778955063,"type":"intelligence.estimate_iterations","estimate":5,"complexity":5,"source":"claude"}
+{"ts":"2026-05-16T18:11:16Z","ts_epoch":1778955076,"type":"intelligence.prediction","estimated_cost":0.18,"estimated_iterations":2,"complexity":5}
+{"ts":"2026-05-16T18:11:18Z","ts_epoch":1778955078,"type":"checks.pipeline_start","stages":13}
+{"ts":"2026-05-16T18:11:18Z","ts_epoch":1778955078,"type":"pipeline.started","issue":509,"template":"autonomous","complexity":5,"machine":"runnervmrw5os","pipeline":"autonomous","model":"opus","goal":"** Failure Message Context Enhancement Engine"}
+{"ts":"2026-05-16T18:11:18Z","ts_epoch":1778955078,"type":"pipeline.started","event_id":"evt-1778955078-1284840338","payload":"{\"issue\":\"509\",\"pipeline\":\"autonomous\",\"goal\":\"** Failure Message Context Enhancement Engine\"}"}
+{"ts":"2026-05-16T18:11:18Z","ts_epoch":1778955078,"type":"stage.skipped","issue":509,"stage":"intake","reason":"ci_resume"}
+{"ts":"2026-05-16T18:11:19Z","ts_epoch":1778955079,"type":"intelligence.model","stage":"spec_generation","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-16T18:11:19Z","ts_epoch":1778955079,"type":"intelligence.model_ab","issue":509,"stage":"spec_generation","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-05-16T18:11:19Z","ts_epoch":1778955079,"type":"stage.started","issue":509,"stage":"spec_generation"}
+{"ts":"2026-05-16T18:11:19Z","ts_epoch":1778955079,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/-failure-message-context-enhancement-engine.json","complexity":"simple","issue":509}
+{"ts":"2026-05-16T18:11:29Z","ts_epoch":1778955089,"type":"spec_generation.completed","issue":509,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"stage.complete","event_id":"evt-1778955091-385553297","payload":"{\"stage\":\"spec_generation\",\"issue\":\"509\",\"timing\":\"10s\"}"}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"stage.completed","issue":509,"stage":"spec_generation","duration_s":12,"result":"success"}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"vitals.snapshot","issue":509,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"stage.artifact_miss","issue":509,"stage":"plan"}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"intelligence.model","stage":"plan","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-16T18:11:31Z","ts_epoch":1778955091,"type":"intelligence.model_ab","issue":509,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-16T18:11:32Z","ts_epoch":1778955092,"type":"stage.started","issue":509,"stage":"plan"}
+{"ts":"2026-05-16T18:12:06Z","ts_epoch":1778955126,"type":"stage.failed","event_id":"evt-1778955126-2207604696","payload":"{\"stage\":\"plan\",\"issue\":\"509\",\"timing\":\"32s\"}"}
+{"ts":"2026-05-16T18:12:06Z","ts_epoch":1778955126,"type":"stage.failed","issue":509,"stage":"plan","duration_s":34,"error":"unknown","error_class":"unknown"}
+{"ts":"2026-05-16T18:12:06Z","ts_epoch":1778955126,"type":"vitals.snapshot","issue":509,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
