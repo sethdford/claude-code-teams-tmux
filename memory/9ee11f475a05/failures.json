@@ -49,8 +49,8 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "jq fails to parse quality-profile.json because a field contains an empty string where JSON value is expected, causing learned rule generation to produce invalid JSON",
       "fix": "Guard the jq learned rule generation against empty/null confidence values by adding a default filter (e.g., `// empty` or `// \"0\"`) before writing to quality-profile.json",
-      "seen_count": 1,
-      "last_seen": "2026-05-15T19:56:46Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-16T08:03:20Z",
       "category": "test_failure"
     },
     {
@@ -61,6 +61,15 @@
       "seen_count": 1,
       "last_seen": "2026-05-15T20:34:10Z",
       "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "jq fails parsing quality-profile.json with 'Expected JSON value (while parsing '')' at line 5, causing learned rule generation to produce empty confidence and invalid JSON output",
+      "fix": "Ensure quality-profile.json is initialized with valid JSON before jq reads it; add a guard in the learned rule generation code to validate or default the confidence field when the source JSON is empty or malformed",
+      "seen_count": 1,
+      "last_seen": "2026-05-16T07:36:15Z",
+      "category": "test_failure"
     }
   ]
 }
