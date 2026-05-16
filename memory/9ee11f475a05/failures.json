@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
-      "seen_count": 3,
-      "last_seen": "2026-05-15T19:28:44Z",
+      "seen_count": 4,
+      "last_seen": "2026-05-16T01:27:15Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 5,
-      "last_seen": "2026-05-15T19:48:21Z",
+      "seen_count": 6,
+      "last_seen": "2026-05-16T01:42:47Z",
       "category": "test_failure"
     },
     {
@@ -56,11 +56,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "All test suites shown in the log are passing (17/17, 12/12, 10/10, 20/20) — no actual test failure visible in the provided log excerpt",
-      "fix": "Review the full test output beyond these 200 lines to find the actual failing test suite; the pipeline exit code 1 likely comes from a test suite not shown in this excerpt",
+      "root_cause": "All test suites passed but the pipeline exit code defaulted to 1, likely due to a test suite reporting '0 tests passed' (guild test shows 'All 0 tests passed') or a script exiting with non-zero despite passing tests",
+      "fix": "Investigate why the pipeline exit code is 1 despite all individual test suites passing; check if the guild test count aggregation is returning 0 tests and causing a failure condition",
       "seen_count": 1,
       "last_seen": "2026-05-15T20:34:10Z",
-      "category": "unknown"
+      "category": "flaky"
     }
   ]
 }
