@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not detect stale heartbeat files or display 'Found N' summary with '--force' hint",
       "fix": "Fix heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory and output the count summary with '--force' hint when items are found",
       "seen_count": 4,
-      "last_seen": "2026-05-16T13:23:12Z",
+      "last_seen": "2026-05-16T13:21:56Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or empty output",
       "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called in test context",
-      "seen_count": 7,
-      "last_seen": "2026-05-16T13:35:55Z",
+      "seen_count": 8,
+      "last_seen": "2026-05-16T13:36:15Z",
       "category": "test_failure"
     },
     {
@@ -65,8 +65,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, tests expect 'agent-1' in heartbeat scan output and 'Found'/'--force' in summary but script produces different output",
-      "fix": "update sw-cleanup.sh heartbeat detection to output the heartbeat file/agent name and ensure dry-run summary prints 'Found N items' and '--force' hint",
+      "root_cause": "sed command references a non-existent file path as a sed script instead of using -e flag for inline expression",
+      "fix": "Replace `sed 's|$TEST_TEMP_DIR|...|g'` pattern with proper inline sed expression using -e flag: `sed -e \"s|$TEST_TEMP_DIR|...|g\"`",
       "seen_count": 1,
       "last_seen": "2026-05-16T08:12:27Z",
       "category": "test_failure"
