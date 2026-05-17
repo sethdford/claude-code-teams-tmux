@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-05-17T12:51:45Z",
+      "last_seen": "2026-05-17T12:54:44Z",
       "category": "test_failure"
     },
     {
@@ -21,11 +21,11 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp cannot create temp dirs under /tmp/claude/ because that parent directory does not exist in the CI environment",
-      "fix": "Create /tmp/claude/ before calling mktemp, or use mktemp -d /tmp/sw-test-XXXXXX without the subdirectory path",
+      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist on this system, and separately sw-cleanup-test.sh has 3 real test failures around heartbeat detection and summary output",
+      "fix": "create /tmp/claude directory before running tests (mkdir -p /tmp/claude), and fix sw-cleanup-test.sh heartbeat detection and Found/--force summary output",
       "seen_count": 1,
       "last_seen": "2026-05-17T08:12:25Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
