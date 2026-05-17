@@ -3,28 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run output does not emit stale heartbeat names or 'Found'/'--force' hint text in its summary section",
-      "fix": "Update sw-cleanup.sh to print detected item names during dry-run scan and add a 'Found N items — re-run with --force' summary line when items are detected",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and does not emit the expected 'Found' count summary or '--force' hint in its output",
+      "fix": "Fix the heartbeat staleness detection logic in sw-cleanup.sh to correctly find and report stale heartbeat files, and ensure the dry-run summary prints 'Found N item(s)' and the '--force' usage hint when items are detected",
       "seen_count": 1,
-      "last_seen": "2026-05-17T07:41:40Z",
+      "last_seen": "2026-05-17T07:42:17Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
-      "fix": "update sw-feedback.sh regression detection subcommand to output valid JSON or fix the test assertion to match actual output format",
-      "seen_count": 3,
-      "last_seen": "2026-05-17T08:18:08Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "All test suites in the log show passing results with no failures detected",
-      "fix": "No fix needed - all tests passed; re-examine full log for actual failure point outside this excerpt",
-      "seen_count": 1,
-      "last_seen": "2026-05-17T08:06:17Z",
+      "root_cause": "All visible test suites are passing with no failures detected in the log output",
+      "fix": "No fix needed - review full log output to find the actual failing test beyond the 200-line window",
+      "seen_count": 2,
+      "last_seen": "2026-05-17T08:23:19Z",
       "category": "unknown"
     }
   ]
