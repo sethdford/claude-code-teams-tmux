@@ -33,6 +33,8 @@ if [[ -f "$SCRIPT_DIR/sw-db.sh" ]]; then
 fi
 # Cross-pipeline discovery (learnings from other pipeline runs)
 [[ -f "$SCRIPT_DIR/sw-discovery.sh" ]] && source "$SCRIPT_DIR/sw-discovery.sh" 2>/dev/null || true
+# Success pattern injection engine (learn from successful builds)
+[[ -f "$SCRIPT_DIR/lib/success-patterns.sh" ]] && source "$SCRIPT_DIR/lib/success-patterns.sh" 2>/dev/null || true
 # Source loop sub-modules for modular iteration management
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
@@ -1915,29 +1917,21 @@ PROMPT
     # Inject success patterns on iteration 1
     local injection_id=""
     if [[ "$ITERATION" -eq 1 ]]; then
-        # Simple injection from success history if available
-        local injection_snippet=""
+        if type sp_inject_for_loop >/dev/null 2>&1; then
+            local injection_result
+            injection_result=$(sp_inject_for_loop "$GOAL" "" 2>/dev/null || echo "{}")
 
-        # Look for any repo's success patterns in memory
-        if [[ -d "${HOME}/.shipwright/memory" ]]; then
-            # Find most recent success pattern file
-            local pattern_file=$(find "${HOME}/.shipwright/memory" -name "success-patterns.json" -type f 2>/dev/null | head -1)
-            if [[ -f "$pattern_file" ]]; then
-                local test_strategy iterations
-                test_strategy=$(jq -r '.patterns[0].test_strategy // "npm test"' "$pattern_file" 2>/dev/null || echo "")
-                iterations=$(jq -r '.patterns[0].iterations // 3' "$pattern_file" 2>/dev/null || echo "")
-                if [[ -n "$test_strategy" ]]; then
-                    injection_snippet=$'## ✅ Build Pattern\n- Test: '"$test_strategy"$'\n- Iterations: '"$iterations"$'\n- Strategy: one fix per iteration'
-                fi
+            # Extract injection_id and snippet
+            injection_id=$(echo "$injection_result" | jq -r '.injection_id // ""' 2>/dev/null || echo "")
+            local injection_snippet
+            injection_snippet=$(echo "$injection_result" | jq -r '.snippet // ""' 2>/dev/null || echo "")
+
+            if [[ -n "$injection_snippet" ]]; then
+                PROMPT+=$'\n\n'"$injection_snippet"
             fi
-        fi
-
-        # Default pattern if nothing found
-        if [[ -z "$injection_snippet" ]]; then
-            injection_snippet=$'## ✅ Success Pattern\n- Run full test suite to ensure quality\n- Keep iterations focused and atomic\n- One problem solved per iteration'
-        fi
-
-        if [[ -n "$injection_snippet" ]]; then
+        else
+            # Fallback if library not available
+            local injection_snippet=$'## ✅ Success Pattern\n- Run full test suite to ensure quality\n- Keep iterations focused and atomic\n- One problem solved per iteration'
             PROMPT+=$'\n\n'"$injection_snippet"
             injection_id="inj-${ITERATION}-$(date +%s)"
         fi
