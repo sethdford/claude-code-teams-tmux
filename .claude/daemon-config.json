@@ -46,6 +46,16 @@
     "hard_restart_cap": 5,
     "max_restarts": 3
   },
+  "success_patterns": {
+    "enabled": true,
+    "similarity_threshold": 60,
+    "max_inject": 3,
+    "weights": {
+      "title": 40,
+      "files": 35,
+      "error": 25
+    }
+  },
   "max_turns": {
     "pipeline_stage": 30
   },
