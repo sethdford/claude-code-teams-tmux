@@ -1,1 +1,84 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my thorough analysis of the cumulative work across iteration 1, I've identified several issues that need attention:
+
+## Issues Found
+
+### 1. **Test Suite Not Registered in package.json** (BLOCKER)
+- **Location**: `package.json` line 39
+- **Issue**: `sw-success-patterns-test.sh` is NOT included in the `test` script, so `npm test` never runs it
+- **Impact**: Task 12 incomplete; the test suite exists but isn't part of the CI pipeline
+- **Fix**: Add `bash scripts/sw-success-patterns-test.sh &&` to the test script in `package.json`
+
+### 2. **Test Assertions Have Formatting Bugs** (3 failures)
+- **Locations**: Lines 108-109, 124-125, 193-194 in `sw-success-patterns-test.sh`
+- **Issue**: Using `jq 'type'` returns quoted strings (e.g., `"array"` with quotes), but assertions compare to unquoted values
+  - Current: `assert_equal "\"array\"" "array"` → FAIL
+  - Expected: `assert_equal "array" "array"` → PASS
+- **Fix**: Use `jq -r 'type'` (raw output) to strip the quotes from jq's output
+- **Impact**: Test currently reports 18 pass, 3 fail
+
+### 3. **Integration Tasks Not Complete** (Expected, not blocking)
+- **Task 6**: `sp_render_injection` NOT wired into `sw-loop.sh` — injection doesn't happen at iteration 1 or test-fail re-entry
+- **Task 7**: `sp_record_outcome` NOT integrated with `memory_finalize_pipeline` — outcome tracking doesn't work
+- **Status**: Agent correctly marked as "Remaining for Iteration 2+", so this is expected
+
+### 4. **Unused Function**
+- **Location**: `scripts/lib/success-patterns.sh` lines 93-118
+- **Issue**: `_sp_jaccard` function is defined but never called; actual scoring uses simple substring matching instead
+- **Impact**: Harmless dead code (no security/logic issue), suggests design evolved from embedding-based approach
+- **Fix**: Either use it in scoring or remove it
+
+### 5. **Potential Logic Issue in `sp_render_injection`**
+- **Location**: Lines 198-232 in `scripts/lib/success-patterns.sh`
+- **Issue**: The fragment rendering loop writes to a temp file, but the loop uses `>> append` while iterating over jq's streaming output. The logic is convoluted:
+  ```bash
+  echo "$top_k_json" | jq -c '.[]' | while read -r item; do
+      # ... build pattern ...
+      echo "..." >> /tmp/sp_fragment_$$.txt  # appending in subshell
+  done
+  fragment=$(cat /tmp/sp_fragment_$$.txt)  # read after loop
+  ```
+- **Better approach**: Pipe directly to accumulate output rather than using a temp file in a subshell
+- **Impact**: Works correctly but is fragile and harder to understand
+
+## Strengths
+
+✅ **Core library is solid**:
+- Bash 3.2 compatible with proper `set -euo pipefail` and ERR trap
+- No security vulnerabilities (proper quoting, no eval/unsafe patterns)
+- Scoring algorithm is deterministic and tunable
+- Config integration via daemon-config.json is in place
+- CLI wrapper (`sw-success-patterns.sh`) is functional and registered in router
+
+✅ **Good separation of concerns**:
+- Library (`scripts/lib/success-patterns.sh`) for core logic
+- CLI wrapper for user-facing commands
+- Config-driven behavior with sensible defaults
+- Proper event logging
+
+✅ **Design choices are sound**:
+- Heuristic scoring (not LLM-based) keeps latency <500ms
+- Top-K filtering with configurable threshold
+- Markdown injection format for loop integration
+- JSONL-based outcome tracking for atomicity
+
+## Summary
+
+The work is approximately **75% complete**. The agent made meaningful progress building a solid foundation:
+- ✅ Core library implemented and tested
+- ✅ CLI interface working
+- ✅ Config integration in place
+- ❌ Test registration incomplete (Task 12)
+- ❌ Test assertions failing (3 failures, fixable)
+- ❌ Loop/memory integration incomplete (Tasks 6-7, expected for iter 2)
+
+**Recommendation**: Fix issues #1-2 (test registration and assertion formatting) before considering iteration complete. Issues #3 (integration tasks) are correctly scoped as "Iteration 2+" work.
+
+AUDIT_FAIL
+
+**Critical fixes needed before accepting:**
+1. Register `sw-success-patterns-test.sh` in package.json's test script
+2. Fix test assertions to use `jq -r 'type'` instead of `jq 'type'`
