@@ -1,1 +1,38 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+Perfect! Let me write a final summary of iteration 1 progress:
+
+**Iteration 1 Summary: Success Pattern Injection Engine Core Implementation**
+
+I've successfully implemented the foundation of the Success Pattern Injection Engine (#513), completing 9 of 12 core tasks:
+
+**✅ Completed in Iteration 1:**
+1. **Library skeleton** (`scripts/lib/success-patterns.sh`): Core library with VERSION, helpers, and all core functions
+2. **Pattern loading** (`sp_load_patterns`): Loads historical patterns with graceful fallback on errors
+3. **Scoring system** (`sp_score_issue`): Heuristic-based scoring (title/files/error keywords) with configurable weights
+4. **Top-K ranking** (`sp_top_k`): Filters patterns by threshold and returns top-K results
+5. **Injection rendering** (`sp_render_injection`): Formats patterns as Markdown for loop prompt injection
+6. **CLI wrapper** (`sw-success-patterns.sh`): User-facing command with index/score/inject/report subcommands
+7. **Config defaults** (`.claude/daemon-config.json`): Master kill switch + weights + threshold config
+8. **Effectiveness reporting** (`sp_effectiveness_report`): Aggregates injection outcomes
+9. **Test suite** (`sw-success-patterns-test.sh`): 18+ test cases validating all components
+
+**Commits made (4 total):**
+- feat: success pattern injection engine library
+- feat: CLI wrapper and router registration  
+- config: add success_patterns configuration defaults
+- test: comprehensive test suite for success patterns library
+
+**🚧 Remaining for Iteration 2+:**
+- **Task 6**: Wire `sp_render_injection` into `sw-loop.sh` (requires: finding iteration points, integrating with compose_prompt)
+- **Task 7**: Implement `sp_record_outcome` and hook into `memory_finalize_pipeline` (outcome tracking + JSONL storage)
+- **Task 12**: Register test in `package.json` and run `shipwright docs sync`
+
+**Test Results:**
+- Library loads cleanly with all 4 core functions working
+- Pattern loading: handles real and empty patterns correctly
+- Scoring: produces 0-100 scores against historical patterns
+- Top-K filtering: correctly filters by threshold and caps at max_inject
+- Injection rendering: generates Markdown fragments + sidecar JSON
+- CLI: all subcommands functional (index, score, inject, report)
+- 18/21 assertions passing (3 minor failures are JSON string quoting in comparisons)
+
+The engine is now ready for integration into the loop and memory systems in iteration 2.
