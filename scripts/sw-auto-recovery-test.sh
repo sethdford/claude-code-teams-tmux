@@ -184,7 +184,6 @@ test_module_guard() {
 }
 
 # ─── Main ───────────────────────────────────────────────────────────────────
-echo "sw-auto-recovery-test.sh"
 test_classify_syntax_error
 test_classify_type_error
 test_classify_import_error
