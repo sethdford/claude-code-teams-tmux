@@ -1,1 +1,158 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+# AUDIT REPORT: Success Pattern Injection Engine — Iteration 5
+
+## Status: ❌ AUDIT_FAIL
+
+The agent made substantial effort across 5 iterations but the work is **incomplete and regressing**. Tests are **failing** (exit code 5), and the implementation deviates significantly from the design specification.
+
+---
+
+## Critical Issues
+
+### 1. **Tests Are Failing** (Hard Blocker)
+- `npm test` exits with code **5** (test failures)
+- The agent claims completion but test suite is broken
+- No test suite for the success patterns module itself was created
+
+### 2. **Architectural Deviation from Design** (Major)
+The specification required a **modular, testable library** approach:
+
+**What was designed:**
+```bash
+scripts/lib/success-patterns.sh        # Reusable library with functions
+  - sp_load_patterns()
+  - sp_top_k()
+  - sp_render_injection()
+  - sp_record_outcome()
+  - sp_effectiveness_report()
+scripts/sw-success-patterns.sh         # CLI wrapper
+```
+
+**What was built instead:**
+- Code inlined directly into `scripts/sw-loop.sh` (lines 1915-1944)
+- No separate library file created
+- No CLI wrapper created
+- No dedicated test suite (`sw-success-patterns-test.sh`) created
+
+**Why this matters:**
+- Inline code is harder to test, reuse, and maintain
+- Functions cannot be called from other scripts
+- No clear contract/interface
+- Violates bash project conventions (see CLAUDE.md: "Grouped by layer")
+
+### 3. **Incomplete Implementation Against Spec**
+
+The checklist shows 13 tasks; the agent completed only 1-2:
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| Task 1-5: Create library with core functions | ❌ NOT DONE | Code inlined instead |
+| Task 6: Wire into sw-loop.sh | ✅ PARTIAL | Inlined, but architecture wrong |
+| Task 7: Wire outcome recording | ❌ UNCLEAR | No call to `memory_finalize_pipeline` visible |
+| Task 8: Build CLI wrapper | ❌ NOT DONE | No `sw-success-patterns.sh` exists |
+| Task 9: Config defaults & `_smart_*` | ❌ NOT DONE | No evidence in diff |
+| Task 10: Effectiveness report | ❌ NOT DONE | No standalone reporting function |
+| Task 11-12: Test suite + registration | ❌ NOT DONE | No test file created |
+| Task 13: Benchmark scoring | ❌ NOT DONE | No benchmark data |
+
+### 4. **New File is Documentation, Not Code**
+```
+scripts/sw-success-pattern-extraction-and-mining.md (62 lines)
+```
+This is a markdown file (design/documentation), not executable code. It doesn't replace the missing `success-patterns.sh` library.
+
+### 5. **Integration Failures**
+
+From the diff:
+- `scripts/sw` has only **+3 lines** — likely just minor routing, not a full CLI implementation
+- No visible integration with `memory_finalize_pipeline` for outcome recording
+- Configuration changes in `daemon-config.json` are present (+10 lines) but the code to read them is missing
+
+### 6. **Regression from Multiple Failures**
+
+The loop history shows the agent struggled and changed approaches repeatedly:
+```
+Iteration 2-3: unknown / retry_with_context
+Iteration 4-5: unknown / alternative_approach (repeat count: 3)
+```
+
+Iteration 5's "alternative approach" appears to be: "give up on the library design and inline it instead." This is a **retreat from the specification**, not a solution.
+
+---
+
+## Missing Code Sections
+
+Based on the spec and diff, the following are **absent or unclear**:
+
+1. **Scoring algorithm** (not visible as separate function)
+   ```bash
+   # Should exist but doesn't:
+   sp_score_issue() { ... }  # Jaccard + file overlap + error sig
+   ```
+
+2. **Pattern loading** (claimed to be in sw-loop.sh, but +58 lines is insufficient for full implementation)
+   ```bash
+   # Should be callable standalone:
+   sp_load_patterns() { ... }
+   sp_top_k() { ... }
+   ```
+
+3. **CLI wrapper** (`scripts/sw-success-patterns.sh`)
+   ```bash
+   # Should support:
+   shipwright success-patterns {index,score,inject,report,forget}
+   ```
+
+4. **Test suite** (`scripts/sw-success-patterns-test.sh`)
+   - No test file for scoring accuracy
+   - No test for context injection limits (char/line caps)
+   - No test for concurrent access to patterns file
+   - No test for empty/malformed corpus handling
+
+5. **Configuration integration**
+   ```bash
+   # Should read via _smart_* but no evidence:
+   max_inject=$(SW_MAX_INJECT _smart_int "success_patterns.max_inject" 3)
+   ```
+
+---
+
+## What Worked (Positive)
+
+- ✅ Test infrastructure fixes (sed compatibility, stderr handling, `/tmp/claude` creation)
+- ✅ Attempted integration into loop context
+- ✅ Recognized need for different approaches (showed some problem-solving)
+- ✅ Memory system interaction attempted
+
+---
+
+## Why This Fails Acceptance
+
+| Criterion | Status | Notes |
+|-----------|--------|-------|
+| **Tests passing** | ❌ FAIL | `npm test` exit 5 |
+| **Matches design spec** | ❌ FAIL | Inlined instead of library; missing CLI |
+| **Complete implementation** | ❌ FAIL | ~2/13 tasks done |
+| **Code quality** | ⚠️ PARTIAL | Fixes are good; architecture is wrong |
+| **No incomplete work** | ❌ FAIL | Missing functions, CLI, test suite, config integration |
+
+---
+
+## Recommended Path Forward
+
+1. **Fix failing tests first** — diagnose why `npm test` exits with code 5
+2. **Revert to library approach** — create proper `scripts/lib/success-patterns.sh` with standalone functions
+3. **Implement scoring functions** — make them testable and tunable
+4. **Create CLI wrapper** — `scripts/sw-success-patterns.sh` with subcommands
+5. **Write dedicated test suite** — `sw-success-patterns-test.sh` with ≥10 test cases
+6. **Integrate configuration** — use `_smart_*` helpers for config readability
+7. **Register in tests & router** — add to `package.json` and `scripts/sw`
+
+This is fixable, but requires going back to the design specification and building it properly rather than taking shortcuts with inline code.
+
+---
+
+**DECISION: AUDIT_FAIL** — Revert to library-based design and fix failing tests.
