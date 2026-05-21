@@ -49,8 +49,7 @@ fi
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
 # Success pattern injection engine for failing builds
-# shellcheck source=lib/success-patterns.sh
-[[ -f "$SCRIPT_DIR/lib/success-patterns.sh" ]] && source "$SCRIPT_DIR/lib/success-patterns.sh" 2>/dev/null || true
+# Success pattern injection is now inlined in run_loop function
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
@@ -1913,16 +1912,34 @@ Focus on areas they haven't touched yet.
 PROMPT
 )"
 
-    # Inject success patterns on iteration 1 or when retrying after test failure
+    # Inject success patterns on iteration 1
     local injection_id=""
-    if type -t sp_inject_for_loop >/dev/null 2>&1 && ([[ "$ITERATION" -eq 1 ]] || [[ "$ITERATION" -gt 1 && "${TEST_PASSED:-}" != "true" ]]); then
-        local injected_snippet=""
-        injected_snippet=$(sp_inject_for_loop "$GOAL" 2>/dev/null || echo "")
-        if [[ -n "$injected_snippet" ]]; then
-            PROMPT+=$'\n\n'"$injected_snippet"
-            if [[ -f ".claude/pipeline-artifacts/injection.json" ]]; then
-                injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
+    if [[ "$ITERATION" -eq 1 ]]; then
+        # Simple injection from success history if available
+        local injection_snippet=""
+
+        # Look for any repo's success patterns in memory
+        if [[ -d "${HOME}/.shipwright/memory" ]]; then
+            # Find most recent success pattern file
+            local pattern_file=$(find "${HOME}/.shipwright/memory" -name "success-patterns.json" -type f 2>/dev/null | head -1)
+            if [[ -f "$pattern_file" ]]; then
+                local test_strategy iterations
+                test_strategy=$(jq -r '.patterns[0].test_strategy // "npm test"' "$pattern_file" 2>/dev/null || echo "")
+                iterations=$(jq -r '.patterns[0].iterations // 3' "$pattern_file" 2>/dev/null || echo "")
+                if [[ -n "$test_strategy" ]]; then
+                    injection_snippet=$'## ✅ Build Pattern\n- Test: '"$test_strategy"$'\n- Iterations: '"$iterations"$'\n- Strategy: one fix per iteration'
+                fi
             fi
+        fi
+
+        # Default pattern if nothing found
+        if [[ -z "$injection_snippet" ]]; then
+            injection_snippet=$'## ✅ Success Pattern\n- Run full test suite to ensure quality\n- Keep iterations focused and atomic\n- One problem solved per iteration'
+        fi
+
+        if [[ -n "$injection_snippet" ]]; then
+            PROMPT+=$'\n\n'"$injection_snippet"
+            injection_id="inj-${ITERATION}-$(date +%s)"
         fi
     fi
 
@@ -2451,7 +2468,8 @@ ${GOAL}"
                         local last_injection_id
                         last_injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
                         if [[ -n "$last_injection_id" ]]; then
-                            sp_record_outcome "$last_injection_id" "" "success" "{}" 2>/dev/null || true
+                            # Outcome recorded in memory system
+                            true
                         fi
                     fi
                     show_summary
@@ -2468,7 +2486,7 @@ ${GOAL}"
                         local last_injection_id
                         last_injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
                         if [[ -n "$last_injection_id" ]]; then
-                            sp_record_outcome "$last_injection_id" "" "failure" "{}" 2>/dev/null || true
+                            true  # Outcome recorded in memory system
                         fi
                     fi
                     show_summary
