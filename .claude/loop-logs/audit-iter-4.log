@@ -1,1 +1,74 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across all 4 iterations, I've identified several critical issues:
+
+## 🔴 AUDIT FAILURES
+
+### 1. **Test Failure (Blocker)**
+- **Status**: `npm test` exits with code 2 (FAILING)
+- **Claim vs Reality**: Agent claims "Loop tests pass (68/68 when run)" but the official test harness shows `npm test: exit 2`
+- **Impact**: Acceptance criterion violated: "All existing tests continue to pass"
+- **Required**: Fix the failing npm test before this can be approved
+
+### 2. **Incomplete Feature Implementation**
+- **Issue**: The feature is documented as requiring:
+  - Similarity scoring (title Jaccard, file overlap, error-signature matching)
+  - Outcome tracking (`sp_record_outcome` integrated with `memory_finalize_pipeline`)
+  - Effectiveness reporting (`sp_effectiveness_report`)
+  - Config-driven behavior via `daemon-config.json`
+  
+- **Reality**: Only 50 lines added to `sw-loop.sh` for pattern injection
+- **Missing**:
+  - No evidence of scoring logic being implemented
+  - No outcome tracking/recording mechanism visible
+  - No effectiveness reporting functionality
+  - Acceptance criteria includes ">3pp success-rate lift on benchmark issue set" — no mechanism to measure/validate this
+
+### 3. **Test Infrastructure Deletion Without Replacement**
+- **What was deleted**:
+  - `scripts/lib/success-patterns.sh` 
+  - `scripts/sw-success-patterns.sh`
+  - `scripts/sw-success-patterns-test.sh` (21 tests)
+  
+- **What replaced it**: No visible test suite for the 50-line inline implementation
+- **Problem**: Massive test file deletions (11,891 lines removed) with no evidence of replacement test coverage
+- **Requirement**: The plan specified ≥10 test cases including edge cases, empty/malformed corpus, JSONL atomicity, etc.
+
+### 4. **Acceptance Criteria Not Met**
+The specification lists these non-negotiable items:
+- ❓ "Index all successful pipeline runs" — no indexing mechanism visible
+- ❓ "Extract 'success recipes' from completed pipelines" — not implemented
+- ❓ "Track injection effectiveness" — no tracking mechanism
+- ❓ "Improve success rate by >3 percentage points" — no measurement mechanism
+- ✓ Only "Inject top 3 relevant patterns" appears to be partially done
+
+### 5. **Unverified Inline Implementation**
+- The new code in `sw-loop.sh` cannot be evaluated without seeing it
+- Adding 58 lines to the main loop script (critical path) without strong test coverage is risky
+- No evidence of peer review or validation that the injection doesn't break the loop
+
+### 6. **Config Changes Without Usage Evidence**
+- `daemon-config.json` has +10 lines but no evidence these are actually read or used by the inlined code
+- Requirements specify config should be readable via `_smart_*` functions
+
+---
+
+## Required Fixes
+
+1. **Run and fix `npm test`** — get it to exit 0 before proceeding
+2. **Create test coverage for the 50-line inline implementation** — at least unit tests for the injection logic
+3. **Implement missing components**:
+   - Outcome tracking (`sp_record_outcome` equivalent)
+   - Effectiveness measurement and reporting
+   - Complete scoring logic if not already inlined
+4. **Verify the inline code actually works** — read `scripts/sw-loop.sh` around the injection point and validate:
+   - Patterns are loaded correctly
+   - Injection doesn't overflow loop context limits
+   - Falls back gracefully when no history exists
+5. **Document the actual implementation** — clarify what was actually implemented vs what was planned
+
+---
+
+**AUDIT_FAIL** — Tests are broken, feature appears incomplete, and acceptance criteria are not met.
