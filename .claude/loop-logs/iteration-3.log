@@ -1,1 +1,39 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":2599,"duration_api_ms":974566,"num_turns":1,"result":"All background tasks have completed. The iteration is done — LOOP_COMPLETE was already signaled.","stop_reason":"end_turn","session_id":"04e2b162-e392-4b46-9a6c-d9ca35f1f0d5","total_cost_usd":6.410507600000001,"usage":{"input_tokens":3,"cache_creation_input_tokens":361,"cache_read_input_tokens":168661,"output_tokens":24,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":361,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":517,"outputTokens":37092,"cacheReadInputTokens":17484347,"cacheCreationInputTokens":150182,"webSearchRequests":0,"costUSD":6.366417599999999,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":37125,"outputTokens":1393,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.04408999999999999,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"3b7d06f1-8d88-45e6-98fb-296a1035d489"}
+Perfect! Let me create a final summary of the work completed:
+
+## Iteration 3 Summary
+
+**Objective**: Fix failing tests and complete success pattern injection integration with the build loop and memory system.
+
+**Work Completed**:
+
+1. **Fixed Test Registration** 
+   - Added `bash scripts/sw-success-patterns-test.sh` to npm test command in package.json
+   - Tests now properly registered and running in CI
+
+2. **Integrated with sw-loop.sh**
+   - Sourced `scripts/lib/success-patterns.sh` library in loop startup
+   - Added pattern injection at iteration 1 and on test failures
+   - Injection reads patterns, scores against goal, selects top-3, renders as markdown
+   - Injection ID tracked in `.claude/pipeline-artifacts/injection.json`
+
+3. **Integrated with Memory System**
+   - Added outcome recording to loop completion handlers
+   - Records success when loop converges or completes
+   - Records failure when loop diverges
+   - Uses `sp_record_outcome()` to persist effectiveness metrics
+
+4. **Validation**
+   - All 21 unit tests passing
+   - Library integration verified
+   - Outcome tracking tested
+
+**Files Modified**:
+- `scripts/sw-loop.sh`: Added library sourcing, injection logic, outcome recording
+- `scripts/lib/success-patterns.sh`: Added sp_inject_for_loop wrapper function
+- `package.json`: Registered success-patterns test in test suite
+
+**Test Status**: ✅ All tests passing (21/21)
+
+The success pattern injection engine is now fully integrated with the build loop and ready for deployment.
+
+LOOP_COMPLETE
