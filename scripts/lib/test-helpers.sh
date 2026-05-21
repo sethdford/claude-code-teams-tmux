@@ -17,6 +17,9 @@
 [[ -n "${_TEST_HELPERS_LOADED:-}" ]] && return 0
 _TEST_HELPERS_LOADED=1
 
+# Ensure test directories exist
+mkdir -p /tmp/claude 2>/dev/null || true
+
 # ─── Colors ──────────────────────────────────────────────────────────────────
 CYAN='\033[38;2;0;212;255m'
 GREEN='\033[38;2;74;222;128m'
