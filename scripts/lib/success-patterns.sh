@@ -304,4 +304,29 @@ sp_effectiveness_report() {
     echo "{\"total_injections\":${total},\"successes\":${successes},\"failures\":${failures},\"success_rate\":${success_rate},\"false_positive_rate\":${false_positive_rate}}"
 }
 
+# sp_inject_for_loop: Combined function for loop integration
+# Input: goal (string), files_json (optional, default []), threshold (optional, default 60)
+# Output: markdown fragment suitable for injection into prompt
+# Side effect: writes injection.json sidecar, returns injection_id
+sp_inject_for_loop() {
+    local goal="${1:-}" files_json="${2:-[]}" threshold="${3:-60}"
+
+    [[ -z "$goal" ]] && return 0
+
+    local patterns scores top_k
+    patterns="$(sp_load_patterns)" || patterns="[]"
+
+    [[ "$patterns" == "[]" ]] && return 0
+
+    scores="$(sp_score_issue "$goal" "$files_json" "{}" "$patterns")" || scores="[]"
+    top_k="$(sp_top_k "$scores" "$threshold" 3)" || top_k="[]"
+
+    local pattern_count
+    pattern_count=$(echo "$top_k" | jq 'length' 2>/dev/null || echo 0)
+
+    [[ $pattern_count -eq 0 ]] && return 0
+
+    sp_render_injection "$patterns" "$top_k"
+}
+
 # Functions are available in sourcing context; export not needed for bash sourcing

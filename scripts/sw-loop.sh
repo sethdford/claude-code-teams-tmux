@@ -48,6 +48,9 @@ fi
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
+# Success pattern injection engine for failing builds
+# shellcheck source=lib/success-patterns.sh
+[[ -f "$SCRIPT_DIR/lib/success-patterns.sh" ]] && source "$SCRIPT_DIR/lib/success-patterns.sh" 2>/dev/null || true
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
@@ -1909,6 +1912,19 @@ Focus on areas they haven't touched yet.
 - Do NOT output LOOP_COMPLETE unless the goal is genuinely achieved
 PROMPT
 )"
+
+    # Inject success patterns on iteration 1 or when retrying after test failure
+    local injection_id=""
+    if type -t sp_inject_for_loop >/dev/null 2>&1 && [[ "$ITERATION" -eq 1 || ("$ITERATION" -gt 1 && "$all_passed" != "true") ]]; then
+        local injected_snippet=""
+        injected_snippet=$(sp_inject_for_loop "$GOAL" 2>/dev/null || echo "")
+        if [[ -n "$injected_snippet" ]]; then
+            PROMPT+=$'\n\n'"$injected_snippet"
+            if [[ -f ".claude/pipeline-artifacts/injection.json" ]]; then
+                injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
+            fi
+        fi
+    fi
 
     # Run Claude (output is JSON due to --output-format json in CLAUDE_FLAGS)
     local JSON_FILE="$LOG_DIR/agent-${AGENT_NUM}-iter-${ITERATION}.json"
