@@ -2446,6 +2446,14 @@ ${GOAL}"
                     STATUS="complete"
                     write_state
                     write_progress
+                    # Record injection outcome on success
+                    if [[ -f ".claude/pipeline-artifacts/injection.json" ]]; then
+                        local last_injection_id
+                        last_injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
+                        if [[ -n "$last_injection_id" ]]; then
+                            sp_record_outcome "$last_injection_id" "" "success" "{}" 2>/dev/null || true
+                        fi
+                    fi
                     show_summary
                     return 0
                     ;;
@@ -2455,6 +2463,14 @@ ${GOAL}"
                     STATUS="diverging"
                     write_state
                     write_progress
+                    # Record injection outcome on failure
+                    if [[ -f ".claude/pipeline-artifacts/injection.json" ]]; then
+                        local last_injection_id
+                        last_injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
+                        if [[ -n "$last_injection_id" ]]; then
+                            sp_record_outcome "$last_injection_id" "" "failure" "{}" 2>/dev/null || true
+                        fi
+                    fi
                     show_summary
                     return 1
                     ;;
@@ -2470,6 +2486,14 @@ ${GOAL}"
             STATUS="complete"
             write_state
             write_progress
+            # Record injection outcome on success
+            if [[ -f ".claude/pipeline-artifacts/injection.json" ]]; then
+                local last_injection_id
+                last_injection_id=$(jq -r '.injection_id // empty' ".claude/pipeline-artifacts/injection.json" 2>/dev/null || echo "")
+                if [[ -n "$last_injection_id" ]]; then
+                    sp_record_outcome "$last_injection_id" "" "success" "{}" 2>/dev/null || true
+                fi
+            fi
             show_summary
             return 0
         fi
