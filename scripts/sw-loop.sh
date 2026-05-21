@@ -1915,7 +1915,7 @@ PROMPT
 
     # Inject success patterns on iteration 1 or when retrying after test failure
     local injection_id=""
-    if type -t sp_inject_for_loop >/dev/null 2>&1 && [[ "$ITERATION" -eq 1 || ("$ITERATION" -gt 1 && "$all_passed" != "true") ]]; then
+    if type -t sp_inject_for_loop >/dev/null 2>&1 && ([[ "$ITERATION" -eq 1 ]] || [[ "$ITERATION" -gt 1 && "${TEST_PASSED:-}" != "true" ]]); then
         local injected_snippet=""
         injected_snippet=$(sp_inject_for_loop "$GOAL" 2>/dev/null || echo "")
         if [[ -n "$injected_snippet" ]]; then
