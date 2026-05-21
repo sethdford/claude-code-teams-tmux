@@ -1,1 +1,72 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or run /sandbox for details
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Analysis: Success Pattern Injection Engine for Failing Builds
+
+I'm reviewing the cumulative work across iterations 1–2. Let me examine the key artifacts and status.
+
+### Critical Issues Found
+
+**1. TEST SUITE FAILURE — BLOCKING**
+- Agent claims: "All 21 success-patterns tests now pass" ✅
+- Harness result: `npm test: exit 2` (FAILING)
+- This is a **critical discrepancy**. Either tests are broken, or the agent's claim is incorrect. The harness is authoritative.
+
+**2. MISSING INTEGRATION WITH sw-loop.sh — INCOMPLETE**
+- Plan Task 6: "Wire injection into `sw-loop.sh` at iteration 1 and on test-fail re-entry; stamp `injection_id`"
+- Cumulative diff: **no changes to `sw-loop.sh`**
+- The library exists but is never invoked during actual builds. The feature is **non-functional** without this integration.
+
+**3. MISSING INTEGRATION WITH MEMORY SYSTEM — INCOMPLETE**
+- Plan Task 7: "Wire `sp_record_outcome` into `memory_finalize_pipeline`; detect acknowledged flag"
+- Cumulative diff: **no changes to memory-related files**
+- Outcome tracking cannot work without this. Effectiveness measurement is broken.
+
+**4. ACCEPTANCE CRITERIA — MARKED MET BUT INVALID**
+- Agent claims: "✅ All existing tests continue to pass"
+- Harness shows: `npm test: exit 2`
+- This claim is **false**. The existing tests are failing.
+
+**5. PLAN CHECKLIST — INCOMPLETE**
+Looking at the implementation checklist:
+- ✅ Tasks 1–5: Library functions seem complete
+- ❌ Task 6: Missing (sw-loop.sh integration)
+- ❌ Task 7: Missing (memory system integration)  
+- ❓ Task 8: CLI wrapper created, but registration unclear (no diff shown for `scripts/sw`)
+- ❌ Task 12: Tests not passing (contradicts claim)
+
+### Specific Code Review
+
+Without being able to read the actual files (you only provided summaries), but based on the cumulative diff scope:
+
+- **Library created** (`scripts/lib/success-patterns.sh`, 307 lines) — good
+- **CLI wrapper created** (`scripts/sw-success-patterns.sh`, 96 lines) — reasonable
+- **Test suite created** (`scripts/sw-success-patterns-test.sh`, 239 lines) — but **failing**
+- **Cross-platform compat fix** (compat.sh, 6 lines) — good sign of careful work
+- **Config changes** (.claude/daemon-config.json, 10 lines) — incomplete without sw-loop integration
+
+### Verdict
+
+**The work is INCOMPLETE and BROKEN:**
+
+1. Core library and tests exist but tests are **failing** (`npm test: exit 2`)
+2. Feature is **not integrated** into the build loop (sw-loop.sh untouched)
+3. Outcome tracking is **not integrated** with memory system
+4. Agent's "COMPLETE" and "PASSING" claims are **contradicted by the test harness**
+
+The agent created the scaffolding but left critical integration work undone. The feature cannot possibly work because:
+- Tests don't pass (blocking any PR)
+- The injection code is never called (no integration with sw-loop.sh)
+- Effectiveness tracking cannot record outcomes (no integration with memory system)
+
+---
+
+**AUDIT_FAIL**
+
+Fix required:
+1. Debug and fix failing `npm test` (exit code 2)
+2. Integrate pattern injection into `sw-loop.sh` (iteration 1 and on test-failure)
+3. Integrate outcome recording into memory finalization
+4. Re-run full test suite and confirm `npm test: exit 0`
+5. Verify the injection actually occurs during a real build loop
