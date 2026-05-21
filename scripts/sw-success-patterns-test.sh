@@ -105,7 +105,7 @@ fi
 echo ""
 echo "Test: sp_load_patterns (empty corpus fallback)"
 patterns=$(sp_load_patterns)
-result=$(echo "$patterns" | jq 'type' 2>/dev/null || echo "error")
+result=$(echo "$patterns" | jq -r 'type' 2>/dev/null || echo "error")
 assert_equal "$result" "array" "Returns array even if patterns missing"
 
 echo ""
@@ -121,7 +121,7 @@ fi
 echo ""
 echo "Test: sp_score_issue (basic scoring)"
 scores=$(sp_score_issue "Fix bug" "[]" "[]" "$patterns")
-score_type=$(echo "$scores" | jq 'type' 2>/dev/null || echo "error")
+score_type=$(echo "$scores" | jq -r 'type' 2>/dev/null || echo "error")
 assert_equal "$score_type" "array" "Scoring returns array"
 score_count=$(echo "$scores" | jq 'length' 2>/dev/null || echo 0)
 if [[ $score_count -gt 0 ]]; then
@@ -190,7 +190,7 @@ fi
 echo ""
 echo "Test: sp_effectiveness_report (aggregation)"
 report=$(sp_effectiveness_report 2>/dev/null || echo "{}")
-report_type=$(echo "$report" | jq 'type' 2>/dev/null || echo "error")
+report_type=$(echo "$report" | jq -r 'type' 2>/dev/null || echo "error")
 assert_equal "$report_type" "object" "Report returns object"
 
 report_keys=$(echo "$report" | jq 'keys[]' 2>/dev/null | tr '\n' ' ' || echo "")
