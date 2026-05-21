@@ -48,9 +48,10 @@ assert_file_exists() {
 }
 
 # ─── Setup ──────────────────────────────────────────────────────────────────
+ORIGINAL_DIR="$(pwd)"
 TMPDIR_TEST=$(mktemp -d 2>/dev/null || mktemp -d "${TMPDIR:-/tmp}/spec-driven-test-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/spec-driven-test-$$")
 mkdir -p "$TMPDIR_TEST" 2>/dev/null || true
-trap 'rm -rf "$TMPDIR_TEST"' EXIT
+trap 'cd "$ORIGINAL_DIR" >/dev/null 2>&1 || true; rm -rf "$TMPDIR_TEST" >/dev/null 2>&1 || true' EXIT
 
 # Override spec dir to temp
 export SPEC_DIR="$TMPDIR_TEST/specs"

@@ -1695,33 +1695,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Project structure (Node, vitest, npm, src/, commonjs) essential for build stage execution"
-          },
-          {
             "file": "metrics.json",
-            "relevance": 80,
-            "summary": "Baseline build duration (2089s) provides performance expectations for success pattern injection engine build"
+            "relevance": 92,
+            "summary": "Build duration baseline (2089s) directly informs expectations and timeout configuration for current build stage"
           },
           {
-            "file": "failures.json",
-            "relevance": 70,
-            "summary": "/tmp/claude directory creation failure is directly relevant to build; other test failures provide regression context"
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure (Node.js, vitest, commonjs) and conventions guide build configuration and script execution"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 60,
-            "summary": "Previous successful patterns show typical iteration counts (3-4) and durations (45-150s) for similar builds"
+            "relevance": 72,
+            "summary": "Previous successful build approaches and iteration strategies inform current build loop strategy and tooling"
           },
           {
             "file": "issues.json",
+            "relevance": 58,
+            "summary": "Past daemon/script issues and their solutions (semaphore fixes, timeout handling) prevent regression during build"
+          },
+          {
+            "file": "failures.json",
             "relevance": 45,
-            "summary": "Daemon timeout semaphore pattern may be relevant if build encounters concurrency issues"
+            "summary": "Test-stage failures indicate potential build quality issues; mktemp path and JSON output problems affect build artifacts"
           }
         ]
       },
-      "timestamp": 1779395460,
+      "timestamp": 1779397276,
       "ttl": 1800
     },
     "deb2c2daff4068f6c7ade0d0d14aaf19": {
