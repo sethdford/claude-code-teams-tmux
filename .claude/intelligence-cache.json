@@ -1695,33 +1695,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 92,
-            "summary": "Shows two successful delivery patterns with iteration counts (3 iterations each), durations, files changed, and test strategies. Directly informs what complexity/approach works for this codebase during build phases."
-          },
-          {
             "file": "patterns.json",
-            "relevance": 88,
-            "summary": "Project structure metadata: Node.js with vitest, CommonJS imports, src/ directory convention. Essential for configuring build and test execution in this specific project."
-          },
-          {
-            "file": "failures.json",
-            "relevance": 72,
-            "summary": "Three test failures recorded, including mktemp directory issue (/tmp/claude missing) which is a build/test environment config problem. The other two are test logic failures that inform what to watch for."
+            "relevance": 95,
+            "summary": "Project structure (Node, vitest, npm, src/, commonjs) essential for build stage execution"
           },
           {
             "file": "metrics.json",
-            "relevance": 61,
-            "summary": "Baseline build duration of 2089s provides performance expectations and timeout thresholds. Useful for detecting stalls or regressions during build execution."
+            "relevance": 80,
+            "summary": "Baseline build duration (2089s) provides performance expectations for success pattern injection engine build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "/tmp/claude directory creation failure is directly relevant to build; other test failures provide regression context"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Previous successful patterns show typical iteration counts (3-4) and durations (45-150s) for similar builds"
           },
           {
             "file": "issues.json",
-            "relevance": 54,
-            "summary": "Records one timeout gotcha in daemon with 'added semaphore' as the fix. Relevant for understanding edge cases and workarounds specific to this codebase."
+            "relevance": 45,
+            "summary": "Daemon timeout semaphore pattern may be relevant if build encounters concurrency issues"
           }
         ]
       },
-      "timestamp": 1779392156,
+      "timestamp": 1779395460,
       "ttl": 1800
     },
     "deb2c2daff4068f6c7ade0d0d14aaf19": {

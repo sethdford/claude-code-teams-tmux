@@ -8,8 +8,10 @@ set -euo pipefail
 ERR_TRAP_DEPTH=0
 trap 'ERR_TRAP_DEPTH=$((ERR_TRAP_DEPTH+1)); if [[ $ERR_TRAP_DEPTH -le 1 ]]; then error "Error in sw-success-patterns.sh line $LINENO"; fi' ERR
 
-source "$(dirname "${BASH_SOURCE[0]}")/lib/compat.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/lib/success-patterns.sh"
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+source "$SCRIPT_DIR/lib/compat.sh"
+source "$SCRIPT_DIR/lib/helpers.sh"
+source "$SCRIPT_DIR/lib/success-patterns.sh"
 
 # ==============================================================================
 # Help
