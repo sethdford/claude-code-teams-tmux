@@ -1695,33 +1695,33 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 95,
-            "summary": "Project detection data (node/vitest/npm, src/ layout, commonjs imports) is essential for understanding build conventions and test runner configuration"
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 88,
-            "summary": "Previous successful builds show npm test strategy, typical file change patterns, iteration counts (2-4), and cost/duration baselines (~45-150s, $2.50)"
+            "relevance": 92,
+            "summary": "Shows two successful delivery patterns with iteration counts (3 iterations each), durations, files changed, and test strategies. Directly informs what complexity/approach works for this codebase during build phases."
           },
           {
-            "file": "metrics.json",
-            "relevance": 72,
-            "summary": "Build duration baseline of 2089s provides performance expectations and stall detection threshold for the build stage"
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Project structure metadata: Node.js with vitest, CommonJS imports, src/ directory convention. Essential for configuring build and test execution in this specific project."
           },
           {
             "file": "failures.json",
-            "relevance": 35,
-            "summary": "Mostly test-stage failures (regression detection, sw-cleanup output), but mktemp /tmp/claude directory issue could affect build setup before tests run"
+            "relevance": 72,
+            "summary": "Three test failures recorded, including mktemp directory issue (/tmp/claude missing) which is a build/test environment config problem. The other two are test logic failures that inform what to watch for."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 61,
+            "summary": "Baseline build duration of 2089s provides performance expectations and timeout thresholds. Useful for detecting stalls or regressions during build execution."
           },
           {
             "file": "issues.json",
-            "relevance": 28,
-            "summary": "Single daemon timeout issue with semaphore fix pattern; tangentially relevant if build process involves daemon interactions"
+            "relevance": 54,
+            "summary": "Records one timeout gotcha in daemon with 'added semaphore' as the fix. Relevant for understanding edge cases and workarounds specific to this codebase."
           }
         ]
       },
-      "timestamp": 1779390199,
+      "timestamp": 1779392156,
       "ttl": 1800
     },
     "deb2c2daff4068f6c7ade0d0d14aaf19": {
