@@ -1,0 +1,276 @@
+{
+  "version": "1",
+  "updated_at": "2026-05-22T02:29:41Z",
+  "entries": [
+    {
+      "id": "kb_b8239eb18d7d",
+      "kind": "failure",
+      "error_type": "test",
+      "error_signature": "mktemp: failed to create directory via template ‘<path>’: no such file or directory",
+      "fix_strategy": "Replace `mktemp -d /tmp/claude/sw-test-XXXXXX` with `mktemp -d /tmp/sw-test-XXXXXX` or ensure /tmp/claude/ is created before mktemp calls",
+      "approach": "mktemp fails because /tmp/claude directory does not exist in the test environment, causing test setup to fail before heartbeat detection tests run",
+      "tags": [
+        "test"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "ingest",
+        "source_file": "ingest",
+        "captured_at": "2026-05-22T01:42:58Z"
+      },
+      "metrics": {
+        "occurrences": 4,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:10:25Z",
+        "query_hits": 2
+      }
+    },
+    {
+      "id": "kb_3058cd61f212",
+      "kind": "failure",
+      "error_type": "test",
+      "error_signature": "\u001b[2moutput missing: --force\u001b[0m",
+      "fix_strategy": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
+      "approach": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
+      "tags": [
+        "test"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "failures.json",
+        "captured_at": "2026-05-22T02:01:12Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:18Z",
+        "query_hits": 1
+      }
+    },
+    {
+      "id": "kb_ae53337e564b",
+      "kind": "failure",
+      "error_type": "test",
+      "error_signature": "\u001b[<n>;<n>;<n>;<n>;255m▸\u001b[0m invalid template errors correctly... \u001b[<n>;<n>;<n>;<n>;128m✓\u001b[0m",
+      "fix_strategy": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
+      "approach": "regression detection test fails to produce valid JSON output",
+      "tags": [
+        "test"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "failures.json",
+        "captured_at": "2026-05-22T02:01:12Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:18Z",
+        "query_hits": 1
+      }
+    },
+    {
+      "id": "kb_1a758e4e0afd",
+      "kind": "failure",
+      "error_type": "test",
+      "error_signature": "mktemp: failed to create directory via template ‘<path>’: no such file or directory",
+      "fix_strategy": "Replace `mktemp -d /tmp/claude/sw-test-XXXXXX` with `mktemp -d /tmp/sw-test-XXXXXX` or create /tmp/claude/ before calling mktemp",
+      "approach": "mktemp fails because /tmp/claude/ directory does not exist on this system",
+      "tags": [
+        "test"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "failures.json",
+        "captured_at": "2026-05-22T02:01:13Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:18Z",
+        "query_hits": 1
+      }
+    },
+    {
+      "id": "kb_399465aef022",
+      "kind": "pattern",
+      "error_type": "convention",
+      "error_signature": "captured_at:\"<ts>\"",
+      "fix_strategy": "",
+      "approach": "captured_at: 2026-05-22T01:24:07Z",
+      "tags": [
+        "captured_at",
+        "convention"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "patterns.json",
+        "captured_at": "2026-05-22T02:01:13Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:14Z",
+        "query_hits": 0
+      }
+    },
+    {
+      "id": "kb_a7a719448ab1",
+      "kind": "pattern",
+      "error_type": "convention",
+      "error_signature": "conventions:{\"source_dir\":\"src/\",\"test_pattern\":\"*.test.js\",\"import_style\":\"commonjs\"}",
+      "fix_strategy": "",
+      "approach": "conventions: source_dir=src/, test_pattern=*.test.js, import_style=commonjs",
+      "tags": [
+        "convention",
+        "conventions"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "patterns.json",
+        "captured_at": "2026-05-22T02:01:13Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:18Z",
+        "query_hits": 1
+      }
+    },
+    {
+      "id": "kb_68974c0a9bc1",
+      "kind": "pattern",
+      "error_type": "convention",
+      "error_signature": "project:{\"type\":\"node\",\"framework\":\"\",\"test_runner\":\"vitest\",\"package_manager\":\"npm\",\"language\":\"javascript\"}",
+      "fix_strategy": "",
+      "approach": "project: type=node, framework=, test_runner=vitest, package_manager=npm, language=javascript",
+      "tags": [
+        "convention",
+        "project"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "patterns.json",
+        "captured_at": "2026-05-22T02:01:13Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:18Z",
+        "query_hits": 1
+      }
+    },
+    {
+      "id": "kb_103713df76d8",
+      "kind": "pattern",
+      "error_type": "convention",
+      "error_signature": "repo:\"sethdford<path>\"",
+      "fix_strategy": "",
+      "approach": "repo: sethdford/shipwright",
+      "tags": [
+        "convention",
+        "repo"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "memory",
+        "source_file": "patterns.json",
+        "captured_at": "2026-05-22T02:01:13Z"
+      },
+      "metrics": {
+        "occurrences": 2,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:01:14Z",
+        "query_hits": 0
+      }
+    },
+    {
+      "id": "kb_1be3d1456278",
+      "kind": "failure",
+      "error_type": "test",
+      "error_signature": "\u001b[<n>;<n>;<n>;<n>;113m\u001b[1m3 of <n> tests failed\u001b[0m",
+      "fix_strategy": "",
+      "approach": "\u001b[38;2;248;113;113m\u001b[1m3 of 52 tests failed\u001b[0m",
+      "tags": [
+        "test"
+      ],
+      "repo_context": {},
+      "evidence": {
+        "source": "ingest",
+        "source_file": "ingest",
+        "captured_at": "2026-05-22T02:29:41Z"
+      },
+      "metrics": {
+        "occurrences": 1,
+        "success_rate": 0,
+        "last_used_at": "2026-05-22T02:29:41Z",
+        "query_hits": 0
+      }
+    }
+  ],
+  "indexes": {
+    "by_error_type": {
+      "test": [
+        "kb_b8239eb18d7d",
+        "kb_3058cd61f212",
+        "kb_ae53337e564b",
+        "kb_1a758e4e0afd",
+        "kb_1be3d1456278"
+      ],
+      "convention": [
+        "kb_399465aef022",
+        "kb_a7a719448ab1",
+        "kb_68974c0a9bc1",
+        "kb_103713df76d8"
+      ]
+    },
+    "by_tag": {
+      "test": [
+        "kb_b8239eb18d7d",
+        "kb_3058cd61f212",
+        "kb_ae53337e564b",
+        "kb_1a758e4e0afd",
+        "kb_1be3d1456278"
+      ],
+      "captured_at": [
+        "kb_399465aef022"
+      ],
+      "convention": [
+        "kb_399465aef022",
+        "kb_a7a719448ab1",
+        "kb_68974c0a9bc1",
+        "kb_103713df76d8"
+      ],
+      "conventions": [
+        "kb_a7a719448ab1"
+      ],
+      "project": [
+        "kb_68974c0a9bc1"
+      ],
+      "repo": [
+        "kb_103713df76d8"
+      ]
+    },
+    "by_kind": {
+      "failure": [
+        "kb_b8239eb18d7d",
+        "kb_3058cd61f212",
+        "kb_ae53337e564b",
+        "kb_1a758e4e0afd",
+        "kb_1be3d1456278"
+      ],
+      "pattern": [
+        "kb_399465aef022",
+        "kb_a7a719448ab1",
+        "kb_68974c0a9bc1",
+        "kb_103713df76d8"
+      ]
+    }
+  }
+}
