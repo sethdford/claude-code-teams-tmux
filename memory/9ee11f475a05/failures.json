@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 6,
-      "last_seen": "2026-05-22T14:01:58Z",
+      "last_seen": "2026-05-22T13:59:26Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
       "seen_count": 11,
-      "last_seen": "2026-05-22T14:07:23Z",
+      "last_seen": "2026-05-22T14:04:03Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a file path instead of as a substitution expression, likely due to missing -e flag or incorrect argument ordering",
-      "fix": "Fix the sed invocation to use 'sed -e s|$TEST_TEMP_DIR|...|g' or ensure the substitution expression is passed as an argument, not a filename",
+      "root_cause": "sed command uses $TEST_TEMP_DIR variable as a filename argument instead of an inline expression, causing 'No such file or directory' error",
+      "fix": "fix sed invocation to use -e flag with the substitution expression rather than treating it as a file path, ensure variable is properly quoted and the -e prefix is present",
       "seen_count": 1,
       "last_seen": "2026-05-22T02:38:55Z",
       "category": "test_failure"
