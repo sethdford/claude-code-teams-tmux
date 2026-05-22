@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
-      "seen_count": 12,
-      "last_seen": "2026-05-22T19:32:58Z",
+      "seen_count": 7,
+      "last_seen": "2026-05-22T14:13:42Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
       "seen_count": 12,
-      "last_seen": "2026-05-22T19:42:04Z",
+      "last_seen": "2026-05-22T19:28:58Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because parent directory /tmp/claude does not exist before test temp dir creation",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in test setup, or use 'mktemp -d' without a custom parent directory",
-      "seen_count": 2,
-      "last_seen": "2026-05-22T01:44:39Z",
+      "seen_count": 3,
+      "last_seen": "2026-05-22T19:51:43Z",
       "category": "config"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "sw-feedback-test.sh regression detection subcommand outputs invalid JSON",
-      "fix": "Fix the regression detection output in sw-feedback.sh to produce valid JSON",
+      "root_cause": "sed command references $TEST_TEMP_DIR as a filename argument instead of an inline expression, causing 'No such file or directory' error",
+      "fix": "Fix the sed invocation in sw-code-review-test.sh to use -e flag or inline the substitution pattern correctly, e.g. sed -e \"s|$TEST_TEMP_DIR|/tmp/...|g\" instead of passing the pattern as a filename",
       "seen_count": 1,
       "last_seen": "2026-05-22T02:38:55Z",
       "category": "test_failure"
