@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 7,
-      "last_seen": "2026-05-22T14:03:02Z",
+      "last_seen": "2026-05-22T14:13:42Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 12,
-      "last_seen": "2026-05-22T14:12:28Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-22T01:58:03Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "sed command uses a literal file path argument instead of an inline expression — missing -e flag causes sed to interpret the substitution string as a filename",
-      "fix": "Change `sed 's|...|...|g'` invocation to use `-e` flag: `sed -e 's|$TEST_TEMP_DIR|...|g'` or fix the variable quoting so the substitution is passed correctly as an expression",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh stale heartbeat detection to output the heartbeat agent name and ensure summary section prints 'Found N item(s)' with '--force' hint",
       "seen_count": 1,
       "last_seen": "2026-05-22T02:38:55Z",
       "category": "test_failure"
