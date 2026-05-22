@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
-      "seen_count": 7,
-      "last_seen": "2026-05-22T14:13:42Z",
+      "seen_count": 8,
+      "last_seen": "2026-05-22T19:24:03Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 12,
-      "last_seen": "2026-05-22T19:28:58Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-22T01:58:03Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because parent directory /tmp/claude does not exist before test temp dir creation",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls in test setup, or use 'mktemp -d' without a custom parent directory",
-      "seen_count": 3,
-      "last_seen": "2026-05-22T19:51:43Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-22T01:44:39Z",
       "category": "config"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "All test suites shown are passing — no actual test failure visible in the provided log output",
       "fix": "Review earlier log output or the full test run exit code to identify the actual failing test suite",
-      "seen_count": 1,
-      "last_seen": "2026-05-22T01:54:30Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-22T19:38:01Z",
       "category": "unknown"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "sed command references $TEST_TEMP_DIR as a filename argument instead of an inline expression, causing 'No such file or directory' error",
-      "fix": "Fix the sed invocation in sw-code-review-test.sh to use -e flag or inline the substitution pattern correctly, e.g. sed -e \"s|$TEST_TEMP_DIR|/tmp/...|g\" instead of passing the pattern as a filename",
+      "root_cause": "jq fails with 'Expected JSON value' parsing quality-profile.json line 5 because a field contains an empty string instead of valid JSON, so learned rule generation produces no output and the confidence value is empty",
+      "fix": "ensure quality-profile.json fields are always populated with valid JSON values before jq processes them — guard empty variables with a default (e.g. `${var:-null}` or `${var:-\"\"}`) when writing the profile file",
       "seen_count": 1,
       "last_seen": "2026-05-22T02:38:55Z",
       "category": "test_failure"
