@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
-      "seen_count": 8,
-      "last_seen": "2026-05-22T19:24:03Z",
+      "seen_count": 9,
+      "last_seen": "2026-05-22T19:27:29Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 10,
-      "last_seen": "2026-05-22T01:58:03Z",
+      "seen_count": 11,
+      "last_seen": "2026-05-22T19:44:08Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "All test suites shown are passing — no actual test failure visible in the provided log output",
       "fix": "Review earlier log output or the full test run exit code to identify the actual failing test suite",
-      "seen_count": 2,
-      "last_seen": "2026-05-22T19:38:01Z",
+      "seen_count": 1,
+      "last_seen": "2026-05-22T01:54:30Z",
       "category": "unknown"
     },
     {
@@ -48,10 +48,19 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "jq fails with 'Expected JSON value' parsing quality-profile.json line 5 because a field contains an empty string instead of valid JSON, so learned rule generation produces no output and the confidence value is empty",
-      "fix": "ensure quality-profile.json fields are always populated with valid JSON values before jq processes them — guard empty variables with a default (e.g. `${var:-null}` or `${var:-\"\"}`) when writing the profile file",
+      "root_cause": "sw-cleanup.sh dry-run mode does not scan for stale heartbeat files or display 'Found N items' summary with '--force hint'",
+      "fix": "Add heartbeat file detection to dry-run scan and emit 'Found N items' summary line with '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-05-22T02:38:55Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
+      "root_cause": "sed command references $TEST_TEMP_DIR variable unexpectedly as a file argument instead of inline substitution, causing 'No such file or directory' error in sw-code-review-test.sh",
+      "fix": "Fix the sed invocation in sw-code-review-test.sh to properly quote the substitution expression inline rather than passing it as a file path",
+      "seen_count": 1,
+      "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
     }
   ]
