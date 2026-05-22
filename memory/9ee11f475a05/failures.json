@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 6,
-      "last_seen": "2026-05-22T13:59:10Z",
+      "last_seen": "2026-05-22T14:12:16Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 11,
-      "last_seen": "2026-05-22T14:06:41Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-22T01:58:03Z",
       "category": "test_failure"
     },
     {
@@ -48,11 +48,10 @@
     {
       "stage": "test",
       "pattern": "✓ chain execute shows error",
-      "root_cause": "sed command references a literal variable name $TEST_TEMP_DIR in a file path argument instead of expanding it, causing 'No such file or directory' error",
-      "fix": "Quote the sed expression correctly so $TEST_TEMP_DIR expands before being passed to sed, or use double quotes around the sed script argument",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-05-22T02:38:55Z",
-      "category": "test_failure"
+      "last_seen": "2026-05-22T02:38:55Z"
     }
   ]
 }
