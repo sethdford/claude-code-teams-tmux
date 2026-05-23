@@ -130,3 +130,60 @@
 {"ts":"2026-05-23T12:24:32Z","ts_epoch":1779539072,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
 {"ts":"2026-05-23T12:24:32Z","ts_epoch":1779539072,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
 {"ts":"2026-05-23T12:24:33Z","ts_epoch":1779539073,"type":"patrol.issue_created","check":"untested_scripts","count":5}
+{"ts":"2026-05-23T12:40:21Z","ts_epoch":1779540021,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":78,"recommended_template":"standard","issue_type":"testing"}
+{"ts":"2026-05-23T12:40:22Z","ts_epoch":1779540022,"type":"reasoning.trace","job_id":"pipeline-3618-548","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T12:40:46Z","ts_epoch":1779540046,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"testing"}
+{"ts":"2026-05-23T12:40:57Z","ts_epoch":1779540057,"type":"intelligence.estimate_iterations","estimate":5,"complexity":5,"source":"claude"}
+{"ts":"2026-05-23T12:41:08Z","ts_epoch":1779540068,"type":"intelligence.prediction","estimated_cost":4.50,"estimated_iterations":3,"complexity":5}
+{"ts":"2026-05-23T12:41:11Z","ts_epoch":1779540071,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-05-23T12:41:11Z","ts_epoch":1779540071,"type":"pipeline.started","issue":548,"template":"standard","complexity":5,"machine":"runnervmg397c","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-05-23T12:41:12Z","ts_epoch":1779540072,"type":"pipeline.started","event_id":"evt-1779540072-384840923","payload":"{\"issue\":\"548\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-05-23T12:41:12Z","ts_epoch":1779540072,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-23T12:41:12Z","ts_epoch":1779540072,"type":"intelligence.model_ab","issue":548,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-23T12:41:12Z","ts_epoch":1779540072,"type":"stage.started","issue":548,"stage":"intake"}
+{"ts":"2026-05-23T12:42:40Z","ts_epoch":1779540160,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/error-feedback-actionability-scorer-for-build-loop-quality-c.json","complexity":"very_complex","issue":548}
+{"ts":"2026-05-23T12:42:40Z","ts_epoch":1779540160,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"stage.complete","event_id":"evt-1779540162-1563690327","payload":"{\"stage\":\"intake\",\"issue\":\"548\",\"timing\":\"1m 28s\"}"}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"stage.completed","issue":548,"stage":"intake","duration_s":90,"result":"success"}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"vitals.snapshot","issue":548,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"intelligence.model","stage":"spec_generation","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"intelligence.model_ab","issue":548,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-23T12:42:42Z","ts_epoch":1779540162,"type":"stage.started","issue":548,"stage":"spec_generation"}
+{"ts":"2026-05-23T12:44:15Z","ts_epoch":1779540255,"type":"spec_generation.completed","issue":548,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-05-23T12:44:16Z","ts_epoch":1779540256,"type":"stage.complete","event_id":"evt-1779540256-3690100016","payload":"{\"stage\":\"spec_generation\",\"issue\":\"548\",\"timing\":\"1m 33s\"}"}
+{"ts":"2026-05-23T12:44:16Z","ts_epoch":1779540256,"type":"stage.completed","issue":548,"stage":"spec_generation","duration_s":94,"result":"success"}
+{"ts":"2026-05-23T12:44:17Z","ts_epoch":1779540257,"type":"vitals.snapshot","issue":548,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-23T12:44:17Z","ts_epoch":1779540257,"type":"intelligence.model","stage":"plan","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-23T12:44:17Z","ts_epoch":1779540257,"type":"intelligence.model_ab","issue":548,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-23T12:44:17Z","ts_epoch":1779540257,"type":"stage.started","issue":548,"stage":"plan"}
+{"ts":"2026-05-23T12:49:25Z","ts_epoch":1779540565,"type":"plan.validated","issue":548,"valid":"true","attempts":1}
+{"ts":"2026-05-23T12:49:26Z","ts_epoch":1779540566,"type":"stage.complete","event_id":"evt-1779540566-21410995","payload":"{\"stage\":\"plan\",\"issue\":\"548\",\"timing\":\"5m 8s\"}"}
+{"ts":"2026-05-23T12:49:26Z","ts_epoch":1779540566,"type":"stage.completed","issue":548,"stage":"plan","duration_s":309,"result":"success"}
+{"ts":"2026-05-23T12:49:26Z","ts_epoch":1779540566,"type":"vitals.snapshot","issue":548,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-23T12:49:27Z","ts_epoch":1779540567,"type":"intelligence.model","stage":"design","complexity":6,"model":"haiku","source":"heuristic"}
+{"ts":"2026-05-23T12:49:27Z","ts_epoch":1779540567,"type":"intelligence.model_ab","issue":548,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-05-23T12:49:27Z","ts_epoch":1779540567,"type":"stage.started","issue":548,"stage":"design"}
+{"ts":"2026-05-23T12:51:16Z","ts_epoch":1779540676,"type":"stage.complete","event_id":"evt-1779540676-1122804069","payload":"{\"stage\":\"design\",\"issue\":\"548\",\"timing\":\"1m 47s\"}"}
+{"ts":"2026-05-23T12:51:16Z","ts_epoch":1779540676,"type":"stage.completed","issue":548,"stage":"design","duration_s":109,"result":"success"}
+{"ts":"2026-05-23T12:51:16Z","ts_epoch":1779540676,"type":"vitals.snapshot","issue":548,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-05-23T12:51:16Z","ts_epoch":1779540676,"type":"vitals.adaptive_limit","issue":548,"context":"build_test","original":2,"vitals_limit":6}
+{"ts":"2026-05-23T12:52:00Z","ts_epoch":1779540720,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"ts":"2026-05-23T12:52:00Z","ts_epoch":1779540720,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-05-23T12:52:00Z","ts_epoch":1779540720,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":16709,"trimmed_prompt_chars":16709,"trim_ratio":0.0,"budget_utilization":8.4,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-05-23T13:01:04Z","ts_epoch":1779541264,"type":"reasoning.trace","job_id":"pipeline-76133-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:04Z","ts_epoch":1779541264,"type":"reasoning.trace","job_id":"pipeline-76793-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:05Z","ts_epoch":1779541265,"type":"reasoning.trace","job_id":"pipeline-77453-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:06Z","ts_epoch":1779541266,"type":"reasoning.trace","job_id":"pipeline-78116-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:07Z","ts_epoch":1779541267,"type":"reasoning.trace","job_id":"pipeline-78721-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:07Z","ts_epoch":1779541267,"type":"reasoning.trace","job_id":"pipeline-79395-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:08Z","ts_epoch":1779541268,"type":"reasoning.trace","job_id":"pipeline-80057-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:09Z","ts_epoch":1779541269,"type":"reasoning.trace","job_id":"pipeline-80886-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:10Z","ts_epoch":1779541270,"type":"reasoning.trace","job_id":"pipeline-81552-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:11Z","ts_epoch":1779541271,"type":"reasoning.trace","job_id":"pipeline-82463-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:11Z","ts_epoch":1779541271,"type":"reasoning.trace","job_id":"pipeline-83123-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:12Z","ts_epoch":1779541272,"type":"reasoning.trace","job_id":"pipeline-83421-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:12Z","ts_epoch":1779541272,"type":"reasoning.trace","job_id":"pipeline-84084-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:13Z","ts_epoch":1779541273,"type":"reasoning.trace","job_id":"pipeline-84803-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:01:14Z","ts_epoch":1779541274,"type":"reasoning.trace","job_id":"pipeline-85465-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-05-23T13:03:44Z","ts_epoch":1779541424,"type":"stage.failed","event_id":"evt-1779541424-1440036482","payload":"{\"stage\":\"build\",\"issue\":\"548\",\"timing\":\"12m 25s\"}"}
