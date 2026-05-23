@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 12,
-      "last_seen": "2026-05-23T13:00:17Z",
+      "last_seen": "2026-05-23T13:03:22Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 16,
-      "last_seen": "2026-05-23T13:06:41Z",
+      "seen_count": 15,
+      "last_seen": "2026-05-23T08:48:22Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
-      "root_cause": "sed command references $TEST_TEMP_DIR variable unexplained path substitution that fails because the literal string '$TEST_TEMP_DIR' is used instead of the variable value, causing 'No such file or directory' error in sw-code-review-test.sh",
-      "fix": "Fix the sed command in sw-code-review-test.sh to properly expand the TEST_TEMP_DIR variable before passing it to sed, using double quotes or pre-expanding the variable",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output missing expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Fix sw-cleanup.sh to detect stale heartbeat files and output 'Found' count summary with '--force' hint in dry-run mode",
       "seen_count": 1,
       "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
