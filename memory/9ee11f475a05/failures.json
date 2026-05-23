@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
-      "seen_count": 9,
-      "last_seen": "2026-05-22T19:27:29Z",
+      "seen_count": 10,
+      "last_seen": "2026-05-23T00:57:36Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 11,
-      "last_seen": "2026-05-22T19:44:08Z",
+      "seen_count": 16,
+      "last_seen": "2026-05-23T02:38:55Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
-      "root_cause": "sed command references $TEST_TEMP_DIR variable unexpectedly as a file argument instead of inline substitution, causing 'No such file or directory' error in sw-code-review-test.sh",
-      "fix": "Fix the sed invocation in sw-code-review-test.sh to properly quote the substitution expression inline rather than passing it as a file path",
+      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or malformed output",
+      "fix": "fix the regression detection function in sw-feedback.sh to output valid JSON when invoked in test context",
       "seen_count": 1,
       "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
