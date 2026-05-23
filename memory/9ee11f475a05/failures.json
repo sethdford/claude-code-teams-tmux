@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
-      "seen_count": 10,
-      "last_seen": "2026-05-23T02:01:12Z",
+      "seen_count": 13,
+      "last_seen": "2026-05-23T08:00:22Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 13,
-      "last_seen": "2026-05-23T02:14:38Z",
+      "seen_count": 17,
+      "last_seen": "2026-05-23T09:04:37Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
-      "root_cause": "regression detection test fails to output valid JSON in sw-feedback.sh",
-      "fix": "fix the regression detection subcommand in sw-feedback.sh to output valid JSON format",
+      "root_cause": "5 test failures in sw-hello-test.sh suite (not shown in log excerpt)",
+      "fix": "Review and fix the failing tests in sw-hello-test.sh — the log is cut off before showing the hello test results and failures",
       "seen_count": 1,
       "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
