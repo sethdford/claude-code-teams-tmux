@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 12,
-      "last_seen": "2026-05-23T12:58:01Z",
+      "last_seen": "2026-05-23T12:58:21Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
       "seen_count": 16,
-      "last_seen": "2026-05-23T13:05:29Z",
+      "last_seen": "2026-05-23T13:02:15Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
-      "root_cause": "sed command receives a sed script file path instead of an inline expression — missing -e flag or incorrect argument ordering causes 'No such file or directory'",
-      "fix": "Replace `sed 's|$TEST_TEMP_DIR|...|g'` with `sed -e \"s|$TEST_TEMP_DIR|...|g\"` or use proper quoting/variable expansion in the sed invocation",
+      "root_cause": "sed command references a literal '$TEST_TEMP_DIR' variable that was not expanded before use, treating it as a filename instead of a substitution pattern",
+      "fix": "Quote the sed expression correctly or ensure TEST_TEMP_DIR is exported and the sed command uses double quotes: sed \"s|$TEST_TEMP_DIR|...|g\" instead of single quotes",
       "seen_count": 1,
       "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
