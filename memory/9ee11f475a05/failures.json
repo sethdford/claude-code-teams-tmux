@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run does not report stale heartbeats or show 'Found N items' summary with --force hint",
       "fix": "Update sw-cleanup.sh to detect stale heartbeat files and output summary line with 'Found' count and '--force' hint in dry-run mode",
       "seen_count": 12,
-      "last_seen": "2026-05-23T12:58:21Z",
+      "last_seen": "2026-05-23T13:12:42Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection test fails to produce valid JSON output",
       "fix": "check the regression detection function in sw-feedback.sh to ensure it outputs properly formatted JSON",
-      "seen_count": 16,
-      "last_seen": "2026-05-23T13:02:15Z",
+      "seen_count": 15,
+      "last_seen": "2026-05-23T08:48:22Z",
       "category": "test_failure"
     },
     {
@@ -57,8 +57,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m5 of 24 tests failed\u001b[0m",
-      "root_cause": "sed command references a literal '$TEST_TEMP_DIR' variable that was not expanded before use, treating it as a filename instead of a substitution pattern",
-      "fix": "Quote the sed expression correctly or ensure TEST_TEMP_DIR is exported and the sed command uses double quotes: sed \"s|$TEST_TEMP_DIR|...|g\" instead of single quotes",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output are missing expected text: 'agent-1', 'Found', and '--force' in dry-run mode",
+      "fix": "Fix sw-cleanup.sh dry-run to scan for stale heartbeat files and print 'Found N items' with '--force' hint in summary output",
       "seen_count": 1,
       "last_seen": "2026-05-22T19:38:44Z",
       "category": "test_failure"
