@@ -1,3 +1,31 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or emit the 'Found'/'--force' summary lines that the test expects",
+      "fix": "Fix the heartbeat staleness detection logic in sw-cleanup.sh to scan the heartbeats directory and output the expected 'Found N item(s)' summary with '--force' hint when items are detected in dry-run mode",
+      "seen_count": 1,
+      "last_seen": "2026-05-28T19:32:59Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command missing -e flag causes the substitution expression to be interpreted as a filename",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in sw-code-review-test.sh",
+      "seen_count": 3,
+      "last_seen": "2026-05-28T20:02:10Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "mktemp failed because /tmp/claude directory does not exist",
+      "fix": "Create /tmp/claude directory before running tests, or update test scripts to use /tmp directly as the mktemp base",
+      "seen_count": 1,
+      "last_seen": "2026-05-28T21:04:20Z",
+      "category": "config"
+    }
+  ]
 }
