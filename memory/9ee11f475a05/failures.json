@@ -5,26 +5,17 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and summary output omits 'Found' count and '--force' hint text",
       "fix": "Fix sw-cleanup.sh heartbeat detection in dry-run mode to scan and display stale heartbeat entries, and ensure summary output includes 'Found N item(s)' count with '--force' hint when items are detected",
-      "seen_count": 3,
-      "last_seen": "2026-05-29T08:24:40Z",
+      "seen_count": 2,
+      "last_seen": "2026-05-29T01:52:04Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup-test.sh fails 3/24 on stale heartbeat detection and summary output — pre-existing known failure unrelated to current changes",
-      "fix": "No fix needed; these 3 failures in sw-cleanup-test.sh are a pre-existing issue documented in memory and do not reflect regressions from the current build",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits 'Found N' summary count and '--force' hint from output",
+      "fix": "Fix heartbeat detection logic in sw-cleanup.sh to correctly identify stale heartbeat files in dry-run mode and restore the summary output lines showing found count and --force hint",
       "seen_count": 2,
       "last_seen": "2026-05-28T21:00:07Z",
-      "category": "flaky"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed invoked without -e flag in sw-code-review-test.sh, causing the substitution expression to be interpreted as a filename",
-      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` with proper quoting so the expression is passed as a script, not a file path",
-      "seen_count": 1,
-      "last_seen": "2026-05-29T08:34:12Z",
       "category": "test_failure"
     }
   ]
