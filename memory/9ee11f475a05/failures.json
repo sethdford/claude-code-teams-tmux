@@ -6,16 +6,16 @@
       "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and summary output omits 'Found' count and '--force' hint text",
       "fix": "Fix sw-cleanup.sh heartbeat detection in dry-run mode to scan and display stale heartbeat entries, and ensure summary output includes 'Found N item(s)' count with '--force' hint when items are detected",
       "seen_count": 2,
-      "last_seen": "2026-05-29T01:52:36Z",
+      "last_seen": "2026-05-29T01:54:52Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup.sh changed output format for stale heartbeat detection and summary section, no longer printing agent ID, 'Found' count, or '--force' hint",
-      "fix": "Update sw-cleanup.sh dry-run output to include agent/heartbeat IDs and summary lines matching 'Found <n>' and '--force' patterns expected by sw-cleanup-test.sh",
-      "seen_count": 2,
-      "last_seen": "2026-05-28T21:00:07Z",
+      "root_cause": "sed called without -e flag in sw-code-review-test.sh, causing the substitution expression to be treated as a filename",
+      "fix": "Add -e flag before the substitution pattern: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|$TEST_TEMP_DIR|...|g\"`",
+      "seen_count": 3,
+      "last_seen": "2026-05-29T01:58:20Z",
       "category": "test_failure"
     }
   ]
