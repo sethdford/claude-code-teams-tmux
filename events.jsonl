@@ -1633,3 +1633,13 @@
 {"ts":"2026-05-29T19:27:18Z","ts_epoch":1780082838,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":14414,"trimmed_prompt_chars":14414,"trim_ratio":0.0,"budget_utilization":7.2,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-05-29T19:27:21Z","ts_epoch":1780082841,"type":"pipeline.context_exhaustion","issue":555,"stage":"build"}
 {"ts":"2026-05-29T19:27:23Z","ts_epoch":1780082843,"type":"stage.failed","event_id":"evt-1780082843-3439032696","payload":"{\"stage\":\"build\",\"issue\":\"555\",\"timing\":\"9m 29s\"}"}
+{"ts":"2026-05-30T00:48:21Z","ts_epoch":1780102101,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-05-30T00:48:25Z","ts_epoch":1780102105,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-05-30T00:48:31Z","ts_epoch":1780102111,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":4}
+{"ts":"2026-05-30T00:48:31Z","ts_epoch":1780102111,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-05-30T00:48:32Z","ts_epoch":1780102112,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-05-30T00:48:32Z","ts_epoch":1780102112,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-05-30T00:48:32Z","ts_epoch":1780102112,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-05-30T00:48:32Z","ts_epoch":1780102112,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-05-30T00:48:32Z","ts_epoch":1780102112,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
+{"ts":"2026-05-30T00:48:33Z","ts_epoch":1780102113,"type":"patrol.issue_created","check":"untested_scripts","count":5}
