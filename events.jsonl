@@ -699,3 +699,13 @@
 {"ts":"2026-05-30T05:53:08Z","ts_epoch":1780120388,"type":"pre_flight.completed","issue":577,"status":"pass","mode":"warning","issues":0,"rules":9}
 {"ts":"2026-05-30T06:11:03Z","ts_epoch":1780121463,"type":"pipeline.context_exhaustion","issue":577,"stage":"build"}
 {"ts":"2026-05-30T06:11:05Z","ts_epoch":1780121465,"type":"stage.failed","event_id":"evt-1780121465-1350048610","payload":"{\"stage\":\"build\",\"issue\":\"577\",\"timing\":\"35m 22s\"}"}
+{"ts":"2026-05-30T07:04:23Z","ts_epoch":1780124663,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-05-30T07:04:25Z","ts_epoch":1780124665,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-05-30T07:04:30Z","ts_epoch":1780124670,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":5}
+{"ts":"2026-05-30T07:04:31Z","ts_epoch":1780124671,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
+{"ts":"2026-05-30T07:04:32Z","ts_epoch":1780124672,"type":"patrol.issue_created","check":"untested_scripts","count":5}
