@@ -1,3 +1,31 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection does not output 'agent-1', 'Found', or '--force' hint during dry-run, indicating the heartbeat scanning logic is broken or the output format changed",
+      "fix": "Fix the stale heartbeat detection and summary output in sw-cleanup.sh to emit the agent name, 'Found N item(s)' count, and '--force' hint when items are detected in dry-run mode",
+      "seen_count": 1,
+      "last_seen": "2026-06-01T19:47:10Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-feedback-test.sh regression detection test fails because the regression detection output is not valid JSON",
+      "fix": "Fix the regression detection function in sw-feedback.sh to output properly formatted JSON",
+      "seen_count": 2,
+      "last_seen": "2026-06-01T20:04:28Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp fails because /tmp/claude parent directory does not exist on this runner",
+      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or change the template to use /tmp directly (e.g., mktemp -d /tmp/sw-test-XXXXXX)",
+      "seen_count": 1,
+      "last_seen": "2026-06-01T20:33:15Z",
+      "category": "config"
+    }
+  ]
 }
