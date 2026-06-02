@@ -48,7 +48,7 @@ fi
 # ─── Database Configuration ──────────────────────────────────────────────────
 DB_DIR="${HOME}/.shipwright"
 DB_FILE="${DB_DIR}/shipwright.db"
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 
 # JSON fallback paths
 EVENTS_FILE="${DB_DIR}/events.jsonl"
@@ -479,6 +479,32 @@ CREATE TABLE IF NOT EXISTS reasoning_traces (
     FOREIGN KEY (job_id) REFERENCES pipeline_runs(job_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
+
+-- Flaky test detection: per-test pass/fail history (v7)
+CREATE TABLE IF NOT EXISTS test_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pipeline_id TEXT NOT NULL,
+    test_name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('PASS', 'FAIL', 'SKIP')),
+    duration_ms INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    UNIQUE(pipeline_id, test_name)
+);
+CREATE INDEX IF NOT EXISTS idx_test_results_name ON test_results(test_name, id DESC);
+CREATE INDEX IF NOT EXISTS idx_test_results_pipeline ON test_results(pipeline_id);
+
+-- Flaky test detection: quarantined tests (v7)
+CREATE TABLE IF NOT EXISTS flaky_quarantine (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_name TEXT UNIQUE NOT NULL,
+    failure_rate REAL NOT NULL,
+    runs_analyzed INTEGER NOT NULL DEFAULT 0,
+    github_issue_url TEXT,
+    test_file TEXT,
+    quarantined_at TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_flaky_quarantine_active ON flaky_quarantine(is_active);
 SCHEMA
 }
 
@@ -651,6 +677,37 @@ CREATE INDEX IF NOT EXISTS idx_reasoning_traces_job ON reasoning_traces(job_id);
 "
         _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (6, '$(now_iso)', '$(now_iso)');"
         success "Migrated to schema v6"
+    fi
+
+    # Migration from v6 → v7: flaky test detection tables
+    if [[ "$current_version" -lt 7 ]]; then
+        info "Migrating schema v${current_version} → v7..."
+        sqlite3 "$DB_FILE" "
+CREATE TABLE IF NOT EXISTS test_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pipeline_id TEXT NOT NULL,
+    test_name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('PASS', 'FAIL', 'SKIP')),
+    duration_ms INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    UNIQUE(pipeline_id, test_name)
+);
+CREATE INDEX IF NOT EXISTS idx_test_results_name ON test_results(test_name, id DESC);
+CREATE INDEX IF NOT EXISTS idx_test_results_pipeline ON test_results(pipeline_id);
+CREATE TABLE IF NOT EXISTS flaky_quarantine (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_name TEXT UNIQUE NOT NULL,
+    failure_rate REAL NOT NULL,
+    runs_analyzed INTEGER NOT NULL DEFAULT 0,
+    github_issue_url TEXT,
+    test_file TEXT,
+    quarantined_at TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_flaky_quarantine_active ON flaky_quarantine(is_active);
+"
+        _db_exec "INSERT OR REPLACE INTO _schema (version, created_at, applied_at) VALUES (7, '$(now_iso)', '$(now_iso)');"
+        success "Migrated to schema v7"
     fi
 }
 
@@ -1287,6 +1344,124 @@ db_query_reasoning_traces() {
     job_id="${job_id//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
     if ! db_available; then echo "[]"; return 0; fi
     _db_query -json "SELECT * FROM reasoning_traces WHERE job_id = '$job_id' ORDER BY id ASC;" || echo "[]"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Flaky Test Detection Functions (v7)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# db_record_test_result <pipeline_id> <test_name> <status> [duration_ms]
+# status must be PASS, FAIL, or SKIP. Idempotent per (pipeline_id, test_name).
+db_record_test_result() {
+    local pipeline_id="$1" test_name="$2" status="$3" duration_ms="${4:-0}"
+    if ! db_available; then return 1; fi
+    case "$status" in
+        PASS|FAIL|SKIP) ;;
+        *) return 1 ;;
+    esac
+    [[ "$duration_ms" =~ ^[0-9]+$ ]] || duration_ms=0
+    pipeline_id="${pipeline_id//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    test_name="${test_name//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    _db_exec "INSERT OR REPLACE INTO test_results (pipeline_id, test_name, status, duration_ms, created_at)
+              VALUES ('$pipeline_id', '$test_name', '$status', $duration_ms, '$(now_iso)');"
+}
+
+# db_query_test_history <test_name> [limit] — newest-first PASS/FAIL/SKIP rows as JSON
+db_query_test_history() {
+    local test_name="$1" limit="${2:-10}"
+    if ! db_available; then echo "[]"; return 0; fi
+    [[ "$limit" =~ ^[0-9]+$ ]] || limit=10
+    test_name="${test_name//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    _db_query -json "SELECT pipeline_id, test_name, status, duration_ms, created_at
+        FROM test_results WHERE test_name = '$test_name'
+        ORDER BY id DESC LIMIT $limit;" || echo "[]"
+}
+
+# db_flaky_candidates <variance_threshold> <window> <min_runs> <required_failures>
+# Returns JSON rows: {test_name, failure_rate, runs, failures} for tests whose
+# failure rate over the last <window> runs is >= threshold (percent). Only PASS/FAIL
+# count toward the rate; SKIP rows are ignored so quarantined tests don't re-trigger.
+db_flaky_candidates() {
+    local threshold="${1:-20}" window="${2:-10}" min_runs="${3:-3}" required_failures="${4:-2}"
+    if ! db_available; then echo "[]"; return 0; fi
+    [[ "$threshold" =~ ^[0-9.]+$ ]] || threshold=20
+    [[ "$window" =~ ^[0-9]+$ ]] || window=10
+    [[ "$min_runs" =~ ^[0-9]+$ ]] || min_runs=3
+    [[ "$required_failures" =~ ^[0-9]+$ ]] || required_failures=2
+    # Per test, take the last <window> PASS/FAIL rows, compute failure rate.
+    _db_query -json "
+WITH ranked AS (
+    SELECT test_name, status,
+           ROW_NUMBER() OVER (PARTITION BY test_name ORDER BY id DESC) AS rn
+    FROM test_results
+    WHERE status IN ('PASS','FAIL')
+),
+windowed AS (
+    SELECT test_name, status FROM ranked WHERE rn <= $window
+)
+SELECT test_name,
+       ROUND(SUM(CASE WHEN status='FAIL' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS failure_rate,
+       COUNT(*) AS runs,
+       SUM(CASE WHEN status='FAIL' THEN 1 ELSE 0 END) AS failures
+FROM windowed
+GROUP BY test_name
+HAVING runs >= $min_runs
+   AND failures >= $required_failures
+   AND failure_rate >= $threshold
+ORDER BY failure_rate DESC;" || echo "[]"
+}
+
+# db_record_quarantine <test_name> <failure_rate> <runs_analyzed> [github_issue_url] [test_file]
+db_record_quarantine() {
+    local test_name="$1" failure_rate="$2" runs="${3:-0}" issue_url="${4:-}" test_file="${5:-}"
+    if ! db_available; then return 1; fi
+    [[ "$failure_rate" =~ ^[0-9.]+$ ]] || failure_rate=0
+    [[ "$runs" =~ ^[0-9]+$ ]] || runs=0
+    test_name="${test_name//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    issue_url="${issue_url//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    test_file="${test_file//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    _db_exec "INSERT INTO flaky_quarantine (test_name, failure_rate, runs_analyzed, github_issue_url, test_file, quarantined_at, is_active)
+              VALUES ('$test_name', $failure_rate, $runs, '$issue_url', '$test_file', '$(now_iso)', 1)
+              ON CONFLICT(test_name) DO UPDATE SET
+                failure_rate=excluded.failure_rate,
+                runs_analyzed=excluded.runs_analyzed,
+                github_issue_url=CASE WHEN excluded.github_issue_url != '' THEN excluded.github_issue_url ELSE flaky_quarantine.github_issue_url END,
+                test_file=CASE WHEN excluded.test_file != '' THEN excluded.test_file ELSE flaky_quarantine.test_file END,
+                quarantined_at=excluded.quarantined_at,
+                is_active=1;"
+}
+
+# db_is_quarantined <test_name> — exit 0 if an active quarantine exists
+db_is_quarantined() {
+    local test_name="$1"
+    if ! db_available; then return 1; fi
+    test_name="${test_name//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    local count
+    count=$(_db_query "SELECT COUNT(*) FROM flaky_quarantine WHERE test_name = '$test_name' AND is_active = 1;" 2>/dev/null || echo 0)
+    [[ "${count:-0}" -gt 0 ]]
+}
+
+# db_list_quarantined [--all] — active quarantines as JSON (use --all to include lifted)
+db_list_quarantined() {
+    if ! db_available; then echo "[]"; return 0; fi
+    local where="WHERE is_active = 1"
+    [[ "${1:-}" == "--all" ]] && where=""
+    _db_query -json "SELECT id, test_name, failure_rate, runs_analyzed, github_issue_url, test_file, quarantined_at, is_active
+        FROM flaky_quarantine $where ORDER BY quarantined_at DESC;" || echo "[]"
+}
+
+# db_lift_quarantine <test_name> — mark a quarantine inactive (manual un-skip)
+db_lift_quarantine() {
+    local test_name="$1"
+    if ! db_available; then return 1; fi
+    test_name="${test_name//$_SQL_SQ/$_SQL_SQ$_SQL_SQ}"
+    _db_exec "UPDATE flaky_quarantine SET is_active = 0 WHERE test_name = '$test_name';"
+}
+
+# db_count_quarantined — number of active quarantines (for dashboard)
+db_count_quarantined() {
+    if ! db_available; then echo "0"; return 0; fi
+    _db_query "SELECT COUNT(*) FROM flaky_quarantine WHERE is_active = 1;" || echo "0"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════

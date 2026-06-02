@@ -360,6 +360,9 @@ main() {
         regression)
             exec "$SCRIPT_DIR/sw-regression.sh" "$@"
             ;;
+        flaky)
+            exec "$SCRIPT_DIR/sw-flaky.sh" "$@"
+            ;;
         incident)
             exec "$SCRIPT_DIR/sw-incident.sh" "$@"
             ;;

@@ -213,6 +213,22 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "flaky.results_recorded": {
+      "required": ["pipeline_id"],
+      "optional": ["count"]
+    },
+    "flaky.detected": {
+      "required": [],
+      "optional": ["count", "threshold"]
+    },
+    "flaky.quarantined": {
+      "required": ["test"],
+      "optional": ["mutated", "failure_rate"]
+    },
+    "flaky.issue_created": {
+      "required": ["test"],
+      "optional": ["url"]
     }
   }
 }

@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.92,
+        "reasoning": "Architect designs detection/quarantine system architecture, builder implements core algorithms, tester validates with comprehensive coverage for this complex system",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1780364617,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,324 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "82dbdf81860b095749fb63765dd9d5d4": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "False positive quarantine: incorrect variance detection masks real issues as flaky",
+          "Detection algorithm accuracy: 20% threshold may require per-project tuning",
+          "Test file mutation side effects: skip annotations could affect test discovery or reporting",
+          "Data drift: historical patterns may not reflect current code health after significant changes",
+          "Quarantine accumulation: tech debt grows if un-quarantine process is not enforced"
+        ],
+        "implementation_hints": [
+          "Validate variance detection algorithm independently before deploying auto-quarantine",
+          "Implement dry-run mode first: track flaky detection without file mutations for 1-2 weeks",
+          "Start with high confidence threshold (>30% variance) and lower gradually",
+          "Make un-quarantine trivial: single command to remove skip annotations and clear history",
+          "Dashboard must show confidence score, failure pattern details, and investigation link for each quarantine",
+          "Ensure GitHub issue template includes test output samples and historical failure timeline",
+          "Consider multiple failure patterns: intermittent vs degrading (not just pass/fail variance)",
+          "Implement detection cooldown: skip re-analysis for 7 days after quarantine to prevent churn"
+        ]
+      },
+      "timestamp": 1780363919,
+      "ttl": 3600
+    },
+    "3b0b27b022db42bfa7d6401b8811ae21": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1780363932,
+      "ttl": 1800
+    },
+    "6dcba0580fb473ce16b52c90f3a1d024": {
+      "result": {
+        "estimated_cost_usd": 12.50,
+        "estimated_iterations": 6,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1780363943,
+      "ttl": 3600
+    },
+    "600f2cb29db97f961d6b5a3012bedb15": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "infrastructure",
+          "observability",
+          "database"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Multi-layered: statistical algorithm design, cross-framework test annotation, SQLite integration, daemon patrol scheduling, GitHub API interaction, and dashboard metrics. Moderate complexity but broad scope across multiple systems."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "data-pipeline"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "flaky-test-pattern-detection"
+          ],
+          "build": [
+            "data-pipeline",
+            "flaky-test-pattern-detection",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "performance",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "testing-strategy": "Must understand test framework variations (Vitest skip syntax, Jest skip, framework-agnostic @skip annotation) and collection points where test results are available.",
+          "data-pipeline": "Design the ETL: collect test results from pipeline runs → SQLite storage → variance calculation → quarantine decision, with attention to data quality and historical window management.",
+          "architecture-design": "Document the system architecture: database schema design, detection service responsibilities, daemon patrol integration point, and how quarantine feedback loops back into test code.",
+          "api-design": "Define interfaces for: test result submission, quarantine decisions, GitHub issue creation, and dashboard query endpoints—all must work within the existing daemon/pipeline context.",
+          "flaky-test-pattern-detection": "Provides the domain-specific algorithm design and framework-agnostic quarantine mechanism that the generic skills don't cover.",
+          "adversarial-quality": "Attack the detection algorithm: find edge cases (tests that pass/fail in strict sequence, tests that flake only under load, tests that flake in CI but not locally), verify 20% threshold doesn't miss real issues or over-flag transient failures.",
+          "performance": "Optimize SQLite queries for test result insertion/retrieval at scale; ensure variance calculation doesn't block daemon patrol runs; consider indexing strategies for test_name and pipeline_id.",
+          "two-stage-review": "Pass 1: verify statistical correctness (variance formula, sliding window, threshold logic); Pass 2: validate integration (database atomicity, framework compatibility, issue deduplication).",
+          "validation-thoroughness": "Test the complete quarantine workflow end-to-end: submit flaky tests, verify @skip annotations are applied, confirm GitHub issues are created without duplicates, validate dashboard metrics align with database state.",
+          "observability": "Instrument the detection pipeline: track variance calculations, quarantine decisions, false positive/negative rates, detection latency; expose metrics to the dashboard; monitor daemon patrol execution times.",
+          "pr-quality": "Ensure the PR clearly explains the statistical approach (20% variance over 10 runs), documents the database schema, and provides migration/rollback steps for SQLite changes.",
+          "deploy-safety": "Treat database migration as a controlled rollout: verify backward compatibility, test rollback procedure, monitor false positive rate in production before marking as permanent."
+        },
+        "generated_skills": [
+          {
+            "name": "flaky-test-pattern-detection",
+            "reason": "No existing skill covers the core detection algorithm (20% variance calculation over 10-run window) or the cross-framework test skip annotation mechanism. This requires domain-specific guidance on statistical thresholds, sliding window sizing, and test framework compatibility.",
+            "content": "## Flaky Test Pattern Detection & Quarantine Strategy\n\n### Core Algorithm Design\n\n**Variance Calculation**: Calculate failure rate variance over the last 10 test runs. A test is flagged if:\n- Failure rate variance > 20% (e.g., passes 8/10 runs, fails 2/10 = 20% failure rate)\n- Minimum 3 runs in the window to avoid noise\n- Use the coefficient of variation (std dev / mean) for normalized scoring across tests with different execution counts\n\n**Sliding Window**: Store last 10 pipeline runs per test. Query structure:\n```sql\nSELECT test_name, \n  COUNT(CASE WHEN status='FAIL' THEN 1 END) * 100.0 / COUNT(*) as failure_rate\nFROM test_results \nWHERE test_name = ? AND pipeline_id IN (\n  SELECT pipeline_id FROM pipelines ORDER BY run_at DESC LIMIT 10\n)\nGROUP BY test_name\nHAVING failure_rate > 20\n```\n\n### Cross-Framework Skip Annotations\n\nDifferent test frameworks use different skip mechanisms. Implement a plugin system:\n\n1. **Vitest**: `.skip()` method on test/describe blocks\n2. **Jest**: `.skip()` method or `xit()` alias\n3. **Mocha**: `.skip()` method\n4. **Generic**: Add comment annotation `// QUARANTINED: flaky test` above test declaration\n\nFor each detected test, append a skip annotation that includes:\n- Failure rate percentage\n- Issue URL for investigation\n- Timestamp of quarantine\n\nExample:\n```javascript\n// QUARANTINED: flaky test (25% failure rate)\n// See: https://github.com/owner/repo/issues/XXXX\ntest.skip('should handle concurrent writes', async () => { ... })\n```\n\n### False Positive Prevention\n\n1. **Require multiple failures**: Only flag if >2 failures in the 10-run window (eliminates single flakes)\n2. **Trend analysis**: Check if failure rate is improving/degrading; improving trends = likely fixed, don't quarantine\n3. **Manual override**: Allow developers to mark tests as \"false positive\" to remove from quarantine\n4. **Cooldown period**: Don't re-quarantine a test that was fixed (dev had to un-skip it) for at least 5 successful runs\n\n### GitHub Issue Creation\n\nCreate issues with:\n- Title: `[Flaky Test] test_name (25% failure rate)`\n- Body: failure pattern data (last 10 results, failure distribution, timestamps)\n- Label: `flaky-test`\n- Assignee: original test author (via git blame)\n- Deduplication: Check for existing `flaky-test` issue for this test_name; update if exists, create if new\n\n### Database Schema\n\n```sql\nCREATE TABLE test_results (\n  id INTEGER PRIMARY KEY,\n  pipeline_id TEXT NOT NULL,\n  test_name TEXT NOT NULL,\n  status TEXT CHECK(status IN ('PASS', 'FAIL', 'SKIP')),\n  duration_ms INTEGER,\n  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,\n  UNIQUE(pipeline_id, test_name)\n);\n\nCREATE TABLE quarantined_tests (\n  id INTEGER PRIMARY KEY,\n  test_name TEXT UNIQUE NOT NULL,\n  failure_rate REAL NOT NULL,\n  github_issue_url TEXT,\n  quarantine_date DATETIME DEFAULT CURRENT_TIMESTAMP,\n  is_active BOOLEAN DEFAULT 1\n);\n\nCREATE INDEX idx_test_results_name_date \n  ON test_results(test_name, timestamp DESC);\n```\n\n### Integration with Daemon Patrol\n\nRun weekly flaky detection as a patrol job:\n1. Calculate variance for all tests with >10 runs\n2. Identify newly-flaky tests (not in quarantined_tests)\n3. Auto-skip them in source code (file mutation)\n4. Create GitHub issues\n5. Update dashboard metrics\n\nDaemon config:\n```json\n{\n  \"patrol\": {\n    \"flaky_detection_enabled\": true,\n    \"flaky_detection_schedule\": \"0 2 * * 0\",\n    \"flaky_variance_threshold\": 20,\n    \"flaky_min_runs\": 3,\n    \"flaky_required_failures\": 2\n  }\n}\n```"
+          }
+        ],
+        "review_focus": [
+          "Variance calculation correctness: verify the 20% threshold and coefficient-of-variation formula correctly identify flaky tests without false positives",
+          "Sliding window size: confirm 10-run window balances historical context vs. stale data for this project's pipeline frequency",
+          "Test framework compatibility: ensure @skip/skip() annotation mechanism works across Vitest, Jest, Mocha, and any other frameworks used in the codebase",
+          "Database query performance: validate indexing strategy and query optimization for large test suites (100s of tests across 1000s of pipeline runs)",
+          "False positive rate: test that the algorithm doesn't over-quarantine tests that are just noisy but legitimately important",
+          "GitHub issue deduplication: verify the system doesn't create duplicate issues for the same flaky test across multiple detection cycles",
+          "Daemon patrol integration: confirm weekly flaky detection runs don't interfere with active pipelines and respect system load",
+          "Skip annotation durability: verify that manually-unskipped tests (after being fixed) aren't immediately re-quarantined on the next detection cycle"
+        ],
+        "risk_areas": [
+          "Over-aggressive quarantine could mask real bugs that need fixing instead of skipping; validate 20% threshold and min-failures logic",
+          "Test framework diversity: Vitest, Jest, Mocha, and custom runners have different skip APIs; incomplete framework support could leave flaky tests running",
+          "Data integrity: incomplete test result tracking from failed pipelines or missing instrumentation could skew variance calculations",
+          "Merge conflicts: auto-modifying test files with skip annotations could create conflicts with developer PRs; need atomic writes and conflict detection",
+          "Performance degradation: large test suites (1000+ tests) could have slow variance queries; must optimize with proper indexing and query limits",
+          "Silent failures: if GitHub issue creation fails, quarantine could be applied without issue tracking, leaving no investigation trail"
+        ]
+      },
+      "timestamp": 1780364046,
+      "ttl": 3600
+    },
+    "68b1561d7b2f43ccafc15ca587746c72": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-06-02)",
+            "relevance": 95,
+            "summary": "Shows project uses Vitest as test runner with npm, Node.js, and test pattern *.test.js. Essential foundation for planning flaky test detection system targeting this specific test runner and project structure."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 85,
+            "summary": "Documents successful fix for timeout bug using semaphores. Directly relevant—timeouts and race conditions are primary causes of flaky tests; semaphore pattern is a potential solution for quarantine mechanism."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains 4 test failure patterns with error signatures and fix strategies. Provides empirical data about recurring test failures (mktemp issues, output formatting) that should inform flaky test detection rules and patterns."
+          },
+          {
+            "file": "success-patterns.json (test1 auth module, 2026-04-01)",
+            "relevance": 65,
+            "summary": "Shows successful feature testing with 'unit + integration' strategy, file patterns (src/, test/), and TDD approach. Informs current testing methodology and organization that the flaky detection system must integrate with."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Establishes build duration baseline (2089s). Useful for setting timeout thresholds and performance expectations when designing the auto-quarantine system's detection criteria."
+          }
+        ]
+      },
+      "timestamp": 1780364137,
+      "ttl": 1800
+    },
+    "894f8b19c894dbad83dbe236c5d2d9af": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains 4+ captured test failure patterns (mktemp errors, output formatting, test detection) with root causes and fix strategies. Directly relevant to understanding what validation failed in a flaky test detection system."
+          },
+          {
+            "file": "failures.json (output missing: --force)",
+            "relevance": 68,
+            "summary": "Shows a recent test-stage failure (2026-06-01) with pattern 'output missing: --force'. Likely represents validation failure signature relevant to understanding test quarantine system requirements."
+          },
+          {
+            "file": "patterns.json (project context)",
+            "relevance": 62,
+            "summary": "Current project is Node.js/vitest with npm test runner. Provides essential context for what a flaky test detection system for this repo must handle."
+          }
+        ]
+      },
+      "timestamp": 1780364430,
+      "ttl": 1800
+    },
+    "7d7b268ca7efdbe7ecab221137c9d6f6": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-06-02T01:34:08Z)",
+            "relevance": 90,
+            "summary": "Contains current project type (node), test runner (vitest), and conventions (test_pattern: *.test.js). Essential for designing test detection system that must integrate with vitest."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 75,
+            "summary": "Defines existing architecture rules that the flaky test detection system must respect and operate within as a new subsystem."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Documents test failure patterns (mktemp errors, missing --force output, JSON validation failures) that inform what kinds of flaky test failures need detection."
+          },
+          {
+            "file": "success-patterns.json (feature patterns)",
+            "relevance": 55,
+            "summary": "Shows successful iterative TDD approaches and feature complexity patterns (60-65 complexity, 3-5 iterations, npm test strategy) useful for planning implementation approach."
+          },
+          {
+            "file": "failures.json (output missing: --force)",
+            "relevance": 45,
+            "summary": "Documents test output/reporting failures that relate to how the quarantine system should surface results to users."
+          }
+        ]
+      },
+      "timestamp": 1780364463,
+      "ttl": 1800
+    },
+    "790a9f7d435f38ea74be027e3820221c": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains multiple test failure signatures and fix strategies (mktemp directory issues, output formatting, regression detection) that directly show what anti-patterns to avoid in test infrastructure design"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 72,
+            "summary": "Shows daemon timeout bug pattern with semaphore solution and 'check backoff' gotcha—directly relevant to understanding flaky test root causes and what patterns work for timeout-related flakiness"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Current project conventions (Node/vitest/npm/commonjs) establish baseline for design constraints and inform which testing patterns are already in use that the flaky detection system must integrate with"
+          }
+        ]
+      },
+      "timestamp": 1780364481,
+      "ttl": 1800
+    },
+    "6473fd65d4ee665e19816db2bb763f00": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (repo-specific, captured 2026-06-02T01:34:08Z)",
+            "relevance": 95,
+            "summary": "Current repo context with exact project conventions: Node.js, vitest, npm, commonjs imports, src/ and test/ dirs. Directly applicable to building flaky test detection feature."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains 5 test-related failure patterns including mktemp directory issues and test output formatting errors. Recent knowledge base (2026-05-22) with practical fixes applicable to test infrastructure work."
+          },
+          {
+            "file": "failures.json (test stage, --force output)",
+            "relevance": 75,
+            "summary": "Recent test stage failure (2026-06-01) showing output formatting issues. Directly relevant to debugging test-related problems during build stage."
+          },
+          {
+            "file": "success-patterns.json (detailed patterns with iterations)",
+            "relevance": 70,
+            "summary": "Contains 2 successful build patterns showing iterative approaches (3-4 iterations) for feature and bug work. Demonstrates effective loop strategies applicable to building the flaky test system."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Records successful resolution of test timeout bug in daemon with semaphore fix. Relevant example of test-related problem solving with identified gotchas."
+          }
+        ]
+      },
+      "timestamp": 1780364587,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 92,
+            "summary": "Defines project conventions (vitest test runner, npm package manager, src/ source dir, commonjs imports) essential for configuring and executing the build stage correctly"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Shows two successful multi-iteration builds (3-4 iterations each) with documented test strategies (npm test) and iteration patterns directly applicable to the current build stage"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Contains 4 specific failure patterns from previous builds: mktemp /tmp/claude issues, cleanup tool output formatting, and regression detection JSON errors—likely to recur during test execution"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Documents a test-stage failure pattern ('output missing: --force') seen in recent builds that should be monitored and avoided during the current build's test phase"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 63,
+            "summary": "Provides baseline build duration (2089s / ~35 min) useful for setting expectations and detecting stalls or performance regressions during the build stage"
+          }
+        ]
+      },
+      "timestamp": 1780364603,
+      "ttl": 1800
     }
   }
 }
