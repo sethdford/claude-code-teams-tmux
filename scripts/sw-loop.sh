@@ -31,6 +31,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$SCRIPT_DIR/sw-db.sh" ]]; then
     source "$SCRIPT_DIR/sw-db.sh" 2>/dev/null || true
 fi
+# Flaky test detection (records per-test history; sources sw-db.sh internally)
+[[ -f "$SCRIPT_DIR/lib/flaky-detection.sh" ]] && source "$SCRIPT_DIR/lib/flaky-detection.sh" 2>/dev/null || true
 # Cross-pipeline discovery (learnings from other pipeline runs)
 [[ -f "$SCRIPT_DIR/sw-discovery.sh" ]] && source "$SCRIPT_DIR/sw-discovery.sh" 2>/dev/null || true
 # Source loop sub-modules for modular iteration management
@@ -1077,6 +1079,20 @@ run_test_gate() {
 
     TEST_PASSED=$all_passed
     TEST_OUTPUT="$(echo "$combined_output" | tail -50)"
+
+    # Record per-test pass/fail history for flaky detection. Reads the full
+    # untruncated test log(s) so individual test lines are visible to the
+    # parser. Guarded: no-op when the library or DB is unavailable.
+    if type flaky_record_results >/dev/null 2>&1 && [[ -n "${FLAKY_PIPELINE_ID:-}" ]]; then
+        local _flaky_log="${combined_output}"
+        local _flaky_tmp
+        _flaky_tmp="$(mktemp "${TMPDIR:-/tmp}/sw-flaky-results.XXXXXX" 2>/dev/null || echo "")"
+        if [[ -n "$_flaky_tmp" ]]; then
+            printf '%s\n' "$_flaky_log" > "$_flaky_tmp"
+            flaky_record_results "$FLAKY_PIPELINE_ID" "$_flaky_tmp" >/dev/null 2>&1 || true
+            rm -f "$_flaky_tmp"
+        fi
+    fi
 }
 
 write_error_summary() {
@@ -2132,6 +2148,13 @@ run_single_agent_loop() {
     # Ensure LOOP_START_COMMIT is set (may not be on resume/restart)
     if [[ -z "${LOOP_START_COMMIT:-}" ]]; then
         LOOP_START_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")"
+    fi
+
+    # Stable per-run id for flaky-test history (one run = one row per test;
+    # later iterations overwrite via INSERT OR REPLACE so final status wins).
+    # Honors a pipeline-supplied id; otherwise derives a unique one once.
+    if [[ -z "${FLAKY_PIPELINE_ID:-}" ]]; then
+        FLAKY_PIPELINE_ID="${SW_PIPELINE_ID:-loop-$(date +%s)-$$}"
     fi
 
     # Apply adaptive budget/model before showing banner

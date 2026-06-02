@@ -20,7 +20,9 @@ assert_equals() {
 }
 assert_contains() {
     local needle="$1" haystack="$2" description="${3:-}"
-    if echo "$haystack" | grep -qF "$needle"; then
+    # Here-string (not a pipe): under pipefail, `echo "$big" | grep -q` can
+    # fail with 141 when grep matches early and echo is killed by SIGPIPE.
+    if grep -qF "$needle" <<<"$haystack"; then
         PASS=$((PASS+1)); echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
         FAIL=$((FAIL+1)); echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
@@ -29,7 +31,7 @@ assert_contains() {
 }
 assert_not_contains() {
     local needle="$1" haystack="$2" description="${3:-}"
-    if ! echo "$haystack" | grep -qF "$needle"; then
+    if ! grep -qF "$needle" <<<"$haystack"; then
         PASS=$((PASS+1)); echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
         FAIL=$((FAIL+1)); echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
@@ -222,6 +224,34 @@ test_router_registration() {
     assert_contains "flaky)" "$(cat "$SCRIPT_DIR/sw")" "flaky registered in sw router"
 }
 
+# Loop integration: the build loop must source the library and record results
+# after running tests so detection has data in production.
+test_loop_wiring() {
+    local loop="$SCRIPT_DIR/sw-loop.sh"
+    assert_contains "lib/flaky-detection.sh" "$(cat "$loop")" "loop sources flaky-detection library"
+    assert_contains "flaky_record_results" "$(cat "$loop")" "loop calls flaky_record_results after tests"
+    assert_contains "FLAKY_PIPELINE_ID" "$(cat "$loop")" "loop sets a stable per-run pipeline id"
+}
+
+# End-to-end: flaky_record_results parses a multi-test log and persists rows.
+test_record_results_e2e() {
+    source "$SCRIPT_DIR/lib/flaky-detection.sh" 2>/dev/null
+    local log; log="$(mktemp "${TMPDIR:-/tmp}/flaky-e2e.XXXXXX")"
+    printf '%s\n' \
+        "  ✓ test/a.test.js > sums two numbers" \
+        "  ✗ test/a.test.js > flaky network call" \
+        "  ✓ test/b.test.js > renders ok" > "$log"
+    flaky_record_results "e2e-run-1" "$log" >/dev/null 2>&1 || true
+    rm -f "$log"
+    local fail_status
+    fail_status=$(sqlite3 "$DBF" \
+        "SELECT status FROM test_results WHERE pipeline_id='e2e-run-1' AND test_name LIKE '%flaky network call%';" 2>/dev/null)
+    assert_equals "FAIL" "$fail_status" "recorded FAIL row from parsed loop output"
+    local total
+    total=$(sqlite3 "$DBF" "SELECT COUNT(*) FROM test_results WHERE pipeline_id='e2e-run-1';" 2>/dev/null)
+    assert_equals "3" "$total" "recorded all three parsed test rows"
+}
+
 # ─── Main ───────────────────────────────────────────────────────────────────
 echo "sw-flaky-test.sh"
 test_schema_v7
@@ -236,6 +266,8 @@ test_ambiguous_quarantine_no_mutation
 test_skip_status_not_recounted
 test_help_and_version
 test_router_registration
+test_loop_wiring
+test_record_results_e2e
 
 echo ""
 echo "PASS: $PASS"
