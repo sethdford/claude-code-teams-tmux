@@ -6,14 +6,14 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 3,
-      "last_seen": "2026-06-02T07:53:31Z",
+      "last_seen": "2026-06-02T09:12:22Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m39 passed\u001b[0m, 0 failed",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, causing 3 tests to fail on missing 'agent-1', 'Found', and '--force' strings",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a 'Found N items' summary with '--force hint' when items are detected in dry-run mode",
+      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeats or output 'Found'/'--force' hint in its summary section",
+      "fix": "Update sw-cleanup.sh to scan for stale heartbeat files in the dry-run path and print 'Found N items' summary with '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-02T02:00:31Z",
       "category": "test_failure"
