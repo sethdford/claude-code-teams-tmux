@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
-      "seen_count": 4,
-      "last_seen": "2026-06-02T10:54:28Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-02T18:46:42Z",
       "category": "test_failure"
     },
     {
@@ -21,11 +21,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "mktemp failed because /tmp/claude directory does not exist",
-      "fix": "Create /tmp/claude directory before running tests, or update test scripts to use mktemp without a subdirectory prefix (use /tmp/sw-test-XXXXXX instead)",
+      "root_cause": "sw-cleanup.sh dry-run mode does not detect stale heartbeat files or display 'Found N items' summary with '--force' hint",
+      "fix": "Update dry-run output in sw-cleanup.sh to scan heartbeat files and print 'Found N items' summary with '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-02T11:37:45Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
