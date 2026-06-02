@@ -1006,6 +1006,90 @@ Auto-detected by \`shipwright daemon patrol\` on $(now_iso)." \
         daemon_log INFO "Patrol: found retry exhaustion pattern (${exhausted_count} in 7 days)"
     }
 
+    # ── Flaky Test Detection (weekly-gated) ──
+    # Detects tests crossing the variance threshold over the last N runs, files
+    # a de-duped flaky-test issue per candidate, and (opt-in) auto-quarantines
+    # unambiguous test declarations. Runs at most once per interval to avoid
+    # re-filing on every daemon poll.
+    patrol_flaky_tests() {
+        if ! [[ -f "$SCRIPT_DIR/lib/flaky-detection.sh" ]]; then
+            echo -e "    ${DIM}●${RESET} Skipped (flaky-detection library not found)"
+            return 0
+        fi
+        # shellcheck source=flaky-detection.sh
+        source "$SCRIPT_DIR/lib/flaky-detection.sh" 2>/dev/null || true
+        if ! type flaky_detect >/dev/null 2>&1; then
+            echo -e "    ${DIM}●${RESET} Skipped (flaky detection unavailable)"
+            return 0
+        fi
+
+        # Weekly gate: skip if we ran within the interval window.
+        local interval_days="${PATROL_FLAKY_INTERVAL_DAYS:-7}"
+        [[ "$interval_days" =~ ^[0-9]+$ ]] || interval_days=7
+        local stamp="${HOME}/.shipwright/patrol-flaky-last"
+        local now_e; now_e=$(now_epoch)
+        if [[ -f "$stamp" ]]; then
+            local last_e; last_e=$(file_mtime "$stamp")
+            [[ "$last_e" =~ ^[0-9]+$ ]] || last_e=0
+            if [[ $(( now_e - last_e )) -lt $(( interval_days * 86400 )) ]]; then
+                local next_in=$(( (interval_days * 86400 - (now_e - last_e)) / 86400 ))
+                echo -e "    ${DIM}●${RESET} Skipped (weekly gate — next run in ~${next_in}d)"
+                return 0
+            fi
+        fi
+
+        local candidates
+        candidates=$(flaky_detect --json 2>/dev/null || echo "[]")
+        [[ -z "$candidates" ]] && candidates="[]"
+        local count
+        count=$(echo "$candidates" | jq 'length' 2>/dev/null || echo 0)
+        count=${count:-0}
+
+        # Record the run regardless of outcome so the weekly gate advances.
+        mkdir -p "${HOME}/.shipwright" 2>/dev/null || true
+        : > "$stamp" 2>/dev/null || true
+
+        if [[ "$count" -eq 0 ]]; then
+            echo -e "    ${GREEN}●${RESET} No flaky tests detected"
+            return 0
+        fi
+
+        echo -e "    ${RED}●${RESET} ${BOLD}${count}${RESET} flaky test(s) detected"
+        local auto_quarantine="${PATROL_FLAKY_AUTO_QUARANTINE:-false}"
+        local idx=0
+        while [[ "$idx" -lt "$count" ]]; do
+            local row name rate runs fails
+            row=$(echo "$candidates" | jq -c ".[$idx]" 2>/dev/null)
+            idx=$((idx + 1))
+            [[ -z "$row" || "$row" == "null" ]] && continue
+            name=$(echo "$row" | jq -r '.test_name')
+            rate=$(echo "$row" | jq -r '.failure_rate')
+            runs=$(echo "$row" | jq -r '.runs')
+            fails=$(echo "$row" | jq -r '.failures')
+
+            total_findings=$((total_findings + 1))
+            emit_event "patrol.finding" "check=flaky" "test=$name" "rate=$rate"
+
+            if [[ "$dry_run" == "true" ]]; then
+                echo -e "      ${YELLOW}○${RESET} ${name} — ${rate}% (${fails}/${runs})"
+                continue
+            fi
+            if [[ "$issues_created" -ge "$PATROL_MAX_ISSUES" ]]; then
+                continue
+            fi
+
+            local url=""
+            url=$(flaky_create_issue "$name" "$rate" "$runs" "$fails" 2>/dev/null || true)
+            [[ -n "$url" ]] && issues_created=$((issues_created + 1))
+            # Opt-in source mutation; safe-skips ambiguous declarations internally.
+            if [[ "$auto_quarantine" == "true" ]] && type flaky_quarantine_test >/dev/null 2>&1; then
+                flaky_quarantine_test "$name" "" "$url" >/dev/null 2>&1 || true
+            fi
+            echo -e "      ${RED}●${RESET} ${name} — ${rate}% (${fails}/${runs})${url:+ → ${url}}"
+        done
+        daemon_log INFO "Patrol: ${count} flaky test(s) detected, ${issues_created} issue(s) filed"
+    }
+
     # ── Stage 1: Run all grep-based patrol checks (fast pre-filter) ──
     local patrol_findings_summary=""
     local pre_check_findings=0
@@ -1087,6 +1171,14 @@ Auto-detected by \`shipwright daemon patrol\` on $(now_iso)." \
     patrol_retry_exhaustion
     if [[ "$total_findings" -gt "$pre_check_findings" ]]; then
         patrol_findings_summary="${patrol_findings_summary}retry_exhaustion: $((total_findings - pre_check_findings)) finding(s); "
+    fi
+    echo ""
+
+    echo -e "  ${BOLD}Flaky Tests${RESET}"
+    pre_check_findings=$total_findings
+    patrol_flaky_tests
+    if [[ "$total_findings" -gt "$pre_check_findings" ]]; then
+        patrol_findings_summary="${patrol_findings_summary}flaky: $((total_findings - pre_check_findings)) finding(s); "
     fi
     echo ""
 

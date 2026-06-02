@@ -425,6 +425,10 @@ load_config() {
     PATROL_UNTESTED_ENABLED=$(jq -r '.patrol.checks.untested_scripts.enabled // true' "$config_file")
     PATROL_RETRY_ENABLED=$(jq -r '.patrol.checks.retry_exhaustion.enabled // true' "$config_file")
     PATROL_RETRY_THRESHOLD=$(jq -r '.patrol.checks.retry_exhaustion.threshold // 2' "$config_file")
+    # Flaky-test detection (weekly-gated patrol check)
+    PATROL_FLAKY_INTERVAL_DAYS=$(jq -r '.patrol.flaky_interval_days // 7' "$config_file")
+    PATROL_FLAKY_AUTO_QUARANTINE=$(jq -r '.patrol.flaky_auto_quarantine // false' "$config_file")
+    export PATROL_FLAKY_INTERVAL_DAYS PATROL_FLAKY_AUTO_QUARANTINE
 
     # adaptive template selection
     AUTO_TEMPLATE=$(jq -r '.auto_template // false' "$config_file")
@@ -1032,7 +1036,13 @@ daemon_init() {
       "dora_degradation": { "enabled": true },
       "untested_scripts": { "enabled": true },
       "retry_exhaustion": { "enabled": true, "threshold": 2 }
-    }
+    },
+    "flaky_interval_days": 7,
+    "flaky_auto_quarantine": false,
+    "flaky_variance_threshold": 20,
+    "flaky_window": 10,
+    "flaky_min_runs": 3,
+    "flaky_required_failures": 2
   },
   "auto_template": false,
   "template_map": {

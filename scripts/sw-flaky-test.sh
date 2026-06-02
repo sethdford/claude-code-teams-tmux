@@ -233,6 +233,17 @@ test_loop_wiring() {
     assert_contains "FLAKY_PIPELINE_ID" "$(cat "$loop")" "loop sets a stable per-run pipeline id"
 }
 
+# Daemon patrol integration: weekly-gated flaky detection must be registered.
+test_patrol_wiring() {
+    local patrol="$SCRIPT_DIR/lib/daemon-patrol.sh"
+    assert_contains "patrol_flaky_tests()" "$(cat "$patrol")" "patrol defines patrol_flaky_tests"
+    # Defined once + invoked once → at least 2 references.
+    local refs; refs=$(grep -c "patrol_flaky_tests" "$patrol")
+    [[ "$refs" -ge 2 ]] && { PASS=$((PASS+1)); echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m patrol invokes flaky detection in run sequence"; } \
+                       || { FAIL=$((FAIL+1)); echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m patrol invokes flaky detection in run sequence"; }
+    assert_contains "PATROL_FLAKY_INTERVAL_DAYS" "$(cat "$patrol")" "patrol gates flaky detection weekly"
+}
+
 # End-to-end: flaky_record_results parses a multi-test log and persists rows.
 test_record_results_e2e() {
     source "$SCRIPT_DIR/lib/flaky-detection.sh" 2>/dev/null
@@ -267,6 +278,7 @@ test_skip_status_not_recounted
 test_help_and_version
 test_router_registration
 test_loop_wiring
+test_patrol_wiring
 test_record_results_e2e
 
 echo ""
