@@ -11,10 +11,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed receives substitution expression as a filename instead of a script because the -e flag is missing or arguments are in wrong order, causing 'can't read s|$TEST_TEMP_DIR|...|g: No such file or directory'",
-      "fix": "Add -e flag before the sed expression: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` or fix argument ordering so the expression precedes the target file",
-      "seen_count": 2,
-      "last_seen": "2026-06-02T02:09:08Z",
+      "root_cause": "regression detection test fails to output valid JSON from sw-feedback.sh",
+      "fix": "fix the regression detection subcommand in sw-feedback.sh to output valid JSON instead of plain text",
+      "seen_count": 1,
+      "last_seen": "2026-06-02T01:54:03Z",
       "category": "test_failure"
     }
   ]
