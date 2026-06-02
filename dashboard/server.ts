@@ -161,6 +161,26 @@ function dbQueryHeartbeats(): Array<Record<string, unknown>> {
   }
 }
 
+// Active flaky-test quarantines (schema v7+). Returns [] when the table is
+// absent (older DB) so the dashboard degrades gracefully.
+function dbQueryQuarantinedTests(): Array<Record<string, unknown>> {
+  const conn = getDb();
+  if (!conn) return [];
+  try {
+    return conn
+      .query(
+        `SELECT test_name, failure_rate, runs_analyzed, github_issue_url, test_file, quarantined_at
+         FROM flaky_quarantine
+         WHERE is_active = 1
+         ORDER BY failure_rate DESC, quarantined_at DESC
+         LIMIT 100`,
+      )
+      .all() as Array<Record<string, unknown>>;
+  } catch {
+    return [];
+  }
+}
+
 // ─── ANSI helpers ────────────────────────────────────────────────────
 const CYAN = "\x1b[38;2;0;212;255m";
 const GREEN = "\x1b[38;2;74;222;128m";
@@ -3506,6 +3526,21 @@ const server = Bun.serve({
         JSON.stringify({
           heartbeats,
           source: heartbeats.length > 0 ? "sqlite" : "none",
+        }),
+        {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        },
+      );
+    }
+
+    // REST: Quarantined flaky tests from DB
+    if (pathname === "/api/db/flaky") {
+      const quarantinedTests = dbQueryQuarantinedTests();
+      return new Response(
+        JSON.stringify({
+          quarantinedTests,
+          count: quarantinedTests.length,
+          source: quarantinedTests.length > 0 ? "sqlite" : "none",
         }),
         {
           headers: { "Content-Type": "application/json", ...CORS_HEADERS },

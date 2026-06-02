@@ -579,6 +579,14 @@ describe("API Client", () => {
       await api.fetchDbHealth();
       expect(mockFetch).toHaveBeenCalledWith("/api/db/health", undefined);
     });
+
+    it("fetchDbFlaky calls GET", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ quarantinedTests: [], count: 0, source: "none" }),
+      );
+      await api.fetchDbFlaky();
+      expect(mockFetch).toHaveBeenCalledWith("/api/db/flaky", undefined);
+    });
   });
 
   describe("audit, quality gates, approvals, notifications", () => {

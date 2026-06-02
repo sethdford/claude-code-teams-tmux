@@ -219,6 +219,16 @@ export interface InsightsData {
   patrol: PatrolFinding[] | null;
   heatmap: HeatmapData | null;
   globalLearnings: Array<Record<string, unknown>> | null;
+  quarantinedTests: QuarantinedTest[] | null;
+}
+
+export interface QuarantinedTest {
+  test_name?: string;
+  failure_rate?: number;
+  runs_analyzed?: number;
+  github_issue_url?: string | null;
+  test_file?: string | null;
+  quarantined_at?: string;
 }
 
 export interface FailurePattern {

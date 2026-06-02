@@ -32,8 +32,9 @@ function fetchInsightsData(): void {
     patrol: null,
     heatmap: null,
     globalLearnings: null,
+    quarantinedTests: null,
   };
-  let pending = 5;
+  let pending = 6;
 
   function checkDone() {
     pending--;
@@ -86,6 +87,16 @@ function fetchInsightsData(): void {
     })
     .catch(() => {
       results.globalLearnings = [];
+    })
+    .then(checkDone);
+  api
+    .fetchDbFlaky()
+    .then((d) => {
+      results.quarantinedTests =
+        (d.quarantinedTests as InsightsData["quarantinedTests"]) || [];
+    })
+    .catch(() => {
+      results.quarantinedTests = [];
     })
     .then(checkDone);
 }

@@ -273,6 +273,13 @@ export const fetchDbHeartbeats = () =>
     "/api/db/heartbeats",
   );
 
+export const fetchDbFlaky = () =>
+  request<{
+    quarantinedTests: Array<Record<string, unknown>>;
+    count: number;
+    source: string;
+  }>("/api/db/flaky");
+
 export const fetchDbHealth = () =>
   request<Record<string, unknown>>("/api/db/health");
 
