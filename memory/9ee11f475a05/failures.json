@@ -5,15 +5,15 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
-      "seen_count": 3,
-      "last_seen": "2026-06-02T07:53:31Z",
+      "seen_count": 2,
+      "last_seen": "2026-06-02T01:50:49Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m39 passed\u001b[0m, 0 failed",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, causing 3 tests to fail on missing 'agent-1', 'Found', and '--force' strings",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a 'Found N items' summary with '--force hint' when items are detected in dry-run mode",
+      "root_cause": "sed command references a variable $TEST_TEMP_DIR that was not expanded before use, causing it to be treated as a literal filename",
+      "fix": "Quote the sed expression correctly or use a heredoc/printf to expand the variable before passing to sed",
       "seen_count": 1,
       "last_seen": "2026-06-02T02:00:31Z",
       "category": "test_failure"
