@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 7,
-      "last_seen": "2026-06-03T08:30:15Z",
+      "last_seen": "2026-06-03T08:25:11Z",
       "category": "test_failure"
     },
     {
@@ -41,18 +41,18 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude directory does not exist on the test runner",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory prefix to fall back to /tmp directly",
-      "seen_count": 3,
-      "last_seen": "2026-06-02T19:51:09Z",
+      "seen_count": 4,
+      "last_seen": "2026-06-03T08:37:53Z",
       "category": "config"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', and '--force'",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and summary lines containing 'Found N' and '--force hint' text",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
+      "fix": "Create /tmp/claude directory before running tests or change the mktemp template to use /tmp directly",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
-      "category": "test_failure"
+      "category": "config"
     }
   ]
 }
