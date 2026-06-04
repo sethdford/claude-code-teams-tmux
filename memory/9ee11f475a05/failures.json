@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
-      "seen_count": 7,
-      "last_seen": "2026-06-04T20:50:38Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-03T02:02:11Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 5,
-      "last_seen": "2026-06-04T20:56:24Z",
+      "seen_count": 4,
+      "last_seen": "2026-06-03T02:19:35Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references a literal variable name '$TEST_TEMP_DIR' as a filename rather than expanding it in a substitution expression",
-      "fix": "Use bash variable expansion correctly in sed: replace `sed 's|$TEST_TEMP_DIR|...|g'` with `sed \"s|$TEST_TEMP_DIR|...|g\"` (double quotes) or use a variable in the substitution pattern properly",
+      "root_cause": "sed called without -e flag, treating substitution expression 's|$TEST_TEMP_DIR|...|g' as a filename instead of a script",
+      "fix": "Add -e flag to the sed invocation in sw-code-review-test.sh: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|$TEST_TEMP_DIR|...|g\"`",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
       "category": "test_failure"
