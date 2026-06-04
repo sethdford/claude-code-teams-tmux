@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 7,
-      "last_seen": "2026-06-04T20:49:36Z",
+      "last_seen": "2026-06-04T21:00:03Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 5,
-      "last_seen": "2026-06-04T21:06:37Z",
+      "seen_count": 4,
+      "last_seen": "2026-06-03T02:19:35Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format does not match what the tests expect — stale heartbeat files are not being detected/reported and the 'Found' count and '--force' hint are missing from dry-run output",
-      "fix": "Update sw-cleanup.sh to scan heartbeat files and report stale ones in dry-run mode, and ensure the summary line outputs 'Found N item(s)' with a '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed — tests expect 'agent-1', 'Found', and '--force' strings that are no longer emitted",
+      "fix": "Update sw-cleanup.sh to emit stale heartbeat filenames and a 'Found N items' summary line with '--force hint' in dry-run output, or update the test expectations to match the current output format",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
       "category": "test_failure"
