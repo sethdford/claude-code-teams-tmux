@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 9,
-      "last_seen": "2026-06-05T19:23:10Z",
+      "last_seen": "2026-06-05T19:54:35Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 6,
-      "last_seen": "2026-06-05T19:30:00Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-05T08:56:44Z",
       "category": "test_failure"
     },
     {
@@ -48,19 +48,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed called without -e flag in sw-code-review-test.sh, causing the substitution expression to be interpreted as a filename instead of an inline script",
-      "fix": "Add the -e flag to the sed invocation: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of sed \"s|$TEST_TEMP_DIR|...|g\"",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed but tests expect old output strings ('agent-1', 'Found', '--force')",
+      "fix": "Update sw-cleanup.sh to output 'agent-1' in dry-run heartbeat detection, 'Found N' in summary, and '--force' hint, or update the test expectations to match current output format",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails parsing quality-profile.json due to an empty string value at line 5, causing confidence field to be empty and learned rule generation to produce no valid JSON output",
-      "fix": "Guard against empty/null values before jq parsing in the learned rule generation code — either validate quality-profile.json is non-empty before parsing, or pipe through `jq -e` with a default for empty confidence fields (e.g., `// 0`)",
-      "seen_count": 1,
-      "last_seen": "2026-06-05T19:57:38Z",
       "category": "test_failure"
     }
   ]
