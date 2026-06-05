@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 8,
-      "last_seen": "2026-06-05T08:43:22Z",
+      "last_seen": "2026-06-05T08:53:19Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 7,
-      "last_seen": "2026-06-05T09:14:40Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-05T09:12:18Z",
       "category": "test_failure"
     },
     {
@@ -41,18 +41,18 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude directory does not exist on the test runner",
       "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory prefix to fall back to /tmp directly",
-      "seen_count": 4,
-      "last_seen": "2026-06-05T09:08:02Z",
+      "seen_count": 3,
+      "last_seen": "2026-06-02T19:51:09Z",
       "category": "config"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "All tests are passing — no failure detected in the provided log output",
-      "fix": "No fix needed; re-examine pipeline failure detection logic to identify the actual failing stage or test",
+      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON or malformed output",
+      "fix": "fix the regression detection output in sw-feedback.sh to emit valid JSON when called in test context",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
-      "category": "unknown"
+      "category": "test_failure"
     }
   ]
 }
