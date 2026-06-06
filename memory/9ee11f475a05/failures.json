@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 11,
-      "last_seen": "2026-06-06T07:59:25Z",
+      "last_seen": "2026-06-06T07:49:05Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 5,
-      "last_seen": "2026-06-05T08:56:44Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-06T08:24:33Z",
       "category": "test_failure"
     },
     {
@@ -48,10 +48,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed but sw-cleanup-test.sh still expects old output strings 'agent-1', 'Found', and '--force'",
-      "fix": "Update sw-cleanup.sh to output heartbeat filenames in dry-run mode and include 'Found N items' summary with '--force' hint, or update the test expectations to match current output format",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format doesn't match what tests expect (missing 'agent-1', 'Found', '--force' strings)",
+      "fix": "Update sw-cleanup.sh heartbeat detection to output the agent name and fix summary section to print 'Found N items' and '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "quality-profile.json contains empty or invalid JSON at line 5, causing jq to fail with 'Expected JSON value (while parsing '')' when generating learned rules",
+      "fix": "Ensure quality-profile.json is initialized with valid JSON (e.g., '{}' or '[]') before jq reads it, and add a guard in the learned rule generation code to handle empty/malformed input",
+      "seen_count": 1,
+      "last_seen": "2026-06-06T07:59:20Z",
       "category": "test_failure"
     }
   ]
