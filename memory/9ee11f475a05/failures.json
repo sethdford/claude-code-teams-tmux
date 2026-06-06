@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection produces no output and summary omits 'Found' count and '--force' hint in dry-run mode",
       "fix": "fix heartbeat age/detection logic in sw-cleanup.sh to surface stale entries and ensure dry-run summary prints 'Found N item(s)' with '--force' hint",
       "seen_count": 10,
-      "last_seen": "2026-06-06T01:38:44Z",
+      "last_seen": "2026-06-06T01:44:29Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command in sw-code-review-test.sh is missing the -e flag, causing the substitution expression to be interpreted as a filename",
       "fix": "Add -e flag to the sed invocation: sed -e 's|$TEST_TEMP_DIR|...|g' instead of sed 's|...|g'",
-      "seen_count": 6,
-      "last_seen": "2026-06-06T01:45:54Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-05T08:56:44Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references a file path as the substitution pattern instead of using inline sed syntax — 's|$TEST_TEMP_DIR|...|g' was passed as a filename argument rather than an expression",
-      "fix": "Change `sed s|$TEST_TEMP_DIR|...|g` to `sed \"s|$TEST_TEMP_DIR|...|g\"` with -e flag or ensure the substitution expression is passed as an inline argument not a file path",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format does not match what the tests expect (missing 'agent-1', 'Found', and '--force' strings in dry-run output)",
+      "fix": "Update sw-cleanup.sh dry-run output to include heartbeat file names, a 'Found N items' summary line, and a '--force' hint when stale items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-02T20:19:26Z",
       "category": "test_failure"
