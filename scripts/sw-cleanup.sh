@@ -13,6 +13,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/bootstrap.sh"
 
 [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+[[ -f "$SCRIPT_DIR/lib/fallback-policy.sh" ]] && source "$SCRIPT_DIR/lib/fallback-policy.sh"
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 # ─── Parse Args ──────────────────────────────────────────────────────────────

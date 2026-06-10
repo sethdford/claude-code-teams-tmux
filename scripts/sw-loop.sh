@@ -25,6 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
 [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+[[ -f "$SCRIPT_DIR/lib/fallback-policy.sh" ]] && source "$SCRIPT_DIR/lib/fallback-policy.sh"
 # Source DB for dual-write (emit_event → JSONL + SQLite).
 # Note: do NOT call init_schema here — the pipeline (sw-pipeline.sh) owns schema
 # initialization. Calling it here would create an empty DB that shadows JSON cost data.

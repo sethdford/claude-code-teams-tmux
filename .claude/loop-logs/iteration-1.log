@@ -1,17 +1,1 @@
-I've made substantial, well-tested progress this iteration. Here's a summary:
-
-## Iteration 1 Summary
-
-Built the complete **Fallback Policy System** core for issue #620 — a thin, fail-safe, config-driven resolver layer that bridges into the existing `sw-adaptive` learning engine (rather than duplicating it, which was the prior attempt's failure mode).
-
-**Completed and committed (3 commits, 8 of 10 tasks):**
-- **T1–T4** — `scripts/lib/fallback-policy.sh`: `_smart_fallback` (4-tier precedence: env → daemon-config → learned override → static policy → hardcoded default; never empty; fail-safe on any corrupt config), `_fallback_clamp`, `_fallback_audit`.
-- **T2/T3** — `config/fallback-policy.schema.json` + `config/fallback-policy.json` with 20 high-impact runtime tunables, all `learning_enabled: false` (GA-safe, reversible by deletion).
-- **T5** — `scripts/sw-fallback.sh` CLI (`audit`/`inventory`/`list`/`get`/`validate`), registered `fallback)` in the router.
-- **T6** — Adaptive bridge in `sw-adaptive.sh`: `write_adaptive_override` (gated, clamped, atomic) + `cmd_bridge` driver — reuses existing getters/confidence, no new learning math.
-- **T8** — `scripts/sw-fallback-policy-test.sh`: **34 tests, all passing**, registered in `package.json`. Verified existing `sw-adaptive` tests still pass (20/20).
-- **T9** — CLAUDE.md "Fallback Policy System" section + committed the reference design doc.
-
-**Remaining (next iteration):** T7 — migrate the ~20 actual call-sites to `_smart_fallback` (behavior-preserving; the riskiest piece, needs per-file regression testing); T10 — full `npm test` + `shipwright doctor`.
-
-Not declaring `LOOP_COMPLETE` — the call-site migration (the issue's core deliverable) and full-suite validation remain. Progress notes written to `progress.md` for continuity.
+You've hit your session limit · resets 6:40pm (UTC)

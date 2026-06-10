@@ -5,7 +5,10 @@
   "policies": {
     "network.connect_timeout": {
       "static": 10,
-      "adaptive_range": [2, 60],
+      "adaptive_range": [
+        2,
+        60
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -13,7 +16,10 @@
     },
     "network.max_time": {
       "static": 60,
-      "adaptive_range": [10, 600],
+      "adaptive_range": [
+        10,
+        600
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -21,7 +27,10 @@
     },
     "network.gh_timeout": {
       "static": 30,
-      "adaptive_range": [5, 300],
+      "adaptive_range": [
+        5,
+        300
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -29,7 +38,10 @@
     },
     "network.retry_count": {
       "static": 3,
-      "adaptive_range": [0, 10],
+      "adaptive_range": [
+        0,
+        10
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_retry_limit",
@@ -37,7 +49,10 @@
     },
     "network.retry_delay": {
       "static": 2,
-      "adaptive_range": [0, 30],
+      "adaptive_range": [
+        0,
+        30
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_retry_limit",
@@ -45,7 +60,10 @@
     },
     "daemon.poll_interval": {
       "static": 30,
-      "adaptive_range": [5, 600],
+      "adaptive_range": [
+        5,
+        600
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_poll_interval",
@@ -53,7 +71,10 @@
     },
     "daemon.max_parallel": {
       "static": 4,
-      "adaptive_range": [1, 32],
+      "adaptive_range": [
+        1,
+        32
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.9,
       "metric_source": "sw-adaptive get_team_size",
@@ -61,7 +82,10 @@
     },
     "daemon.health_check_interval": {
       "static": 60,
-      "adaptive_range": [10, 600],
+      "adaptive_range": [
+        10,
+        600
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_poll_interval",
@@ -69,7 +93,10 @@
     },
     "daemon.stale_job_timeout_hours": {
       "static": 2,
-      "adaptive_range": [1, 24],
+      "adaptive_range": [
+        1,
+        24
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -77,15 +104,21 @@
     },
     "pipeline.max_iterations": {
       "static": 20,
-      "adaptive_range": [1, 100],
+      "adaptive_range": [
+        1,
+        100
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_iterations",
       "context": "max build-loop iterations per pipeline"
     },
     "pipeline.build_test_retries": {
-      "static": 3,
-      "adaptive_range": [0, 10],
+      "static": 2,
+      "adaptive_range": [
+        0,
+        10
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_retry_limit",
@@ -93,7 +126,10 @@
     },
     "pipeline.claude_timeout": {
       "static": 1800,
-      "adaptive_range": [60, 7200],
+      "adaptive_range": [
+        60,
+        7200
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -101,7 +137,10 @@
     },
     "pipeline.heartbeat_interval": {
       "static": 30,
-      "adaptive_range": [5, 300],
+      "adaptive_range": [
+        5,
+        300
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_poll_interval",
@@ -109,7 +148,10 @@
     },
     "loop.claude_timeout": {
       "static": 1800,
-      "adaptive_range": [60, 7200],
+      "adaptive_range": [
+        60,
+        7200
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
@@ -117,7 +159,10 @@
     },
     "loop.sleep_between_iterations": {
       "static": 2,
-      "adaptive_range": [0, 60],
+      "adaptive_range": [
+        0,
+        60
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_poll_interval",
@@ -125,7 +170,10 @@
     },
     "loop.max_restarts": {
       "static": 0,
-      "adaptive_range": [0, 10],
+      "adaptive_range": [
+        0,
+        10
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.9,
       "metric_source": "sw-adaptive get_retry_limit",
@@ -133,7 +181,10 @@
     },
     "loop.fast_test_interval": {
       "static": 5,
-      "adaptive_range": [1, 50],
+      "adaptive_range": [
+        1,
+        50
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_iterations",
@@ -141,7 +192,10 @@
     },
     "loop.convergence_threshold": {
       "static": 3,
-      "adaptive_range": [1, 20],
+      "adaptive_range": [
+        1,
+        20
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_iterations",
@@ -149,7 +203,10 @@
     },
     "quality.gate_score_threshold": {
       "static": 70,
-      "adaptive_range": [0, 100],
+      "adaptive_range": [
+        0,
+        100
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.9,
       "metric_source": "sw-adaptive get_quality_threshold",
@@ -157,7 +214,10 @@
     },
     "cleanup.heartbeat_stale_seconds": {
       "static": 300,
-      "adaptive_range": [30, 3600],
+      "adaptive_range": [
+        30,
+        3600
+      ],
       "learning_enabled": false,
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
