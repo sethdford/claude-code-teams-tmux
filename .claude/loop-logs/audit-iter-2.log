@@ -1,1 +1,51 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work through iteration 2, I need to flag a **critical issue** before this work can proceed.
+
+## Status Summary
+
+**Positive Progress:**
+- Infrastructure (resolver, CLI, schema) already existed from earlier work
+- Iteration 2 fixed a critical test isolation issue (sw-agi-roadmap-test.sh) with proper fail-safe stub injection
+- Migrated 4 genuine call-sites: `loop.context_budget_chars`, `loop.context_budget_tokens`, `loop.test_timeout`, `loop.context_restart_limit`
+- Expanded config from 20 → 33 declared policies (proper schema compliance)
+- Migration pattern is correct: `_smart_fallback "key" fallback_value` preserves behavior
+- Backward compatibility maintained throughout
+
+**Critical Issue:**
+
+```
+Test commands run: 2 (npm test, npm run test:smoke)
+- npm test: exit 3 (6s)     ← FAILING
+- npm run test:smoke: exit 0 (10s)
+Overall: FAILING
+```
+
+The full test suite (`npm test`, which runs all vitest suites) is **returning exit code 3** (test failure). The agent noted individual test scripts pass (sw-loop-test.sh 68/68, sw-agi-roadmap-test.sh 53/53, sw-fallback-policy-test.sh pass) but **did not investigate which test suite is actually failing in the full run**. This is a showstopper because:
+
+1. The agent is continuing to subsequent iterations without fixing the broken build
+2. `npm test` must be green before claiming meaningful progress
+3. The gap between individual scripts passing and `npm test` failing suggests either:
+   - A syntax error in the expanded `config/fallback-policy.json` (though `fallback validate` should catch this)
+   - A test suite that wasn't manually run is breaking
+   - The test harness itself has an issue with the config changes
+
+## Required Before Proceeding
+
+The agent **must**:
+1. Run `npm test 2>&1 | tail -50` and identify which test suite is failing
+2. Examine the actual error message (not just the exit code)
+3. Fix the root cause (not patch around it like the sw-agi-roadmap-test.sh stub)
+4. Get `npm test` returning exit 0
+5. Only then continue to iteration 3
+
+The work itself (migration pattern, config structure, fail-safe handling) is sound, but **cannot ship with a broken test suite**.
+
+**AUDIT_FAIL**
+
+Issues to fix:
+1. **Investigate npm test exit 3** — identify the failing test suite with `npm test 2>&1 | tail -100`
+2. **Fix the root cause** — don't continue iterating until full test suite passes
+3. **Verify config/fallback-policy.json is valid** — run `jq empty config/fallback-policy.json` to rule out JSON syntax errors
