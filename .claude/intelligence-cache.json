@@ -30,17 +30,40 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
-        "new_role_needed": false,
-        "suggested_role": null
+        "confidence": 0.5,
+        "reasoning": "Task requires system design understanding of error feedback loops plus quality measurement/validation, but no existing role specializes in error quality analysis.",
+        "new_role_needed": true,
+        "suggested_role": {
+          "key": "error-quality-analyst",
+          "title": "Error Quality Analyst",
+          "description": "Analyze error feedback systems, measure actionability, evaluate agent comprehension of errors, design error quality metrics",
+          "required_skills": [
+            "quality-analysis",
+            "metrics-design",
+            "error-analysis",
+            "agent-behavior-evaluation"
+          ],
+          "recommended_model": "sonnet",
+          "context_needs": [
+            "error-handling-patterns",
+            "feedback-loop-architecture",
+            "agent-responses",
+            "actionability-criteria"
+          ],
+          "success_metrics": [
+            "actionability-score",
+            "comprehension-rate",
+            "error-clarity-improvement"
+          ],
+          "estimated_cost_per_task_usd": 1.8
+        }
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781100567,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1424,332 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "c69e1b6c07e6c1d71d1ce23442ccc0cd": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "testing",
+        "key_risks": [
+          "Incorrect quality metrics could mislead agents further instead of improving guidance",
+          "Auto-generated templates might be ineffective without rigorous validation",
+          "Correlation analysis requires sufficient historical data to be statistically reliable",
+          "Real-time error analysis could introduce performance bottlenecks in loop iterations",
+          "Risk of overfitting templates to recent error patterns rather than general problem classes"
+        ],
+        "implementation_hints": [
+          "Define explicit actionability rubric (specificity score, file:line presence, suggestion quality) before automation",
+          "Validate correlation hypothesis with historical data before investing in template generation",
+          "Start with low-volume focused scope: score only, then top 5 error types, then templates",
+          "Require human review gate before auto-applying generated templates to production error paths",
+          "Instrument agent comprehension metrics (did agent fix issue on next iteration with new template?)",
+          "Integrate with existing error-log.jsonl classification to reuse error taxonomy",
+          "Consider phased rollout: scoring → correlation validation → template generation → deployment"
+        ]
+      },
+      "timestamp": 1781099443,
+      "ttl": 3600
+    },
+    "1acd0a4f040f11c4ec0fb008bdfd393c": {
+      "result": {
+        "estimated_iterations": 9
+      },
+      "timestamp": 1781099468,
+      "ttl": 1800
+    },
+    "40e4b2ac482e4857f92a475bf955524e": {
+      "result": {
+        "estimated_cost_usd": 5.50,
+        "estimated_iterations": 5,
+        "estimated_tokens": 125000,
+        "likely_failure_stage": "compound_quality",
+        "confidence": 70
+      },
+      "timestamp": 1781099494,
+      "ttl": 3600
+    },
+    "9860fd5f00baa171e222da8e22515b6a": {
+      "result": {
+        "issue_type": "backend/infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "observability",
+          "data-pipeline",
+          "testing",
+          "quality-measurement"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Requires data analysis, correlation logic, metric design, and integration with event pipeline. Moderate complexity with clear acceptance criteria."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "data-pipeline"
+          ],
+          "design": [
+            "data-pipeline",
+            "api-design",
+            "error-actionability-scoring"
+          ],
+          "build": [
+            "collection-system-validation",
+            "pattern-matching-similarity-scoring",
+            "error-actionability-scoring"
+          ],
+          "review": [
+            "testing-strategy",
+            "api-design"
+          ],
+          "compound_quality": [
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about what makes an error actionable—is specificity sufficient without file:line? Can agents understand stack traces vs structured data? Prevents building the wrong metric.",
+          "data-pipeline": "The analyzer processes error-summary.json and correlates with iteration outcomes—requires clear understanding of data transformations, aggregations, and how metrics flow to events.jsonl.",
+          "api-design": "The quality analyzer must expose metrics and generated templates in a way agents can consume. Clear interfaces (queries, output format) determine adoption and usability.",
+          "error-actionability-scoring": "This issue is fundamentally about measuring error quality—specificity, file:line presence, actionable suggestions. This skill provides the scoring framework and correlation methodology.",
+          "collection-system-validation": "error-summary.json and iteration state may be incomplete or malformed. Validators ensure the analyzer doesn't emit spurious metrics from bad data.",
+          "pattern-matching-similarity-scoring": "Identify recurring low-quality error patterns across iterations—cluster similar errors, score similarity to existing patterns, and generate templates from high-recurrence groups.",
+          "testing-strategy": "The correlation logic (error quality → fix success) is statistical and easy to get wrong. Tests must verify correctness of calculations and catch false positive correlations.",
+          "adversarial-quality": "Attack the analyzer: What if errors have no file:line? What if every iteration succeeds regardless of error quality? What if the same error is never seen twice? Find brittleness.",
+          "pr-quality": "A new analysis subsystem must be easy to understand—document metrics definitions, explain correlation methodology, and make the generated templates auditable.",
+          "deploy-safety": "New metric emissions affect dashboards and alerts. Verify metrics are present before rolling out; false metrics could trigger false alarms.",
+          "validation-thoroughness": "Smoke tests won't catch whether quality scores actually predict fix success. Manually validate: review generated templates with humans, check correlation r² values, and spot-check low-scoring errors.",
+          "observability": "Quality scores are only useful if they flow to the right dashboards. Verify events.jsonl is populated, metrics are queryable, and errors with low actionability are visible to humans."
+        },
+        "generated_skills": [
+          {
+            "name": "error-actionability-scoring",
+            "reason": "No existing skill covers measuring error quality, designing actionability metrics, or correlating error quality with agent success—core requirements for this analyzer.",
+            "content": "## Error Actionability Scoring\n\nMeasure how well error messages guide agents toward fixes. Actionability combines specificity, clarity, and correlation with outcomes.\n\n### Metrics\n\n**Specificity Score** (0–1):\n- Presence of file:line reference (+0.3)\n- Function/method name (+0.2)\n- Specific error type or code (+0.2)\n- Line-of-code context or snippet (+0.15)\n- Exact root cause identified (+0.15)\n\n**Clarity Score** (0–1):\n- Stack trace present and legible (+0.25)\n- Error message under 200 chars (+0.25)\n- Actionable suggestion included (+0.25)\n- No duplicate/repetitive info (+0.25)\n\n**Outcome Correlation** (0–1):\n- Measure: Did agents fix the issue in the iteration following this error?\n- Window: Look ahead 1–3 iterations (config-driven)\n- Baseline: If 80%+ of errors are followed by fixes, all errors score 0.5–0.8 (poor signal)\n- Only correlate when signal is clear (>30% variance in fix rate by error type)\n\n**Composite Quality Score**: `(0.6 × specificity + 0.3 × clarity + 0.1 × outcome) / 1.0`\n\n### Template Generation\n\nFor error types with lowest quality (bottom quartile):\n1. Cluster similar errors by root cause pattern (use fuzzy matching, 80%+ similarity)\n2. Extract common context: file types, failure modes, agent response patterns\n3. Generate improved template: `[file:line] [error_type]: [specific_root_cause]. Try: [actionable_suggestion]`\n4. Validate template against historical errors: does it subsume the 3+ lowest-quality errors?\n\n### Implementation Notes\n\n- Store scores per error_id in events.jsonl; aggregate by error_type\n- Emit after iteration completion: error metadata + quality metrics\n- Top 5 lowest-quality error types go to stdout (human review)\n- Generated templates saved to `.claude/error-templates.json` for injection into future iterations\n- Correlation window is configurable (default: 2 iterations ahead)\n- Minimum sample size: 10 observations per error type before scoring (avoid noise)\n"
+          }
+        ],
+        "review_focus": [
+          "Correlation logic: Verify that error quality → fix success causality is not spurious (separate confounders like iteration count, error frequency)",
+          "Metric edge cases: What happens when errors never repeat? When all iterations succeed? When error-summary.json is empty or malformed?",
+          "Template quality: Validate generated templates don't hallucinate details (file:line) or make worse suggestions than the original errors",
+          "Data integrity: Ensure events.jsonl emission is atomic; handle partial writes or process crashes without losing metrics",
+          "Backward compatibility: New metrics shouldn't break existing pipeline stages or dashboards"
+        ],
+        "risk_areas": [
+          "**Correlation fallacy**: Mistaking temporal proximity for causation—error followed by fix ≠ error caused fix. Need careful statistical controls (control for iteration count, error frequency, etc.).",
+          "**Noisy templates**: Generated templates from small sample sizes or high-variance error types may be worse than originals. Require human vetting before injection.",
+          "**Incomplete data**: error-summary.json may lack file:line info in older iterations. Analyzer must gracefully handle missing fields without biasing scores.",
+          "**Silent metric failures**: If events.jsonl emissions fail, the analyzer appears to work but metrics are missing. Needs explicit health checks and error reporting.",
+          "**Overfitting to recent errors**: Template generation should balance recency (recent errors matter more) with stability (don't churn on one-off errors)."
+        ]
+      },
+      "timestamp": 1781099717,
+      "ttl": 3600
+    },
+    "adad287ab01755bb25973126cee27d5b": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 95,
+            "summary": "Contains detailed failure patterns with error signatures, root causes, fix strategies, occurrence metrics, and success rates. This is core data for measuring error actionability and agent comprehension."
+          },
+          {
+            "file": "patterns.json (repo: sethdford/shipwright)",
+            "relevance": 85,
+            "summary": "Current repo context showing Node/vitest/npm setup with JavaScript conventions. Essential for planning features in this specific codebase."
+          },
+          {
+            "file": "success-patterns.json (0bcf0637... authentication feature)",
+            "relevance": 75,
+            "summary": "Real feature development pattern with detailed approach breakdown, iterations, and complexity scoring. Demonstrates how to measure and track solution comprehension."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh output missing)",
+            "relevance": 70,
+            "summary": "Shows concrete test failure revealing what makes errors NOT actionable: missing specific output keywords and improper formatting. Directly informs actionability metrics design."
+          },
+          {
+            "file": "success-patterns.json (f4af3e2a... bug fix)",
+            "relevance": 70,
+            "summary": "Real bug fix pattern showing iteration approach with specific fixes applied. Demonstrates how agents resolve errors and what factors indicate successful comprehension."
+          }
+        ]
+      },
+      "timestamp": 1781099934,
+      "ttl": 1800
+    },
+    "c17459da14568e93a558fe3fab65378d": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Contains 4+ KB entries documenting test validation failures (mktemp errors, output formatting, JSON generation), fix strategies, and patterns directly relevant to understanding why plan validation failed"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-06-10)",
+            "relevance": 76,
+            "summary": "Current project context (Node.js, vitest, npm) — essential baseline for understanding the scope and conventions of the Error Feedback Loop Quality Analyzer being built"
+          },
+          {
+            "file": "success-patterns.json (outcome-feedback pattern)",
+            "relevance": 68,
+            "summary": "Documents successful 3-iteration fix in outcome-feedback system (related to error analysis), showing iterative approach and test strategy (npm test) applicable to similar feedback-loop features"
+          }
+        ]
+      },
+      "timestamp": 1781100310,
+      "ttl": 1800
+    },
+    "da69c3ca05313cd88e94b9a32262529a": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Failure knowledge base with error signatures, fix strategies, effectiveness metrics, and query hits — directly models what makes errors actionable and measurable for agent comprehension"
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 85,
+            "summary": "Current project context (Node.js/vitest/npm) — essential for designing analyzer that understands this codebase's error patterns and test infrastructure"
+          },
+          {
+            "file": "success-patterns.json (detailed implementation)",
+            "relevance": 80,
+            "summary": "Captured patterns showing how errors were resolved (iterations, file patterns, test strategy, cost) — provides empirical data on error feedback loops in this project"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Real issue examples with errors, outcomes, success patterns, and gotchas — concrete error feedback data to measure comprehension against"
+          },
+          {
+            "file": "failures.json (most recent)",
+            "relevance": 65,
+            "summary": "Recent test failure patterns with root causes and fixes — examples of actionable error messages and what makes them resolvable"
+          }
+        ]
+      },
+      "timestamp": 1781100382,
+      "ttl": 1800
+    },
+    "7d086a6e4f88591ff0588f1e6b623520": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Contains detailed patterns for successful implementations (bug fixes, feature addition) with approach, iterations, duration, cost. Informs what design/implementation strategies worked well in similar contexts, helping identify effective approaches to contrast with anti-patterns."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Contains failure analysis entries with fix_strategy, approach, and error signatures. Provides detailed lessons learned about what went wrong and why, directly supporting identification of design anti-patterns to avoid in error feedback systems."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Concrete failure examples (sw-cleanup.sh output format, mktemp path issues) with root causes and fixes. Shows specific implementation failures that can inform which design approaches led to problems and should be rejected."
+          }
+        ]
+      },
+      "timestamp": 1781100411,
+      "ttl": 1800
+    },
+    "565a2250c95ea668a07cd29f1f401ba3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current repo context (sethdford/shipwright, 2026-06-10): Node.js project, vitest runner, npm, src/ convention. Exact match for active project state during build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Feature development pattern (Add authentication, 2026-03-29): Shows 3-iteration loop with npm test strategy, standard template, typical file/test patterns for Node.js features in this repo."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Build process pattern (Fix bug, 2026-03-29): Demonstrates loop iteration workflow, npm test strategy, multi-file changes in .claude/ and scripts/, relevant for understanding build stage progression."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Feature development with TDD (add auth module, 2026-04-01): Shows complexity 60, iterative approach, unit+integration tests, file patterns (src/, test/) matching current project conventions."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Test failure patterns (kb entries, 2026-05-22): Contains mktemp issues and test output formatting failures relevant to shell script testing in build/test loops, recent and applicable to this repo."
+          }
+        ]
+      },
+      "timestamp": 1781100534,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Two recent build patterns with complete context: iterations count, test strategies, file changes, costs, and durations. Directly applicable for understanding build approach and expectations."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Knowledge base with 5 test failure patterns and fix strategies. Includes mktemp errors, cleanup output issues, and regression detection—failures likely to occur during build's test execution."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Recent test failure with root cause analysis: sw-cleanup.sh output validation. Provides specific fix strategy for prevent similar failures in current build."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions and metadata: test pattern, import style, test runner (vitest), source directory. Needed for configuring test execution during build stage."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Build duration baseline (2089 seconds). Sets expectations for build time and helps detect stalls or anomalies during build execution."
+          }
+        ]
+      },
+      "timestamp": 1781100549,
+      "ttl": 1800
+    },
+    "cb51f1a3fb1d93cc04e002a470d0b350": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1781101109,
+      "ttl": 1800
     }
   }
 }

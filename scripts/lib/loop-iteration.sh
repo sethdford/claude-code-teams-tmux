@@ -117,6 +117,22 @@ Fix these specific errors. Each line above is one distinct error from the test o
         fi
     fi
 
+    # Improved error templates (from the error feedback loop quality analyzer).
+    # These guide the agent on what a high-actionability fix looks like for the
+    # error types that historically had the lowest actionability (AC3).
+    local error_templates_section=""
+    local templates_json=".claude/error-templates.json"
+    if [[ -f "$templates_json" ]] && command -v jq >/dev/null 2>&1; then
+        local tmpl_lines
+        tmpl_lines=$(jq -r '.templates[]? | "- " + .type + ": " + .template' "$templates_json" 2>/dev/null | head -5 || true)
+        if [[ -n "$tmpl_lines" ]]; then
+            error_templates_section="## Error Reporting Templates (improve actionability)
+When you encounter or report these error types, follow the template format so the
+next iteration has a file:line, the error type, and a concrete next step:
+${tmpl_lines}"
+        fi
+    fi
+
     # Build audit sections (captured before heredoc to avoid nested heredoc issues)
     local audit_section
     audit_section="$(compose_audit_section)"
@@ -390,6 +406,8 @@ ${git_log}
 ${test_section}
 
 ${error_summary_section:+$error_summary_section
+}
+${error_templates_section:+$error_templates_section
 }
 ${memory_section:+## Memory Context
 $memory_section

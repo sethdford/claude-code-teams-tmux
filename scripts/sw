@@ -354,6 +354,9 @@ main() {
         cost)
             exec "$SCRIPT_DIR/sw-cost.sh" "$@"
             ;;
+        errors|error-quality)
+            exec "$SCRIPT_DIR/sw-error-quality.sh" "$@"
+            ;;
         adaptive)
             exec "$SCRIPT_DIR/sw-adaptive.sh" "$@"
             ;;

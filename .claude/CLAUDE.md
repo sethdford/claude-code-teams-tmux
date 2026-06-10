@@ -620,6 +620,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-dora.sh` | 605 | DORA Metrics Dashboard with Engineering Intelligence |
 | `scripts/sw-durable.sh` | 708 | Durable Workflow Engine |
 | `scripts/sw-e2e-orchestrator.sh` | 535 | Test suite registry & execution |
+| `scripts/sw-error-quality.sh` | 53 | Error Feedback Loop Quality Analyzer CLI |
 | `scripts/sw-eventbus.sh` | 415 | Durable event bus for real-time inter-component |
 | `scripts/sw-evidence.sh` | 1100 | Machine-Verifiable Proof for Agent Deliveries |
 | `scripts/sw-feedback.sh` | 999 | Production Feedback Loop |
@@ -639,7 +640,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-launchd.sh` | 703 | Process supervision (macOS + Linux) |
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
-| `scripts/sw-loop.sh` | 2675 | Continuous agent loop harness for Claude Code |
+| `scripts/sw-loop.sh` | 2684 | Continuous agent loop harness for Claude Code |
 | `scripts/sw-memory.sh` | 2240 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1053 | Intelligent Model Routing & Cost Optimization |
@@ -691,7 +692,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-webhook.sh` | 621 | GitHub Webhook Receiver for Instant Issue Processing |
 | `scripts/sw-widgets.sh` | 528 | Embeddable Status Widgets |
 | `scripts/sw-worktree.sh` | 421 | Git worktree management for multi-agent isolation |
-| `scripts/sw` | 623 | CLI router — dispatches subcommands via exec |
+| `scripts/sw` | 626 | CLI router — dispatches subcommands via exec |
 <!-- /AUTO:core-scripts -->
 
 ### GitHub API Modules
@@ -814,6 +815,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-daemon-state-test.sh` | 383 | Unit tests for state management |
 | `scripts/sw-lib-daemon-triage-test.sh` | 267 | Unit tests for triage scoring |
 | `scripts/sw-lib-error-actionability-test.sh` | 213 |  |
+| `scripts/sw-lib-error-quality-analyzer-test.sh` | 155 |  |
 | `scripts/sw-lib-helpers-test.sh` | 229 | Unit tests for shared helper functions |
 | `scripts/sw-lib-pipeline-detection-test.sh` | 391 | Unit tests for detection fns |
 | `scripts/sw-lib-pipeline-intelligence-test.sh` | 410 | Unit tests for intelligence |

@@ -48,6 +48,9 @@ fi
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
+
+# shellcheck source=lib/error-quality-analyzer.sh
+[[ -f "$SCRIPT_DIR/lib/error-quality-analyzer.sh" ]] && source "$SCRIPT_DIR/lib/error-quality-analyzer.sh" 2>/dev/null || true
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
@@ -2322,6 +2325,12 @@ ${GOAL}"
         # Test gate
         run_test_gate
         write_error_summary
+        # Error feedback loop quality: score the iteration's errors and emit an
+        # error.quality event for correlation/template generation (AC1+AC4).
+        if [[ -f "$LOG_DIR/error-summary.json" ]] && \
+           type eqa_emit_iteration_quality >/dev/null 2>&1; then
+            eqa_emit_iteration_quality "$LOG_DIR/error-summary.json" "${PIPELINE_JOB_ID:-loop-$$}" 2>/dev/null || true
+        fi
         if [[ -n "$TEST_CMD" ]]; then
             if [[ "$TEST_PASSED" == "true" ]]; then
                 echo -e "  ${GREEN}✓${RESET} Tests: passed"
