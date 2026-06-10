@@ -30,18 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "builder",
         "secondary_roles": [
-          "builder",
+          "architect",
           "tester",
-          "docs-writer"
+          "reviewer"
         ],
-        "confidence": 0.92,
-        "reasoning": "System design task: converting static fallback policies to config-driven adaptive overrides requires architecture decisions, then implementation, testing, and documentation.",
+        "confidence": 0.85,
+        "reasoning": "Implementation of resolver function, schema, and migration of 67 call-sites from static fallbacks to config-driven system; architecture for precedence chain validation; comprehensive testing of all cases; review for consistency.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1781100482,
+      "timestamp": 1781125396,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1407,28 +1407,28 @@
       "result": {
         "complexity": 7,
         "risk_level": "medium",
-        "success_probability": 77,
+        "success_probability": 78,
         "recommended_template": "standard",
         "issue_type": "refactor",
         "key_risks": [
-          "Inconsistent fallback detection across varying bash script patterns (${VAR:-default}, || echo, assignment chains)",
-          "Behavioral changes if migration doesn't preserve original defaults exactly across all contexts",
-          "Partial migration leaving system in inconsistent state with mixed static/config-driven fallbacks",
-          "Integration risk when modifying 20+ scripts simultaneously with dependent config references",
-          "Adaptive learning system may require tuning and monitoring as policies evolve in production"
+          "Fallback values are safety-critical (timeouts, retries); incorrect migration could cause pipeline failures or hangs",
+          "Wide blast radius: 67 locations across core scripts; testing all combinations requires systematic validation",
+          "Adaptive learning system could recommend suboptimal values if metric sources are noisy or misconfigured",
+          "Backward compatibility: must guarantee config deletion restores exact pre-migration behavior (fail-safe contract)",
+          "Schema validation complexity: corrupt/missing config files must not break pipeline or hide errors silently"
         ],
         "implementation_hints": [
-          "Start with systematic audit: grep for ${VAR:-default}, || echo patterns, and fallback assignment chains across all scripts",
-          "Generate complete fallback inventory with file, line, variable, context before migrating any - easier to spot patterns and dependencies",
-          "Design config/fallback-policy.json schema with adaptive hook structure first, including override conditions and learning triggers",
-          "Create test cases for each migrated fallback to verify behavior preservation and no regressions",
-          "Stage migration by impact/frequency to enable incremental rollback and validate each batch",
-          "Document context and rationale for each fallback default value in CLAUDE.md with examples",
-          "Add validation in daemon-config.json loading to catch schema violations and type mismatches early",
-          "Include metrics collection for fallback override frequency to measure adaptive learning effectiveness and policy drift"
+          "Audit first: generate full JSONL inventory (file, line, variable, default, context) using grep patterns for ${VAR:-default}, || echo default, fallback assignments before any migration",
+          "Design schema with explicit fail-safe semantics: document that _smart_fallback must always return a value, never empty, and explain the 4-tier precedence chain",
+          "Create _smart_fallback wrapper function in scripts/lib/fallback-policy.sh and test it with intentional config corruption (missing keys, invalid JSON, out-of-range values) before migrating any call-sites",
+          "Migrate incrementally: top 20 high-impact fallbacks first (network timeouts, retry counts, poll intervals), then remaining 47 in later phases",
+          "Leverage existing sw-adaptive.sh engine for learning rather than building new system; ensure adaptive_range bounds prevent unsafe values (e.g., timeout never goes to 0)",
+          "Include validation CLI command (shipwright fallback validate) from start; add audit command (shipwright fallback audit scripts) to track call-site coverage",
+          "Test each fallback's adaptive_range thoroughly: timeouts should have [min_safe, max_reasonable], retry counts should never be negative, poll intervals should respect responsiveness vs load tradeoffs",
+          "Document metric_source pointers (e.g., 'sw-adaptive get_timeout') so team knows which observability signals drive learned overrides"
         ]
       },
-      "timestamp": 1781099398,
+      "timestamp": 1781124806,
       "ttl": 3600
     },
     "ad51af53669f995a60fe4b7ad9f1a59b": {
@@ -1576,110 +1576,110 @@
           {
             "file": "patterns.json",
             "relevance": 95,
-            "summary": "Project-specific conventions (nodejs, vitest, npm, src/ directory, commonjs imports) are essential context for validating a refactor plan against actual codebase structure and test setup."
+            "summary": "Most recent project snapshot (2026-06-10) with current tech stack: Node/vitest/npm/commonjs. Essential baseline for understanding project conventions and structure needed to validate the fallback policy migration plan."
           },
           {
             "file": "knowledge.json",
             "relevance": 72,
-            "summary": "Failure knowledge base shows test patterns and fix strategies from prior work in this repo (mktemp failures, output formatting). Plan validation may reject if it doesn't account for known failure modes."
+            "summary": "Contains captured failure patterns from prior work: mktemp path issues, sw-cleanup.sh script behavior, and regression detection problems. Directly applicable to validating shell script changes in fallback policy migration (67 static fallbacks likely involve shell code)."
           },
           {
             "file": "success-patterns.json",
             "relevance": 58,
-            "summary": "Successful patterns from standard template work show typical iteration counts (3-4), file change patterns, and test strategies that the rejected plan should align with for this project's refactor conventions."
+            "summary": "Shows successful config-driven feature approaches (authentication feature, bug fixes) with iteration patterns, file change strategies, and test approaches. Relevant precedent for planning a large-scale config migration (complexity 60-65, 3+ iterations typical)."
           }
         ]
       },
-      "timestamp": 1781100182,
+      "timestamp": 1781125194,
       "ttl": 1800
     },
     "f3a827d0c88350120bd0e1feec95fa88": {
       "result": {
         "results": [
           {
-            "file": "patterns.json (2026-06-10T13:54:11Z)",
-            "relevance": 95,
-            "summary": "Project type (Node.js), test runner (vitest), conventions (src/ directory, commonjs imports) — essential tech context for designing interfaces and API contracts for the fallback policy migrator"
-          },
-          {
             "file": "architecture.json",
-            "relevance": 80,
-            "summary": "Existing architecture rules that the design must comply with; ensures new fallback policy interfaces don't violate established patterns"
+            "relevance": 95,
+            "summary": "Contains architecture rules essential for designing fallback policy system interfaces and ensuring adherence to project architecture constraints"
           },
           {
-            "file": "success-patterns.json (auth feature, complexity 65, 2026-03-29T02:20:18Z)",
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Latest project context (2026-06-10) with node/vitest/npm setup and source conventions needed to design file structure and test patterns for migrator"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Complex feature patterns (auth module, complexity 65-70) demonstrate iterative TDD approach and file organization patterns applicable to adaptive override design"
+          },
+          {
+            "file": "issues.json",
             "relevance": 70,
-            "summary": "Similar complexity feature (65 vs estimated ~70 for fallback migrator) showing iterative TDD approach, file patterns, test strategy — directly applicable to design methodology for policy migration"
+            "summary": "Contains daemon timeout bug fixed with 'added semaphore' pattern—relevant precedent for fallback handling in adaptive override system"
           },
           {
-            "file": "success-patterns.json (bug fix, 2026-03-29T01:52:45Z)",
+            "file": "knowledge.json",
             "relevance": 65,
-            "summary": "Shows successful 3-iteration loop with npm test strategy and standard template; demonstrates proven approach for similar scope work"
-          },
-          {
-            "file": "knowledge.json (failure patterns)",
-            "relevance": 50,
-            "summary": "Documents common failure signatures and fix strategies (mktemp, output formatting); informs robustness and error handling design decisions"
+            "summary": "Failure signatures and fix strategies inform resilient design; mktemp/tempfile patterns may inform safe temporary state handling in config-driven system"
           }
         ]
       },
-      "timestamp": 1781100273,
+      "timestamp": 1781125236,
       "ttl": 1800
     },
     "ff452e811420fe276e7155e08c048850": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 80,
-            "summary": "Shows successful feature/refactor patterns at complexity 60-65 with test strategies, iteration counts, and file patterns — understanding what worked informs what design approaches to avoid for config-driven migrations"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 75,
-            "summary": "Documents project structure (nodejs, vitest, commonjs, src/ test pattern) that directly constrains architectural decisions for this refactor — anti-patterns violating these conventions should be rejected"
-          },
-          {
             "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains failure signatures and fix strategies from prior work, directly showing anti-patterns to avoid (mktemp path issues, output format problems, regression detection failures) and proven remediation approaches"
+          },
+          {
+            "file": "success-patterns.json",
             "relevance": 70,
-            "summary": "Contains detailed failure signatures with fix strategies and approaches that didn't work — directly documents anti-patterns and failure modes to avoid in refactoring work"
+            "summary": "Shows successful design patterns and iterations from similar feature work (3-4 iterations typical, iterative TDD approaches, test strategies, file organization conventions) providing contrast to anti-patterns and proven strategies"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Documents past issue resolutions with gotchas (e.g., timeout bug requiring semaphore synchronization, backoff checking) that can inform anti-patterns in distributed/adaptive systems"
           }
         ]
       },
-      "timestamp": 1781100301,
+      "timestamp": 1781125263,
       "ttl": 1800
     },
     "dbab0c5583a25aed1fc04d147e5ebfe3": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
+            "file": "patterns.json (sethdford/shipwright, 2026-06-10)",
             "relevance": 95,
-            "summary": "Current project metadata (repo: sethdford/shipwright, Node.js, vitest, npm, JavaScript) — essential for understanding build environment and conventions"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 82,
-            "summary": "ENOENT 'Missing dependency installation' failure (95% fix effectiveness) — common blocker during build stage, concrete fix: npm install"
-          },
-          {
-            "file": "success-patterns.json",
-            "relevance": 72,
-            "summary": "Bug fix pattern with 3 iterations modifying scripts/lib and .claude infrastructure — shows successful refactor workflow in this codebase"
-          },
-          {
-            "file": "failures.json",
-            "relevance": 68,
-            "summary": "JavaScript 'cannot read property' error with 100% fix effectiveness — common issue in refactoring JavaScript/Node code"
+            "summary": "Current repo with exact project structure: Node.js, vitest, npm, commonjs imports. Captured today. Essential context for build toolchain decisions."
           },
           {
             "file": "knowledge.json",
-            "relevance": 61,
-            "summary": "Test setup patterns (mktemp path issues) — relevant for understanding test execution during build, includes specific fix strategies"
+            "relevance": 88,
+            "summary": "Recent test failure patterns (mktemp, sw-cleanup output formatting). These failures are relevant to build/test stage and show common pitfalls in this codebase."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh, 2026-06-10)",
+            "relevance": 82,
+            "summary": "Current test stage failure about heartbeat detection and output formatting. Captured today, directly applicable to build/test phases of this pipeline."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline build duration of 2089s provides iteration budget estimate and helps set realistic expectations for 20-iteration build loop."
+          },
+          {
+            "file": "success-patterns.json (bug fix, 2026-03-29)",
+            "relevance": 58,
+            "summary": "Similar bug fix pattern with 3 iterations and scripts/lib work. Shows successful iterative approach on config/infrastructure changes similar to fallback policy migration."
           }
         ]
       },
-      "timestamp": 1781100405,
+      "timestamp": 1781125367,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
@@ -1687,32 +1687,83 @@
         "results": [
           {
             "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Shows how previous builds succeeded including iteration counts, test strategies (npm test), file patterns changed, and durations—directly applicable to current build execution with adaptive loop"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project structure metadata (node/vitest/commonjs) defines how this build should execute and where test/source files are located"
+            "relevance": 90,
+            "summary": "Contains 2 recent successful fix patterns showing iteration counts (3), test strategies (npm test), and file modification patterns (.claude/ + scripts/lib/) directly applicable to current build work"
           },
           {
             "file": "knowledge.json",
-            "relevance": 78,
-            "summary": "Contains 4 failure patterns from previous test runs (mktemp failures, cleanup.sh output issues) that inform what could break during build's test execution phase"
+            "relevance": 85,
+            "summary": "5 KB entries documenting test failures with fix strategies: mktemp directory issues, sw-cleanup.sh heartbeat detection, and regression detection—these are recurring patterns likely to appear in current build"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Single resolved issue showing timeout bug pattern with success outcome and gotcha (check backoff); provides reference for similar daemon/timeout issues"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project metadata (Node/vitest/npm) and conventions (src/ dir, .test.js pattern, commonjs imports) needed to understand build environment and test execution"
           },
           {
             "file": "failures.json",
-            "relevance": 72,
-            "summary": "Records recent test failure (sw-cleanup.sh output formatting) from 6/10 that may recur during current build; provides root cause and fix"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 58,
-            "summary": "Baseline build_duration_s (2089s) provides performance expectation context for evaluating build progress and iteration count decisions"
+            "relevance": 50,
+            "summary": "Current test failure in sw-cleanup.sh (missing --force output) with documented root cause and fix strategy; directly actionable for ongoing build iterations"
           }
         ]
       },
-      "timestamp": 1781100434,
+      "timestamp": 1781125381,
+      "ttl": 1800
+    },
+    "5863481bd1f8f7749277688f2032e23a": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1781124819,
+      "ttl": 1800
+    },
+    "0f54ccb9195eab393f05bb5d68ef2063": {
+      "result": {
+        "estimated_cost_usd": 20.50,
+        "estimated_iterations": 6,
+        "estimated_tokens": 78000,
+        "likely_failure_stage": "build",
+        "confidence": 75
+      },
+      "timestamp": 1781124836,
+      "ttl": 3600
+    },
+    "a8cd7e14e001d9e768cd114b31cd8ea8": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (f4af3e2a..., 0bcf0637...)",
+            "relevance": 85,
+            "summary": "Iterative feature development patterns with 3-4 iterations, complexity 60-65, test strategies (npm test), file pattern conventions (src/, test/, scripts/), and duration/cost baselines. Critical for planning scope and methodology of large refactoring."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Captured failure patterns with fix strategies for shell scripting issues (mktemp, sw-cleanup heartbeat detection, sw-feedback regression). Relevant for anticipating integration issues during fallback policy migration across 67 call-sites."
+          },
+          {
+            "file": "patterns.json (2026-06-10 with project info)",
+            "relevance": 65,
+            "summary": "Current project structure: nodejs, vitest test runner, npm, source_dir: src/, test_pattern: *.test.js, commonjs imports. Essential context for planning where fallback policy enforcement fits in the codebase."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Timeout bug fix with semaphore pattern shows diagnosis and resolution of system-level issues. Fallback policies heavily involve timeouts and retries—this pattern may inform design decisions."
+          },
+          {
+            "file": "failures.json (2026-06-10, sw-cleanup.sh issue)",
+            "relevance": 40,
+            "summary": "Known issue with heartbeat detection and summary output in state management. Relevant for understanding potential integration points and risks in managing fallback policy state files."
+          }
+        ]
+      },
+      "timestamp": 1781124920,
       "ttl": 1800
     }
   }

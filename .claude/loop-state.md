@@ -2,26 +2,26 @@
 goal: "Fallback Policy Migrator — Convert 67 Static Fallbacks to Config-Driven Adaptive Overrides
 
 ## Plan Summary
-# Implementation Plan — Fallback Policy Migrator (#620)
+# Implementation Plan — Fallback Policy Migrator: Convert 67 Static Fallbacks to Config-Driven Adaptive Overrides
 
-Convert high-impact static fallbacks to a centralized, **config-driven policy** with **adaptive override** hooks, reusing the existing config-resolution chain (`config/defaults.json` + `scripts/lib/config.sh`) and the existing learning engine (`scripts/sw-adaptive.sh`).
+## Current State (grounding the plan)
 
----
+The **fallback-policy *infrastructure* already exists** on this branch (`ci/issue-620`):
 
-## Root Cause Hypothesis (previous attempt failed)
+| Component | Path | Status |
+|-----------|------|--------|
+| Resolver (`_smart_fallback`, `_fallback_clamp`, `_fallback_audit`) | `scripts/lib/fallback-policy.sh` | ✅ Built (171 lines) |
+| Policy config | `config/fallback-policy.json` | ⚠️ Only **20** policies declared |
+| JSON schema | `config/fallback-policy.schema.json` | ✅ Built |
+| CLI (`audit`/`inventory`/`list`/`get`/`validate`) | `scripts/sw-fallback.sh` | ✅ Built, wired into `scripts/sw` router (l.614) |
+| Unit test | `scripts/sw-fallback-policy-test.sh` | ✅ Registered in `package.json` |
+| Docs | `.claude/CLAUDE.md` "Fallback Policy System" | ✅ Written |
 
-The plan stage was retried (empty `plan.md`, an orphaned untracked `scripts/skills/generated/adaptive-fallback-learning.md`). Ranked likely causes of the prior failure:
+**The gap:** `grep -rn _smart_fallback scripts/ --include='*.sh'` (excluding the lib + test) finds the resolver invoked at exactly **one** call-site — `sw-fallback.sh:97`, which is the CLI's own `get` command. **Zero production call-sites have actually been migrated.** The 20 declared policies are inert.
 
-1. **Over-scoping — building a new learning engine from scratch (most likely).** The generated skill proposes a brand-new SQLite `adaptive_overrides` table, `--learning-window` daemon param, and score functions. That duplicates `sw-adaptive.sh`, which **already** learns timeouts/iterations/retries/quality thresholds with `confidence_level()` and `cmd_recommend`. A from-scratch engine is a multi-week effort that cannot land in a "standard" complexity refactor → the build loop would exhaust iterations. *Confirming evidence:* `grep -nE 'confidence_level|cmd_recommend|get_timeout' scripts/sw-adaptive.sh` — already present.
-2. **Migrating all 940 `${VAR:-default}` sites instead of the top 20.** A blanket migration touches ~80 files and breaks tests en masse. The issue explicitly scopes "top 20 high-impact." *Evidence:* `grep` shows 940 `:-` patterns; AC says 20.
-3. **Schema invented in isolation from `defaults.json`.** Designing a parallel config that ignores the existing `_config_get` precedence chain creates two competing config systems. *Evidence:* `config/defaults.json` + `scripts/lib/config.sh` already implement `env > daemon-config.json > policy.json > defaults.json`.
-
-### Evidence Gathered
-- `config/defaults.json` (3.6 KB) — centralized tunables already exist (network/daemon/pipeline/loop/quality/limits).
-- `scripts/lib/config.sh:24` `_config_get "section.key" [default]` — resolution chain already implemented (precedence comment at line 3).
-- `scripts/lib/compat.sh:337` `_smart_int`, `:290` `_smart_model` — env→config→default resolvers to mirror.
-- `scripts/sw-adaptive.sh` — `confidence_level()` (line 100), `cmd_train`, `cmd_recommend`, `get_timeout/get_retry_limit/get_quality_threshold` — the learning engine exists; it writes models to `~/.shipwright/`.
-- `scripts/skills/generated/adaptive-fallback-learning.md` (untracked) — design doc to commit as the reference spec.
+**Therefore the goal "Convert 67 Static Fallbacks" is the migration work itself**, in two parts:
+1. **Expand** `config/fallback-policy.json` from 20 → ~67 declared policies (the high-impact runtime fallbacks).
+2. **Rewire** ~67 real `${VAR:-N}` call-sites to resolve through `_smart_fallback "key" N`, keeping `N` as the fail-safe argument so behavior is byte-identical until config/learning changes it.
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
@@ -30,25 +30,17 @@ The plan stage was retried (empty `plan.md`, an orphaned untracked `scripts/skil
 ## Decision
 ### Component Diagram
 ### Interface Contracts
-# scripts/lib/fallback-policy.sh
-# _smart_fallback <policy_key> <hardcoded_default> -> echoes resolved value
-#   Pure (no side effects). NEVER empty.
-#   Precedence: env SW_<KEY> > daemon-config .fallback_overrides.<key>
-#               > learned override (if learning_enabled && confident && in-range)
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+## Implementation Plan
+## Validation Criteria
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Fallback Policy Migrator — Convert 67 Static Fallbacks to Config-Driven Adaptive Overrides
 
 ### Goals
-- Audit all scripts for fallback patterns (${VAR:-default}, || echo default, fallback assignment)
-- Generate fallback inventory: file, line, variable, default value, context
-- Create config/fallback-policy.json schema with adaptive override support
-- Migrate top 20 high-impact fallbacks to config-driven with adaptive learning hooks
-- Document fallback policy system in CLAUDE.md with examples
-- **Priority**: P6
-- **Complexity**: standard
-- **Generated by**: Strategic Intelligence Agent
-- **Strategy alignment**: P6: Platform Self-Improvement
+- Fallback Policy Migrator — Convert 67 Static Fallbacks to Config-Driven Adaptive Overrides
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -57,29 +49,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
+      "file": "patterns.json (sethdford/shipwright, 2026-06-10)",
       "relevance": 95,
-      "summary": "Current project metadata (repo: sethdford/shipwright, Node.js, vitest, npm, JavaScript) — essential for understanding build environment and conventions"
-    },
-    {
-      "file": "failures.json",
-      "relevance": 82,
-      "summary": "ENOENT 'Missing dependency installation' failure (95% fix effectiveness) — common blocker during build stage, concrete fix: npm install"
-    },
-    {
-      "file": "success-patterns.json",
-      "relevance": 72,
-      "summary": "Bug fix pattern with 3 iterations modifying scripts/lib and .claude infrastructure — shows successful refactor workflow in this codebase"
-    },
-    {
-      "file": "failures.json",
-      "relevance": 68,
-      "summary": "JavaScript 'cannot read property' error with 100% fix effectiveness — common issue in refactoring JavaScript/Node code"
+      "summary": "Current repo with exact project structure: Node.js, vitest, npm, commonjs imports. Captured today. Essential context for build toolchain decisions."
     },
     {
       "file": "knowledge.json",
-      "relevance": 61,
-      "summary": "Test setup patterns (mktemp path issues) — relevant for understanding test execution during build, includes specific fix strategies"
+      "relevance": 88,
+      "summary": "Recent test failure patterns (mktemp, sw-cleanup output formatting). These failures are relevant to build/test stage and show common pitfalls in this codebase."
+    },
+    {
+      "file": "failures.json (sw-cleanup.sh, 2026-06-10)",
+      "relevance": 82,
+      "summary": "Current test stage failure about heartbeat detection and output formatting. Captured today, directly applicable to build/test phases of this pipeline."
+    },
+    {
+      "file": "metrics.json",
+      "relevance": 65,
+      "summary": "Baseline build duration of 2089s provides iteration budget estimate and helps set realistic expectations for 20-iteration build loop."
+    },
+    {
+      "file": "success-patterns.json (bug fix, 2026-03-29)",
+      "relevance": 58,
+      "summary": "Similar bug fix pattern with 3 iterations and scripts/lib work. Shows successful iterative approach on config/infrastructure changes similar to fallback policy migration."
     }
   ]
 }
@@ -92,39 +84,42 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Fallback Policy Migrator — Convert 67 Static Fallbacks to Config-Driven Adaptive Overrides
 
 ## Implementation Checklist
-- [ ] T1: Implement `_fallback_audit`, generate inventory JSONL, select top 20 tunable fallbacks
-- [ ] T2: Write `config/fallback-policy.schema.json`
-- [ ] T3: Write `config/fallback-policy.json` with 20 policies (`learning_enabled:false`)
-- [ ] T4: Implement `_smart_fallback` + `_fallback_clamp` in `scripts/lib/fallback-policy.sh`
-- [ ] T5: Implement `scripts/sw-fallback.sh` (audit/inventory/list/validate) + register `fallback)` in `scripts/sw`
-- [ ] T6: Add adaptive-override writer bridge to `scripts/sw-adaptive.sh`
-- [ ] T7: Migrate the top-20 call-sites to `_smart_fallback` (behavior-preserving)
-- [ ] T8: Write `scripts/sw-fallback-policy-test.sh`, register in `package.json`
-- [ ] T9: Document Fallback Policy System in `.claude/CLAUDE.md`; commit generated skill doc
-- [ ] T10: Run `shipwright fallback validate`, `npm test`, `shipwright doctor` — all green
-- [ ] Audit produces a complete fallback inventory (`file,line,variable,default,context`).
-- [ ] `config/fallback-policy.json` + schema exist and validate; 20 high-impact fallbacks declared.
-- [ ] `_smart_fallback` resolves the documented 4-tier precedence and clamps to bounds.
-- [ ] Top 20 call-sites migrated; behavior **unchanged** when no config/override present (proven by regression test).
-- [ ] Adaptive bridge writes learned overrides only when confident; learning defaults **off**.
-- [ ] `.claude/CLAUDE.md` documents the system with schema + examples; `shipwright fallback` discoverable.
-- [ ] New test suite registered and passing; `npm test` and `shipwright doctor` green.
+- [ ] Task 1: Inventory + filter to the canonical 67 high-impact sites; reconcile vs. existing 20
+- [ ] Task 2: Define var→key namespace map (one key per semantic fallback)
+- [ ] Task 3: Expand `config/fallback-policy.json` to ~67 entries (`static == literal`)
+- [ ] Task 4: `fallback validate` + `jq empty` green on expanded config
+- [ ] Task 5: Migrate `loop.*` call-sites + `sw-loop-test.sh`
+- [ ] Task 6: Migrate `pipeline.*` call-sites + pipeline lib tests
+- [ ] Task 7: Migrate `daemon.*`/`patrol.*` call-sites + `sw-daemon-test.sh`
+- [ ] Task 8: Migrate `stall.*`/`recovery.*` call-sites + tests
+- [ ] Task 9: Migrate `network.*` call-sites
+- [ ] Task 10: Migrate `review.*`/`simulation.*`/`cleanup.*` call-sites
+- [ ] Task 11: Extend `sw-fallback-policy-test.sh` (count, range, fail-safe, behavior-preservation)
+- [ ] Task 12: Update `.claude/CLAUDE.md`; run `fallback audit`
+- [ ] Task 13: Full `npm test` green
+- [ ] Task 14: `VERSION` header bumps + `shipwright version check`
+- [ ] `config/fallback-policy.json` declares **≥ 67** policies; `shipwright fallback validate` exits 0.
+- [ ] **≥ 67** production call-sites resolve through `_smart_fallback` (verified by `grep -c`, excluding the CLI self-reference).
+- [ ] Every migrated `static` equals its original call-site literal (behavior-preservation tests pass).
+- [ ] `shipwright fallback audit scripts` reports `declared ≥ 67`.
+- [ ] Deleting `config/fallback-policy.json` restores pre-migration behavior (fail-safe test passes).
+- [ ] `sw-fallback-policy-test.sh` extended and green; full `npm test` green.
 
 ## Context
-- Pipeline: standard
-- Branch: refactor/fallback-policy-migrator-convert-67-stat-620
-- Issue: #620
-- Generated: 2026-06-10T14:02:14Z"
-iteration: 1
+- Pipeline: autonomous
+- Branch: ci/issue-620
+- Issue: none
+- Generated: 2026-06-10T20:59:35Z"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-06-10T14:38:45Z
-last_iteration_at: 2026-06-10T14:38:45Z
+started_at: 2026-06-10T21:03:17Z
+last_iteration_at: 2026-06-10T21:03:17Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
