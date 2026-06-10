@@ -196,7 +196,22 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local m
+    # GNU stat (Linux): -c '%Y'. Validate numeric — on Linux, BSD's `-f %m`
+    # exits non-zero but still prints filesystem info to stdout, so each form
+    # must be guarded against polluting the result with non-numeric output.
+    m=$(stat -c '%Y' "$file" 2>/dev/null)
+    if [[ "$m" =~ ^[0-9]+$ ]]; then
+        echo "$m"
+        return
+    fi
+    # BSD stat (macOS): -f %m
+    m=$(stat -f '%m' "$file" 2>/dev/null)
+    if [[ "$m" =~ ^[0-9]+$ ]]; then
+        echo "$m"
+        return
+    fi
+    echo "0"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
