@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "docs-writer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.92,
+        "reasoning": "System design task: converting static fallback policies to config-driven adaptive overrides requires architecture decisions, then implementation, testing, and documentation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781100482,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,318 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "2ec04ca6449762507fd5518edf5a5673": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 77,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Inconsistent fallback detection across varying bash script patterns (${VAR:-default}, || echo, assignment chains)",
+          "Behavioral changes if migration doesn't preserve original defaults exactly across all contexts",
+          "Partial migration leaving system in inconsistent state with mixed static/config-driven fallbacks",
+          "Integration risk when modifying 20+ scripts simultaneously with dependent config references",
+          "Adaptive learning system may require tuning and monitoring as policies evolve in production"
+        ],
+        "implementation_hints": [
+          "Start with systematic audit: grep for ${VAR:-default}, || echo patterns, and fallback assignment chains across all scripts",
+          "Generate complete fallback inventory with file, line, variable, context before migrating any - easier to spot patterns and dependencies",
+          "Design config/fallback-policy.json schema with adaptive hook structure first, including override conditions and learning triggers",
+          "Create test cases for each migrated fallback to verify behavior preservation and no regressions",
+          "Stage migration by impact/frequency to enable incremental rollback and validate each batch",
+          "Document context and rationale for each fallback default value in CLAUDE.md with examples",
+          "Add validation in daemon-config.json loading to catch schema violations and type mismatches early",
+          "Include metrics collection for fallback override frequency to measure adaptive learning effectiveness and policy drift"
+        ]
+      },
+      "timestamp": 1781099398,
+      "ttl": 3600
+    },
+    "ad51af53669f995a60fe4b7ad9f1a59b": {
+      "result": {
+        "estimated_iterations": 12
+      },
+      "timestamp": 1781099426,
+      "ttl": 1800
+    },
+    "538e855c5fa955b23f592ffaa90c708c": {
+      "result": {
+        "estimated_cost_usd": 12.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 520000,
+        "likely_failure_stage": "test",
+        "confidence": 65
+      },
+      "timestamp": 1781099458,
+      "ttl": 3600
+    },
+    "bd1f74ce4488f9a6d89df39f92e17a69": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "infrastructure",
+          "performance",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Large-scale systematic audit (67 fallbacks) + schema design for adaptive behavior + migration of high-impact cases + learning system integration. Requires careful coordination to avoid silent behavior changes."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design",
+            "systematic-debugging"
+          ],
+          "design": [
+            "api-design",
+            "architecture-design",
+            "adaptive-fallback-learning"
+          ],
+          "build": [],
+          "review": [
+            "adversarial-quality",
+            "security-audit",
+            "testing-strategy"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge whether all 67 fallbacks should be adaptive—some may be intentional constants that learning would harm (e.g., circuit breaker thresholds).",
+          "architecture-design": "Document why centralized fallback policy exists, how it differs from daemon-config.json, and which systems own which fallback categories.",
+          "systematic-debugging": "The issue notes a 'previous attempt' failed—investigate what approach broke and why before designing the new system.",
+          "api-design": "The fallback-policy.json schema must support both static overrides and learning hooks without becoming unmaintainable; design the override precedence carefully.",
+          "adaptive-fallback-learning": "Guide the design of how runtime metrics (DORA, pipeline vitals, error rates) feed back into adaptive override decisions without creating feedback loops or thrashing.",
+          "adversarial-quality": "Stress-test the system: what happens if an override is invalid? If learning tuning conflicts with manual config? If a fallback service is unreachable?",
+          "security-audit": "Some fallback values (timeouts on auth calls, retry limits on credential checks) have security implications—audit which ones need gating.",
+          "testing-strategy": "Migration of 20 high-impact fallbacks requires test harness that verifies: (1) behavior equivalence before/after, (2) adaptive overrides work, (3) learning doesn't break anything.",
+          "validation-thoroughness": "Post-migration: verify all 67 fallbacks are discoverable, no silent changes in defaults, and adaptive overrides produce measurable improvement.",
+          "observability": "Add metrics: which fallbacks are being overridden most? Are adaptive tuning decisions converging or thrashing? Is the new system reducing SLO violations?",
+          "pr-quality": "The PR will touch many files—use a clear inventory (table in description) showing which fallbacks moved and why each was prioritized.",
+          "deploy-safety": "Fallback policy changes are critical infrastructure—stage rollout: config-only (non-adaptive) first, then enable adaptive learning in canary, then full rollout."
+        },
+        "generated_skills": [
+          {
+            "name": "adaptive-fallback-learning",
+            "reason": "No existing skill covers designing adaptive systems that learn from runtime metrics and tune configuration automatically. This is core to the issue's 'AGI-level self-tuning' requirement.",
+            "content": "## Adaptive Fallback Learning System Design\n\n### Core Challenge\nFallback policies (timeouts, retry counts, circuit breaker thresholds) are typically hardcoded or static config. This skill guides design of systems that learn from runtime behavior and adapt automatically—without oscillation, feedback loops, or silent failures.\n\n### Design Principles\n\n1. **Separate learning from override precedence**\n   - Config schema: `{ \"fallback_name\": { \"static\": value, \"adaptive_range\": [min, max], \"learning_enabled\": bool } }`\n   - Precedence: manual override > adaptive override > config static > hardcoded\n   - Never let learning violate system invariants (e.g., timeouts can't go to 0, retry count can't go negative)\n\n2. **Measure before tuning**\n   - Define what \"better\" means for each fallback (e.g., timeout: minimize `(p99_latency + timeout_errors * penalty)`, retry_count: minimize `(failures + cost_per_retry)`)\n   - Capture baseline metrics before enabling learning\n   - Use SLO-aware tuning: prioritize SLO violations over micro-optimizations\n\n3. **Prevent feedback loops**\n   - Add hysteresis: don't update a fallback unless new value is 5%+ better *and* confidence interval doesn't overlap prior estimate\n   - Limit update frequency (e.g., once per hour minimum) to avoid thrashing\n   - Track update history; alert if a fallback oscillates more than 3 times in 24h\n\n4. **Handle drift and decay**\n   - Adaptive tuning decays over time as code changes—decay learning weight by 50% per major version\n   - Flag overrides that outlive their context (e.g., a timeout tuned for slow CI is now wrong)\n\n### Implementation Checklist\n\n- [ ] Design `adaptive_overrides` table in `~/.shipwright/` (SQLite or JSON)\n- [ ] Add `--learning-window` param to daemon (how far back to look for metrics)\n- [ ] Implement score function: takes metrics → proposed fallback value with confidence\n- [ ] Add `shipwright adaptive tune --fallback <name>` to manually trigger one learning cycle\n- [ ] Gate behind `config.adaptive_learning.enabled` (default false for GA)\n- [ ] Log every override decision (audit trail for incident review)\n- [ ] Add `shipwright memory show` section for learned fallback patterns\n\n### Anti-Patterns\n\n- **No learning without metrics**: require at least 10 observations before tuning\n- **No unbounded ranges**: always set min/max bounds matching real constraints\n- **No learning on new systems**: wait 24h before enabling adaptive tuning (let steady-state establish)\n- **No per-pipeline tuning**: share adaptive overrides across all pipelines (ensemble learning)\n\n### Example: Timeout Fallback\n\n```json\n{\n  \"fallback_policy\": {\n    \"timeout_default\": {\n      \"static\": 30,\n      \"adaptive_range\": [10, 120],\n      \"learning_enabled\": true,\n      \"metric_source\": \"pipeline_vitals.p99_latency\",\n      \"score_function\": \"min(p99_latency + timeout_errors*10)\",\n      \"learning_window_hours\": 72,\n      \"update_frequency_hours\": 1,\n      \"confidence_threshold\": 0.85\n    }\n  }\n}\n```\n\nLearning engine reads p99_latency and timeout error count over last 72h, computes optimal timeout, and applies if confidence ≥ 0.85 and improvement ≥ 5%."
+          }
+        ],
+        "review_focus": [
+          "Audit completeness—is the inventory truly exhaustive? Grep patterns: ${VAR:-}, || echo, fallback assignments, default function parameters",
+          "Schema design—does fallback-policy.json support all 67 cases without becoming unmaintainable? Can static and adaptive overrides coexist safely?",
+          "Migration correctness—do the 20 migrated fallbacks behave identically before/after? Are there any silent behavior changes in tests or production runs?",
+          "Learning integration—how does runtime data (DORA, pipeline vitals, error rates) feed back? Are there safeguards against feedback loops and thrashing?",
+          "Backward compatibility—if a script predates the new config system, does it gracefully fall back to hardcoded defaults? Can old and new systems coexist?",
+          "Documentation—is the fallback policy system (both static and adaptive modes) clearly explained in CLAUDE.md with concrete examples?"
+        ],
+        "risk_areas": [
+          "Silent behavior changes: migrated fallback values differ from original, breaking subtle assumptions in dependent code",
+          "Race conditions: multiple processes (daemon workers, fleet machines) simultaneously tuning adaptive overrides without atomic writes",
+          "Config explosion: schema becomes too flexible and unmaintainable, or too rigid and doesn't support all 67 cases",
+          "Learning feedback loops: adaptive tuning creates oscillation (e.g., timeout keeps growing→more data→timeout grows more) or unexpected interactions between fallbacks",
+          "Incomplete audit: some fallbacks are missed (e.g., hardcoded numbers masquerading as magic constants, indirect references via environment variables)",
+          "Rollback complexity: if a fallback policy change breaks a pipeline, is reverting simple, or does it require manual config surgery?"
+        ]
+      },
+      "timestamp": 1781099648,
+      "ttl": 3600
+    },
+    "bf1bd363c0549ba015c8b28def1e4505": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-06-10)",
+            "relevance": 95,
+            "summary": "Project conventions: Node.js/JavaScript, vitest test runner, npm, source in src/, commonjs imports. Essential for understanding where fallback policy code lives and how to structure the refactor."
+          },
+          {
+            "file": "success-patterns.json (Fix bug, complexity 60)",
+            "relevance": 85,
+            "summary": "Completed refactor pattern: standard template, 3 iterations, files in .claude/ and scripts/, npm test strategy, 6 commits. Shows proven approach for similar medium-complexity refactors."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 65,
+            "summary": "Feature development with TDD + module isolation, unit+integration tests, iterative approach. Applicable for planning test strategy and iteration estimates for this refactor."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 45,
+            "summary": "Test infrastructure failures (mktemp paths, sw-cleanup.sh output). Warns of potential build-stage blockers related to test environment setup."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline build duration: 2089s (~35 min). Useful for estimating timeline and resource requirements in the implementation plan."
+          }
+        ]
+      },
+      "timestamp": 1781099812,
+      "ttl": 1800
+    },
+    "08b0543774a9148cdb25514f5e04b386": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project-specific conventions (nodejs, vitest, npm, src/ directory, commonjs imports) are essential context for validating a refactor plan against actual codebase structure and test setup."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Failure knowledge base shows test patterns and fix strategies from prior work in this repo (mktemp failures, output formatting). Plan validation may reject if it doesn't account for known failure modes."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Successful patterns from standard template work show typical iteration counts (3-4), file change patterns, and test strategies that the rejected plan should align with for this project's refactor conventions."
+          }
+        ]
+      },
+      "timestamp": 1781100182,
+      "ttl": 1800
+    },
+    "f3a827d0c88350120bd0e1feec95fa88": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (2026-06-10T13:54:11Z)",
+            "relevance": 95,
+            "summary": "Project type (Node.js), test runner (vitest), conventions (src/ directory, commonjs imports) — essential tech context for designing interfaces and API contracts for the fallback policy migrator"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 80,
+            "summary": "Existing architecture rules that the design must comply with; ensures new fallback policy interfaces don't violate established patterns"
+          },
+          {
+            "file": "success-patterns.json (auth feature, complexity 65, 2026-03-29T02:20:18Z)",
+            "relevance": 70,
+            "summary": "Similar complexity feature (65 vs estimated ~70 for fallback migrator) showing iterative TDD approach, file patterns, test strategy — directly applicable to design methodology for policy migration"
+          },
+          {
+            "file": "success-patterns.json (bug fix, 2026-03-29T01:52:45Z)",
+            "relevance": 65,
+            "summary": "Shows successful 3-iteration loop with npm test strategy and standard template; demonstrates proven approach for similar scope work"
+          },
+          {
+            "file": "knowledge.json (failure patterns)",
+            "relevance": 50,
+            "summary": "Documents common failure signatures and fix strategies (mktemp, output formatting); informs robustness and error handling design decisions"
+          }
+        ]
+      },
+      "timestamp": 1781100273,
+      "ttl": 1800
+    },
+    "ff452e811420fe276e7155e08c048850": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Shows successful feature/refactor patterns at complexity 60-65 with test strategies, iteration counts, and file patterns — understanding what worked informs what design approaches to avoid for config-driven migrations"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Documents project structure (nodejs, vitest, commonjs, src/ test pattern) that directly constrains architectural decisions for this refactor — anti-patterns violating these conventions should be rejected"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Contains detailed failure signatures with fix strategies and approaches that didn't work — directly documents anti-patterns and failure modes to avoid in refactoring work"
+          }
+        ]
+      },
+      "timestamp": 1781100301,
+      "ttl": 1800
+    },
+    "dbab0c5583a25aed1fc04d147e5ebfe3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project metadata (repo: sethdford/shipwright, Node.js, vitest, npm, JavaScript) — essential for understanding build environment and conventions"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "ENOENT 'Missing dependency installation' failure (95% fix effectiveness) — common blocker during build stage, concrete fix: npm install"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Bug fix pattern with 3 iterations modifying scripts/lib and .claude infrastructure — shows successful refactor workflow in this codebase"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 68,
+            "summary": "JavaScript 'cannot read property' error with 100% fix effectiveness — common issue in refactoring JavaScript/Node code"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 61,
+            "summary": "Test setup patterns (mktemp path issues) — relevant for understanding test execution during build, includes specific fix strategies"
+          }
+        ]
+      },
+      "timestamp": 1781100405,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Shows how previous builds succeeded including iteration counts, test strategies (npm test), file patterns changed, and durations—directly applicable to current build execution with adaptive loop"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure metadata (node/vitest/commonjs) defines how this build should execute and where test/source files are located"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 78,
+            "summary": "Contains 4 failure patterns from previous test runs (mktemp failures, cleanup.sh output issues) that inform what could break during build's test execution phase"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Records recent test failure (sw-cleanup.sh output formatting) from 6/10 that may recur during current build; provides root cause and fix"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 58,
+            "summary": "Baseline build_duration_s (2089s) provides performance expectation context for evaluating build progress and iteration count decisions"
+          }
+        ]
+      },
+      "timestamp": 1781100434,
+      "ttl": 1800
     }
   }
 }
