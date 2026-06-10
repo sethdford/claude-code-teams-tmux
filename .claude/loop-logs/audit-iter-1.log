@@ -1,1 +1,35 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my analysis of the cumulative work, I need to assess whether this is acceptable. Let me review the critical pieces:
+
+**Completed (8 of 10 tasks):**
+- T1-T6: Core infrastructure (resolver library, schema, CLI, adaptive bridge) — well-designed and implemented
+- T8: Tests written (34 tests)
+- T9: Documentation added to CLAUDE.md
+
+**Not Done (blocking issues):**
+- **T7: Call-site migration** — The ~20 actual `${VAR:-default}` call-sites are NOT migrated to use `_smart_fallback`. This is the critical piece. Without it, the fallback policy system is infrastructure with zero functionality. Looking at the git diff, no `timeout=`, `retry=`, or other fallback sites were modified to use the new resolver.
+
+- **T10: Full validation** — Neither `npm test` (exit 3) nor `shipwright doctor` was run successfully to completion.
+
+**Test Status:**
+- npm test exits with code 3 due to 3 failing tests in `sw-reaper-test.sh` (detecting stale heartbeats, summary counting). These failures appear pre-existing and unrelated to the fallback-policy code, but they block the test suite.
+
+**Code Quality Assessment:**
+The infrastructure code is well-designed: fail-safe precedence chain, proper clamping, schema validation, adaptive bridge gated correctly. However, design quality alone doesn't complete a feature.
+
+---
+
+## Issues Requiring Fix
+
+1. **Missing Core Deliverable (T7)**: No call-sites migrated. Without the actual migration of ~20 high-impact `${VAR:-...}` literals to `_smart_fallback`, the policy system is non-functional infrastructure. This is the issue's core requirement.
+
+2. **Incomplete Validation (T10)**: Full test suite and doctor validation not run successfully. Exit code 3 means test failures (the 3 reaper test failures). While these may not be caused by the fallback work, they need diagnosis/resolution.
+
+3. **Discrepancy in Agent Reporting**: Agent claimed tests passing but `npm test` returned exit 3. The actual fallback-policy tests may have passed (output truncated), but the agent didn't verify the claim against actual exit code.
+
+---
+
+**AUDIT_FAIL** — The feature lacks its core deliverable (T7: call-site migration), and full validation (T10) was not completed successfully.
