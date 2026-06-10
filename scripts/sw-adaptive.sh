@@ -42,6 +42,12 @@ EVENTS_FILE="${HOME}/.shipwright/events.jsonl"
 MODELS_FILE="${HOME}/.shipwright/adaptive-models.json"
 REPO_DIR="${PWD}"
 
+# Fallback-policy resolver (provides _fallback_clamp; bridge writes learned overrides)
+# shellcheck source=lib/fallback-policy.sh
+[[ -f "$SCRIPT_DIR/lib/fallback-policy.sh" ]] && source "$SCRIPT_DIR/lib/fallback-policy.sh"
+ADAPTIVE_OVERRIDES_FILE="${SW_FALLBACK_OVERRIDES_FILE:-${HOME}/.shipwright/adaptive-overrides.json}"
+FALLBACK_POLICY_FILE="${SW_FALLBACK_POLICY_FILE:-${SCRIPT_DIR}/../config/fallback-policy.json}"
+
 # ─── Default Thresholds ─────────────────────────────────────────────────────
 MIN_CONFIDENCE_SAMPLES=10
 MED_CONFIDENCE_SAMPLES=50
@@ -861,6 +867,10 @@ ${BOLD}SUBCOMMANDS${RESET}
   ${CYAN}reset${RESET} [--metric METRIC]
     Clear learned data (all, or specific metric)
 
+  ${CYAN}bridge${RESET} [--key KEY] [--dry-run]
+    Bridge confident recommendations into learned fallback-policy overrides
+    (~/.shipwright/adaptive-overrides.json). Skips low-confidence; clamps to range.
+
   ${CYAN}help${RESET}
     Show this help message
 
@@ -898,6 +908,128 @@ ${BOLD}STATISTICS${RESET}
 EOF
 }
 
+# ─── Adaptive Override Bridge ───────────────────────────────────────────────
+# Maps sw-adaptive's confidence levels to a numeric score for policy gating.
+_confidence_to_score() {
+    case "$1" in
+        high)   echo "0.9" ;;
+        medium) echo "0.6" ;;
+        *)      echo "0.3" ;;
+    esac
+}
+
+# write_adaptive_override <policy_key> <value> <confidence_score>
+# Gated, clamped, atomic writer for ~/.shipwright/adaptive-overrides.json.
+# Skips (returns 1, no write) when: invalid key, non-numeric value, confidence
+# below the policy's confidence_threshold, or key not declared in the policy.
+# Clamps the value to the policy's adaptive_range before writing. Never writes
+# low-confidence garbage. Concurrent-read safe (tmp + mv).
+write_adaptive_override() {
+    local key="$1" value="$2" confidence="$3"
+
+    [[ "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_.]*$ ]] || { warn "bridge: invalid key '$key'"; return 1; }
+    [[ "$value" =~ ^-?[0-9]+([.][0-9]+)?$ ]]  || { warn "bridge: non-numeric value '$value'"; return 1; }
+    [[ "$confidence" =~ ^[0-9]+([.][0-9]+)?$ ]] || { warn "bridge: bad confidence '$confidence'"; return 1; }
+
+    [[ -f "$FALLBACK_POLICY_FILE" ]] || { warn "bridge: policy file missing"; return 1; }
+
+    # Key must be declared.
+    local declared
+    declared=$(jq -r --arg k "$key" '.policies | has($k)' "$FALLBACK_POLICY_FILE" 2>/dev/null || echo "false")
+    [[ "$declared" == "true" ]] || { warn "bridge: '$key' not declared in policy"; return 1; }
+
+    # Gate on confidence >= policy threshold.
+    local threshold confident
+    threshold=$(jq -r --arg k "$key" '.policies[$k].confidence_threshold // 0.85' "$FALLBACK_POLICY_FILE" 2>/dev/null || echo "0.85")
+    confident=$(awk -v c="$confidence" -v t="$threshold" 'BEGIN{ print (c+0 >= t+0) ? "1" : "0" }' 2>/dev/null || echo 0)
+    [[ "$confident" == "1" ]] || return 1
+
+    # Clamp to the policy's adaptive_range.
+    local rmin rmax
+    rmin=$(jq -r --arg k "$key" '.policies[$k].adaptive_range[0] // empty' "$FALLBACK_POLICY_FILE" 2>/dev/null || true)
+    rmax=$(jq -r --arg k "$key" '.policies[$k].adaptive_range[1] // empty' "$FALLBACK_POLICY_FILE" 2>/dev/null || true)
+    if [[ -n "$rmin" && -n "$rmax" ]] && [[ "$(type -t _fallback_clamp)" == "function" ]]; then
+        value=$(_fallback_clamp "$value" "$rmin" "$rmax")
+    fi
+
+    # Atomic merge into the overrides file.
+    mkdir -p "$(dirname "$ADAPTIVE_OVERRIDES_FILE")"
+    local existing tmp
+    existing="{}"
+    [[ -f "$ADAPTIVE_OVERRIDES_FILE" ]] && existing=$(cat "$ADAPTIVE_OVERRIDES_FILE" 2>/dev/null || echo "{}")
+    echo "$existing" | jq empty 2>/dev/null || existing="{}"
+    tmp=$(mktemp "${TMPDIR:-/tmp}/sw-adaptive-override.XXXXXX")
+    if echo "$existing" | jq \
+        --arg k "$key" \
+        --argjson v "$value" \
+        --argjson c "$confidence" \
+        '.[$k] = {value: $v, confidence: $c}' > "$tmp" 2>/dev/null; then
+        mv "$tmp" "$ADAPTIVE_OVERRIDES_FILE"
+        return 0
+    fi
+    rm -f "$tmp"
+    return 1
+}
+
+# cmd_bridge [--key K] [--dry-run]
+# Bridge existing sw-adaptive recommendations into learned policy overrides.
+# For each mapped (policy_key -> getter) pair, compute the recommended value and
+# its confidence level; write only confident, in-range recommendations.
+cmd_bridge() {
+    local only_key="" dry_run=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --key) only_key="$2"; shift 2 ;;
+            --dry-run) dry_run=1; shift ;;
+            *) shift ;;
+        esac
+    done
+
+    # policy_key|getter_fn|getter_args|sample_query (jq filter producing an array)
+    local pairs="
+pipeline.claude_timeout|get_timeout|build . 1800|map(select(.type==\"stage.completed\" and .stage==\"build\") | .duration_s // empty)
+loop.claude_timeout|get_timeout|build . 1800|map(select(.type==\"stage.completed\" and .stage==\"build\") | .duration_s // empty)
+quality.gate_score_threshold|get_quality_threshold|70|map(select(.type==\"build.commit_quality\" and .score!=null) | .score)
+pipeline.build_test_retries|get_retry_limit|generic 3|map(select(.type==\"retry.classified\"))
+network.retry_count|get_retry_limit|generic 3|map(select(.type==\"retry.classified\"))
+"
+    local wrote=0 skipped=0
+    while IFS='|' read -r key getter gargs squery; do
+        [[ -z "$key" ]] && continue
+        [[ -n "$only_key" && "$key" != "$only_key" ]] && continue
+
+        # Sample count -> confidence level -> score.
+        local samples level score
+        samples=$(db_query_events "" 5000 | jq "[ $squery ] | flatten | length" 2>/dev/null || echo 0)
+        [[ "$samples" =~ ^[0-9]+$ ]] || samples=0
+        level=$(confidence_level "$samples")
+        score=$(_confidence_to_score "$level")
+
+        # Recommended value from the existing getter.
+        local value
+        # shellcheck disable=SC2086
+        value=$("$getter" $gargs 2>/dev/null || echo "")
+        [[ -n "$value" ]] || { ((skipped++)) || true; continue; }
+
+        if [[ -n "$dry_run" ]]; then
+            echo "  ${key}: value=${value} confidence=${score} (samples=${samples}, level=${level})"
+            continue
+        fi
+
+        if write_adaptive_override "$key" "$value" "$score" 2>/dev/null; then
+            success "bridged ${CYAN}${key}${RESET} = ${value} (confidence ${score})"
+            ((wrote++)) || true
+        else
+            ((skipped++)) || true
+        fi
+    done <<< "$pairs"
+
+    if [[ -z "$dry_run" ]]; then
+        info "Adaptive bridge: ${wrote} written, ${skipped} skipped (low confidence / no data)"
+        emit_event "adaptive.bridge" "wrote=${wrote}" "skipped=${skipped}" 2>/dev/null || true
+    fi
+}
+
 # ─── Main Entry Point ────────────────────────────────────────────────────────
 main() {
     local cmd="${1:-help}"
@@ -906,6 +1038,9 @@ main() {
     case "$cmd" in
         get)
             cmd_get "$@"
+            ;;
+        bridge)
+            cmd_bridge "$@"
             ;;
         profile)
             cmd_profile "$@"

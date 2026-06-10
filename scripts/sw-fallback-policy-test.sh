@@ -144,6 +144,56 @@ assert_contains "help lists get subcommand"      "$help_out" "get"
 get_out=$(SW_FALLBACK_POLICY_FILE="$POLICY" "$SCRIPT_DIR/sw-fallback.sh" get net.timeout 7 2>&1)
 assert_eq "CLI get resolves static policy value" "30" "$get_out"
 
+# ─── Adaptive bridge writer (sw-adaptive.sh) ────────────────────────────────
+print_test_section "Adaptive bridge (write_adaptive_override)"
+
+# Source sw-adaptive defensively (it sets its own traps); use the real policy.
+bridge_write() {
+    # Run in a clean subshell so the bridge's set -e/ERR trap can't leak.
+    SW_FALLBACK_POLICY_FILE="$REAL_POLICY" \
+    SW_FALLBACK_OVERRIDES_FILE="$OVERRIDES" \
+    HOME="$TEST_HOME" \
+    bash -c '
+        set +e
+        source "'"$SCRIPT_DIR"'/sw-adaptive.sh" 2>/dev/null
+        trap - ERR          # drop sw-adaptive ERR trap (references $BASH_SOURCE)
+        set +eu             # sw-adaptive set -eu; intended return 1 must not abort
+        write_adaptive_override "'"$1"'" "'"$2"'" "'"$3"'" >/dev/null 2>&1
+        echo "rc=$?"
+    '
+}
+
+rm -f "$OVERRIDES"
+br=$(bridge_write "network.gh_timeout" 25 0.9)
+assert_contains "bridge writes confident in-range override (rc=0)" "$br" "rc=0"
+written=$(jq -r '."network.gh_timeout".value' "$OVERRIDES" 2>/dev/null || echo "")
+assert_eq "bridge persisted clamped value" "25" "$written"
+
+br=$(bridge_write "network.gh_timeout" 9999 0.95)
+clamped=$(jq -r '."network.gh_timeout".value' "$OVERRIDES" 2>/dev/null || echo "")
+assert_eq "bridge clamps out-of-range value to adaptive_range max (300)" "300" "$clamped"
+
+br=$(bridge_write "network.gh_timeout" 50 0.5)
+assert_contains "bridge skips low-confidence write (rc=1)" "$br" "rc=1"
+
+br=$(bridge_write "bogus.undeclared.key" 5 0.99)
+assert_contains "bridge skips undeclared key (rc=1)" "$br" "rc=1"
+
+br=$(bridge_write "network.gh_timeout" notanumber 0.99)
+assert_contains "bridge skips non-numeric value (rc=1)" "$br" "rc=1"
+rm -f "$OVERRIDES"
+
+# Resolver consumes a bridge-written override end-to-end (with learning enabled).
+LEARN_POLICY="$TEST_HOME/learn-policy.json"
+echo '{"version":"1","policies":{"net.timeout":{"static":30,"adaptive_range":[5,120],"learning_enabled":true,"confidence_threshold":0.85}}}' > "$LEARN_POLICY"
+echo '{"net.timeout":{"value":77,"confidence":0.9}}' > "$OVERRIDES"
+e2e=$(SW_FALLBACK_POLICY_FILE="$LEARN_POLICY" bash -c '
+    source "'"$SCRIPT_DIR"'/lib/fallback-policy.sh"
+    _smart_fallback "net.timeout" 7
+')
+assert_eq "resolver applies a bridge-shaped learned override end-to-end" "77" "$e2e"
+rm -f "$OVERRIDES"
+
 # ─── Real shipped policy sanity ─────────────────────────────────────────────
 print_test_section "Shipped policy"
 
