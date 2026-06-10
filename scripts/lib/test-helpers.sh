@@ -39,7 +39,11 @@ FAILURES=()
 # Save originals now so cleanup_test_env() can always restore them.
 ORIG_HOME="${HOME}"
 ORIG_PATH="${PATH}"
-TEST_TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/sw-test-auto.XXXXXX")
+# TMPDIR may point at a directory that does not exist yet (e.g. CI sets
+# TMPDIR=/tmp/claude). Ensure the parent exists, falling back to /tmp.
+_sw_tmp_parent="${TMPDIR:-/tmp}"
+mkdir -p "$_sw_tmp_parent" 2>/dev/null || _sw_tmp_parent="/tmp"
+TEST_TEMP_DIR=$(mktemp -d "${_sw_tmp_parent%/}/sw-test-auto.XXXXXX")
 mkdir -p "$TEST_TEMP_DIR/home/.shipwright"
 mkdir -p "$TEST_TEMP_DIR/bin"
 

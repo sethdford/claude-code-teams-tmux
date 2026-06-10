@@ -295,14 +295,14 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-10T14:17:34Z
-last_iteration_at: 2026-06-10T14:17:34Z
+started_at: 2026-06-10T14:39:06Z
+last_iteration_at: 2026-06-10T14:39:06Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -313,8 +313,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-10T14:17:34Z)
-- **Graceful degradation** — missing/empty/corrupt cost files yield a valid zeroed object instead of crashing the pipe
-### Tests (T14)
-- `scripts/sw-cost-attribution-test.sh` — **31 tests, all passing**: aggregation, issue normalization, stage breakdown
 
