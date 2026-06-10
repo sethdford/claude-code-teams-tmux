@@ -143,7 +143,7 @@ QUALITY_GATE_PASSED=true
 ADDITIONAL_TEST_CMDS=()   # Array of extra test commands (from --additional-test-cmds)
 
 # ─── Context Budget ──────────────────────────────────────────────────────────
-CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-200000}"  # Max prompt chars before trimming
+CONTEXT_BUDGET_CHARS="${CONTEXT_BUDGET_CHARS:-$(_smart_fallback "loop.context_budget_chars" 200000)}"  # Max prompt chars before trimming
 
 # ─── Claude CLI Flags ─────────────────────────────────────────────────────────
 EFFORT_LEVEL="${SW_EFFORT_LEVEL:-}"
@@ -467,7 +467,7 @@ ARTIFACTS_DIR="${STATE_DIR}/pipeline-artifacts"
 mkdir -p "$ARTIFACTS_DIR"
 if type context_budget_init >/dev/null 2>&1; then
     # Set total budget (default 800K, configurable via env/config)
-    CONTEXT_BUDGET="${CONTEXT_BUDGET_TOKENS:-800000}"
+    CONTEXT_BUDGET="${CONTEXT_BUDGET_TOKENS:-$(_smart_fallback "loop.context_budget_tokens" 800000)}"
     context_budget_init "$CONTEXT_BUDGET" "$ARTIFACTS_DIR" 2>/dev/null || true
 fi
 
@@ -996,7 +996,7 @@ run_test_gate() {
     local all_passed=true
     local test_results="[]"
     local combined_output=""
-    local test_timeout="${SW_TEST_TIMEOUT:-900}"
+    local test_timeout="${SW_TEST_TIMEOUT:-$(_smart_fallback "loop.test_timeout" 900)}"
 
     # Run primary test command
     if [[ -n "$active_test_cmd" ]]; then
@@ -2264,7 +2264,7 @@ ${GOAL}"
         [[ -f "$stderr_file" ]] && stderr_content=$(cat "$stderr_file" 2>/dev/null || true)
 
         if echo "${log_content}${stderr_content}" | grep -qiE "$CONTEXT_EXHAUSTION_PATTERNS" 2>/dev/null; then
-            if [[ "${CONTEXT_RESTART_COUNT:-0}" -lt "${CONTEXT_RESTART_LIMIT:-2}" ]]; then
+            if [[ "${CONTEXT_RESTART_COUNT:-0}" -lt "${CONTEXT_RESTART_LIMIT:-$(_smart_fallback "loop.context_restart_limit" 2)}" ]]; then
                 CONTEXT_RESTART_COUNT=$(( CONTEXT_RESTART_COUNT + 1 ))
                 STATUS="context_exhaustion_restart"
                 write_state

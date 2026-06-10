@@ -321,6 +321,47 @@
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_poll_interval",
       "context": "poll cycles between stale-job reaper sweeps"
+    },
+    "loop.context_budget_chars": {
+      "static": 200000,
+      "adaptive_range": [
+        20000,
+        1000000
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "context": "max prompt chars before context trimming in the build loop"
+    },
+    "loop.context_budget_tokens": {
+      "static": 800000,
+      "adaptive_range": [
+        100000,
+        2000000
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "context": "total context window token budget for the build loop"
+    },
+    "loop.test_timeout": {
+      "static": 900,
+      "adaptive_range": [
+        30,
+        7200
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "per-run test command timeout in seconds"
+    },
+    "loop.context_restart_limit": {
+      "static": 2,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "context": "max session restarts due to context exhaustion"
     }
   }
 }
