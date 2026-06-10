@@ -1785,7 +1785,12 @@ test_retry_args_passed_to_spawn() {
 test_failure_classification_wired() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    # Capture the window first: piping into `grep -q` makes it close the pipe on
+    # first match, sending SIGPIPE to the upstream grep, which `pipefail` turns
+    # into a spurious failure. A herestring avoids the pipe entirely.
+    local _on_failure_window
+    _on_failure_window="$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB || true)"
+    grep -q 'classify_failure' <<< "$_on_failure_window" || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
@@ -1856,7 +1861,12 @@ test_retry_args_passed_to_spawn() {
 test_failure_classification_wired() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    # Capture the window first: piping into `grep -q` makes it close the pipe on
+    # first match, sending SIGPIPE to the upstream grep, which `pipefail` turns
+    # into a spurious failure. A herestring avoids the pipe entirely.
+    local _on_failure_window
+    _on_failure_window="$(grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB || true)"
+    grep -q 'classify_failure' <<< "$_on_failure_window" || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }

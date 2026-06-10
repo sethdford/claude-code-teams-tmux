@@ -3,6 +3,14 @@
 [[ -n "${_DAEMON_POLL_LOADED:-}" ]] && return 0
 _DAEMON_POLL_LOADED=1
 
+# Ensure the fallback-policy resolver is available (parent normally sources it).
+# Fall back to a pass-through shim so call-sites always get the hardcoded default.
+if ! command -v _smart_fallback >/dev/null 2>&1; then
+    _fbp_lib="$(dirname "${BASH_SOURCE[0]}")/fallback-policy.sh"
+    if [[ -f "$_fbp_lib" ]]; then source "$_fbp_lib" 2>/dev/null || true; fi
+    command -v _smart_fallback >/dev/null 2>&1 || _smart_fallback() { printf '%s' "${2:-}"; }
+fi
+
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 DAEMON_DIR="${DAEMON_DIR:-${HOME}/.shipwright}"
 STATE_FILE="${STATE_FILE:-${DAEMON_DIR}/daemon-state.json}"
@@ -16,7 +24,7 @@ MAX_PARALLEL="${MAX_PARALLEL:-4}"
 WATCH_LABEL="${WATCH_LABEL:-shipwright}"
 WATCH_MODE="${WATCH_MODE:-repo}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
-ISSUE_LIMIT="${ISSUE_LIMIT:-100}"
+ISSUE_LIMIT="${ISSUE_LIMIT:-$(_smart_fallback "daemon.issue_limit" 100)}"
 SLACK_WEBHOOK="${SLACK_WEBHOOK:-}"
 BACKOFF_SECS="${BACKOFF_SECS:-0}"
 POLL_CYCLE_COUNT="${POLL_CYCLE_COUNT:-0}"
@@ -580,17 +588,17 @@ daemon_poll_loop() {
         fi
 
         # Auto-scale every N cycles (default: 5)
-        if [[ $((POLL_CYCLE_COUNT % ${AUTO_SCALE_INTERVAL:-5})) -eq 0 ]]; then
+        if [[ $((POLL_CYCLE_COUNT % ${AUTO_SCALE_INTERVAL:-$(_smart_fallback "daemon.auto_scale_interval" 5)})) -eq 0 ]]; then
             daemon_auto_scale || daemon_log WARN "daemon_auto_scale failed — continuing"
         fi
 
         # Self-optimize every N cycles (default: 10)
-        if [[ $((POLL_CYCLE_COUNT % ${OPTIMIZE_INTERVAL:-10})) -eq 0 ]]; then
+        if [[ $((POLL_CYCLE_COUNT % ${OPTIMIZE_INTERVAL:-$(_smart_fallback "daemon.optimize_interval" 10)})) -eq 0 ]]; then
             daemon_self_optimize || daemon_log WARN "daemon_self_optimize failed — continuing"
         fi
 
         # Stale state reaper every N cycles (default: 10)
-        if [[ $((POLL_CYCLE_COUNT % ${STALE_REAPER_INTERVAL:-10})) -eq 0 ]]; then
+        if [[ $((POLL_CYCLE_COUNT % ${STALE_REAPER_INTERVAL:-$(_smart_fallback "daemon.stale_reaper_interval" 10)})) -eq 0 ]]; then
             daemon_cleanup_stale || daemon_log WARN "daemon_cleanup_stale failed — continuing"
         fi
 

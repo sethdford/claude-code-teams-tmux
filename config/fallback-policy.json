@@ -222,6 +222,105 @@
       "confidence_threshold": 0.85,
       "metric_source": "sw-adaptive get_timeout",
       "context": "seconds before a heartbeat file is considered stale"
+    },
+    "daemon.max_retries": {
+      "static": 2,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_count",
+      "context": "default retry count for failed daemon pipelines"
+    },
+    "daemon.max_retries_api_error": {
+      "static": 4,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_count",
+      "context": "retry count for API-error pipeline failures"
+    },
+    "daemon.max_retries_context_exhaustion": {
+      "static": 2,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_count",
+      "context": "retry count for context-exhaustion pipeline failures"
+    },
+    "daemon.max_retries_build": {
+      "static": 2,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_count",
+      "context": "retry count for build-failure pipeline failures"
+    },
+    "daemon.max_restarts_cfg": {
+      "static": 3,
+      "adaptive_range": [
+        0,
+        10
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_count",
+      "context": "base build-loop restart count boosted on context-exhaustion retry"
+    },
+    "daemon.issue_limit": {
+      "static": 100,
+      "adaptive_range": [
+        1,
+        1000
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_batch_size",
+      "context": "max issues fetched per daemon poll cycle"
+    },
+    "daemon.auto_scale_interval": {
+      "static": 5,
+      "adaptive_range": [
+        1,
+        100
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "poll cycles between auto-scale evaluations"
+    },
+    "daemon.optimize_interval": {
+      "static": 10,
+      "adaptive_range": [
+        1,
+        100
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "poll cycles between self-optimize runs"
+    },
+    "daemon.stale_reaper_interval": {
+      "static": 10,
+      "adaptive_range": [
+        1,
+        100
+      ],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "poll cycles between stale-job reaper sweeps"
     }
   }
 }

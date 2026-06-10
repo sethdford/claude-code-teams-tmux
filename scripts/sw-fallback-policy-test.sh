@@ -197,8 +197,11 @@ rm -f "$OVERRIDES"
 # ─── Real shipped policy sanity ─────────────────────────────────────────────
 print_test_section "Shipped policy"
 
+# Migration target is >= 67 high-impact fallbacks (see issue #620). Use a floor
+# rather than an exact count so the assertion tracks incremental migration
+# progress while still catching regressions/deletions below the current baseline.
 real_count=$(jq -r '.policies | length' "$REAL_POLICY" 2>/dev/null || echo 0)
-assert_eq "shipped policy declares 20 high-impact fallbacks" "20" "$real_count"
+assert_gt "shipped policy declares a growing set of high-impact fallbacks (>= 29)" "$real_count" "28"
 learning_on=$(jq -r '[.policies[] | select(.learning_enabled == true)] | length' "$REAL_POLICY" 2>/dev/null || echo -1)
 assert_eq "all shipped policies have learning_enabled=false (GA-safe)" "0" "$learning_on"
 

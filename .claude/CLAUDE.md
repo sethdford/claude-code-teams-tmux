@@ -321,7 +321,7 @@ env SW_<KEY>                                   (manual override)   [highest]
         > hardcoded call-site default            (== today's literal)   [lowest]
 ```
 
-`learning_enabled` is **`false` for all 20 entries** (GA-safe) — the adaptive tier is skipped entirely until explicitly enabled. The learned tier reuses the existing `scripts/sw-adaptive.sh` engine (no new learning math); confident recommendations are written to `~/.shipwright/adaptive-overrides.json` and clamped to each policy's `adaptive_range` so learning can never violate an invariant (e.g. a timeout to 0).
+`learning_enabled` is **`false` for every shipped entry** (GA-safe) — the adaptive tier is skipped entirely until explicitly enabled. The learned tier reuses the existing `scripts/sw-adaptive.sh` engine (no new learning math); confident recommendations are written to `~/.shipwright/adaptive-overrides.json` and clamped to each policy's `adaptive_range` so learning can never violate an invariant (e.g. a timeout to 0).
 
 ### Schema (`config/fallback-policy.json`)
 

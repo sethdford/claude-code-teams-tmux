@@ -3,6 +3,14 @@
 [[ -n "${_DAEMON_FAILURE_LOADED:-}" ]] && return 0
 _DAEMON_FAILURE_LOADED=1
 
+# Ensure the fallback-policy resolver is available (parent normally sources it).
+# Fall back to a pass-through shim so call-sites always get the hardcoded default.
+if ! command -v _smart_fallback >/dev/null 2>&1; then
+    _fbp_lib="$(dirname "${BASH_SOURCE[0]}")/fallback-policy.sh"
+    if [[ -f "$_fbp_lib" ]]; then source "$_fbp_lib" 2>/dev/null || true; fi
+    command -v _smart_fallback >/dev/null 2>&1 || _smart_fallback() { printf '%s' "${2:-}"; }
+fi
+
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 DAEMON_DIR="${DAEMON_DIR:-${HOME}/.shipwright}"
 STATE_FILE="${STATE_FILE:-${DAEMON_DIR}/daemon-state.json}"
@@ -80,10 +88,10 @@ get_max_retries_for_class() {
     local class="${1:-unknown}"
     case "$class" in
         auth_error|invalid_issue) echo 0 ;;
-        api_error)                echo "${MAX_RETRIES_API_ERROR:-4}" ;;
-        context_exhaustion)       echo "${MAX_RETRIES_CONTEXT_EXHAUSTION:-2}" ;;
-        build_failure)           echo "${MAX_RETRIES_BUILD:-2}" ;;
-        *)                       echo "${MAX_RETRIES:-2}" ;;
+        api_error)                echo "${MAX_RETRIES_API_ERROR:-$(_smart_fallback "daemon.max_retries_api_error" 4)}" ;;
+        context_exhaustion)       echo "${MAX_RETRIES_CONTEXT_EXHAUSTION:-$(_smart_fallback "daemon.max_retries_context_exhaustion" 2)}" ;;
+        build_failure)           echo "${MAX_RETRIES_BUILD:-$(_smart_fallback "daemon.max_retries_build" 2)}" ;;
+        *)                       echo "${MAX_RETRIES:-$(_smart_fallback "daemon.max_retries" 2)}" ;;
     esac
 }
 
@@ -284,7 +292,7 @@ daemon_on_failure() {
 
                     # Increase restarts on context exhaustion
                     if [[ "$failure_class" == "context_exhaustion" ]]; then
-                        local boosted_restarts=$(( ${MAX_RESTARTS_CFG:-3} + retry_count ))
+                        local boosted_restarts=$(( ${MAX_RESTARTS_CFG:-$(_smart_fallback "daemon.max_restarts_cfg" 3)} + retry_count ))
                         if [[ "$boosted_restarts" -gt 5 ]]; then
                             boosted_restarts=5
                         fi
@@ -306,7 +314,7 @@ Pipeline failed (${failure_class}) — retrying with escalated strategy.
 
 | Field | Value |
 |-------|-------|
-| Retry | ${retry_count} / ${MAX_RETRIES:-2} |
+| Retry | ${retry_count} / ${MAX_RETRIES:-$(_smart_fallback "daemon.max_retries" 2)} |
 | Failure | \`${failure_class}\` |
 | Template | \`${retry_template}\` |
 | Model | \`${retry_model}\` |
