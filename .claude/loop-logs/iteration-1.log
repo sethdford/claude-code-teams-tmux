@@ -1,14 +1,1 @@
-All acceptance criteria are now implemented, tested, and committed. Let me verify against the goal one final time:
-
-**AC1 — Actionability scoring**: `eqa_score_summary_file` scores every `error_lines[]` entry (specificity, file:line, type) via the existing scoring lib. ✓ tested
-**AC2 — Correlation**: `eqa_correlate` joins `error.quality`[iter N] with `loop.iteration_complete`[iter N+1] to compute per-type `fix_rate`. ✓ tested
-**AC3 — Templates**: `eqa_generate_templates` writes `.claude/error-templates.json`; injected into the build prompt via `loop-iteration.sh`. ✓ tested
-**AC4 — Events**: `eqa_emit_iteration_quality` emits `error.quality` per failing iteration, wired into `sw-loop.sh` after `write_error_summary`. ✓ tested
-**AC5 — Top offenders**: `eqa_top_offenders` returns the bottom-5 (ascending, min-sample gated). ✓ tested
-**"All existing tests continue to pass"**: error-actionability (49) and loop (68) suites pass; syntax-checked all modified scripts.
-
-Self-audit: no TODO/FIXME, edge cases handled (missing/empty/malformed input, no-jq, min_sample gate), bash 3.2-compatible (no assoc arrays), atomic writes, jq-escaped JSON, follows module-guard/VERSION conventions. New test suite (24 tests) registered in `package.json`; docs AUTO sections synced.
-
-The goal is fully achieved.
-
-LOOP_COMPLETE
+You've hit your session limit · resets 6:40pm (UTC)
