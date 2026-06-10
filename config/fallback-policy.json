@@ -1,0 +1,167 @@
+{
+  "$schema": "https://shipwright.dev/schemas/fallback-policy-v1.json",
+  "description": "Top-20 high-impact runtime fallbacks, migrated from static ${VAR:-N} call-sites to a config-driven policy with adaptive override hooks. learning_enabled is false for all entries (GA-safe); deleting this file restores exact pre-migration behavior. See .claude/CLAUDE.md 'Fallback Policy System'.",
+  "version": "1",
+  "policies": {
+    "network.connect_timeout": {
+      "static": 10,
+      "adaptive_range": [2, 60],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "curl/gh connect timeout in seconds"
+    },
+    "network.max_time": {
+      "static": 60,
+      "adaptive_range": [10, 600],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "curl/gh total request timeout in seconds"
+    },
+    "network.gh_timeout": {
+      "static": 30,
+      "adaptive_range": [5, 300],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "gh CLI invocation timeout in seconds"
+    },
+    "network.retry_count": {
+      "static": 3,
+      "adaptive_range": [0, 10],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_limit",
+      "context": "network operation retry attempts"
+    },
+    "network.retry_delay": {
+      "static": 2,
+      "adaptive_range": [0, 30],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_limit",
+      "context": "delay between network retries in seconds"
+    },
+    "daemon.poll_interval": {
+      "static": 30,
+      "adaptive_range": [5, 600],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "daemon issue-poll interval in seconds"
+    },
+    "daemon.max_parallel": {
+      "static": 4,
+      "adaptive_range": [1, 32],
+      "learning_enabled": false,
+      "confidence_threshold": 0.9,
+      "metric_source": "sw-adaptive get_team_size",
+      "context": "daemon concurrent worker limit"
+    },
+    "daemon.health_check_interval": {
+      "static": 60,
+      "adaptive_range": [10, 600],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "daemon health-check interval in seconds"
+    },
+    "daemon.stale_job_timeout_hours": {
+      "static": 2,
+      "adaptive_range": [1, 24],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "hours before a daemon job is considered stale"
+    },
+    "pipeline.max_iterations": {
+      "static": 20,
+      "adaptive_range": [1, 100],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_iterations",
+      "context": "max build-loop iterations per pipeline"
+    },
+    "pipeline.build_test_retries": {
+      "static": 3,
+      "adaptive_range": [0, 10],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_retry_limit",
+      "context": "self-healing build/test retry attempts"
+    },
+    "pipeline.claude_timeout": {
+      "static": 1800,
+      "adaptive_range": [60, 7200],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "per-stage Claude CLI timeout in seconds"
+    },
+    "pipeline.heartbeat_interval": {
+      "static": 30,
+      "adaptive_range": [5, 300],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "pipeline agent heartbeat interval in seconds"
+    },
+    "loop.claude_timeout": {
+      "static": 1800,
+      "adaptive_range": [60, 7200],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "per-iteration Claude CLI timeout in seconds"
+    },
+    "loop.sleep_between_iterations": {
+      "static": 2,
+      "adaptive_range": [0, 60],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_poll_interval",
+      "context": "pause between loop iterations in seconds"
+    },
+    "loop.max_restarts": {
+      "static": 0,
+      "adaptive_range": [0, 10],
+      "learning_enabled": false,
+      "confidence_threshold": 0.9,
+      "metric_source": "sw-adaptive get_retry_limit",
+      "context": "fresh-session restarts when iterations exhaust"
+    },
+    "loop.fast_test_interval": {
+      "static": 5,
+      "adaptive_range": [1, 50],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_iterations",
+      "context": "iterations between full test runs in fast-test mode"
+    },
+    "loop.convergence_threshold": {
+      "static": 3,
+      "adaptive_range": [1, 20],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_iterations",
+      "context": "stable iterations before convergence is declared"
+    },
+    "quality.gate_score_threshold": {
+      "static": 70,
+      "adaptive_range": [0, 100],
+      "learning_enabled": false,
+      "confidence_threshold": 0.9,
+      "metric_source": "sw-adaptive get_quality_threshold",
+      "context": "minimum quality-gate score to pass"
+    },
+    "cleanup.heartbeat_stale_seconds": {
+      "static": 300,
+      "adaptive_range": [30, 3600],
+      "learning_enabled": false,
+      "confidence_threshold": 0.85,
+      "metric_source": "sw-adaptive get_timeout",
+      "context": "seconds before a heartbeat file is considered stale"
+    }
+  }
+}

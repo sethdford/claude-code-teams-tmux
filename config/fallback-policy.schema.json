@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shipwright Fallback Policy",
+  "description": "Config-driven policy for high-impact runtime fallbacks with adaptive override support. Resolved by _smart_fallback in scripts/lib/fallback-policy.sh. Precedence: env SW_<KEY> > daemon-config.json .fallback_overrides.<key> > learned adaptive override (clamped, gated on learning_enabled + confidence) > policies[key].static > hardcoded call-site default.",
+  "type": "object",
+  "required": ["version", "policies"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "description": { "type": "string" },
+    "version": { "type": "string" },
+    "policies": {
+      "type": "object",
+      "description": "Map of dot-path policy key (e.g. network.gh_timeout) to its declaration.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["static", "adaptive_range", "learning_enabled"],
+        "properties": {
+          "static": {
+            "type": "number",
+            "description": "Static policy value. Must equal the original call-site literal for behavior-preserving migration."
+          },
+          "adaptive_range": {
+            "type": "array",
+            "description": "Inclusive [min, max] bounds. Learned overrides are clamped to this range so learning can never violate an invariant (e.g. timeout to 0).",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "learning_enabled": {
+            "type": "boolean",
+            "description": "When false (GA default), the adaptive override tier is skipped entirely."
+          },
+          "confidence_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Minimum confidence (0-1) a learned override must carry before it is applied."
+          },
+          "metric_source": {
+            "type": "string",
+            "description": "Documentation pointer to the sw-adaptive metric that feeds this policy."
+          },
+          "context": {
+            "type": "string",
+            "description": "Human-readable description of what this fallback controls."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
