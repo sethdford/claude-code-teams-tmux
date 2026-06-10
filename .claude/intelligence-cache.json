@@ -1401,6 +1401,141 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "992167d12fe6bc0a873b92211eed3873": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 70,
+        "recommended_template": "standard",
+        "issue_type": "documentation",
+        "key_risks": [
+          "Tutorial UX is unclear or fails to guide users effectively",
+          "Interactive guide verification doesn't properly validate step completion",
+          "Sample app environment has missing dependencies or setup issues",
+          "Pipeline execution time exceeds 10-minute target on fresh install",
+          "Sample app bug is too trivial or too complex to demonstrate value"
+        ],
+        "implementation_hints": [
+          "Build sample app first with clear, intentional bug before creating tutorial flow",
+          "Use existing CLI infrastructure for shipwright tutorial start command",
+          "Create verification scripts that confirm each step (prereq check, pipeline run, PR review)",
+          "Test full flow on fresh VM/environment to measure actual time and identify blockers",
+          "Design sample app to highlight core Shipwright features (issue processing, PR workflow)",
+          "Consider using existing tmux integration for visual progress feedback",
+          "Implement completion tracking to gather adoption metrics post-launch",
+          "Start with Node.js sample app to match Shipwright's existing stack"
+        ]
+      },
+      "timestamp": 1781056836,
+      "ttl": 3600
+    },
+    "ebea5fc974d82d3feaa8a599b947e580": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1781056844,
+      "ttl": 1800
+    },
+    "395049dc6e9de654d79c209707b1ed4f": {
+      "result": {
+        "estimated_cost_usd": 3.25,
+        "estimated_iterations": 2,
+        "estimated_tokens": 18500,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1781056857,
+      "ttl": 3600
+    },
+    "c908e16802fbe788f13469b2520690f8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project conventions show Node.js/vitest/CommonJS with src/ and test/ directories—essential for planning tutorial structure and code organization"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 55,
+            "summary": "Authentication feature successfully delivered in 3 iterations using standard template—informs what features are worth documenting and iterative approach"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 50,
+            "summary": "Project detected as Node.js type at bootstrap—confirms language/runtime context for tutorial targeting"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "Authentication bug fix pattern shows testing strategy and common gotchas worth covering in tutorial"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 35,
+            "summary": "Real issue example (daemon timeout semaphore fix) provides concrete case study material for interactive tutorial"
+          }
+        ]
+      },
+      "timestamp": 1781057028,
+      "ttl": 1800
+    },
+    "1704c20831c0a0f5e0dda32b92979a47": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure metadata (Node, vitest, src/ layout, commonjs imports) directly informs architectural decisions for a tutorial sample repository"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Auth module pattern with TDD/module isolation approach shows successful architectural patterns for feature development in similar projects"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Multiple patterns for feature/bug work show proven file organization, test strategies, and iteration approaches applicable to tutorial architecture"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Test failure patterns and fixes document pitfalls and constraints to avoid during architecture design phase"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 25,
+            "summary": "Issue patterns show debugging approaches and gotchas (e.g., backoff checking) that inform resilient architectural patterns"
+          }
+        ]
+      },
+      "timestamp": 1781057267,
+      "ttl": 1800
+    },
+    "329a5971360ab9b45117a9d006f9cfbd": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains documented failure patterns (mktemp directory issues, test setup failures, JSON output regression) with fix strategies and metrics on occurrence/success rates. Directly captures what went wrong and how to fix it—core anti-patterns to avoid."
+          },
+          {
+            "file": "failures.json (with 'cannot read property' pattern)",
+            "relevance": 65,
+            "summary": "Explicitly documents failure patterns with fix effectiveness rates (100% success for variable initialization fix). Shows concrete anti-patterns like uninitialized variables and their proven solutions."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright project conventions)",
+            "relevance": 45,
+            "summary": "Shows established project conventions (Node.js, vitest, commonjs, src/ directory). Relevant to understanding what architectural/organizational choices were already validated, informing what design patterns are already accepted vs. should be rejected."
+          }
+        ]
+      },
+      "timestamp": 1781057284,
+      "ttl": 1800
     }
   }
 }
