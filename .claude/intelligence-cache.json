@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Cost attribution & budget tracking requires architectural decisions on data models, collection/aggregation, enforcement points, then implementation with comprehensive testing",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781100520,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,229 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "ee22e70b965913b61af53675a73cd6cf": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 80,
+        "recommended_template": "cost-aware",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Cost calculation accuracy across model types and stages must match billing reality",
+          "Integration complexity: touches cost system (sw-cost.sh), pipeline artifacts, dashboard, CLI, and intelligence layer",
+          "Data schema versioning: JSON format changes risk breaking downstream tools relying on cost data",
+          "Budget forecasting reliability depends on sufficient historical data and consistency in pipeline execution patterns",
+          "Performance impact of per-stage cost tracking on pipeline latency"
+        ],
+        "implementation_hints": [
+          "Define cost.json schema first with version field for future evolution",
+          "Hook into existing cost tracking (sw-cost.sh) at stage completion rather than reimplementing",
+          "Store cost artifacts with pipeline run data in .claude/pipeline-artifacts/ for easy correlation",
+          "Implement CLI display (shipwright cost show --pipeline) before dashboard to validate data structure",
+          "Build budget forecasting with confidence intervals to account for stage cost variance",
+          "Create comprehensive unit tests with mock cost data before integrating intelligence layer",
+          "Track not just tokens but also model selection rationale for optimization opportunities"
+        ]
+      },
+      "timestamp": 1781099457,
+      "ttl": 3600
+    },
+    "5d1b6e0db8fc087ed82125a477e555dc": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1781099481,
+      "ttl": 1800
+    },
+    "eaa980ff9e294a8709ca212be84d65da": {
+      "result": {
+        "estimated_cost_usd": 0.24,
+        "estimated_iterations": 2,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1781099495,
+      "ttl": 3600
+    },
+    "41288c7d4c1d5e40ee56eb33945f7340": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright entry)",
+            "relevance": 95,
+            "summary": "Current project conventions: Node/Vitest/CommonJS, src/ and test/ directories. Essential baseline for planning code structure, import patterns, and test organization for the cost attribution feature."
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 78,
+            "summary": "Similar feature task with complexity 65, 3 iterations, 150s duration, shows file patterns (.claude/, scripts/). Provides reference for planning scope, iteration strategy, and expected effort for a comparable feature."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 62,
+            "summary": "Project baseline of 2089s build duration. Useful for planning performance expectations and understanding cost tracking requirements in the context of build/test cycles."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 52,
+            "summary": "Feature pattern with complexity 60, 5 iterations, shows src/auth.ts and test patterns. Reference point for feature complexity estimation and TDD approach planning."
+          },
+          {
+            "file": "knowledge.json (test failures and patterns)",
+            "relevance": 35,
+            "summary": "Captures test setup issues and edge cases from prior runs. May inform test strategy planning for cost attribution feature, particularly around mktemp and system resource handling."
+          }
+        ]
+      },
+      "timestamp": 1781099910,
+      "ttl": 1800
+    },
+    "3ab7a08958ab7d6934d34d4ff8dc8235": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 75,
+            "summary": "Shows completed feature development patterns in this repo (authentication, bug fixes) with complexity levels (65), iterations (3), templates (standard), and cost metrics. Relevant for understanding what valid implementation plans look like in this codebase."
+          },
+          {
+            "file": "patterns.json (first)",
+            "relevance": 70,
+            "summary": "Captures actual project conventions for this repo (Node.js, vitest, commonjs imports, src/ and test/ directories). Essential for plan validation—any valid plan must respect these established patterns."
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 65,
+            "summary": "Documents validation/test failures (sw-cleanup.sh output format issues). Reveals what kinds of output/format mismatches cause test validation to fail, directly relevant to understanding why a plan validation was rejected."
+          }
+        ]
+      },
+      "timestamp": 1781100062,
+      "ttl": 1800
+    },
+    "23c3be0043b26925c0a6b245f8577d4c": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json (with build_duration_s baseline)",
+            "relevance": 75,
+            "summary": "Contains baseline metrics tracking system essential for understanding cost attribution data models and tracking patterns"
+          },
+          {
+            "file": "success-patterns.json (with Fix bug and Add authentication patterns)",
+            "relevance": 70,
+            "summary": "Shows successful architectural patterns, design approaches, and iteration structures that inform feature implementation strategy"
+          },
+          {
+            "file": "patterns.json (with project conventions)",
+            "relevance": 60,
+            "summary": "Captures project structure conventions (src/, test patterns, import style) that constrain architecture design choices"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Contains architecture rules that should guide cost attribution system design and enforce consistency"
+          },
+          {
+            "file": "success-patterns.json (with test1 auth module pattern)",
+            "relevance": 45,
+            "summary": "Demonstrates successful pattern structure showing files changed, complexity estimation, and cost tracking from prior features"
+          }
+        ]
+      },
+      "timestamp": 1781100170,
+      "ttl": 1800
+    },
+    "774891fc1e36035fd847e96f7b029866": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 25,
+            "summary": "Contains project type, framework, test runner, and code conventions that would inform any design decision including cost attribution architecture. Provides baseline project context for design decisions."
+          },
+          {
+            "file": "success-patterns.json (second entry)",
+            "relevance": 18,
+            "summary": "Shows cost tracking ($2.50 per delivery), iteration counts, and file change patterns from successful feature work. While not specific to cost attribution, historical cost data and delivery patterns could inform budget tracking design decisions."
+          },
+          {
+            "file": "knowledge.json (kb_b8239eb18d7d, kb_3058cd61f212, etc.)",
+            "relevance": 12,
+            "summary": "Contains failure patterns and root causes from past work. Understanding previous failures (test infrastructure, output formatting) could help identify anti-patterns to avoid in cost attribution design, though entries are infrastructure-focused rather than design-focused."
+          }
+        ]
+      },
+      "timestamp": 1781100217,
+      "ttl": 1800
+    },
+    "30e91c2b4f410a95cba30515702611c0": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project structure & conventions: src/ source dir, *.test.js test pattern, vitest runner, npm package manager, commonjs imports. Essential for understanding where cost attribution feature code should be located during build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Captured patterns for 'Fix bug' and 'Add authentication feature': shows 3 iterations, ~2.5 hours duration, standard template, npm test strategy, files in scripts/ and .claude/ dirs. Directly applicable to estimating build time and test approach for cost tracking feature."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Authentication bug fix pattern: complexity 60, 3 iterations, 45 seconds duration, $2.50 cost, standard template. Provides baseline for understanding how similar features are completed in this repo."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Build duration baseline: 2089 seconds (~35 min). Useful for understanding expected build stage duration and identifying if current build is on track or stalled."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Project type detection: nodejs with bootstrap source. Confirms tech stack and helps determine which build tools, test runners, and conventions apply to the cost attribution feature."
+          }
+        ]
+      },
+      "timestamp": 1781100454,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions essential for build: Node.js/vitest/npm/CommonJS, test pattern is *.test.js, source in src/ directory"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Shows successful completion patterns for similar complexity work (feature/bug fixes at 60-65 complexity), including iteration counts and file patterns to expect"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Baseline build duration of ~2089 seconds sets expectations for total build time; helps detect if build is stalling"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "sw-cleanup.sh test failure pattern recorded; relevant if implementation touches cleanup or test output formatting"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 25,
+            "summary": "Daemon timeout fix pattern shows semaphore approach worked; applicable only if cost tracking implementation involves daemon concurrency"
+          }
+        ]
+      },
+      "timestamp": 1781100493,
+      "ttl": 1800
     }
   }
 }
