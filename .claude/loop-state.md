@@ -109,20 +109,15 @@ Task tracking (check off items as you complete them):
 - Pipeline: autonomous
 - Branch: ci/issue-620
 - Issue: none
-- Generated: 2026-06-10T20:59:35Z
-
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0"
-iteration: 2
+- Generated: 2026-06-10T20:59:35Z"
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-10T21:32:21Z
-last_iteration_at: 2026-06-10T21:32:21Z
+started_at: 2026-06-10T21:40:56Z
+last_iteration_at: 2026-06-10T21:40:56Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -135,13 +130,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-10T21:22:12Z)
-- **Fail-safe guard** added to both libs so call-sites return the hardcoded default even when sourced standalone.
-**Bonus fix:** Diagnosed and fixed a **pre-existing flaky test** (`test_failure_classification_wired`, failed 3/3 on ori
-**Tests:** `sw-daemon-test` (66/0, stable ×2), `sw-fallback-policy-test` (34/34), `sw-lib-daemon-failure-test` (34/34) 
-
-### Iteration 2 (2026-06-10T21:32:21Z)
-- `fallback validate` → 33 policies valid
-- Resolver returns exact statics (200000/800000/900/2) — behavior preserved
-- `sw-loop-test.sh` 68/68, `sw-fallback-policy-test.sh` pass, `sw-agi-roadmap-test.sh` 53/53
 
