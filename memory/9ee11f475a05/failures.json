@@ -3,28 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', and '--force'",
-      "fix": "Check sw-cleanup.sh stale heartbeat detection logic and ensure dry-run summary outputs 'Found N' count and '--force hint' text",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Fix sw-cleanup.sh to output 'agent-1' when listing stale heartbeats, 'Found' in the summary count line, and '--force' as the hint for removing items",
       "seen_count": 1,
-      "last_seen": "2026-06-10T08:35:58Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "classify_failure function is not called within daemon_on_failure in sw-daemon.sh",
-      "fix": "Add a classify_failure call inside daemon_on_failure to route retry logic based on failure classification",
-      "seen_count": 1,
-      "last_seen": "2026-06-10T09:25:31Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-hygiene.sh dead-code subcommand exits with code 254 instead of 0",
-      "fix": "Fix the dead-code subcommand in sw-hygiene.sh to exit with code 0 on successful scan completion",
-      "seen_count": 1,
-      "last_seen": "2026-06-10T09:58:45Z",
+      "last_seen": "2026-06-10T10:05:36Z",
       "category": "test_failure"
     }
   ]
