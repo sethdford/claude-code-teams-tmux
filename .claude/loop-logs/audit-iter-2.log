@@ -1,1 +1,57 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work from iterations 1-2, I need to identify critical issues.
+
+## Test Status Discrepancy
+
+**CRITICAL ISSUE**: There's a direct contradiction between the agent's claims and the verified test harness results:
+
+**Agent claims:** "blocking test failures are resolved... `sw-cost-attribution-test.sh` — 31/31 pass"
+**Harness verification:** `npm test: exit 2 (7s)` — FAILING
+
+The agent ran individual test files successfully but the full test suite (`npm test`) exits with code 2. This indicates:
+1. Syntax error in new test file or cost-attribution library
+2. Import error or missing dependency
+3. Regression in existing tests due to the changes
+4. The new test file isn't properly registered in `package.json`
+
+Without fixing this, the code cannot be merged.
+
+## Incomplete Implementation
+
+The implementation plan lists 20 tasks. Current completion:
+- ✅ **T1**: Core library (`scripts/lib/cost-attribution.sh`) created with 262 lines
+- ✅ **Partial T14**: Basic unit tests (31 tests reported) in `scripts/sw-cost-attribution-test.sh`
+- ✅ **Bonus**: Fixed `file_mtime()` cross-platform bug in `compat.sh`
+- ❌ **T2-T3, T5-T13, T15-T20**: NOT STARTED (19 of 20 tasks incomplete)
+
+**Critical missing work:**
+- **T4**: No database tables created (`sw-db.sh` unchanged)
+- **T5-T6**: No pipeline integration (cost tracking not wired into `sw-pipeline.sh`)
+- **T7-T9**: No CLI commands (`shipwright cost show --pipeline` doesn't exist)
+- **T10-T13**: No dashboard integration (no API endpoints, no WebSocket events)
+- **T15**: No integration tests
+- **T19**: No end-to-end validation
+
+## Code Quality Concerns
+
+Without visibility into the actual implementation, I cannot fully audit `cost-attribution.sh`, but the fact that the full test suite fails suggests there may be structural issues.
+
+## Assessment
+
+The agent created the foundation (core library + tests) but:
+1. **The library is not integrated into the pipeline** — cost tracking won't actually happen
+2. **The test suite is broken** — `npm test` exits with error code 2
+3. **19 of 20 tasks remain incomplete** — feature is non-functional in production
+
+---
+
+**AUDIT_FAIL**
+
+**Required fixes before merge:**
+1. Fix `npm test` failure — run `npm test` locally and diagnose the exit code 2 error
+2. Verify `scripts/lib/cost-attribution.sh` has no syntax errors and proper imports
+3. Check that `scripts/sw-cost-attribution-test.sh` is registered in `package.json`
+4. After the test suite passes: proceed with integration tasks (T4, T5, T7, T10) to make the feature functional
