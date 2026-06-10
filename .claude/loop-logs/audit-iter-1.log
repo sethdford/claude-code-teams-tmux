@@ -2,34 +2,97 @@
 ⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-Based on my analysis of the cumulative work, I need to assess whether this is acceptable. Let me review the critical pieces:
+# Audit Review: Fallback Policy Migrator (Iteration 1)
 
-**Completed (8 of 10 tasks):**
-- T1-T6: Core infrastructure (resolver library, schema, CLI, adaptive bridge) — well-designed and implemented
-- T8: Tests written (34 tests)
-- T9: Documentation added to CLAUDE.md
-
-**Not Done (blocking issues):**
-- **T7: Call-site migration** — The ~20 actual `${VAR:-default}` call-sites are NOT migrated to use `_smart_fallback`. This is the critical piece. Without it, the fallback policy system is infrastructure with zero functionality. Looking at the git diff, no `timeout=`, `retry=`, or other fallback sites were modified to use the new resolver.
-
-- **T10: Full validation** — Neither `npm test` (exit 3) nor `shipwright doctor` was run successfully to completion.
-
-**Test Status:**
-- npm test exits with code 3 due to 3 failing tests in `sw-reaper-test.sh` (detecting stale heartbeats, summary counting). These failures appear pre-existing and unrelated to the fallback-policy code, but they block the test suite.
-
-**Code Quality Assessment:**
-The infrastructure code is well-designed: fail-safe precedence chain, proper clamping, schema validation, adaptive bridge gated correctly. However, design quality alone doesn't complete a feature.
+## Summary
+The agent made **meaningful, well-architected progress** on the core goal. The fallback policy infrastructure was already built; this iteration correctly migrated the first batch of production call-sites from static `${VAR:-default}` patterns to config-driven resolution through `_smart_fallback`. However, there is a **critical test failure** that must be addressed.
 
 ---
 
-## Issues Requiring Fix
+## Strengths ✓
 
-1. **Missing Core Deliverable (T7)**: No call-sites migrated. Without the actual migration of ~20 high-impact `${VAR:-...}` literals to `_smart_fallback`, the policy system is non-functional infrastructure. This is the issue's core requirement.
+1. **Proper architecture understanding**: The agent correctly used `_smart_fallback "key" N` with `N` as the fail-safe argument, preserving byte-identical behavior until a policy/override exists.
 
-2. **Incomplete Validation (T10)**: Full test suite and doctor validation not run successfully. Exit code 3 means test failures (the 3 reaper test failures). While these may not be caused by the fallback work, they need diagnosis/resolution.
+2. **Incremental progress toward goal**:
+   - Declared policies: 20 → **29** (+9 daemon.* entries)
+   - Migrated call-sites: 0 → **10** (daemon-failure.sh, daemon-poll.sh)
+   - Clear roadmap for remaining ~38 policies and ~57 call-sites
 
-3. **Discrepancy in Agent Reporting**: Agent claimed tests passing but `npm test` returned exit 3. The actual fallback-policy tests may have passed (output truncated), but the agent didn't verify the claim against actual exit code.
+3. **Specific tests green**: 
+   - `sw-daemon-test` (66/0, stable ×2)
+   - `sw-fallback-policy-test` (34/34)
+   - `sw-lib-daemon-failure-test` (34/34)
+
+4. **Bug fix included**: Fixed pre-existing flaky test (`test_failure_classification_wired`) with proper diagnosis of the `grep -q` + pipefail pitfall.
+
+5. **Fail-safe guards**: Added defensive checks so libraries return hardcoded defaults even when sourced standalone.
 
 ---
 
-**AUDIT_FAIL** — The feature lacks its core deliverable (T7: call-site migration), and full validation (T10) was not completed successfully.
+## Issues ✗
+
+### **CRITICAL: npm test failing (exit 1)**
+
+```
+npm test: exit 1 (1s)  ← FAILING
+npm run test:smoke: exit 0 (10s)  ← PASSING
+```
+
+**Problem:**
+- Specification requires: "All existing tests continue to pass"
+- Agent claimed "clean, tested first batch" but full test suite exits with 1
+- 1-second failure suggests early exit (test discovery, setup, or very early test failure)
+
+**Required action:**
+- Determine if this is a **pre-existing condition** (check git history before ci/issue-620 branch) or a **regression**
+- If regression: identify which test(s) fail and fix before next iteration
+- If pre-existing: document and track separately — do not claim tests pass when they don't
+
+The agent should have verified `npm test` directly (even if it takes longer than 1s) OR documented why it was skipped. Running only scoped tests (`sw-daemon-test`, `sw-fallback-policy-test`) is not sufficient; those may pass while others break.
+
+---
+
+## Code Quality Assessment
+
+| Aspect | Status | Notes |
+|--------|--------|-------|
+| Architecture | ✓ Correct | Proper use of resolver with fail-safe |
+| Testing of feature | ✓ Comprehensive | 34/34 on fallback policy tests |
+| Fail-safe design | ✓ Sound | Hardcoded defaults preserved |
+| Config expansion | ✓ Proper | 9 new policies with correct schema |
+| Work tracking | ✓ Clear | Explicit list of remaining tasks |
+| **Full test suite** | **✗ Broken** | npm test exits 1; must be fixed |
+
+---
+
+## Recommendation
+
+**This iteration is CONDITIONALLY ACCEPTABLE pending test investigation:**
+
+1. **In next iteration (immediately)**: 
+   - Run full test suite diagnostics: `npm test` with verbose output to identify failing test(s)
+   - Determine: pre-existing or new regression?
+   - If new: fix before committing
+   - If pre-existing: document in loop log and continue
+
+2. **The feature work is solid** — architecture is correct, call-site migrations are proper, specific tests pass. This part would pass audit.
+
+3. **The test suite must be fixed** before final merge, regardless of whether it's pre-existing or new.
+
+---
+
+## Verification Needed
+
+To confirm audit status, need answers to:
+- [ ] Is `npm test: exit 1` pre-existing (was it failing before ci/issue-620 branch)?
+- [ ] If new: which test(s) fail? Can they be fixed easily?
+- [ ] Did changes to `daemon-failure.sh` / `daemon-poll.sh` affect any tests outside `sw-daemon-test`?
+
+**Conditional:**  
+If this is **pre-existing and documented**, work can proceed.  
+If this is **new and fixable**, it should be fixed now.  
+If this is **new and blocking**, iteration must resolve it.
+
+---
+
+**Overall:** Feature engineering is solid; test infrastructure issue is blocking. Investigate and fix the `npm test` failure, then resubmit.
