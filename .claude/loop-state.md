@@ -110,16 +110,16 @@ Task tracking (check off items as you complete them):
 - Branch: ci/issue-620
 - Issue: none
 - Generated: 2026-06-10T20:59:35Z"
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-10T21:03:17Z
-last_iteration_at: 2026-06-10T21:03:17Z
+started_at: 2026-06-10T21:22:12Z
+last_iteration_at: 2026-06-10T21:22:12Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -130,4 +130,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-06-10T21:22:12Z)
+- **Fail-safe guard** added to both libs so call-sites return the hardcoded default even when sourced standalone.
+**Bonus fix:** Diagnosed and fixed a **pre-existing flaky test** (`test_failure_classification_wired`, failed 3/3 on ori
+**Tests:** `sw-daemon-test` (66/0, stable ×2), `sw-fallback-policy-test` (34/34), `sw-lib-daemon-failure-test` (34/34) 
 

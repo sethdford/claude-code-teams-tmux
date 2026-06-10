@@ -114,6 +114,9 @@ test_max_retries_per_class() {
     [[ -n "$func_body" ]] || { echo "get_max_retries_for_class function not found"; return 1; }
     local result
     result=$(bash -c "
+        # Fail-safe stub: when the fallback resolver/config is absent, the
+        # call-site literal (2nd arg) is returned — matches production contract.
+        _smart_fallback() { printf '%s' \"\$2\"; }
         $func_body
         echo \"auth=\$(get_max_retries_for_class auth_error)\"
         echo \"invalid=\$(get_max_retries_for_class invalid_issue)\"
