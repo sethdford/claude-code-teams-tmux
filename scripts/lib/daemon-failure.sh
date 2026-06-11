@@ -232,6 +232,23 @@ daemon_on_failure() {
                 # Retryable failures — per-class max retries and escalation
                 local effective_max
                 effective_max=$(get_max_retries_for_class "$failure_class")
+
+                # ── Unified retry decision engine (guarded; informs + metrics) ──
+                # retry_decide consults the 4-category taxonomy + failure memory
+                # and emits a retry.decision event before we attempt the retry.
+                # The escalation logic below remains the executor; this surfaces a
+                # confidence-scored recommendation and is non-fatal if absent.
+                if type retry_decide >/dev/null 2>&1; then
+                    local _rs_err _rs_decision _rs_action
+                    _rs_err=$(tail -50 "$LOG_DIR/issue-${issue_num}.log" 2>/dev/null || true)
+                    [[ -z "$_rs_err" ]] && _rs_err="$failure_class"
+                    _rs_decision=$(retry_decide "$_rs_err" "$((retry_count + 1))" "${effective_max:-2}" "${MODEL:-opus}" 2>/dev/null || true)
+                    if [[ -n "$_rs_decision" ]] && command -v jq >/dev/null 2>&1; then
+                        _rs_action=$(echo "$_rs_decision" | jq -r '.action // "model-escalation"' 2>/dev/null || echo "model-escalation")
+                        daemon_log INFO "Retry engine: action=${_rs_action} confidence=$(echo "$_rs_decision" | jq -r '.confidence // "?"' 2>/dev/null) for issue #${issue_num}"
+                    fi
+                fi
+
                 if [[ "$retry_count" -lt "$effective_max" ]]; then
                     retry_count=$((retry_count + 1))
 

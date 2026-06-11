@@ -47,6 +47,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/daemon-triage.sh" ]] && source "$SCRIPT_DIR/lib/daemon-triage.sh"
 # shellcheck source=lib/daemon-failure.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-failure.sh" ]] && source "$SCRIPT_DIR/lib/daemon-failure.sh"
+# shellcheck source=lib/retry-strategy.sh
+[[ -f "$SCRIPT_DIR/lib/retry-strategy.sh" ]] && source "$SCRIPT_DIR/lib/retry-strategy.sh"
 # shellcheck source=lib/daemon-dispatch.sh
 [[ -f "$SCRIPT_DIR/lib/daemon-dispatch.sh" ]] && source "$SCRIPT_DIR/lib/daemon-dispatch.sh"
 # shellcheck source=lib/daemon-patrol.sh
@@ -1041,6 +1043,12 @@ daemon_init() {
   },
   "max_retries": 2,
   "retry_escalation": true,
+  "retry_strategy": {
+    "enabled": true,
+    "model_ladder": "sonnet,opus",
+    "min_confidence_to_retry": 0.3,
+    "max_human_notify_per_issue": 1
+  },
   "self_optimize": false,
   "optimize_interval": 10,
   "priority_lane": false,

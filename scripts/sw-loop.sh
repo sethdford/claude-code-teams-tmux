@@ -51,6 +51,9 @@ fi
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
+
+# shellcheck source=lib/retry-strategy.sh
+[[ -f "$SCRIPT_DIR/lib/retry-strategy.sh" ]] && source "$SCRIPT_DIR/lib/retry-strategy.sh" 2>/dev/null || true
 # Test execution optimization (issue #200)
 # shellcheck source=lib/test-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/test-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/test-optimizer.sh" 2>/dev/null || true
@@ -2349,6 +2352,26 @@ ${GOAL}"
                 fi
             fi
             _applied_fix_pattern=""
+        fi
+
+        # ── Intelligent retry strategy: record per-strategy outcome + decide ──
+        # Guarded so absence of retry-strategy.sh is non-fatal (falls back to
+        # the existing fixed-iteration / circuit-breaker behavior).
+        if type retry_record_outcome >/dev/null 2>&1 && [[ -n "$TEST_CMD" ]]; then
+            local _rs_cat="recoverable-escalation"
+            if type retry_category_of >/dev/null 2>&1 && type retry_classify >/dev/null 2>&1; then
+                _rs_cat="$(retry_category_of "$(retry_classify "${TEST_OUTPUT:-}")" 2>/dev/null || echo recoverable-escalation)"
+            fi
+            if [[ "${TEST_PASSED:-}" == "true" ]]; then
+                retry_record_outcome "${MODEL:-opus}" "true" "$_rs_cat" 2>/dev/null || true
+            elif [[ "${TEST_PASSED:-}" == "false" ]]; then
+                retry_record_outcome "${MODEL:-opus}" "false" "$_rs_cat" 2>/dev/null || true
+                if type retry_decide >/dev/null 2>&1; then
+                    local _rs_dec
+                    _rs_dec=$(retry_decide "${TEST_OUTPUT:-}" "$ITERATION" "$MAX_ITERATIONS" "${MODEL:-opus}" 2>/dev/null || true)
+                    [[ -n "$_rs_dec" ]] && echo -e "  ${DIM}retry-engine: $(echo "$_rs_dec" | jq -r '"\(.action) @ conf \(.confidence)"' 2>/dev/null || echo decided)${RESET}"
+                fi
+            fi
         fi
 
         # Save Claude context for checkpoint resume (goal, findings, test output)
