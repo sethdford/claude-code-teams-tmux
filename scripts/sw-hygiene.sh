@@ -407,10 +407,15 @@ scan_platform_refactor() {
     findings_raw=$(mktemp)
     grep -rnE "hardcoded|Hardcoded|Fallback:|fallback:|TODO|FIXME|HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null > "$findings_raw" || true
     while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
+        if [[ -z "$line" ]]; then
+            continue
+        fi
         # shellcheck disable=SC2318
         local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
-        ln="${ln:-0}"
+        # Guard against non-numeric line numbers so the JSON stays valid.
+        case "$ln" in
+            ''|*[!0-9]*) ln="0" ;;
+        esac
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true
     jq -s '.' "$findings_file.raw" 2>/dev/null > "$findings_file" || echo "[]" > "$findings_file"

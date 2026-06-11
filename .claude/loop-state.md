@@ -210,12 +210,12 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 30
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-11T13:59:39Z
-last_iteration_at: 2026-06-11T13:59:39Z
+started_at: 2026-06-11T14:19:08Z
+last_iteration_at: 2026-06-11T14:19:08Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -228,8 +228,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-11T13:59:39Z)
-- Task 8: `--auto-template` flag in `pipeline-cli.sh`/`sw-pipeline.sh`
-- Task 9: daemon auto-apply when confidence > 80% + `emit_event`
-- Task 12: document in `.claude/CLAUDE.md`
 
