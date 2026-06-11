@@ -250,16 +250,16 @@ For each check type:
 
 Use mock project directories (temp repos with known issues) to avoid test interdependencies.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-11T13:49:26Z
-last_iteration_at: 2026-06-11T13:49:26Z
+started_at: 2026-06-11T14:06:10Z
+last_iteration_at: 2026-06-11T14:06:10Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -270,4 +270,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-06-11T14:06:10Z)
+- **Happy path:** valid JS/imports/required files → all checks pass → build proceeds (`RC=0`).
+- **Error cases (2+):** broken JS syntax → critical fail → build skipped (`RC=1`, report `failed`); missing required
+- **Edge cases (2+):** empty `.js` file is valid; bare package imports (`fs`, `lodash`) ignored; directory/`index.js` im
 

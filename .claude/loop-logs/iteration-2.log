@@ -1,1 +1,18 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result":"The same 6 failures exist without my changes — confirmed pre-existing. My changes introduced no regressions.\n\n**Final status:**\n- **Main goal** (commit `5641f7b`): Fixed misleading \"jq not available\" warning when Claude outputs a JSON object — `sw-loop.sh` now handles both arrays and objects in Case 2.\n- **Test fix** (commit `0d897c1`): Fixed `sw-cost-test.sh` by showing context efficiency even when no cost entries fall within the period.\n- **6 pre-existing failures** in `sw-pipeline-test.sh` (E2E pipeline tests requiring live Claude) — unrelated to this issue, present before and after my changes.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"5b2ab48e-dc20-4503-8af1-9eaac1d19535","total_cost_usd":1.93753455,"usage":{"input_tokens":4,"cache_creation_input_tokens":761,"cache_read_input_tokens":191892,"output_tokens":294,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":761,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":67,"outputTokens":12162,"cacheReadInputTokens":4878521,"cacheCreationInputTokens":72775,"webSearchRequests":0,"costUSD":1.9190935500000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":15541,"outputTokens":580,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.018441,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"d1ae553f-d751-4043-bbc4-a8ecb15508bb"}
+All checks pass with no regressions:
+
+- **heartbeat** 17/17, **stall-detector** 12/12, **reaper** 0 failures (tmux-gated) — all timestamp-sensitive suites using the shared `file_mtime` are clean.
+- **cleanup** 24/24 (was 3 failing), **compat** 56/56, **prebuild-validation** 55/0, **smoke** 19/19.
+
+## Summary
+
+This iteration's blocker was a **pre-existing shared-library bug**, not the feature itself. The Pre-Build Validation Engine (the actual goal) was already complete and fully wired in iteration 1:
+
+- `scripts/lib/pipeline-prebuild-validation.sh` (23KB) exposes `prebuild_validate()`
+- Called degrade-safely before the build/test cycle in `self_healing_build_test()` (`pipeline-execution.sh:210`) — critical failure → `mark_stage_failed build` + `return 1`
+- Sourced in `pipeline-stages.sh`, configured under `validation` in `daemon-config.json`, documented in `.claude/CLAUDE.md`, 55 tests registered in `package.json`
+
+**Root-cause fix this iteration:** On GNU/Linux, BSD-syntax `stat -f %m` leaks a filesystem-info block to stdout before exiting non-zero, so `file_mtime()` returned multiline garbage instead of falling through to `stat -c %Y`. In `sw-cleanup.sh` that value hit `$((now_e - hb_mtime))` under `set -u`, throwing `File: unbound variable` and aborting before the summary printed — failing 3 cleanup tests. Fixed by validating each `stat` result is a bare epoch before trusting it, in both `compat.sh` and the `pipeline-cli.sh` standalone fallback (`ce166eef`).
+
+The goal is fully achieved and all quality gates pass.
+
+LOOP_COMPLETE
