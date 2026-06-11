@@ -199,9 +199,17 @@ metrics() {
         fi
     done
 
-    # Get current debt count
+    # Get current debt count — count raw markers directly (accurate, not capped
+    # at scan_debt's 25-item display limit). Avoids the `grep -c || echo 0`
+    # double-output pitfall by using `|| true` + ${var:-0} per-file.
     local debt_count=0
-    debt_count=$(scan_debt 2>/dev/null | grep -c ":" || echo 0)
+    for script in "$script_dir"/sw-*.sh; do
+        [[ -f "$script" ]] || continue
+        [[ "$script" =~ -test\.sh$ ]] && continue
+        local marker_count
+        marker_count=$(grep -c "TODO\|FIXME\|HACK\|KLUDGE" "$script" 2>/dev/null || true)
+        debt_count=$((debt_count + ${marker_count:-0}))
+    done
 
     # Calculate coverage percentage
     local coverage_pct=0

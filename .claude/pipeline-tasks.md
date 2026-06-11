@@ -1,29 +1,27 @@
 # Pipeline Tasks — Autonomous Test Gap Filler & Platform Hygiene Agent
 
 ## Implementation Checklist
-- [ ] Task 1: Scaffold `sw-platform-hygiene.sh` (header, helpers fallback, VERSION, `main()` dispatch, help)
-- [ ] Task 2: Implement `is_sourced_only()` (fixes tracker-github false positive generally)
-- [ ] Task 3: Implement `scan_tests()` with bash-3.2 integer coverage math + empty guard
-- [ ] Task 4: Implement `scan_debt()` (TODO/FIXME/HACK/KLUDGE, weighted, truncation logged)
-- [ ] Task 5: Implement `metrics()` atomic JSON snapshot + trend deltas + history.jsonl
-- [ ] Task 6: Implement `file_issues()` deduped, `NO_GITHUB`-guarded, code links + suggested fixes
-- [ ] Task 7: Implement `report()`/`auto()` and register CLI router case in `scripts/sw`
-- [ ] Task 8: Write & pass `sw-tmux-role-color-test.sh` (9 color cases + default)
-- [ ] Task 9: Write & pass `sw-tmux-status-test.sh` (widget outputs, version, edge case)
-- [ ] Task 10: Fix patrol scanner skip + add `patrol_meta_platform_hygiene()` to `patrol_meta_run`
-- [ ] Task 11: Write & pass `sw-platform-hygiene-test.sh` (scanner/debt/metrics/dry-run)
-- [ ] Task 12: Register 3 tests in `package.json`; update CLAUDE.md AUTO tables
-- [ ] Task 13: Run impacted suites + `shipwright version check`; confirm executable coverage = 100%
-- [ ] `sw-platform-hygiene.sh` exists, `set -euo pipefail`, bash-3.2 clean, `VERSION` matches package.json, `--version`/`help` work.
-- [ ] `scan-tests` excludes sourced providers and reports the correct untested-executable list/count.
-- [ ] `scan-debt` detects TODO/FIXME/HACK/KLUDGE with `file:line:context`, weighted, truncation logged.
-- [ ] `metrics` writes valid atomic JSON with coverage % + debt totals and computes trend vs. prior snapshot.
-- [ ] `file_issues` is `NO_GITHUB`-guarded and deduped (no network in dry-run).
-- [ ] `sw-tmux-role-color-test.sh` and `sw-tmux-status-test.sh` exist and pass; executable-script coverage = 100%.
-- [ ] `sw-patrol-meta.sh` no longer flags `sw-tracker-github.sh`; new hygiene check runs in `patrol_meta_run` and appears in the summary.
+- [ ] Task 1: Fix `grep -c` double-output in `metrics()` `debt_count`
+- [ ] Task 2: Enforce `auto()` ordering — metrics before file_issues
+- [ ] Task 3: Add `platform_hygiene_patrol()`; wire into `patrol_meta_run`/`patrol_meta_auto`
+- [ ] Task 4: De-duplicate `patrol_meta_untested_scripts()` against the agent
+- [ ] Task 5: Register `platform-hygiene`/`hygiene-patrol` in `scripts/sw` router + help
+- [ ] Task 6: Patrol-integration + dedup + failing-`gh` assertions in `sw-patrol-meta-test.sh`
+- [ ] Task 7: `is_sourced_only` + metrics-trend + router-reachability assertions in `sw-platform-hygiene-test.sh`
+- [ ] Task 8: Update `.claude/CLAUDE.md` AUTO sections + command table
+- [ ] Task 9: Confirm `VERSION` sync; `version check`/`doctor` green
+- [ ] Task 10: Run `npm test`; confirm zero regressions
+- [ ] `shipwright platform-hygiene {auto|report|metrics|help}` dispatches via the CLI router (alias `hygiene-patrol`).
+- [ ] `patrol_meta_run` and `patrol_meta_auto` invoke the hygiene agent; the patrol summary reflects test-gap + debt findings; `patrol.platform_hygiene_complete` emitted.
+- [ ] No duplicate "add tests for X" issues between the legacy check and the new agent.
+- [ ] `sw-tmux-role-color.sh` and `sw-tmux-status.sh` have passing suites (✔ 11/11, 9/9); `sw-tracker-github.sh` documented as sourced-only and excluded from the coverage denominator (asserted).
+- [ ] `metrics` writes atomic snapshots with `coverage_pct`, `debt_count`, and trend deltas to `$METRICS_FILE`/`$HISTORY_FILE`; `grep -c` pitfall fixed; metrics computed before issue filing.
+- [ ] New unit/integration assertions added and green; `npm test` passes with **zero regressions**.
+- [ ] `VERSION` in `sw-platform-hygiene.sh` matches `package.json`; `shipwright version check` and `doctor` pass.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated; `shipwright docs check` clean.
 
 ## Context
 - Pipeline: standard
 - Branch: test/autonomous-test-gap-filler-platform-hygi-631
 - Issue: #631
-- Generated: 2026-06-11T13:45:04Z
+- Generated: 2026-06-11T21:17:48Z

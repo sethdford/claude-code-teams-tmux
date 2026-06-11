@@ -2,39 +2,38 @@
 goal: "Autonomous Test Gap Filler & Platform Hygiene Agent
 
 ## Plan Summary
-# Implementation Plan: Autonomous Test Gap Filler & Platform Hygiene Agent
+# Implementation Plan — Autonomous Test Gap Filler & Platform Hygiene Agent (#631)
 
-**Issue:** #631 · **Priority:** P6 · **Complexity:** fast · **Strategy:** P6 Platform Self-Improvement
+## Current State Assessment (discovered during planning)
 
-## Summary & Reasoning (Socratic Refinement)
+A prior WIP commit (`75661b4f`) already delivered the **core agent and its unit tests**. This plan is scoped to the **remaining integration gaps**, not a from-scratch build.
 
-### Requirements Clarity — Minimum Viable Change
-The issue asks for an autonomous agent that (a) finds scripts without tests, (b) generates test suites, (c) scans for TODO/FIXME/HACK/KLUDGE debt, (d) files GitHub issues, (e) runs weekly via patrol, and (f) tracks coverage/debt metrics over time.
+Already present and **passing**:
 
-**Critical discovery from codebase analysis:**
-- The acceptance criteria name `sw-tmux-role-color.sh`, `sw-tmux-status.sh`, and `sw-tracker-github.sh` as untested. But `sw-tracker-github.sh` is a **sourced-only provider** (header: `Sourced by sw-tracker.sh — do not call directly`, no `main()`, no `set -euo pipefail`) and is **already covered** by `scripts/sw-tracker-providers-test.sh`. The same is true of `sw-tracker-linear.sh` / `sw-tracker-jira.sh`.
-- The existing `patrol_meta_untested_scripts()` (`sw-patrol-meta.sh:70`) already files "missing test" issues, but it hardcodes skips for `tracker-linear`/`tracker-jira` and **misses `tracker-github`** — a real scanner bug producing a false positive on a sourced provider.
-- Therefore the only genuinely-untested **executable** scripts are `sw-tmux-role-color.sh` and `sw-tmux-status.sh`.
+| Artifact | Lines | Status |
+|---|---:|---|
+| `scripts/sw-platform-hygiene.sh` | 423 | Built — `scan_tests`, `scan_debt`, `metrics`, `file_issues`, `report`, `auto`, `show_help`, `is_sourced_only` |
+| `scripts/sw-platform-hygiene-test.sh` | 131 | **9/9 pass** |
+| `scripts/sw-tmux-role-color-test.sh` | 213 | **11/11 pass** (fills named gap) |
+| `scripts/sw-tmux-status-test.sh` | 235 | **9/9 pass** (fills named gap) |
+| `package.json` test chain | — | Already references the 3 new test files |
 
-**MVP** = a dedicated agent script that (1) scans correctly, excluding sourced providers, (2) scans debt, (3) writes a metrics snapshot with trend, (4) files deduped issues, (5) is wired into patrol; PLUS the two real missing test suites delivered as concrete proof and to hit the 90%+ coverage goal.
+**Decision on the third named script `sw-tracker-github.sh`:** its header reads *"Sourced by sw-tracker.sh — do not call directly"* and it has no `main()` / `set -euo pipefail`. The agent's `is_sourced_only()` correctly classifies it as a sourced provider — the same family as `sw-tracker-linear`/`sw-tracker-jira`, which the existing `patrol_meta_untested_scripts` already excludes. A standalone `*-test.sh` would test a non-executable provider in isolation; its behavior is already exercised by `sw-tracker-test.sh` / `sw-tracker-providers-test.sh`. **We do not create `sw-tracker-github-test.sh`.** Instead the agent excludes sourced-only scripts from the coverage denominator — the correct interpretation of the AGI criterion ("scripts without tests" = *executable* scripts). This is asserted in the agent's test suite.
 
-### Implicit requirements
-- Bash 3.2 compatible, `set -euo pipefail`, `NO_GITHUB`-guarded GitHub calls, atomic JSON writes via `jq -n --arg` + tmp+`mv`, `VERSION` synced to package.json, `emit_event` observability, no `grep -c || echo` double-output pitfall, no `cmd | while read` subshell loss.
-- Issue creation must dedup (reuse the existing `gh issue list --search` + `grep -qF` pattern) to avoid weekly spam.
-- "Sourced-only" scripts must be classified and excluded from the test-gap count.
+### Remaining gaps (the actual work for this pipeline)
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Architecture Decision Record: Autonomous Test Gap Filler & Platform Hygiene Agent
+# Design: Autonomous Test Gap Filler & Platform Hygiene Agent
 ## Context
 ## Decision
+## Alternatives Considered
 ## Component Diagram
 ## Interface Contracts
-### **`is_sourced_only(script_path) → int`**
-### **`scan_tests() → (stdout: list+counts, events)`**
-### **`scan_debt() → (stdout: ranked list, truncation note)`**
-### **`metrics() → (JSON file, event)`**
-### **`file_issues() → (GitHub API calls | dry-run output)`**
+## Data Flow
+## Error Boundaries
+## Implementation Plan
+## Test Pyramid Breakdown
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Autonomous Test Gap Filler & Platform Hygiene Agent
@@ -58,29 +57,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "knowledge.json",
-      "relevance": 85,
-      "summary": "Contains real test failures (mktemp directory creation, sw-cleanup output format, regression detection JSON) with specific fix strategies—directly applicable to building and testing the platform"
+      "file": "failures.json",
+      "relevance": 95,
+      "summary": "Contains 4 documented test failures (mktemp, cleanup output, sed syntax) with root causes and fixes. Essential for test gap filler to identify what tests are broken and what platform hygiene issues exist."
     },
     {
-      "file": "failures.json",
-      "relevance": 80,
-      "summary": "Documents sw-cleanup.sh stale heartbeat detection failure (core platform hygiene issue)—directly relevant to the hygiene agent's goals"
+      "file": "knowledge.json",
+      "relevance": 90,
+      "summary": "Documents test failure patterns with error signatures, fix strategies, and metrics. Provides reusable patterns for identifying and fixing test infrastructure issues during build stage."
     },
     {
       "file": "patterns.json",
-      "relevance": 70,
-      "summary": "Project structure conventions (src/, test pattern, commonjs, vitest)—essential for understanding how to write and organize tests for this Node.js project"
+      "relevance": 85,
+      "summary": "Project detection metadata: Node.js/vitest/npm/CommonJS. Critical for configuring test generation and platform hygiene tasks for this specific project structure."
     },
     {
       "file": "success-patterns.json",
-      "relevance": 60,
-      "summary": "Bug fix pattern showing 3 iterations, test strategy (npm test), cost tracking—provides build methodology reference for autonomous iteration"
+      "relevance": 80,
+      "summary": "Shows successful bug fix pattern with 3 iterations across 6 files, demonstrating iterative approach. Provides template for how platform hygiene fixes are structured and tested."
     },
     {
-      "file": "metrics.json",
-      "relevance": 40,
-      "summary": "Baseline build duration (2089s)—provides performance context for build stage execution planning"
+      "file": "issues.json",
+      "relevance": 60,
+      "summary": "One successful issue pattern (timeout bug fix with semaphore) shows gotcha (check backoff) and success criteria. Models how to approach and validate platform hygiene improvements."
     }
   ]
 }
@@ -93,32 +92,30 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Autonomous Test Gap Filler & Platform Hygiene Agent
 
 ## Implementation Checklist
-- [ ] Task 1: Scaffold `sw-platform-hygiene.sh` (header, helpers fallback, VERSION, `main()` dispatch, help)
-- [ ] Task 2: Implement `is_sourced_only()` (fixes tracker-github false positive generally)
-- [ ] Task 3: Implement `scan_tests()` with bash-3.2 integer coverage math + empty guard
-- [ ] Task 4: Implement `scan_debt()` (TODO/FIXME/HACK/KLUDGE, weighted, truncation logged)
-- [ ] Task 5: Implement `metrics()` atomic JSON snapshot + trend deltas + history.jsonl
-- [ ] Task 6: Implement `file_issues()` deduped, `NO_GITHUB`-guarded, code links + suggested fixes
-- [ ] Task 7: Implement `report()`/`auto()` and register CLI router case in `scripts/sw`
-- [ ] Task 8: Write & pass `sw-tmux-role-color-test.sh` (9 color cases + default)
-- [ ] Task 9: Write & pass `sw-tmux-status-test.sh` (widget outputs, version, edge case)
-- [ ] Task 10: Fix patrol scanner skip + add `patrol_meta_platform_hygiene()` to `patrol_meta_run`
-- [ ] Task 11: Write & pass `sw-platform-hygiene-test.sh` (scanner/debt/metrics/dry-run)
-- [ ] Task 12: Register 3 tests in `package.json`; update CLAUDE.md AUTO tables
-- [ ] Task 13: Run impacted suites + `shipwright version check`; confirm executable coverage = 100%
-- [ ] `sw-platform-hygiene.sh` exists, `set -euo pipefail`, bash-3.2 clean, `VERSION` matches package.json, `--version`/`help` work.
-- [ ] `scan-tests` excludes sourced providers and reports the correct untested-executable list/count.
-- [ ] `scan-debt` detects TODO/FIXME/HACK/KLUDGE with `file:line:context`, weighted, truncation logged.
-- [ ] `metrics` writes valid atomic JSON with coverage % + debt totals and computes trend vs. prior snapshot.
-- [ ] `file_issues` is `NO_GITHUB`-guarded and deduped (no network in dry-run).
-- [ ] `sw-tmux-role-color-test.sh` and `sw-tmux-status-test.sh` exist and pass; executable-script coverage = 100%.
-- [ ] `sw-patrol-meta.sh` no longer flags `sw-tracker-github.sh`; new hygiene check runs in `patrol_meta_run` and appears in the summary.
+- [ ] Task 1: Fix `grep -c` double-output in `metrics()` `debt_count`
+- [ ] Task 2: Enforce `auto()` ordering — metrics before file_issues
+- [ ] Task 3: Add `platform_hygiene_patrol()`; wire into `patrol_meta_run`/`patrol_meta_auto`
+- [ ] Task 4: De-duplicate `patrol_meta_untested_scripts()` against the agent
+- [ ] Task 5: Register `platform-hygiene`/`hygiene-patrol` in `scripts/sw` router + help
+- [ ] Task 6: Patrol-integration + dedup + failing-`gh` assertions in `sw-patrol-meta-test.sh`
+- [ ] Task 7: `is_sourced_only` + metrics-trend + router-reachability assertions in `sw-platform-hygiene-test.sh`
+- [ ] Task 8: Update `.claude/CLAUDE.md` AUTO sections + command table
+- [ ] Task 9: Confirm `VERSION` sync; `version check`/`doctor` green
+- [ ] Task 10: Run `npm test`; confirm zero regressions
+- [ ] `shipwright platform-hygiene {auto|report|metrics|help}` dispatches via the CLI router (alias `hygiene-patrol`).
+- [ ] `patrol_meta_run` and `patrol_meta_auto` invoke the hygiene agent; the patrol summary reflects test-gap + debt findings; `patrol.platform_hygiene_complete` emitted.
+- [ ] No duplicate "add tests for X" issues between the legacy check and the new agent.
+- [ ] `sw-tmux-role-color.sh` and `sw-tmux-status.sh` have passing suites (✔ 11/11, 9/9); `sw-tracker-github.sh` documented as sourced-only and excluded from the coverage denominator (asserted).
+- [ ] `metrics` writes atomic snapshots with `coverage_pct`, `debt_count`, and trend deltas to `$METRICS_FILE`/`$HISTORY_FILE`; `grep -c` pitfall fixed; metrics computed before issue filing.
+- [ ] New unit/integration assertions added and green; `npm test` passes with **zero regressions**.
+- [ ] `VERSION` in `sw-platform-hygiene.sh` matches `package.json`; `shipwright version check` and `doctor` pass.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated; `shipwright docs check` clean.
 
 ## Context
 - Pipeline: standard
 - Branch: test/autonomous-test-gap-filler-platform-hygi-631
 - Issue: #631
-- Generated: 2026-06-11T13:45:04Z
+- Generated: 2026-06-11T21:17:48Z
 
 ## Skill Guidance (backend issue, AI-selected)
 ## Systematic Debugging: Root Cause Analysis
@@ -213,12 +210,12 @@ iteration: 1
 max_iterations: 20
 status: error
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-06-11T14:19:21Z
-last_iteration_at: 2026-06-11T14:19:21Z
+started_at: 2026-06-11T21:24:08Z
+last_iteration_at: 2026-06-11T21:24:08Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
