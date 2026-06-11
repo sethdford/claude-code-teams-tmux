@@ -186,14 +186,14 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-11T13:54:00Z
-last_iteration_at: 2026-06-11T13:54:00Z
+started_at: 2026-06-11T14:18:59Z
+last_iteration_at: 2026-06-11T14:18:59Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -204,8 +204,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-11T13:54:00Z)
-2. Orchestrator `scripts/sw-setup-auto.sh` + router registration in `scripts/sw` (`setup-auto` command)
-3. Final `shipwright doctor` validation + actionable next-steps report
-4. E2E/timing tests asserting the <5-minute constraint
 
