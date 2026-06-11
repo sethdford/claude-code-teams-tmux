@@ -4,27 +4,26 @@
 Pipeline: standard | Branch: feat/intelligent-retry-strategy-engine-with-f-627
 
 ## Checklist
-- [ ] Task 1: Scaffold `scripts/lib/retry-strategy.sh` (module guard, `VERSION`, defensive helper/`now_iso` fallbacks).
-- [ ] Task 2: Implement `retry_category_of()` 4-category mapping.
-- [ ] Task 3: Implement `retry_classify()` (delegate to `recovery_classify_error`, inline fallback).
-- [ ] Task 4: Implement `retry_memory_lookup()` (guarded `memory_query_fix_for_error` wrapper).
-- [ ] Task 5: Implement `retry_compute_confidence()` (integer math, clamp, `printf` float format).
-- [ ] Task 6: Implement `retry_escalation_target()` (config-driven ladder, bounded).
-- [ ] Task 7: Implement `retry_decide()` + `retry.decision` event (JSON via `jq -n --arg`).
-- [ ] Task 8: Implement `retry_record_outcome()` + atomic metrics JSONL + `retry.outcome` + `memory_track_fix`.
-- [ ] Task 9: Add guarded CLI dispatch (`decide|classify|category|record|metrics`).
-- [ ] Task 10: Integrate into `daemon-failure.sh` + `sw-daemon.sh`; add `retry_strategy` config defaults.
-- [ ] Task 11: Integrate into `sw-loop.sh` + `loop-restart.sh` (guarded calls + outcome recording).
-- [ ] Task 12: Write `scripts/sw-retry-strategy-test.sh` (unit + integration + E2E).
-- [ ] Task 13: Register test in `package.json`; run new + touched suites (all `FAIL=0`).
-- [ ] Task 14: Update `.claude/CLAUDE.md`; confirm `shipwright version check` passes.
-- [ ] `scripts/lib/retry-strategy.sh` exists, `set -euo pipefail`-compatible, module guard, `VERSION` matching `package.json`, bash 3.2 compatible (no `declare -A`, `readarray`, `${var,,}`, `${var^^}`).
-- [ ] Failure classification maps every error into exactly one of: `recoverable-transient`, `recoverable-escalation`, `context-exhausted`, `unrecoverable`.
-- [ ] `retry_decide` outputs valid JSON (`jq -e .` passes) with `action` ∈ {`immediate`,`model-escalation`,`session-restart`,`skip`} and `confidence` ∈ [0.05, 0.99].
-- [ ] Memory integration queries past failures by error signature, raises confidence / surfaces a fix on high-effectiveness matches, and degrades to empty gracefully when memory/jq absent.
-- [ ] Escalation ladder implemented (same → sonnet → opus → session-restart → human), bounded by `max_attempts`.
-- [ ] `sw-loop.sh` (+`loop-restart.sh`) and `daemon-failure.sh` (+`sw-daemon.sh`) invoke `retry_decide` before retry attempts, guarded so absence of the lib is non-fatal.
+- [ ] Task 1: Add `RETRY_NOTIFY_STATE` + `retry_should_notify_human` + `retry_notify_human` to `retry-strategy.sh` (atomic write, jq-guarded) — *blocks Task 3, Task 5*
+- [ ] Task 2: In `daemon-failure.sh`, capture `_rs_action` and branch `skip`→terminal / `session-restart`→context-exhaustion boost / else legacy; guard on `retry_strategy.enabled` — *blocks Task 6*
+- [ ] Task 3: Wire `max_human_notify_per_issue` enforcement into the daemon `skip→human` path using Task 1 helpers — *depends on Task 1, Task 2*
+- [ ] Task 4: Wire `action=session-restart` into `sw-loop.sh` restart hint (reuse `loop-restart.sh`)
+- [ ] Task 5: Add unit tests for notify-budget helpers in `sw-retry-strategy-test.sh` — *depends on Task 1*
+- [ ] Task 6: Add daemon-failure executor tests (mock `retry_decide`) in `sw-lib-daemon-failure-test.sh` — *depends on Task 2, Task 3*
+- [ ] Task 7: Run `sw-retry-strategy-test.sh`, `sw-lib-daemon-failure-test.sh`, `sw-loop-test.sh`; fix regressions
+- [ ] Task 8: Run full `npm test`; confirm 0 failures
+- [ ] Task 9: Update `.claude/CLAUDE.md` retry section; `docs check`/`sync`; `version check`
+- [ ] Task 10: Dry-run verification that `retry.decision`/`retry.outcome`/`retry.human_notify` events land in `events.jsonl`
+- [ ] `daemon-failure.sh` acts on `retry_decide`: `skip` terminates retries (count not incremented), `session-restart` takes the context-exhaustion/restart-boost path, others fall through to legacy escalation.
+- [ ] `max_human_notify_per_issue` enforced: at most N `retry.human_notify` events per issue; verified by test.
+- [ ] `sw-loop.sh` honors `action=session-restart` via the existing restart hint (guarded, non-fatal).
+- [ ] New unit + integration tests added; `bash scripts/sw-retry-strategy-test.sh` and `bash scripts/sw-lib-daemon-failure-test.sh` pass with 0 failures.
+- [ ] `npm test` passes (all suites, 0 failures).
+- [ ] `retry.decision`, `retry.outcome`, `retry.human_notify` events observed in `events.jsonl` during a dry run.
+- [ ] All new code is bash 3.2 compatible (no `declare -A`, `readarray`, `${var,,}`), uses `set -euo pipefail`, atomic writes, `jq --arg`, subshell `cd`.
+- [ ] `.claude/CLAUDE.md` retry section updated; `shipwright version check` passes.
+- [ ] Engine remains fully guarded — `retry_strategy.enabled=false` restores legacy behavior with no regressions.
 
 ## Notes
-- Generated from pipeline plan at 2026-06-11T13:45:07Z
+- Generated from pipeline plan at 2026-06-11T21:18:34Z
 - Pipeline will update status as tasks complete

@@ -2,26 +2,25 @@
 goal: "Intelligent Retry Strategy Engine with Failure Pattern Recognition
 
 ## Plan Summary
-# Implementation Plan: Intelligent Retry Strategy Engine with Failure Pattern Recognition
+# Implementation Plan — Intelligent Retry Strategy Engine (#627)
 
-**Issue:** #627 | **Priority:** P0 | **Complexity:** standard | **Strategy:** Reliability & Success Rate
+## Current State Assessment (verified against the branch)
 
-## Summary
+This branch (`feat/intelligent-retry-strategy-engine-with-f-627`) already contains a
+working engine from prior pipeline iterations. **56/56 unit/integration tests pass.**
+Verified present:
 
-Build a unified **retry decision engine** (`scripts/lib/retry-strategy.sh`) that classifies failures into four coarse categories, consults memory for similar past failures and their successful fixes, then emits a structured **decision** (action + confidence + escalation target). Both `sw-loop.sh` (per-iteration recovery, before the circuit breaker) and `sw-daemon.sh` (per-issue retry, via `daemon-failure.sh`) invoke the engine before deciding to retry, escalate, restart, or skip. Retry outcomes are tracked by strategy and logged to `events.jsonl`.
-
-This is an **integration-and-unification** feature, not a greenfield build. The codebase already has the constituent pieces; the value is one decision point that ties them together and adds the four-category taxonomy, confidence scoring, memory-informed strategy selection, and per-strategy success metrics.
-
----
-
-## Design Reasoning (Socratic Refinement)
-
-### Minimum Viable Change
-A new `scripts/lib/retry-strategy.sh` library exposing a pure orchestrator `retry_decide(error_text, attempt, max_attempts, current_model) → decision JSON`, plus thin guarded call sites in `loop-restart.sh` / `sw-loop.sh` and `daemon-failure.sh`. The engine **reuses** existing classifiers rather than reinventing them.
-
-### Existing infrastructure to reuse (do NOT duplicate)
-- `scripts/lib/auto-recovery.sh` — `recovery_classify_error()` (13 fine-grained categories), `recovery_get_strategy()`, model ladder `haiku,sonnet,opus`, recovery state/log.
-- `scripts/lib/daemon-failure.sh` — `classify_failure()` (auth_error, api_error, invalid_issue, context_exhaustion, build_failure), `get_max_retries_for_class()`, daemon escalation block (model→template escalation, exponential backoff, context-exhaustion `--max-restarts` boost).
+| Acceptance Criterion | Status | Evidence |
+|----------------------|--------|----------|
+| 4-category classification | ✅ Done | `retry_category_of` + `retry_classify` (`scripts/lib/retry-strategy.sh:53-117`) |
+| Memory integration by error signature | ✅ Done | `retry_memory_lookup` → `memory_query_fix_for_error` (`:119-132`) |
+| Decision engine outputs action + confidence | ✅ Done | `retry_decide` emits JSON `{category,action,confidence,…}` (`:223-287`) |
+| Escalation ladder same→sonnet→opus→restart→human | ✅ Done | `retry_escalation_target` (`:163-190`), ladder from config |
+| Integration in sw-loop.sh & daemon | ⚠️ **Advisory only** | hooks present (`sw-loop.sh:2358`, `daemon-failure.sh:237`) but **do not act** on the decision |
+| Metrics → events.jsonl + JSONL | ✅ Done | `retry_record_outcome` / `retry_metrics`, `emit_event retry.decision`/`retry.outcome` |
+| Test suite for all types/paths | ✅ Done | `scripts/sw-retry-strategy-test.sh` (56 tests), registered in `package.json` |
+| Config block | ✅ Done | `sw-daemon.sh:1046` `retry_strategy{enabled,model_ladder,min_confidence_to_retry,max_human_notify_per_issue}` |
+| Docs | ✅ Done | `.claude/CLAUDE.md` "Intelligent Retry Strategy" section + lib/test tables |
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
@@ -29,12 +28,9 @@ A new `scripts/lib/retry-strategy.sh` library exposing a pure orchestrator `retr
 ## Context
 ## Decision
 ## Alternatives Considered
-## Interface Contracts
-## API Design (Required Sections)
 ## Implementation Plan
-## Testing Architecture
-### Test Pyramid Breakdown
-### Coverage Targets
+## Validation Criteria
+### Required Skill Sections
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Intelligent Retry Strategy Engine with Failure Pattern Recognition
@@ -58,29 +54,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
-      "relevance": 90,
-      "summary": "Project structure conventions (source_dir: src/, test_pattern: *.test.js, test_runner: vitest, language: javascript) directly inform code organization and testing approach for build stage"
+      "file": "failures.json",
+      "relevance": 95,
+      "summary": "Contains direct reference to 'classify_failure wired into retry logic' which is the core feature being built in this stage. Captures recent test failures and root causes from the current pipeline run."
     },
     {
       "file": "success-patterns.json",
-      "relevance": 78,
-      "summary": "Recent successful build patterns show proven approaches for bug fixes and features with 3-4 iterations, similar complexity profile to retry strategy engine; demonstrates test_strategy and file organization patterns"
-    },
-    {
-      "file": "success-patterns.json",
-      "relevance": 70,
-      "summary": "TDD approach with module isolation for auth module (5 iterations, 300s duration) provides reference pattern for iterative feature development with unit + integration testing strategy"
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 65,
-      "summary": "Build duration baseline (2089s) establishes time/cost constraints and expectations for how long the build stage should take for this project"
+      "relevance": 88,
+      "summary": "Shows recent successful bug-fix patterns in this repo with concrete examples: 3 iterations, 6 commits, specific files changed (.claude/loop-logs, scripts/lib/outcome-feedback.sh). Test strategy and loop approach directly applicable to this build stage."
     },
     {
       "file": "knowledge.json",
-      "relevance": 58,
-      "summary": "Test failure patterns (mktemp directory creation, output validation, JSON parsing) could inform test environment setup and error handling during build/test phase"
+      "relevance": 72,
+      "summary": "Contains test failure patterns with fixes (mktemp directory issues, output format problems, JSON validation). Test-phase failures documented here will likely recur during the build stage."
+    },
+    {
+      "file": "issues.json",
+      "relevance": 68,
+      "summary": "Past daemon timeout bug fixed with semaphore pattern. Retry and resilience strategies are foundational to building the intelligent retry strategy engine. Shows 'gotcha: check backoff' which is relevant."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 65,
+      "summary": "Project conventions: test_pattern='*.test.js', import_style='commonjs', test_runner='vitest'. Essential for writing code that matches project structure and runs tests correctly in the build stage."
     }
   ]
 }
@@ -93,32 +89,31 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Intelligent Retry Strategy Engine with Failure Pattern Recognition
 
 ## Implementation Checklist
-- [ ] Task 1: Scaffold `scripts/lib/retry-strategy.sh` (module guard, `VERSION`, defensive helper/`now_iso` fallbacks).
-- [ ] Task 2: Implement `retry_category_of()` 4-category mapping.
-- [ ] Task 3: Implement `retry_classify()` (delegate to `recovery_classify_error`, inline fallback).
-- [ ] Task 4: Implement `retry_memory_lookup()` (guarded `memory_query_fix_for_error` wrapper).
-- [ ] Task 5: Implement `retry_compute_confidence()` (integer math, clamp, `printf` float format).
-- [ ] Task 6: Implement `retry_escalation_target()` (config-driven ladder, bounded).
-- [ ] Task 7: Implement `retry_decide()` + `retry.decision` event (JSON via `jq -n --arg`).
-- [ ] Task 8: Implement `retry_record_outcome()` + atomic metrics JSONL + `retry.outcome` + `memory_track_fix`.
-- [ ] Task 9: Add guarded CLI dispatch (`decide|classify|category|record|metrics`).
-- [ ] Task 10: Integrate into `daemon-failure.sh` + `sw-daemon.sh`; add `retry_strategy` config defaults.
-- [ ] Task 11: Integrate into `sw-loop.sh` + `loop-restart.sh` (guarded calls + outcome recording).
-- [ ] Task 12: Write `scripts/sw-retry-strategy-test.sh` (unit + integration + E2E).
-- [ ] Task 13: Register test in `package.json`; run new + touched suites (all `FAIL=0`).
-- [ ] Task 14: Update `.claude/CLAUDE.md`; confirm `shipwright version check` passes.
-- [ ] `scripts/lib/retry-strategy.sh` exists, `set -euo pipefail`-compatible, module guard, `VERSION` matching `package.json`, bash 3.2 compatible (no `declare -A`, `readarray`, `${var,,}`, `${var^^}`).
-- [ ] Failure classification maps every error into exactly one of: `recoverable-transient`, `recoverable-escalation`, `context-exhausted`, `unrecoverable`.
-- [ ] `retry_decide` outputs valid JSON (`jq -e .` passes) with `action` ∈ {`immediate`,`model-escalation`,`session-restart`,`skip`} and `confidence` ∈ [0.05, 0.99].
-- [ ] Memory integration queries past failures by error signature, raises confidence / surfaces a fix on high-effectiveness matches, and degrades to empty gracefully when memory/jq absent.
-- [ ] Escalation ladder implemented (same → sonnet → opus → session-restart → human), bounded by `max_attempts`.
-- [ ] `sw-loop.sh` (+`loop-restart.sh`) and `daemon-failure.sh` (+`sw-daemon.sh`) invoke `retry_decide` before retry attempts, guarded so absence of the lib is non-fatal.
+- [ ] Task 1: Add `RETRY_NOTIFY_STATE` + `retry_should_notify_human` + `retry_notify_human` to `retry-strategy.sh` (atomic write, jq-guarded) — *blocks Task 3, Task 5*
+- [ ] Task 2: In `daemon-failure.sh`, capture `_rs_action` and branch `skip`→terminal / `session-restart`→context-exhaustion boost / else legacy; guard on `retry_strategy.enabled` — *blocks Task 6*
+- [ ] Task 3: Wire `max_human_notify_per_issue` enforcement into the daemon `skip→human` path using Task 1 helpers — *depends on Task 1, Task 2*
+- [ ] Task 4: Wire `action=session-restart` into `sw-loop.sh` restart hint (reuse `loop-restart.sh`)
+- [ ] Task 5: Add unit tests for notify-budget helpers in `sw-retry-strategy-test.sh` — *depends on Task 1*
+- [ ] Task 6: Add daemon-failure executor tests (mock `retry_decide`) in `sw-lib-daemon-failure-test.sh` — *depends on Task 2, Task 3*
+- [ ] Task 7: Run `sw-retry-strategy-test.sh`, `sw-lib-daemon-failure-test.sh`, `sw-loop-test.sh`; fix regressions
+- [ ] Task 8: Run full `npm test`; confirm 0 failures
+- [ ] Task 9: Update `.claude/CLAUDE.md` retry section; `docs check`/`sync`; `version check`
+- [ ] Task 10: Dry-run verification that `retry.decision`/`retry.outcome`/`retry.human_notify` events land in `events.jsonl`
+- [ ] `daemon-failure.sh` acts on `retry_decide`: `skip` terminates retries (count not incremented), `session-restart` takes the context-exhaustion/restart-boost path, others fall through to legacy escalation.
+- [ ] `max_human_notify_per_issue` enforced: at most N `retry.human_notify` events per issue; verified by test.
+- [ ] `sw-loop.sh` honors `action=session-restart` via the existing restart hint (guarded, non-fatal).
+- [ ] New unit + integration tests added; `bash scripts/sw-retry-strategy-test.sh` and `bash scripts/sw-lib-daemon-failure-test.sh` pass with 0 failures.
+- [ ] `npm test` passes (all suites, 0 failures).
+- [ ] `retry.decision`, `retry.outcome`, `retry.human_notify` events observed in `events.jsonl` during a dry run.
+- [ ] All new code is bash 3.2 compatible (no `declare -A`, `readarray`, `${var,,}`), uses `set -euo pipefail`, atomic writes, `jq --arg`, subshell `cd`.
+- [ ] `.claude/CLAUDE.md` retry section updated; `shipwright version check` passes.
+- [ ] Engine remains fully guarded — `retry_strategy.enabled=false` restores legacy behavior with no regressions.
 
 ## Context
 - Pipeline: standard
 - Branch: feat/intelligent-retry-strategy-engine-with-f-627
 - Issue: #627
-- Generated: 2026-06-11T13:45:06Z
+- Generated: 2026-06-11T21:18:33Z
 
 ## Skill Guidance (backend issue, AI-selected)
 ## API Design Expertise
@@ -254,15 +249,15 @@ Your output MUST include these sections when this skill is active:
 If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
-max_iterations: 20
+max_iterations: 30
 status: error
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-06-11T14:19:01Z
-last_iteration_at: 2026-06-11T14:19:01Z
+started_at: 2026-06-11T21:24:14Z
+last_iteration_at: 2026-06-11T21:24:14Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

@@ -34,14 +34,14 @@
         "secondary_roles": [
           "architect",
           "tester",
-          "security-auditor"
+          "reviewer"
         ],
-        "confidence": 0.85,
-        "reasoning": "Feature implementation of retry engine with architecture guidance on strategy patterns, comprehensive testing for failure scenarios, and security review of retry timing/logic",
+        "confidence": 0.95,
+        "reasoning": "Complex engine requiring architecture validation, implementation with multi-category failure handling and memory integration, comprehensive test coverage, and code quality enforcement.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1781185721,
+      "timestamp": 1781212920,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1406,28 +1406,29 @@
     "9ccb3bbe4f47ab424e617c47d6bfd020": {
       "result": {
         "complexity": 7,
-        "risk_level": "high",
-        "success_probability": 72,
-        "recommended_template": "full",
-        "issue_type": "infrastructure",
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "performance",
         "key_risks": [
-          "Failure classification misidentifies recoverable vs unrecoverable errors",
-          "Memory queries return stale/irrelevant patterns for novel failure types",
-          "Escalation ladder causes runaway model upgrades without termination condition",
-          "Integration with sw-loop.sh/sw-daemon.sh introduces regressions in existing retry behavior",
-          "Silent failures if decision engine bugs prevent proper fallback to conservative defaults",
-          "Deadlock if session restart logic triggered incorrectly during critical pipeline stages"
+          "Escalation ladder could trigger expensive model upgrades incorrectly if confidence scoring is miscalibrated",
+          "Memory integration depends on accurate failure pattern capture - stale or incomplete patterns could misguide decisions",
+          "Integration points with sw-loop.sh and sw-daemon.sh may have unexpected side effects on existing retry logic",
+          "Unrecoverable failure detection must be highly reliable to avoid skip errors on actually-recoverable failures",
+          "Session restart escalation could lose intermediate progress if checkpoint system is not robust"
         ],
         "implementation_hints": [
-          "Build failure classifier as independent module with exhaustive test suite before integrating",
-          "Define strict bounds on escalation ladder (max 3 model steps, then session restart, then skip)",
-          "Add dry-run mode to validate retry decisions without executing them",
-          "Query memory with signature matching and confidence threshold to avoid false pattern matches",
-          "Log every decision (type, confidence, chosen action) to events.jsonl for observability",
-          "Preserve backward compatibility: if memory/engine unavailable, fall back to original fixed-retry logic"
+          "Build and test failure classification independently first with comprehensive test matrix for all 4 categories",
+          "Implement memory query interface (error signature matching) as a separate module before integration",
+          "Use structured JSON output format for decisions to enable deterministic testing and debugging",
+          "Start with sw-loop.sh integration only, validate with tests, then add sw-daemon.sh integration",
+          "Create mock failure generators to test escalation paths without expensive real model calls",
+          "Track retry success rates per strategy from day one to calibrate confidence thresholds",
+          "Implement circuit breaker to prevent retry storms when confidence is low across many failures",
+          "Document decision tree and escalation criteria clearly - this will be critical for debugging false escalations"
         ]
       },
-      "timestamp": 1781184904,
+      "timestamp": 1781212234,
       "ttl": 3600
     },
     "720dda04f24ea28651ba58ff540e95c7": {
@@ -1448,178 +1449,178 @@
       "result": {
         "results": [
           {
-            "file": "patterns.json (sethdford/shipwright project context)",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Defines current project structure (Node.js, vitest, npm, src/ directory, commonjs imports). Essential context for planning architecture decisions and module organization for the retry strategy feature."
-          },
-          {
-            "file": "success-patterns.json (bug fix and feature patterns)",
-            "relevance": 75,
-            "summary": "Shows successful delivery patterns with 3-4 iterations, 60-65 complexity, duration/cost metrics, and iterative approach. Provides templates for estimating scope and effort for similar feature complexity."
-          },
-          {
-            "file": "issues.json",
-            "relevance": 60,
-            "summary": "Documents timeout bug fix using semaphore pattern. Directly relevant since retry strategy planning must address timeouts, backoff, and concurrency control—core retry concerns."
-          },
-          {
-            "file": "success-patterns.json (auth module feature)",
-            "relevance": 52,
-            "summary": "Shows iterative TDD feature development with module isolation and unit+integration testing. Provides precedent for planning similar multi-iteration feature work with test coverage patterns."
+            "summary": "Contains 4 real failure patterns (mktemp, test output, timeout, sed syntax) with root causes and fixes—exactly the type of failure data the retry strategy engine must classify and handle"
           },
           {
             "file": "knowledge.json",
-            "relevance": 38,
-            "summary": "Contains past test failures (mktemp issues, output formatting). While infrastructure-focused, understanding failure signatures can inform robustness planning for retry logic edge cases."
+            "relevance": 90,
+            "summary": "Structured failure KB with error_type, error_signature, fix_strategy, and occurrence metrics—directly informs the retry decision categorization (recoverable-transient vs escalation vs unrecoverable)"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 85,
+            "summary": "Real issue example (daemon timeout bug) solved with 'added semaphore' and 'check backoff' gotcha—timeout handling and backoff strategies are core retry logic patterns"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Patterns showing bug/feature complexity (60-65), iteration counts (3-4), and test strategies—inform planning for how this feature will iterate and what test approach to use"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project conventions (src/, test/, Node/vitest, commonjs)—needed during plan stage to scope implementation locations and test patterns"
           }
         ]
       },
-      "timestamp": 1781185234,
+      "timestamp": 1781212486,
       "ttl": 1800
     },
     "8a1938d6d086a882a9248a87de4f2b80": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
+            "file": "failures.json",
             "relevance": 92,
-            "summary": "Contains detailed successful feature development patterns with iterations, file changes, test strategies, and complexity metrics. Shows what working plans and executions look like for Node.js projects, directly informing what a valid Intelligent Retry Strategy Engine plan should encompass."
+            "summary": "Contains categorized failure patterns (test_failure, config) with root causes, fixes, and occurrence counts. Directly informs intelligent retry strategy for classifying and responding to different failure types."
           },
           {
             "file": "knowledge.json",
-            "relevance": 78,
-            "summary": "Documents failure patterns and fix strategies across test, convention, and implementation domains. Directly applicable to 'Failure Pattern Recognition' aspect of the feature—shows how past failures were diagnosed and remediated, informing plan robustness validation."
+            "relevance": 88,
+            "summary": "Structured failure knowledge base with error signatures, fix strategies, success rates, and query metrics. Provides the data model for failure pattern recognition engine and retry decision logic."
           },
           {
-            "file": "patterns.json",
-            "relevance": 72,
-            "summary": "Captures project structure conventions (src/, test pattern, vitest, commonjs imports) for this Node.js repository. Plan validation must account for project-specific conventions; this entry defines the baseline that any proposed implementation plan must respect."
+            "file": "success-patterns.json",
+            "relevance": 61,
+            "summary": "Records successful delivery approaches with iteration counts, duration, and file patterns. Shows how similar features were resolved iteratively, informing retry escalation strategy and recovery patterns."
           }
         ]
       },
-      "timestamp": 1781185525,
+      "timestamp": 1781212728,
       "ttl": 1800
     },
     "f2dfc702db4b9f1904758ad028c36879": {
       "result": {
         "results": [
           {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains failure classification patterns and mentions 'classify_failure wired into retry logic' — directly discusses failure pattern recognition architecture for retry decisions"
+          },
+          {
             "file": "issues.json",
             "relevance": 72,
-            "summary": "Contains timeout bug fix pattern with 'semaphore' success strategy—directly applicable to retry strategy engine timeout handling and synchronization"
+            "summary": "Timeout bug fix using semaphore pattern and backoff strategy — demonstrates proven retry/backoff architectural patterns in this codebase"
           },
           {
-            "file": "failures.json (first entry)",
-            "relevance": 65,
-            "summary": "Demonstrates stale state detection patterns (heartbeat cleanup). Failure pattern recognition is core to the design; shows how systems detect and handle stale/failed states"
+            "file": "success-patterns.json",
+            "relevance": 68,
+            "summary": "Detailed iteration patterns with complexity metrics, loop cycles, and test strategies — informs decision logic structure for intelligent retry escalation"
           },
           {
-            "file": "success-patterns.json (second entry: Fix bug with 3 iterations)",
-            "relevance": 58,
-            "summary": "Shows successful iterative bug fix patterns using 'standard' template; complexity 60 matches expected retry engine scope. Demonstrates multi-iteration refinement approach"
+            "file": "knowledge.json",
+            "relevance": 64,
+            "summary": "Failure signatures, fix strategies, and pattern kinds capture failure categorization approaches — relevant for failure pattern recognition taxonomy"
           },
           {
-            "file": "patterns.json (first entry with project type)",
+            "file": "patterns.json",
             "relevance": 52,
-            "summary": "Project conventions (nodejs, vitest, src/ directory, commonjs imports) establish where retry engine should be placed and how to structure code following project norms"
-          },
-          {
-            "file": "success-patterns.json (first entry: add auth module)",
-            "relevance": 48,
-            "summary": "Module isolation + TDD approach with integration tests is relevant architectural pattern for designing self-contained, testable retry strategy engine"
+            "summary": "Project structure conventions (source_dir, test_pattern, language) inform where/how to implement retry engine architecture within existing patterns"
           }
         ]
       },
-      "timestamp": 1781185564,
+      "timestamp": 1781212765,
       "ttl": 1800
     },
     "5d93a686652656a649c6db8d0b0db381": {
       "result": {
         "results": [
           {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains failure pattern 'classify_failure not called in daemon_on_failure' showing that failure classification was not properly wired into retry logic—directly demonstrates what anti-pattern to avoid in the retry strategy engine design"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Records timeout bug fix in daemon using semaphore with gotcha 'check backoff'—shows real-world failure mode in daemon retry/timeout handling that informs what anti-patterns to reject (e.g., missing backoff, improper synchronization)"
+          },
+          {
             "file": "knowledge.json",
-            "relevance": 78,
-            "summary": "Contains captured failure patterns with error signatures, fix strategies, and approaches. Directly documents what went wrong (mktemp failures, test output issues, regression detection) providing concrete anti-patterns and failed approaches to avoid."
-          },
-          {
-            "file": "success-patterns.json (second entry: f4af3e2a8276...)",
-            "relevance": 62,
-            "summary": "Documents successful patterns for bug fixes and authentication features using iterative approaches with proper test strategies and file organization. Provides contrast to rejected approaches and shows what successful design patterns look like."
-          },
-          {
-            "file": "failures.json (first entry)",
-            "relevance": 55,
-            "summary": "Contains specific test failures with root causes and fixes (sw-cleanup.sh stale heartbeat detection). Provides concrete examples of failed implementations and their remedies, relevant to understanding anti-patterns to avoid."
+            "relevance": 48,
+            "summary": "Captures failure patterns from previous runs, though mostly infrastructure-focused (mktemp, cleanup output issues); provides general context on what failure modes to expect and handle in robust design"
           }
         ]
       },
-      "timestamp": 1781185581,
+      "timestamp": 1781212786,
       "ttl": 1800
     },
     "f8a32d3296433d65c351f40a91646df4": {
       "result": {
         "results": [
           {
-            "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Project structure conventions (source_dir: src/, test_pattern: *.test.js, test_runner: vitest, language: javascript) directly inform code organization and testing approach for build stage"
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains direct reference to 'classify_failure wired into retry logic' which is the core feature being built in this stage. Captures recent test failures and root causes from the current pipeline run."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 78,
-            "summary": "Recent successful build patterns show proven approaches for bug fixes and features with 3-4 iterations, similar complexity profile to retry strategy engine; demonstrates test_strategy and file organization patterns"
-          },
-          {
-            "file": "success-patterns.json",
-            "relevance": 70,
-            "summary": "TDD approach with module isolation for auth module (5 iterations, 300s duration) provides reference pattern for iterative feature development with unit + integration testing strategy"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 65,
-            "summary": "Build duration baseline (2089s) establishes time/cost constraints and expectations for how long the build stage should take for this project"
+            "relevance": 88,
+            "summary": "Shows recent successful bug-fix patterns in this repo with concrete examples: 3 iterations, 6 commits, specific files changed (.claude/loop-logs, scripts/lib/outcome-feedback.sh). Test strategy and loop approach directly applicable to this build stage."
           },
           {
             "file": "knowledge.json",
-            "relevance": 58,
-            "summary": "Test failure patterns (mktemp directory creation, output validation, JSON parsing) could inform test environment setup and error handling during build/test phase"
+            "relevance": 72,
+            "summary": "Contains test failure patterns with fixes (mktemp directory issues, output format problems, JSON validation). Test-phase failures documented here will likely recur during the build stage."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 68,
+            "summary": "Past daemon timeout bug fixed with semaphore pattern. Retry and resilience strategies are foundational to building the intelligent retry strategy engine. Shows 'gotcha: check backoff' which is relevant."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project conventions: test_pattern='*.test.js', import_style='commonjs', test_runner='vitest'. Essential for writing code that matches project structure and runs tests correctly in the build stage."
           }
         ]
       },
-      "timestamp": 1781185687,
+      "timestamp": 1781212892,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Contains proven iteration strategies (loop patterns, test approaches, multi-iteration fixes) for similar complexity work; directly applicable to build stage planning"
-          },
-          {
             "file": "failures.json",
-            "relevance": 90,
-            "summary": "Documents known test stage failures (sw-cleanup.sh, output validation); build stage should avoid these known patterns"
+            "relevance": 95,
+            "summary": "Contains 4 recent test failures (sw-cleanup output format, mktemp /tmp/claude, sed command, classify_failure integration) with root causes and fixes — directly applicable to ongoing build stage test execution"
           },
           {
             "file": "knowledge.json",
-            "relevance": 78,
-            "summary": "Contains specific mktemp and test harness failures with concrete fix strategies; directly applicable if test setup fails during build"
+            "relevance": 85,
+            "summary": "Captures mktemp failures blocking test setup (entries kb_b8239eb18d7d, kb_1a758e4e0afd) and sw-cleanup output issues (kb_3058cd61f212) — known patterns with proven fix strategies for build failures"
           },
           {
             "file": "patterns.json",
-            "relevance": 70,
-            "summary": "Project structure (src/, test patterns, CommonJS) needed to understand codebase conventions for writing/building correct code"
+            "relevance": 60,
+            "summary": "Documents project conventions (Node.js, vitest test runner, commonjs imports, src/ source dir) — essential context for understanding how the build stage invokes tests"
           },
           {
-            "file": "issues.json",
-            "relevance": 55,
-            "summary": "Previous daemon timeout issue solved with semaphore pattern; potentially useful if encountering similar timing issues during build execution"
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline build duration of 2089s establishes performance expectations and timeout thresholds for the current build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 28,
+            "summary": "Two previous successful builds using 'standard' template with similar complexity (60-65) and test strategies — provides reference approach but not directly actionable for current build"
           }
         ]
       },
-      "timestamp": 1781185707,
+      "timestamp": 1781212908,
       "ttl": 1800
     },
     "67c80311536a3cf885aa5ef7e723a37c": {
@@ -1663,6 +1664,24 @@
       ],
       "timestamp": 1781187320,
       "ttl": 1800
+    },
+    "4d65ccf5c53c5083a59dbc274da3b5fe": {
+      "result": {
+        "estimated_iterations": 13
+      },
+      "timestamp": 1781212248,
+      "ttl": 1800
+    },
+    "000d5873d8a9cd88decab7f2ace8730e": {
+      "result": {
+        "estimated_cost_usd": 225,
+        "estimated_iterations": 8,
+        "estimated_tokens": 165000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1781212264,
+      "ttl": 3600
     }
   }
 }
