@@ -1,14 +1,54 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Cross-Repo Pattern Learning Engine for Fleet Mode
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+I have enough grounding. Here is the implementation plan.
+
+---
+
+# Implementation Plan: Cross-Repo Pattern Learning Engine for Fleet Mode
+
+## Summary
+
+Add a **fleet-wide pattern store** at `~/.shipwright/fleet-memory/` that captures successful fix strategies, error→solution mappings, and test approaches from *every* repo a fleet daemon processes, then injects the most relevant patterns into a new pipeline when a *different* repo starts a build. Patterns are scored for relevance by repo language/framework, error type, and issue keywords. Privacy is opt-in per repo. A new `fleet patterns` subcommand surfaces and applies patterns, and metrics track cross-repo learning impact.
+
+The design **wraps existing infrastructure rather than replacing it**: the per-repo memory system (`sw-memory.sh`, `~/.shipwright/memory/<repo_hash>/`) stays the source of truth for a single repo; the fleet engine is a thin aggregation + injection layer that hooks the two existing seams — `memory_finalize_pipeline` (capture) and `memory_inject_context` (injection).
+
+---
+
+## Brainstorming / Socratic Refinement (answered)
+
+**Minimum viable change:** A new library `scripts/lib/fleet-memory.sh` providing `fleet_pattern_capture`, `fleet_pattern_match`, `fleet_pattern_inject`; a new store dir; a `fleet patterns` subcommand in `sw-fleet.sh`; opt-in config; and a test suite. We do *not* build a new daemon process — capture and injection piggyback on existing pipeline seams already proven to be called (`daemon-dispatch.sh:515`, `pipeline-commands.sh:1223`, `loop-iteration.sh:130`).
+
+**Implicit requirements:** Concurrency safety (fleet daemon runs N pipelines across repos in parallel, all writing one shared index → needs locking/atomic writes); bounded store size (cap patterns, prune stale); no PII/secret leakage across repo boundaries (patterns are fix descriptions + error signatures, never file contents).
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Architecture Decision Record: Cross-Repo Pattern Learning Engine for Fleet Mode
+## Context
+## Decision
+## Alternatives Considered
+### A. New `lib/fleet-memory.sh` hooking existing seams (✅ CHOSEN)
+### B. Extend `sw-memory.sh` `global.json` to hold cross-repo patterns
+### C. SQLite-backed shared store via `sw-db.sh`
+## Component Decomposition
+### Component Responsibilities (Single Responsibility Principle)
+## Interface Contracts
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Cross-Repo Pattern Learning Engine for Fleet Mode
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Fleet-wide memory store: ~/.shipwright/fleet-memory/ with pattern index
+- Pattern capture: successful fixes, error→solution mappings, test strategies
+- Pattern injection: when daemon starts pipeline, inject relevant fleet patterns from similar repos
+- Similarity scoring: repo language, framework, error type, issue keywords
+- CLI commands: `shipwright fleet patterns list`, `shipwright fleet patterns apply <pattern-id>`
+- Privacy controls: opt-in/opt-out per repo in fleet-config.json
+- Metrics: pattern application success rate, cross-repo learning impact on success rate
+- Test suite validates pattern capture, storage, retrieval, and application
+- **Priority**: P2
+- **Complexity**: full
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +57,135 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "patterns.json (sethdford/shipwright)",
       "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "summary": "Project conventions—Node, vitest, npm, commonjs—directly applicable to build stage for this repo"
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "success-patterns.json (second entry)",
+      "relevance": 85,
+      "summary": "Two successful build patterns showing iteration counts, file patterns, and loop-based approaches for 'Fix bug' and 'Add authentication' with proven strategies"
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "knowledge.json",
+      "relevance": 82,
+      "summary": "Captured test failures (mktemp directory issues, JSON output formatting, cleanup output) to avoid during build and test stages"
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "architecture.json",
+      "relevance": 72,
+      "summary": "Architecture rules that the cross-repo pattern learning engine must follow to maintain consistency"
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "metrics.json (first entry)",
+      "relevance": 68,
+      "summary": "Build duration baseline (2089s) provides context for expected scope and iteration planning"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Cross-Repo Pattern Learning Engine for Fleet Mode — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Cross-Repo Pattern Learning Engine for Fleet Mode
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/fleet-memory.sh` with VERSION, store paths, defensive sourcing.
+- [ ] Task 2: Implement `_fleet_init_store` + corruption quarantine (atomic writes).
+- [ ] Task 3: Implement `_fleet_opt_in` privacy gate (default opt-in=false, per-repo override). *(blocks Task 7, 8)*
+- [ ] Task 4: Implement `fleet_pattern_fingerprint` reusing `repo_hash`/`patterns.json`.
+- [ ] Task 5: Implement `_fleet_score` + `fleet_pattern_match` with config-driven weights/threshold. *(blocks Task 8, 11-stats)*
+- [ ] Task 6: Implement `fleet_pattern_capture` with `flock`, 500-cap, `emit_event`. *(depends on 3,4)*
+- [ ] Task 7: Implement `fleet_pattern_inject` + `fleet_pattern_record_outcome` + `fleet_pattern_prune`. *(depends on 5)*
+- [ ] Task 8: Add `patterns` sub-router (`list`/`show`/`apply`/`stats`/`prune`) to `sw-fleet.sh`. *(depends on 6,7)*
+- [ ] Task 9: Add guarded capture hooks in `daemon-dispatch.sh` + `pipeline-commands.sh`. *(depends on 6)*
+- [ ] Task 10: Add guarded injection hook in `loop-iteration.sh`. *(depends on 7)*
+- [ ] Task 11: Extend `fleet_init` + config docs with `pattern_learning` / `fleet_pattern_matching` blocks.
+- [ ] Task 12: Write `sw-fleet-patterns-test.sh` covering capture/store/retrieval/scoring/application/opt-out/concurrency. *(depends on 8)*
+- [ ] Task 13: Register test in `package.json`; ensure `npm test` green.
+- [ ] Task 14: Update `.claude/CLAUDE.md`, bump VERSIONs, sync AUTO docs.
+- [ ] Task 15: Verify `shipwright fleet patterns list` is discoverable end-to-end (CLI router → sw-fleet → lib).
+- [ ] `~/.shipwright/fleet-memory/{index.json,metrics.json}` created and maintained with the documented schema.
+- [ ] Successful pipeline in one repo captures a pattern (fix + error→solution + test strategy); verified by test and `emit_event`.
+- [ ] A new pipeline in a *similar* repo receives injected fleet patterns in its build prompt (cross-repo path proven by E2E test).
+- [ ] Similarity scoring uses language/framework + error type + keywords with config-driven weights/threshold; boundary cases tested.
+- [ ] `shipwright fleet patterns list|show|apply|stats|prune` all work and are reachable via the CLI router.
+
+## Context
+- Pipeline: standard
+- Branch: arch/cross-repo-pattern-learning-engine-for-f-626
+- Issue: #626
+- Generated: 2026-06-11T13:43:13Z
+
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **data-pipeline**: Pattern capture (fix→storage), indexing, retrieval, and injection form a data pipeline that must handle heterogeneous repo structures and evolving pattern schemas.
+
+## Data Pipeline Expertise
+
+Apply these data engineering patterns:
+
+### Schema Design
+- Define schemas explicitly — never rely on implicit structure
+- Use migrations for all schema changes (never manual ALTER TABLE)
+- Add indexes for frequently queried columns
+- Consider denormalization for read-heavy paths
+
+### Data Integrity
+- Use transactions for multi-step operations
+- Implement idempotency keys for operations that could be retried
+- Validate data at ingestion — reject bad data early
+- Use constraints (NOT NULL, UNIQUE, FOREIGN KEY) in the database layer
+
+### Query Patterns
+- Avoid N+1 queries — use JOINs or batch loading
+- Use EXPLAIN to verify query plans for complex queries
+- Paginate large result sets — never SELECT * without LIMIT
+- Use parameterized queries — never string concatenation for SQL
+
+### Migration Safety
+- Migrations must be reversible (include rollback steps)
+- Test migrations on a copy of production data
+- Add new columns as nullable, then backfill, then add NOT NULL
+- Never drop columns in the same deploy as code changes
+
+### Backpressure & Resilience
+- Implement circuit breakers for external data sources
+- Use dead letter queues for failed processing
+- Set timeouts on all external calls
+- Monitor queue depths and processing latency
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Schema Changes**: Full migration SQL with both forward and rollback scripts, plus data backfill strategy if required
+2. **Data Flow Diagram**: Text diagram showing data ingestion → processing → output with failure points marked
+3. **Idempotency Strategy**: How the system handles duplicate requests (idempotency keys, deduplication, side-effect safety)
+4. **Rollback Plan**: Step-by-step process to revert schema changes and restore data consistency
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
+max_iterations: 30
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-06-11T13:47:40Z
+last_iteration_at: 2026-06-11T13:47:40Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 

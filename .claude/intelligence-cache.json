@@ -32,15 +32,16 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
+          "architect",
           "tester",
-          "reviewer"
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.90,
+        "reasoning": "Cross-repo pattern learning engine needs core implementation (builder) with architectural guidance on learning algorithms, comprehensive testing across repo variations, and optimization for fleet-scale analysis",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781185658,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,387 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "6729ab29c818c377b1d3cfe7af8d76ec": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern similarity scoring accuracy - false positives could waste agent iterations",
+          "Fleet memory bloat without proper pattern curation and deduplication",
+          "Cross-repo pattern applicability - context differences may make patterns irrelevant",
+          "Integration complexity with existing daemon heartbeat and memory systems",
+          "Privacy/security concerns with sharing patterns across repos with different visibility levels",
+          "Performance overhead of similarity scoring during daemon spawn for every pipeline"
+        ],
+        "implementation_hints": [
+          "Design pattern schema first: {fix_strategy, error_signature, test_approach, repo_metadata, success_metrics}",
+          "Use repo language+framework+key dependencies for initial similarity scoring before advancing to embedding-based matching",
+          "Capture patterns as post-pipeline hook only on successful merges to avoid noise",
+          "Index patterns by error type and keywords for O(1) retrieval during injection",
+          "Implement privacy controls as allowlist/blocklist in fleet-config.json before pattern capture",
+          "Inject top-3 similar patterns as structured context in build loop prompt to avoid overwhelming context",
+          "Track application metrics granularly: pattern_applied, agent_iterations_saved, success_rate_delta",
+          "Test with synthetic multi-repo scenarios (e.g., simulate 3 repos with intentional pattern overlap)"
+        ]
+      },
+      "timestamp": 1781184950,
+      "ttl": 3600
+    },
+    "f35874976948dca3f93657c71289e08a": {
+      "result": {
+        "estimated_iterations": 8
+      },
+      "timestamp": 1781184970,
+      "ttl": 1800
+    },
+    "c1d842fed5ef857dcf05b924644031e3": {
+      "result": {
+        "estimated_cost_usd": 3.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 342000,
+        "likely_failure_stage": "build",
+        "confidence": 62,
+        "breakdown": {
+          "intake": {
+            "tokens": 8000,
+            "cost": 0.02
+          },
+          "plan": {
+            "tokens": 22000,
+            "cost": 0.12
+          },
+          "design": {
+            "tokens": 35000,
+            "cost": 0.18
+          },
+          "build": {
+            "tokens": 186000,
+            "cost": 1.85,
+            "iterations": 4,
+            "notes": "pattern_schema, similarity_scoring, privacy_controls"
+          },
+          "test": {
+            "tokens": 52000,
+            "cost": 0.28,
+            "notes": "multi_repo_scenarios, false_positive_validation"
+          },
+          "review": {
+            "tokens": 28000,
+            "cost": 0.18
+          },
+          "spec_verification": {
+            "tokens": 11000,
+            "cost": 0.08
+          }
+        },
+        "risk_adjusted_success_probability": 71,
+        "failure_modes": {
+          "pattern_accuracy": {
+            "probability": 0.35,
+            "recovery_iterations": 2,
+            "stage": "build"
+          },
+          "fleet_memory_bloat": {
+            "probability": 0.18,
+            "recovery_iterations": 1,
+            "stage": "test"
+          },
+          "cross_repo_applicability": {
+            "probability": 0.28,
+            "recovery_iterations": 2,
+            "stage": "review"
+          }
+        },
+        "assumptions": {
+          "model_mix": "haiku for intake, sonnet for build/test, opus for plan/design/review",
+          "agents_spawned": 6,
+          "parallelizable_phases": [
+            "design_variants",
+            "test_multi_repo"
+          ],
+          "blockers": "privacy_controls_schema_design_must_complete_before_build"
+        }
+      },
+      "timestamp": 1781184985,
+      "ttl": 3600
+    },
+    "d8db946dc5d041a3b89f0abf92284ca7": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "backend",
+          "observability",
+          "distributed-systems"
+        ],
+        "complexity_assessment": {
+          "score": 8,
+          "reasoning": "Full-complexity feature requiring distributed pattern capture, similarity matching, fleet-wide coordination, privacy controls, and metrics tracking across heterogeneous repos. New domain (fleet patterns) with unique challenges in cross-repo learning."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "pattern-matching-similarity-scoring",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "data-pipeline",
+            "observability"
+          ],
+          "build": [
+            "data-pipeline"
+          ],
+          "review": [
+            "architecture-design",
+            "security-audit",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "adversarial-quality",
+            "collection-system-validation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Fleet memory schema, pattern indexing structure, and similarity scoring pipeline must be designed as an ADR before implementation to ensure extensibility across repo types.",
+          "pattern-matching-similarity-scoring": "The core requirement—scoring repo similarity by language, framework, error type, and keywords—depends on sound matching algorithms that this skill directly addresses.",
+          "brainstorming": "Challenge assumptions about pattern representation, privacy risks, and cross-repo conflict resolution before committing to a design that affects daemon behavior fleet-wide.",
+          "api-design": "CLI commands (`shipwright fleet patterns list|apply`) must expose fleet memory operations with clear semantics and error handling.",
+          "data-pipeline": "Pattern capture (fix→storage), indexing, retrieval, and injection form a data pipeline that must handle heterogeneous repo structures and evolving pattern schemas.",
+          "observability": "Metrics on pattern application success rate and cross-repo learning impact are acceptance criteria; instrumentation must be designed during architecture phase.",
+          "security-audit": "Privacy controls (opt-in/opt-out per repo, pattern sanitization) and access patterns must prevent sensitive repo details from leaking through patterns.",
+          "adversarial-quality": "Identify failure modes: similarity scoring false positives, patterns from repo A breaking repo B, memory bloat from storing too many patterns, inference perf under scale.",
+          "testing-strategy": "Acceptance criteria mandate test suite for pattern capture, storage, retrieval, and application—requires strategy for multi-repo scenarios and metrics validation.",
+          "collection-system-validation": "Fleet memory collects patterns from heterogeneous repos; validators ensure consistency of pattern schema, index integrity, and metric aggregation.",
+          "deploy-safety": "Rolling out fleet patterns is a controlled experiment—validate pattern quality and impact metrics in canary repos before fleet-wide application.",
+          "validation-thoroughness": "Smoke tests (does pattern store work?) are insufficient; validate that cross-repo patterns actually improve issue resolution time and success rates in real scenarios.",
+          "pr-quality": "Fleet patterns feature spans CLI, daemon integration, memory persistence, and metrics—PRs must be reviewable in 5 min with clear separation of concerns."
+        },
+        "generated_skills": [
+          {
+            "name": "fleet-pattern-lifecycle",
+            "reason": "No existing skill covers the end-to-end cross-repo pattern lifecycle: capture (successful fix→pattern), indexing with similarity scoring, injection into new pipelines, and fleet-wide metrics. This is domain-specific to Shipwright's fleet intelligence model.",
+            "content": "## Fleet Pattern Lifecycle: Cross-Repo Learning Integration\n\n### Pattern Lifecycle Phases\n\n1. **Capture** (daemon completes successful build)\n   - Extract: fix strategy, error signature, test approach, success metrics\n   - Normalize: repo metadata (language, framework, dependencies)\n   - Store: ~/.shipwright/fleet-memory/<pattern-id>.json with schema versioning\n   - Index: commit to pattern-index.jsonl with hash for dedup\n\n2. **Similarity Scoring**\n   - Incoming issue: analyze error type, keywords, repo language/framework\n   - Fleet search: find patterns in similar repos (score threshold configurable, default 0.65)\n   - Rank: by recency, success rate, and similarity confidence\n   - Return: top 5 patterns with explanations\n\n3. **Injection**\n   - Pipeline intake stage: query fleet patterns for similar issues\n   - Prompt injection: \"Fleet has 3 similar patterns from Go repos; use if applicable\"\n   - Tracking: log which patterns were considered and applied\n\n4. **Application & Feedback**\n   - Agent applies pattern, test results recorded\n   - Success: pattern success_count++, update metrics\n   - Failure: pattern failure_count++, error signature logged for future debugging\n\n### Privacy Model\n\n- **Opt-in/Opt-out**: Per-repo flag in fleet-config.json (`\"share_patterns\": true|false`, `\"receive_patterns\": true|false`)\n- **Pattern Sanitization**: Strip repo paths, secrets, and identifying info before sharing\n- **Access Control**: Only daemon agents can read fleet patterns; no direct human access\n- **Audit Trail**: Pattern application logged in repo's local pipeline artifacts for compliance\n\n### Schema & Storage\n\n```json\n{\n  \"pattern_id\": \"hash(repo_lang + error_type + fix_strategy)\",\n  \"source_repo\": \"<hash of repo path>\",\n  \"language\": \"go|javascript|python|...\",\n  \"framework\": \"next|express|django|...\",\n  \"error_type\": \"type mismatch|import not found|...\",\n  \"error_signature\": \"<normalized error regex>\",\n  \"fix_strategy\": \"<prose description>\",\n  \"test_approach\": \"<how it was validated>\",\n  \"success_count\": 3,\n  \"failure_count\": 0,\n  \"success_rate\": 1.0,\n  \"first_seen\": \"2026-06-10T...\",\n  \"last_applied\": \"2026-06-11T...\",\n  \"keywords\": [\"auth\", \"session\", \"token\"],\n  \"version\": \"1\"\n}\n```\n\n### Similarity Scoring Algorithm\n\nScore = (language_match × 0.3) + (framework_match × 0.25) + (error_sig_match × 0.3) + (keyword_overlap × 0.15)\n\n- **language_match**: 1.0 if same, 0.5 if same family (e.g., go/rust), 0.0 otherwise\n- **framework_match**: 1.0 if exact, 0.7 if both present, 0.0 if either absent\n- **error_sig_match**: Cosine similarity of error tokens normalized\n- **keyword_overlap**: Jaccard similarity of issue keywords vs pattern keywords\n\n### Metrics for Learning Impact\n\n- **Application Rate**: % of issues that received relevant fleet patterns\n- **Success Rate**: % of applied patterns that led to successful pipeline completion\n- **Time Savings**: avg lead time with fleet patterns vs. baseline (tracked per issue)\n- **Reach**: % of repos using patterns from outside their primary language/framework\n- **Freshness**: % of patterns applied within 30 days of creation\n\n### CLI Integration\n\n```bash\nshipwright fleet patterns list [--repo <name>] [--language go] [--framework] [--sort success_rate|last_applied]\nshipwright fleet patterns apply <pattern-id>              # Manually trigger pattern application\nshipwright fleet patterns remove <pattern-id>             # Prune outdated patterns\nshipwright fleet patterns stats                           # Show learning metrics\nshipwright fleet patterns config --opt-in|--opt-out       # Toggle sharing for this repo\n```\n\n### Implementation Notes\n\n- Pattern index lives in memory for fast similarity queries; persist to events.jsonl on daemon shutdown\n- Similarity scoring runs in build loop intake phase (before planning), so agents see relevant patterns early\n- Failed patterns still counted (for learning), but success_rate < 0.3 triggers audit (human review before fleet-wide sharing)\n- Daemon auto-prunes patterns with success_rate < 0.1 and age > 90 days (configurable)\n"
+          }
+        ],
+        "review_focus": [
+          "Pattern schema flexibility: can it evolve for new repo types without breaking stored patterns?",
+          "Similarity scoring correctness: do language/framework/error/keyword weights produce sensible rankings?",
+          "Privacy implementation: are patterns properly sanitized before fleet-wide sharing, and is opt-in/out enforced?",
+          "Index performance: with 1000+ patterns, are similarity searches acceptable during intake (< 1s)?",
+          "Metrics accuracy: success/failure counts correctly attributed to applied vs. unconsidered patterns?",
+          "CLI usability: are `shipwright fleet patterns` commands discoverable and forgiving?",
+          "Cross-repo conflicts: validation that pattern from repo A doesn't break repo B's type system or dependencies?"
+        ],
+        "risk_areas": [
+          "Similarity false positives: pattern from Go repo applied to Python repo with superficial error match → wasted iterations and frustration",
+          "Privacy breach: pattern containing error trace reveals internal repo structure or secrets to unauthorized repos",
+          "Performance cliff: similarity scoring scales O(n) with pattern count; with 5000+ patterns, intake throughput drops below daemon SLA",
+          "Stale patterns: patterns from breaking changes in old framework versions continue to apply, masking real bugs",
+          "Memory leak: patterns accumulate indefinitely, fleet-memory/ grows to GB scale, index queries degrade",
+          "Opt-out bypass: privacy flag ignored, patterns from private repos leak to public repos or vice versa",
+          "Conflict cascade: pattern A suggests fix, which triggers pattern B, which conflicts with pattern A (infinite loop detection needed)"
+        ]
+      },
+      "timestamp": 1781185087,
+      "ttl": 3600
+    },
+    "8f3a4f8b73257994146ffe5e66876839": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 95,
+            "summary": "Directly models fleet-mode knowledge entries with query/publish/injection metrics — core data structure for cross-repo pattern learning engine"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 85,
+            "summary": "Contains architecture rules framework that will need extension for cross-repo pattern enforcement and validation"
+          },
+          {
+            "file": "global.json",
+            "relevance": 80,
+            "summary": "Has cross_repo_learnings field explicitly for capturing patterns across repositories — primary target for the engine being designed"
+          },
+          {
+            "file": "patterns.json (project metadata)",
+            "relevance": 65,
+            "summary": "Project structure metadata (node/vitest/npm/js) provides baseline for what patterns to learn across repos with similar stacks"
+          },
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 60,
+            "summary": "Multi-iteration success patterns show approach taxonomy and complexity scoring that could inform cross-repo pattern classification"
+          }
+        ]
+      },
+      "timestamp": 1781185169,
+      "ttl": 1800
+    },
+    "1bb8b94cb4951eae7321505190bd9238": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 75,
+            "summary": "Contains detailed successful plan patterns ('Fix bug', 'Add authentication feature') with complete approach, iterations, files changed, test strategy, and templates. Shows what comprehensive, validated plans look like and how they were executed successfully."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Contains failure signatures, fix strategies, and root causes from past runs (mktemp issues, cleanup.sh output validation, regression detection). Helps understand what validation checks typically fail and how they were resolved."
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 55,
+            "summary": "Shows recent test validation failure (sw-cleanup.sh stale heartbeat detection) with root cause and fix pattern. Demonstrates the type of validation-stage issues encountered in this repository's pipeline."
+          }
+        ]
+      },
+      "timestamp": 1781185417,
+      "ttl": 1800
+    },
+    "d3d227fbb21c44e60f481501ad75befa": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (f4af3e2a... and 0bcf0637... entries)",
+            "relevance": 95,
+            "summary": "Concrete pattern data structures with complexity scoring, iteration counts, duration, file change patterns, test strategies, and cost metrics—exactly what a cross-repo learning engine would capture and reuse across repos"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 90,
+            "summary": "Fleet-level knowledge storage with publish/query/injection metrics and time-saved tracking—directly models the data storage and retrieval layer needed for fleet-mode pattern learning"
+          },
+          {
+            "file": "patterns.json (project conventions with test_runner, import_style)",
+            "relevance": 78,
+            "summary": "Cross-repo project detection and conventions (language, test runner, source layout)—essential context for normalizing patterns across heterogeneous repositories"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Failure pattern capture mechanism with error signatures, fix strategies, occurrence metrics, and evidence tracking—shows how patterns are identified, stored, and scored for relevance"
+          },
+          {
+            "file": "global.json",
+            "relevance": 68,
+            "summary": "Contains cross_repo_learnings field for aggregating patterns across repositories—conceptually aligned with fleet mode's goal of global learning from many repos"
+          }
+        ]
+      },
+      "timestamp": 1781185463,
+      "ttl": 1800
+    },
+    "c5cbda36d8ec3f78e6d0f64f5826c586": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains failure patterns with error signatures and fix strategies. Documents what failed (test failures, mktemp issues) and root causes—directly shows anti-patterns to avoid in pattern learning system design."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Records operational failures with root causes and fixes. Shows test failures in sw-cleanup.sh and other components, indicating failure modes and anti-patterns that have been encountered."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 48,
+            "summary": "Specific to cross-repo pattern learning engine for fleet mode (exact domain match), but currently empty of entries. Appropriate storage for rejected design approaches once populated."
+          }
+        ]
+      },
+      "timestamp": 1781185484,
+      "ttl": 1800
+    },
+    "f0a6224e3314b5f3535ac365ceb9d7cd": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 95,
+            "summary": "Project conventions—Node, vitest, npm, commonjs—directly applicable to build stage for this repo"
+          },
+          {
+            "file": "success-patterns.json (second entry)",
+            "relevance": 85,
+            "summary": "Two successful build patterns showing iteration counts, file patterns, and loop-based approaches for 'Fix bug' and 'Add authentication' with proven strategies"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Captured test failures (mktemp directory issues, JSON output formatting, cleanup output) to avoid during build and test stages"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 72,
+            "summary": "Architecture rules that the cross-repo pattern learning engine must follow to maintain consistency"
+          },
+          {
+            "file": "metrics.json (first entry)",
+            "relevance": 68,
+            "summary": "Build duration baseline (2089s) provides context for expected scope and iteration planning"
+          }
+        ]
+      },
+      "timestamp": 1781185618,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions directly inform build: source_dir (src/), test_pattern (*.test.js), import_style (commonjs), test_runner (vitest). Essential for understanding project structure during build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Past successful builds in this repo show tested approaches, file patterns (.claude/*.json, scripts/lib/*.sh), test strategy (npm test), and iteration counts. Provides context for effective build strategies."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline build_duration_s (2089s) sets expectations for build completion time and helps identify anomalies if current build significantly exceeds baseline."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Documents timeout bug fix in daemon with semaphore solution. Relevant if build stage exercises daemon code (sw-daemon.sh), but context-specific rather than broadly applicable."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Contains mktemp failures and test output issues with fix strategies. Peripherally relevant to build test phase if similar environment setup problems occur, but primarily test-stage concerns."
+          }
+        ]
+      },
+      "timestamp": 1781185641,
+      "ttl": 1800
     }
   }
 }
