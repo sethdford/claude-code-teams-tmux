@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.87,
+        "reasoning": "Failure playbook automation is fundamentally an incident response and reliability infrastructure problem — primary DevOps concern with Architect for design, Builder for implementation, and Tester for validation",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781213023,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,234 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "537fa228a23598a3fb85caee420e0e53": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Auto-executor might apply incorrect fixes and worsen build state",
+          "Failure classifier could misclassify error types, triggering wrong playbook",
+          "Learning system may perpetuate incorrect patterns from human interventions",
+          "Could mask underlying issues if playbooks are surface-level workarounds",
+          "Agent spawning overhead on every failure impacts token budget and actual MTTR",
+          "Playbook registry becomes technical debt without active maintenance and versioning",
+          "Single failed attempt may be insufficient for multi-stage or cascading failures"
+        ],
+        "implementation_hints": [
+          "Start with 3-5 high-confidence playbooks (test-failure, lint, merge-conflict) before expanding",
+          "Use error signature matching (regex + heuristics) for classification before ML",
+          "Add human approval step before persisting learned patterns; require multiple confirmations",
+          "Build failure metrics dashboard first to understand distribution and validate classifier",
+          "Implement dry-run mode to analyze without modifying; separate observation from action",
+          "Integrate tightly with existing Shipwright memory system and captured failure patterns",
+          "Test playbook matching against real failure logs before enabling in live pipeline",
+          "Version playbooks and track learning evolution; audit learned patterns for correctness",
+          "Document each playbook with preconditions, actions, postconditions, and success rate",
+          "Consider limiting auto-execution to non-production stages initially; escalate all prod failures"
+        ]
+      },
+      "timestamp": 1781212246,
+      "ttl": 3600
+    },
+    "671950577efdd28f9e9e74d02e8c452e": {
+      "result": {
+        "estimated_iterations": 13
+      },
+      "timestamp": 1781212260,
+      "ttl": 1800
+    },
+    "296fff85bc4da44e71afdb9ef097b641": {
+      "result": {
+        "estimated_cost_usd": 12.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 620000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1781212278,
+      "ttl": 3600
+    },
+    "6935bf15526733667854227be184f6ba": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (detailed test failures)",
+            "relevance": 82,
+            "summary": "Contains 5 failure patterns with root causes and fixes: sw-cleanup.sh heartbeat detection, intelligence classification in retry logic, template errors, and mktemp failures. Directly applicable for building failure detection and automated recovery playbooks."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Shows timeout bug in daemon with success pattern 'added semaphore'. Directly relevant to DevOps automation; demonstrates how to detect and fix production issues with recovery strategies."
+          },
+          {
+            "file": "knowledge.json (failure patterns with fixes)",
+            "relevance": 55,
+            "summary": "Contains 5 captured failure entries with error signatures, fix strategies, and metrics (occurrences, last_used_at). Provides a playbook model for detecting failures and routing to fixes based on error patterns."
+          },
+          {
+            "file": "success-patterns.json (bug fix iteration data)",
+            "relevance": 48,
+            "summary": "Tracks two successful fixes with iteration counts, duration, file patterns, and cost. Useful for estimating MTTR and understanding what recovery patterns work within time bounds."
+          },
+          {
+            "file": "metrics.json (baselines)",
+            "relevance": 22,
+            "summary": "Provides baseline build duration (2089s). Useful for establishing MTTR targets and measuring improvement once the failure playbook auto-executor is in place."
+          }
+        ]
+      },
+      "timestamp": 1781212485,
+      "ttl": 1800
+    },
+    "55c444ccff67c0381392928fb7ed8690": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains 4 recent failure patterns (sw-cleanup output format, test detection, sed quoting, mktemp directory issues) with root causes and proven fixes. Directly reveals what validation might fail and how to resolve it."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Documents 2 successful feature completions (bug fix, auth feature) with iterative approaches, test strategies (npm test), cost/duration metrics, and file change patterns. Shows how to plan and execute complex features."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains 5 failure entries with tagged errors (test infrastructure, mktemp, cleanup detection), fix strategies, and occurrence metrics. Shows known issues and their remediation, useful for understanding what plan validation might catch."
+          }
+        ]
+      },
+      "timestamp": 1781212820,
+      "ttl": 1800
+    },
+    "2b6921ed9aafc5e0ca5e3a623c9e9606": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 85,
+            "summary": "Contains daemon timeout bug fix pattern (semaphore approach) — directly applicable to designing concurrent failure playbook executor architecture"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure conventions (Node.js, src/, vitest, commonjs) — foundational for design decisions about where/how to implement the executor"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 62,
+            "summary": "Shows iterative fix patterns with test strategies (npm test) and file organization — informs design for multi-step failure playbook execution and testing"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 50,
+            "summary": "Baseline build duration (2089s) provides performance context for sub-30-minute MTTR target design decisions"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 42,
+            "summary": "Failure signatures and fix strategies document common issues — informs what failure modes the executor must handle robustly"
+          }
+        ]
+      },
+      "timestamp": 1781212858,
+      "ttl": 1800
+    },
+    "eee2d29201a6b90749e1da492ff23470": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains observed failure patterns including intelligence classification failures, stale detection issues, and output format problems. Directly shows what breaks in practice—critical for identifying anti-patterns to avoid in failure playbook execution."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Documents successful iteration strategies, test approaches, and implementation patterns that achieved goals. Understanding what worked helps identify their anti-patterns (opposite designs to reject)."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Contains example of timeout bug fix using semaphore pattern. Directly relevant to MTTR concerns; shows a design choice that succeeded, informing what NOT to do for fast recovery."
+          }
+        ]
+      },
+      "timestamp": 1781212874,
+      "ttl": 1800
+    },
+    "8da32f93dbb01438a36380889c40d7ed": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first)",
+            "relevance": 95,
+            "summary": "Provides exact project structure (Node/vitest, commonjs imports, src/ source dir, *.test.js pattern) — critical for configuring build, test runner, and import resolution correctly"
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 80,
+            "summary": "Contains accumulated test infrastructure failures (mktemp paths, cleanup output format, sed quoting, stale heartbeat detection) that will be encountered during build/test phase"
+          },
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 70,
+            "summary": "Shows successful 3-iteration feature build pattern with npm test strategy, commit count (5-6), and temp file changes — directly applicable to build stage approach for this feature"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Demonstrates timeout bug fix with semaphore pattern — relevant to failure handling and MTTR automation, shows gotchas to watch for (check backoff)"
+          },
+          {
+            "file": "metrics.json (first)",
+            "relevance": 60,
+            "summary": "Baseline build_duration_s of 2089s (~35 min) provides context for the sub-30-minute MTTR goal and typical iteration timing"
+          }
+        ]
+      },
+      "timestamp": 1781212989,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Recent test failures (last seen 2026-06-11) including mktemp /tmp/claude issues, sw-cleanup output format, and sed command bugs — directly applicable to debugging build-stage test runs"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two recent successful fix patterns showing 3-iteration cycles, npm test strategy, file patterns changed, and cost estimates — informs approach and iteration expectations for current build"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 78,
+            "summary": "Documented failure signatures with fix strategies: mktemp directory issues (4 occurrences), sw-cleanup output format, and regression detection — provides root causes and remediation for common build failures"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Project conventions (Node/vitest/npm, CommonJS imports, src/ source dir) — ensures build output and test patterns conform to established project structure"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 35,
+            "summary": "Build duration baseline (2089s) — provides performance reference, though dated (2026-05-15) and less actionable than recent failure/success patterns"
+          }
+        ]
+      },
+      "timestamp": 1781213006,
+      "ttl": 1800
     }
   }
 }
