@@ -32,15 +32,15 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Real-time quality scoring system requires implementation-focused work; architect provides design oversight for the scoring metrics/thresholds, optimizer ensures model downshift efficiently trades quality for cost.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781185705,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,350 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "4d426e60d6538ca7635c82c9af94b56a": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "full",
+        "issue_type": "performance",
+        "key_risks": [
+          "Scoring function may not capture all quality dimensions; incorrect decisions degrade build quality",
+          "Escalation/downshift thrashing if thresholds are miscalibrated; conservative tuning required",
+          "State management across iterations needs persistence; edge cases with restart/recovery",
+          "Integration with critical sw-loop.sh path could introduce regressions in build pipeline",
+          "Safety constraints (e.g., no downshift first 2 iterations) may conflict with cost optimization goals"
+        ],
+        "implementation_hints": [
+          "Design and test quality scoring function in isolation with synthetic test cases before integrating with loop",
+          "Reuse existing convergence metrics from loop progress tracking; avoid reinventing state",
+          "Persist model decision history to file so restarts/resumptions maintain decision context",
+          "Add verbose decision logging (score, threshold, action) for debugging cost/quality tradeoffs",
+          "Start with conservative thresholds (downshift >0.85, escalate <0.4) and tune via DORA metrics over time",
+          "Build comprehensive test scenarios: sustained high quality, quality degradation, thrashing prevention, restart recovery",
+          "Implement cost tracking as simple log of model per iteration; calculate savings in final summary",
+          "Safety constraint: enforce downshift only after 2+ consecutive high-quality iterations AND no increasing error trend",
+          "Consider canary mode: track predicted vs actual quality scores for early detection of scoring drift"
+        ]
+      },
+      "timestamp": 1781184939,
+      "ttl": 3600
+    },
+    "5d4591cfa806e9fb77d85cc614bf7c78": {
+      "result": {
+        "estimated_iterations": 13
+      },
+      "timestamp": 1781184956,
+      "ttl": 1800
+    },
+    "80659226f0f4640c4e47ac16a7c3b14b": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 102000,
+        "likely_failure_stage": "test",
+        "confidence": 70
+      },
+      "timestamp": 1781184970,
+      "ttl": 3600
+    },
+    "33311676f37996c7ccfa599855cd2d19": {
+      "result": {
+        "issue_type": "backend/infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "cost-optimization",
+          "testing",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Medium-high: requires designing a multi-metric quality scoring function, implementing stateful model routing logic with safety constraints, integrating into a 2675-line existing script (sw-loop.sh), and comprehensive test coverage across quality scenarios. State management and escalation logic add complexity."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "testing-strategy",
+            "performance"
+          ],
+          "design": [
+            "architecture-design",
+            "observability",
+            "model-routing-strategy"
+          ],
+          "build": [
+            "testing-strategy",
+            "systematic-debugging",
+            "quality-scoring-metrics"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "performance"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Validate assumptions about what constitutes 'high quality' (score >0.8) and edge cases that could cause model thrashing or safety violations.",
+          "testing-strategy": "Plan comprehensive test suite covering scoring accuracy across quality scenarios, routing decisions, escalation logic, and the never-downshift-in-first-2 constraint.",
+          "performance": "Validate cost-benefit tradeoff: does Sonnet produce equivalent results to Opus for simple iterations? Establish baseline token usage and cost savings targets.",
+          "architecture-design": "Create ADR documenting the quality scorer architecture, model routing decision tree, state machine transitions, and integration points with sw-loop.sh.",
+          "observability": "Design metrics collection (test results, diff quality, error counts, convergence progress) and reporting structure to track scoring accuracy and cost savings per iteration.",
+          "model-routing-strategy": "Implement decision logic for state tracking (consecutive iterations), escalation/de-escalation thresholds, safety constraints (first 2 iterations, error trends), and model selection.",
+          "quality-scoring-metrics": "Design normalized scoring function that combines test pass/fail, diff size, error count, and convergence metrics into a single 0.0–1.0 score.",
+          "systematic-debugging": "If quality scoring or routing logic breaks during integration, methodically isolate the failure before retrying (previous stage failures noted in issue).",
+          "adversarial-quality": "Attack the scoring and routing logic: can metrics be gamed? Can the state machine oscillate between models? Does increasing error count trigger escalation reliably?",
+          "two-stage-review": "Pass 1: verify scoring math and routing logic correctness. Pass 2: ensure sw-loop.sh integration is safe and doesn't break existing loop behavior.",
+          "validation-thoroughness": "Run extended real builds with the new routing enabled; compare actual cost savings and success rates against predictions before assuming it works.",
+          "pr-quality": "Despite complexity, write a focused PR that reviewers can understand in 5 minutes by isolating scoring logic, routing logic, and sw-loop.sh integration into separate commits."
+        },
+        "generated_skills": [
+          {
+            "name": "model-routing-strategy",
+            "reason": "The issue requires specific decision logic for adaptive model switching that isn't adequately covered by generic performance or observability guidance. It needs a state machine for escalation/de-escalation, safety constraints, and edge case handling.",
+            "content": "## Model Routing Strategy for Adaptive Build Loop\n\nImplement a stateful model router that tracks code quality across consecutive iterations and makes escalation/de-escalation decisions.\n\n### State Machine\n\nTrack state as: `(current_model, iterations_in_state, consecutive_high_scores, last_score, previous_test_status)`\n\n**Transitions:**\n- **Downshift (Opus → Sonnet)**: Only after 2+ consecutive high-quality iterations (score >0.8) AND not in first 2 iterations AND error count not increasing\n- **Escalate (Sonnet → Opus)**: On quality degradation (score <0.5 OR test failure after prior pass) OR first occurrence of new error type\n- **Locked**: First 2 iterations always use Opus, regardless of quality\n\n### Scoring Function Design\n\nNormalize metrics to [0, 1] range, then combine:\n```\nscore = 0.5 * test_quality + 0.25 * diff_quality + 0.25 * convergence_health\nwhere:\n  test_quality = [pass=1.0, fail=0.0]\n  diff_quality = 1.0 - min(lines_changed / 500, 1.0)  # penalize large diffs\n  convergence_health = 1.0 - (error_count / prior_error_count)  # penalize new errors\n```\n\nHandle edge cases:\n- If all metrics missing: score = 0.5 (neutral, don't route)\n- If any single metric is missing: use 2/3 weighted average of remaining metrics\n- New error types always trigger escalation, even if overall score is high\n\n### State Persistence\n\nWhen loop restarts (context exhaustion): restore routing state from `.claude/build-loop-routing-state.json`. On init, create state with Opus locked until iteration 2.\n\n### Anti-Patterns to Avoid\n\n1. **Model thrashing**: Don't escalate/downshift on every iteration. Require N consecutive iterations at target quality level.\n2. **Metric blindness**: Don't ignore error count increases just because total score is high. Track error vector: new_errors vs. fixed_errors.\n3. **Cost over safety**: Never downshift during risky phases (first 2 iterations, active test failures, increasing complexity).\n4. **State loss**: Always persist routing state to disk after each iteration, not just in memory.\n\n### Testing Strategy\n\n- **Downshift scenario**: Start with Opus, achieve 2 high scores, verify switch to Sonnet, log cost savings\n- **Escalation scenario**: In Sonnet, trigger a test failure, verify immediate escalation back to Opus\n- **Safety constraints**: Verify first 2 iterations always use Opus regardless of quality\n- **Error tracking**: Verify new error types trigger escalation even with high overall score\n- **State recovery**: Simulate context exhaustion, restart loop, verify routing state is restored\n- **Metric robustness**: Feed incomplete metrics (missing diff data, no test results), verify score calculation handles gracefully"
+          },
+          {
+            "name": "quality-scoring-metrics",
+            "reason": "The issue requires detailed design of what metrics constitute quality and how to normalize them into a 0.0–1.0 score. This goes beyond generic observability and needs specific mathematical guidance.",
+            "content": "## Quality Scoring Metrics for Build Loop\n\nDesign a composable, normalizable metric system that feeds the model routing decision engine.\n\n### Metric Dimensions\n\n**1. Test Quality**\n- Signal: Test pass/fail status after each iteration\n- Calculation: `test_score = 1.0 if all_tests_pass else 0.0`\n- Edge case: If no tests run yet, use 0.5 (neutral) to avoid biasing toward downshift\n- Observation: This is binary, but use 0.5 for \"unknown\" to prevent false confidence\n\n**2. Diff Quality (Code Churn)**\n- Signal: Lines added/removed, number of files changed\n- Calculation: `diff_score = 1.0 - min(total_lines_changed / 500, 1.0)`\n  - 0 lines = 1.0 (perfect, no breaking changes)\n  - 250 lines = 0.5 (moderate churn, some risk)\n  - 500+ lines = 0.0 (high churn, model should stay on Opus)\n- Rationale: Sonnet performs well on targeted fixes but struggles with broad refactoring\n- Edge case: If diff is empty (no changes), use 1.0 but don't downshift (convergence issue)\n\n**3. Convergence Health**\n- Signal: Error count trend (are we fixing errors or introducing new ones?)\n- Calculation: `convergence = 1.0 - (error_delta / max(prior_error_count, 1.0))`\n  - `error_delta = max(0, new_errors - fixed_errors)` (net change)\n  - If error_delta < 0 (we're fixing), score is >1.0, clamp to 1.0\n  - If error_delta > prior error count, score is ≤0, clamp to 0.0\n- Rationale: Downshift only if we're actively reducing errors, not introducing them\n- Edge case: First iteration has no prior errors; use error count from prior run if available, else use 0.0\n\n**4. Iteration Health (Composite)**\n- Calculation: `iteration_score = 0.5 * test_quality + 0.25 * diff_quality + 0.25 * convergence`\n- Why this weighting: Test results are primary signal (50%), diff/convergence are secondary guards (25% each)\n- Boundary: Score >0.8 = \"high quality, candidate for downshift\"; <0.5 = \"degraded, escalate\"\n\n### Temporal Aggregation\n\nFor the \"2 consecutive high-quality iterations\" rule:\n- Keep a rolling window: `high_scores = deque(maxlen=3)` of recent iteration scores\n- Downshift trigger: `len([s for s in high_scores if s > 0.8]) >= 2`\n- Escalation trigger: `score < 0.5 or (test_status changed from pass to fail)`\n\n### Logging & Observability\n\nAfter each iteration, append to `.claude/build-loop-quality-log.jsonl`:\n```json\n{\n  \"iteration\": 5,\n  \"timestamp\": \"2026-06-11T13:35:18Z\",\n  \"model_used\": \"opus\",\n  \"test_passed\": true,\n  \"diff_lines\": 87,\n  \"error_count\": 2,\n  \"prior_error_count\": 4,\n  \"test_quality\": 1.0,\n  \"diff_quality\": 0.83,\n  \"convergence\": 0.50,\n  \"iteration_score\": 0.71,\n  \"routing_decision\": \"stay_on_opus\",\n  \"tokens_used\": 142000\n}\n```\n\nSummarize in loop output:\n```\nQuality Scoring Summary:\n  Iteration 1–2: Opus (locked)     [scores: 0.65, 0.72]\n  Iteration 3–5: Sonnet (downshift) [scores: 0.85, 0.87, 0.81]  Cost: -28%\n  Iteration 6–7: Opus (escalate)    [scores: 0.45, 0.68]  Reason: test failure in iteration 5\n  Total cost: $2.14 (vs $2.97 baseline = 28% savings)\n```\n\n### Anti-Patterns\n\n1. **Asymmetric weighting**: Don't weight all metrics equally; test results matter more than diff size\n2. **Single-iteration decisions**: Require 2+ iterations before downshifting; one good iteration isn't enough\n3. **Ignoring metric variance**: A single high score in a sea of low scores doesn't justify downshift\n4. **Missing context**: If convergence is unknown (first iteration), don't interpret that as high quality"
+          }
+        ],
+        "review_focus": [
+          "Scoring function accuracy: do metrics correctly reflect build quality? Are weights reasonable?",
+          "State machine correctness: can the model routing logic enter invalid states? Does escalation fire reliably on degradation?",
+          "Safety constraints enforced: is first-2-iteration lock unbreakable? Does increasing error count prevent downshift?",
+          "Integration with sw-loop.sh: does quality scorer integrate without breaking existing loop behavior?",
+          "Cost savings validation: do real runs match predicted cost reductions? No regressions in build success rate?",
+          "State persistence: is routing state correctly saved and restored across loop restarts?",
+          "Edge case handling: missing metrics, metric vector changes, error type changes, empty diffs"
+        ],
+        "risk_areas": [
+          "Model thrashing: rapid oscillation between Opus and Sonnet consuming tokens without benefit",
+          "Safety violations: downshifting during first 2 iterations or when errors are increasing",
+          "Regression detection failure: poor metrics miss quality degradation and keep model downshifted",
+          "Integration breakage: modifications to sw-loop.sh accidentally break existing iteration logic or state management",
+          "Cost underestimation: actual Sonnet performance worse than expected, requiring escalation mid-build",
+          "Metric blindness: focusing on overall score while ignoring new error types or critical test failures",
+          "State loss on restart: context exhaustion causes loop restart without restoring routing state, resetting to Opus permanently"
+        ]
+      },
+      "timestamp": 1781185072,
+      "ttl": 3600
+    },
+    "031cc539b568eed672fd4f1b4788616b": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 55,
+            "summary": "Contains 2 successful feature patterns (bug fix, auth feature) showing typical iterations (3), durations (45-150s), costs ($2.50), file patterns, and confirmed use of 'standard' template—directly informative for planning complexity and resource estimates"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 42,
+            "summary": "Project detection metadata (Node.js, vitest, npm, CommonJS, src/ convention) provides essential context for understanding tech stack and file organization during planning phase"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "First entry shows 'add auth module' feature pattern with 5 iterations, TDD approach, unit+integration test strategy—similar complexity reference for feature planning"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 28,
+            "summary": "Historical issue pattern shows timeout bug resolved with semaphore pattern in daemon code—may inform adaptive model downshift implementation around concurrency/backoff handling"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 22,
+            "summary": "Baseline build duration (2089s) from May provides context for planning realistic timelines and understanding build loop performance characteristics"
+          }
+        ]
+      },
+      "timestamp": 1781185160,
+      "ttl": 1800
+    },
+    "d9c8ff34bca1039db705c0989d206e19": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains pattern for 'Fix bug' with 3 iterations, standard template, and npm test strategy — directly demonstrates successful approach for iterative fixes with build loop, showing this project's expected test/iteration patterns for similar complexity work"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Establishes project conventions (Node.js, vitest test runner, CommonJS imports) — essential context for validating that a plan accounts for project-specific testing and build requirements"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline build duration of 2089s provides scope expectation for plan — relevant for validating that plan iteration/timeline estimates are realistic for this project's actual build performance"
+          }
+        ]
+      },
+      "timestamp": 1781185458,
+      "ttl": 1800
+    },
+    "e413ce8e086c2d4edd932cc5c609cdcc": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Detailed iteration patterns (f4af3e2a...) showing successful feature builds with test strategies, file organization, and test-driven iteration—directly applicable to structuring the build loop quality scoring feature"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 75,
+            "summary": "Contains explicit architectural rules and patterns—directly relevant to designing architecture for quality scoring with adaptive model downshift"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Build duration baseline (2089s) provides performance context essential when designing quality scoring mechanism with adaptive model selection"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project conventions (Node.js, Vitest, commonjs, src/ structure) inform architectural decisions and layer organization for the quality scoring module"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 58,
+            "summary": "Daemon timeout issue showing semaphore-based concurrency patterns—relevant for real-time quality scoring timing and adaptive scheduling design"
+          }
+        ]
+      },
+      "timestamp": 1781185515,
+      "ttl": 1800
+    },
+    "442d3a796d49041550295470d0d1cbb5": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 45,
+            "summary": "Contains failure patterns with error signatures and fix strategies (mktemp issues, cleanup output, regression detection). Useful for understanding what went wrong in similar infrastructure/testing scenarios that inform anti-patterns for quality scoring."
+          },
+          {
+            "file": "failures.json (first instance)",
+            "relevance": 40,
+            "summary": "Documents actual test stage failures with patterns, root causes, and fixes. Provides evidence of what doesn't work (e.g., cleanup output issues) relevant to understanding anti-patterns in build loop testing."
+          },
+          {
+            "file": "success-patterns.json (second instance)",
+            "relevance": 28,
+            "summary": "Contains patterns from bug fixes and feature work with iteration counts, test strategies, and templates. While focused on completed work rather than rejections, the 3-iteration patterns provide context for understanding build loop complexity and design decisions."
+          }
+        ]
+      },
+      "timestamp": 1781185534,
+      "ttl": 1800
+    },
+    "f90cfe5a658fd5c94c6f26f13c141550": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (with Fix bug and Add authentication patterns)",
+            "relevance": 90,
+            "summary": "Shows successful build patterns for similar complexity features (bug fix 3 iterations/45s, feature 3 iterations/150s). Directly applicable for estimating iterations and test strategy for quality scoring feature."
+          },
+          {
+            "file": "patterns.json (with project conventions)",
+            "relevance": 85,
+            "summary": "Defines project structure (src/, test pattern *.test.js, commonjs imports). Essential for building consistently with codebase conventions during this feature development."
+          },
+          {
+            "file": "metrics.json (with build_duration_s baseline)",
+            "relevance": 70,
+            "summary": "Establishes 2089s build duration baseline. Helps calibrate iteration expectations and time budgets during real-time quality scoring feature development."
+          },
+          {
+            "file": "knowledge.json (with test failure patterns)",
+            "relevance": 65,
+            "summary": "Documents recurring test infrastructure issues (mktemp paths, stale heartbeat detection). Helps avoid test setup failures that could block quality scoring feature testing."
+          },
+          {
+            "file": "failures.json (with sw-cleanup stale heartbeat)",
+            "relevance": 55,
+            "summary": "Records test infrastructure issue with cleanup script. Relevant for maintaining build/test pipeline reliability during feature iterations."
+          }
+        ]
+      },
+      "timestamp": 1781185664,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project conventions (Node.js, vitest, CommonJS, src/ directory, *.test.js pattern). Essential for the agent to write code that adheres to project structure during build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Shows two successful build patterns: bug fix (3 iterations, 45s) and feature (3 iterations, 150s), both using npm test and standard template. Directly informs iteration strategy and testing approach for current build loop."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Establishes baseline build_duration_s = 2089s (~35 min). Helps agent understand expected iteration pacing and recognize when build is significantly slower/faster than baseline."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Records past timeout bug fix using semaphore pattern. Relevant if current build encounters loop/daemon timeout issues; shows proven solution approach."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Documents persistent test-stage failure in sw-cleanup.sh. Low immediate relevance to build stage, but agent should be aware of this known test failure to avoid waste during test iteration."
+          }
+        ]
+      },
+      "timestamp": 1781185684,
+      "ttl": 1800
+    },
+    "0d3a360426d5b2783ceca80ae28cd2a9": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1781186494,
+      "ttl": 1800
+    },
+    "26b9c38420f9e006e6b722b4e93a8a2c": {
+      "result": {
+        "raw_response": "Done. LOOP_COMPLETE is not yet."
+      },
+      "timestamp": 1781186732,
+      "ttl": 1800
     }
   }
 }
