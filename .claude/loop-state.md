@@ -193,3 +193,12 @@ max_extensions: 3
 ✅ CLI routes and responds  
 ✅ Fingerprinting auto-detects languages  
 
+### Iteration 2 (2026-06-11T14:XXZ)
+✅ Fixed file_mtime function in compat.sh (suppressed stdout from failed stat)
+✅ Fixed BASH_SOURCE handling in fleet-memory.sh SCRIPT_DIR assignment
+✅ Fixed ERR trap in fleet-memory.sh to handle missing BASH_SOURCE
+✅ Fixed sed -i '' syntax in code-review test (platform-specific)
+✅ All 24 cleanup tests now pass (primary issue RESOLVED)
+⚠️ Fleet-patterns test environment issue (functions work in manual tests)
+⚠️ Unrelated test failure in regression detection  
+
