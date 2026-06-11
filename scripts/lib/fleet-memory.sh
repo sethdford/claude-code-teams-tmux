@@ -267,6 +267,90 @@ fleet_pattern_match() {
 # Stdout: empty
 # Exit code: 0 always (best-effort)
 fleet_pattern_capture() {
+  local repo_path="${1:-.}"
+  local state_file="${2:-}"
+  local artifacts_dir="${3:-}"
+
+  # Gate 1: Check opt-in
+  if ! _fleet_opt_in "$repo_path" 2>/dev/null; then
+    return 0
+  fi
+
+  # Gate 2: Check outcome is success
+  if [[ ! -f "$state_file" ]]; then
+    return 0
+  fi
+
+  local outcome
+  outcome=$(jq -r '.outcome // ""' "$state_file" 2>/dev/null || echo "")
+  [[ "$outcome" != "success" ]] && return 0
+
+  # Initialize store
+  fleet_memory_init_store
+
+  # Collect pattern data from repo's memory
+  local repo_hash fingerprint error_sig fix_summary root_cause test_strategy issue_kw
+  repo_hash=$(echo -n "local" | shasum -a 256 | cut -c1-12)
+  fingerprint=$(fleet_pattern_fingerprint "$repo_path")
+  error_sig=$(jq -r '.error_signature // ""' "$state_file" 2>/dev/null || echo "")
+  fix_summary=$(jq -r '.fix_summary // "successful pattern"' "$state_file" 2>/dev/null || echo "")
+  root_cause=$(jq -r '.root_cause // ""' "$state_file" 2>/dev/null || echo "")
+  test_strategy=$(jq -r '.test_strategy // ""' "$state_file" 2>/dev/null || echo "")
+  issue_kw=$(jq -r '.issue_keywords // []' "$state_file" 2>/dev/null || echo "[]")
+
+  # Generate pattern ID
+  local pattern_id
+  pattern_id="fp_$(echo -n "$fix_summary$error_sig" | shasum -a 256 | cut -c1-16)"
+
+  # Build pattern object
+  local pattern_obj
+  pattern_obj=$(jq -n \
+    --arg id "$pattern_id" \
+    --arg src_hash "$repo_hash" \
+    --arg fp "$fingerprint" \
+    --arg err "$error_sig" \
+    --arg fix "$fix_summary" \
+    --arg root "$root_cause" \
+    --arg test "$test_strategy" \
+    --argjson kw "$issue_kw" \
+    '{
+      id: $id,
+      source_repo_hash: $src_hash,
+      fingerprint: ($fp | fromjson),
+      error_signature: $err,
+      issue_keywords: $kw,
+      fix_summary: $fix,
+      root_cause: $root,
+      test_strategy: $test,
+      captured_at: now | todate,
+      applied_count: 0,
+      success_count: 0,
+      confidence: 1.0
+    }' 2>/dev/null || echo '{}')
+
+  [[ "$pattern_obj" == '{}' ]] && return 0
+
+  # Acquire lock, read-append-cap-write, release lock
+  _fleet_lock || return 0
+  local tmp_file
+  tmp_file=$(mktemp "${FLEET_INDEX}.tmp.XXXXXX") || { _fleet_unlock; return 0; }
+
+  # Read current patterns, append new, cap at 500, drop lowest-confidence-oldest
+  jq \
+    --arg new_pattern "$pattern_obj" \
+    '.patterns += [($new_pattern | fromjson)] |
+     .patterns |= sort_by(.confidence, .captured_at) |
+     if length > 500 then .[-(500):] else . end |
+     {"version": 1, "patterns": .}' \
+    "$FLEET_INDEX" > "$tmp_file" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+
+  # Atomic move
+  mv "$tmp_file" "$FLEET_INDEX" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+  _fleet_unlock
+
+  # Emit event
+  emit_event "fleet_pattern.captured" "repo=$repo_path" "id=$pattern_id" "fix=$fix_summary"
+
   return 0
 }
 
@@ -276,6 +360,54 @@ fleet_pattern_capture() {
 # Stdout: text block (empty if disabled/no-match)
 # Exit code: 0
 fleet_pattern_inject() {
+  local stage="${1:-build}"
+  local repo_path="${2:-.}"
+  local error_sig="${3:-}"
+
+  # Gate 1: Check opt-in
+  if ! _fleet_opt_in "$repo_path" 2>/dev/null; then
+    return 0
+  fi
+
+  # Gate 2: Check learning enabled
+  if ! _fleet_learning_enabled 2>/dev/null; then
+    return 0
+  fi
+
+  fleet_memory_init_store
+
+  # Fingerprint target repo
+  local target_fp
+  target_fp=$(fleet_pattern_fingerprint "$repo_path")
+
+  # Extract keywords from goal/issue (if available)
+  local keywords=""
+
+  # Find matching patterns
+  local matches
+  matches=$(fleet_pattern_match "$target_fp" "$error_sig" "$keywords" 3 2>/dev/null || echo "[]")
+
+  # If no matches, return empty
+  local count
+  count=$(echo "$matches" | jq -r 'length' 2>/dev/null || echo 0)
+  [[ "$count" -eq 0 ]] && return 0
+
+  # Format as prompt block with confidence tags
+  local block
+  block=$(echo "$matches" | jq -r '
+    "Fleet Learning: Found \(length) similar patterns from other repos\n" +
+    (to_entries[] |
+      "[\(if .value.confidence > 0.75 then "HIGH" elif .value.confidence > 0.5 then "MEDIUM" else "LOW" end) confidence] " +
+      "\(.value.fix_summary) (applied \(.value.applied_count)x, \(.value.success_count) success)\n"
+    )' 2>/dev/null)
+
+  echo "$block"
+
+  # Record injections and bump applied_count for each pattern
+  echo "$matches" | jq -r '.[] | .id' 2>/dev/null | while read -r pattern_id; do
+    fleet_pattern_record_outcome "$pattern_id" 1 0 2>/dev/null || true
+  done
+
   return 0
 }
 
@@ -284,6 +416,45 @@ fleet_pattern_inject() {
 # Stdout: empty
 # Exit code: 0
 fleet_pattern_record_outcome() {
+  local pattern_id="$1"
+  local applied="${2:-0}"
+  local success="${3:-0}"
+
+  fleet_memory_init_store
+
+  # Acquire lock, update counters, release lock
+  _fleet_lock || return 0
+  local tmp_file
+  tmp_file=$(mktemp "${FLEET_INDEX}.tmp.XXXXXX") || { _fleet_unlock; return 0; }
+
+  jq \
+    --arg id "$pattern_id" \
+    --arg app "$applied" \
+    --arg suc "$success" \
+    '.patterns |= map(
+      if .id == $id then
+        .applied_count += ($app | tonumber) |
+        .success_count += ($suc | tonumber)
+      else . end
+    )' \
+    "$FLEET_INDEX" > "$tmp_file" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+
+  mv "$tmp_file" "$FLEET_INDEX" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+  _fleet_unlock
+
+  # Update global metrics
+  _fleet_lock || return 0
+  tmp_file=$(mktemp "${FLEET_METRICS}.tmp.XXXXXX") || { _fleet_unlock; return 0; }
+
+  jq \
+    --arg app "$applied" \
+    --arg suc "$success" \
+    '.applied += ($app | tonumber) | .succeeded += ($suc | tonumber)' \
+    "$FLEET_METRICS" > "$tmp_file" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+
+  mv "$tmp_file" "$FLEET_METRICS" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; return 0; }
+  _fleet_unlock
+
   return 0
 }
 
@@ -292,7 +463,41 @@ fleet_pattern_record_outcome() {
 # Stdout: count of pruned patterns
 # Exit code: 0
 fleet_pattern_prune() {
-  echo 0
+  local retention_days="${1:-90}"
+
+  fleet_memory_init_store
+
+  # Calculate cutoff timestamp
+  local cutoff_ts
+  cutoff_ts=$(date -u -d "$retention_days days ago" +%s 2>/dev/null || date -u -v-"$retention_days"d +%s 2>/dev/null)
+
+  _fleet_lock || { echo 0; return 0; }
+  local tmp_file
+  tmp_file=$(mktemp "${FLEET_INDEX}.tmp.XXXXXX") || { _fleet_unlock; echo 0; return 0; }
+
+  jq \
+    --arg cutoff "$cutoff_ts" \
+    '.patterns |= map(
+      select(
+        ((.captured_at | fromdate) > ($cutoff | tonumber)) or
+        (.applied_count >= 1)
+      )
+    ) |
+    . as $pruned |
+    ((.[:] | length) - ($pruned | length)) as $removed |
+    {version: 1, patterns: $pruned}' \
+    "$FLEET_INDEX" > "$tmp_file" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; echo 0; return 0; }
+
+  # Count pruned
+  local pruned_count
+  pruned_count=$(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0)
+  pruned_count=$(jq '.patterns | length' "$tmp_file" 2>/dev/null || echo 0)
+  pruned_count=$(($(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0) - pruned_count))
+
+  mv "$tmp_file" "$FLEET_INDEX" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; echo 0; return 0; }
+  _fleet_unlock
+
+  echo "$pruned_count"
   return 0
 }
 
@@ -303,17 +508,40 @@ fleet_pattern_prune() {
 # Acquire lock for atomic writes to the store.
 # Returns 0 on success, 1 on timeout.
 _fleet_lock() {
+  mkdir -p "$FLEET_MEMORY_ROOT"
+
+  # Try flock if available (Linux)
+  if type flock >/dev/null 2>&1; then
+    flock -x "$FLEET_LOCK" || return 1
+    return 0
+  fi
+
+  # Fallback: mkdir-based spinlock (macOS, etc)
+  local attempts=0
+  while mkdir "$FLEET_LOCK" 2>/dev/null; do
+    sleep 0.1
+    attempts=$((attempts + 1))
+    [[ $attempts -gt 50 ]] && return 1  # Timeout after 5 seconds
+  done
   return 0
 }
 
 # Release lock.
 _fleet_unlock() {
+  # If using flock, it auto-releases when fd closes; fallback is no-op
   return 0
 }
 
 # Validate and parse index.json; handle corruption.
 # Returns 0 if valid, 1 if corrupt (file moved to .corrupt, fresh store initialized).
 _fleet_validate_index() {
+  if ! jq empty < "$FLEET_INDEX" 2>/dev/null; then
+    warn "Fleet index corrupt: $FLEET_INDEX"
+    mv "$FLEET_INDEX" "${FLEET_INDEX}.corrupt" 2>/dev/null || true
+    echo '{"version":1,"patterns":[]}' > "$FLEET_INDEX"
+    emit_event "fleet_pattern.corrupt" "file=$FLEET_INDEX"
+    return 1
+  fi
   return 0
 }
 
@@ -322,7 +550,7 @@ _fleet_validate_index() {
 # Echoes JSON, returns 0.
 _fleet_repo_fingerprint() {
   local repo_path="$1"
-  echo '{}'
+  fleet_pattern_fingerprint "$repo_path"
   return 0
 }
 
@@ -366,12 +594,25 @@ _fleet_jaccard() {
 _fleet_config() {
   local key="$1"
   local default="${2:-}"
+
+  # Try daemon-config.json
+  local daemon_config="${DAEMON_CONFIG_PATH:-./.claude/daemon-config.json}"
+  if [[ -f "$daemon_config" ]]; then
+    local value
+    value=$(jq -r ".fleet_pattern_matching.$key // empty" "$daemon_config" 2>/dev/null)
+    [[ -n "$value" ]] && echo "$value" && return 0
+  fi
+
+  # Return default
   echo "$default"
   return 0
 }
 
 # Check if fleet learning is enabled (config gate).
 _fleet_learning_enabled() {
+  local enabled
+  enabled=$(_fleet_config "enabled" "false")
+  [[ "$enabled" == "true" ]] && return 0
   return 1
 }
 
