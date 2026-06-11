@@ -213,6 +213,22 @@
     "stage.artifact_miss": {
       "required": ["stage"],
       "optional": ["issue"]
+    },
+    "feedback_collect": {
+      "required": [],
+      "optional": ["issue", "error_count", "path"]
+    },
+    "feedback_analyze": {
+      "required": [],
+      "optional": ["issue", "error_count"]
+    },
+    "feedback_detect_regression": {
+      "required": ["merge_sha", "regression"],
+      "optional": ["severity", "type"]
+    },
+    "feedback_correlate": {
+      "required": [],
+      "optional": ["pr", "confidence", "correlation"]
     }
   }
 }
