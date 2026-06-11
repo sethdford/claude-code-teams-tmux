@@ -37,6 +37,17 @@
     "validate": "medium",
     "monitor": "medium"
   },
+  "validation": {
+    "enabled": true,
+    "timeout_seconds": 60,
+    "on_failure": "skip_build_loop",
+    "checks": [
+      { "type": "required_files", "enabled": true, "files": ["package.json"] },
+      { "type": "syntax", "enabled": true },
+      { "type": "imports", "enabled": true },
+      { "type": "smoke_test", "enabled": false, "cmd": "" }
+    ]
+  },
   "loop": {
     "circuit_breaker_threshold": 4,
     "min_progress_lines": 3,

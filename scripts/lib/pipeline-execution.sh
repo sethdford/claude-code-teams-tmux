@@ -202,6 +202,18 @@ self_healing_build_test() {
     local max_cycles="$BUILD_TEST_RETRIES"
     local last_test_error=""
 
+    # ── Pre-Build Validation ──
+    # Catch obvious failures (syntax, missing files, broken imports, smoke test)
+    # in < 60s BEFORE the build/test cycle, so we never waste iterations on
+    # issues a fast check would have flagged. Degrade-safe: a missing lib or
+    # broken validation infra returns 0 and lets the build proceed.
+    if type prebuild_validate >/dev/null 2>&1; then
+        if ! prebuild_validate; then
+            mark_stage_failed "build"
+            return 1
+        fi
+    fi
+
     # Convergence tracking
     local prev_error_sig="" consecutive_same_error=0
     local prev_fail_count=0 zero_convergence_streak=0
