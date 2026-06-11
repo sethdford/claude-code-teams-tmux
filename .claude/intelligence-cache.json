@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Validation engine requires system design (when/how/what to validate), implementation (core engine code), and rigorous testing (validator strategy, edge cases, failure detection).",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781185765,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,316 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "8f9180c7f18f53afb460766fb74862e6": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "False positives rejecting valid code, causing unnecessary failure",
+          "Validation timeout exceeding 60 second SLA",
+          "Integration breakage with existing pipeline stages",
+          "Configuration misalignment across daemon-config.json and check definitions",
+          "Edge cases in syntax/import detection missing real errors"
+        ],
+        "implementation_hints": [
+          "Create modular validation engine with pluggable check types (syntax, imports, files, smoke tests)",
+          "Leverage existing project linters and test runners instead of building custom validators",
+          "Implement fast-fail strategy: stop at first validation failure to stay under 60s timeout",
+          "Provide structured error.json output with actionable remediation steps and file:line references",
+          "Serialize validation results to events.jsonl and pipeline-state.md for observability",
+          "Add daemon-config.json schema with per-check timeout and enable/disable toggles",
+          "Comprehensive test suite covering success/failure paths and timeout scenarios",
+          "Track validation metrics (success rate, time per check, false positive count) for DORA integration"
+        ]
+      },
+      "timestamp": 1781184964,
+      "ttl": 3600
+    },
+    "d9f404c244f353017e61c9748c8dda67": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1781184980,
+      "ttl": 1800
+    },
+    "4dbf75907d7797bf8dad7029f61334d9": {
+      "result": {
+        "estimated_cost_usd": 2.84,
+        "estimated_iterations": 3,
+        "estimated_tokens": 118000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1781184995,
+      "ttl": 3600
+    },
+    "f04568815fdeaca59e08edb6a778ef7e": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "testing",
+          "reliability",
+          "performance"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Medium complexity: straightforward architecture (validate before build loop), moderate implementation (multiple check types, config schema, error reporting), significant testing effort (comprehensive test suite for validation logic and failure modes), and moderate risk (affects pipeline reliability and cost)"
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "performance"
+          ],
+          "build": [
+            "testing-strategy",
+            "pre-flight-validation-design"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "Design validation engine integration point in pipeline (before build stage), plugin architecture for extensible checks, and decision records for future maintainers",
+          "testing-strategy": "Plan comprehensive test coverage for all check types (syntax, imports, files, smoke tests), failure scenarios, and integration with pipeline state/events",
+          "api-design": "Design validation config schema in daemon-config.json and structured error report format that integrates with pipeline state and events.jsonl",
+          "performance": "Ensure validation checks complete within 60-second budget and design efficient check execution to avoid blocking legitimate builds",
+          "pre-flight-validation-design": "Specific patterns for pre-flight check systems: plugin architecture, configuration flexibility, fail-fast error reporting, metrics collection, and test harness design",
+          "two-stage-review": "Critical infrastructure change affecting all pipeline runs requires adversarial first-pass review, then thorough second-pass for robustness",
+          "adversarial-quality": "Attack the validation engine: identify false positives that block valid code, false negatives that miss real issues, edge cases, and performance pathologies",
+          "pr-quality": "Complex architectural change needs clear PR explaining validation design, configuration options, and integration points for reviewers unfamiliar with pipeline internals",
+          "validation-thoroughness": "Verify validation checks catch the intended failure modes (syntax, imports, required files, smoke tests) without missing categories",
+          "observability": "Track validation success/failure rates, time spent in validation, and count of issues caught early vs. wasted in build loop for cost optimization metrics"
+        },
+        "generated_skills": [
+          {
+            "name": "pre-flight-validation-design",
+            "reason": "No existing skill covers the specific patterns for designing fail-fast pre-flight validation systems in CI/CD pipelines: check plugin architecture, configuration schema design for dynamic check lists, structured error reporting that integrates with pipeline observability, and metrics collection for cost tracking.",
+            "content": "## Pre-Flight Validation System Design\n\nPre-flight validation runs before expensive operations (build loop, deployment) to catch obvious failures in seconds. Design for extensibility, fail-fast semantics, and observability.\n\n### Check Plugin Architecture\n\n- Each check is a standalone function/script: syntax validator, import checker, file existence validator, smoke test runner\n- Checks return structured output: `{status: \"pass|fail|skip\", message: string, duration_ms: number}`\n- New checks can be added via configuration without code changes — register in `daemon-config.json` under `validation.checks`\n- Order matters: run fast checks first (file existence < syntax < imports < tests), stop on first critical failure\n- Timeouts: each check has a timeout; exceed it and mark as `timeout` (not failure — suggests performance issue, not code issue)\n\n### Configuration Schema\n\n```json\n{\n  \"validation\": {\n    \"enabled\": true,\n    \"timeout_seconds\": 60,\n    \"checks\": [\n      {\"type\": \"syntax\", \"enabled\": true, \"patterns\": [\"**/*.js\", \"**/*.ts\"]},\n      {\"type\": \"imports\", \"enabled\": true},\n      {\"type\": \"required_files\", \"enabled\": true, \"files\": [\"package.json\"]},\n      {\"type\": \"smoke_test\", \"enabled\": true, \"cmd\": \"npm run test:smoke\"}\n    ],\n    \"on_failure\": \"skip_build_loop\"\n  }\n}\n```\n\nAllow runtime override: `VALIDATION_TIMEOUT=120 VALIDATION_CHECKS=syntax,imports`\n\n### Error Reporting\n\nStructured error report written to `.claude/validation-report.json`:\n```json\n{\n  \"timestamp\": \"2026-06-11T13:36:37Z\",\n  \"status\": \"failed\",\n  \"checks_run\": 4,\n  \"checks_passed\": 2,\n  \"checks_failed\": 1,\n  \"checks_skipped\": 1,\n  \"total_duration_ms\": 3200,\n  \"failed_checks\": [\n    {\"type\": \"imports\", \"message\": \"Missing import: ./utils (line 42)\", \"file\": \"src/main.js\"}\n  ],\n  \"time_saved\": \"~420 seconds (7 wasted loop iterations avoided)\"\n}\n```\n\nLog to `events.jsonl`: `{type: \"validation\", status: \"failed\", check: \"imports\", message: \"...\", duration_ms: 1200}`\n\n### Fail-Fast Semantics\n\n- **Critical failure** (syntax, missing required files): Stop immediately, skip build loop\n- **Soft failure** (failed smoke test, import warning): Log and proceed if `on_failure: \"continue\"`, otherwise skip\n- **Timeout**: Mark as degraded (validation infrastructure issue, not code issue); proceed to build loop\n- Skip build loop only on critical failure by default; respect `on_failure` config\n\n### Metrics & Cost Tracking\n\n- Track: checks run, passed, failed; total validation time; matches with build loop failures (did validation catch it?)\n- Calculate: \"time saved per early catch\" = (avg build loop time) × (prevented iterations)\n- Emit metric: `validation.time_saved_minutes` per pipeline run\n- Hourly rollup: `validation_success_rate`, `avg_validation_time_ms`, `issues_caught_early_count`\n\n### Test Harness Pattern\n\nFor each check type:\n1. **Positive case**: valid code passes the check\n2. **Negative case**: known failure mode fails the check\n3. **Edge case**: boundary conditions (empty files, deeply nested imports, circular dependencies)\n4. **Performance**: validate check completes within timeout\n5. **Integration**: validation report written correctly, metrics emitted\n\nUse mock project directories (temp repos with known issues) to avoid test interdependencies.\n"
+          }
+        ],
+        "review_focus": [
+          "Validation check correctness: does each check detect its intended failure mode without false positives?",
+          "Configuration schema flexibility: can new checks be added without code changes? Is the syntax intuitive?",
+          "Error reporting clarity: are failure messages actionable enough for developers to fix issues?",
+          "Performance budget: validation completes in < 60 seconds across all check types",
+          "Integration with pipeline state: validation report written to expected locations and events logged correctly",
+          "Test coverage: all check types covered, failure modes tested, edge cases validated",
+          "Metrics accuracy: time saved, success rate, and early-catch counts are calculated correctly"
+        ],
+        "risk_areas": [
+          "False positives: validation blocks legitimate code, causing frustration and reducing trust in the system",
+          "False negatives: missing checks that should catch real issues, reducing cost savings",
+          "Performance degradation: validation takes longer than 60 seconds, delaying feedback",
+          "Configuration complexity: daemon-config.json becomes hard to understand, discouraging customization",
+          "Metrics/observability gaps: missing data makes it hard to assess whether validation is actually saving cost and iterations"
+        ]
+      },
+      "timestamp": 1781185129,
+      "ttl": 3600
+    },
+    "76a5e8184f440dfa7a578143176152d3": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (entries with 2+ detailed patterns)",
+            "relevance": 95,
+            "summary": "Shows feature development patterns at 60-65 complexity requiring 3-4 iterations; directly applicable for planning scope, duration, and iteration expectations for the validation engine feature."
+          },
+          {
+            "file": "patterns.json (with conventions: Node, vitest, CommonJS)",
+            "relevance": 80,
+            "summary": "Project tech stack and test conventions inform what the validation engine should validate for; guides implementation approach aligned with codebase patterns."
+          },
+          {
+            "file": "knowledge.json (failure patterns: mktemp, output validation, regression)",
+            "relevance": 75,
+            "summary": "Real test failure signatures and root causes directly inform validation rules the engine should enforce; shows common pre-build failure modes to prevent."
+          },
+          {
+            "file": "failures.json (sw-cleanup.sh output detection issue)",
+            "relevance": 65,
+            "summary": "Specific failure pattern and detection logic relevant to understanding what validation the engine should catch before wasting build iterations."
+          },
+          {
+            "file": "metrics.json (build_duration_s baseline: 2089)",
+            "relevance": 55,
+            "summary": "Build duration baseline helps estimate impact of pre-build validation on pipeline efficiency and plan resource allocation accordingly."
+          }
+        ]
+      },
+      "timestamp": 1781185225,
+      "ttl": 1800
+    },
+    "c58a589f8647792327893801bcffc28a": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 88,
+            "summary": "Contains failure signatures, root causes, and fix strategies (mktemp failures, sw-cleanup output issues, regression detection). Critical for understanding what a pre-build validation engine should detect and prevent."
+          },
+          {
+            "file": "success-patterns.json (second entry at ~line 132)",
+            "relevance": 76,
+            "summary": "Documents successful feature implementation patterns including iterations, test strategy, file patterns, and fix approaches. Provides validation context for what a working solution looks like."
+          },
+          {
+            "file": "patterns.json (first entry at ~line 99)",
+            "relevance": 72,
+            "summary": "Contains project structure conventions (source_dir, test_pattern, import_style). Essential metadata for pre-build validation to understand project layout and standards to validate against."
+          }
+        ]
+      },
+      "timestamp": 1781185537,
+      "ttl": 1800
+    },
+    "659de6350ab62f54a5ebc0456d342428": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (project conventions with source_dir, test_pattern, import_style)",
+            "relevance": 85,
+            "summary": "Shows project structure conventions (src/, *.test.js, commonjs) and tech stack (node, vitest). Critical for design decisions about where validation engine interfaces should live and how they'll be tested."
+          },
+          {
+            "file": "success-patterns.json (auth module feature with TDD approach)",
+            "relevance": 70,
+            "summary": "Demonstrates successful feature development with iterative TDD, module isolation patterns, and test strategy. Relevant for designing validation engine modules and data contracts."
+          },
+          {
+            "file": "issues.json (timeout bug fix with semaphore pattern)",
+            "relevance": 50,
+            "summary": "Shows 'semaphore' pattern used to fix timing/concurrency issues. Relevant because pre-build validation likely needs synchronization patterns and failure detection logic."
+          },
+          {
+            "file": "architecture.json (architecture rules)",
+            "relevance": 45,
+            "summary": "Contains existing architecture constraints that validation engine design must respect. Important for ensuring new interfaces don't violate existing layer boundaries."
+          },
+          {
+            "file": "metrics.json (build_duration_s baseline: 2089)",
+            "relevance": 40,
+            "summary": "Provides baseline build performance (35 minutes). Relevant for designing validation stages that must complete before wasting full build iterations."
+          }
+        ]
+      },
+      "timestamp": 1781185579,
+      "ttl": 1800
+    },
+    "39d706100ebac9c0085665ca65260b42": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 45,
+            "summary": "Contains 5 captured failure patterns with error signatures and fix strategies (mktemp, cleanup output, JSON generation). Shows what breaks in practice and how to fix it—directly informs anti-patterns and what to avoid in validation engine design."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 35,
+            "summary": "Captures successful approaches to 'Fix bug' and 'Add authentication feature' with iteration counts (3-4 iterations), file patterns, and test strategies. Understanding what succeeded helps define the inverse—rejected approaches and anti-patterns."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 25,
+            "summary": "Documents recurring test failure in sw-cleanup.sh (3 occurrences, last seen 2026-06-11). Shows failure patterns that reveal anti-patterns—in this case, incomplete state detection and missing diagnostic output."
+          }
+        ]
+      },
+      "timestamp": 1781185607,
+      "ttl": 1800
+    },
+    "05076ee79e1583d8aaf9de32c15b3f34": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Detailed patterns showing successful builds for 'Fix bug' (3 iterations, 45s) and 'Add authentication feature' (3 iterations, 150s) with specific test strategies, file changes, and commit counts — directly applicable to understanding what successful builds look like"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains 5 captured failure patterns from test stage including mktemp path issues, cleanup output validation, and regression detection — directly relevant to catching failures before iterations complete"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Specific test failure pattern 'output missing: --force' from sw-cleanup.sh with root cause and fix — shows validation failures that slow iterations (seen 3 times)"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline metric showing build_duration_s: 2089 — relevant for understanding expected build performance and iteration time budgets"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project detection showing Node.js with vitest test runner and commonjs imports — relevant for understanding how tests execute during build stage"
+          }
+        ]
+      },
+      "timestamp": 1781185729,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Shows two proven patterns for similar complexity (60–65) issues using standard template with 3 iterations. Files modified in scripts/lib/ and .claude/ match expected build targets. Test strategy (npm test) and duration baseline (45–150s) inform iteration planning."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project conventions (vitest, npm, src/, commonjs) are critical for build stage. Build system, import style, and test pattern directly affect compilation and iteration loops."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Current failure about sw-cleanup.sh output provides context for test-stage issues that may surface during build loop iterations. Shows patterns for fixing output/formatting issues."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Historical timeout bug fix pattern (semaphore + backoff check) may be relevant if pre-build validation engine encounters timing or concurrency issues in daemon scripts."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "mktemp path issues (#kb_b8239eb18d7d, #kb_1a758e4e0afd) document test infrastructure problems that could block test runs during build iterations. May require /tmp/claude/ setup."
+          }
+        ]
+      },
+      "timestamp": 1781185750,
+      "ttl": 1800
     }
   }
 }
