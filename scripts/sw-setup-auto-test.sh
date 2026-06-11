@@ -191,4 +191,55 @@ echo "USER EDITED CONTENT" > "$TINY/.claude/agents/node-specialist.md"
 setup_auto_generate_agents "$TINY" "nodejs" >/dev/null
 assert_contains "existing agent not overwritten" "$(cat "$TINY/.claude/agents/node-specialist.md")" "USER EDITED CONTENT"
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Orchestrator (sw-setup-auto.sh) — end-to-end CLI behavior
+# ═══════════════════════════════════════════════════════════════════════════
+print_test_section "Orchestrator"
+
+ORCH="$SCRIPT_DIR/sw-setup-auto.sh"
+
+# Help text describes the command.
+help_out=$("$ORCH" --help 2>&1) || true
+assert_contains "help shows usage" "$help_out" "setup-auto"
+assert_contains "help lists dry-run" "$help_out" "--dry-run"
+
+# Unknown option errors with non-zero exit.
+rc=0; "$ORCH" --bogus >/dev/null 2>&1 || rc=$?
+assert_eq "unknown option exits non-zero" "1" "$rc"
+
+# Non-existent path errors out.
+rc=0; "$ORCH" "$TEST_TEMP_DIR/does-not-exist" >/dev/null 2>&1 || rc=$?
+assert_eq "missing path exits non-zero" "1" "$rc"
+
+# Dry-run on a real project: reports but writes NO files.
+ORCH_DRY="$TEST_TEMP_DIR/orch-dry"
+create_tiny_project "$ORCH_DRY"
+dry_out=$("$ORCH" "$ORCH_DRY" --dry-run --no-doctor 2>&1) || true
+assert_contains "dry-run detects nodejs" "$dry_out" "nodejs"
+assert_contains "dry-run reports complexity" "$dry_out" "complexity"
+assert_file_not_exists "dry-run writes no config" "$ORCH_DRY/.claude/daemon-config.json"
+
+# Full run: generates config + agent and reports next steps within budget.
+ORCH_RUN="$TEST_TEMP_DIR/orch-run"
+create_tiny_project "$ORCH_RUN"
+run_out=$("$ORCH" "$ORCH_RUN" --no-doctor 2>&1) || true
+assert_file_exists "run generates config" "$ORCH_RUN/.claude/daemon-config.json"
+assert_file_exists "run generates node agent" "$ORCH_RUN/.claude/agents/node-specialist.md"
+assert_contains "run reports next steps" "$run_out" "Next steps"
+assert_contains "run reports completion within budget" "$run_out" "complete in"
+
+# Time budget: a real setup must finish well under the 5-minute budget.
+start_e=$(date +%s)
+"$ORCH" "$TEST_TEMP_DIR/orch-timing" >/dev/null 2>&1 || true  # path may not exist → fast fail, still timed
+mkdir -p "$TEST_TEMP_DIR/orch-timing2"; create_tiny_project "$TEST_TEMP_DIR/orch-timing2"
+"$ORCH" "$TEST_TEMP_DIR/orch-timing2" --no-doctor >/dev/null 2>&1 || true
+end_e=$(date +%s)
+assert_eq "setup completes under 5-minute budget" "1" "$([[ $((end_e - start_e)) -lt 300 ]] && echo 1 || echo 0)"
+
+# Idempotent re-run: existing config is preserved (user settings win).
+echo '{"pipeline_template":"enterprise","custom_user_key":42}' > "$ORCH_RUN/.claude/daemon-config.json"
+"$ORCH" "$ORCH_RUN" --no-doctor >/dev/null 2>&1 || true
+assert_eq "re-run preserves user template" "enterprise" "$(jq -r '.pipeline_template' "$ORCH_RUN/.claude/daemon-config.json")"
+assert_eq "re-run preserves user custom key" "42" "$(jq -r '.custom_user_key' "$ORCH_RUN/.claude/daemon-config.json")"
+
 print_test_results

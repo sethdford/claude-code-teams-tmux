@@ -384,6 +384,9 @@ main() {
         setup)
             exec "$SCRIPT_DIR/sw-setup.sh" "$@"
             ;;
+        setup-auto)
+            exec "$SCRIPT_DIR/sw-setup-auto.sh" "$@"
+            ;;
         dashboard|dash)
             exec "$SCRIPT_DIR/sw-dashboard.sh" "$@"
             ;;
