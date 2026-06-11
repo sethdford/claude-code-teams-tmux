@@ -2,39 +2,39 @@
 goal: "Build Loop Real-Time Quality Scoring with Adaptive Model Downshift
 
 ## Plan Summary
-# Implementation Plan: Build Loop Real-Time Quality Scoring with Adaptive Model Downshift
+Perfect! I've created a comprehensive implementation plan for the build loop real-time quality scoring with adaptive model downshift feature. Let me summarize the key highlights:
 
-## Goal
-During build-loop iterations, score code quality in real time and dynamically
-downshift Opus→Sonnet when quality is consistently high (score >0.8 for 2+
-consecutive iterations), escalating Sonnet→Opus when quality degrades (score
-<0.5 or a regression). Target: 20–30% cost reduction on easy iterations with no
-loss in success rate.
+## Plan Summary
 
----
+**Goal**: Implement real-time quality scoring for build loop iterations with dynamic model routing (Opus ↔ Sonnet) to achieve 20-30% cost savings.
 
-## Design Reasoning (Socratic Refinement)
+### Core Design Decisions
 
-### Requirements Clarity — Minimum Viable Change
-The codebase **already computes a per-iteration composite quality score**
-(`process_reward_score_iteration` in `scripts/lib/process-reward.sh`, returning a
-0–100 composite over test_progress / code_quality / convergence / architecture /
-security) and **already has an escalation primitive** (`escalate_model` in
-`scripts/sw-model-router.sh:228`, haiku→sonnet→opus). The reward scorer is already
-invoked from the loop at `scripts/sw-loop.sh:2245`.
+1. **Stateful File-Based Router** — State persists in `.claude/model-routing-state.jsonl`, survives session restarts, fully observable
+2. **Conservative Downshift Criteria** — Requires 2+ consecutive high scores (>0.8), locks first 2 iterations to Opus, blocks downshift if errors rising
+3. **Quality Score Formula** — 50% test results + 25% diff quality + 25% convergence (0–1000 milli-score)
+4. **Anti-Thrash Cooldown** — After upshift, wait 2 iterations before re-downshifting to prevent oscillation
+5. **Multiple Safety Guards** — Diff size cap (500 lines), error convergence monitoring, immediate upshift on test regression
+
+### Files to Create/Modify
+- **Create**: `scripts/lib/loop-model-router.sh` (450 lines) — Core scoring & routing functions
+- **Create**: `scripts/lib/loop-model-router-test.sh` (650 lines) — Comprehensive test suite
+- **Create**: `scripts/sw-adaptive-model-test.sh` (400 lines) — E2E validation
+- **Modify**: `scripts/sw-loop.sh` — Integrate scorer after each iteration
+- **Modify**: `.claude/daemon-config.json` — Add thresholds (downshift_score, upshift_score, route_cooldown)
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
 # Design: Build Loop Real-Time Quality Scoring with Adaptive Model Downshift
 ## Context
 ## Decision
-### Component Diagram
-### Interface Contracts
-### Data Flow
-### Error Boundaries
 ## Alternatives Considered
 ## Implementation Plan
 ## Validation Criteria
+## Component Diagram
+## Interface Contracts (TypeScript-style)
+## Data Flow
+## Error Boundaries
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Build Loop Real-Time Quality Scoring with Adaptive Model Downshift
@@ -58,29 +58,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json (with Fix bug and Add authentication patterns)",
-      "relevance": 90,
-      "summary": "Shows successful build patterns for similar complexity features (bug fix 3 iterations/45s, feature 3 iterations/150s). Directly applicable for estimating iterations and test strategy for quality scoring feature."
+      "file": "success-patterns.json (entry with 'Fix bug' and 'Add authentication feature' patterns)",
+      "relevance": 95,
+      "summary": "Contains two recent success patterns with multi-iteration builds (3-4 iterations), complexity 60-65, standard template, cost tracking, and test strategies. Directly demonstrates loop iteration behavior and convergence patterns relevant to adaptive model downshift scoring."
     },
     {
-      "file": "patterns.json (with project conventions)",
-      "relevance": 85,
-      "summary": "Defines project structure (src/, test pattern *.test.js, commonjs imports). Essential for building consistently with codebase conventions during this feature development."
+      "file": "patterns.json (entry with project type: node, vitest, commonjs)",
+      "relevance": 80,
+      "summary": "Describes the actual project structure (Node.js, vitest test runner, npm, JavaScript). Essential context for understanding build environment and test execution conventions."
     },
     {
-      "file": "metrics.json (with build_duration_s baseline)",
+      "file": "metrics.json (entry with build_duration_s baseline)",
       "relevance": 70,
-      "summary": "Establishes 2089s build duration baseline. Helps calibrate iteration expectations and time budgets during real-time quality scoring feature development."
+      "summary": "Provides baseline build duration (2089s) which is critical for quality scoring thresholds and adaptive model routing decisions based on iteration convergence."
     },
     {
-      "file": "knowledge.json (with test failure patterns)",
-      "relevance": 65,
-      "summary": "Documents recurring test infrastructure issues (mktemp paths, stale heartbeat detection). Helps avoid test setup failures that could block quality scoring feature testing."
-    },
-    {
-      "file": "failures.json (with sw-cleanup stale heartbeat)",
+      "file": "knowledge.json (failure patterns from May 2026)",
       "relevance": 55,
-      "summary": "Records test infrastructure issue with cleanup script. Relevant for maintaining build/test pipeline reliability during feature iterations."
+      "summary": "Contains documented test failures (mktemp path issues, cleanup script output formatting). Relevant for understanding potential infrastructure issues that could affect build loop iterations and quality scoring."
+    },
+    {
+      "file": "issues.json (timeout bug fix pattern)",
+      "relevance": 45,
+      "summary": "Shows a successful bug fix approach (3 iterations, semaphore solution) demonstrating iterative debugging patterns relevant to build loop quality scoring."
     }
   ]
 }
@@ -120,11 +120,60 @@ Task tracking (check off items as you complete them):
 - Issue: #628
 - Generated: 2026-06-11T13:43:58Z
 
-## Skill Guidance (backend/infrastructure issue, AI-selected)
+## Skill Guidance (backend issue, AI-selected)
 ### Why these skills were selected (AI-analyzed):
-- **testing-strategy**: Plan comprehensive test suite covering scoring accuracy across quality scenarios, routing decisions, escalation logic, and the never-downshift-in-first-2 constraint.
-- **systematic-debugging**: If quality scoring or routing logic breaks during integration, methodically isolate the failure before retrying (previous stage failures noted in issue).
-- **quality-scoring-metrics**: Design normalized scoring function that combines test pass/fail, diff size, error count, and convergence metrics into a single 0.0–1.0 score.
+- **model-routing-strategy**: This issue is literally building a stateful model router that tracks quality across consecutive iterations—the skill directly addresses state initialization, escalation triggers (degradation detection), de-escalation conditions (2 consecutive high scores), and preventing thrashing.
+- **testing-strategy**: Acceptance criteria explicitly require 'test suite validates scoring accuracy and routing decisions'—this skill guides unit tests (scorer outputs correct values), integration tests (sw-loop.sh integration), and scenarios (high quality, degradation, early iterations, error increases).
+- **performance**: Quality scorer runs after every iteration; naive implementations (rescanning diffs, recomputing convergence) will add overhead—this skill ensures scorer is O(n) on metrics, not O(all-history).
+
+## Model Routing Strategy for Adaptive Build Loop
+
+Implement a stateful model router that tracks code quality across consecutive iterations and makes escalation/de-escalation decisions.
+
+### State Machine
+
+Track state as: `(current_model, iterations_in_state, consecutive_high_scores, last_score, previous_test_status)`
+
+**Transitions:**
+- **Downshift (Opus → Sonnet)**: Only after 2+ consecutive high-quality iterations (score >0.8) AND not in first 2 iterations AND error count not increasing
+- **Escalate (Sonnet → Opus)**: On quality degradation (score <0.5 OR test failure after prior pass) OR first occurrence of new error type
+- **Locked**: First 2 iterations always use Opus, regardless of quality
+
+### Scoring Function Design
+
+Normalize metrics to [0, 1] range, then combine:
+```
+score = 0.5 * test_quality + 0.25 * diff_quality + 0.25 * convergence_health
+where:
+  test_quality = [pass=1.0, fail=0.0]
+  diff_quality = 1.0 - min(lines_changed / 500, 1.0)  # penalize large diffs
+  convergence_health = 1.0 - (error_count / prior_error_count)  # penalize new errors
+```
+
+Handle edge cases:
+- If all metrics missing: score = 0.5 (neutral, don't route)
+- If any single metric is missing: use 2/3 weighted average of remaining metrics
+- New error types always trigger escalation, even if overall score is high
+
+### State Persistence
+
+When loop restarts (context exhaustion): restore routing state from `.claude/build-loop-routing-state.json`. On init, create state with Opus locked until iteration 2.
+
+### Anti-Patterns to Avoid
+
+1. **Model thrashing**: Don't escalate/downshift on every iteration. Require N consecutive iterations at target quality level.
+2. **Metric blindness**: Don't ignore error count increases just because total score is high. Track error vector: new_errors vs. fixed_errors.
+3. **Cost over safety**: Never downshift during risky phases (first 2 iterations, active test failures, increasing complexity).
+4. **State loss**: Always persist routing state to disk after each iteration, not just in memory.
+
+### Testing Strategy
+
+- **Downshift scenario**: Start with Opus, achieve 2 high scores, verify switch to Sonnet, log cost savings
+- **Escalation scenario**: In Sonnet, trigger a test failure, verify immediate escalation back to Opus
+- **Safety constraints**: Verify first 2 iterations always use Opus regardless of quality
+- **Error tracking**: Verify new error types trigger escalation even with high overall score
+- **State recovery**: Simulate context exhaustion, restart loop, verify routing state is restored
+- **Metric robustness**: Feed incomplete metrics (missing diff data, no test results), verify score calculation handles gracefully
 
 ## Testing Strategy Expertise
 
@@ -174,141 +223,69 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 
-## Systematic Debugging: Root Cause Analysis
+## Performance Expertise
 
-A previous attempt at this stage FAILED. Do NOT blindly retry the same approach. Follow this 4-phase investigation:
+Apply these optimization patterns:
 
-### Phase 1: Evidence Collection
-- Read the error output from the previous attempt carefully
-- Identify the EXACT line/file where the failure occurred
-- Check if the error is a symptom or the root cause
-- Look for patterns: is this a known error type?
+### Profiling First
+- Measure before optimizing — identify the actual bottleneck
+- Use profiling tools appropriate to the language/runtime
+- Focus on the critical path — optimize what users experience
 
-### Phase 2: Hypothesis Formation
-- List 3 possible root causes for this failure
-- For each hypothesis, identify what evidence would confirm or deny it
-- Rank hypotheses by likelihood
+### Caching Strategy
+- Cache expensive computations and repeated queries
+- Set appropriate TTLs — stale data vs freshness trade-off
+- Invalidate caches on write operations
+- Use cache layers: in-memory (L1) → distributed (L2) → database (L3)
 
-### Phase 3: Root Cause Verification
-- Test the most likely hypothesis first
-- Read the relevant source code — don't guess
-- Check if previous artifacts (plan.md, design.md) are correct or flawed
-- If the plan was correct but execution failed, focus on execution
-- If the plan was flawed, document what was wrong
+### Database Performance
+- Add indexes for frequently queried columns (check EXPLAIN plans)
+- Avoid N+1 queries — use batch loading or JOINs
+- Use connection pooling
+- Consider read replicas for read-heavy workloads
 
-### Phase 4: Targeted Fix
-- Fix the ROOT CAUSE, not the symptom
-- If the previous approach was fundamentally wrong, choose a different approach
-- If it was a minor error, make the minimal fix
-- Document what went wrong and why the new approach is better
+### Algorithm Complexity
+- Prefer O(n log n) over O(n²) for sorting/searching
+- Use appropriate data structures (hash maps for lookups, trees for ranges)
+- Avoid unnecessary allocations in hot paths
+- Pre-compute values that are used repeatedly
 
-IMPORTANT: If you find existing artifacts from a successful previous stage, USE them — don't regenerate from scratch.
+### Network Optimization
+- Minimize round trips — batch API calls where possible
+- Use compression for large payloads
+- Implement pagination — never return unbounded result sets
+- Use CDNs for static assets
+
+### Benchmarking
+- Include before/after benchmarks for performance changes
+- Test with realistic data volumes (not just unit test fixtures)
+- Measure p50, p95, p99 latencies — not just averages
 
 ### Required Output (Mandatory)
 
 Your output MUST include these sections when this skill is active:
-[... skills truncated: 8069→8000 chars ...]
 
-1. **Root Cause Hypothesis**: List 3 possible root causes ranked by likelihood with specific evidence that would confirm/deny each
-2. **Evidence Gathered**: Exact file:line location of failure, error messages, logs, code examination results, artifact validation (plan.md, design.md correctness)
-3. **Fix Strategy**: Description of the ROOT CAUSE fix (not the symptom), with rationale for why this approach differs from the previous failed attempt
-4. **Verification Plan**: How to verify the fix works (test cases, specific checks, expected behavior confirmation)
+1. **Baseline Metrics**: Current performance metrics before optimization (p50/p95/p99 latency, throughput, resource usage)
+2. **Optimization Targets**: Specific targets (e.g., "reduce p95 latency from 250ms to <100ms") with rationale
+3. **Profiling Strategy**: Tools and methodology to identify bottlenecks (CPU profiler, memory profiler, query analyzer, benchmarks)
+4. **Benchmark Plan**: Before/after benchmarks with realistic data volume and success criteria for each optimization
 
 If any section is not applicable, explicitly state why it's skipped.
-
-## Quality Scoring Metrics for Build Loop
-
-Design a composable, normalizable metric system that feeds the model routing decision engine.
-
-### Metric Dimensions
-
-**1. Test Quality**
-- Signal: Test pass/fail status after each iteration
-- Calculation: `test_score = 1.0 if all_tests_pass else 0.0`
-- Edge case: If no tests run yet, use 0.5 (neutral) to avoid biasing toward downshift
-- Observation: This is binary, but use 0.5 for "unknown" to prevent false confidence
-
-**2. Diff Quality (Code Churn)**
-- Signal: Lines added/removed, number of files changed
-- Calculation: `diff_score = 1.0 - min(total_lines_changed / 500, 1.0)`
-  - 0 lines = 1.0 (perfect, no breaking changes)
-  - 250 lines = 0.5 (moderate churn, some risk)
-  - 500+ lines = 0.0 (high churn, model should stay on Opus)
-- Rationale: Sonnet performs well on targeted fixes but struggles with broad refactoring
-- Edge case: If diff is empty (no changes), use 1.0 but don't downshift (convergence issue)
-
-**3. Convergence Health**
-- Signal: Error count trend (are we fixing errors or introducing new ones?)
-- Calculation: `convergence = 1.0 - (error_delta / max(prior_error_count, 1.0))`
-  - `error_delta = max(0, new_errors - fixed_errors)` (net change)
-  - If error_delta < 0 (we're fixing), score is >1.0, clamp to 1.0
-  - If error_delta > prior error count, score is ≤0, clamp to 0.0
-- Rationale: Downshift only if we're actively reducing errors, not introducing them
-- Edge case: First iteration has no prior errors; use error count from prior run if available, else use 0.0
-
-**4. Iteration Health (Composite)**
-- Calculation: `iteration_score = 0.5 * test_quality + 0.25 * diff_quality + 0.25 * convergence`
-- Why this weighting: Test results are primary signal (50%), diff/convergence are secondary guards (25% each)
-- Boundary: Score >0.8 = "high quality, candidate for downshift"; <0.5 = "degraded, escalate"
-
-### Temporal Aggregation
-
-For the "2 consecutive high-quality iterations" rule:
-- Keep a rolling window: `high_scores = deque(maxlen=3)` of recent iteration scores
-- Downshift trigger: `len([s for s in high_scores if s > 0.8]) >= 2`
-- Escalation trigger: `score < 0.5 or (test_status changed from pass to fail)`
-
-### Logging & Observability
-
-After each iteration, append to `.claude/build-loop-quality-log.jsonl`:
-```json
-{
-  "iteration": 5,
-  "timestamp": "2026-06-11T13:35:18Z",
-  "model_used": "opus",
-  "test_passed": true,
-  "diff_lines": 87,
-  "error_count": 2,
-  "prior_error_count": 4,
-  "test_quality": 1.0,
-  "diff_quality": 0.83,
-  "convergence": 0.50,
-  "iteration_score": 0.71,
-  "routing_decision": "stay_on_opus",
-  "tokens_used": 142000
-}
-```
-
-Summarize in loop output:
-```
-Quality Scoring Summary:
-  Iteration 1–2: Opus (locked)     [scores: 0.65, 0.72]
-  Iteration 3–5: Sonnet (downshift) [scores: 0.85, 0.87, 0.81]  Cost: -28%
-  Iteration 6–7: Opus (escalate)    [scores: 0.45, 0.68]  Reason: test failure in iteration 5
-  Total cost: $2.14 (vs $2.97 baseline = 28% savings)
-```
-
-### Anti-Patterns
-
-1. **Asymmetric weighting**: Don't weight all metrics equally; test results matter more than diff size
-2. **Single-iteration decisions**: Require 2+ iterations before downshifting; one good iteration isn't enough
-3. **Ignoring metric variance**: A single high score in a sea of low scores doesn't justify downshift
-4. **Missing context**: If convergence is unknown (first iteration), don't interpret that as high quality
 "
 iteration: 1
 max_iterations: 20
 status: error
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-06-11T14:19:01Z
-last_iteration_at: 2026-06-11T14:19:01Z
+started_at: 2026-06-11T21:24:30Z
+last_iteration_at: 2026-06-11T21:24:30Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
+dod_file: ""
 auto_extend: true
 extension_count: 0
 max_extensions: 3
