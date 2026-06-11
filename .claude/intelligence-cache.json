@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "tester",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "reviewer",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Test gap analysis and coverage improvement maps directly to Tester; platform hygiene requires Reviewer for quality/best-practices; Builder for implementing missing tests and fixes.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781185737,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,246 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "47e84ccc8e90ad87972a89433c1b8041": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Generated tests may not match project conventions or mock patterns",
+          "GitHub issue creation could spam repo if hygiene scanner is too aggressive",
+          "False positives in TODO/FIXME detection (comments in strings, quoted text)",
+          "Weekly patrol execution reliability and idempotency concerns",
+          "Test generation complexity for scripts with complex dependencies and state"
+        ],
+        "implementation_hints": [
+          "Analyze existing test patterns in scripts/*-test.sh to establish conventions before generating",
+          "Start with the 3 known scripts without tests (sw-tmux-role-color.sh, sw-tmux-status.sh, sw-tracker-github.sh) as validation cases",
+          "Implement dry-run mode for GitHub issue creation before enabling live posting",
+          "Use existing mock binary harness approach and test helper patterns from sw-lib-helpers-test.sh",
+          "Add grep-based filters to reduce false positives (skip comments in quoted strings, test blocks)",
+          "Integrate metrics tracking into existing cost.sh and memory.sh systems to measure coverage trend"
+        ]
+      },
+      "timestamp": 1781184915,
+      "ttl": 3600
+    },
+    "599de114e3e75ea37d5632824c0816f5": {
+      "result": {
+        "estimated_iterations": 4,
+        "reasoning": {
+          "complexity_factor": 1.3,
+          "risk_adjustment": 0.9,
+          "baseline_iterations": 3,
+          "key_drivers": [
+            "Multiple subsystems (test generation, GitHub API, patrol automation)",
+            "75% success probability indicates moderate rework likelihood",
+            "Dry-run mode implementation adds validation complexity",
+            "Pattern analysis needed before generating tests",
+            "Integration with existing metrics/memory systems"
+          ],
+          "breakpoint_estimate": {
+            "iteration_1": "Test generation framework + convention analysis + 3 validation cases",
+            "iteration_2": "GitHub dry-run mode + false positive filtering",
+            "iteration_3": "Weekly patrol scheduling + reliability fixes",
+            "iteration_4": "Integration polish + edge case handling"
+          }
+        }
+      },
+      "timestamp": 1781184931,
+      "ttl": 1800
+    },
+    "52641226508c614171cc8855d1506927": {
+      "result": {
+        "estimated_cost_usd": 6.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 55000,
+        "likely_failure_stage": "build",
+        "confidence": 72
+      },
+      "timestamp": 1781184945,
+      "ttl": 3600
+    },
+    "fc38d51dad95193fcd372f4740b0b975": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 95,
+            "summary": "Contains documented test failures and fix strategies (mktemp directory issues, test output validation). Directly identifies testing gaps and their solutions."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Test failure pattern for sw-cleanup.sh dry-run output validation. Specific example of platform hygiene tooling test gaps (missing --force hint in output)."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project detection showing Node/vitest with *.test.js pattern and commonjs imports. Essential baseline for planning test gap strategy."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Two successful patterns showing test_strategy 'npm test' with iterative approaches. Demonstrates proven testing methodology and complexity estimates for similar work."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Past test-related issue (timeout bug resolved with semaphore). Shows test coverage gaps that have been found and fixed in production code."
+          }
+        ]
+      },
+      "timestamp": 1781185238,
+      "ttl": 1800
+    },
+    "748fed96bb09652fd22ef4fe8714cbbc": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Contains 4+ test failure patterns with fix strategies (mktemp directory issues, sw-cleanup.sh output validation, JSON formatting). Directly relevant to understanding what test validation checks for and why plans might fail validation."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Documents test stage failures including sw-cleanup.sh stale heartbeat detection and summary output issues. Shows specific validation failure patterns seen 3 times, which informs what validation rules the plan must satisfy."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Second entry shows 3-iteration successful bug fix with actual test strategies ('npm test'), file patterns, and approaches. Provides template for what successful test-focused plans should include to pass validation."
+          }
+        ]
+      },
+      "timestamp": 1781185527,
+      "ttl": 1800
+    },
+    "03028c4b11610cf8e1d0eea8be9d9209": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry - project conventions)",
+            "relevance": 95,
+            "summary": "Contains Node.js project type, test runner (vitest), source/test directory structure, and import conventions. Essential for designing how the agent will analyze and work with the codebase."
+          },
+          {
+            "file": "success-patterns.json (second entry - detailed patterns)",
+            "relevance": 88,
+            "summary": "Shows proven patterns for feature/bug resolution including iteration strategies, test approaches, file patterns, and templates. Directly applicable to designing the agent's algorithm and workflow."
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 75,
+            "summary": "Contains platform hygiene-specific failures (cleanup script issues with heartbeat detection). Directly relevant to designing the Platform Hygiene Agent's core responsibilities."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Knowledge base of test failures and fixes including mktemp issues and test infrastructure problems. Informs Test Gap Filler design by showing recurring test infrastructure gaps."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 62,
+            "summary": "Example issue (timeout bug) with success pattern and gotchas. Shows how the agent should document root causes and solutions for platform issues."
+          }
+        ]
+      },
+      "timestamp": 1781185567,
+      "ttl": 1800
+    },
+    "44105231aabd20b4bdaf5887b98607c1": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first occurrence)",
+            "relevance": 80,
+            "summary": "Contains test failures with root causes (sw-cleanup.sh heartbeat detection, output formatting). Shows concrete design problems in test/hygiene contexts that inform anti-patterns to reject."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains failure patterns with error signatures and fix strategies (mktemp path issues, test output validation). Documents what design approaches were problematic in testing, directly informing rejection criteria."
+          },
+          {
+            "file": "patterns.json (first occurrence)",
+            "relevance": 65,
+            "summary": "Shows project conventions (test_pattern: *.test.js, test_runner: vitest, source_dir: src/). Constrains viable design approaches for the test gap filler agent by documenting existing testing structure."
+          }
+        ]
+      },
+      "timestamp": 1781185585,
+      "ttl": 1800
+    },
+    "5e40f16f52365b2c57a4ea3d9e443ce0": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains real test failures (mktemp directory creation, sw-cleanup output format, regression detection JSON) with specific fix strategies—directly applicable to building and testing the platform"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Documents sw-cleanup.sh stale heartbeat detection failure (core platform hygiene issue)—directly relevant to the hygiene agent's goals"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure conventions (src/, test pattern, commonjs, vitest)—essential for understanding how to write and organize tests for this Node.js project"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Bug fix pattern showing 3 iterations, test strategy (npm test), cost tracking—provides build methodology reference for autonomous iteration"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline build duration (2089s)—provides performance context for build stage execution planning"
+          }
+        ]
+      },
+      "timestamp": 1781185709,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Recent test failure (sw-cleanup.sh output missing) seen 3 times, last on 2026-06-11. Directly blocks build stage test runs."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two successful bug/feature deliveries using 3-iteration loop approach with npm test strategy. Demonstrates proven pattern for build stage iteration and test recovery."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Multiple test failures (mktemp /tmp/claude path issues, cleanup output, feedback JSON) with documented fixes. Critical for avoiding known test blocking issues during build."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Baseline build duration of 2089 seconds. Provides expected performance baseline for monitoring build stage progress and detecting stalls."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project conventions (vitest, npm, src/ structure, CommonJS). Useful for understanding test harness expectations, though not specific to current build failures."
+          }
+        ]
+      },
+      "timestamp": 1781185726,
+      "ttl": 1800
     }
   }
 }
