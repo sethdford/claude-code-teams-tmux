@@ -259,8 +259,9 @@ fleet_pattern_match() {
   done)
 
   # Filter by threshold, sort descending, slice to limit
-  local threshold
-  threshold=$(jq -r '.fleet_pattern_matching.similarity_threshold // 50' "${DAEMON_CONFIG_PATH:-./.claude/daemon-config.json}" 2>/dev/null || echo 50)
+  local threshold daemon_config_path
+  daemon_config_path="${DAEMON_CONFIG_PATH:-${REPO_DIR}/.claude/daemon-config.json}"
+  threshold=$(jq -r '.fleet_pattern_matching.similarity_threshold // 50' "$daemon_config_path" 2>/dev/null || echo 50)
 
   local result
   result=$(echo "$scored_patterns" | awk -F'|' -v thresh="$threshold" '$1 >= thresh' | sort -t'|' -k1 -rn | head -"$limit" | cut -d'|' -f2- | jq -s '.' 2>/dev/null || echo '[]')
@@ -411,10 +412,12 @@ fleet_pattern_inject() {
 
   echo "$block"
 
-  # Record injections and bump applied_count for each pattern
-  echo "$matches" | jq -r '.[] | .id' 2>/dev/null | while read -r pattern_id; do
+  # Record injections and bump applied_count for each pattern (read into array to avoid subshell)
+  local pattern_ids
+  pattern_ids=$(echo "$matches" | jq -r '.[] | .id' 2>/dev/null)
+  while read -r pattern_id; do
     fleet_pattern_record_outcome "$pattern_id" 1 0 2>/dev/null || true
-  done
+  done < <(echo "$pattern_ids")
 
   return 0
 }
@@ -496,11 +499,11 @@ fleet_pattern_prune() {
     {version: 1, patterns: $pruned}' \
     "$FLEET_INDEX" > "$tmp_file" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; echo 0; return 0; }
 
-  # Count pruned
-  local pruned_count
-  pruned_count=$(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0)
-  pruned_count=$(jq '.patterns | length' "$tmp_file" 2>/dev/null || echo 0)
-  pruned_count=$(($(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0) - pruned_count))
+  # Count pruned (original - final)
+  local old_count new_count pruned_count
+  old_count=$(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0)
+  new_count=$(jq '.patterns | length' "$tmp_file" 2>/dev/null || echo 0)
+  pruned_count=$((old_count - new_count))
 
   mv "$tmp_file" "$FLEET_INDEX" 2>/dev/null || { rm -f "$tmp_file"; _fleet_unlock; echo 0; return 0; }
   _fleet_unlock
