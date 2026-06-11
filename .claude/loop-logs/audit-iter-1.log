@@ -1,1 +1,49 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Perfect. I've completed a thorough review of the cumulative work on the Pre-Build Validation Engine feature. Let me summarize my findings:
+
+## Code Quality & Architecture
+✓ Proper bash 3.2 compliance (no associative arrays, correct quoting patterns)
+✓ Degrade-safe design with fallbacks for missing dependencies
+✓ Atomic file writes with temp file + mv pattern
+✓ Module guard to prevent double-sourcing
+✓ Proper error handling and stderr redirection
+
+## Implementation Completeness
+✓ All 4 checks implemented:
+  - **required_files**: Validates configured files exist (default: package.json)
+  - **syntax**: Language-aware checks via node --check, bash -n, python3
+  - **imports**: Heuristic relative-import resolution
+  - **smoke_test**: Optional configurable command execution
+
+✓ Orchestrator properly handles:
+  - Cheap→expensive ordering
+  - Stop-on-first-critical failure
+  - Global 60-second timeout budget
+  - Criticality routing (critical vs soft failures)
+  - on_failure config option (skip_build_loop vs continue)
+
+## Integration Points
+✓ Lib sourced in pipeline-stages.sh (line 17)
+✓ Called in pipeline-execution.sh at line 210-214 (correct placement: before build/test loop)
+✓ Guarded with `type` check for degrade-safety
+✓ Returns 1 to skip build on critical failure, 0 to proceed
+✓ Config block properly added to daemon-config.json with sensible defaults
+
+## Testing
+✓ sw-prebuild-validation-test.sh passes with **55/55 assertions** covering:
+  - Config readers, millisecond clock
+  - All 4 checks (positive, negative, edge cases)
+  - Report writing, event emission
+  - Orchestrator integration
+  - Performance budget
+
+The 3 failures in npm test are in sw-cleanup-test.sh (pre-existing, unrelated to this feature—agent correctly noted this).
+
+## Documentation
+✓ Updated .claude/CLAUDE.md with Pre-Build Validation section
+✓ Includes configuration schema, check descriptions, and runtime overrides
+
+AUDIT_PASS
