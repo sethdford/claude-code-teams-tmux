@@ -5,18 +5,36 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 4,
-      "last_seen": "2026-06-11T13:59:12Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-11T19:30:14Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "classify_failure function is not called within daemon_on_failure, so failure classification is not wired into the retry logic path",
-      "fix": "Add a classify_failure call inside daemon_on_failure to gate retry decisions based on the failure class (skipping retries for auth_error and invalid_issue)",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and uses different summary output format than tests expect (missing 'Found N' count and '--force' hint text)",
+      "fix": "Update sw-cleanup.sh stale heartbeat detection to output the heartbeat agent name in dry-run mode and ensure summary prints 'Found <n>' and '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-11T14:16:00Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
+      "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
+      "seen_count": 1,
+      "last_seen": "2026-06-11T19:39:59Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist on this system",
+      "fix": "Create /tmp/claude before running tests, or change mktemp template to use /tmp directly (mktemp -d /tmp/sw-test-XXXXXX)",
+      "seen_count": 1,
+      "last_seen": "2026-06-11T20:02:28Z",
+      "category": "config"
     }
   ]
 }
