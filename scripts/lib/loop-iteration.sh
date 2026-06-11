@@ -133,6 +133,15 @@ Fix these specific errors. Each line above is one distinct error from the test o
         memory_section="$("$SCRIPT_DIR/sw-memory.sh" inject build 2>/dev/null || true)"
     fi
 
+    # Fleet pattern injection (cross-repo learning)
+    if type fleet_pattern_inject >/dev/null 2>&1; then
+        local fleet_patterns
+        fleet_patterns="$(fleet_pattern_inject "build" "$(pwd)" 2>/dev/null || true)"
+        [[ -n "$fleet_patterns" ]] && memory_section="${memory_section}
+
+${fleet_patterns}"
+    fi
+
     # Cross-pipeline discovery injection (learnings from other pipeline runs)
     local discovery_section=""
     if type inject_discoveries >/dev/null 2>&1; then

@@ -1223,6 +1223,11 @@ pipeline_start() {
         memory_finalize_pipeline "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
     fi
 
+    # Fleet pattern capture (cross-repo learning)
+    if type fleet_pattern_capture >/dev/null 2>&1; then
+        fleet_pattern_capture "$(pwd)" "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
+    fi
+
     # Broadcast discovery for cross-pipeline learning
     if type broadcast_discovery >/dev/null 2>&1; then
         local _disc_result="failure"
