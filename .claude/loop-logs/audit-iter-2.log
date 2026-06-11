@@ -1,1 +1,79 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Now let me synthesize my findings into a final audit report:
+
+## AUDIT FINDINGS
+
+**Overall Assessment: The feature is substantially complete and functional.**
+
+### ✅ Strengths
+
+1. **Feature Implementation Complete**
+   - `pipeline-prebuild-validation.sh` (574 lines) fully implements all four check types: `required_files`, `syntax`, `imports`, `smoke_test`
+   - All checks are properly ordered (cheap → expensive), with correct criticality mapping
+   - Integration point correctly placed before build/test cycle in `pipeline-execution.sh:210-214` with degrade-safe error handling
+   - Comprehensive test suite: 55 unit + integration tests, all passing
+
+2. **Design Quality**
+   - Degrade-safe by design: missing dependencies (jq, node, git, etc.) result in pass-through, not failure
+   - Bash 3.2 compatible: no associative arrays, uses function-name dispatch convention
+   - Configuration-driven via `daemon-config.json` with environment variable overrides
+   - Proper timeout handling (per-check and global budgets) with correct exit code detection (124)
+   - Atomic report writing with tmp file + mv pattern
+   - Structured error reporting (JSON) and event emission
+
+3. **Configuration & Documentation**
+   - `daemon-config.json` properly updated with validation block (lines 40-50)
+   - `.claude/CLAUDE.md` fully documents the feature, check types, configuration schema
+   - Test properly registered in `package.json`
+   - All acceptance criteria met
+
+4. **Error Handling**
+   - Timeout → degraded (skip, not blocking) — correct for infrastructure issues
+   - Critical failure → skip build loop (return 1)
+   - Soft failure + `on_failure=skip_build_loop` → skip loop
+   - Soft failure + `on_failure=continue` → proceed with warning
+   - All edge cases tested
+
+### ⚠️ Issues Found
+
+**1. Test Suite Failure in npm test (Not a Validation Engine Issue)**
+- `sw-code-review-test.sh:40` uses BSD-only `sed -i ''` syntax, which fails on GNU/Linux
+- This is pre-existing code, not part of the validation feature
+- **Impact**: npm test exits 2, but the pre-build validation tests (55/55) all pass
+- **Root cause**: Cross-platform sed incompatibility in an unrelated test file
+
+**2. Minor Documentation Inconsistency**
+- The daemon-config.json shows `"smoke_test": {"enabled": false, "cmd": ""}`, which is reasonable for safety
+- However, the CLAUDE.md examples show different structures that might benefit from consistency notes
+
+### ✅ Verification Results
+
+- **sw-prebuild-validation-test.sh**: 55 PASS / 0 FAIL (100% pass rate)
+- **Integration**: Properly sourced and called degrade-safely
+- **Bash 3.2 compatibility**: ✓ Verified
+- **Code quality**: ✓ No security issues, proper escaping, no eval() of untrusted input
+- **Completeness**: All acceptance criteria met:
+  - Runs before build/test cycle ✓
+  - All four check types implemented ✓
+  - Critical failures skip build ✓
+  - Results logged to pipeline-state + events.jsonl ✓
+  - Configurable via daemon-config.json ✓
+  - Metrics/time-saved calculations ✓
+
+### Conclusion
+
+**The Pre-Build Validation Engine feature is production-ready.** The goal is fully achieved:
+
+✅ Catches syntax errors, missing imports, missing files, and configurable smoke tests  
+✅ Completes in < 60s  
+✅ Prevents wasted build loop iterations  
+✅ Never blocks pipeline due to infrastructure issues (degrade-safe)  
+✅ Properly integrated into the build stage  
+✅ Fully tested and documented  
+
+The npm test failure is unrelated to this feature (pre-existing BSD sed issue in sw-code-review-test.sh).
+
+AUDIT_PASS
