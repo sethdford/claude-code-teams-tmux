@@ -1342,6 +1342,97 @@ fleet_init() {
     echo -e "  ${CYAN}shipwright fleet start${RESET}"
 }
 
+# ─── Fleet Patterns (Cross-Repo Learning) ────────────────────────────────────
+
+fleet_patterns_list() {
+    fleet_memory_init_store
+    [[ ! -f "$FLEET_INDEX" ]] && echo "No patterns yet." && return 0
+
+    echo -e "${BOLD}Fleet Learning Patterns${RESET}"
+    echo ""
+    jq -r '.patterns[] | "\(.id | .[0:8])  \(.fingerprint.language)  \(.fix_summary | .[0:50])  \(.applied_count)x/\(.success_count)s"' \
+        "$FLEET_INDEX" 2>/dev/null | column -t -s' ' || echo "No patterns in store."
+    echo ""
+}
+
+fleet_patterns_show() {
+    local pattern_id="$1"
+    [[ -z "$pattern_id" ]] && error "Pattern ID required" && return 1
+
+    fleet_memory_init_store
+    [[ ! -f "$FLEET_INDEX" ]] && error "No patterns in store" && return 1
+
+    jq ".patterns[] | select(.id == \"$pattern_id\")" "$FLEET_INDEX" 2>/dev/null || error "Pattern not found: $pattern_id"
+}
+
+fleet_patterns_apply() {
+    local pattern_id="$1"
+    [[ -z "$pattern_id" ]] && error "Pattern ID required" && return 1
+
+    fleet_memory_init_store
+
+    local pattern
+    pattern=$(jq ".patterns[] | select(.id == \"$pattern_id\")" "$FLEET_INDEX" 2>/dev/null)
+    [[ -z "$pattern" ]] && error "Pattern not found: $pattern_id" && return 1
+
+    echo -e "${BOLD}Pattern: $pattern_id${RESET}"
+    echo ""
+    echo -e "${BOLD}Fix Summary:${RESET}"
+    echo "$pattern" | jq -r '.fix_summary' | sed 's/^/  /'
+    echo ""
+    echo -e "${BOLD}Root Cause:${RESET}"
+    echo "$pattern" | jq -r '.root_cause' | sed 's/^/  /'
+    echo ""
+    echo -e "${BOLD}Test Strategy:${RESET}"
+    echo "$pattern" | jq -r '.test_strategy' | sed 's/^/  /'
+    echo ""
+
+    # Record as applied
+    fleet_pattern_record_outcome "$pattern_id" 1 0 2>/dev/null || true
+}
+
+fleet_patterns_stats() {
+    fleet_memory_init_store
+
+    echo -e "${BOLD}Fleet Learning Statistics${RESET}"
+    echo ""
+
+    local total_patterns injections applied_rate success_rate
+    total_patterns=$(jq '.patterns | length' "$FLEET_INDEX" 2>/dev/null || echo 0)
+    injections=$(jq '.injections // 0' "$FLEET_METRICS" 2>/dev/null || echo 0)
+
+    local total_applied total_succeeded
+    total_applied=$(jq '[.patterns[] | .applied_count] | add // 0' "$FLEET_INDEX" 2>/dev/null || echo 0)
+    total_succeeded=$(jq '[.patterns[] | .success_count] | add // 0' "$FLEET_INDEX" 2>/dev/null || echo 0)
+
+    [[ $total_applied -gt 0 ]] && applied_rate=$((total_succeeded * 100 / total_applied)) || applied_rate=0
+
+    printf "  %-25s %d\n" "Total patterns:" "$total_patterns"
+    printf "  %-25s %d\n" "Total injections:" "$injections"
+    printf "  %-25s %d applied, %d succeeded\n" "Application rate:" "$total_applied" "$total_succeeded"
+    [[ $total_applied -gt 0 ]] && printf "  %-25s %d%%\n" "Success rate:" "$applied_rate"
+    echo ""
+}
+
+fleet_patterns_prune() {
+    local retention_days="${1:-90}"
+    local pruned
+    pruned=$(fleet_pattern_prune "$retention_days")
+    success "Pruned $pruned stale patterns"
+}
+
+fleet_patterns_help() {
+    echo "Usage: shipwright fleet patterns <command> [options]"
+    echo ""
+    echo "Commands:"
+    echo "  list          List all patterns in the fleet store"
+    echo "  show <id>     Show details of a specific pattern"
+    echo "  apply <id>    Mark a pattern as applied and show its fix strategy"
+    echo "  stats         Show cross-repo learning statistics"
+    echo "  prune [days]  Remove patterns unused for N days (default: 90)"
+    echo ""
+}
+
 # ─── Command Router ─────────────────────────────────────────────────────────
 
 case "$SUBCOMMAND" in
@@ -1364,6 +1455,33 @@ case "$SUBCOMMAND" in
         ;;
     init)
         fleet_init
+        ;;
+    patterns)
+        # Source fleet-memory library
+        # shellcheck source=lib/fleet-memory.sh
+        [[ -f "$SCRIPT_DIR/lib/fleet-memory.sh" ]] && source "$SCRIPT_DIR/lib/fleet-memory.sh"
+
+        # Route to pattern subcommands
+        case "${1:-help}" in
+            list)
+                fleet_patterns_list
+                ;;
+            show)
+                fleet_patterns_show "${2:-}"
+                ;;
+            apply)
+                fleet_patterns_apply "${2:-}"
+                ;;
+            stats)
+                fleet_patterns_stats
+                ;;
+            prune)
+                fleet_patterns_prune
+                ;;
+            *)
+                fleet_patterns_help
+                ;;
+        esac
         ;;
     help|--help|-h)
         show_help
