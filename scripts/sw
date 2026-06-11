@@ -131,6 +131,7 @@ show_help() {
     echo -e "  ${CYAN}cleanup${RESET} [--force]       Clean up orphaned sessions"
     echo -e "  ${CYAN}upgrade${RESET} [--apply]       Check for and apply updates"
     echo -e "  ${CYAN}templates${RESET} [list|show]   Manage team composition templates"
+    echo -e "  ${CYAN}template${RESET} recommend       Recommend optimal pipeline template for an issue"
     echo -e "  ${CYAN}version${RESET}                 Show/bump/check version"
     echo ""
     echo -e "${BOLD}QUICK START${RESET}"
@@ -306,6 +307,9 @@ main() {
             ;;
         templates)
             exec "$SCRIPT_DIR/sw-templates.sh" "$@"
+            ;;
+        template)
+            exec "$SCRIPT_DIR/sw-template-recommender.sh" "$@"
             ;;
         doctor)
             exec "$SCRIPT_DIR/sw-doctor.sh" "$@"
