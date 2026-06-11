@@ -252,14 +252,14 @@ Use mock project directories (temp repos with known issues) to avoid test interd
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-11T14:06:10Z
-last_iteration_at: 2026-06-11T14:06:10Z
+started_at: 2026-06-11T14:19:03Z
+last_iteration_at: 2026-06-11T14:19:03Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -270,8 +270,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-11T14:06:10Z)
-- **Happy path:** valid JS/imports/required files → all checks pass → build proceeds (`RC=0`).
-- **Error cases (2+):** broken JS syntax → critical fail → build skipped (`RC=1`, report `failed`); missing required
-- **Edge cases (2+):** empty `.js` file is valid; bare package imports (`fs`, `lodash`) ignored; directory/`index.js` im
 
