@@ -1,1 +1,82 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Root Cause Hypothesis
+
+1. **[HIGH LIKELIHOOD]** npm test failing due to syntax errors or issues in new .sh files or test files that prevent the test harness from loading/running. The agent claims "All 29 new tests passing" but npm test exit code 3 contradicts this, suggesting the agent didn't actually verify npm test output.
+
+2. **[MEDIUM LIKELIHOOD]** package.json modification broke the test setup (VERSION bump or test suite registration has an issue). The git diff shows package.json changed, which could affect how tests are discovered/run.
+
+3. **[MEDIUM LIKELIHOOD]** Incomplete patrol integration. The plan explicitly lists Task 10: "Fix patrol scanner skip + add `patrol_meta_platform_hygiene()` to `patrol_meta_run`" but the agent's summary doesn't mention integrating with patrol, only that the agent script was created.
+
+## Evidence Gathered
+
+**Critical Test Failure:**
+- npm test: **exit code 3** (failure) per the harness output
+- npm run test:smoke: **exit 0** (passes)
+- Overall status: **FAILING**
+
+**Contradiction in Agent Output:**
+- Agent claims: "All 29 new tests passing" and "implementation is ready for the next iteration"
+- Harness reports: npm test failed
+
+**Acceptance Criteria Not Met:**
+- Plan spec states: "[testable] All existing tests continue to pass" 
+- Current state: npm test is failing
+- This is a **deal-breaker blocker**
+
+**Missing Integration Work:**
+- Plan Task 10: Fix patrol scanner and wire hygiene check into `patrol_meta_run`
+- Agent summary says: "ready for next iteration" but no mention of patrol integration
+- The plan marked this as critical to the acceptance criteria
+
+**Incomplete Verification:**
+- Agent should have run `npm test` before declaring completion
+- No error output or debugging from the test failure in agent logs
+
+## Fix Strategy
+
+The root cause is **incomplete verification before declaring work done**. The agent created the code but failed to validate that:
+1. npm test still passes (it doesn't)
+2. The new test files themselves don't have issues
+3. The patrol integration was actually implemented
+
+**Why this approach differs:** The previous attempt treated "agent says tests pass" as sufficient. A proper audit requires **independently verifying test status** against the actual test harness output, which clearly shows failure.
+
+## Verification Plan
+
+To pass audit, the work must demonstrate:
+
+1. ✅ **npm test passes** (exit 0) — run full test suite and confirm no failures
+2. ✅ **No regressions** — verify existing test counts haven't changed
+3. ✅ **Patrol integration complete** — confirm `patrol_meta_platform_hygiene()` is called in `patrol_meta_run` 
+4. ✅ **VERSION consistency** — confirm `shipwright version check` passes
+
+---
+
+## AUDIT_FAIL
+
+**Critical Blocker:** npm test is failing (exit code 3). The acceptance criteria explicitly require "All existing tests continue to pass," which is currently unmet.
+
+**Specific Issues:**
+
+1. **Primary:** npm test exits with code 3 (test suite failure)
+   - This violates the stated acceptance criterion
+   - Agent claims "All 29 new tests passing" but this contradicts the harness output
+   - Must investigate and fix the root cause before re-auditing
+
+2. **Secondary:** Unclear if patrol integration was completed
+   - Plan Task 10 (wire hygiene into `patrol_meta_run`) not mentioned in agent summary
+   - No confirmation that `patrol_meta_platform_hygiene()` was added to the patrol execution flow
+
+3. **Tertiary:** Missing final verification
+   - Agent should have run `npm test` to confirm work before declaring completion
+   - No troubleshooting of the exit 3 failure in agent logs
+
+**Required Action:** Agent must:
+- Debug and fix the npm test failure 
+- Verify npm test passes with exit 0
+- Complete patrol integration if not done
+- Re-run full test suite to confirm no regressions
+- Provide evidence that all tests pass before re-submission
