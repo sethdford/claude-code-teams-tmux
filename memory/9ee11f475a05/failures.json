@@ -3,20 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run does not output stale heartbeat filenames or a 'Found N' summary line with '--force' hint",
-      "fix": "Update sw-cleanup.sh to print stale heartbeat agent names and a 'Found N item(s)' summary with '--force hint' in dry-run mode",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection logic fails to find/report heartbeat files, causing dry-run to skip the Found count and --force hint in summary output",
+      "fix": "Fix heartbeat detection in sw-cleanup.sh to correctly identify stale heartbeat files and ensure dry-run summary prints 'Found N items' with '--force' hint when items are detected",
       "seen_count": 3,
-      "last_seen": "2026-06-11T01:36:47Z",
+      "last_seen": "2026-06-11T01:31:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed invocation passes the substitution expression as a filename instead of a script (missing -e flag), causing 'No such file or directory'",
-      "fix": "change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` with double quotes so the variable expands",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-06-11T01:45:05Z",
-      "category": "test_failure"
+      "last_seen": "2026-06-11T01:41:35Z"
     }
   ]
 }
