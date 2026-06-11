@@ -5,10 +5,19 @@
 # ║  Stores: ~/.shipwright/fleet-memory/index.json, metrics.json             ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
-trap 'echo "ERROR in fleet-memory: $BASH_SOURCE:$LINENO exited with status $?" >&2' ERR
+trap 'echo "ERROR in fleet-memory: ${BASH_SOURCE[0]:-unknown}:${LINENO:-?} exited with status $?" >&2' ERR
 
 VERSION="3.3.0"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
+  if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SCRIPT_DIR="${SCRIPT_DIR%/lib}"  # strip /lib if this was called as lib/fleet-memory.sh
+  else
+    # Fallback: assume we're in scripts/lib directory
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    SCRIPT_DIR="${SCRIPT_DIR%/lib}"
+  fi
+fi
 REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 
 # ─── Double-source guard ──────────────────────────────────────────────────
@@ -119,7 +128,6 @@ _fleet_opt_in() {
 fleet_pattern_fingerprint() {
   local repo_path="${1:-.}"
   _fleet_detect_fingerprint "$repo_path"
-  return 0
 }
 
 # Detect repo fingerprint from filesystem structure.
