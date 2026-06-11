@@ -3,19 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format does not match what the tests expect (missing 'agent-1', 'Found', and '--force' strings in dry-run output)",
-      "fix": "Update sw-cleanup.sh dry-run mode to output detected heartbeat filenames, a 'Found N item(s)' summary line, and a '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh dry-run does not output stale heartbeat filenames or a 'Found N' summary line with '--force' hint",
+      "fix": "Update sw-cleanup.sh to print stale heartbeat agent names and a 'Found N item(s)' summary with '--force hint' in dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-06-11T01:56:38Z",
+      "last_seen": "2026-06-11T01:36:47Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command references TEST_TEMP_DIR variable that was not interpolated before being used as a filename",
-      "fix": "ensure sed substitution uses the literal variable value rather than the unexpanded variable name as the script path",
+      "root_cause": "sed invocation passes the substitution expression as a filename instead of a script (missing -e flag), causing 'No such file or directory'",
+      "fix": "change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` with double quotes so the variable expands",
       "seen_count": 1,
-      "last_seen": "2026-06-11T02:04:14Z",
+      "last_seen": "2026-06-11T01:45:05Z",
       "category": "test_failure"
     }
   ]
