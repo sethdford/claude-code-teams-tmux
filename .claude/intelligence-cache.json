@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "devops",
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Requires system design for intelligent recommendation logic, implementation, pipeline infrastructure expertise, and optimization knowledge to evaluate configuration tradeoffs.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781185703,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,230 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "2c3fb3a26c8b0143cca46e9d9e04d999": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Scoring algorithm may weight factors incorrectly, leading to poor recommendations",
+          "Feedback loop vulnerable to selection bias if early recommendations dominate",
+          "Confidence thresholds (>80%) require careful calibration to avoid aggressive auto-apply",
+          "Historical data could become contaminated if initial recommendations are poor",
+          "Integration with daemon mode auto-application could cause silent pipeline failures if recommendation is wrong"
+        ],
+        "implementation_hints": [
+          "Start with weighted heuristics (labels/keywords/repo size) before ML-based scoring",
+          "Build feedback tracking early: log template recommendation + actual template used + success outcome",
+          "Create synthetic test dataset with 20+ diverse issue types before implementing recommender logic",
+          "Use gradual rollout: log recommendations for 2 weeks, validate accuracy, then enable auto-apply",
+          "Implement holdout validation: withhold certain issue types from training data to prevent overfitting",
+          "Add monitoring: track recommendation accuracy by issue type, confidence score distribution, and false positive rate",
+          "Consider ensemble: combine signals from issue labels, description keywords, repo metrics, and historical success rates",
+          "Set conservative confidence thresholds initially (start at 90%, lower gradually as accuracy improves)"
+        ]
+      },
+      "timestamp": 1781184962,
+      "ttl": 3600
+    },
+    "c9821288a0b8d622eba0abed4d9619a5": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1781184981,
+      "ttl": 1800
+    },
+    "d3631a1f845f68c7d529e17d3a6bca4f": {
+      "result": {
+        "estimated_cost_usd": 13.75,
+        "estimated_iterations": 2,
+        "estimated_tokens": 72000,
+        "likely_failure_stage": "test",
+        "confidence": 71
+      },
+      "timestamp": 1781184995,
+      "ttl": 3600
+    },
+    "c1b5784ddb04bbcd70fba720a70b5cad": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains detailed patterns for 'Fix bug' (complexity 60, 3 iterations) and 'Add authentication feature' (complexity 65, 3 iterations) with template selection, duration, and cost data. Directly informs what templates work and their characteristics."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 88,
+            "summary": "Shows project detection (Node.js, vitest test runner, commonjs imports, source_dir: src/). Template recommendation engine needs to understand project characteristics to recommend appropriately."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Earlier pattern showing 'add auth module' feature with complexity 60, iterative TDD approach, 5 iterations. Provides reference point for feature complexity and successful approaches."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Baseline build_duration_s of 2089 seconds establishes performance context for template decisions. Critical for choosing between fast/standard/full pipeline variants."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 68,
+            "summary": "Defines architectural rules and constraints (rule1, rule2, rule3). Template recommendation engine must respect project architecture when suggesting pipeline configurations."
+          }
+        ]
+      },
+      "timestamp": 1781185194,
+      "ttl": 1800
+    },
+    "96531008539f39c708296b4281f6f43e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (detailed patterns with complexity/iterations)",
+            "relevance": 80,
+            "summary": "Shows captured success patterns with complexity scores, iteration counts, file patterns, and template choices. Directly informs what a template recommendation engine should learn from and recommend—understanding past successful patterns is critical for auto-selecting optimal pipeline configuration."
+          },
+          {
+            "file": "patterns.json (project detection with conventions)",
+            "relevance": 65,
+            "summary": "Demonstrates project type detection (Node.js, source/test dirs, import conventions) and extracted patterns. A template recommendation engine must detect project characteristics to recommend templates—this memory shows the detection infrastructure."
+          },
+          {
+            "file": "success-patterns.json (simpler pattern with TDD approach)",
+            "relevance": 55,
+            "summary": "Contains a straightforward success pattern showing complexity score, iterations needed, and approach (iterative TDD). Provides an example of the pattern format the recommendation engine should recognize and use to suggest templates for similar issues."
+          }
+        ]
+      },
+      "timestamp": 1781185458,
+      "ttl": 1800
+    },
+    "9eae2b9ca43324bf78d7d4cceb576bf4": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains detailed success patterns with template choices (standard), complexity scores, iterations, duration, and cost metrics. Directly shows what factors influence successful delivery — essential for designing template recommendation logic."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Shows project conventions (nodejs, vitest, src/, commonjs). The recommendation engine must understand project structure to make appropriate template suggestions."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Contains measured success pattern (auth module) with complexity=60, 5 iterations, test_strategy, duration. Provides concrete example of how complexity correlates with approach and resource usage."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captures failure patterns and fixes (mktemp, cleanup output, regression detection). Failure signatures inform which templates work for which problem types — essential for robustness of recommendations."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Shows specific success case with gotchas ('check backoff'), demonstrating that template selection must account for domain-specific considerations like concurrency and timeouts."
+          }
+        ]
+      },
+      "timestamp": 1781185512,
+      "ttl": 1800
+    },
+    "8a0e9aaabdf20f0758a4206b9e69f2aa": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Contains explicit failure patterns with error types, fix strategies, and approaches that didn't work. Directly documents what failed and root causes, which inform anti-patterns for new designs."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 48,
+            "summary": "Defines architectural rules and constraints. Rules implicitly define what violates design principles—the inverse of anti-patterns. Relevant for understanding valid/invalid design approaches."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 38,
+            "summary": "Documents successful approaches on similar issues (bug fixes, feature work). Success patterns show what HAS worked elsewhere, providing inverse signal about rejected/failed design approaches."
+          }
+        ]
+      },
+      "timestamp": 1781185537,
+      "ttl": 1800
+    },
+    "ca5edf879bad5cefb35ae612f21997ef": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project detection data showing Node.js/vitest/npm setup with src/, test/ structure and commonjs imports — exactly matches current build context"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Recent successful builds: bug fix in 3 iterations (45s, $2.50) and auth feature in 3 iterations (150s) using standard template — provides iteration and cost baselines"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Build duration baseline of 2089s establishes expected build performance window for this project"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Test environment failures (mktemp /tmp/claude issues, cleanup script output problems) — identifies known test setup pitfalls to avoid during build"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Successful timeout bug fix using semaphore approach with multi-file changes — demonstrates debugging pattern applicable to daemon/shell script issues"
+          }
+        ]
+      },
+      "timestamp": 1781185675,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 95,
+            "summary": "Contains 4 specific test failure patterns (mktemp /tmp/claude issues, sw-cleanup.sh output) directly applicable to build/test phase failures"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Describes project conventions (Node.js, vitest, commonjs) that inform how build stage executes tests and interprets results"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Tracks sw-cleanup.sh test failure pattern with root cause and fix strategy, directly relevant to build stage test execution"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows prior successful bug fix approaches (3-6 iterations, loop strategy, file patterns) applicable to current build issues"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 42,
+            "summary": "Provides build duration baseline (2089s) for performance context, useful for detecting build stage regressions"
+          }
+        ]
+      },
+      "timestamp": 1781185689,
+      "ttl": 1800
     }
   }
 }
