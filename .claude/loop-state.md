@@ -295,16 +295,16 @@ Quality Scoring Summary:
 3. **Ignoring metric variance**: A single high score in a sea of low scores doesn't justify downshift
 4. **Missing context**: If convergence is unknown (first iteration), don't interpret that as high quality
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-11T13:48:26Z
-last_iteration_at: 2026-06-11T13:48:26Z
+started_at: 2026-06-11T14:19:01Z
+last_iteration_at: 2026-06-11T14:19:01Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

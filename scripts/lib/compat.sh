@@ -196,7 +196,15 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local mt
+    # GNU stat (Linux) uses -c '%Y'; BSD stat (macOS) uses -f '%m'.
+    # Caution: on GNU stat, `-f` means --file-system and prints non-numeric
+    # filesystem info while still exiting 0 — so try the GNU form first and
+    # validate that the result is numeric before falling back to the BSD form.
+    mt=$(stat -c '%Y' "$file" 2>/dev/null) || true
+    case "$mt" in ''|*[!0-9]*) mt=$(stat -f '%m' "$file" 2>/dev/null) || true ;; esac
+    case "$mt" in ''|*[!0-9]*) mt="0" ;; esac
+    printf '%s\n' "$mt"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
