@@ -102,6 +102,14 @@ emit_event() {
         echo "$_event_line" >> "$EVENTS_FILE"
     ) 200>"$_lock_file" 2>/dev/null || true
 
+    # Schema validation — opt-in dev tooling only (SW_VALIDATE_EVENTS=1).
+    # The event schema is intentionally incomplete (it documents a subset of
+    # event types), so this check warns for the majority of real events. Left
+    # on by default it writes to stderr, which pollutes any caller that captures
+    # `2>&1` and pipes the result to jq. Gate it so normal/test runs stay quiet.
+    if [[ "${SW_VALIDATE_EVENTS:-0}" != "1" ]]; then
+        return 0
+    fi
     # Schema validation — auto-detect config repo from BASH_SOURCE location
     local _schema_dir="${_CONFIG_REPO_DIR:-}"
     if [[ -z "$_schema_dir" ]]; then
