@@ -1,1 +1,52 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Code Audit Complete
+
+I've found **multiple critical issues** that prevent the implementation from working correctly:
+
+### **CRITICAL ISSUES (Blocking)**
+
+1. **Test Harness Fatal Bug** – `scripts/sw-fleet-patterns-test.sh` lines 33, 37
+   - `((PASS++))` fails under `set -euo pipefail` because post-increment returns 0 (the old value), triggering ERR trap
+   - **Result**: npm test exits with code 1; test suite only runs first test then crashes
+   - **Fix**: Use `(( ++PASS ))` or `(( PASS += 1 ))`
+
+2. **Lock Implementation Backwards** – `scripts/lib/fleet-memory.sh:529-532`
+   - Current logic: `while mkdir "$FLEET_LOCK" >/dev/null 2>&1` creates lock and exits immediately (wrong direction)
+   - Should: try to create, sleep if it fails (the sleep is missing), retry
+   - **Impact**: No actual concurrency protection; parallel fleet operations can corrupt the index
+
+3. **Double JSON Parsing** – `scripts/lib/fleet-memory.sh:327`
+   - `($fp | fromjson)` parses JSON that's already JSON from `fleet_pattern_fingerprint`
+   - Pattern objects store `fingerprint` as a stringified JSON instead of an object
+   - **Impact**: Fingerprint queries in scoring functions will fail or return wrong results
+
+### **HIGH PRIORITY (Functional Defects)**
+
+4. **Metrics Lost in Subshell** – `scripts/lib/fleet-memory.sh:414-419`
+   - Pattern injection metrics update runs in a while-loop fed by jq pipe (subshell), so variable changes don't persist
+   - **Impact**: Metrics don't record when patterns are injected
+
+5. **Pruning Count Wrong** – `scripts/lib/fleet-memory.sh:501-503`
+   - `pruned_count` computed twice with overwrite; logic error on calculation
+
+6. **Config Path Not Rooted** – `scripts/lib/fleet-memory.sh:263`
+   - Default daemon config path `./.claude/daemon-config.json` is relative to current working directory, not repo root
+
+### **Summary**
+
+| Aspect | Status |
+|--------|--------|
+| Meaningful progress toward goal | ✅ Yes – core architecture implemented |
+| Obvious bugs | ❌ **6 critical/high bugs found** |
+| Incomplete work | ❌ **Test suite doesn't run past 1st test** |
+| Regressions | ❌ **npm test fails (exit 1)** |
+| Code quality | ⚠️ Good structure, but logic errors show insufficient testing |
+
+---
+
+**AUDIT_FAIL**
+
+The implementation has architectural merit but contains too many critical bugs to be production-ready. The immediate blocker is the test harness failure (npm test exits 1), which prevents CI validation. Even if tests passed, the lock, fingerprint, and metrics bugs would cause runtime failures in production fleet scenarios.
