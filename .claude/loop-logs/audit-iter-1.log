@@ -1,1 +1,91 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+# Audit Results: Zero-Config Project Auto-Setup (Iteration 1)
+
+## Critical Issues
+
+### 1. **Test Status Contradiction** ⚠️ BLOCKING
+The agent claims "43 tests, all passing" for `scripts/sw-setup-auto-test.sh`, but the verified test harness shows:
+- `npm test: exit 3` (FAILURE)
+- `npm run test:smoke: exit 0` (passing)
+
+**This is a critical discrepancy.** Either:
+- The new tests in `sw-setup-auto-test.sh` are actually failing despite the agent's claim, OR
+- Existing tests are now failing (regression)
+
+**Required action**: Investigate the actual test output from `npm test` to identify which tests are failing and why.
+
+---
+
+### 2. **Incomplete Feature Implementation**
+The agent explicitly acknowledges the feature is incomplete and notes "The goal is not fully achieved":
+
+**Missing components:**
+- ❌ Parallel dependency installer (tmux/jq/gh/Claude CLI)
+- ❌ Orchestrator script (`scripts/sw-setup-auto.sh`)
+- ❌ CLI router registration (integrating into `scripts/sw`)
+- ❌ `shipwright doctor` validation integration
+- ❌ Actionable next-steps reporting
+- ❌ E2E and timing constraint tests (validating <5-min goal)
+- ❌ Documentation in `.claude/CLAUDE.md`
+
+**Assessment**: ~40% complete. The foundational library exists, but the command is not exposed to users and cannot be invoked yet.
+
+---
+
+## Issues with Acceptable Quality
+
+### 3. **Idempotency Not Fully Verified**
+The `setup_auto_generate_config` function claims idempotent deep-merge, but:
+- Only 43 unit tests exist for `setup-auto.sh`
+- No integration tests verifying multiple runs are stable
+- No real-world scenario tests (e.g., user runs `setup-auto`, edits config, runs again)
+
+**Recommendation**: Add integration tests covering re-run stability once the feature is integrated.
+
+---
+
+### 4. **Agent Generation May Overwrite User Work** ⚠️
+The `setup_auto_generate_agents` function checks `[[ ! -f "$agent_file" ]]` to avoid overwrites, but:
+- If an agent file becomes stale or corrupted, users have no way to regenerate it without manual deletion
+- No `--force` flag or regeneration mechanism documented
+- No warning message when agents exist
+
+**Low severity**: The no-overwrite default is safe, but usability could be better.
+
+---
+
+### 5. **Design Artifact Quality**
+The agent created plan.md, design.md, and specification documents (~931 lines), but:
+- These are in `.claude/pipeline-artifacts/` (not referenced in commits)
+- No links in `.claude/CLAUDE.md` or documentation to guide users
+- Performance/timing analysis exists but no actual measurements
+
+---
+
+## What's Good
+
+✅ **Modular architecture** — Reuses `project-detect.sh`, three focused functions with clear contracts  
+✅ **Test registration** — Properly added to `package.json` test suite  
+✅ **Bash quality** — Shellcheck-clean, bash 3.2 compatible  
+✅ **Idempotent writes** — Config uses atomic tmp+mv pattern  
+✅ **Complexity scoring logic** — Weighted algorithm with clamping is reasonable  
+
+---
+
+## Verdict
+
+**AUDIT_FAIL** — Cannot pass while:
+
+1. **npm test exits with code 3** — must investigate and fix the actual test failures
+2. **Feature is non-functional** — cannot be invoked by users without the orchestrator, CLI registration, and remaining components
+
+**Next steps:**
+1. Run `npm test` in full and capture output to diagnose which tests are actually failing
+2. Complete the feature by implementing the remaining components (dependency installer, orchestrator, CLI routing)
+3. Add integration tests for setup stability across multiple runs
+4. Document in `.claude/CLAUDE.md` with usage examples
+
+The foundational code is sound, but the feature cannot move to review until tests pass and the feature is complete enough to use.
