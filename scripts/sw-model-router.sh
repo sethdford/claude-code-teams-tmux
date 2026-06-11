@@ -244,6 +244,28 @@ escalate_model() {
     echo "$next_model"
 }
 
+# ─── Downshift to Cheaper Model Tier ────────────────────────────────────────
+# Inverse of escalate_model: opus→sonnet, sonnet→sonnet (floor), haiku→haiku.
+# Sonnet is the floor for build work — haiku is too weak per the routing tiers.
+downshift_model() {
+    local current_model="$1"
+
+    if [[ -z "$current_model" ]]; then
+        error "current model is required"
+        return 1
+    fi
+
+    local next_model=""
+    case "$current_model" in
+        opus)   next_model="sonnet" ;;
+        sonnet) next_model="sonnet" ;;  # Floor for build work
+        haiku)  next_model="haiku" ;;   # Already at bottom
+        *)      error "Unknown model: $current_model"; return 1 ;;
+    esac
+
+    echo "$next_model"
+}
+
 # ─── Show Configuration ─────────────────────────────────────────────────────
 show_config() {
     ensure_config
@@ -938,6 +960,7 @@ show_help() {
     echo -e "${BOLD}EXAMPLES${RESET}"
     echo "  ${DIM}shipwright model route plan 65${RESET}        # Route 'plan' stage with 65% complexity"
     echo "  ${DIM}shipwright model escalate haiku${RESET}      # Upgrade from haiku"
+    echo "  ${DIM}shipwright model downshift opus${RESET}      # Downshift opus → sonnet"
     echo "  ${DIM}shipwright model chain config${RESET}        # Show chain templates"
     echo "  ${DIM}shipwright model chain execute explore-decide \"analyze this code\"${RESET}"
     echo "  ${DIM}shipwright model chain report${RESET}         # Show chain execution stats"
@@ -956,6 +979,10 @@ main() {
         escalate)
             shift 2>/dev/null || true
             escalate_model "$@"
+            ;;
+        downshift)
+            shift 2>/dev/null || true
+            downshift_model "$@"
             ;;
         config)
             shift 2>/dev/null || true

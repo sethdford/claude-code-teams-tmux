@@ -38,6 +38,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-progress.sh" ]] && source "$SCRIPT_DIR/lib/loop-progress.sh"
+# Real-time quality scoring + adaptive model downshift (issue #628)
+[[ -f "$SCRIPT_DIR/lib/loop-model-router.sh" ]] && source "$SCRIPT_DIR/lib/loop-model-router.sh" 2>/dev/null || true
 # Intelligent session restart with enhanced briefings and cross-session tracking
 [[ -f "$SCRIPT_DIR/lib/session-restart.sh" ]] && source "$SCRIPT_DIR/lib/session-restart.sh"
 # Context window budget monitoring (issue #209)
@@ -95,6 +97,11 @@ FAST_TEST_CMD=""
 FAST_TEST_INTERVAL=5
 TEST_LOG_FILE=""
 MODEL="${SW_MODEL:-opus}"
+# Adaptive model downshift (issue #628) — opt-in via --adaptive-model or env
+case "${SW_ADAPTIVE_MODEL:-false}" in
+    true|1|yes|on) ADAPTIVE_MODEL_ENABLED=true ;;
+    *)             ADAPTIVE_MODEL_ENABLED=false ;;
+esac
 AGENTS=1
 AGENT_ROLES=""
 USE_WORKTREE=false
@@ -164,6 +171,7 @@ show_help() {
     echo -e "  ${CYAN}--fast-test-interval${RESET} N       Run full tests every N iterations (default: 5)"
     echo -e "  ${CYAN}--additional-test-cmds${RESET} \"cmd\" Extra test command (repeatable)"
     echo -e "  ${CYAN}--model${RESET} MODEL             Claude model to use (default: opus)"
+    echo -e "  ${CYAN}--adaptive-model${RESET}          Real-time quality scoring: downshift opus→sonnet on sustained high quality, upshift on degradation"
     echo -e "  ${CYAN}--effort${RESET} low|medium|high   Effort level for Claude reasoning (default: auto per stage)"
     echo -e "  ${CYAN}--fallback-model${RESET} MODEL      Fallback model on rate limits (default: sonnet)"
     echo -e "  ${CYAN}--agents${RESET} N                Number of parallel agents (default: 1)"
@@ -239,6 +247,14 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --model=*) MODEL="${1#--model=}"; shift ;;
+        --adaptive-model) ADAPTIVE_MODEL_ENABLED=true; shift ;;
+        --adaptive-model=*)
+            case "${1#--adaptive-model=}" in
+                true|1|yes|on) ADAPTIVE_MODEL_ENABLED=true ;;
+                *)             ADAPTIVE_MODEL_ENABLED=false ;;
+            esac
+            shift
+            ;;
         --effort)
             EFFORT_LEVEL="${2:-}"
             [[ -z "$EFFORT_LEVEL" ]] && { error "Missing value for --effort"; exit 1; }
@@ -464,6 +480,9 @@ mkdir -p "$STATE_DIR" "$LOG_DIR"
 # Initialize context window budget tracker (issue #209)
 ARTIFACTS_DIR="${STATE_DIR}/pipeline-artifacts"
 mkdir -p "$ARTIFACTS_DIR"
+# Pin the adaptive-routing log under the loop's artifacts dir (issue #628) so the
+# wiring and show_summary agree regardless of the process CWD.
+LMR_ROUTING_FILE="${ARTIFACTS_DIR}/model-routing.jsonl"
 if type context_budget_init >/dev/null 2>&1; then
     # Set total budget (default 800K, configurable via env/config)
     CONTEXT_BUDGET="${CONTEXT_BUDGET_TOKENS:-800000}"
@@ -727,6 +746,13 @@ STATUS="running"
 TEST_PASSED=""
 TEST_OUTPUT=""
 LOG_ENTRIES=""
+
+# ─── Adaptive Model Routing State (issue #628) ──────────────────────────────
+HIGH_QUALITY_STREAK=0       # consecutive iterations scoring above the downshift threshold
+MODEL_ROUTE_COOLDOWN=0      # iterations to wait after an upshift before re-downshifting
+PREV_ERROR_COUNT=0          # error count from the previous iteration (trend signal)
+PREV_TEST_PASSED=""         # test status from the previous iteration (regression signal)
+BASELINE_MODEL="$MODEL"     # the user's starting model — for summary math
 
 
 
@@ -1716,6 +1742,12 @@ show_summary() {
     if [[ "$LOOP_INPUT_TOKENS" -gt 0 || "$LOOP_OUTPUT_TOKENS" -gt 0 ]]; then
         echo -e "  ${BOLD}Tokens:${RESET}      in=${LOOP_INPUT_TOKENS} out=${LOOP_OUTPUT_TOKENS}"
     fi
+    # Adaptive model routing summary (issue #628)
+    if [[ "${ADAPTIVE_MODEL_ENABLED:-false}" == "true" ]] && type lmr_savings_summary >/dev/null 2>&1; then
+        local _lmr_summary
+        _lmr_summary="$(lmr_savings_summary 2>/dev/null || echo "")"
+        [[ -n "$_lmr_summary" ]] && echo -e "  ${BOLD}Routing:${RESET}     ${_lmr_summary}"
+    fi
     echo ""
     echo -e "  ${DIM}State: $STATE_FILE${RESET}"
     echo -e "  ${DIM}Logs:  $LOG_DIR/${RESET}"
@@ -2329,6 +2361,71 @@ ${GOAL}"
                 echo -e "  ${RED}✗${RESET} Tests: failed"
             fi
         fi
+
+        # ─── Adaptive model routing (issue #628) ──────────────────────────────
+        # Score this iteration's quality and downshift/upshift the model for the
+        # next iteration. Entirely gated behind --adaptive-model (default off), so
+        # loop behavior is byte-identical when disabled.
+        if [[ "${ADAPTIVE_MODEL_ENABLED:-false}" == "true" ]] && type lmr_decide >/dev/null 2>&1; then
+            # Error count from the structured error summary (written above)
+            local _lmr_error_count=0
+            local _lmr_err_json="$LOG_DIR/error-summary.json"
+            if [[ -f "$_lmr_err_json" ]] && command -v jq >/dev/null 2>&1; then
+                _lmr_error_count=$(jq -r '.error_count // 0' "$_lmr_err_json" 2>/dev/null || echo 0)
+                [[ "$_lmr_error_count" =~ ^[0-9]+$ ]] || _lmr_error_count=0
+            fi
+
+            # Total changed lines this iteration (insertions + deletions)
+            local _lmr_diff_lines=0
+            _lmr_diff_lines=$(git -C "$PROJECT_ROOT" diff --numstat HEAD~1 2>/dev/null \
+                | awk '{ a+=$1; d+=$2 } END { print a+d+0 }' 2>/dev/null || echo 0)
+            [[ "$_lmr_diff_lines" =~ ^[0-9]+$ ]] || _lmr_diff_lines=0
+
+            # Composite + convergence sub-score from the process-reward model (0–100)
+            local _lmr_composite="" _lmr_convergence=50
+            if type process_reward_score_iteration >/dev/null 2>&1; then
+                local _lmr_reward_json
+                _lmr_reward_json=$(process_reward_score_iteration \
+                    "$ITERATION" "${TEST_PASSED:-}" "${TEST_OUTPUT:-}" "${PREV_TEST_PASSED:-}" "$PROJECT_ROOT" 2>/dev/null || echo "")
+                if [[ -n "$_lmr_reward_json" ]] && command -v jq >/dev/null 2>&1; then
+                    _lmr_composite=$(echo "$_lmr_reward_json" | jq -r '.composite // empty' 2>/dev/null || echo "")
+                    _lmr_convergence=$(echo "$_lmr_reward_json" | jq -r '.scores.convergence // 50' 2>/dev/null || echo 50)
+                    [[ "$_lmr_convergence" =~ ^[0-9]+$ ]] || _lmr_convergence=50
+                fi
+            fi
+
+            local _lmr_score
+            _lmr_score=$(lmr_quality_score "${TEST_PASSED:-}" "${PREV_TEST_PASSED:-}" \
+                "$_lmr_error_count" "$PREV_ERROR_COUNT" "$_lmr_diff_lines" "$_lmr_convergence" "$_lmr_composite")
+
+            # Call without command substitution — lmr_decide mutates streak/cooldown
+            # state globals and sets LMR_DECISION (a subshell would discard them).
+            LMR_DECISION="hold"
+            lmr_decide "$MODEL" "$_lmr_score" "$ITERATION" \
+                "${TEST_PASSED:-}" "${PREV_TEST_PASSED:-}" "$_lmr_error_count" "$PREV_ERROR_COUNT" || true
+            local _lmr_decision="$LMR_DECISION"
+
+            local _lmr_prev_model="$MODEL"
+            case "$_lmr_decision" in
+                downshift) [[ "$MODEL" == "opus" ]]   && MODEL="sonnet" ;;
+                upshift)   [[ "$MODEL" == "sonnet" ]] && MODEL="opus" ;;
+            esac
+
+            if [[ "$MODEL" != "$_lmr_prev_model" ]]; then
+                local _lmr_norm=$(( _lmr_score / 10 ))
+                echo -e "  ${CYAN}▸${RESET} Adaptive model: ${_lmr_prev_model} → ${MODEL} (${_lmr_decision}, quality ${_lmr_norm}%)"
+            fi
+
+            if type emit_event >/dev/null 2>&1; then
+                emit_event "loop.model_route" "iteration=$ITERATION" "decision=$_lmr_decision" \
+                    "model=$MODEL" "prev_model=$_lmr_prev_model" "score=$_lmr_score"
+            fi
+            lmr_record_iteration "$ITERATION" "$_lmr_prev_model" "$_lmr_score" "$_lmr_decision" 2>/dev/null || true
+
+            PREV_ERROR_COUNT="$_lmr_error_count"
+        fi
+        # Carry test status forward for the next iteration's regression signal
+        PREV_TEST_PASSED="${TEST_PASSED:-}"
 
         # Dark factory: update RL weights based on test outcome
         if type rl_update_weights >/dev/null 2>&1; then

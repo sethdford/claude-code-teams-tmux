@@ -205,6 +205,7 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 - **Fast test mode** (`--fast-test-cmd "cmd"`): Alternates between a fast subset test and the full suite. Full test runs on iteration 1, every N iterations (`--fast-test-interval`, default 5), and the final iteration.
 - **Agent roles** (`--roles "builder,reviewer,tester"`): In multi-agent mode, assigns specialization per agent. Built-in roles: `builder`, `reviewer`, `tester`, `optimizer`, `docs`, `security`.
 - **Context exhaustion detection**: When the daemon detects a build loop failed due to iteration exhaustion (not a code error), it tags the failure as `context_exhaustion` and boosts `--max-restarts` on retry.
+- **Adaptive model downshift** (`--adaptive-model`, env `SW_ADAPTIVE_MODEL`): Scores each iteration's quality in real time (0–1000 milli-score over test result, diff size, error-count trend, convergence, and the process-reward composite) and routes the model for the next iteration. Downshifts Opus→Sonnet after 2 consecutive high-quality iterations (score >0.8), upshifts Sonnet→Opus immediately on degradation (score <0.5 or a test pass→fail regression). Never downshifts during iterations 1–2 or while errors are rising; a cooldown after each upshift prevents thrash. Opt-in and default-safe — loop behavior is byte-identical when off. Per-iteration model + score are logged to `model-routing.jsonl`; the model mix + estimated savings appear in the loop summary. Pure bash + jq, no extra LLM call.
 
 ## Pipeline Templates
 
@@ -290,7 +291,10 @@ Tune the build loop's resilience and restart behavior:
     "max_extensions": 3,
     "context_restart_limit": 3,
     "hard_restart_cap": 5,
-    "max_restarts": 3
+    "max_restarts": 3,
+    "downshift_score": 800,
+    "upshift_score": 500,
+    "route_cooldown": 2
   }
 }
 ```
@@ -304,6 +308,9 @@ Tune the build loop's resilience and restart behavior:
 | `context_restart_limit`     | `3`     | Max restarts due to context exhaustion            |
 | `hard_restart_cap`          | `5`     | Absolute maximum restarts regardless of cause     |
 | `max_restarts`              | `3`     | Default restart limit for daemon-driven loops     |
+| `downshift_score`           | `800`   | Milli-score (0–1000) above which an iteration counts toward the Opus→Sonnet downshift streak (`--adaptive-model`) |
+| `upshift_score`             | `500`   | Milli-score below which the model upshifts Sonnet→Opus (`--adaptive-model`) |
+| `route_cooldown`            | `2`     | Iterations to wait after an upshift before re-downshifting (anti-thrash hysteresis) |
 
 ## Constitutional AI
 
