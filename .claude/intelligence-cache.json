@@ -32,15 +32,17 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
+          "architect",
+          "optimizer",
           "tester",
-          "reviewer"
+          "security-auditor"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.9,
+        "reasoning": "Feature requires design (architect), core implementation (builder), algorithm optimization (optimizer), comprehensive testing of adaptive behavior (tester), and timeout/resource security analysis (security-auditor)",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781292777,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1403,380 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "1de8aff6594f55aaac98a34a70c1581a": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 70,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Progress detection heuristics are fragile - false positives (stage looks stuck but isn't) could cause premature abort or extend timeouts unnecessarily",
+          "Historical data outliers could skew P90 percentile calculations, making adaptive timeouts unreliable for certain stage/complexity combinations",
+          "Database queries for historical lookup on every stage could become a bottleneck if not properly indexed; need careful schema design",
+          "Insufficient history edge case (< 5 samples) requires bulletproof fallback logic - misconfigured fallback could cascade failures"
+        ],
+        "implementation_hints": [
+          "Create database table: stage_timing(repo_hash, stage_name, issue_complexity, duration_seconds, timestamp) with composite indexes on (repo_hash, stage_name, issue_complexity)",
+          "Implement progress detection as pluggable callbacks per stage type - commits, test output, file changes have different signals per stage",
+          "Store timeout adjustment decisions (old/new/reason/percentile used) in JSON for dashboard visualization and debugging",
+          "Start with simple P90 over last N runs; add exponential backoff caps to prevent runaway timeout extensions",
+          "Extensive logging: emit timeout_adjusted events with bucket stats (sample count, min/max/p90) for observability and auditing",
+          "Unit test statistical edge cases: empty history, single sample, all identical durations, extreme outliers",
+          "Integration test daemon behavior: verify mid-flight extension cancels previous timeout alarm, mid-flight abort cleans up stage resources",
+          "Config precedence: daemon-config.json max_timeout_seconds should hard-cap adaptive timeout to prevent resource exhaustion"
+        ]
+      },
+      "timestamp": 1781292035,
+      "ttl": 3600
+    },
+    "32216144cfae9aa9859e61c67c47d1c5": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1781292047,
+      "ttl": 1800
+    },
+    "605f3fc89d7ed22b621e297ec2dc7679": {
+      "result": {
+        "estimated_cost_usd": 2.85,
+        "estimated_iterations": 3,
+        "estimated_tokens": 42000,
+        "likely_failure_stage": "test",
+        "confidence": 65,
+        "breakdown": {
+          "intake": {
+            "tokens": 2000,
+            "cost": 0.08,
+            "model": "haiku"
+          },
+          "plan": {
+            "tokens": 8000,
+            "cost": 0.24,
+            "model": "sonnet"
+          },
+          "design": {
+            "tokens": 12000,
+            "cost": 0.36,
+            "model": "sonnet"
+          },
+          "build": {
+            "tokens": 6000,
+            "cost": 0.18,
+            "model": "haiku"
+          },
+          "test": {
+            "tokens": 8000,
+            "cost": 0.72,
+            "model": "sonnet"
+          },
+          "review": {
+            "tokens": 4000,
+            "cost": 0.12,
+            "model": "haiku"
+          },
+          "pr": {
+            "tokens": 2000,
+            "cost": 0.08,
+            "model": "haiku"
+          }
+        },
+        "risk_factors": {
+          "progress_detection_fragility": "high",
+          "historical_data_unavailable": true,
+          "database_schema_required": true,
+          "edge_case_handling": "critical"
+        },
+        "success_probability": 70,
+        "retry_probability": 30,
+        "recommended_template": "full",
+        "notes": "Infrastructure changes with adaptive timeout logic. No historical data available; estimate assumes baseline complexity 5 + risk premium for timeout edge cases. Test stage most likely failure point due to database schema validation requirements."
+      },
+      "timestamp": 1781292058,
+      "ttl": 3600
+    },
+    "d85fda6e592959e676b9cc3d5dbadcb0": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "performance",
+          "database",
+          "reliability",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Moderate scope: database schema for historical tracking, statistical P90 calculation, progress/stall detection heuristics, integration with daemon config and events, dashboard visualization. Multiple integration points but no architectural redesign needed."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "data-pipeline",
+            "performance"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "adaptive-timeout-algorithm-design"
+          ],
+          "build": [
+            "adaptive-timeout-algorithm-design",
+            "data-pipeline",
+            "performance"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "systematic-debugging"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness",
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about complexity indicators—is file count the right signal, or should we include test count, changed code ratio, or dependency depth?",
+          "data-pipeline": "Design database schema for duration history with repo_hash, stage_name, complexity, duration_seconds—and ensure efficient percentile queries without scanning all historical data.",
+          "performance": "Timeout calculation and progress detection must not add significant overhead to pipeline execution; optimize percentile computation and stall-check logic.",
+          "architecture-design": "Clarify where timeout calculation happens (daemon, pipeline stage, separate service), how state flows between timeout extension requests, and interaction with daemon-config.json precedence.",
+          "adaptive-timeout-algorithm-design": "This issue requires careful design of the P90 percentile algorithm, progress detection heuristics (commits, test output, file changes), stall detection thresholds, and thread-safe mid-flight extension.",
+          "adversarial-quality": "Find edge cases: all historical durations identical, single extreme outlier, complexity mismatch between historical and current run, rapid timeout extensions, false-positive stall detection.",
+          "two-stage-review": "Pass 1: timeout math correctness, fallback logic, progress/stall detection heuristics. Pass 2: database query efficiency, event emission completeness, dashboard integration, configuration precedence.",
+          "systematic-debugging": "If prior timeout logic attempts failed, audit what went wrong (missed signals, incorrect percentiles, race conditions) before implementing this approach.",
+          "testing-strategy": "Comprehensive test coverage of timeout scenarios: insufficient history (<5 samples), percentile edge cases, progress detection accuracy, stall detection without false positives, mid-flight extension.",
+          "validation-thoroughness": "Unit tests alone won't validate timeout behavior—run integration tests with real pipeline stages across varying complexity to confirm timeouts extend and abort correctly.",
+          "observability": "Ensure timeout_adjusted events are emitted with old/new timeout, reason, and complexity indicators; dashboard must show timeout adjustment history and stall aborts per run.",
+          "pr-quality": "Clear PR explaining the timeout adaptation algorithm, percentile calculation safety, progress detection strategy, and how configuration overrides are handled.",
+          "documentation": "Document the timeout algorithm, database schema, progress detection signals, fallback logic, and how to interpret dashboard timeout visualizations.",
+          "deploy-safety": "Timeout changes directly affect pipeline reliability—test with canary issues before full rollout; monitor abort rates and false-positive stalls post-deploy.",
+          "pattern-matching-similarity-scoring": "Use to match incoming stages to historical data of similar complexity—ensures P90 percentile is calculated from relevant, comparable stage runs."
+        },
+        "generated_skills": [
+          {
+            "name": "adaptive-timeout-algorithm-design",
+            "reason": "No existing skill covers timeout adaptation algorithm design (percentile calculation, progress detection heuristics, stall detection thresholds, mid-flight extension safety), which is the core technical challenge of this issue.",
+            "content": "## Adaptive Timeout Algorithm Design\n\nDesign and implement a robust timeout adaptation algorithm that adjusts stage timeouts mid-flight based on historical data and real-time progress signals.\n\n### Percentile Calculation\n- Calculate P90 for stages of similar complexity (use complexity bins, not exact matches)\n- Require minimum 5 historical samples before using adaptive timeout; fallback to template timeout otherwise\n- Handle edge cases: all identical durations, single extreme outlier, Nan/null values\n- Exclude the top 1% of durations to avoid skewing from stuck/killed stages\n\n### Complexity Scoring\n- Define complexity signals: file count, change size (lines added/deleted), test count, dependency count\n- Bucket into categories (low: <50 files, medium: 50-200, high: >200) rather than continuous scoring\n- If no historical data for exact bucket, use next-larger bucket as fallback\n\n### Progress Detection\n- Track three signals: new commits pushed to branch, test runner activity (test output appearing), file system changes (files written to disk)\n- Progress = any signal detected in past 30% of timeout window\n- Extend timeout by 50% of original if progress detected (cap at 2x original)\n- Log when extension happens: timestamp, old/new timeout, which signals detected\n\n### Stall Detection\n- After 90% of timeout elapsed with no progress signals, consider stage stalled\n- Before aborting, emit warning event giving stage 10 more seconds to show progress\n- Only abort if still stalled at 100% + 10s threshold\n- Do NOT kill if file descriptor activity detected (process may be flushing buffers)\n\n### Thread Safety\n- Timeout extension reads historical data once at stage start (immutable snapshot)\n- Lock the timeout value before modification to prevent race with abort logic\n- Store adjustment reason in state for event emission\n\n### Event Emission\n- Emit `timeout_adjusted` with keys: old_timeout_seconds, new_timeout_seconds, reason (\"progress_detected\"), complexity_bucket, p90_percentile_seconds\n- Emit `timeout_stall_warning` with 10s countdown if hitting stall threshold\n- Emit `timeout_aborted` with final duration_seconds if stage exceeds extended timeout\n\n### Configuration Integration\n- daemon-config.json `timeout_overrides.stage_name` takes precedence over calculated timeout\n- If override set, use it directly (skip percentile calculation, disable mid-flight extension)\n- Log when override applied\n\n### Fallback Logic\n- < 5 samples: use template timeout from pipeline config\n- > 5 samples: use P90 from historical data\n- If complexity bucket has no data, try next-larger bucket (low → medium → high)\n- If still no data after climbing buckets, use template timeout"
+          }
+        ],
+        "review_focus": [
+          "Percentile calculation correctness: is P90 being computed safely with small sample sizes and edge cases?",
+          "Progress detection accuracy: do we avoid false positives (detecting spurious activity) while catching real progress?",
+          "Stall detection safety: can we distinguish slow-but-working from truly stalled without killing legitimate long-running stages?",
+          "Database query efficiency: is historical percentile lookup optimized to not block the pipeline?",
+          "Timeout extension limits: is there a cap to prevent runaway timeout growth (2x original, max config)?",
+          "Configuration precedence: does daemon-config.json override correctly disable adaptive logic?",
+          "Event emission completeness: are timeout_adjusted, timeout_stall_warning, timeout_aborted events always emitted with full context?",
+          "Dashboard integration: can users see timeout adjustment history, reason codes, and stall decisions per run?"
+        ],
+        "risk_areas": [
+          "Insufficient historical data on cold starts: first N runs will have very few samples; fallback logic must be sound",
+          "Stall detection false positives: slow-but-working stages incorrectly killed, causing confusing pipeline failures",
+          "Runaway timeout extensions: if logic permits repeated extensions, stage could theoretically run indefinitely",
+          "Database unbounded growth: duration history could grow without bounds unless retention/purging policy implemented",
+          "Complexity bucket misclassification: stages slightly above threshold may not match appropriate historical data",
+          "Race condition in mid-flight extension: concurrent access to timeout value between extension logic and abort timeout",
+          "Observability gap: if timeout_adjusted events are missed/dropped, timeout behavior becomes invisible and undebuggable",
+          "Performance regression: percentile calculations or progress polling could add latency to pipeline iteration"
+        ]
+      },
+      "timestamp": 1781292155,
+      "ttl": 3600
+    },
+    "cd779f6f79ae3381143a035f6f13f036": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 90,
+            "summary": "Contains 'Fix timeout bug in daemon' with scripts/sw-daemon.sh files and 'added semaphore' success pattern. Directly relevant to adaptive timeout feature development."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project conventions show Node.js project with vitest test runner and commonjs imports. Essential for understanding implementation patterns in this codebase."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 50,
+            "summary": "Contains feature development patterns (Fix bug: 60 complexity/3 iterations; Add feature: 65 complexity/3 iterations). Useful for estimating timeline and approach for adaptive timeout feature."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "Auth module pattern shows iterative TDD approach with 5 iterations, 300s duration, module isolation strategy. Demonstrates proven feature development methodology applicable to this engine."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 28,
+            "summary": "Baseline build_duration_s of 2089s provides performance context for resource adjustment calculations and timeout configuration."
+          }
+        ]
+      },
+      "timestamp": 1781292238,
+      "ttl": 1800
+    },
+    "681b8f4981ab6d3e46dfdcd30556fdfb": {
+      "result": {
+        "results": [
+          {
+            "file": ".claude/memory/sethdford-shipwright/failures.json",
+            "relevance": 92,
+            "summary": "Documents test failures, root causes, and fixes from recent runs. Directly relevant to understanding validation failure patterns — contains specific failure signatures (mktemp paths, output formatting, sed syntax) that inform what plan validation should check for."
+          },
+          {
+            "file": ".claude/memory/sethdford-shipwright/knowledge.json",
+            "relevance": 85,
+            "summary": "Knowledge base of failure patterns with documented fix strategies. Relevant to plan validation because it captures lessons learned from previous attempts and approaches that worked/failed — helps inform what a valid plan should account for."
+          },
+          {
+            "file": ".claude/memory/sethdford-shipwright/success-patterns.json",
+            "relevance": 68,
+            "summary": "Successful implementation patterns from prior adaptive/timeout related work. Relevant because it shows complexity scores, iteration counts, and file patterns for similar features — context for what a realistic plan for the timeout engine should include."
+          }
+        ]
+      },
+      "timestamp": 1781292361,
+      "ttl": 1800
+    },
+    "07c33bd4c539feff7f163f254f8b6f01": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Contains 'Fix timeout bug in daemon' case study with concrete patterns (semaphore, backoff). Directly informs adaptive timeout and resource adjustment architecture design."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 48,
+            "summary": "Baseline metrics (build_duration_s: 2089) provide empirical data for designing timeout thresholds and adaptive adjustment windows."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 32,
+            "summary": "Shows iterative development patterns with complexity scoring and iteration counts. Provides methodology context for feature design approach."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 28,
+            "summary": "Project structure detection (Node.js, vitest, src/ conventions). Understanding project architecture enables better interface design decisions."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 20,
+            "summary": "Contains abstract architecture rules. May inform design constraints and layer boundaries, though specific rules not visible."
+          }
+        ]
+      },
+      "timestamp": 1781292538,
+      "ttl": 1800
+    },
+    "aa20bcb3684335749d000c792115698b": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Contains timeout-related issue with daemon showing 'TIMEOUT' errors and gotcha about 'check backoff' — directly informs anti-patterns for adaptive timeout engine (avoid naive backoff, use semaphores)"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 42,
+            "summary": "Captures test stage failures and root causes including stale state detection and output format issues — informs design anti-patterns around state management and cleanup in timeout/resource systems"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Documents test failures and fix strategies for mktemp/cleanup issues — shows anti-pattern of assuming directory existence and highlights need for proper resource initialization in timeout/resource adjustment engine"
+          }
+        ]
+      },
+      "timestamp": 1781292555,
+      "ttl": 1800
+    },
+    "f1386372076b43edb0eeb9f6018fa64a": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (2026-03-29)",
+            "relevance": 95,
+            "summary": "Multiple successful feature patterns showing standard template, 3 iterations, npm test strategy, 60-65 complexity—directly applicable to building this timeout feature with the same approach and expectations"
+          },
+          {
+            "file": "patterns.json (2026-05-22)",
+            "relevance": 90,
+            "summary": "Project structure and conventions (Node/vitest/src/commonjs)—essential context for understanding build environment and test runner for this feature"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Timeout bug fix pattern using semaphore solution—directly relevant to building an adaptive timeout feature; shows successful timeout handling approach"
+          },
+          {
+            "file": "failures.json (detailed, 4 entries)",
+            "relevance": 65,
+            "summary": "Common test failures (mktemp path issues, cleanup output format, sed syntax)—helps anticipate and avoid test infrastructure issues during build stage"
+          },
+          {
+            "file": "metrics.json (2026-05-15)",
+            "relevance": 55,
+            "summary": "Baseline build duration (2089s)—provides context for expected build time and helps set realistic iteration expectations"
+          }
+        ]
+      },
+      "timestamp": 1781292749,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project structure and conventions (node/vitest/npm/commonjs) are essential for build stage — test runner, import style, and source directory paths inform build commands and artifact locations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 90,
+            "summary": "Baseline build_duration_s of 2089s establishes build timeout expectations and is critical for the adaptive timeout feature (#638) being implemented in this build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 78,
+            "summary": "Previous successful builds show iteration patterns (3 iterations typical), file change patterns (loop logs, intelligence cache, scripts), and cost data ($2.50-2.80 typical) — useful for build loop configuration"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 62,
+            "summary": "Test stage failures (mktemp, output format, sed issues) may recur during build phase test runs; provides known failure patterns and fixes to preempt test regressions"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 38,
+            "summary": "Previous timeout bug fix using semaphore pattern may inform the current adaptive timeout feature implementation, though issue is from May 9 and context is limited"
+          }
+        ]
+      },
+      "timestamp": 1781292766,
+      "ttl": 1800
     }
   }
 }
