@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 8,
-      "last_seen": "2026-06-12T09:55:57Z",
+      "seen_count": 9,
+      "last_seen": "2026-06-12T17:58:29Z",
       "category": "test_failure"
     },
     {
@@ -30,11 +30,11 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp -d -t '/tmp/claude/sw-test-XXXXXX' fails because the parent directory /tmp/claude does not exist on this Linux runner",
-      "fix": "Create /tmp/claude before calling mktemp, or use mktemp -d -t 'sw-test-XXXXXX' without the /tmp/claude/ prefix to let mktemp use the default TMPDIR",
+      "root_cause": "mktemp fails because /tmp/claude/ parent directory does not exist in the CI environment, and sw-cleanup-test.sh stale heartbeat detection logic outputs differently than expected",
+      "fix": "create /tmp/claude directory before mktemp calls or use mktemp -d /tmp/sw-test-XXXXXX without the subdirectory; also fix stale heartbeat and summary output assertions in sw-cleanup-test.sh",
       "seen_count": 1,
       "last_seen": "2026-06-11T20:02:28Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
