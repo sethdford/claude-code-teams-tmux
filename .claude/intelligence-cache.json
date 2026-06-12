@@ -32,15 +32,16 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
+          "devops",
           "tester",
-          "reviewer"
+          "security-auditor"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Dependency pre-flight checks and auto-installation is primarily a feature implementation task (builder), with strong DevOps (dependency management), testing (validation), and security (safe installation) components.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781292590,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,331 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "d45c1bc6b706282a62f5a14370908825": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Version compatibility conflicts from auto-installing deps",
+          "Cross-platform package manager behavior differences (npm vs yarn, pip vs pip3, etc.)",
+          "System permissions and environment-specific issues during install",
+          "Unintended side effects modifying global or local system state",
+          "Performance overhead added to pipeline startup for large manifests"
+        ],
+        "implementation_hints": [
+          "Detect manifests first with targeted glob patterns before parsing",
+          "Use package manager check/list commands (npm ls, pip show, go list, bundle check) to verify before installing",
+          "Make dependency checking idempotent and cache results to avoid repeated checks across iterations",
+          "Implement graceful error handling—warn on non-critical failures but don't block pipeline",
+          "Create fixture with intentionally missing dependencies to test auto-install behavior",
+          "Log each dependency check and install as pipeline event for visibility",
+          "Handle environment variations (npm vs yarn, python3 vs python, etc.) based on manifest presence"
+        ]
+      },
+      "timestamp": 1781292027,
+      "ttl": 3600
+    },
+    "3dea138eb7c99a6e189f523ee827b4e8": {
+      "result": {
+        "estimated_iterations": 10,
+        "reasoning": {
+          "complexity_factor": 6,
+          "risk_factors": [
+            "Cross-platform package manager variations (npm, yarn, pip, go, bundle)",
+            "System permission and environment-specific edge cases",
+            "Idempotency and caching implementation across multiple managers"
+          ],
+          "confidence": "medium",
+          "iteration_breakdown": {
+            "1-2": "Core detection and npm/yarn integration",
+            "3-4": "pip, go, bundle support with compatibility testing",
+            "5-6": "Caching, idempotency, and cross-platform edge cases",
+            "7-8": "Error handling and graceful failure modes",
+            "9-10": "Performance optimization, event logging, final validation"
+          }
+        }
+      },
+      "timestamp": 1781292041,
+      "ttl": 1800
+    },
+    "76bac95fbe77a5b1c2819882e5d1f731": {
+      "result": {
+        "estimated_cost_usd": 1.05,
+        "estimated_iterations": 4,
+        "estimated_tokens": 40000,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1781292053,
+      "ttl": 3600
+    },
+    "37d6c5f515708892210b615db17a9ccd": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "reliability",
+          "build-system",
+          "cross-platform-compatibility"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires handling five different package managers with different manifest formats, error recovery paths, and integration with an existing async pipeline. Primary complexity is robustness (manifest parsing, missing managers, partial failures) and observability rather than algorithmic complexity."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "security-audit",
+            "dependency-installation-robustness"
+          ],
+          "build": [
+            "testing-strategy",
+            "dependency-installation-robustness"
+          ],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality",
+            "security-audit"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about which five package managers warrant inclusion, how to handle the config flag gracefully, and whether pre-install should block or warn on failure.",
+          "architecture-design": "Design where this check integrates in the pipeline lifecycle, how manifest detection scales to monorepos, and the contract with the build loop (should iteration 1 skip if deps pre-installed?).",
+          "security-audit": "Auto-installing packages introduces supply chain risk—validate that lockfiles are used, review sources are trusted, and no eval-like behavior in manifest parsing.",
+          "dependency-installation-robustness": "Core skill for handling five package managers safely: manifest parsing edge cases, graceful degradation when package managers are missing, atomic install semantics, and clear observability.",
+          "testing-strategy": "Test fixture needs real missing dependencies (not mocks) to validate skipped iteration 1; must cover monorepo detection, manifest parse failures, and manager unavailability.",
+          "two-stage-review": "This is foundational to build reliability—affects pipeline iteration counts and error recovery. Needs careful review of atomic semantics and failure paths.",
+          "adversarial-quality": "Find ways this breaks: malformed manifests, missing managers, concurrent builds, partial installs, lockfile-manifest mismatches, disk exhaustion during install.",
+          "validation-thoroughness": "Smoke tests are necessary but insufficient—run with actual missing dependencies in test fixtures, validate real package managers (npm/pip/go/bundle/mvn) are invoked, check that iteration 1 is actually skipped.",
+          "pr-quality": "Multi-language implementation (manifest parsing for Node/Python/Go/Ruby/Java) is complex; PR must clearly explain design decisions and error handling per language."
+        },
+        "generated_skills": [
+          {
+            "name": "dependency-installation-robustness",
+            "reason": "No existing skill covers the specific challenge of safely handling heterogeneous package managers (npm, pip, go, bundle, maven) with defensive manifest parsing, graceful degradation when managers are missing, atomic install semantics, and clear observability for the pipeline.",
+            "content": "## Dependency Installation Robustness\n\nImplement a pre-flight dependency check that detects, parses, and safely installs packages across five package managers with clear error handling and observability.\n\n### Core Challenges\n\n**1. Manifest Detection & Parsing**\n- Each language has different manifest formats: package.json (JSON), requirements.txt (plain text with comments), go.mod (TOML-like), Gemfile (Ruby DSL), pom.xml (XML).\n- Parsing must be defensive—malformed manifests should report clear errors with line numbers, not crash silently.\n- Support monorepo layouts where multiple manifests exist at different depths.\n- Use language-native tools (node, python, go, ruby, mvn) to parse rather than regex, to handle format edge cases correctly.\n\n**2. Package Manager Availability**\n- The target package manager (npm, pip, go, bundle, maven) might not be installed.\n- Failing with \"command not found\" is confusing—must detect upfront and provide actionable guidance (e.g., \"pip not found—install Python 3\").\n- Verify manager version is compatible, not just present.\n- This is the most common failure mode in CI environments.\n\n**3. Installation Safety & Atomicity**\n- Installing packages in the build directory can shadow system packages, cause version conflicts, or leak into production builds.\n- Treat the entire install as atomic: all packages succeed, or the entire operation fails cleanly. Partial success leaves the build in an uncertain state.\n- Use lockfiles (package-lock.json, poetry.lock, go.sum, Gemfile.lock) to ensure deterministic installs across environments.\n- On failure, clean up any partially-installed packages so the build can retry cleanly.\n\n**4. Error Recovery**\n- Network failures during install must be distinguishable from package conflicts or broken manifests.\n- Distinguish between \"package manager crashed\" (infrastructure issue, should retry) and \"manifest is invalid\" (code issue, should fail).\n- Log root cause analysis: Was it a missing package manager? Malformed manifest? Version conflict? Network timeout?\n\n**5. Observability for the Pipeline**\n- The build loop needs to know what was installed, why it took time, and whether to skip iteration 1.\n- Emit pipeline events: `type=dependencies_installed manager=npm count=42 duration_ms=5230 status=success`.\n- Log individual install commands and their output so debugging is possible.\n- Track which manifests were found and processed.\n\n### Implementation Patterns\n\n**Manifest Detection**\n```bash\n# Scan in order of priority (multiple manifests = multiple installs)\nfind . -maxdepth 3 -name 'package.json' -o -name 'requirements.txt' -o -name 'go.mod' -o -name 'Gemfile' -o -name 'pom.xml'\n# Validate each manifest file exists and is readable\n# Determine language from filename + content check (don't guess from extension alone)\n```\n\n**Defensive Parsing**\n- For package.json: use `node -e \"require('./package.json')\"` to validate before parsing, catch SyntaxError with line number.\n- For requirements.txt: parse line-by-line, skip comment lines, validate package@version format.\n- For go.mod: use `go mod graph` to list dependencies instead of regex parsing.\n- For Gemfile: use `bundler` commands to list without executing.\n- For pom.xml: use `mvn dependency:list` or XML parser, not string matching.\n\n**Package Manager Checks**\n```bash\nfor manager in npm pip go bundle mvn; do\n  if ! command -v \"$manager\" &>/dev/null; then\n    warn \"$manager not found—skipping $language deps\"\n    continue\n  fi\n  # Verify version\n  version=$($manager --version 2>&1)\n  if [[ $? -ne 0 ]]; then\n    error \"$manager exists but is broken: $version\"\n    exit 1\n  fi\ndone\n```\n\n**Safe Installation**\n- Use `npm ci` (clean install from lockfile) instead of `npm install` (allows upgrades).\n- Use `pip install -r requirements.txt` with `--prefer-offline` to avoid unexpected changes.\n- Use `go mod download` before `go mod verify` to validate checksums.\n- Use `bundle install --no-deployment` (or `--deployment` if Gemfile.lock exists) for Ruby.\n- Use `mvn dependency:resolve` to download without compiling.\n\n**Atomic Installation**\n```bash\n# Create temp directory, install there, verify success, move to real location\ntemp_dir=$(mktemp -d)\ntrap \"rm -rf '$temp_dir'\" EXIT\n\nif npm ci --prefix \"$temp_dir\" 2>&1 | tee \"$temp_dir/install.log\"; then\n  mv \"$temp_dir/node_modules\" \"./node_modules\"\n  success \"Installed $(jq -r '.dependencies | keys | length' package.json) npm dependencies\"\nelse\n  error \"npm install failed: $(tail -5 \"$temp_dir/install.log\")\"\n  exit 1\nfi\n```\n\n**Logging & Observability**\n```bash\n# Log manifest detection\ninfo \"Found Node.js manifest: package.json ($(jq -r '.dependencies | keys | length' package.json) deps)\"\n\n# Log installation start\nstart=$(date +%s%N)\n\n# Run install\nnpm ci 2>&1 | tee install.log\n\n# Log completion\nduration=$(( ($(date +%s%N) - start) / 1000000 ))\nemit_event \"dependencies_installed\" \\\n  \"manager=npm\" \"count=42\" \"duration_ms=$duration\" \"status=success\"\n```\n\n### Edge Cases to Handle\n\n1. **Monorepo with multiple manifests**: Should you install all, or only root? Design: install root first, then any other top-level manifests.\n2. **Lockfile without manifest** (or vice versa): Warn but don't fail—let the build discover the real error.\n3. **Broken package manager** (installed but crashes): Distinguish from missing manager. Both should skip gracefully.\n4. **Network failure mid-install**: Retry up to 2 times with exponential backoff. If persistent, fail clearly.\n5. **Dependency conflicts** (two manifests want incompatible versions): Log the conflict, let the build fail later with a clear error.\n6. **Disk space exhaustion**: Check available disk before installing. Fail with \"Disk full\" rather than cryptic install errors.\n7. **Pre-existing partial installations**: Clean up before installing to avoid version conflicts.\n\n### Testing Strategy\n\n**Unit Tests**\n- Manifest parsing: valid, malformed, missing required fields, edge cases (empty files, BOM markers).\n- Manager detection: installed, missing, broken (crashes on --version).\n- Error message generation: clear, actionable, language-appropriate.\n\n**Integration Tests**\n- End-to-end with real npm, pip, go, bundle, mvn on test fixtures.\n- Test fixtures with intentionally missing dependencies.\n- Verify iteration 1 is skipped when all deps are pre-installed.\n- Test monorepo scenarios with multiple manifests.\n- Test network failure recovery (mock network timeouts).\n- Test disk space handling (mock df to report low space).\n\n**Fault Injection**\n- Remove package managers mid-install (simulate uninstall during build).\n- Truncate manifests to test parse error handling.\n- Fill disk to test exhaustion scenarios.\n- Introduce version conflicts in lock files.\n\n### Configuration\n\nAdd to `daemon-config.json`:\n```json\n{\n  \"dependency_preflight\": {\n    \"enabled\": true,\n    \"managers\": [\"npm\", \"pip\", \"go\", \"bundle\", \"maven\"],\n    \"skip_on_error\": false,\n    \"max_install_time_seconds\": 300\n  }\n}\n```\n\nAllow pipeline stage to override: `--dependency-install-timeout 600`."
+          }
+        ],
+        "review_focus": [
+          "Manifest parsing robustness—test with malformed/edge-case files from real projects",
+          "Graceful degradation when package managers are missing—don't block the entire build, only skip that language",
+          "Atomic install semantics—verify partial failures are rolled back cleanly",
+          "Iteration 1 skip logic—confirm this actually saves a wasted iteration when all deps are pre-installed",
+          "Cross-platform compatibility—test on Linux, macOS, and Windows (if applicable)",
+          "Monorepo handling—does multiple manifests work correctly, or does it cause conflicts?",
+          "Configuration integration—verify daemon-config.json flag is wired correctly and respected",
+          "Error messages—are they actionable for common failures (missing manager, parse error, network timeout)?"
+        ],
+        "risk_areas": [
+          "Manifest parsing failures could crash the pipeline if error handling is incomplete (JSON parse error, XML malformation, unexpected format)",
+          "Missing package managers should degrade gracefully, not block the entire build—must test behavior when npm/pip/go/bundle/mvn are unavailable",
+          "Partial installs during network failures could leave the build in an inconsistent state—atomic semantics are critical",
+          "Monorepo with conflicting dependencies (two manifests want incompatible versions) could mask real errors if not logged clearly",
+          "Performance regression if dependency installation takes too long—could make daemon slower overall if not gated by timeout",
+          "Security: auto-installing packages without validation could introduce supply chain risk—must verify lockfiles and trusted sources",
+          "Concurrency in daemon mode—multiple builds running in parallel could conflict over package manager cache/lock files"
+        ]
+      },
+      "timestamp": 1781292156,
+      "ttl": 3600
+    },
+    "f4efed60cb1a7f9bb3061cede802f4e4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project metadata (npm package manager, vitest test runner, JavaScript language, src/ directory structure) is essential for planning dependency pre-flight checks and auto-install engine — defines what dependency system to work with and how to test it"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows successful patterns using npm test, standard template, and multiple iterations on DevOps-adjacent work — provides tested approach for multi-iteration dependency work with npm ecosystem"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Timeout bug fix in daemon (semaphore + backoff patterns) directly applicable to dependency pre-flight checks which may need timeout handling and backoff strategies during installation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Baseline build_duration_s of 2089 seconds provides performance context for setting timeout expectations in pre-flight dependency checks"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Test infrastructure failures (mktemp, output formats, sed patterns) inform testing strategy for dependency pre-flight validation — shows common shell scripting pitfalls to avoid"
+          }
+        ]
+      },
+      "timestamp": 1781292240,
+      "ttl": 1800
+    },
+    "1dc43697bc2897ec6d1245c580b1b0de": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (project conventions from 2026-06-12)",
+            "relevance": 82,
+            "summary": "Defines this project as Node/npm/vitest with commonjs imports. Directly relevant for understanding the codebase structure that a dependency pre-flight check engine needs to validate."
+          },
+          {
+            "file": "failures.json (detailed, 2026-06-12)",
+            "relevance": 58,
+            "summary": "Shows test failures and root causes from recent runs (mktemp, sw-cleanup output format, sed syntax). Helps identify categories of failures that plan validation should anticipate and prevent."
+          },
+          {
+            "file": "knowledge.json (captured patterns, 2026-05-22)",
+            "relevance": 52,
+            "summary": "Contains 4 test failures with fix strategies (mktemp directory issues, output format problems). Provides historical context on what breaks in this repo's test/CI environment."
+          }
+        ]
+      },
+      "timestamp": 1781292406,
+      "ttl": 1800
+    },
+    "085abe27b8c92b831abe30b0dc430d97": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 95,
+            "summary": "Defines project conventions: Node.js, npm package manager, vitest test runner, CommonJS imports, src/ source structure. Essential for designing dependency engine architecture that fits the project's tooling and conventions."
+          },
+          {
+            "file": "success-patterns.json (second entry with 'Fix bug' and 'Add authentication feature')",
+            "relevance": 70,
+            "summary": "Documents successful feature implementation patterns with iterations, file organization, test strategies, and file_patterns matching. Provides a template for structuring similar multi-stage architectural work."
+          },
+          {
+            "file": "patterns.json (third entry - project_type nodejs)",
+            "relevance": 65,
+            "summary": "Confirms Node.js project type with npm context. Critical for design decisions around dependency resolution, package metadata parsing, and auto-install mechanics."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 55,
+            "summary": "Establishes baseline build duration (2089s). Relevant for setting performance targets and understanding the overhead budget for pre-flight checks and auto-install operations."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Shows past successful issue resolution pattern (daemon timeout fix with semaphore approach). Relevant as an example of how the team tackles infrastructure problems requiring careful state management."
+          }
+        ]
+      },
+      "timestamp": 1781292441,
+      "ttl": 1800
+    },
+    "f2d6b94263aeb485e42b0db40c98b3da": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains 4 documented test failures showing anti-patterns: stale heartbeat detection logic, output format issues, and sed command pattern errors. Illustrates what went wrong in similar infrastructure work (cleanup, detection, formatting)."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 58,
+            "summary": "Captures 5+ failure patterns with fix strategies for test infrastructure issues (mktemp failures, output formatting, JSON generation). Demonstrates anti-patterns in error handling and test setup that could inform dependency checking design."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 42,
+            "summary": "Shows successful timeout bug fix using semaphore pattern in daemon work. Relevant as a counter-example—demonstrates proper concurrency handling which informs what NOT to do (naive polling, race conditions) in auto-install logic."
+          }
+        ]
+      },
+      "timestamp": 1781292459,
+      "ttl": 1800
+    },
+    "7912ff1f32e7c58c72a8b52c42eafda7": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project conventions (Node.js, vitest, npm, commonjs) directly match current build environment and test strategy"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Contains two successful patterns with iterative build/test loops, npm test strategy, and multi-iteration approaches (3-4 iterations, 45-150s duration)"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Recent test failures (sw-cleanup.sh output format, mktemp directory issues) that could occur during transition to test stage after build completes"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Success pattern for timeout bug fix using semaphore—directly applicable to 'Auto-Install Engine' robustness feature for dependency handling"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Failure knowledge base with mktemp and test formatting issues; provides known failure signatures to avoid during build and test phases"
+          }
+        ]
+      },
+      "timestamp": 1781292566,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains recent test failures actively blocking builds (sw-cleanup.sh output format, mktemp directory issues, sed syntax) with root causes and fixes; most recent entries from 2026-06-12"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Documents successful build patterns from prior runs: 3-iteration loops with npm test, standard template, file change patterns; directly applicable to current build strategy"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Indexed failure patterns with fix strategies: mktemp /tmp/claude directory issues, sw-cleanup.sh output format bugs; useful for avoiding recurrence during build"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions (Node/vitest/commonjs, src/ structure) essential for understanding build environment and test patterns"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Baseline build duration (2089s) provides performance expectations and regression detection reference for current build"
+          }
+        ]
+      },
+      "timestamp": 1781292579,
+      "ttl": 1800
     }
   }
 }

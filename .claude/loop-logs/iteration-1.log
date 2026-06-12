@@ -1,1 +1,28 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+The implementation is complete. Here's the summary against the active skills' required output:
+
+## Dependency Pre-Flight Check & Auto-Install Engine — Complete
+
+**What shipped** (`scripts/lib/dependency-preflight.sh`, sourced by `stage_build()`):
+- Detects `package.json`/`requirements.txt`/`go.mod`/`Gemfile`/`pom.xml` → npm/pip/go/bundle/maven, monorepo-aware (bounded depth, excludes `node_modules`/`vendor`)
+- Checks installed status before the build loop; auto-installs missing deps (lockfile-deterministic: `npm ci` when lockfile present)
+- Each install wrapped in `timeout` + `( cd … )` subshell; `dep_preflight_run` **always returns 0** — failures never abort the pipeline
+- Emits `dependencies.installed` events (manager/count/duration_ms/status), exports `SW_DEPS_PREINSTALLED`, writes advisory `dep-preflight.json`
+- Config-gated (`dependency_preflight.auto_install`, default true) via new `_smart_bool` helper; registered the event in `config/event-schema.json`
+
+### Test Pyramid Breakdown
+- **41 tests total**: ~36 unit (`_smart_bool` chain, per-manager detection, monorepo exclusion, availability, installed heuristics, disabled no-op, non-fatal failure, missing-manager skip), **3 integration** (missing-deps → install invoked + event + marker; all-installed → `SW_DEPS_PREINSTALLED=1`; install failure non-fatal), **0 E2E** (full-pipeline E2E is covered by existing `sw-pipeline-test.sh`; real network installs are avoided in CI via mock binaries).
+
+### Coverage Targets
+- 100% of the 5 public functions + `_smart_bool`/`_dep_count` exercised; both config-gate branches; install success + failure + timeout-degradation paths. Critical path = the `stage_build` hook (guarded, non-fatal).
+
+### Critical Paths Tested
+- **Happy path**: package.json, no node_modules, mock npm → `npm install` invoked, `status=success`, `SW_DEPS_PREINSTALLED=0`, marker written.
+- **Error 1**: mock npm exits 1 → run returns 0, `status=failed` emitted.
+- **Error 2**: manager binary absent → `status=skipped`, no crash.
+- **Edge 1**: `auto_install=false` → no-op, `status=disabled`, no install.
+- **Edge 2**: monorepo with nested + `node_modules`/`vendor` manifests → root & nested detected, installed trees excluded.
+- **Edge 3**: all deps present → no install run, `status=present`, `SW_DEPS_PREINSTALLED=1`.
+
+**Regression check**: directly-affected suites (`sw-lib-pipeline-stages-test`, `sw-lib-compat-test` modulo a pre-existing environmental `file_mtime` failure confirmed at HEAD, `sw-project-detect-test` confirmed flaky/passes 3-of-3) are green. New suite registered in `package.json`. Version consistent (3.3.0). Committed as `d4ffab1b`.
+
+LOOP_COMPLETE
