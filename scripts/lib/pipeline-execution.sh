@@ -771,6 +771,28 @@ run_pipeline() {
         stage_start_epoch=$(now_epoch)
         emit_event "stage.started" "issue=${ISSUE_NUMBER:-0}" "stage=$id"
 
+        # Adaptive timeout: resolve the effective timeout for this stage from
+        # learned P95 history (or a config override) and surface it when it
+        # differs from the static default. The resolved value is exported so
+        # stage runners can honor it; recording happens on completion below.
+        if type timeout_resolve >/dev/null 2>&1; then
+            local _stage_timeout _stage_timeout_default
+            _stage_timeout=$(timeout_resolve "$id" 2>/dev/null || echo "")
+            _stage_timeout_default=$(_timeout_default "$id" 2>/dev/null || echo "")
+            if [[ -n "$_stage_timeout" ]]; then
+                export SW_STAGE_TIMEOUT="$_stage_timeout"
+                if [[ "$_stage_timeout" != "$_stage_timeout_default" ]]; then
+                    emit_event "timeout_adjusted" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=$id" \
+                        "old_timeout_seconds=${_stage_timeout_default}" \
+                        "new_timeout_seconds=${_stage_timeout}" \
+                        "source=${TIMEOUT_LAST_SOURCE:-unknown}" \
+                        "reason=${TIMEOUT_LAST_REASON:-unknown}"
+                fi
+            fi
+        fi
+
         # Mark GitHub Check Run as in-progress
         if [[ "${NO_GITHUB:-false}" != "true" ]] && type gh_checks_stage_update >/dev/null 2>&1; then
             gh_checks_stage_update "$id" "in_progress" "" "Stage $id started" 2>/dev/null || true
@@ -794,6 +816,11 @@ run_pipeline() {
             stage_dur_s=$(( $(now_epoch) - stage_start_epoch ))
             success "Stage ${BOLD}$id${RESET} complete ${DIM}(${timing})${RESET}"
             emit_event "stage.completed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "duration_s=$stage_dur_s" "result=success"
+            # Adaptive timeout: record the observed duration so future runs can
+            # learn the P95 for this stage. Only successful stages are recorded —
+            # failed/aborted durations would skew the percentile toward timeouts.
+            type timeout_record >/dev/null 2>&1 && \
+                timeout_record "$id" "$stage_dur_s" "${PIPELINE_TEMPLATE:-standard}" "${ISSUE_COMPLEXITY:-medium}" 2>/dev/null || true
             # Audit: stage complete
             if type audit_emit >/dev/null 2>&1; then
                 audit_emit "stage.complete" "stage=$id" "verdict=pass" \

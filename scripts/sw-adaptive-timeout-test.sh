@@ -31,6 +31,10 @@ if ! command -v jq >/dev/null 2>&1; then
     exit 1
 fi
 
+# Source compat helpers (provides _smart_int for config-override precedence)
+# shellcheck source=lib/compat.sh
+source "$SCRIPT_DIR/lib/compat.sh"
+
 # Source the module under test
 # shellcheck source=lib/adaptive-timeout.sh
 source "$SCRIPT_DIR/lib/adaptive-timeout.sh"
@@ -370,6 +374,60 @@ test_recording_with_metadata() {
     fi
 }
 
+# Test 13: timeout_resolve falls back to stage default with no history
+test_resolve_default_no_history() {
+    TEST_NAME="test_resolve_default_no_history"
+    timeout_reset
+    unset SW_TIMEOUT_OVERRIDES_BUILD 2>/dev/null || true
+
+    local timeout
+    timeout_resolve "build" > "$TEST_DIR/resolve.out"
+    timeout=$(cat "$TEST_DIR/resolve.out")
+    assert_equals "1800" "$timeout" "Resolves to stage default with no history"
+    assert_equals "default" "$TIMEOUT_LAST_SOURCE" "Resolution source is 'default'"
+}
+
+# Test 14: timeout_resolve uses adaptive P95 once enough samples exist
+test_resolve_adaptive() {
+    TEST_NAME="test_resolve_adaptive"
+    timeout_reset
+    unset SW_TIMEOUT_OVERRIDES_TEST 2>/dev/null || true
+
+    # 12 identical samples (> TIMEOUT_MIN_SAMPLES) → P95 = 200, +20% buffer = 240
+    local i
+    for i in {1..12}; do
+        timeout_record "test" "200" "standard" "medium"
+    done
+
+    local timeout
+    timeout_resolve "test" > "$TEST_DIR/resolve.out"
+    timeout=$(cat "$TEST_DIR/resolve.out")
+    assert_equals "240" "$timeout" "Resolves to adaptive P95+buffer with history"
+    assert_equals "adaptive" "$TIMEOUT_LAST_SOURCE" "Resolution source is 'adaptive'"
+}
+
+# Test 15: config override wins outright, skipping the percentile calc
+test_resolve_override_precedence() {
+    TEST_NAME="test_resolve_override_precedence"
+    timeout_reset
+
+    # Seed plenty of history that would otherwise drive an adaptive value...
+    local i
+    for i in {1..12}; do
+        timeout_record "review" "500" "standard" "medium"
+    done
+
+    # ...but an env-backed config override must take precedence.
+    export SW_TIMEOUT_OVERRIDES_REVIEW=1234
+    local timeout
+    timeout_resolve "review" > "$TEST_DIR/resolve.out"
+    timeout=$(cat "$TEST_DIR/resolve.out")
+    unset SW_TIMEOUT_OVERRIDES_REVIEW
+
+    assert_equals "1234" "$timeout" "Config override takes precedence over adaptive"
+    assert_equals "override" "$TIMEOUT_LAST_SOURCE" "Resolution source is 'override'"
+}
+
 # ─── Run All Tests ──────────────────────────────────────────────────────────
 
 echo ""
@@ -388,6 +446,9 @@ test_report_output
 test_history_rotation
 test_p95_nonuniform
 test_recording_with_metadata
+test_resolve_default_no_history
+test_resolve_adaptive
+test_resolve_override_precedence
 
 echo "│"
 echo "╭─ Test Results ──────────────────────────────────────────────────────"

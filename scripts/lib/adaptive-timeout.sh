@@ -117,6 +117,48 @@ timeout_get() {
     return 0
 }
 
+# Resolution metadata set by timeout_resolve() for event emission by callers.
+TIMEOUT_LAST_SOURCE=""   # one of: override | adaptive | default
+TIMEOUT_LAST_REASON=""   # human-readable reason string
+
+# timeout_resolve(stage) — Resolve the effective timeout honoring config precedence.
+# Precedence: daemon-config `timeout_overrides.<stage>` > adaptive P95 > stage default.
+# When a config override is set it wins outright and the percentile calc is skipped.
+# Side effects: sets TIMEOUT_LAST_SOURCE and TIMEOUT_LAST_REASON for the caller to
+# emit a timeout_adjusted event.
+# $1: stage name
+# Returns: timeout in seconds
+timeout_resolve() {
+    local stage="${1:-unknown}"
+    local default_timeout
+    default_timeout=$(_timeout_default "$stage")
+
+    # 1. Config override takes precedence — skip percentile calc entirely.
+    local override=""
+    if type _smart_int >/dev/null 2>&1; then
+        override=$(_smart_int "timeout_overrides.$stage" "" 2>/dev/null || true)
+    fi
+    if [[ -n "$override" && "$override" =~ ^[0-9]+$ && "$override" -gt 0 ]]; then
+        TIMEOUT_LAST_SOURCE="override"
+        TIMEOUT_LAST_REASON="config_override"
+        echo "$override"
+        return 0
+    fi
+
+    # 2. Adaptive P95 (falls back to default when samples are insufficient).
+    local resolved
+    resolved=$(timeout_get "$stage")
+    if [[ "$resolved" == "$default_timeout" ]]; then
+        TIMEOUT_LAST_SOURCE="default"
+        TIMEOUT_LAST_REASON="default_insufficient_samples"
+    else
+        TIMEOUT_LAST_SOURCE="adaptive"
+        TIMEOUT_LAST_REASON="p95_adaptive"
+    fi
+    echo "$resolved"
+    return 0
+}
+
 # ─── Duration Recording ────────────────────────────────────────────────────
 
 # timeout_record(stage, duration_seconds) — Record a stage duration.
@@ -188,8 +230,13 @@ timeout_sample_count() {
 
     [[ ! -f "$TIMEOUT_HISTORY_FILE" ]] && echo "0" && return 0
 
-    # Count lines where .stage == arg1
-    grep -c "\"stage\":\"$stage\"" "$TIMEOUT_HISTORY_FILE" 2>/dev/null | xargs || echo "0"
+    # Count lines where .stage == arg1.
+    # grep -c always prints a count but exits 1 on zero matches; under pipefail
+    # that would trip a `|| echo 0` fallback and emit a double value, so mask the
+    # exit code with `|| true` and normalize empties with ${var:-0}.
+    local count
+    count=$(grep -c "\"stage\":\"$stage\"" "$TIMEOUT_HISTORY_FILE" 2>/dev/null || true)
+    echo "${count:-0}"
 }
 
 # timeout_calculate_p95(stage) — Calculate P95 duration from historical data.
