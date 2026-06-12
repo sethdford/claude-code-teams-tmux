@@ -367,6 +367,50 @@ _smart_int() {
     echo "$default"
 }
 
+# _smart_bool <config_key> <default:true|false>
+# Read boolean from daemon-config with env override and default fallback.
+# Chain: SW_<KEY> env var → daemon-config.json key → default. Echoes "true"/"false".
+# Accepts truthy: true/1/yes/on (case-insensitive); everything else → false.
+_smart_bool() {
+    local key="$1" default="${2:-false}"
+
+    # Sanitize key to alphanumeric/underscore/dot only (prevents eval injection)
+    if [[ ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_.]*$ ]]; then
+        echo "$default"
+        return
+    fi
+
+    local raw=""
+
+    # Env override: config.key.path → SW_KEY_PATH
+    local env_key
+    env_key="SW_$(echo "$key" | tr '[:lower:].' '[:upper:]_')"
+    local env_val=""
+    eval 'env_val="${'"$env_key"':-}"' 2>/dev/null || true
+    if [[ -n "$env_val" ]]; then
+        raw="$env_val"
+    else
+        # Daemon config
+        local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+        if [[ -f "$cfg" ]]; then
+            local cfg_val
+            cfg_val=$(jq -r --arg k "$key" 'getpath($k | split(".")) // empty' "$cfg" 2>/dev/null || true)
+            if [[ -n "$cfg_val" && "$cfg_val" != "null" ]]; then
+                raw="$cfg_val"
+            fi
+        fi
+    fi
+
+    # No explicit value found → use default
+    [[ -z "$raw" ]] && raw="$default"
+
+    # Normalize to true/false
+    case "$(echo "$raw" | tr '[:upper:]' '[:lower:]')" in
+        true|1|yes|on) echo "true" ;;
+        *)             echo "false" ;;
+    esac
+}
+
 # _smart_effort <stage>
 # Read effort level from config, with per-stage defaults
 _smart_effort() {

@@ -195,6 +195,8 @@ _SCOPE_ENFORCEMENT_SH="${SCRIPT_DIR}/lib/scope-enforcement.sh"
 _PIPELINE_STAGES_INTAKE_SH="${SCRIPT_DIR}/lib/pipeline-stages-intake.sh"
 [[ -f "$_PIPELINE_STAGES_INTAKE_SH" ]] && source "$_PIPELINE_STAGES_INTAKE_SH"
 
+[[ -f "$SCRIPT_DIR/lib/dependency-preflight.sh" ]] && source "$SCRIPT_DIR/lib/dependency-preflight.sh" 2>/dev/null || true
+
 _PIPELINE_STAGES_BUILD_SH="${SCRIPT_DIR}/lib/pipeline-stages-build.sh"
 [[ -f "$_PIPELINE_STAGES_BUILD_SH" ]] && source "$_PIPELINE_STAGES_BUILD_SH"
 

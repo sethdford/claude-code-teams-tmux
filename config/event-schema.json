@@ -66,6 +66,10 @@
       "required": ["pr_number"],
       "optional": ["title", "branch"]
     },
+    "dependencies.installed": {
+      "required": ["manager", "status"],
+      "optional": ["count", "duration_ms", "reason"]
+    },
     "deploy.started": { "required": ["environment"], "optional": ["version"] },
     "deploy.completed": {
       "required": ["environment"],

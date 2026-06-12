@@ -169,6 +169,13 @@ stage_build() {
     local dod_file="$ARTIFACTS_DIR/dod.md"
     local loop_args=()
 
+    # Pre-flight dependency check & auto-install (best-effort, non-fatal).
+    # Installs missing deps before the build loop so iteration 1 isn't spent on
+    # `npm install`-style setup. Guarded: skips silently if the engine is absent.
+    if type dep_preflight_run >/dev/null 2>&1; then
+        dep_preflight_run "${PROJECT_ROOT:-.}" || true
+    fi
+
     # Memory integration — inject context if memory system available
     local memory_context=""
     if type intelligence_search_memory >/dev/null 2>&1; then
