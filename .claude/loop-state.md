@@ -239,14 +239,14 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 30
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-12T19:39:33Z
-last_iteration_at: 2026-06-12T19:39:33Z
+started_at: 2026-06-12T19:47:29Z
+last_iteration_at: 2026-06-12T19:47:29Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -257,8 +257,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-12T19:39:33Z)
-### 3. New `timeout_resolve` with config precedence
-Implements the spec'd precedence chain: `daemon-config timeout_overrides.<stage>` → adaptive P95 → stage default, wi
-### Tests
 
