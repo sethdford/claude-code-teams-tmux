@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 6,
-      "last_seen": "2026-06-12T03:23:41Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-11T19:30:14Z",
       "category": "test_failure"
     },
     {
@@ -30,20 +30,11 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude parent directory does not exist before test temp dirs are created",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or change the template to use /tmp/sw-test-XXXXXX which doesn't require a pre-existing subdirectory",
-      "seen_count": 2,
-      "last_seen": "2026-06-12T03:47:24Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails parsing quality-profile.json because it contains invalid/empty JSON, causing learned rule generation to produce empty confidence values and invalid output",
-      "fix": "Ensure quality-profile.json is written as valid JSON before jq reads it; add a guard to initialize the file with '{}' or a valid skeleton if it is empty or malformed",
+      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist on this system",
+      "fix": "Create /tmp/claude before running tests, or change mktemp template to use /tmp directly (mktemp -d /tmp/sw-test-XXXXXX)",
       "seen_count": 1,
-      "last_seen": "2026-06-12T04:00:01Z",
-      "category": "test_failure"
+      "last_seen": "2026-06-11T20:02:28Z",
+      "category": "config"
     }
   ]
 }
