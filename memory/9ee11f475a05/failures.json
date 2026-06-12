@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 6,
-      "last_seen": "2026-06-12T03:49:49Z",
+      "seen_count": 7,
+      "last_seen": "2026-06-12T11:07:15Z",
       "category": "test_failure"
     },
     {
@@ -30,8 +30,8 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude/ directory doesn't exist, and test failures in sw-cleanup-test.sh show heartbeat detection and summary output are broken",
-      "fix": "create /tmp/claude/ before mktemp calls or use mktemp -d /tmp/sw-test-XXXXXX; fix heartbeat stale detection and 'Found'/'--force' summary output in sw-cleanup.sh",
+      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist in the test environment, and 3 cleanup tests fail due to stale heartbeat detection and summary output mismatches",
+      "fix": "Create /tmp/claude directory before running tests or change mktemp template to use /tmp directly; fix cleanup test assertions to match actual output format",
       "seen_count": 1,
       "last_seen": "2026-06-11T20:02:28Z",
       "category": "test_failure"
