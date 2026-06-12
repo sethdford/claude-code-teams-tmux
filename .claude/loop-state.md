@@ -295,16 +295,16 @@ Add to `daemon-config.json`:
 
 Allow pipeline stage to override: `--dependency-install-timeout 600`.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-12T19:29:51Z
-last_iteration_at: 2026-06-12T19:29:51Z
+started_at: 2026-06-12T19:47:55Z
+last_iteration_at: 2026-06-12T19:47:55Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

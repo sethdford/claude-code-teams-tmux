@@ -358,7 +358,10 @@ generate_learned_rules() {
         # Compute confidence (count / total_prs, capped at 0.95)
         # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        # count-based confidence (3 → 0.15, 5 → 0.25, ≥10 → 0.95), portable via awk
+        # (bc lacks `if/then/else/end` keyword syntax, silently yielding empty output)
+        confidence=$(awk -v c="$count" 'BEGIN { v = (c >= 10) ? 0.95 : c / 20; printf "%.2f", v }' 2>/dev/null)
+        [[ -z "$confidence" ]] && confidence="0.60"
 
         # Generate rule text based on category
         local rule_text
