@@ -1071,18 +1071,6 @@ run_test_gate() {
     TEST_OUTPUT="$(echo "$combined_output" | tail -50)"
 }
 
-
-    # Write on test failure OR build failure (non-zero exit from Claude iteration)
-
-    # Prefer test log, fall back to build log
-
-    # Extract error lines (last 30 lines, grep for error patterns)
-
-    local error_count=0
-
-    local tmp_json="${error_json}.tmp.$$"
-
-    # Build JSON with jq (preferred) or plain-text fallback
 # ─── Audit Agent ─────────────────────────────────────────────────────────────
 
 run_audit_agent() {
