@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
       "seen_count": 11,
-      "last_seen": "2026-06-13T08:31:18Z",
+      "last_seen": "2026-06-13T08:23:57Z",
       "category": "test_failure"
     },
     {
@@ -24,7 +24,7 @@
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
       "seen_count": 5,
-      "last_seen": "2026-06-13T08:40:42Z",
+      "last_seen": "2026-06-13T08:35:30Z",
       "category": "test_failure"
     },
     {
@@ -32,18 +32,18 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude/ directory does not exist, and the cleanup test has output mismatches for heartbeat detection and summary display",
       "fix": "create /tmp/claude directory before mktemp calls or use mktemp without a subdirectory path, and fix sw-cleanup.sh heartbeat detection and summary output to match expected strings",
-      "seen_count": 1,
-      "last_seen": "2026-06-11T20:02:28Z",
+      "seen_count": 2,
+      "last_seen": "2026-06-13T08:51:02Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m  1/7 tests failed\u001b[0m",
-      "root_cause": "sed command references a literal variable name '$TEST_TEMP_DIR' as a filename instead of performing a substitution, caused by incorrect quoting in the test script",
-      "fix": "Fix the sed invocation in sw-code-review-test.sh to use proper shell quoting so $TEST_TEMP_DIR is expanded before being passed to sed (use double quotes or a variable substitution pattern)",
+      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this system",
+      "fix": "Create /tmp/claude directory before running tests or update test scripts to use /tmp directly as the mktemp template base",
       "seen_count": 1,
       "last_seen": "2026-06-12T19:25:30Z",
-      "category": "test_failure"
+      "category": "config"
     }
   ]
 }
