@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
       "seen_count": 11,
-      "last_seen": "2026-06-13T08:34:03Z",
+      "last_seen": "2026-06-13T08:36:10Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 6,
-      "last_seen": "2026-06-13T09:08:55Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-13T09:06:19Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m  1/7 tests failed\u001b[0m",
-      "root_cause": "sw-feedback-test.sh regression detection test produces invalid or non-JSON output",
-      "fix": "Check the regression detection section in sw-feedback-test.sh and ensure the command under test outputs valid JSON (likely needs jq formatting or the output path is wrong)",
+      "root_cause": "sed invocation missing -e flag causing the substitution expression to be interpreted as a filename",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in sw-code-review-test.sh",
       "seen_count": 1,
       "last_seen": "2026-06-12T19:25:30Z",
       "category": "test_failure"
