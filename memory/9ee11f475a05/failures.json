@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 11,
-      "last_seen": "2026-06-13T08:38:21Z",
+      "seen_count": 12,
+      "last_seen": "2026-06-13T13:33:59Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 5,
-      "last_seen": "2026-06-13T08:46:17Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-13T13:39:19Z",
       "category": "test_failure"
     },
     {
@@ -48,10 +48,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "",
-      "fix": "",
+      "root_cause": "sed command references TEST_TEMP_DIR variable that is not expanded before use, treating it as a literal filename rather than a variable substitution",
+      "fix": "Replace the unquoted variable reference in the sed argument with proper shell expansion, e.g. use double quotes or pre-expand the variable before passing to sed",
       "seen_count": 1,
-      "last_seen": "2026-06-13T09:11:47Z"
+      "last_seen": "2026-06-13T09:11:47Z",
+      "category": "test_failure"
     }
   ]
 }
