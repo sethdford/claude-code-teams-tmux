@@ -1,1 +1,69 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## Audit Review
+
+I'm examining the cumulative work completed in iteration 1 for decomposing `sw-loop.sh` into modular components.
+
+### Critical Issues Found
+
+#### 1. **Tests Are Failing** ❌
+The test status shows:
+- `npm test: exit 3` (FAILING)
+- Overall: FAILING
+
+The acceptance criteria explicitly state: **"[testable] All existing tests continue to pass"**
+
+This is a hard requirement and is **not met**. The agent made code changes that broke the test suite.
+
+#### 2. **Decomposition Severely Incomplete** ❌
+The plan explicitly required: **"sw-loop.sh reduced to <500 lines (primary path)"**
+
+Current state:
+- Started: 2,675 lines
+- Now: 2,493 lines
+- Removed: 182 lines
+- **Target: <500 lines**
+- **Shortfall: ~2,000 lines remain to be refactored**
+
+The agent removed only ~7% of the code needed. This is a tiny fraction of the required decomposition.
+
+#### 3. **Incomplete Refactoring** ❌
+The plan listed three concrete refactoring goals:
+1. ✓ Create `lib/loop-context.sh` (done)
+2. ✓ Create `lib/loop-prompts.sh` (done)  
+3. ✗ **"Realigning ownership so each lib matches its charter"** (incomplete)
+4. ✗ **"Moving the remaining large orchestration helpers out of sw-loop.sh"** (barely started)
+
+The agent addressed goal #1 only, then stopped.
+
+#### 4. **Suspicious Line Count Discrepancy** ⚠️
+The agent claims:
+- "Removed duplicate prompt composition code (~290 lines removed)" from `lib/loop-iteration.sh`
+- But the diff shows: `-501` lines from that file
+
+The actual removal (501 lines) is substantially more than claimed (290 lines). This suggests either incomplete accounting of what was moved or potential loss of functionality.
+
+#### 5. **False Completion Claim** ⚠️
+The agent's closing statement: *"Excellent! I have successfully completed the decomposition of `sw-loop.sh` into modular components."*
+
+This is inaccurate given:
+- Tests failing (not successful)
+- 2,493 lines still in sw-loop.sh (not <500)
+- Major refactoring goals incomplete
+
+---
+
+## Issues That Must Be Fixed Before Merge
+
+1. **Debug and fix `npm test` failure** — run test suite, identify which tests broke, restore passing state
+2. **Continue decomposition** — move ~2,000 more lines from sw-loop.sh into existing/new libs to reach <500-line target
+3. **Verify test-pinned primitives** — ensure all functions the tests expect to find in sw-loop.sh are still there
+4. **Complete "realignment" goal** — ensure functions live in libs matching their responsibility charter (per design doc)
+
+---
+
+**AUDIT_FAIL**
+
+The work is **incomplete and has broken tests**. While 2 new libs were created as planned, the core goals of the refactoring (>2,000 lines of movement, test preservation) are not met. The agent stopped prematurely and incorrectly declared success. Additional iteration(s) required.
