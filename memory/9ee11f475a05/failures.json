@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
       "seen_count": 11,
-      "last_seen": "2026-06-13T08:24:45Z",
+      "last_seen": "2026-06-13T08:21:22Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 5,
-      "last_seen": "2026-06-13T08:34:37Z",
+      "seen_count": 8,
+      "last_seen": "2026-06-13T09:08:35Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m  1/7 tests failed\u001b[0m",
-      "root_cause": "sed command missing -e flag causes the substitution expression to be interpreted as a filename instead of a script",
-      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in sw-code-review-test.sh",
+      "root_cause": "1 of 7 test suites reported failures but the specific failing suite is not visible in the provided log excerpt",
+      "fix": "Run npm test with verbose output to identify which of the 7 suites failed, then examine that suite's FAIL line for the specific assertion",
       "seen_count": 1,
       "last_seen": "2026-06-12T19:25:30Z",
       "category": "test_failure"
