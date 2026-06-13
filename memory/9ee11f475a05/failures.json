@@ -2,57 +2,29 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
-      "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
-      "seen_count": 13,
-      "last_seen": "2026-06-13T19:17:38Z",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed invoked without -e flag causing it to treat the substitution expression 's|$TEST_TEMP_DIR|...|g' as a filename",
+      "fix": "Add -e flag before the sed expression: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of sed \"s|...|g\"",
+      "seen_count": 2,
+      "last_seen": "2026-06-13T19:42:16Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and uses different summary output format than tests expect (missing 'Found N' count and '--force' hint text)",
-      "fix": "Update sw-cleanup.sh stale heartbeat detection to output the heartbeat agent name in dry-run mode and ensure summary prints 'Found <n>' and '--force' hint when items are detected",
-      "seen_count": 2,
-      "last_seen": "2026-06-12T19:32:26Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
-      "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 6,
-      "last_seen": "2026-06-13T19:26:33Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude/ directory does not exist, and the cleanup test has output mismatches for heartbeat detection and summary display",
-      "fix": "create /tmp/claude directory before mktemp calls or use mktemp without a subdirectory path, and fix sw-cleanup.sh heartbeat detection and summary output to match expected strings",
+      "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script produces non-JSON output",
+      "fix": "Fix the regression detection subcommand in sw-feedback.sh to output valid JSON when invoked in test context",
       "seen_count": 1,
-      "last_seen": "2026-06-11T20:02:28Z",
+      "last_seen": "2026-06-13T19:29:00Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m  1/7 tests failed\u001b[0m",
-      "root_cause": "sed command references a variable $TEST_TEMP_DIR that is not expanded before being passed as a sed script argument, causing it to be interpreted as a filename",
-      "fix": "quote the sed expression correctly or ensure TEST_TEMP_DIR is exported before the sed invocation in sw-code-review-test.sh",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-06-12T19:25:30Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sed command references a literal string '$TEST_TEMP_DIR' as a filename instead of using it as a variable substitution pattern",
-      "fix": "Quote the sed expression correctly so $TEST_TEMP_DIR expands as a shell variable before being passed to sed, e.g. use double quotes or pass the variable via -e",
-      "seen_count": 1,
-      "last_seen": "2026-06-13T09:11:47Z",
-      "category": "test_failure"
+      "last_seen": "2026-06-13T20:01:34Z"
     }
   ]
 }
