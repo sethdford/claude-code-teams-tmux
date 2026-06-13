@@ -139,6 +139,14 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 2 (2026-06-13T08:50:00Z)
+- Fixed file_mtime() cross-platform compatibility bug (Linux stat -f vs -c issue)
+- Cleanup tests now pass (24/24 — was 3 failures)
+- Created lib/loop-multi-agent.sh (352 lines) with 6 multi-agent functions
+- Removed 336 lines from sw-loop.sh (2493 → 2157 lines)
+- Loop tests unchanged: 62/68 pass, 6 pre-existing failures
+- Progress: 13% reduction toward <500 line target
+
 ### Iteration 1 (2026-06-13T08:31:16Z)
 - All test-pinned functions and literals remain in place
 - Proper module guards prevent double-sourcing
