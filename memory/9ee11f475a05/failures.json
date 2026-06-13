@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
       "seen_count": 12,
-      "last_seen": "2026-06-13T13:34:00Z",
+      "last_seen": "2026-06-13T13:15:39Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', '--force'",
-      "fix": "Update sw-cleanup.sh to output heartbeat filenames and summary lines matching the test expectations, or fix the test patterns to match actual output",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a summary line containing 'Found N' and '--force' hint in dry-run mode",
       "seen_count": 1,
       "last_seen": "2026-06-13T09:11:47Z",
       "category": "test_failure"
