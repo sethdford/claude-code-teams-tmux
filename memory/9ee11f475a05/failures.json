@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format changed, no longer emitting 'agent-1', 'Found', or '--force' hint text",
       "fix": "Update sw-cleanup-test.sh expected strings to match current cleanup script output, or fix sw-cleanup.sh to emit the expected summary lines when items are found",
       "seen_count": 12,
-      "last_seen": "2026-06-13T13:15:39Z",
+      "last_seen": "2026-06-13T13:17:58Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 5,
-      "last_seen": "2026-06-13T08:46:17Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-13T13:31:41Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output don't match expected strings 'agent-1', 'Found', and '--force'",
-      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames and a summary line containing 'Found N' and '--force' hint in dry-run mode",
+      "root_cause": "sed command references a literal variable name '$TEST_TEMP_DIR' in the substitution pattern instead of expanding it, causing 'No such file or directory' when the string is treated as a filename",
+      "fix": "Quote the sed expression correctly so $TEST_TEMP_DIR expands before sed sees it, e.g. use double quotes: sed \"s|$TEST_TEMP_DIR|...|g\" or pass the value via a variable with -e",
       "seen_count": 1,
       "last_seen": "2026-06-13T09:11:47Z",
       "category": "test_failure"
