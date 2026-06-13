@@ -32,15 +32,16 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "reviewer",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.90,
+        "reasoning": "Decomposing a 2675-line bash script into modular components requires implementation expertise (builder), architectural design decisions (architect), quality assurance (reviewer), and test validation (tester) to ensure behavior preservation",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781338651,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,340 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "c47f894870f936aef4230f283569fcdf": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "full",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Subtle function dependencies breaking when modules are separated",
+          "Context window management complexity creating hidden interactions between modules",
+          "Circular dependencies or unresolved function exports across new libs",
+          "Performance degradation from additional file sourcing and function indirection",
+          "Memory injection and global state management failures across module boundaries"
+        ],
+        "implementation_hints": [
+          "Map complete dependency graph of all ~150+ functions before extraction to identify coupling points",
+          "Extract each module one at a time and run full test suite after each to catch breakage early",
+          "Use strong naming convention (loop_context_*, loop_iteration_*, etc.) to avoid symbol conflicts in global scope",
+          "Document all exported functions with their contracts: inputs, outputs, global state dependencies",
+          "Establish clear module boundaries: define what each lib owns vs delegates to others",
+          "Create integration tests before refactoring to baseline current behavior",
+          "Profile for performance impact of additional sourcing and verify no significant overhead",
+          "Use consistent error handling patterns across all new modules to maintain reliability",
+          "Keep orchestration logic in sw-loop.sh intentionally verbose to clarify module interaction flow",
+          "Test module interactions thoroughly—integration is where refactoring bugs hide"
+        ]
+      },
+      "timestamp": 1781337793,
+      "ttl": 3600
+    },
+    "8bfbad4ba329fe718496182eb50704e6": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1781337803,
+      "ttl": 1800
+    },
+    "48ed921ac0f3b3f75ee3908d2604c010": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 135000,
+        "likely_failure_stage": "test",
+        "confidence": 65
+      },
+      "timestamp": 1781337817,
+      "ttl": 3600
+    },
+    "16af8d68507438df202c32616b18b942": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "infrastructure",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Large but well-scoped refactoring of 2,654-line monolith into 5 focused lib modules following established pattern (#218). Complexity is managing backward compatibility and hidden dependencies, not design. Hard requirement: existing tests pass unchanged."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "systematic-debugging"
+          ],
+          "design": [
+            "api-design"
+          ],
+          "build": [],
+          "review": [
+            "two-stage-review",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "architecture-design": "Create an ADR documenting the new lib-loop-*.sh module boundaries, their responsibilities, and dependency directions—critical for future maintainers to understand why orchestration was split this way and avoid reintroducing monolithic coupling.",
+          "systematic-debugging": "Map the current 2,654-line monolith's hidden dependencies, state flow, and integration points before extracting—a wrong boundary could fragment context management or break restart logic.",
+          "api-design": "Design minimal, focused APIs between the 5 modules (context/iteration/convergence/restart/prompts) to ensure the refactoring actually reduces coupling rather than just moving code around.",
+          "two-stage-review": "Pass 1: Verify all sw-loop functionality preserved, test harness works unchanged, no regressions. Pass 2: Evaluate whether new module structure actually improves maintainability and follows #218 patterns.",
+          "adversarial-quality": "Challenge module boundaries with failure scenarios—e.g., what breaks if iteration.sh calls convergence.sh which calls context.sh? Can restart logic run independently or is it entangled with iteration?",
+          "testing-strategy": "Non-negotiable: existing sw-loop-test.sh must pass without modification. Verify test harness can still mock internal functions, inject state, and verify call chains across module boundaries.",
+          "validation-thoroughness": "Beyond test suite: verify refactored loop orchestrates correctly in realistic scenarios (context restart with error recovery, convergence extension logic, progress tracking through iteration boundaries).",
+          "pr-quality": "Large refactoring needs clear 5-minute narrative: explain the new lib structure, why these boundaries reduce coupling, and how backward compatibility was preserved for external callers."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Backward compatibility: All sw-loop.sh function calls from pipeline.sh, loop tests, and other callers remain working—no external API breakage.",
+          "Module boundaries: Are context/iteration/convergence/restart/prompts cleanly separated or do they have circular dependencies or hidden state coupling?",
+          "Test harness intact: sw-loop-test.sh runs unchanged—verify new lib modules export all functions the test harness mocks, stubs, or inspects.",
+          "Hidden state and side effects: Look for implicit global state (files, env vars, exit codes) that the monolith relies on and becomes fragile when split.",
+          "New lib exports: Does lib/compat.sh need new helper functions extracted during refactoring? Any duplicated utilities that should be shared?",
+          "Line reduction verification: sw-loop.sh should drop to <500 lines (orchestration delegation only), confirming real extraction occurred vs. just reorganization."
+        ],
+        "risk_areas": [
+          "Test harness breakage: Existing sw-loop-test.sh depends on internal function signatures, mocking patterns, and state inspection—refactoring could silently break test assumptions.",
+          "Circular module dependencies: context.sh needs convergence.sh which needs iteration.sh which needs context.sh—design risk if not carefully handled.",
+          "External caller compatibility: pipeline.sh and other scripts may call sw-loop functions that move to lib modules—must remain accessible from sw-loop.sh exports.",
+          "Critical path performance: Loop orchestration is performance-sensitive—splitting into 5 modules could add call overhead or expose inefficiencies in state passing.",
+          "Implicit state management: Monolith may have hidden mutable state (temp files, progress tracking, error context) that becomes fragile when responsibilities split across modules."
+        ]
+      },
+      "timestamp": 1781337927,
+      "ttl": 3600
+    },
+    "60224d4678ea48e259b6bbadedb8262a": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains pattern from bug fix with 3 iterations involving loop iteration work and modifications to .claude/loop-logs and scripts/lib/outcome-feedback.sh. Directly relevant to understanding iterative refactoring patterns and loop-related infrastructure."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project conventions (Node, vitest, *.test.js pattern, commonjs). Essential for planning modularization strategy and understanding test requirements during refactoring."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Documents timeout bug fix in daemon using semaphore pattern. Relevant for understanding concurrency patterns in daemon/loop infrastructure that may inform modular component design."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Failure patterns including mktemp issues and test setup problems. Informs planning around test infrastructure and setup constraints during refactoring."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 35,
+            "summary": "Test failure patterns (cleanup output format, sed command issues). Provides examples of common test failures to avoid during refactoring and modularization."
+          }
+        ]
+      },
+      "timestamp": 1781337994,
+      "ttl": 1800
+    },
+    "5a3bfbed6d8ec378c9758cf4caa0f397": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains detailed test failures (sw-cleanup.sh, sw-hello-test, sed, mktemp) captured 2026-06-12/13. These test infrastructure issues are likely root causes of plan validation failures for a refactoring task."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Stores failure signatures and fix strategies for mktemp, sw-cleanup.sh heartbeat detection, and sed/JSON output issues. Directly addresses test environment problems that would block plan validation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Records successful bug fix and feature execution patterns with iteration counts (3-4), file change lists, and test strategies. Provides reference for how complex refactorings have succeeded previously (45-150s duration)."
+          }
+        ]
+      },
+      "timestamp": 1781338471,
+      "ttl": 1800
+    },
+    "8b49336129a4b75d03bcba065b1fc5c4": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (2nd occurrence)",
+            "relevance": 90,
+            "summary": "Contains detailed successful patterns for bug fixes and feature development (auth module) showing iterations, file organization patterns, test strategies, and modular approach — directly applicable to designing modular component architecture"
+          },
+          {
+            "file": "patterns.json (1st occurrence)",
+            "relevance": 75,
+            "summary": "Project structure metadata showing source_dir, test_pattern, conventions, and import style — essential for ensuring new modular components align with existing project conventions"
+          },
+          {
+            "file": "failures.json (2nd occurrence)",
+            "relevance": 70,
+            "summary": "Real failure patterns from this codebase (sw-cleanup.sh, heartbeat detection, test output formatting) inform what architectural issues to prevent when designing modular decomposition"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Documented failure patterns and fix strategies (mktemp issues, JSON output formatting, detection logic) provide concrete examples of pitfalls to avoid in modular component design"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 60,
+            "summary": "Explicitly captures architectural rules that new modular components must respect during decomposition"
+          }
+        ]
+      },
+      "timestamp": 1781338506,
+      "ttl": 1800
+    },
+    "76dc6328679a339ff2c2003d8989acc6": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains multiple documented anti-patterns and root causes: mktemp path assumptions, incorrect sed syntax (missing -e flags), improper quoting, output format inconsistencies. Directly relevant for identifying what NOT to do when decomposing shell scripts."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Shows successful pattern for daemon/script bug fix (timeout bug in sw-daemon.sh using semaphore approach). Relevant as a working design pattern for script modularization and component isolation in similar contexts."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Demonstrates successful iteration-based development patterns with loop strategies and test approaches. Relevant for understanding what design approaches have worked for similar refactoring/modularization tasks in the Shipwright codebase."
+          }
+        ]
+      },
+      "timestamp": 1781338522,
+      "ttl": 1800
+    },
+    "de119ad9e2992ba56818597b5e3b2dea": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (second - 0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a)",
+            "relevance": 75,
+            "summary": "Shows successful shell script refactoring patterns with 3-4 iterations on complex changes, including modifications to scripts/lib/*.sh and loop-related files. Demonstrates cost (~2.50 USD) and duration (150s) expectations for moderately complex shell script work."
+          },
+          {
+            "file": "failures.json (first with 5 entries)",
+            "relevance": 70,
+            "summary": "Contains recent test failures in sw-cleanup.sh, sw-feedback.sh, and mktemp directory handling. Understanding these common pitfalls in shell script testing and output formatting is directly applicable when refactoring sw-loop.sh."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captures mktemp directory creation failures and shell script testing issues (sw-cleanup.sh, sw-feedback.sh) with specific fix strategies. These patterns are relevant for avoiding similar issues during sw-loop.sh decomposition and testing."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Documents a successful shell script timeout bug fix using semaphore approach in daemon/dispatch scripts. Demonstrates a successful pattern for fixing complex shell script issues with specific gotchas to check."
+          },
+          {
+            "file": "patterns.json (first - project detection)",
+            "relevance": 45,
+            "summary": "Establishes project baseline: Node.js project with vitest and commonjs imports. Provides context for understanding the overall project structure and build environment for sw-loop.sh decomposition work."
+          }
+        ]
+      },
+      "timestamp": 1781338624,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Build stage should reference past successful patterns: bug fixes typically require 3 iterations, standard template uses npm test, files changed patterns show .claude/ artifacts and script directories. Critical for setting iteration expectations."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Recent test failures directly applicable to build stage: mktemp /tmp/claude path issues, sw-cleanup.sh output format mismatches, sed command issues. Agent should avoid these known pitfalls during iterations."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project conventions inform build strategy: Node.js project with vitest test runner, npm package manager, CommonJS imports. Build stage will execute 'npm test' per test_runner specification."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captured failure patterns with fix strategies (mktemp directory creation, test output formatting). If similar errors emerge during build iterations, fix_strategy and approach fields provide recovery paths."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Past successful fix approach (timeout bug + semaphore fix): shows that blocking/synchronization issues are solvable in this codebase. If daemon-related issues appear during build, similar pattern may apply."
+          }
+        ]
+      },
+      "timestamp": 1781338639,
+      "ttl": 1800
+    },
+    "862f3ae8b3d3a9b2cfaa3a61464b2ce1": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1781338728,
+      "ttl": 1800
+    },
+    "bd6457ccc921fc2a8742f7f33b6d5afa": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1781338863,
+      "ttl": 1800
+    },
+    "01b6a2be1c1786bdb8326a757e4f9461": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1781338992,
+      "ttl": 1800
     }
   }
 }

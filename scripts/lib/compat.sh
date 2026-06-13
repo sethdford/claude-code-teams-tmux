@@ -419,3 +419,16 @@ _exponential_backoff() {
     [ "$delay" -lt 1 ] && delay=1
     echo "$delay"
 }
+
+# format_duration <seconds>
+# Convert seconds to human-readable "Xm Ys" or "Xs" format
+format_duration() {
+    local secs="$1"
+    local mins=$(( secs / 60 ))
+    local remaining_secs=$(( secs % 60 ))
+    if [[ $mins -gt 0 ]]; then
+        printf "%dm %ds" "$mins" "$remaining_secs"
+    else
+        printf "%ds" "$remaining_secs"
+    fi
+}

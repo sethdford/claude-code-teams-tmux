@@ -34,6 +34,8 @@ fi
 # Cross-pipeline discovery (learnings from other pipeline runs)
 [[ -f "$SCRIPT_DIR/sw-discovery.sh" ]] && source "$SCRIPT_DIR/sw-discovery.sh" 2>/dev/null || true
 # Source loop sub-modules for modular iteration management
+[[ -f "$SCRIPT_DIR/lib/loop-prompts.sh" ]] && source "$SCRIPT_DIR/lib/loop-prompts.sh"
+[[ -f "$SCRIPT_DIR/lib/loop-context.sh" ]] && source "$SCRIPT_DIR/lib/loop-context.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-iteration.sh" ]] && source "$SCRIPT_DIR/lib/loop-iteration.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-convergence.sh" ]] && source "$SCRIPT_DIR/lib/loop-convergence.sh"
 [[ -f "$SCRIPT_DIR/lib/loop-restart.sh" ]] && source "$SCRIPT_DIR/lib/loop-restart.sh"
@@ -706,17 +708,6 @@ VELOCITY_HISTORY=""
 
 # ─── Timing Helpers ───────────────────────────────────────────────────────────
 
-format_duration() {
-    local secs="$1"
-    local mins=$(( secs / 60 ))
-    local remaining_secs=$(( secs % 60 ))
-    if [[ $mins -gt 0 ]]; then
-        printf "%dm %ds" "$mins" "$remaining_secs"
-    else
-        printf "%ds" "$remaining_secs"
-    fi
-}
-
 # ─── State Management ────────────────────────────────────────────────────────
 
 ITERATION=0
@@ -1079,69 +1070,18 @@ run_test_gate() {
     TEST_OUTPUT="$(echo "$combined_output" | tail -50)"
 }
 
-write_error_summary() {
-    local error_json="$LOG_DIR/error-summary.json"
 
     # Write on test failure OR build failure (non-zero exit from Claude iteration)
-    local build_log="$LOG_DIR/iteration-${ITERATION}.log"
-    if [[ "${TEST_PASSED:-}" != "false" ]]; then
-        # Check for build-level failures (Claude iteration exited non-zero or produced errors)
-        local build_had_errors=false
-        if [[ -f "$build_log" ]]; then
-            local build_err_count
-            build_err_count=$(tail -30 "$build_log" 2>/dev/null | grep -ciE '(error|fail|exception|panic|FATAL)' || true)
-            [[ "${build_err_count:-0}" -gt 0 ]] && build_had_errors=true
-        fi
-        if [[ "$build_had_errors" != "true" ]]; then
-            # Clear previous error summary on success
-            rm -f "$error_json" 2>/dev/null || true
-            return
-        fi
-    fi
 
     # Prefer test log, fall back to build log
-    local test_log="${TEST_LOG_FILE:-$LOG_DIR/tests-iter-${ITERATION}.log}"
-    local source_log="$test_log"
-    if [[ ! -f "$source_log" ]]; then
-        source_log="$build_log"
-    fi
-    [[ ! -f "$source_log" ]] && return
 
     # Extract error lines (last 30 lines, grep for error patterns)
-    local error_lines_raw
-    error_lines_raw=$(tail -30 "$source_log" 2>/dev/null | grep -iE '(error|fail|assert|exception|panic|FAIL|TypeError|ReferenceError|SyntaxError)' | head -10 || true)
 
     local error_count=0
-    if [[ -n "$error_lines_raw" ]]; then
-        error_count=$(echo "$error_lines_raw" | wc -l | tr -d ' ')
-    fi
 
     local tmp_json="${error_json}.tmp.$$"
 
     # Build JSON with jq (preferred) or plain-text fallback
-    if command -v jq >/dev/null 2>&1; then
-        jq -n \
-            --argjson iteration "${ITERATION:-0}" \
-            --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-            --argjson error_count "${error_count:-0}" \
-            --arg error_lines "$error_lines_raw" \
-            --arg test_cmd "${TEST_CMD:-}" \
-            '{
-                iteration: $iteration,
-                timestamp: $timestamp,
-                error_count: $error_count,
-                error_lines: ($error_lines | split("\n") | map(select(length > 0))),
-                test_cmd: $test_cmd
-            }' > "$tmp_json" 2>/dev/null && mv "$tmp_json" "$error_json" || rm -f "$tmp_json" 2>/dev/null
-    else
-        # Fallback: write plain-text error summary (still machine-parseable)
-        cat > "$tmp_json" <<ERRJSON
-{"iteration":${ITERATION:-0},"error_count":${error_count:-0},"error_lines":[],"test_cmd":"test"}
-ERRJSON
-        mv "$tmp_json" "$error_json" 2>/dev/null || rm -f "$tmp_json" 2>/dev/null
-    fi
-}
-
 # ─── Audit Agent ─────────────────────────────────────────────────────────────
 
 run_audit_agent() {
@@ -1513,43 +1453,10 @@ STUCKNESS_TRACKING_FILE=""
 
 
 
-compose_audit_section() {
-    if ! $AUDIT_ENABLED; then
-        return
-    fi
 
     # Try to inject audit items from past review feedback in memory
-    local memory_audit_items=""
-    if [[ -f "$SCRIPT_DIR/sw-memory.sh" ]]; then
-        local mem_dir_path
-        mem_dir_path="$HOME/.shipwright/memory"
-        # Look for review feedback in any repo memory
-        local repo_hash_val
-        repo_hash_val=$(git config --get remote.origin.url 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-12 || echo "")
-        if [[ -n "$repo_hash_val" && -f "$mem_dir_path/$repo_hash_val/failures.json" ]]; then
-            memory_audit_items=$(jq -r '.failures[] | select(.stage == "review" and .pattern != "") |
-                "- Check for: \(.pattern[:100])"' \
-                "$mem_dir_path/$repo_hash_val/failures.json" 2>/dev/null | head -5 || true)
-        fi
-    fi
 
     echo "## Self-Audit Checklist"
-    echo "Before declaring LOOP_COMPLETE, critically evaluate your own work:"
-    echo "1. Does the implementation FULLY satisfy the goal, not just partially?"
-    echo "2. Are there any edge cases you haven't handled?"
-    echo "3. Did you leave any TODO, FIXME, HACK, or XXX comments in new code?"
-    echo "4. Are all new functions/modules tested (if a test command exists)?"
-    echo "5. Would a code reviewer approve this, or would they request changes?"
-    echo "6. Is the code clean, well-structured, and following project conventions?"
-    if [[ -n "$memory_audit_items" ]]; then
-        echo ""
-        echo "Common review findings from this repo's history:"
-        echo "$memory_audit_items"
-    fi
-    echo ""
-    echo "If ANY answer is \"no\", do NOT output LOOP_COMPLETE. Instead, fix the issues first."
-}
-
 compose_audit_feedback_section() {
     if [[ -z "$AUDIT_RESULT" ]] || [[ "$AUDIT_RESULT" == "pass" ]]; then
         return
@@ -1561,19 +1468,6 @@ ${AUDIT_RESULT}
 
 Address ALL audit findings before proceeding with new work.
 AUDIT_FEEDBACK
-}
-
-compose_rejection_notice_section() {
-    if ! $COMPLETION_REJECTED; then
-        return
-    fi
-    COMPLETION_REJECTED=false
-    cat <<'REJECTION'
-## ⚠ Completion Rejected
-Your previous LOOP_COMPLETE was REJECTED because quality gates did not pass.
-Review the audit feedback and test results above, fix the issues, then try again.
-Do NOT output LOOP_COMPLETE until all quality checks pass.
-REJECTION
 }
 
 compose_worker_prompt() {
