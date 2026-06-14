@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 6,
-      "last_seen": "2026-06-13T19:35:57Z",
+      "seen_count": 7,
+      "last_seen": "2026-06-14T02:37:09Z",
       "category": "test_failure"
     },
     {
@@ -57,10 +57,11 @@
     {
       "stage": "test",
       "pattern": "ERROR: scripts/sw-context-delegate-test.sh:126 exited with status 1",
-      "root_cause": "",
-      "fix": "",
+      "root_cause": "sw-context-delegate-test.sh line 126 fails because regression detection in sw-feedback.sh outputs non-JSON or malformed JSON",
+      "fix": "Fix the regression detection output in sw-feedback.sh to emit valid JSON, or update the test assertion to match actual output format",
       "seen_count": 1,
-      "last_seen": "2026-06-13T20:01:27Z"
+      "last_seen": "2026-06-13T20:01:27Z",
+      "category": "test_failure"
     }
   ]
 }
