@@ -3,29 +3,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) not matching test expectations",
-      "fix": "Fix heartbeat detection logic in sw-cleanup.sh to output 'agent-1' when scanning stale heartbeats, and ensure dry-run summary prints 'Found N item(s)' with '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the Found count and --force hint from the summary output",
+      "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory during dry-run and emit the agent name, Found count, and --force hint in the summary",
       "seen_count": 2,
-      "last_seen": "2026-06-14T07:31:28Z",
+      "last_seen": "2026-06-14T09:05:31Z",
       "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
-      "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called from the test",
-      "seen_count": 2,
-      "last_seen": "2026-06-14T07:48:20Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "mktemp failed because /tmp/claude directory does not exist on this system",
-      "fix": "Create /tmp/claude directory before running tests, or update test scripts to use mktemp without the /tmp/claude prefix",
-      "seen_count": 1,
-      "last_seen": "2026-06-14T08:35:56Z",
-      "category": "config"
     }
   ]
 }
