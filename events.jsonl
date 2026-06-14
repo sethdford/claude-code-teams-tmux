@@ -810,3 +810,40 @@
 {"ts":"2026-06-14T05:34:06Z","ts_epoch":1781415246,"type":"strategic.issue_created","title":"Build Loop Token Budget Monitor with Real-Time Adaptive Model Downshift","priority":"P3","complexity":"standard"}
 {"ts":"2026-06-14T05:34:10Z","ts_epoch":1781415250,"type":"strategic.issue_created","title":"Pre-Build Validation Gate with Fast-Fail Dependency Health Check","priority":"P0","complexity":"fast"}
 {"ts":"2026-06-14T05:34:10Z","ts_epoch":1781415250,"type":"strategic.cycle_complete","issues_created":4,"issues_skipped":1}
+{"ts":"2026-06-14T05:43:35Z","ts_epoch":1781415815,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"infrastructure"}
+{"ts":"2026-06-14T05:43:35Z","ts_epoch":1781415815,"type":"reasoning.trace","job_id":"pipeline-3779-667","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-14T05:43:52Z","ts_epoch":1781415832,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":75,"recommended_template":"standard","issue_type":"infrastructure"}
+{"ts":"2026-06-14T05:44:02Z","ts_epoch":1781415842,"type":"intelligence.estimate_iterations","estimate":7,"complexity":5,"source":"claude"}
+{"ts":"2026-06-14T05:44:14Z","ts_epoch":1781415854,"type":"intelligence.prediction","estimated_cost":18.50,"estimated_iterations":3,"complexity":5}
+{"ts":"2026-06-14T05:44:16Z","ts_epoch":1781415856,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-06-14T05:44:16Z","ts_epoch":1781415856,"type":"pipeline.started","issue":667,"template":"standard","complexity":5,"machine":"runnervm1li68","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-06-14T05:44:16Z","ts_epoch":1781415856,"type":"pipeline.started","event_id":"evt-1781415856-3034389656","payload":"{\"issue\":\"667\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-06-14T05:44:16Z","ts_epoch":1781415856,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-14T05:44:16Z","ts_epoch":1781415856,"type":"intelligence.model_ab","issue":667,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-14T05:44:17Z","ts_epoch":1781415857,"type":"stage.started","issue":667,"stage":"intake"}
+{"ts":"2026-06-14T05:47:04Z","ts_epoch":1781416024,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/pre-build-validation-gate-with-fast-fail-dependency-health-c.json","complexity":"very_complex","issue":667}
+{"ts":"2026-06-14T05:47:05Z","ts_epoch":1781416025,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-06-14T05:47:06Z","ts_epoch":1781416026,"type":"stage.complete","event_id":"evt-1781416026-2913605834","payload":"{\"stage\":\"intake\",\"issue\":\"667\",\"timing\":\"2m 48s\"}"}
+{"ts":"2026-06-14T05:47:06Z","ts_epoch":1781416026,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-06-14T05:47:06Z","ts_epoch":1781416026,"type":"stage.completed","issue":667,"stage":"intake","duration_s":169,"result":"success"}
+{"ts":"2026-06-14T05:47:06Z","ts_epoch":1781416026,"type":"vitals.snapshot","issue":667,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-14T05:47:07Z","ts_epoch":1781416027,"type":"intelligence.model","stage":"spec_generation","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-14T05:47:07Z","ts_epoch":1781416027,"type":"intelligence.model_ab","issue":667,"stage":"spec_generation","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-06-14T05:47:07Z","ts_epoch":1781416027,"type":"stage.started","issue":667,"stage":"spec_generation"}
+{"ts":"2026-06-14T05:48:07Z","ts_epoch":1781416087,"type":"spec_generation.completed","issue":667,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-06-14T05:48:08Z","ts_epoch":1781416088,"type":"stage.complete","event_id":"evt-1781416088-3866225445","payload":"{\"stage\":\"spec_generation\",\"issue\":\"667\",\"timing\":\"1m 0s\"}"}
+{"ts":"2026-06-14T05:48:08Z","ts_epoch":1781416088,"type":"stage.completed","issue":667,"stage":"spec_generation","duration_s":61,"result":"success"}
+{"ts":"2026-06-14T05:48:08Z","ts_epoch":1781416088,"type":"vitals.snapshot","issue":667,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-14T05:48:09Z","ts_epoch":1781416089,"type":"intelligence.model","stage":"plan","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-14T05:48:09Z","ts_epoch":1781416089,"type":"intelligence.model_ab","issue":667,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-14T05:48:09Z","ts_epoch":1781416089,"type":"stage.started","issue":667,"stage":"plan"}
+{"ts":"2026-06-14T05:52:38Z","ts_epoch":1781416358,"type":"retry.skipped_existing_artifact","issue":667,"stage":"plan","artifact_lines":269}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"stage.complete","event_id":"evt-1781416360-1080048487","payload":"{\"stage\":\"plan\",\"issue\":\"667\",\"timing\":\"4m 29s\"}"}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"stage.completed","issue":667,"stage":"plan","duration_s":271,"result":"success"}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"vitals.snapshot","issue":667,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"intelligence.model","stage":"design","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"intelligence.model_ab","issue":667,"stage":"design","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-06-14T05:52:40Z","ts_epoch":1781416360,"type":"stage.started","issue":667,"stage":"design"}
+{"ts":"2026-06-14T05:55:01Z","ts_epoch":1781416501,"type":"stage.failed","event_id":"evt-1781416501-454174367","payload":"{\"stage\":\"design\",\"issue\":\"667\",\"timing\":\"2m 19s\"}"}
+{"ts":"2026-06-14T05:55:02Z","ts_epoch":1781416502,"type":"stage.failed","issue":667,"stage":"design","duration_s":141,"error":"unknown","error_class":"unknown"}
+{"ts":"2026-06-14T05:55:02Z","ts_epoch":1781416502,"type":"vitals.snapshot","issue":667,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
