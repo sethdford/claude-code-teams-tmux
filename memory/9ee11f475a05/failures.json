@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed command receives the substitution expression as a filename argument instead of a pattern, likely due to missing -e flag or incorrect quoting",
       "fix": "change `sed 's|...|...|g'` to `sed -e 's|...|...|g'` or fix variable quoting so the substitution is passed as a pattern not a file path",
-      "seen_count": 6,
-      "last_seen": "2026-06-13T19:35:57Z",
+      "seen_count": 9,
+      "last_seen": "2026-06-14T02:38:38Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude/ directory does not exist, and the cleanup test has output mismatches for heartbeat detection and summary display",
       "fix": "create /tmp/claude directory before mktemp calls or use mktemp without a subdirectory path, and fix sw-cleanup.sh heartbeat detection and summary output to match expected strings",
-      "seen_count": 1,
-      "last_seen": "2026-06-11T20:02:28Z",
+      "seen_count": 2,
+      "last_seen": "2026-06-14T01:43:32Z",
       "category": "test_failure"
     },
     {
@@ -57,10 +57,11 @@
     {
       "stage": "test",
       "pattern": "ERROR: scripts/sw-context-delegate-test.sh:126 exited with status 1",
-      "root_cause": "",
-      "fix": "",
+      "root_cause": "sw-context-delegate-test.sh line 126 exited with status 1, indicating a test assertion or command failed in the context delegate test suite",
+      "fix": "Read sw-context-delegate-test.sh around line 126 to identify the failing assertion and fix the underlying function or test expectation",
       "seen_count": 1,
-      "last_seen": "2026-06-13T20:01:27Z"
+      "last_seen": "2026-06-13T20:01:27Z",
+      "category": "test_failure"
     }
   ]
 }
