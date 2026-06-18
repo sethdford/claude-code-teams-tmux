@@ -3,19 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits 'Found' count and '--force' hint from summary output",
-      "fix": "fix the stale heartbeat detection logic in sw-cleanup.sh to correctly identify and report stale heartbeat files, and ensure the summary section prints 'Found N item(s)' with '--force' hint when items are detected",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force' in dry-run mode",
+      "fix": "Fix sw-cleanup.sh to output stale heartbeat agent names, a 'Found N items' summary line, and a '--force' hint when items are detected in dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-06-18T19:43:41Z",
+      "last_seen": "2026-06-18T19:56:04Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails parsing quality-profile.json with 'Expected JSON value (while parsing \\'\\')' at line 5, causing learned rule generation to produce empty confidence and no valid JSON output",
-      "fix": "Ensure quality-profile.json is initialized with valid JSON before jq reads it, and guard against empty string interpolation when building the rules JSON in sw-outcome-feedback or the test fixture",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed called without -e flag so the substitution expression s|$TEST_TEMP_DIR|...|g is treated as a filename argument",
+      "fix": "Add -e flag to the sed invocation in sw-code-review-test.sh: sed -e \"s|$TEST_TEMP_DIR|...|g\"",
       "seen_count": 1,
-      "last_seen": "2026-06-18T20:08:03Z",
+      "last_seen": "2026-06-18T20:04:14Z",
       "category": "test_failure"
     }
   ]
