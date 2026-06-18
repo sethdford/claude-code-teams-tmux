@@ -3,10 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the Found count and --force hint from the summary output",
-      "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan the heartbeats directory during dry-run and emit the agent name, Found count, and --force hint in the summary",
-      "seen_count": 2,
-      "last_seen": "2026-06-14T09:05:31Z",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits 'Found' count and '--force' hint from summary output",
+      "fix": "fix the stale heartbeat detection logic in sw-cleanup.sh to correctly identify and report stale heartbeat files, and ensure the summary section prints 'Found N item(s)' with '--force' hint when items are detected",
+      "seen_count": 3,
+      "last_seen": "2026-06-18T19:43:41Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "jq fails parsing quality-profile.json with 'Expected JSON value (while parsing \\'\\')' at line 5, causing learned rule generation to produce empty confidence and no valid JSON output",
+      "fix": "Ensure quality-profile.json is initialized with valid JSON before jq reads it, and guard against empty string interpolation when building the rules JSON in sw-outcome-feedback or the test fixture",
+      "seen_count": 1,
+      "last_seen": "2026-06-18T20:08:03Z",
       "category": "test_failure"
     }
   ]
