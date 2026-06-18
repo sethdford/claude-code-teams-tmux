@@ -3,20 +3,29 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output do not match expected strings 'agent-1', 'Found', and '--force' in dry-run mode",
-      "fix": "Fix sw-cleanup.sh to output stale heartbeat agent names, a 'Found N items' summary line, and a '--force' hint when items are detected in dry-run mode",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output (Found count + --force hint) are missing or not matching expected strings in dry-run mode",
+      "fix": "Fix sw-cleanup.sh to output 'agent-1', 'Found', and '--force' strings when stale heartbeats are detected in dry-run mode",
       "seen_count": 3,
-      "last_seen": "2026-06-18T19:56:04Z",
+      "last_seen": "2026-06-18T19:39:55Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed called without -e flag so the substitution expression s|$TEST_TEMP_DIR|...|g is treated as a filename argument",
-      "fix": "Add -e flag to the sed invocation in sw-code-review-test.sh: sed -e \"s|$TEST_TEMP_DIR|...|g\"",
+      "root_cause": "sed command receives a literal pattern string as a file argument instead of using -e flag for inline expression",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in the code review test script",
       "seen_count": 1,
-      "last_seen": "2026-06-18T20:04:14Z",
+      "last_seen": "2026-06-18T19:49:41Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "Test script calls mktemp with a path under /tmp/claude/ which does not exist in this environment",
+      "fix": "Create /tmp/claude/ before running tests, or change mktemp template to use /tmp/sw-test-XXXXXX",
+      "seen_count": 1,
+      "last_seen": "2026-06-18T20:13:35Z",
+      "category": "config"
     }
   ]
 }
