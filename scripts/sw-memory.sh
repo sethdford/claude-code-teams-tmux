@@ -54,33 +54,14 @@ fi
 [[ -f "$SCRIPT_DIR/lib/memory-index.sh" ]] && source "$SCRIPT_DIR/lib/memory-index.sh"
 # shellcheck source=lib/memory-cache.sh
 [[ -f "$SCRIPT_DIR/lib/memory-cache.sh" ]] && source "$SCRIPT_DIR/lib/memory-cache.sh"
+# ─── Ranked query core (extracted) ──────────────────────────────────────────
+# Provides _expand_domain_keywords, _memory_query_keywords, memory_ranked_search.
+# shellcheck source=lib/memory-query.sh
+[[ -f "$SCRIPT_DIR/lib/memory-query.sh" ]] && source "$SCRIPT_DIR/lib/memory-query.sh"
 
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
-
-# ─── Domain keyword expansion (shared semantic concept) ──────────────────────
-
-_expand_domain_keywords() {
-    local text="$1"
-    local expanded="$text"
-
-    local dom
-    for dom in auth api db ui test deploy error perf; do
-        case "$dom" in
-            auth)   [[ "$text" =~ [aA]uth ]] && expanded="$expanded authentication authorization login session token credential permission access" ;;
-            api)    [[ "$text" =~ [aA]pi ]]  && expanded="$expanded endpoint route handler request response rest graphql" ;;
-            db)     [[ "$text" =~ [dD]b ]]   && expanded="$expanded database query migration schema model table sql" ;;
-            ui)     [[ "$text" =~ [uU]i ]]   && expanded="$expanded component view render template layout style css frontend" ;;
-            test)   [[ "$text" =~ [tT]est ]] && expanded="$expanded testing assertion coverage mock stub fixture spec" ;;
-            deploy) [[ "$text" =~ [dD]eploy ]] && expanded="$expanded deployment release publish ship ci cd pipeline" ;;
-            error)  [[ "$text" =~ [eE]rror ]] && expanded="$expanded exception failure crash bug issue defect" ;;
-            perf)   [[ "$text" =~ [pP]erf ]] && expanded="$expanded performance optimization speed latency throughput cache" ;;
-        esac
-    done
-
-    echo "$expanded"
-}
 
 # ─── Embedding & Semantic Search ───────────────────────────────────────────
 
@@ -89,130 +70,13 @@ _memory_content_hash() {
     echo -n "$1" | shasum -a 256 | cut -d' ' -f1
 }
 
-# TF-IDF-like ranked search across failures, patterns, decisions
-# Returns JSON array of {source_type, content_text} for injection compatibility
-memory_ranked_search() {
-    local query="$1"
-    local memory_dir="$2"
-    local max_results="${3:-5}"
-
-    # Use repo memory dir when not specified
-    if [[ -z "$memory_dir" ]] && type repo_memory_dir &>/dev/null 2>&1; then
-        memory_dir="$(repo_memory_dir)"
-    fi
-    memory_dir="${memory_dir:-$HOME/.shipwright/memory}"
-    if [[ ! -d "$memory_dir" ]]; then
-        info "Memory dir not found at ${memory_dir} — auto-creating"
-        mkdir -p "$memory_dir"
-        emit_event "memory.not_available" "path=$memory_dir" "action=auto_created"
-        echo "[]"
-        return 0
-    fi
-
-    # ── L1 cache: return a byte-identical prior result when one is fresh ──
-    # Keyed by query + source-version, so any memory write invalidates it.
-    # Disable with SW_MEMORY_CACHE=0. Fail-open: a miss runs the full scan.
-    if [[ "${SW_MEMORY_CACHE:-1}" != "0" ]] && \
-       [[ "$(type -t memory_cache_get 2>/dev/null)" == "function" ]]; then
-        local _cached
-        if _cached="$(memory_cache_get "$memory_dir" "$query" "$max_results")"; then
-            emit_event "memory.cache_hit" "dir=$memory_dir" "max=$max_results"
-            printf '%s\n' "$_cached"
-            return 0
-        fi
-    fi
-
-    # Extract and expand query keywords
-    local keywords
-    keywords=$(echo "$query" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '\n' | sort -u | \
-        grep -vxE '^.{1,2}$|^(the|and|for|not|with|this|that|from)$' || true)
-    keywords=$(_expand_domain_keywords "$keywords" 2>/dev/null || echo "$keywords")
-
-    local results_file
-    results_file=$(mktemp)
-
-    # Search failures.json
-    if [[ -f "$memory_dir/failures.json" ]]; then
-        jq -c '.failures[]? // empty' "$memory_dir/failures.json" 2>/dev/null | while IFS= read -r entry; do
-            [[ -z "$entry" ]] && continue
-            local entry_text
-            entry_text=$(echo "$entry" | jq -r '(.pattern // "") + " " + (.root_cause // "") + " " + (.fix // "")' 2>/dev/null)
-            local score=0
-            while IFS= read -r kw; do
-                [[ -z "$kw" ]] && continue
-                if echo "$entry_text" | grep -qiF "$kw" 2>/dev/null; then
-                    score=$((score + 1))
-                fi
-            done <<< "$keywords"
-
-            # Boost by effectiveness
-            local effectiveness
-            effectiveness=$(echo "$entry" | jq -r '.fix_effectiveness_rate // 0' 2>/dev/null)
-            if [[ "$effectiveness" =~ ^[0-9]+$ ]] && [[ "$effectiveness" -gt 50 ]]; then
-                score=$((score + 2))
-            fi
-
-            if [[ "$score" -gt 0 ]]; then
-                local content
-                content=$(echo "$entry" | jq -r '(.pattern // "") + " | " + (.root_cause // "") + " | " + (.fix // "")' 2>/dev/null)
-                echo "${score}|{\"source_type\":\"failure\",\"content_text\":$(echo "$content" | jq -Rs .)}" >> "$results_file"
-            fi
-        done
-    fi
-
-    # Search decisions.json
-    if [[ -f "$memory_dir/decisions.json" ]]; then
-        jq -c '.decisions[]? // empty' "$memory_dir/decisions.json" 2>/dev/null | while IFS= read -r entry; do
-            [[ -z "$entry" ]] && continue
-            local entry_text
-            entry_text=$(echo "$entry" | jq -r '(.summary // "") + " " + (.detail // "") + " " + (.type // "")' 2>/dev/null)
-            local score=0
-            while IFS= read -r kw; do
-                [[ -z "$kw" ]] && continue
-                echo "$entry_text" | grep -qiF "$kw" 2>/dev/null && score=$((score + 1))
-            done <<< "$keywords"
-            if [[ "$score" -gt 0 ]]; then
-                local content
-                content=$(echo "$entry" | jq -r '(.summary // "") + " | " + (.detail // "")' 2>/dev/null)
-                echo "${score}|{\"source_type\":\"decision\",\"content_text\":$(echo "$content" | jq -Rs .)}" >> "$results_file"
-            fi
-        done
-    fi
-
-    # Search patterns.json (project, conventions, known_issues as text)
-    if [[ -f "$memory_dir/patterns.json" ]]; then
-        local entry_text
-        entry_text=$(jq -r 'to_entries | map(select(.key != "known_issues")) | from_entries | tostring' "$memory_dir/patterns.json" 2>/dev/null || echo "")
-        entry_text="$entry_text $(jq -r '.known_issues[]? // empty' "$memory_dir/patterns.json" 2>/dev/null | tr '\n' ' ')"
-        local score=0
-        while IFS= read -r kw; do
-            [[ -z "$kw" ]] && continue
-            echo "$entry_text" | grep -qiF "$kw" 2>/dev/null && score=$((score + 1))
-        done <<< "$keywords"
-        if [[ "$score" -gt 0 ]]; then
-            local content
-            content=$(jq -r 'to_entries | map("\(.key): \(.value)") | join(" | ")' "$memory_dir/patterns.json" 2>/dev/null | head -c 500)
-            echo "${score}|{\"source_type\":\"pattern\",\"content_text\":$(echo "$content" | jq -Rs .)}" >> "$results_file"
-        fi
-    fi
-
-    # Sort by score and output as JSON array
-    local output
-    if [[ -s "$results_file" ]]; then
-        output=$(sort -t'|' -k1 -rn "$results_file" | head -"$max_results" | cut -d'|' -f2- | jq -s '.' 2>/dev/null || echo "[]")
-    else
-        output="[]"
-    fi
-    rm -f "$results_file" 2>/dev/null || true
-
-    # ── L1 cache: memoize this exact output for repeat queries ──
-    if [[ "${SW_MEMORY_CACHE:-1}" != "0" ]] && \
-       [[ "$(type -t memory_cache_put 2>/dev/null)" == "function" ]]; then
-        memory_cache_put "$memory_dir" "$query" "$max_results" "$output" || true
-    fi
-
-    echo "$output"
-}
+# memory_ranked_search and its keyword helpers (_expand_domain_keywords,
+# _memory_query_keywords) live in lib/memory-query.sh (sourced above). The
+# fallback below keeps `sw memory` working if that module is ever missing —
+# it degrades to an empty result set rather than erroring under `set -e`.
+if [[ "$(type -t memory_ranked_search 2>/dev/null)" != "function" ]]; then
+    memory_ranked_search() { echo "[]"; return 0; }
+fi
 
 # Store a memory with its text content for future embedding
 memory_store_for_embedding() {
