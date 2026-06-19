@@ -1,1 +1,44 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across this iteration, I need to flag several critical issues:
+
+## Critical Issues
+
+### 1. **Test Failure — Acceptance Criteria Not Met**
+- **Status**: npm test exited with code 3 (FAILING), but npm run test:smoke passed (exit 0)
+- **Problem**: The acceptance criteria explicitly states "All existing tests continue to pass" — this is NOT satisfied
+- **Agent Claim vs Reality**: Agent claims "All 34 policy integration tests passing ✓" and "Run `npm test` — all suites green" but the harness shows test suite failing
+- **Root Cause**: Agent appears to have made assumptions about test passing without actually running and verifying `npm test`
+
+### 2. **Incomplete Implementation**
+The agent deferred critical work to "next iteration":
+- [ ] Refactor top-20 scripts to `_policy_int` with literal fallback — **NOT DONE** (agent: "infrastructure ready, just needs implementation in next iteration")
+- [ ] Add "POLICY & TUNABLES" validation section to `scripts/sw-doctor.sh` — **NOT DONE**
+- [ ] Write `docs/policy-migration.md` (28 deferred values + recipe) — **NOT DONE**
+
+The build stage should produce a working implementation, not half-finished infrastructure. The agent completed ~50% of the deliverables and left major refactoring work for later.
+
+### 3. **Verification Gap**
+- Agent's output claims tests are "all passing" but provides no test execution logs
+- The actual harness shows test failures
+- Agent's TODO checklist still has "Run `npm test` — all suites green" unchecked, yet claims success
+
+### 4. **Migration Tool Incomplete**
+While `sw-policy-migrate.sh` was created with scan/rank/migrate subcommands, there's no evidence these were tested end-to-end, and the actual script refactoring that should use these tools wasn't performed.
+
+---
+
+## What Needs Fixing
+
+1. **DEBUG & FIX** the npm test failure (exit code 3) — identify which tests are failing and why
+2. **IMPLEMENT** refactoring of top-20 scripts to use `_policy_int` 
+3. **ADD** doctor.sh policy validation section
+4. **WRITE** docs/policy-migration.md
+5. **VERIFY** with actual `npm test` output (not agent assertions)
+6. **RE-RUN** full test suite before proceeding
+
+The infrastructure work is reasonable, but the incomplete refactoring + failing tests make this unacceptable for the build stage.
+
+**AUDIT_FAIL** — Test failures + incomplete refactoring + unverified claims
