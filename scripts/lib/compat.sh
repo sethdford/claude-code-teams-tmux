@@ -193,10 +193,18 @@ detect_test_framework() {
 }
 
 # ─── Cross-platform file modification time (epoch) ────────────────────────
-# macOS/BSD: stat -f %m; Linux: stat -c '%Y'
+# Linux/GNU: stat -c '%Y'; macOS/BSD: stat -f %m
+# GNU stat -f prints filesystem info to STDOUT (not just stderr) when given a
+# format like %m, so it must NOT be tried first on Linux — the leaked text
+# corrupts callers. Try GNU form first, then BSD, and reject any non-numeric
+# result so a partial leak can never escape as an mtime.
 file_mtime() {
-    local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local file="$1" m
+    m=$(stat -c '%Y' "$file" 2>/dev/null) || m=$(stat -f '%m' "$file" 2>/dev/null)
+    case "$m" in
+        ''|*[!0-9]*) echo "0" ;;
+        *) echo "$m" ;;
+    esac
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
