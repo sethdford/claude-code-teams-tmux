@@ -49,6 +49,7 @@ show_help() {
     echo -e "  ${DIM}--model <model>${RESET}           Override AI model (opus, sonnet, haiku)"
     echo -e "  ${DIM}--agents <n>${RESET}              Override agent count"
     echo -e "  ${DIM}--skip-gates${RESET}              Auto-approve all gates (fully autonomous)"
+    echo -e "  ${DIM}--skip-prebuild-validate${RESET}  Skip the pre-build dependency health check (debugging)"
     echo -e "  ${DIM}--headless${RESET}                Full headless mode (skip gates, no prompts)"
     echo -e "  ${DIM}--base <branch>${RESET}           Base branch for PR (default: main)"
     echo -e "  ${DIM}--reviewers \"a,b\"${RESET}        Request PR reviewers (auto-detected if omitted)"
@@ -131,6 +132,7 @@ parse_args() {
             --model)       MODEL="$2"; shift 2 ;;
             --agents)      AGENTS="$2"; shift 2 ;;
             --skip-gates)  SKIP_GATES=true; shift ;;
+            --skip-prebuild-validate) export SKIP_PREBUILD_VALIDATE=true; shift ;;
             --headless)    HEADLESS=true; SKIP_GATES=true; shift ;;
             --base)        BASE_BRANCH="$2"; shift 2 ;;
             --reviewers)   REVIEWERS="$2"; shift 2 ;;

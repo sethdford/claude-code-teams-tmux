@@ -1,6 +1,6 @@
 {
   "name": "cost-aware",
-  "description": "Cost-optimized pipeline: budget limits, model routing (haiku→sonnet→opus), per-stage tracking",
+  "description": "Cost-optimized pipeline: budget limits, model routing (haiku\u2192sonnet\u2192opus), per-stage tracking",
   "defaults": {
     "test_cmd": "npm test",
     "model": "claude-sonnet-4-6",
@@ -36,6 +36,16 @@
       "config": {
         "model": "claude-sonnet-4-6",
         "cost_tracking": true
+      }
+    },
+    {
+      "id": "pre_build_validate",
+      "enabled": true,
+      "gate": "auto",
+      "config": {
+        "fail_on_dirty_worktree": false,
+        "lint": false,
+        "env_required_file": ".env.required"
       }
     },
     {

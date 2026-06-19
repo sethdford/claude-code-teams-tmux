@@ -14,6 +14,7 @@ _stage_effort_level() {
     # Fallback if compat.sh not loaded
     case "$stage" in
         intake)              echo "low" ;;
+        pre_build_validate)  echo "low" ;;
         plan|design)         echo "high" ;;
         build)               echo "medium" ;;
         test)                echo "medium" ;;

@@ -172,6 +172,7 @@ show_stage_preview() {
         intake)   echo -e "  Fetch issue, detect task type, create branch, self-assign" ;;
         plan)     echo -e "  Generate plan via Claude, post task checklist to issue" ;;
         design)   echo -e "  Generate Architecture Decision Record (ADR), evaluate alternatives" ;;
+        pre_build_validate) echo -e "  Fast-fail dependency health check: manifests, lock files, test runner, git state" ;;
         build)    echo -e "  Delegate to ${CYAN}shipwright loop${RESET} for autonomous building" ;;
         test_first) echo -e "  Generate tests from requirements (TDD mode) before implementation" ;;
         test)     echo -e "  Run test suite and check coverage" ;;
@@ -194,6 +195,9 @@ _SCOPE_ENFORCEMENT_SH="${SCRIPT_DIR}/lib/scope-enforcement.sh"
 
 _PIPELINE_STAGES_INTAKE_SH="${SCRIPT_DIR}/lib/pipeline-stages-intake.sh"
 [[ -f "$_PIPELINE_STAGES_INTAKE_SH" ]] && source "$_PIPELINE_STAGES_INTAKE_SH"
+
+_PIPELINE_STAGES_PREBUILD_SH="${SCRIPT_DIR}/lib/pipeline-stages-prebuild.sh"
+[[ -f "$_PIPELINE_STAGES_PREBUILD_SH" ]] && source "$_PIPELINE_STAGES_PREBUILD_SH"
 
 _PIPELINE_STAGES_BUILD_SH="${SCRIPT_DIR}/lib/pipeline-stages-build.sh"
 [[ -f "$_PIPELINE_STAGES_BUILD_SH" ]] && source "$_PIPELINE_STAGES_BUILD_SH"

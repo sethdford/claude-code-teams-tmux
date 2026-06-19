@@ -1,6 +1,6 @@
 {
   "name": "fast",
-  "description": "Quick fixes: intake → build → test → PR (all auto, no gates)",
+  "description": "Quick fixes: intake \u2192 build \u2192 test \u2192 PR (all auto, no gates)",
   "defaults": {
     "test_cmd": "npm test",
     "model": "sonnet",
@@ -31,6 +31,16 @@
       "config": {}
     },
     {
+      "id": "pre_build_validate",
+      "enabled": false,
+      "gate": "auto",
+      "config": {
+        "fail_on_dirty_worktree": false,
+        "lint": false,
+        "env_required_file": ".env.required"
+      }
+    },
+    {
       "id": "build",
       "enabled": true,
       "gate": "auto",
@@ -44,7 +54,9 @@
       "id": "test",
       "enabled": true,
       "gate": "auto",
-      "config": { "coverage_min": 0 }
+      "config": {
+        "coverage_min": 0
+      }
     },
     {
       "id": "review",
@@ -70,7 +82,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "auto",
-      "config": { "wait_ci": false }
+      "config": {
+        "wait_ci": false
+      }
     },
     {
       "id": "deploy",

@@ -1,7 +1,11 @@
 {
   "name": "tdd",
-  "description": "Test-first pipeline: plan → design → generate tests → build → test → review → PR",
-  "defaults": { "test_cmd": "npm test", "model": "sonnet", "agents": 1 },
+  "description": "Test-first pipeline: plan \u2192 design \u2192 generate tests \u2192 build \u2192 test \u2192 review \u2192 PR",
+  "defaults": {
+    "test_cmd": "npm test",
+    "model": "sonnet",
+    "agents": 1
+  },
   "tdd": true,
   "intelligence": {
     "adversarial_enabled": true,
@@ -9,7 +13,12 @@
     "simulation_enabled": true
   },
   "stages": [
-    { "id": "intake", "enabled": true, "gate": "auto", "config": {} },
+    {
+      "id": "intake",
+      "enabled": true,
+      "gate": "auto",
+      "config": {}
+    },
     {
       "id": "spec_generation",
       "enabled": true,
@@ -20,27 +29,52 @@
       "id": "plan",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
     },
     {
       "id": "design",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
+    },
+    {
+      "id": "pre_build_validate",
+      "enabled": true,
+      "gate": "auto",
+      "config": {
+        "fail_on_dirty_worktree": false,
+        "lint": false,
+        "env_required_file": ".env.required"
+      }
     },
     {
       "id": "build",
       "enabled": true,
       "gate": "auto",
-      "config": { "max_iterations": 20, "audit": true, "quality_gates": true }
+      "config": {
+        "max_iterations": 20,
+        "audit": true,
+        "quality_gates": true
+      }
     },
     {
       "id": "test",
       "enabled": true,
       "gate": "auto",
-      "config": { "coverage_min": 80 }
+      "config": {
+        "coverage_min": 80
+      }
     },
-    { "id": "review", "enabled": true, "gate": "approve", "config": {} },
+    {
+      "id": "review",
+      "enabled": true,
+      "gate": "approve",
+      "config": {}
+    },
     {
       "id": "spec_verification",
       "enabled": true,
@@ -65,7 +99,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "approve",
-      "config": { "wait_ci": false }
+      "config": {
+        "wait_ci": false
+      }
     },
     {
       "id": "merge",
@@ -79,6 +115,11 @@
         "auto_approve": false
       }
     },
-    { "id": "deploy", "enabled": false, "gate": "approve", "config": {} }
+    {
+      "id": "deploy",
+      "enabled": false,
+      "gate": "approve",
+      "config": {}
+    }
   ]
 }

@@ -28,13 +28,27 @@
       "id": "plan",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "claude-opus-4-6" }
+      "config": {
+        "model": "claude-opus-4-6"
+      }
     },
     {
       "id": "design",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "claude-opus-4-6" }
+      "config": {
+        "model": "claude-opus-4-6"
+      }
+    },
+    {
+      "id": "pre_build_validate",
+      "enabled": true,
+      "gate": "auto",
+      "config": {
+        "fail_on_dirty_worktree": false,
+        "lint": false,
+        "env_required_file": ".env.required"
+      }
     },
     {
       "id": "build",
@@ -50,7 +64,9 @@
       "id": "test",
       "enabled": true,
       "gate": "auto",
-      "config": { "coverage_min": 80 }
+      "config": {
+        "coverage_min": 80
+      }
     },
     {
       "id": "review",
@@ -95,7 +111,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "approve",
-      "config": { "wait_ci": true }
+      "config": {
+        "wait_ci": true
+      }
     },
     {
       "id": "merge",

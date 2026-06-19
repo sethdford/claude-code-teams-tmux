@@ -28,13 +28,27 @@
       "id": "plan",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
     },
     {
       "id": "design",
       "enabled": true,
       "gate": "approve",
-      "config": { "model": "opus" }
+      "config": {
+        "model": "opus"
+      }
+    },
+    {
+      "id": "pre_build_validate",
+      "enabled": true,
+      "gate": "auto",
+      "config": {
+        "fail_on_dirty_worktree": false,
+        "lint": false,
+        "env_required_file": ".env.required"
+      }
     },
     {
       "id": "build",
@@ -50,7 +64,9 @@
       "id": "test",
       "enabled": true,
       "gate": "approve",
-      "config": { "coverage_min": 90 }
+      "config": {
+        "coverage_min": 90
+      }
     },
     {
       "id": "review",
@@ -83,7 +99,9 @@
       "id": "pr",
       "enabled": true,
       "gate": "approve",
-      "config": { "wait_ci": true }
+      "config": {
+        "wait_ci": true
+      }
     },
     {
       "id": "merge",
