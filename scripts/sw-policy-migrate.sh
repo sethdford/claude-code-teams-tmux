@@ -146,11 +146,115 @@ scan_candidates() {
 # ─── rank subcommand: score candidates by impact ──────────────────────────
 rank_candidates() {
     local top_n="${1:-20}"
+    local format="${2:-text}"
 
-    # For now, return the candidates (full ranking to come in next iteration)
-    # Placeholder: candidates are ranked by category
-    info "Ranking candidates by git churn + intelligence references..."
-    info "Top $top_n will be prioritized for migration"
+    info "Ranking $top_n candidates by git churn frequency..." >&2
+
+    local scripts_dir="$REPO_DIR/scripts"
+    local scored_candidates=()
+
+    # Get all candidates with their scores
+    while IFS= read -r file; do
+        local line_no=0
+        while IFS= read -r line; do
+            line_no=$((line_no + 1))
+
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line// }" ]] && continue
+
+            if [[ "$line" =~ $SCAN_PATTERN ]]; then
+                local var_name="${BASH_REMATCH[1]}"
+                local var_value="${BASH_REMATCH[2]}"
+
+                if [[ "$var_name" =~ $DENY_PATTERNS ]]; then
+                    continue
+                fi
+
+                local var_name_lower
+                var_name_lower=$(echo "$var_name" | tr '[:upper:]' '[:lower:]')
+                if ! echo "$var_name_lower" | grep -qE "$KEYWORD_PATTERNS"; then
+                    continue
+                fi
+
+                local category="other"
+                [[ "$var_name_lower" =~ timeout ]] && category="timeout"
+                [[ "$var_name_lower" =~ threshold ]] && category="threshold"
+                [[ "$var_name_lower" =~ retry ]] && category="retry"
+                [[ "$var_name_lower" =~ interval ]] && category="interval"
+
+                # Score by git churn: count how many commits touched this file
+                local churn_score=0
+                if command -v git &>/dev/null && [[ -d "$REPO_DIR/.git" ]]; then
+                    churn_score=$(git -C "$REPO_DIR" log --oneline --all -- "$file" 2>/dev/null | wc -l)
+                fi
+
+                # Boost score by category: timeouts/thresholds/retries are high impact
+                local category_boost=1
+                case "$category" in
+                    timeout)  category_boost=3 ;;
+                    threshold) category_boost=2 ;;
+                    retry)    category_boost=2 ;;
+                    interval) category_boost=1 ;;
+                    *)        category_boost=1 ;;
+                esac
+
+                local final_score=$((churn_score * category_boost + 1))
+                scored_candidates+=("$(printf '%d\t%s\t%d\t%s\t%s\t%s' \
+                    "$final_score" "$(basename "$file")" "$line_no" "$var_name" "$var_value" "$category")")
+            fi
+        done < "$file"
+    done < <(find "$scripts_dir" -maxdepth 1 -name "*.sh" -type f | sort)
+
+    # Sort by score descending
+    local sorted_candidates=()
+    while IFS= read -r line; do
+        sorted_candidates+=("$line")
+    done < <(printf '%s\n' "${scored_candidates[@]}" | sort -rn -t$'\t' -k1)
+
+    # Output top N + summary of remainder
+    if [[ "$format" == "json" ]]; then
+        local json_array='['
+        local idx=0
+        for cand in "${sorted_candidates[@]}"; do
+            local score file line name value category
+            IFS=$'\t' read -r score file line name value category <<< "$cand"
+
+            if [[ $idx -lt $top_n ]]; then
+                [[ $idx -gt 0 ]] && json_array+=','
+                json_array+=$(printf '{"score":%d,"file":"scripts/%s","line":%d,"name":"%s","value":%d,"category":"%s"}' \
+                    "$score" "$file" "$line" "$name" "$value" "$category")
+                idx=$((idx + 1))
+            fi
+        done
+        json_array+=']'
+
+        local deferred_count=$((${#sorted_candidates[@]} - top_n))
+        printf '{"top":%s,"deferred_count":%d,"total":%d}\n' "$json_array" "$deferred_count" "${#sorted_candidates[@]}"
+    else
+        # Text format
+        {
+            echo "Top $top_n candidates by impact (score = churn × category_boost):" >&2
+            echo "" >&2
+            printf "%-8s %-35s %-30s %s\n" "SCORE" "FILE:LINE" "VAR_NAME" "CATEGORY" >&2
+            printf "%-8s %-35s %-30s %s\n" "-" "-" "-" "-" >&2
+
+            local idx=0
+            for cand in "${sorted_candidates[@]}"; do
+                local score file line name value category
+                IFS=$'\t' read -r score file line name value category <<< "$cand"
+
+                if [[ $idx -lt $top_n ]]; then
+                    printf "%-8d %-35s %-30s %s\n" "$score" "scripts/$file:$line" "$name" "$category" >&2
+                fi
+                idx=$((idx + 1))
+            done
+
+            local deferred_count=$((${#sorted_candidates[@]} - top_n))
+            echo "" >&2
+            echo "Deferred ($deferred_count remaining): document in docs/policy-migration.md" >&2
+        }
+    fi
+
     return 0
 }
 
@@ -221,7 +325,8 @@ main() {
         rank)
             shift
             local top_n="${1:-20}"
-            rank_candidates "$top_n"
+            local rank_format="${2:-text}"
+            rank_candidates "$top_n" "$rank_format"
             ;;
         migrate)
             shift
