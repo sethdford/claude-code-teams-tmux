@@ -345,6 +345,12 @@ main() {
         memory)
             exec "$SCRIPT_DIR/sw-memory.sh" "$@"
             ;;
+        knowledge)
+            exec "$SCRIPT_DIR/sw-knowledge.sh" "$@"
+            ;;
+        mine)
+            exec "$SCRIPT_DIR/sw-knowledge.sh" mine "$@"
+            ;;
         guild)
             exec "$SCRIPT_DIR/sw-guild.sh" "$@"
             ;;
