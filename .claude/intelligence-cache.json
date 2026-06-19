@@ -30,17 +30,44 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
+          "optimizer",
           "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
-        "new_role_needed": false,
-        "suggested_role": null
+        "confidence": 0.85,
+        "reasoning": "Fleet-wide pattern mining requires system design for knowledge capture, storage, retrieval, and transfer across agents; builder implements, optimizer handles fleet performance, tester validates pattern accuracy, devops manages deployment.",
+        "new_role_needed": true,
+        "suggested_role": {
+          "key": "knowledge-engineer",
+          "title": "Knowledge Systems Engineer",
+          "description": "Pattern mining, knowledge representation, cross-agent learning systems, semantic indexing, pattern extraction and transfer across fleet",
+          "required_skills": [
+            "pattern-mining",
+            "knowledge-graphs",
+            "semantic-analysis",
+            "distributed-learning",
+            "vector-indexing"
+          ],
+          "recommended_model": "opus",
+          "context_needs": [
+            "agent-execution-logs",
+            "codebase-patterns",
+            "failure-history",
+            "learning-objectives"
+          ],
+          "success_metrics": [
+            "pattern-discovery-rate",
+            "transfer-effectiveness",
+            "knowledge-reuse-rate",
+            "cross-team-learning-velocity"
+          ],
+          "estimated_cost_per_task_usd": 2.8
+        }
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781878608,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1428,230 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "38cf98e588fa0a98cc96d6d73fd5e801": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "medium",
+        "success_probability": 70,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern extraction may miss important context or fail to capture complex pipeline interactions",
+          "Similarity matching algorithm could produce false positives leading to inappropriate pattern recommendations",
+          "Performance impact on daemon when checking pattern library for every incoming issue",
+          "Cross-repo context differences (language, framework, scale) make patterns from one repo inapplicable to another",
+          "Pattern library quality degradation if unsuccessful patterns accumulate without stringent filtering thresholds"
+        ],
+        "implementation_hints": [
+          "Extract patterns from successful pipeline-artifacts by analyzing composed-pipeline.json and daemon-config overrides",
+          "Implement k-means clustering on feature vectors (template choice, model_routing config, iteration counts, effort levels)",
+          "Use multi-dimensional similarity: Levenshtein distance on issue description + cosine similarity on repo metadata (language, size, test_framework, package_manager)",
+          "Enforce strict quality gate: only recommend patterns with ≥80% observed success rate and ≥10 successful reuses",
+          "Track recommendation outcomes (did the pattern result in success/failure) and update metadata; retrain similarity model weekly",
+          "Add exponential time decay favoring recent patterns (last 30 days weighted 3x higher than earlier patterns)",
+          "Return confidence-sorted recommendation triplet; expose confidence score to daemon so it can decide threshold for auto-apply vs notify-only",
+          "Implement daemon flag `pattern_recommendation_mode: [off|notify|apply]` for gradual rollout and A/B testing"
+        ]
+      },
+      "timestamp": 1781877993,
+      "ttl": 3600
+    },
+    "02b663307f4a6ff05d1ff66a36545b88": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1781878005,
+      "ttl": 1800
+    },
+    "0729d2a00f3c347e955f0aa0256f6e0a": {
+      "result": {
+        "estimated_cost_usd": 5.80,
+        "estimated_iterations": 5,
+        "estimated_tokens": 102000,
+        "likely_failure_stage": "build",
+        "confidence": 68
+      },
+      "timestamp": 1781878018,
+      "ttl": 3600
+    },
+    "ae2d73de4c84338da30ad86b798ad895": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 95,
+            "summary": "Core infrastructure for fleet-wide knowledge with version tracking, entry storage, and metrics (publishes/queries/matches/injections). Directly represents the knowledge transfer mechanism planned for this feature."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Captures failure patterns with error signatures, fix strategies, tags, and metrics (occurrences, success_rate, query_hits). Demonstrates pattern mining structure that would be applied fleet-wide."
+          },
+          {
+            "file": "global.json",
+            "relevance": 85,
+            "summary": "Structure for common_patterns and cross_repo_learnings at fleet level. Directly represents the cross-repo knowledge consolidation the feature aims to enable."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Detailed success patterns with complexity, iterations, duration, files_changed, test_strategy, cost tracking. Shows pattern metadata that mining engine would extract and share across fleet."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project detection patterns (source_dir, test_pattern, import_style, framework). Demonstrates how project-level patterns are captured for potential standardization across fleet."
+          }
+        ]
+      },
+      "timestamp": 1781878083,
+      "ttl": 1800
+    },
+    "42766de37a5426a0e8dc0b109a562ace": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 90,
+            "summary": "Directly models the fleet-wide pattern mining system: includes publish/query metrics, injection tracking, and time-saved calculations. Core data structure for the knowledge transfer engine."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "Contains detailed failure patterns (sw-cleanup.sh, regression detection) with root causes and fixes. Relevant for understanding what validation rules the plan should enforce to prevent these patterns."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 52,
+            "summary": "Documents successful delivery patterns with iterations, costs, and file changes (bug fixes: 3 iterations/2.50 USD, features: 3 iterations/2.5 USD). Informs what knowledge mining should capture about effective approaches."
+          }
+        ]
+      },
+      "timestamp": 1781878400,
+      "ttl": 1800
+    },
+    "6c0424f0bb5102de3d4a3a56a4c0df91": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 98,
+            "summary": "Directly shows the fleet knowledge structure (entries, metrics on publishes/queries/matches/injections) — this is the core data model for a fleet-wide knowledge transfer engine"
+          },
+          {
+            "file": "success-patterns.json (detailed patterns object)",
+            "relevance": 92,
+            "summary": "Shows comprehensive success pattern schema with complexity, iterations, approach, files_changed, test_strategy, template, cost — essential metadata structure for pattern mining"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 88,
+            "summary": "Demonstrates knowledge base schema with kinds (failure/pattern), error_type, fix_strategy, tags, evidence, metrics — core for designing captured pattern structures"
+          },
+          {
+            "file": "failures.json (first detailed entry)",
+            "relevance": 82,
+            "summary": "Shows failure pattern capture with root_cause, fix, seen_count, category — important for designing what the mining engine extracts and stores"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 76,
+            "summary": "Shows issue-level pattern recording with success_pattern, approach, files_changed, gotchas — demonstrates what context needs to be captured during work for pattern extraction"
+          }
+        ]
+      },
+      "timestamp": 1781878441,
+      "ttl": 1800
+    },
+    "cb827eb6ae0a724e0dea7671c96c3831": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "Documents concrete failures with root causes and fixes (cleanup output format changes, heartbeat detection issues). Directly reveals anti-patterns: what went wrong and why. Critical for understanding rejected approaches."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 68,
+            "summary": "Detailed failure knowledge base with 5+ documented error signatures, fix strategies, and approach analysis. Shows pattern: mktemp failures, output formatting bugs, regression detection failures. Essential reference for what design decisions failed."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 42,
+            "summary": "Fleet-wide knowledge engine structure with metrics (publishes, queries, matches, injections). Empty entries suggest it's a template for the engine being designed. Relevant as a structural reference for the knowledge transfer system."
+          }
+        ]
+      },
+      "timestamp": 1781878458,
+      "ttl": 1800
+    },
+    "f69123ca8dee308bd265be9250c158da": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Recent test failures from 2026-06-19 (today) with documented root causes and fixes: sw-cleanup.sh output format issues, template error handling, mktemp directory creation. Critical for avoiding test failures during build."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Two complete build patterns: bug fix (60 complexity, 3 iterations, 45s) and auth feature (65 complexity, 3 iterations, 150s). Shows file patterns, test strategies (npm test), and commit workflow for successful builds."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Knowledge base with 4 documented failure patterns and fixes: mktemp directory creation (occurrences: 4), cleanup.sh output format (occurrences: 2), regression detection JSON validation. Enables pattern recognition to avoid repeated failures."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 82,
+            "summary": "Current project structure from 2026-06-19: Node.js project with vitest test runner, commonjs imports, src/ source directory, *.test.js pattern. Essential baseline for build environment setup."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Past successful issue resolution showing: daemon timeout bug fix using semaphore pattern. Demonstrates troubleshooting approach for complex shell script issues affecting build stability."
+          }
+        ]
+      },
+      "timestamp": 1781878580,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Shows successful builds in this repo: 3-iteration patterns, files changed (scripts/lib/*.sh, .claude/*.json), test strategies, and cost/duration baselines. Directly applicable to current build approach."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, commonjs imports, vitest runner) are essential for code generation and test execution during build."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Build duration baseline of 2089 seconds (~35 min) sets expectations for how long build should take before timeout concerns are warranted."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Recorded daemon timeout fix pattern (semaphore solution) provides domain knowledge about common build issues and proven fixes in this codebase."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 45,
+            "summary": "Test stage failures (mktemp paths, cleanup output format) are lower priority for build stage but show environmental assumptions that might affect test execution later."
+          }
+        ]
+      },
+      "timestamp": 1781878593,
+      "ttl": 1800
     }
   }
 }
