@@ -59,6 +59,18 @@ fi
 # shellcheck source=lib/memory-query.sh
 [[ -f "$SCRIPT_DIR/lib/memory-query.sh" ]] && source "$SCRIPT_DIR/lib/memory-query.sh"
 
+# ─── L2 index maintenance hook ──────────────────────────────────────────────
+# Rebuild the keyword index after a memory write so reads hit a fresh index
+# instead of paying a rebuild-on-lookup penalty. Strictly fail-open: an index
+# build failure can never fail (or slow into error) a memory write.
+_memory_reindex() {
+    [[ "$(type -t memory_index_build 2>/dev/null)" == "function" ]] || return 0
+    local d="${1:-}"
+    [[ -z "$d" ]] && d="$(repo_memory_dir 2>/dev/null || echo "$MEMORY_ROOT")"
+    memory_index_build "$d" >/dev/null 2>&1 || true
+    return 0
+}
+
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
@@ -329,6 +341,7 @@ memory_capture_failure() {
 
     memory_store_for_embedding "failure" "$pattern" "$(repo_hash)" 2>/dev/null || true
 
+    _memory_reindex "$mem_dir"
     emit_event "memory.failure" "stage=${stage}" "pattern=${pattern:0:80}"
 }
 
@@ -391,6 +404,7 @@ memory_record_fix_outcome() {
            "$failures_file" > "$tmp_file" && mv "$tmp_file" "$failures_file" || rm -f "$tmp_file"
     ) 200>"${failures_file}.lock"
 
+    _memory_reindex "$mem_dir"
     emit_event "memory.fix_outcome" \
         "pattern=${pattern_match:0:60}" \
         "applied=${fix_applied}" \
@@ -861,6 +875,7 @@ memory_capture_pattern() {
             return 1
             ;;
     esac
+    _memory_reindex "$mem_dir"
 }
 
 # memory_inject_context <stage_id>
@@ -1289,6 +1304,7 @@ memory_capture_decision() {
 
     memory_store_for_embedding "decision" "${dec_type}: ${summary} - ${detail:-}" "$(repo_hash)" 2>/dev/null || true
 
+    _memory_reindex "$mem_dir"
     emit_event "memory.decision" "type=${dec_type}" "summary=${summary:0:80}"
     success "Recorded decision: ${summary}"
 }

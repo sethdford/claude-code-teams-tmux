@@ -83,15 +83,27 @@ memory_cache_key() {
     printf '%s|%s|%s\n' "$(_memory_cache_version "$dir")" "$(_memory_cache_hash "$query")" "$max"
 }
 
+# Maximum number of cached rows retained (LRU ceiling). Honors the acceptance
+# criterion "cache the last 50 lookups"; eviction keys on last_used (see put).
+_memory_cache_max_rows() {
+    echo "${SW_MEMORY_CACHE_MAX:-50}"
+}
+
 # ─── Ensure the table exists (idempotent) ────────────────────────────────────
+# The last_used column drives LRU eviction; a pre-existing table from before this
+# column is migrated in-place (the ADD COLUMN is a no-op once present).
 _memory_cache_init() {
     local db="$1"
     sqlite3 -cmd ".timeout 5000" "$db" \
         "CREATE TABLE IF NOT EXISTS query_cache (
             key        TEXT PRIMARY KEY,
             value      TEXT NOT NULL,
-            created_at INTEGER NOT NULL
+            created_at INTEGER NOT NULL,
+            last_used  INTEGER NOT NULL DEFAULT 0
         );" 2>/dev/null
+    # Migrate legacy tables that predate last_used (ignore "duplicate column").
+    sqlite3 -cmd ".timeout 5000" "$db" \
+        "ALTER TABLE query_cache ADD COLUMN last_used INTEGER NOT NULL DEFAULT 0;" 2>/dev/null || true
 }
 
 # ─── SQL string literal escaping (single-quote → doubled) ────────────────────
@@ -119,6 +131,11 @@ memory_cache_get() {
            AND created_at > $((now - ttl))
          LIMIT 1;" 2>/dev/null)" || return 1
     [[ -n "$value" ]] || return 1
+    # Touch the row's recency so LRU eviction keeps actively-read entries. Fire
+    # and forget — a failed touch only risks premature eviction, never wrong data.
+    sqlite3 -cmd ".timeout 5000" "$db" \
+        "UPDATE query_cache SET last_used=$now
+         WHERE key='$(_memory_cache_sql_escape "$key")';" 2>/dev/null || true
     printf '%s\n' "$value"
     return 0
 }
@@ -137,14 +154,19 @@ memory_cache_put() {
     ver="$(_memory_cache_version "$dir")"
     now="$(date +%s)"
     local ttl; ttl="$(_memory_cache_ttl)"
+    local max; max="$(_memory_cache_max_rows)"
     sqlite3 -cmd ".timeout 5000" "$db" \
-        "INSERT OR REPLACE INTO query_cache (key, value, created_at)
+        "INSERT OR REPLACE INTO query_cache (key, value, created_at, last_used)
          VALUES ('$(_memory_cache_sql_escape "$key")',
                  '$(_memory_cache_sql_escape "$value")',
-                 $now);
+                 $now, $now);
          DELETE FROM query_cache
          WHERE key NOT LIKE '$(_memory_cache_sql_escape "$ver")|%'
-            OR created_at <= $((now - ttl));" 2>/dev/null || return 1
+            OR created_at <= $((now - ttl));
+         DELETE FROM query_cache
+         WHERE key NOT IN (
+             SELECT key FROM query_cache ORDER BY last_used DESC, created_at DESC LIMIT $max
+         );" 2>/dev/null || return 1
     return 0
 }
 

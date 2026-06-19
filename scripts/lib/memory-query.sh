@@ -92,6 +92,102 @@ _memory_query_keywords() {
     printf '%s' "$keywords"
 }
 
+# ─── L2 index candidate narrowing ────────────────────────────────────────────
+# Emits deduped "<source_type>:<idx>" refs for entries that COULD score > 0,
+# or the literal "ALL" when the index is unusable (→ caller does a full scan).
+#
+# Parity contract: the scan scores a keyword via `grep -qiF "$kw"` (substring of
+# the entry text). Each query keyword is all-alphanumeric, so it can only match
+# *inside a single token* — therefore "kw is a substring of the text" iff "some
+# index token contains kw". We match candidates by SUBSTRING over the index keys
+# (not exact `memory_index_lookup`), which makes the narrowed set a provable
+# superset of the substring matches. Over-inclusion is harmless: the authoritative
+# per-entry scorer drops anything that scores 0. High-effectiveness failures
+# (boosted +2 even with zero keyword hits) are unioned in unconditionally.
+_memory_query_candidates() {
+    local dir="$1" keywords="$2"
+    local idx="$dir/index.json"
+    command -v jq >/dev/null 2>&1 || { echo "ALL"; return 0; }
+    if [[ "$(type -t memory_index_validate 2>/dev/null)" != "function" ]]; then
+        echo "ALL"; return 0
+    fi
+    if ! memory_index_validate "$dir" 2>/dev/null; then
+        memory_index_build "$dir" >/dev/null 2>&1 || { echo "ALL"; return 0; }
+    fi
+    [[ -f "$idx" ]] || { echo "ALL"; return 0; }
+
+    local refs="" kw hits
+    while IFS= read -r kw; do
+        [[ -z "$kw" ]] && continue
+        # Multi-word domain-expansion lines never match via grep -qiF (tokens are
+        # single words), so they contribute no candidates — matching legacy behavior.
+        case "$kw" in *[[:space:]]*) continue;; esac
+        hits=$(jq -r --arg kw "$kw" \
+            '.keywords | to_entries[] | select(.key | contains($kw)) | .value[]' \
+            "$idx" 2>/dev/null) || true
+        [[ -n "$hits" ]] && refs="${refs}${hits}"$'\n'
+    done <<< "$keywords"
+
+    # Always include high-effectiveness failures (loose >50; the scorer re-checks).
+    if [[ -f "$dir/failures.json" ]]; then
+        local eff
+        eff=$(jq -r \
+            '.failures | to_entries[] | select(((.value.fix_effectiveness_rate // 0) | tonumber? // 0) > 50) | "failure:\(.key)"' \
+            "$dir/failures.json" 2>/dev/null) || true
+        [[ -n "$eff" ]] && refs="${refs}${eff}"$'\n'
+    fi
+
+    # Deduped, validated refs. Empty output is meaningful: "no candidates" → an
+    # empty narrowed scan, distinct from the "ALL" full-scan sentinel above.
+    printf '%s' "$refs" | grep -E '^(failure|decision|pattern):[0-9]+$' | sort -u || true
+}
+
+# ─── Per-entry scorers (authoritative; shared by full-scan and narrowed paths) ─
+# Echo "<score>|<json-line>" when score > 0, else nothing. Logic is byte-identical
+# to the original inline scan so both paths emit the exact same lines.
+_mq_score_failure_entry() {
+    local entry="$1" keywords="$2"
+    [[ -z "$entry" ]] && return 0
+    local entry_text
+    entry_text=$(echo "$entry" | jq -r '(.pattern // "") + " " + (.root_cause // "") + " " + (.fix // "")' 2>/dev/null)
+    local score=0 kw
+    while IFS= read -r kw; do
+        [[ -z "$kw" ]] && continue
+        if echo "$entry_text" | grep -qiF "$kw" 2>/dev/null; then
+            score=$((score + 1))
+        fi
+    done <<< "$keywords"
+
+    local effectiveness
+    effectiveness=$(echo "$entry" | jq -r '.fix_effectiveness_rate // 0' 2>/dev/null)
+    if [[ "$effectiveness" =~ ^[0-9]+$ ]] && [[ "$effectiveness" -gt 50 ]]; then
+        score=$((score + 2))
+    fi
+
+    if [[ "$score" -gt 0 ]]; then
+        local content
+        content=$(echo "$entry" | jq -r '(.pattern // "") + " | " + (.root_cause // "") + " | " + (.fix // "")' 2>/dev/null)
+        echo "${score}|{\"source_type\":\"failure\",\"content_text\":$(echo "$content" | jq -Rs .)}"
+    fi
+}
+
+_mq_score_decision_entry() {
+    local entry="$1" keywords="$2"
+    [[ -z "$entry" ]] && return 0
+    local entry_text
+    entry_text=$(echo "$entry" | jq -r '(.summary // "") + " " + (.detail // "") + " " + (.type // "")' 2>/dev/null)
+    local score=0 kw
+    while IFS= read -r kw; do
+        [[ -z "$kw" ]] && continue
+        echo "$entry_text" | grep -qiF "$kw" 2>/dev/null && score=$((score + 1))
+    done <<< "$keywords"
+    if [[ "$score" -gt 0 ]]; then
+        local content
+        content=$(echo "$entry" | jq -r '(.summary // "") + " | " + (.detail // "")' 2>/dev/null)
+        echo "${score}|{\"source_type\":\"decision\",\"content_text\":$(echo "$content" | jq -Rs .)}"
+    fi
+}
+
 # ─── TF-IDF-like ranked search across failures, patterns, decisions ──────────
 # Returns JSON array of {source_type, content_text} for injection compatibility.
 memory_ranked_search() {
@@ -134,52 +230,47 @@ memory_ranked_search() {
     local results_file
     results_file=$(mktemp)
 
+    # ── L2 index: narrow the O(N) failure/decision scans to candidate entries ──
+    # Gated by SW_MEMORY_INDEX (default on). "ALL" (or index off) → legacy full
+    # scan. Patterns.json is one synthetic entry (O(1)) so it is always scanned.
+    local candidates="ALL"
+    if [[ "${SW_MEMORY_INDEX:-1}" != "0" ]]; then
+        candidates="$(_memory_query_candidates "$memory_dir" "$keywords")"
+        [[ -z "$candidates" ]] && candidates="NONE"  # index usable, zero matches
+    fi
+
     # Search failures.json
     if [[ -f "$memory_dir/failures.json" ]]; then
-        jq -c '.failures[]? // empty' "$memory_dir/failures.json" 2>/dev/null | while IFS= read -r entry; do
-            [[ -z "$entry" ]] && continue
-            local entry_text
-            entry_text=$(echo "$entry" | jq -r '(.pattern // "") + " " + (.root_cause // "") + " " + (.fix // "")' 2>/dev/null)
-            local score=0
-            while IFS= read -r kw; do
-                [[ -z "$kw" ]] && continue
-                if echo "$entry_text" | grep -qiF "$kw" 2>/dev/null; then
-                    score=$((score + 1))
-                fi
-            done <<< "$keywords"
-
-            # Boost by effectiveness
-            local effectiveness
-            effectiveness=$(echo "$entry" | jq -r '.fix_effectiveness_rate // 0' 2>/dev/null)
-            if [[ "$effectiveness" =~ ^[0-9]+$ ]] && [[ "$effectiveness" -gt 50 ]]; then
-                score=$((score + 2))
-            fi
-
-            if [[ "$score" -gt 0 ]]; then
-                local content
-                content=$(echo "$entry" | jq -r '(.pattern // "") + " | " + (.root_cause // "") + " | " + (.fix // "")' 2>/dev/null)
-                echo "${score}|{\"source_type\":\"failure\",\"content_text\":$(echo "$content" | jq -Rs .)}" >> "$results_file"
-            fi
-        done
+        if [[ "$candidates" == "ALL" ]]; then
+            jq -c '.failures[]? // empty' "$memory_dir/failures.json" 2>/dev/null | while IFS= read -r entry; do
+                local line; line=$(_mq_score_failure_entry "$entry" "$keywords")
+                [[ -n "$line" ]] && echo "$line" >> "$results_file"
+            done
+        elif [[ "$candidates" != "NONE" ]]; then
+            while IFS= read -r i; do
+                [[ -z "$i" ]] && continue
+                local entry; entry=$(jq -c ".failures[$i] // empty" "$memory_dir/failures.json" 2>/dev/null)
+                local line; line=$(_mq_score_failure_entry "$entry" "$keywords")
+                [[ -n "$line" ]] && echo "$line" >> "$results_file"
+            done < <(printf '%s\n' "$candidates" | sed -n 's/^failure:\([0-9]*\)$/\1/p' | sort -n)
+        fi
     fi
 
     # Search decisions.json
     if [[ -f "$memory_dir/decisions.json" ]]; then
-        jq -c '.decisions[]? // empty' "$memory_dir/decisions.json" 2>/dev/null | while IFS= read -r entry; do
-            [[ -z "$entry" ]] && continue
-            local entry_text
-            entry_text=$(echo "$entry" | jq -r '(.summary // "") + " " + (.detail // "") + " " + (.type // "")' 2>/dev/null)
-            local score=0
-            while IFS= read -r kw; do
-                [[ -z "$kw" ]] && continue
-                echo "$entry_text" | grep -qiF "$kw" 2>/dev/null && score=$((score + 1))
-            done <<< "$keywords"
-            if [[ "$score" -gt 0 ]]; then
-                local content
-                content=$(echo "$entry" | jq -r '(.summary // "") + " | " + (.detail // "")' 2>/dev/null)
-                echo "${score}|{\"source_type\":\"decision\",\"content_text\":$(echo "$content" | jq -Rs .)}" >> "$results_file"
-            fi
-        done
+        if [[ "$candidates" == "ALL" ]]; then
+            jq -c '.decisions[]? // empty' "$memory_dir/decisions.json" 2>/dev/null | while IFS= read -r entry; do
+                local line; line=$(_mq_score_decision_entry "$entry" "$keywords")
+                [[ -n "$line" ]] && echo "$line" >> "$results_file"
+            done
+        elif [[ "$candidates" != "NONE" ]]; then
+            while IFS= read -r i; do
+                [[ -z "$i" ]] && continue
+                local entry; entry=$(jq -c ".decisions[$i] // empty" "$memory_dir/decisions.json" 2>/dev/null)
+                local line; line=$(_mq_score_decision_entry "$entry" "$keywords")
+                [[ -n "$line" ]] && echo "$line" >> "$results_file"
+            done < <(printf '%s\n' "$candidates" | sed -n 's/^decision:\([0-9]*\)$/\1/p' | sort -n)
+        fi
     fi
 
     # Search patterns.json (project, conventions, known_issues as text)
@@ -202,7 +293,17 @@ memory_ranked_search() {
     # Sort by score and output as JSON array
     local output
     if [[ -s "$results_file" ]]; then
-        output=$(sort -t'|' -k1 -rn "$results_file" | head -"$max_results" | cut -d'|' -f2- | jq -s '.' 2>/dev/null || echo "[]")
+        # Sort to a file first, then `head` it — never pipe `head` directly
+        # downstream of `sort`. Under inherited `set -o pipefail`, `head` closing
+        # early on a large result set sends SIGPIPE to `sort` (exit 141), which
+        # would make the pipeline "fail" and collapse the output to "[]"
+        # non-deterministically (only when sort is still writing). Reading from a
+        # file gives `head` no upstream process to signal.
+        local sorted_file="${results_file}.sorted"
+        sort -t'|' -k1 -rn "$results_file" > "$sorted_file" 2>/dev/null || true
+        output=$(head -"$max_results" "$sorted_file" 2>/dev/null | cut -d'|' -f2- | jq -s '.' 2>/dev/null)
+        [[ -z "$output" ]] && output="[]"
+        rm -f "$sorted_file" 2>/dev/null || true
     else
         output="[]"
     fi
