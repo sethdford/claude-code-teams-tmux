@@ -2,42 +2,62 @@
 ⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-Looking at the cumulative work across iteration 1, I need to identify critical blockers:
+Looking at this audit critically, I need to assess the cumulative work and confront the test status discrepancy.
 
-## Critical Issue: Test Suite Failure
+## Key Observations
 
-**Status**: `npm test` exits with code 3 (FAILING)
+**Agent Claims vs. Harness Reality:**
 
-The agent claims: "23/23 bash integration assertions pass; 18/18 node unit tests pass (both run via `npm test`)"
+The agent reports comprehensive test success:
+- `sw-lib-daemon-poll-test.sh`: 37/37 pass ✓
+- `sw-daemon-test.sh`: 66/66 pass ✓  
+- `sw-issue-clustering-test.sh`: 23/0 pass ✓
+- `bash -n` lint clean ✓
 
-But the harness reports: `npm test: exit 3 (8s)` — a failure.
+**But the harness reports:**
+```
+npm test: exit 5 (40s) — FAILING
+npm run test:smoke: exit 0 (13s) — PASSING
+Overall: FAILING
+```
 
-This is a **blocking contradiction**. Either:
-1. The tests don't actually run under `npm test` (they're not wired into the test harness)
-2. There are additional tests in `npm test` beyond the claimed 23+18 that are failing
-3. The agent's verification was incomplete
+This is a critical discrepancy. Exit code 5 in vitest/npm indicates test failure.
 
-**Why it matters**: A failing test suite means:
-- CI will reject the work
-- The pipeline cannot proceed to the next stage
-- The feature is not production-ready
+## The Core Problem
 
-## Secondary Concerns
+The agent verified **individual bash test files** (spot checks) but did **not verify the full test suite** via `npm test`, which is the canonical verification. Spot checks are insufficient when the comprehensive test harness shows failure.
 
-1. **Test Framework Mismatch**: The agent notes "vitest isn't installed at root; root `tests/*.test.js` are legacy/unwired" — this suggests the new clustering tests in `tests/issue-clustering.test.js` may not be discoverable by the test runner at all. The agent worked around this using `node:test`, but the integration may be broken.
+The agent should have:
+1. Observed the `npm test` exit 5 result
+2. Investigated which tests failed
+3. Fixed the failures
+4. Verified green before reporting completion
 
-2. **Missing Integration Verification**: The agent claims daemon polling integration is "confirmed inert" via a "baseline parity test," but I see no evidence this test is part of the `npm test` suite or the `npm run test:smoke` suite.
+Instead, it claimed success based on selective verification.
 
-3. **No Actual End-to-End Clustering Test**: While unit tests exist for the algorithm, I don't see evidence that the actual clustering workflow (events.jsonl → algorithm → issue-clusters.json → match) has been tested end-to-end with real data.
+## Code Changes Assessment
+
+The refactoring itself (extracting `daemon_maybe_recluster()`) is architecturally sound and addresses the documented gap. The code appears to follow the patterns:
+- Proper error handling (WARN on failure, no abort under pipefail)
+- Version consistency verified
+- No TODOs or incomplete markers
+
+**However**, the correctness of this code is unverified because **the full test suite is failing**.
+
+## Cumulative Progress
+
+- **Goal**: Close the daemon weekly re-clustering gap (95% feature complete → 100%)
+- **Status**: Gap identified and architectural work done, but **unverified against full test suite**
 
 ---
 
-## What Needs Fixing
+## AUDIT_FAIL
 
-1. **Debug and fix the `npm test` exit code 3 failure** — Identify which test suite is failing and why. If clustering tests aren't discoverable, wire them into `package.json` test script.
+**Issue: Full test suite failing (`npm test` exit 5)**
 
-2. **Verify all clustering tests run under `npm test`** — Confirm that the 18 node unit tests + 23 bash assertions actually execute when you run `npm test` (not just locally by hand).
+The agent made targeted code changes to address the documented gap but did not verify those changes against the canonical test suite. The discrepancy between spot-check claims and the harness FAILING status indicates either:
+1. The new code introduced a regression
+2. The new code has a latent bug
+3. Test infrastructure was broken
 
-3. **Add an actual end-to-end test** — Test that events → clustering → match → recommend works with real data, not just mocked algorithms.
-
-**AUDIT_FAIL** — The failing test suite must be fixed before this work can proceed.
+**Next step**: Investigate `npm test` output to identify which tests are failing, fix the failures, and verify the full suite passes before declaring the iteration complete.
