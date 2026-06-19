@@ -419,3 +419,52 @@ _exponential_backoff() {
     [ "$delay" -lt 1 ] && delay=1
     echo "$delay"
 }
+
+# ─── Policy-driven tunable resolution ────────────────────────────────────────
+# _policy_int <section> <key> [default]
+# Runtime reader for structured policy tunables from config/policy.json
+# Resolution order: env override → policy.json → caller default
+# Bash 3.2 safe (no associative arrays), injection-guarded, degrades gracefully
+_policy_int() {
+    local section="$1" key="$2" default="${3:-0}"
+    local resolved_value env_var_name policy_file
+
+    # Sanitize section: must match ^[a-zA-Z_][a-zA-Z0-9_]*$
+    if [[ ! "$section" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        echo "$default"
+        return 0
+    fi
+
+    # Sanitize key: must match ^[a-zA-Z_][a-zA-Z0-9_]*$
+    if [[ ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        echo "$default"
+        return 0
+    fi
+
+    # 1. Try explicit env override: SW_<SECTION>_<KEY>
+    env_var_name="SW_$(echo "$section" | tr '[:lower:]' '[:upper:]')_$(echo "$key" | tr '[:lower:]' '[:upper:]')"
+    resolved_value=""
+    eval 'resolved_value="${'"$env_var_name"':-}"' 2>/dev/null || true
+    if [[ -n "$resolved_value" ]]; then
+        if [[ "$resolved_value" =~ ^[0-9]+$ ]]; then
+            echo "$resolved_value"
+            return 0
+        fi
+    fi
+
+    # 2. Try policy.json tunables section
+    policy_file="${REPO_DIR:-${WORK_DIR:-.}}/config/policy.json"
+    if [[ -f "$policy_file" ]] && command -v jq &>/dev/null; then
+        resolved_value=$(jq -r ".tunables.${section}.${key}.default // empty" "$policy_file" 2>/dev/null || true)
+        if [[ -n "$resolved_value" ]]; then
+            if [[ "$resolved_value" =~ ^[0-9]+$ ]]; then
+                echo "$resolved_value"
+                return 0
+            fi
+        fi
+    fi
+
+    # 3. Degrade to caller-provided default
+    echo "$default"
+    return 0
+}

@@ -230,5 +230,69 @@
     "outcome_learning_enabled": true,
     "outcome_min_samples": 10,
     "dedup_window_days": 7
+  },
+  "tunables": {
+    "daemon": {
+      "max_retries": {
+        "default": 3,
+        "env_var": "SW_DAEMON_MAX_RETRIES",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Failed pipelines abandoned after this many retries; tuned by CFR recovery loop."
+      },
+      "poll_interval_seconds": {
+        "default": 30,
+        "env_var": "SW_DAEMON_POLL_INTERVAL_SECONDS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Time between issue queue polls; smaller = responsive but higher CPU."
+      },
+      "stall_timeout_minutes": {
+        "default": 30,
+        "env_var": "SW_DAEMON_STALL_TIMEOUT_MINUTES",
+        "adaptive_hint": "adaptive",
+        "rationale": "Detect pipeline stalls; abort if no progress after this duration."
+      }
+    },
+    "loop": {
+      "circuit_breaker_threshold": {
+        "default": 4,
+        "env_var": "SW_LOOP_CIRCUIT_BREAKER_THRESHOLD",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Consecutive build failures before killing the loop; tuned by failure recovery logic."
+      },
+      "min_progress_lines": {
+        "default": 3,
+        "env_var": "SW_LOOP_MIN_PROGRESS_LINES",
+        "adaptive_hint": "adaptive",
+        "rationale": "Minimum changed lines per iteration to count as progress."
+      },
+      "extension_size": {
+        "default": 5,
+        "env_var": "SW_LOOP_EXTENSION_SIZE",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Extra iterations granted per extension request."
+      },
+      "max_extensions": {
+        "default": 3,
+        "env_var": "SW_LOOP_MAX_EXTENSIONS",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Maximum number of iteration extension rounds allowed."
+      }
+    },
+    "pipeline": {
+      "max_iterations": {
+        "default": 20,
+        "env_var": "SW_PIPELINE_MAX_ITERATIONS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Default iteration limit per build loop; respects --max-iterations CLI flag."
+      }
+    },
+    "quality": {
+      "gate_score_threshold": {
+        "default": 70,
+        "env_var": "SW_QUALITY_GATE_SCORE_THRESHOLD",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Minimum quality gate score to auto-merge; tuned by quality history."
+      }
+    }
   }
 }

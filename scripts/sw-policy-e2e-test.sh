@@ -274,6 +274,102 @@ assert_eq "policy_get falls back to HOME policy.json" "30" "$got"
 rm -rf "$tmp4"
 
 # ═══════════════════════════════════════════════════════════════════════
+# Test 7: _policy_int function (runtime tunable reader)
+# ═══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}_policy_int Runtime Reader${RESET}"
+
+tmp5=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp5/config"
+cat > "$tmp5/config/policy.json" <<'POLICY'
+{
+  "tunables": {
+    "daemon": {
+      "max_retries": {
+        "default": 5,
+        "env_var": "SW_DAEMON_MAX_RETRIES",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Test tunable"
+      },
+      "poll_interval_seconds": {
+        "default": 25,
+        "env_var": "SW_DAEMON_POLL_INTERVAL_SECONDS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Test tunable"
+      }
+    },
+    "loop": {
+      "circuit_breaker_threshold": {
+        "default": 6,
+        "env_var": "SW_LOOP_CIRCUIT_BREAKER_THRESHOLD",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Test tunable"
+      }
+    }
+  }
+}
+POLICY
+
+# Test: read from policy.json
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int daemon max_retries 3")
+assert_eq "_policy_int reads policy.json (daemon.max_retries)" "5" "$got"
+
+# Test: env override takes precedence
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SW_DAEMON_POLL_INTERVAL_SECONDS=99 SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int daemon poll_interval_seconds 30")
+assert_eq "_policy_int env override takes precedence" "99" "$got"
+
+# Test: caller default used when policy absent
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int daemon nonexistent 42")
+assert_eq "_policy_int uses caller default when absent" "42" "$got"
+
+# Test: loop section from policy
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int loop circuit_breaker_threshold 4")
+assert_eq "_policy_int reads policy.json (loop.circuit_breaker)" "6" "$got"
+
+# Test: bad section name rejected safely (injection guard)
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int 'daemon;rm' max_retries 7")
+assert_eq "_policy_int rejects bad section name" "7" "$got"
+
+# Test: bad key name rejected safely
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int daemon 'foo\$bar' 8")
+assert_eq "_policy_int rejects bad key name" "8" "$got"
+
+# Test: non-numeric value in policy degrades to default
+tmp5_bad=$(mktemp -d "${TMPDIR:-/tmp}/sw-policy-e2e.XXXXXX")
+mkdir -p "$tmp5_bad/config"
+cat > "$tmp5_bad/config/policy.json" <<'POLICY'
+{
+  "tunables": {
+    "test": {
+      "value": {
+        "default": "not_a_number",
+        "env_var": "SW_TEST_VALUE",
+        "adaptive_hint": "none",
+        "rationale": "Test"
+      }
+    }
+  }
+}
+POLICY
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5_bad" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int test value 99")
+assert_eq "_policy_int handles non-numeric gracefully" "99" "$got"
+rm -rf "$tmp5_bad"
+
+# Test: policy.json missing, jq not required
+# shellcheck disable=SC2097,SC2098
+got=$(REPO_DIR="$tmp5" SCRIPT_DIR="$SCRIPT_DIR" bash -c "source \"$SCRIPT_DIR/lib/compat.sh\"; _policy_int unknown section 77")
+assert_eq "_policy_int defaults when jq unavailable" "77" "$got"
+
+rm -rf "$tmp5"
+
+# ═══════════════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════════════
 echo ""

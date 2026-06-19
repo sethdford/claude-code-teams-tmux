@@ -305,6 +305,47 @@
         }
       },
       "additionalProperties": false
+    },
+    "tunables": {
+      "type": "object",
+      "description": "Structured numeric tunables that scripts can read at runtime via _policy_int(). Each section groups related tunables; each tunable has a default value, environment variable name, and adaptive hints for intelligence modules.",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Section (e.g., 'daemon', 'loop', 'pipeline')",
+        "additionalProperties": {
+          "type": "object",
+          "description": "Individual tunable entry",
+          "properties": {
+            "default": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Default integer value; used if env var and policy.json entry both absent"
+            },
+            "env_var": {
+              "type": "string",
+              "pattern": "^SW_[A-Z0-9_]+$",
+              "description": "Environment variable name that overrides this tunable at runtime"
+            },
+            "adaptive_hint": {
+              "type": "string",
+              "enum": [
+                "none",
+                "self-optimize",
+                "adaptive",
+                "predictive",
+                "model-router"
+              ],
+              "description": "Declares which intelligence module is allowed to tune this value at runtime"
+            },
+            "rationale": {
+              "type": "string",
+              "description": "Human-readable explanation of why this tunable exists and how it affects behavior"
+            }
+          },
+          "required": ["default", "env_var", "adaptive_hint", "rationale"],
+          "additionalProperties": false
+        }
+      }
     }
   },
   "additionalProperties": false

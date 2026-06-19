@@ -35,12 +35,12 @@
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Feature implementation of a migration engine with complex state management requires core development, comprehensive testing for correctness, and review for edge cases.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781832834,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,233 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "db68abebef271528c36472fb68223628": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "high",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Breaking changes to pipeline behavior if migration misses edge cases",
+          "Incomplete migration leaving some tunables inconsistently hardcoded",
+          "Config parsing errors causing silent failures in critical paths",
+          "Backward compatibility issues with code expecting hardcoded values",
+          "Performance regression if config reads are inefficient",
+          "Unidentified dependencies between scripts sharing same tunables"
+        ],
+        "implementation_hints": [
+          "Start with pilot on top 5-10 highest-impact values before full 20-value migration",
+          "Implement _policy_int helper function first with comprehensive test coverage",
+          "Use git blame + intelligence module references to validate tunable impact",
+          "Create dry-run mode for scanner showing what would be migrated without changes",
+          "Build integration tests validating config fallback and missing-config behavior",
+          "Add config validation to shipwright doctor before heavy refactoring begins",
+          "Use feature flags or environment variable to stage rollout across scripts",
+          "Document each tunable's rationale, adaptive hint, and which intelligence module tunes it",
+          "Plan config schema versioning strategy for future migrations",
+          "Test all 14 pipeline stages with missing/invalid config to ensure robustness"
+        ]
+      },
+      "timestamp": 1781832129,
+      "ttl": 3600
+    },
+    "eb19c0e7103c2ea1c03141da8d5e77f8": {
+      "result": {
+        "estimated_iterations": 18
+      },
+      "timestamp": 1781832141,
+      "ttl": 1800
+    },
+    "8824e2dd8ce8acf14f767f8e37c81d9e": {
+      "result": {
+        "estimated_cost_usd": 4.75,
+        "estimated_iterations": 5,
+        "estimated_tokens": 175000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1781832151,
+      "ttl": 3600
+    },
+    "0e967dbb368c8df40b19e343761ac0e8": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry with project type/conventions)",
+            "relevance": 85,
+            "summary": "Project structure and conventions are essential for migration planning — defines source dir (src/), test pattern (*.test.js), import style (commonjs), and test runner (vitest) needed to estimate scope and plan file changes"
+          },
+          {
+            "file": "success-patterns.json (larger file with 2 patterns: Fix bug / Add authentication feature)",
+            "relevance": 75,
+            "summary": "Shows successful work at similar complexity (60–65), iteration counts (3–4), test strategies, and cost estimates ($2.50). Directly informs migration effort estimation and planning approach"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 70,
+            "summary": "Contains architecture rules that the migration must not violate. Essential to incorporate into plan to ensure the hardcoded policy engine complies with existing rules"
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 65,
+            "summary": "Build duration baseline (2089s) helps estimate how long test iterations will take during migration, informing timeline and iteration budget in the plan"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Contains learned failure patterns (mktemp directory issues, test infrastructure gotchas) and conventions that inform what to avoid when planning test infrastructure and setup for the migration"
+          }
+        ]
+      },
+      "timestamp": 1781832363,
+      "ttl": 1800
+    },
+    "05f8bb87ffffbc633e63b13605f639fd": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (second entry with bug fix + auth patterns)",
+            "relevance": 80,
+            "summary": "Shows successful patterns for both bug fixes (60 complexity, 3 iterations) and feature development (65 complexity) using loop-based approach. Demonstrates validated iterative strategy that might inform plan structure for the migration engine."
+          },
+          {
+            "file": "patterns.json (first entry - current project)",
+            "relevance": 70,
+            "summary": "Documents actual project conventions: Node.js, vitest, CommonJS imports, src/ structure. Essential context for validating plan against established project patterns and test strategy."
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 55,
+            "summary": "Shows validation/test failure patterns (sw-cleanup.sh output formatting). Illustrates how test validation failures manifest, relevant for understanding what causes plan validation rejection."
+          }
+        ]
+      },
+      "timestamp": 1781832600,
+      "ttl": 1800
+    },
+    "02a28cff5ea13d34c197324296860906": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Explicit architecture rules directly applicable to design stage decisions for engine pattern and override framework structure"
+          },
+          {
+            "file": "patterns.json (with conventions: source_dir, test_pattern, import_style)",
+            "relevance": 85,
+            "summary": "Project-level conventions for source structure and testing patterns inform module organization and architecture layer boundaries"
+          },
+          {
+            "file": "success-patterns.json (with patterns: fix bug iteration 3, auth feature iteration 4)",
+            "relevance": 80,
+            "summary": "Proven complexity patterns (60-65) and approach metadata for feature work show successful file organization and test strategies applicable to migration engine design"
+          },
+          {
+            "file": "success-patterns.json (with test1: add auth module)",
+            "relevance": 70,
+            "summary": "TDD and module isolation approach for feature implementation; shows successful pattern for complex feature design with separate test organization"
+          },
+          {
+            "file": "patterns.json (with project_type: nodejs)",
+            "relevance": 55,
+            "summary": "Project type context informs technology stack choices and architectural patterns available for migration engine implementation"
+          }
+        ]
+      },
+      "timestamp": 1781832651,
+      "ttl": 1800
+    },
+    "3ab3ddef47d3030741b707ee633f6470": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 100,
+            "summary": "Directly documents failure patterns with root causes (e.g., 'sw-cleanup.sh does not detect stale heartbeat files') and fixes. Most directly relevant to understanding what anti-patterns to avoid during design."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 95,
+            "summary": "Contains detailed failure analysis entries (kind: 'failure') with error signatures, fix strategies, and approaches. Shows concrete examples of what failed and how to avoid similar mistakes in the migration engine design."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 80,
+            "summary": "Documents real issues encountered (e.g., 'Fix timeout bug in daemon') with their success patterns ('added semaphore'). Helps identify gotchas and solutions relevant to adaptive override framework design."
+          }
+        ]
+      },
+      "timestamp": 1781832671,
+      "ttl": 1800
+    },
+    "f0a38a9c6aaac0134a56e5931baf8a3c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (first entry)",
+            "relevance": 95,
+            "summary": "Project structure detection: Node.js with vitest test runner, commonjs imports, src/ and test/ directories. Critical for understanding build environment and test execution strategy."
+          },
+          {
+            "file": "success-patterns.json (second entry with 'Fix bug' and 'Add authentication' patterns)",
+            "relevance": 75,
+            "summary": "Previous successful builds show 3 iterations typical, npm test strategy, loop-based progression. Demonstrates proven iteration patterns for builds of similar complexity (60-65)."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captured test infrastructure failures: mktemp path issues, output formatting in test harness. Helps avoid known test setup pitfalls during build phase."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 60,
+            "summary": "Build duration baseline of 2089s sets expectations for build stage timing and helps detect stalls or regressions."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Previous infrastructure fix pattern (timeout bug with semaphore solution) shows relevant troubleshooting approach for daemon-related builds."
+          }
+        ]
+      },
+      "timestamp": 1781832794,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Shows successful build patterns with iteration counts (3-4), test strategy (npm test), template (standard), files typically changed, and duration (~150s max). Directly applicable to current build stage execution."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Contains project structure (src/, *.test.js, commonjs) and test runner (vitest) needed to build and test correctly. Essential context for build phase execution."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline build duration (2089s = 34m) sets expectations for build stage timing and helps detect stalls or anomalies during the current build."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Records sw-cleanup.sh test failures and similar issues that occur during build validation; helps anticipate and handle common test-phase blockers."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Contains specific test failure signatures (mktemp errors) and fix strategies that may recur during the build's test phase, enabling faster error recovery."
+          }
+        ]
+      },
+      "timestamp": 1781832817,
+      "ttl": 1800
     }
   }
 }
