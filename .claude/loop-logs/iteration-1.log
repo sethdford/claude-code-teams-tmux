@@ -1,1 +1,26 @@
-You've hit your session limit · resets 6pm (UTC)
+The Fleet-Wide Pattern Mining & Knowledge Transfer Engine is complete and committed. Summary of what was delivered:
+
+## What was built (issue #668)
+
+**`sw-knowledge.sh` — three new subcommands** (extends the existing failure-knowledge engine, reusing `km_signature`/`atomic_write`/`emit_event`, zero router change):
+- **`mine-success`** — sole writer of a separate schema-v1 store `~/.shipwright/fleet-patterns.json`. Reads `events.jsonl` tolerantly (torn lines dropped, never aborts), consolidates successful `pipeline.completed` events by `(template | complexity_bucket | goal_tokens)`, aggregates `applied_count` / `success_rate` / `avg_iterations` / `avg_cost_usd` / `repo_count`.
+- **`recommend [--json] "<title>" <complexity>`** — pure read. Pinned deterministic score `floor(100*(0.5*overlap + 0.3*complexity_match + 0.2*repo_norm) + 0.5)`, gated on `score≥60 AND success_rate≥50 AND applied_count≥2`.
+- **`patterns-report`** — library health, reuse metrics, and event-schema drift alarm.
+- **Reuse tracking is reconciled, not incremented** — `total_reuses` is recounted from `knowledge.pattern_recommended` events each mine (idempotent, race-free).
+
+**`lib/pipeline-composer-fleet.sh`** (new) — read-only advisory hook. On a hit emits exactly one `knowledge.pattern_recommended` event and returns the proven template; on miss/error returns `""` and the composer falls back. Never writes the library.
+
+**`sw-pipeline-composer.sh`** — sources the hook, records the recommendation as a best-effort `.fleet_recommendation` prior (never overrides selection, never aborts).
+
+**`pipeline-commands.sh`** — additive `goal=` field on `pipeline.completed` (already in scope/on `pipeline.started`) so recommend matches real data.
+
+## Verification
+- **50/50 sw-knowledge tests pass** — including 59/60/61 scoring boundary, gate enforcement, reconcile idempotency (3 events + 2 mines = 3 reuses), composer read-only proof (mtime unchanged, exactly one event), drift signal, torn-line tolerance.
+- `version check` clean (deliberately **no VERSION bump** — the repo-wide consistency checker would fail it; that's a release-time concern).
+- Composer / eventbus / pipeline-stages suites pass — no regressions.
+- Fixed a `grep -c || echo 0` double-output pitfall (the exact one warned about in CLAUDE.md).
+- Docs: command table, runtime-state paths, help text, and event-schema all updated.
+
+All acceptance criteria and the design's mandatory data-pipeline sections (schema, data-flow with failure points, idempotency via recount, rollback via self-reseed) are satisfied.
+
+LOOP_COMPLETE
