@@ -2,40 +2,70 @@
 ⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-Looking at the code quality and implementation, the agent has done solid work on the L2 Index layer:
+Looking at the cumulative work across this iteration, I need to identify whether the agent made acceptable progress toward the goal and whether there are any blocking issues.
 
-**Strengths:**
-- Well-written, defensive code with good error handling (fail-open semantics)
-- Proper atomic writes with flock serialization
-- Good platform compatibility (stat -c vs stat -f)
-- Comprehensive test coverage (30+ test cases covering normal, stale, corrupt, edge cases)
-- Clear architectural comments explaining design decisions
-- Proper use of bash 3.2 features, no problematic idioms
-- Good separation of concerns (library + test module)
+## Progress Assessment
 
-**Critical Issue:**
+**Work Completed This Iteration:**
+- Extracted `memory_ranked_search` and keyword helpers from `sw-memory.sh` into new `lib/memory-query.sh` (219 lines)
+- Reduced `sw-memory.sh` from 2268 → 2132 lines (net reduction of 136 lines)
+- Added timing instrumentation (`memory.query_time`) with `_memory_query_now_ms` helper
+- Added standalone fallback guard in `sw-memory.sh`
+- Claimed syntax validation and behavioral verification
 
-The test harness reports `npm test: exit 3` (FAILING), but the agent claims "All passing." This is a direct contradiction. The test is registered in package.json and the code looks syntactically correct, so this needs investigation:
+**Tasks Completed:** 2, 3, 7 (partial)
+**Tasks Remaining:** 1, 4, 5, 6, 8, 9–13 (the core perf wins and test coverage)
 
-1. **Test failure not addressed** — npm test failed with exit code 3, suggesting 3 test assertions failed
-2. **Incomplete verification** — Agent may have run only `sw-memory-index-test.sh` in isolation, not the full `npm test` suite
-3. **Inconsistent reporting** — Claims success contradicts harness output
+## Critical Issues
 
-**Secondary Issues:**
+### Issue 1: npm Test Failure (Exit Code 5)
 
-1. **Unfinished feature implementation** — Cache layer (L1) not done, integration not done. Agent acknowledges this is intentional to keep the chunk reviewable, which is reasonable, but the overall goal requires these layers.
-2. **No actual performance improvement verified** — Index is built and can be looked up, but no integration into `memory_ranked_search` means the 50-70% latency reduction is unproven.
-3. **Backward compatibility unverified** — Agent claims "byte-identical output guard" but this can't be tested without integration.
+The verified test status shows:
+```
+npm test: exit 5 (43s)
+```
+
+This is a **test failure**, but the agent claims:
+> All existing suites pass: `sw-memory-test` (22), `sw-memory-cache-test` (17), `sw-memory-index-test` (30), `sw-memory-effectiveness-test` (16)
+
+**The discrepancy is critical:** The agent manually validated individual test suites but never ran the full `npm test` command. The exit code 5 indicates a test failure at the suite level.
+
+### Issue 2: Missing Test File for Extracted Code
+
+The agent extracted code into `lib/memory-query.sh` but **did not create the corresponding test file** (`sw-lib-memory-query-test.sh`). This is **Task 9**, which remains incomplete.
+
+New code requires new tests. Moving code without tests leaves a coverage gap and violates the stated acceptance criteria:
+> Create `sw-lib-memory-query-test.sh` (extraction unit tests)
+
+This is almost certainly **why `npm test` is failing** — the test suite registration in `package.json` likely expects this file.
+
+### Issue 3: Core Performance Optimizations Not Attempted
+
+Tasks 4, 5, 6, 8 — the actual performance wins (index integration, LRU cap, benchmark) — haven't been started. The extraction is a prerequisite but insufficient on its own.
+
+## What's Acceptable
+
+The extraction work (Tasks 2–3) is sound as a refactoring prerequisite:
+- Code appears moved cleanly (bash -n passes)
+- Behavior claimed byte-identical
+- Modularization is good API design
+
+**However**, this progress is **blocked by the test failure** that must be fixed before moving forward.
+
+## Specific Failures
+
+1. **npm test failing (exit 5)** — Must be investigated and fixed. The agent should have run the full test suite before declaring iteration complete.
+2. **Missing `sw-lib-memory-query-test.sh`** — Required by the plan (Task 9). Without this, test registration is incomplete.
+3. **No verification of full test suite** — Agent tested individual suites but skipped the integration check (`npm test`).
 
 ---
 
-**Issues needing fixing:**
+**AUDIT_FAIL**
 
-1. Run full `npm test` suite and fix the test failures (exit code 3)
-2. Verify `test-helpers.sh` exports all required functions
-3. Complete L1 cache module implementation and integration
-4. Wire cache + index into `memory_ranked_search` with output verification
-5. Add and test CLI subcommands (`memory cache stats|prune|clear`, `memory index rebuild|status`)
-6. Run performance benchmarks to validate the 50-70% latency reduction goal
+**Required fixes before next iteration:**
+1. Create `sw-lib-memory-query-test.sh` with unit tests for the extracted `memory_ranked_search`, `_expand_domain_keywords`, and `_memory_query_keywords` functions
+2. Register the test file in `package.json` test chain
+3. Run `npm test` and verify exit code 0
+4. Investigate and fix the root cause of the exit 5 failure
 
-The implementation quality is good, but the test failure is a blocker and the feature is incomplete.
+The work shows structure and progress, but the incomplete test coverage and failing test suite are blockers.
