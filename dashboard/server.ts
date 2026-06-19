@@ -3620,6 +3620,55 @@ const server = Bun.serve({
       });
     }
 
+    // REST: Forward-looking cost preview / budget-aware template selection
+    // ?template=<name> previews one template; omit to list all. ?complexity=N
+    // (0-100) scales the estimate. ?select=1 returns the budget-aware pick.
+    if (pathname === "/api/cost/preview") {
+      const costScript = resolveWorktreePath("scripts/sw-cost.sh");
+      if (!costScript) {
+        return new Response(
+          JSON.stringify({ error: "cost script not found" }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+
+      // Sanitize inputs before they reach the shell.
+      const rawTemplate = url.searchParams.get("template") || "";
+      const template = /^[a-z][a-z0-9-]*$/.test(rawTemplate) ? rawTemplate : "";
+      const rawComplexity = url.searchParams.get("complexity") || "";
+      const complexity = /^[0-9]{1,3}$/.test(rawComplexity)
+        ? rawComplexity
+        : "";
+      const wantSelect = url.searchParams.get("select") === "1";
+
+      let cmd: string;
+      if (wantSelect) {
+        cmd = `bash ${costScript} select ${complexity || "50"} --json`;
+      } else if (template) {
+        cmd = `bash ${costScript} preview ${template} ${complexity} --json`;
+      } else {
+        cmd = `bash ${costScript} preview --all ${complexity} --json`;
+      }
+
+      try {
+        const out = execSync(cmd, { encoding: "utf-8", timeout: 5000 });
+        return new Response(out, {
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: "preview failed", detail: String(err) }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+    }
+
     // REST: Cost breakdown by stage, model, issue
     if (pathname === "/api/costs/breakdown") {
       const period = parseInt(url.searchParams.get("period") || "7");

@@ -154,6 +154,11 @@ test_server_exports_context_efficiency() {
     assert_file_matches_grep "$INDEX_HTML" 'context-efficiency-container' "index.html has context-efficiency container"
 }
 
+test_server_exports_cost_preview() {
+    assert_file_matches_grep "$SERVER_TS" '/api/cost/preview' "exports /api/cost/preview" &&
+    assert_file_matches_grep "$SERVER_TS" 'sw-cost\.sh' "cost preview shells out to sw-cost.sh"
+}
+
 test_bun_check_passes() {
     if ! command -v bun &>/dev/null; then
         echo -e "    ${DIM}(bun not installed, skipping)${RESET}"
@@ -221,6 +226,7 @@ echo -e "${PURPLE}${BOLD}Routes${RESET}"
 run_test "Server exports /api/health and /api/status" test_server_exports_api_routes
 run_test "Server exports /ws WebSocket route" test_server_exports_ws_route
 run_test "Server exports /api/context-efficiency" test_server_exports_context_efficiency
+run_test "Server exports /api/cost/preview" test_server_exports_cost_preview
 echo ""
 
 echo -e "${PURPLE}${BOLD}Integrity${RESET}"
