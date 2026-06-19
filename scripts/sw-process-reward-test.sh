@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
     local needle="$1" haystack="$2" description="${3:-}"
     if echo "$haystack" | grep -qF "$needle"; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    Actual: $haystack"
@@ -38,10 +38,10 @@ assert_contains() {
 assert_ge() {
     local threshold="$1" actual="$2" description="${3:-}"
     if [[ "$actual" -ge "$threshold" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected >= $threshold, got: $actual"
     fi
@@ -50,10 +50,10 @@ assert_ge() {
 assert_le() {
     local threshold="$1" actual="$2" description="${3:-}"
     if [[ "$actual" -le "$threshold" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected <= $threshold, got: $actual"
     fi
@@ -148,10 +148,10 @@ test_composite_json() {
     local composite
     composite=$(echo "$result" | jq -r '.composite' 2>/dev/null || echo "FAIL")
     if [[ "$composite" != "FAIL" ]] && [[ "$composite" -ge 0 ]] && [[ "$composite" -le 100 ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m composite scoring returns valid JSON with 0-100 score ($composite)"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m composite scoring returns valid JSON"
         echo "    Result: $result"
     fi
@@ -167,7 +167,7 @@ test_record_writes_jsonl() {
         line_count=$(wc -l < "$PROCESS_REWARD_FILE" | tr -d ' ')
         assert_equals "1" "$line_count" "record writes exactly 1 line to JSONL"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m record writes JSONL file"
     fi
 }

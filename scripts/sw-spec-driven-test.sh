@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
     local needle="$1" haystack="$2" description="${3:-}"
     if echo "$haystack" | grep -qF "$needle"; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    Actual: $haystack"
@@ -38,10 +38,10 @@ assert_contains() {
 assert_file_exists() {
     local path="$1" description="${2:-}"
     if [[ -f "$path" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $path"
     fi
@@ -101,10 +101,10 @@ test_generate_required_fields() {
 assert_ge_local() {
     local threshold="$1" actual="$2" description="${3:-}"
     if [[ "$actual" -ge "$threshold" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected >= $threshold, got: $actual"
     fi
