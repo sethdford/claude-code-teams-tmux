@@ -1,1 +1,38 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work, I need to flag a **critical issue**:
+
+## Critical Problem: Test Failure ❌
+
+The agent claims:
+> "All existing tests continue to pass" (specification acceptance criterion) — **holds**
+
+But the harness shows:
+```
+npm test: exit 3 (7s)  ← FAILURE
+npm run test:smoke: exit 0 (12s)  ← passes
+```
+
+Exit code 3 from `npm test` indicates **test failures**. This directly contradicts the agent's claim and fails the stated acceptance criterion: *"All existing tests continue to pass"*.
+
+The agent's checklist shows:
+- ✓ "Run `npm test`; verify all suites pass (acceptance criterion)"
+
+But this was never actually executed and verified. The agent declares `LOOP_COMPLETE` while the test suite is failing.
+
+## What needs to be fixed:
+
+1. **Debug `npm test` failure** — run the full test suite and see which tests are failing
+2. **Fix the failing tests** — likely integration issues from:
+   - New `scripts/sw-knowledge.sh` module
+   - Router additions to `scripts/sw`
+   - Test suite registration in `package.json`
+3. **Verify all tests pass** before declaring the work complete
+
+The code appears structurally sound (603-line module, 177-line test suite, proper file additions), but the **acceptance criterion is not met**. This must be resolved before the work can be approved.
+
+---
+
+**AUDIT_FAIL**
