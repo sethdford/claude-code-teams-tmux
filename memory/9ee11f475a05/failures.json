@@ -8,6 +8,15 @@
       "seen_count": 4,
       "last_seen": "2026-06-19T01:49:04Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded/substituted before being passed as a sed script argument",
+      "fix": "Ensure TEST_TEMP_DIR is exported and properly interpolated in the sed command — use double quotes around the sed expression or pre-expand the variable before calling sed",
+      "seen_count": 1,
+      "last_seen": "2026-06-19T08:30:37Z",
+      "category": "test_failure"
     }
   ]
 }
