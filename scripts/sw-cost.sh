@@ -993,6 +993,7 @@ show_help() {
     echo -e "  ${CYAN}preview${RESET} <template> [complexity]    Predicted cost + per-stage breakdown"
     echo -e "  ${CYAN}preview${RESET} --all [complexity]         Estimate every template, sorted by cost"
     echo -e "  ${CYAN}select${RESET} [complexity]                Budget-aware recommended template"
+    echo -e "  ${CYAN}accuracy${RESET}                          Estimate-vs-actual error (MAPE) per template"
     echo -e "  ${DIM}Append --json to any of the above for machine-readable output${RESET}"
     echo ""
     echo -e "${BOLD}MODEL PRICING${RESET}"
@@ -1065,6 +1066,14 @@ case "$SUBCOMMAND" in
             if [[ "$_a" == "--json" ]]; then _CP_JSON=1; else _CP_ARGS+=("$_a"); fi
         done
         cp_select "${_CP_ARGS[0]:-50}" "$_CP_JSON"
+        ;;
+    accuracy)
+        # cost accuracy [--json]
+        _CP_JSON=0
+        for _a in "$@"; do
+            [[ "$_a" == "--json" ]] && _CP_JSON=1
+        done
+        cp_accuracy "$_CP_JSON"
         ;;
     check-budget)
         cost_check_budget "$@"

@@ -143,6 +143,7 @@ Shipwright orchestrates autonomous Claude Code agent teams with delivery pipelin
 | `shipwright cost budget set <amount>` | Set daily budget limit                                                                |
 | `shipwright cost preview <template>`  | Forward-looking cost estimate for a template (per-stage breakdown; `--all`, `--json`) |
 | `shipwright cost select`              | Budget-aware template recommendation (`--json`)                                       |
+| `shipwright cost accuracy`            | Estimate-vs-actual error (MAPE) per template from recorded history (`--json`)         |
 | `shipwright db <cmd>`                 | SQLite persistence layer management                                                   |
 | `shipwright eventbus subscribe`       | Subscribe to real-time events by type                                                 |
 | `shipwright eventbus reaper`          | Clean up expired/consumed events                                                      |
@@ -924,6 +925,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 - Checkpoints: `.claude/pipeline-artifacts/checkpoints/`
 - Machine registry: `~/.shipwright/machines.json`
 - Cost data: `~/.shipwright/costs.json, ~/.shipwright/budget.json`
+- Cost history (estimate/actual ledger): `~/.shipwright/cost-history.jsonl` (override via `SHIPWRIGHT_COST_HISTORY`)
 - Intelligence cache: `.claude/intelligence-cache.json`
 - Optimization data: `~/.shipwright/optimization/`
 - Baselines: `~/.shipwright/baselines/`
