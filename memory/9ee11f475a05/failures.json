@@ -3,10 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection does not output stale agent names or summary 'Found N items' / '--force' hint in dry-run mode",
-      "fix": "Fix the stale-heartbeat detection block in sw-cleanup.sh to print the agent name when a stale heartbeat is found and add a summary line with 'Found <n> item(s)' and '--force' hint when items are detected",
-      "seen_count": 1,
-      "last_seen": "2026-06-19T08:30:57Z",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, dropping 'agent-1' stale heartbeat detection, 'Found' count, and '--force' hint from dry-run output",
+      "fix": "Update sw-cleanup-test.sh expected strings or fix sw-cleanup.sh to restore stale heartbeat detection and dry-run summary output with Found count and --force hint",
+      "seen_count": 5,
+      "last_seen": "2026-06-19T08:33:53Z",
       "category": "test_failure"
     }
   ]
