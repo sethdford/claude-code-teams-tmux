@@ -355,10 +355,20 @@ generate_learned_rules() {
         local count
         count=$(echo "$pattern" | jq -r '.count')
 
-        # Compute confidence (count / total_prs, capped at 0.95)
-        # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
+        # Compute confidence: count/20, capped at 0.95 for count >= 10.
+        # Pure bash arithmetic — `bc` lacks portable if/then/else and is not
+        # guaranteed installed, so avoid it entirely.
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        if [[ "$count" -ge 10 ]]; then
+            confidence="0.95"
+        else
+            local conf_pct=$(( count * 5 ))   # count/20 expressed as a percentage
+            if [[ "$conf_pct" -lt 10 ]]; then
+                confidence="0.0${conf_pct}"
+            else
+                confidence="0.${conf_pct}"
+            fi
+        fi
 
         # Generate rule text based on category
         local rule_text
