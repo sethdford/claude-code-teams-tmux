@@ -1,1 +1,44 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+## CRITICAL ISSUE FOUND
+
+The work shows substantial progress toward the goal, but there is a **hard blocker**:
+
+### Issue: npm test Failing (Exit Code 3)
+
+**The Evidence:**
+- Agent's claim: "All validations pass with no regressions"
+- Harness result: `npm test: exit 3 (FAILING)` (from the verified test status)
+- Smoke tests pass (exit 0), so the issue is specific to the new test registration
+
+**The Problem:**
+The agent created a new test suite (`scripts/sw-prebuild-validate-test.sh` with 239 lines) and claims to have registered it in `npm test` (36 tests), but the actual test run is failing with exit code 3. This indicates either:
+1. The new test file has a syntax error (bash 3.2 compatibility issue, missing function, etc.)
+2. The test file wasn't properly registered in `package.json`
+3. The test file depends on something that doesn't exist (e.g., the prebuild stage module isn't properly sourced)
+
+**Why This Matters:**
+- Exit code 3 typically means "tests not found" or "fatal test runner error"
+- The agent's claim of "all validations pass" is contradicted by objective test results
+- The feature cannot be merged while the test suite is broken
+
+### Secondary Issue: Unclear Template Modifications
+
+The agent states templates are "disabled in fast/hotfix" but the diff shows +20 lines added to each. **How are stages marked as "disabled"?** This needs clarification:
+- Are they added with an `"enabled": false` flag?
+- Are they omitted from the stage list entirely?
+- Is the diff misleading (e.g., formatting/whitespace changes)?
+
+### What Needs to Happen
+
+**Before audit approval, fix:**
+1. **Debug npm test failure** — Verify the test file has no syntax errors (bash 3.2 compat, missing sourced files)
+2. **Verify test registration** — Confirm `package.json` properly registers the new test suite
+3. **Run npm test locally** — Reproduce and fix the failing test output
+4. **Verify all 36 tests are discovered** — Not just registered, but actually running
+
+The implementation approach (new stage module, check functions returning 0/1/2, atomic JSON output, flag-based skipping) looks sound, but the broken test suite is a blocker.
+
+**AUDIT_FAIL** — Fix the npm test exit code 3 failure before proceeding.
