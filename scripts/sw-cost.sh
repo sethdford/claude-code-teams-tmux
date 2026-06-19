@@ -58,6 +58,10 @@ if [[ -f "$_COST_SCRIPT_DIR/sw-db.sh" ]]; then
     source "$_COST_SCRIPT_DIR/sw-db.sh" 2>/dev/null || true
 fi
 
+# Forward-looking cost preview & budget-aware template selection
+# shellcheck source=lib/cost-preview.sh
+[[ -f "$_COST_SCRIPT_DIR/lib/cost-preview.sh" ]] && source "$_COST_SCRIPT_DIR/lib/cost-preview.sh"
+
 ensure_cost_dir() {
     mkdir -p "$COST_DIR"
     [[ -f "$COST_FILE" ]] || echo '{"entries":[],"summary":{}}' > "$COST_FILE"
@@ -985,6 +989,12 @@ show_help() {
     echo -e "  ${CYAN}efficiency${RESET}                     Show cost/success efficiency metrics"
     echo -e "  ${CYAN}efficiency${RESET} --json              JSON output"
     echo ""
+    echo -e "${BOLD}COST PREVIEW & SELECTION${RESET}"
+    echo -e "  ${CYAN}preview${RESET} <template> [complexity]    Predicted cost + per-stage breakdown"
+    echo -e "  ${CYAN}preview${RESET} --all [complexity]         Estimate every template, sorted by cost"
+    echo -e "  ${CYAN}select${RESET} [complexity]                Budget-aware recommended template"
+    echo -e "  ${DIM}Append --json to any of the above for machine-readable output${RESET}"
+    echo ""
     echo -e "${BOLD}MODEL PRICING${RESET}"
     echo -e "  ${CYAN}update-pricing${RESET} [model] [in] [out]  Update model pricing"
     echo -e "  ${CYAN}update-pricing${RESET}                     Show current pricing"
@@ -1032,6 +1042,29 @@ case "$SUBCOMMAND" in
         ;;
     remaining-budget)
         cost_remaining_budget
+        ;;
+    preview)
+        # cost preview <template> [complexity] [--json]
+        # cost preview --all [complexity] [--json]
+        _CP_JSON=0
+        _CP_ARGS=()
+        for _a in "$@"; do
+            if [[ "$_a" == "--json" ]]; then _CP_JSON=1; else _CP_ARGS+=("$_a"); fi
+        done
+        if [[ "${_CP_ARGS[0]:-}" == "--all" ]]; then
+            cp_preview_all "${_CP_ARGS[1]:-50}" "$_CP_JSON"
+        else
+            cp_preview_one "${_CP_ARGS[0]:-standard}" "${_CP_ARGS[1]:-50}" "$_CP_JSON"
+        fi
+        ;;
+    select)
+        # cost select [complexity] [--json]
+        _CP_JSON=0
+        _CP_ARGS=()
+        for _a in "$@"; do
+            if [[ "$_a" == "--json" ]]; then _CP_JSON=1; else _CP_ARGS+=("$_a"); fi
+        done
+        cp_select "${_CP_ARGS[0]:-50}" "$_CP_JSON"
         ;;
     check-budget)
         cost_check_budget "$@"

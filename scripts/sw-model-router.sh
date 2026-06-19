@@ -301,21 +301,30 @@ estimate_cost() {
     info "Estimating cost for template: $template, complexity: $complexity"
     echo ""
 
-    # Typical token usage by stage (estimated)
-    local stage_tokens=(
-        "intake:5000"
-        "plan:50000"
-        "design:50000"
-        "build:100000"
-        "test:30000"
-        "review:20000"
-        "compound_quality:40000"
-        "pr:10000"
-        "merge:5000"
-        "deploy:5000"
-        "validate:5000"
-        "monitor:5000"
-    )
+    # Single source of truth for per-stage token estimates lives in
+    # lib/cost-preview.sh (_cp_stage_tokens). Source it when available; the
+    # inline list below preserves the historical stage set & output ordering.
+    [[ -f "$SCRIPT_DIR/lib/cost-preview.sh" ]] && source "$SCRIPT_DIR/lib/cost-preview.sh" 2>/dev/null || true
+
+    local stages=(intake plan design build test review compound_quality pr merge deploy validate monitor)
+    local stage_tokens=()
+    local _s _tok
+    for _s in "${stages[@]}"; do
+        if [[ "$(type -t _cp_stage_tokens 2>/dev/null)" == "function" ]]; then
+            _tok=$(_cp_stage_tokens "$_s")
+        else
+            case "$_s" in
+                build) _tok=100000 ;;
+                plan|design) _tok=50000 ;;
+                compound_quality) _tok=40000 ;;
+                test) _tok=30000 ;;
+                review) _tok=20000 ;;
+                pr) _tok=10000 ;;
+                *) _tok=5000 ;;
+            esac
+        fi
+        stage_tokens+=("${_s}:${_tok}")
+    done
 
     local total_cost="0"
     local total_input_tokens="0"
