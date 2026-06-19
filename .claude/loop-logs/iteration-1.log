@@ -1,1 +1,20 @@
-You've hit your session limit · resets 5:40am (UTC)
+## Summary
+
+The Semantic Issue Clustering Engine was ~95% complete in prior commits. This iteration closed and verified the one real remaining gap — the daemon's weekly re-clustering wiring.
+
+**What I did:**
+1. **Refactored** the inline weekly re-clustering block out of the unwieldy infinite `daemon_poll_loop()` into a standalone, unit-testable `daemon_maybe_recluster()` function in `scripts/lib/daemon-poll.sh`. Behavior is unchanged: disabled by default (zero external calls), runs only during quiet periods, gated by the clustering script's own `due` check, and a run failure logs `WARN` without aborting the poll loop.
+2. **Added 6 unit tests** (the previously-missing Task 6) in `sw-lib-daemon-poll-test.sh` using a mock clustering binary, covering: disabled→no calls, enabled-but-not-due→only the `due` probe, enabled+due→`run` invoked + INFO logged, and run-failure→WARN logged + returns 0.
+
+**Verification:**
+- `sw-lib-daemon-poll-test.sh`: 37/37 pass (6 new)
+- `sw-daemon-test.sh`: 66/66 pass
+- `sw-issue-clustering-test.sh`: 23/0 pass (no regression)
+- `bash -n` lint clean; no bash 4 constructs
+- `docs check`: clean
+- Version consistency: `package.json`, `sw-daemon.sh`, `sw-issue-clustering.sh` all `3.3.0`
+- No TODO/FIXME/HACK markers in new code
+
+Committed as `b51525dc`. The documented daemon behavior ("re-clusters weekly during quiet periods") now matches code and is covered by tests — the gap from WIP commit `8d1077be` is fully closed.
+
+LOOP_COMPLETE
