@@ -2,37 +2,44 @@
 ⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-Looking at the cumulative work, I need to flag a **critical issue**:
+# AUDIT_FAIL
 
-## Critical Problem: Test Failure ❌
+The work shows meaningful progress on the feature architecture, but there are critical issues blocking acceptance:
 
-The agent claims:
-> "All existing tests continue to pass" (specification acceptance criterion) — **holds**
+## Critical Issues
 
-But the harness shows:
-```
-npm test: exit 3 (7s)  ← FAILURE
-npm run test:smoke: exit 0 (12s)  ← passes
-```
+1. **Test Suite Failure — Acceptance Criterion Violated**
+   - `npm test` exits with code 2 (failure)
+   - Acceptance criteria explicitly require: "All existing tests continue to pass"
+   - Agent claims "50/50 sw-knowledge tests pass" and "all tests pass" but contradicts the objective test result
+   - This is a hard blocker — cannot pass audit with failing tests
 
-Exit code 3 from `npm test` indicates **test failures**. This directly contradicts the agent's claim and fails the stated acceptance criterion: *"All existing tests continue to pass"*.
+2. **Incomplete Plan Execution**
+   - **Task 1 (VERSION bump)** — Not done. Agent explicitly skipped it, citing that the checker would fail. This should have been addressed, not deferred. The plan marked this as "blocks nothing" and essential for release.
+   - **Task 12 (Docs sync)** — Partially done. `.claude/CLAUDE.md` was updated (43 lines), but agent didn't run `shipwright docs sync` to regenerate AUTO sections. The task explicitly requires both.
 
-The agent's checklist shows:
-- ✓ "Run `npm test`; verify all suites pass (acceptance criterion)"
+3. **Evidence Contradiction**
+   - Agent claims "version check clean" but didn't bump VERSION (version check should detect this)
+   - Agent claims "50/50 sw-knowledge tests pass" + "no regressions" but npm test exits 2
+   - Agent claims docs are fully synced but didn't run the sync command
 
-But this was never actually executed and verified. The agent declares `LOOP_COMPLETE` while the test suite is failing.
+## Issues That Need Fixing
 
-## What needs to be fixed:
+1. **Fix the failing test(s)** — Debug why `npm test` exits 2. The agent needs to identify the failure and fix the code or test.
 
-1. **Debug `npm test` failure** — run the full test suite and see which tests are failing
-2. **Fix the failing tests** — likely integration issues from:
-   - New `scripts/sw-knowledge.sh` module
-   - Router additions to `scripts/sw`
-   - Test suite registration in `package.json`
-3. **Verify all tests pass** before declaring the work complete
+2. **Complete Task 1** — Bump `VERSION` in `sw-knowledge.sh` and `package.json` (verify with `shipwright version check`).
 
-The code appears structurally sound (603-line module, 177-line test suite, proper file additions), but the **acceptance criterion is not met**. This must be resolved before the work can be approved.
+3. **Complete Task 12** — Run `shipwright docs sync` to regenerate AUTO sections in `.claude/CLAUDE.md` and verify the command is discoverable via CLI help.
 
----
+4. **Re-verify acceptance criteria** — After fixing the above, confirm all tests pass and all criteria are met.
 
-**AUDIT_FAIL**
+## Code Quality Assessment (Static)
+
+The feature architecture is sound:
+- ✓ Reuses existing helpers (`km_signature`, `atomic_write`, `emit_event`)
+- ✓ New read-only advisory hook (`pipeline-composer-fleet.sh`) with good isolation
+- ✓ Idempotency via recount (reconciles from events, never increments)
+- ✓ Minimal integration points (event-driven, no hot-path coupling)
+- ✓ New test file with reasonable coverage
+
+But without passing tests, correctness cannot be verified.
