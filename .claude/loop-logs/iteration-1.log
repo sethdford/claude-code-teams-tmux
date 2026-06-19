@@ -1,1 +1,22 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+Excellent — the main pipeline suite passes 58/0, confirming my `pipeline-execution.sh` hook integration is non-breaking.
+
+## Iteration 1 Summary
+
+I implemented a complete, tested vertical slice of **Stage Output Schema Validator & Contract Enforcement**:
+
+**Created:**
+- `scripts/lib/validate.sh` — core library: `validate_stage_output`, `validate_stage_hook`, `load_schema`, `lint_schema`, `format_validation_error`, `record_validation_metric`, `stage_artifact_path`, `_validation_cfg`. A jq-based "contract subset" validator (per the design — jq is *not* a full JSON Schema engine), with `lint_schema` rejecting unsupported load-bearing keywords so authors aren't given false confidence.
+- `config/stage-schemas/*.schema.json` — 14 stage schemas (draft 2020-12, `$schema`+`$id`), permissive by default.
+- `scripts/sw-validate-stage-output.sh` — CLI (`--strict`, `--json`, `--no-metric`, `lint`), wired into the `sw` router.
+- `scripts/sw-validate-stage-output-test.sh` — **67 tests** (unit + integration), registered in `npm test`.
+
+**Modified:**
+- `pipeline-execution.sh` — post-stage `validate_stage_hook` after `mark_stage_complete` (warn-default, strict opt-in, blocks only in strict mode).
+- `sw-daemon.sh` — `validation` config block.
+- `.claude/CLAUDE.md` — full section + "Adding a New Stage Output Schema" guide.
+
+**Verified:** new suite 67/0, `sw-lib-pipeline-stages`, `sw-lib-pipeline-state`, `sw-daemon`, and the main `sw-pipeline-test` (58/0) all pass. Committed as `904144ef`.
+
+**Design highlights honored:** Bash 3.2-safe (no assoc arrays), atomic metric appends with `flock`, exit-code semantics (exit 1 = validator fault only), backward-compatible (SCHEMA_NOT_FOUND → valid), timeout-bounded jq.
+
+I'm **not** declaring `LOOP_COMPLETE` yet: the spec's one acceptance criterion is "all existing tests continue to pass," and while I verified the directly-impacted suites + main pipeline test, I haven't run the full ~130-suite `npm test`. Next iteration I'll run the full suite and add validation integration cases into `sw-pipeline-test.sh` to fully close the loop.
