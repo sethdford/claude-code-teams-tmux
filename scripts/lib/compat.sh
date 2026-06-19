@@ -196,7 +196,16 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    # GNU coreutils first: on Linux `stat -f` means --file-system and would
+    # leak filesystem info to stdout, so probe `-c '%Y'` (GNU) before the BSD
+    # `-f '%m'` form. Guarantees numeric-only output for arithmetic callers.
+    if stat -c '%Y' "$file" >/dev/null 2>&1; then
+        stat -c '%Y' "$file" 2>/dev/null
+    elif stat -f '%m' "$file" >/dev/null 2>&1; then
+        stat -f '%m' "$file" 2>/dev/null
+    else
+        echo "0"
+    fi
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
