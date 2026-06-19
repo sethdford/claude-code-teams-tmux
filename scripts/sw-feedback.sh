@@ -232,7 +232,7 @@ feedback_post_merge_monitor() {
     mv "$tmp_file" "$POST_MERGE_MONITORING_FILE"
 
     success "Post-merge monitoring complete: $POST_MERGE_MONITORING_FILE"
-    emit_event "feedback_post_merge_monitor" "merge_sha=$merge_sha" "environment=$environment" "errors=$( echo "$monitoring_data" | jq -r '.errors_detected')"
+    emit_event "feedback.post_merge_monitor" "merge_sha=$merge_sha" "environment=$environment" "errors=$( echo "$monitoring_data" | jq -r '.errors_detected')"
 }
 
 # ─── Detect regressions from monitoring data ────────────────────────────────────
@@ -295,7 +295,7 @@ feedback_detect_regression() {
         }')
 
     echo "$regression_result"
-    emit_event "feedback_detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity"
+    emit_event "feedback.detect_regression" "merge_sha=$merge_sha" "regression=$regression" "severity=$severity"
 }
 
 # ─── Correlate regressions with changed files ───────────────────────────────────
@@ -363,7 +363,7 @@ feedback_correlate_with_changes() {
         }')
 
     echo "$correlation_result"
-    emit_event "feedback_correlate" "pr=$pr_number" "confidence=$confidence"
+    emit_event "feedback.correlate" "pr=$pr_number" "confidence=$confidence"
 }
 
 # ─── Auto-respond to regressions based on severity ──────────────────────────────
@@ -465,7 +465,7 @@ Auto-created by Shipwright Post-Merge Feedback System" \
             ;;
     esac
 
-    emit_event "feedback_auto_respond" "severity=$severity" "type=$regression_type"
+    emit_event "feedback.auto_respond" "severity=$severity" "type=$regression_type"
 }
 
 # ─── Learn from post-merge outcomes ─────────────────────────────────────────────
@@ -526,7 +526,7 @@ feedback_learn_from_outcome() {
     mv "$tmp_file" "$MERGE_OUTCOMES_FILE"
 
     success "Learned outcome: PR #$pr_number ($merge_result / $deploy_result / regression=$regression)"
-    emit_event "feedback_learn_from_outcome" "pr=$pr_number" "merge_result=$merge_result" "regression=$regression"
+    emit_event "feedback.learn_from_outcome" "pr=$pr_number" "merge_result=$merge_result" "regression=$regression"
 }
 
 # ─── Generate post-merge health report ──────────────────────────────────────────
@@ -654,7 +654,7 @@ cmd_collect() {
     success "Collected $total_errors errors"
     info "Saved to: $error_file"
 
-    emit_event "feedback_collect" "errors=$total_errors" "file=$error_file"
+    emit_event "feedback.collect" "errors=$total_errors" "file=$error_file"
 }
 
 # ─── Analyze collected errors ────────────────────────────────────────────────
@@ -778,7 +778,7 @@ EOF
 
     if [[ -n "$issue_url" ]]; then
         success "Created issue: $issue_url"
-        emit_event "feedback_issue_created" "url=$issue_url" "errors=$error_count"
+        emit_event "feedback.issue_created" "url=$issue_url" "errors=$error_count"
         echo "$issue_url" > "${ARTIFACTS_DIR}/last-issue.txt"
     else
         warn "Could not create issue (check gh auth)"
@@ -828,7 +828,7 @@ cmd_rollback() {
         '{timestamp: $ts, environment: $env, reason: $reason, status: $status}')
 
     echo "$rollback_entry" >> "${ARTIFACTS_DIR}/rollbacks.jsonl"
-    emit_event "feedback_rollback" "environment=$environment" "reason=$reason" "status=$rollback_status"
+    emit_event "feedback.rollback" "environment=$environment" "reason=$reason" "status=$rollback_status"
 }
 
 # ─── Capture incident in memory system ───────────────────────────────────────
@@ -856,7 +856,7 @@ cmd_learn() {
 
     echo "$incident_entry" >> "$INCIDENTS_FILE"
     success "Incident captured in $INCIDENTS_FILE"
-    emit_event "feedback_incident_learned" "cause=$root_cause"
+    emit_event "feedback.incident_learned" "cause=$root_cause"
 }
 
 # ─── Report on recent incidents ──────────────────────────────────────────────

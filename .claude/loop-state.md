@@ -310,16 +310,16 @@ Design and implement validators that check heterogeneous data collection systems
 - Patterns from > 180 days ago with < 5 uses → mark for review
 - Dashboard should surface "patterns never injected" for root cause analysis
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-19T19:14:40Z
-last_iteration_at: 2026-06-19T19:14:40Z
+started_at: 2026-06-19T19:51:45Z
+last_iteration_at: 2026-06-19T19:51:45Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
