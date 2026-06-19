@@ -251,7 +251,7 @@ echo -e "${DIM}─────────────────────�
 HEARTBEAT_DIR="${HOME}/.shipwright/heartbeats"
 if [[ -d "$HEARTBEAT_DIR" ]]; then
     now_e=$(date +%s)
-    stale_threshold=$(_config_get_int "cleanup.heartbeat_stale_seconds" 3600)
+    stale_threshold=$(_policy_int cleanup heartbeat_stale_seconds 3600)
 
     while IFS= read -r hb_file; do
         [[ -f "$hb_file" ]] || continue

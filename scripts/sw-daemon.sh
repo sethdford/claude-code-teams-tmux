@@ -194,10 +194,7 @@ WORKTREE_DIR=""
 
 # Config defaults (overridden by daemon-config.json; policy overrides when present)
 WATCH_LABEL="$(_config_get "labels.watch" "shipwright" 2>/dev/null || echo "shipwright")"
-POLL_INTERVAL=$(_config_get_int "daemon.poll_interval" 60 2>/dev/null || echo 60)
-if type policy_get >/dev/null 2>&1; then
-    POLL_INTERVAL=$(policy_get ".daemon.poll_interval_seconds" "60")
-fi
+POLL_INTERVAL=$(_policy_int daemon poll_interval_seconds 30)
 MAX_PARALLEL=$(_config_get_int "daemon.max_parallel" 4 2>/dev/null || echo 4)
 ISSUE_LIMIT=$(_config_get_int "daemon.issue_limit" 100 2>/dev/null || echo 100)
 PIPELINE_TEMPLATE="autonomous"
@@ -245,6 +242,13 @@ PATROL_RETRY_ENABLED=true
 PATROL_RETRY_THRESHOLD=$(_policy_int daemon patrol_retry_threshold 2)
 LAST_PATROL_EPOCH=0
 
+# Pipeline control tuning
+MAX_RETRIES=$(_policy_int daemon max_retries 3)
+STALL_TIMEOUT_MINUTES=$(_policy_int daemon stall_timeout_minutes 30)
+
+# Backoff timing (exponential retry delays)
+BACKOFF_SECS=$(_policy_int daemon backoff_secs 0)
+
 # Team dashboard coordination
 DASHBOARD_URL="${DASHBOARD_URL:-$(_config_get "dashboard.url" "http://localhost:8767" 2>/dev/null || echo "http://localhost:8767")}"
 
@@ -253,7 +257,6 @@ NO_GITHUB=false
 CONFIG_PATH=""
 DETACH=false
 FOLLOW=false
-BACKOFF_SECS=0
 
 # ─── CLI Argument Parsing ──────────────────────────────────────────────────
 

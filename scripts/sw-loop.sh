@@ -89,7 +89,6 @@ fi
 # ─── Defaults ─────────────────────────────────────────────────────────────────
 GOAL=""
 ORIGINAL_GOAL=""  # Preserved across restarts — GOAL gets appended to
-MAX_ITERATIONS="${SW_MAX_ITERATIONS:-20}"
 TEST_CMD=""
 FAST_TEST_CMD=""
 FAST_TEST_INTERVAL=$(_policy_int loop fast_test_interval 5)
@@ -115,14 +114,15 @@ LOOP_OUTPUT_TOKENS=0
 LOOP_COST_MILLICENTS=0
 
 # ─── Flexible Iteration Defaults (all config-driven) ───────────────────────
+MAX_ITERATIONS=$(_policy_int loop max_iterations 20)
 AUTO_EXTEND=true
-EXTENSION_SIZE=$(_smart_int "loop.extension_size" 5)
-MAX_EXTENSIONS=$(_smart_int "loop.max_extensions" 3)
+EXTENSION_SIZE=$(_policy_int loop extension_size 5)
+MAX_EXTENSIONS=$(_policy_int loop max_extensions 3)
 EXTENSION_COUNT=0
 
 # ─── Circuit Breaker Defaults (config-driven) ─────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD=$(_smart_int "loop.circuit_breaker_threshold" 3)
-MIN_PROGRESS_LINES=$(_smart_int "loop.min_progress_lines" 5)
+CIRCUIT_BREAKER_THRESHOLD=$(_policy_int loop circuit_breaker_threshold 4)
+MIN_PROGRESS_LINES=$(_policy_int loop min_progress_lines 3)
 
 # ─── Context Exhaustion Recovery ────────────────────────────────────────────────
 CONTEXT_EXHAUSTION_PATTERNS="context.length.exceeded|maximum context length|context_length_exceeded|prompt is too long"

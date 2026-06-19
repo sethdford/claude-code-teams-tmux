@@ -42,7 +42,7 @@ fi
 # ─── Config (from policy via pipeline-quality.sh when present) ─────────────────
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-./.claude/pipeline-artifacts}"
 COVERAGE_THRESHOLD="${QUALITY_COVERAGE_THRESHOLD:-70}"
-QUALITY_THRESHOLD="${QUALITY_GATE_SCORE_THRESHOLD:-70}"
+QUALITY_THRESHOLD=$(_policy_int quality gate_score_threshold 70)
 # Audit weights from policy (via pipeline-quality.sh) — expressed as decimals
 TEST_PASS_WEIGHT=$(awk -v w="${QUALITY_WEIGHT_TEST_PASS:-30}" 'BEGIN{printf "%.2f", w/100}')
 COVERAGE_WEIGHT=$(awk -v w="${QUALITY_WEIGHT_COVERAGE:-20}" 'BEGIN{printf "%.2f", w/100}')
