@@ -494,6 +494,8 @@ pipeline_start_detached() {
     [[ -n "${MODEL:-}" ]] && cmd+=" --model '${MODEL}'"
     [[ "${SKIP_GATES:-}" == "true" ]] && cmd+=" --skip-gates"
     [[ "${AUTO_WORKTREE:-}" == "true" ]] && cmd+=" --worktree"
+    [[ "${AUTO_TEMPLATE:-}" == "true" ]] && cmd+=" --auto-template"
+    [[ "${IGNORE_BUDGET:-}" == "true" ]] && cmd+=" --ignore-budget"
     [[ -n "${WORKTREE_NAME:-}" ]] && cmd+=" --worktree='${WORKTREE_NAME}'"
     cmd+=" --foreground"  # Inside tmux, run foreground
 
@@ -712,6 +714,59 @@ pipeline_start() {
     generate_reasoning_trace 2>/dev/null || true
     if [[ -n "${PIPELINE_TEMPLATE:-}" && "$user_specified_pipeline" == "standard" ]]; then
         PIPELINE_NAME="$PIPELINE_TEMPLATE"
+    fi
+
+    # ─── Cost impact preview, budget-aware auto-selection, estimate recording ──
+    # Maps the 1–10 intelligence complexity onto the 0–100 scale the cost model
+    # expects, optionally auto-selects the most capable template within budget,
+    # prints a forward-looking cost preview, and records the estimate so the
+    # finalize step can score estimate-vs-actual accuracy.
+    local _cp_intel="${INTELLIGENCE_COMPLEXITY:-5}"
+    [[ "$_cp_intel" =~ ^[0-9]+$ ]] || _cp_intel=5
+    local _cp_complexity=$(( _cp_intel * 10 ))
+    [[ "$_cp_complexity" -lt 1 ]] && _cp_complexity=1
+    [[ "$_cp_complexity" -gt 100 ]] && _cp_complexity=100
+    _CP_ESTIMATE_RUN_ID=""
+    _CP_ESTIMATE_COMPLEXITY="$_cp_complexity"
+    if type cp_estimate_template >/dev/null 2>&1; then
+        # Auto-select a budget-aware template when the user didn't pin one.
+        if [[ "${AUTO_TEMPLATE:-false}" == "true" && "$user_specified_pipeline" == "standard" ]]; then
+            local _cp_picked
+            _cp_picked=$(cp_select "$_cp_complexity" 0 2>/dev/null | tail -n1 || echo "")
+            if [[ -n "$_cp_picked" ]]; then
+                [[ "$_cp_picked" != "$PIPELINE_NAME" ]] && \
+                    info "Auto-template selected '${_cp_picked}' (budget-aware, complexity ${_cp_complexity})"
+                PIPELINE_NAME="$_cp_picked"
+            fi
+        fi
+
+        local _cp_est _cp_remaining
+        _cp_est=$(cp_estimate_template "$PIPELINE_NAME" "$_cp_complexity" 2>/dev/null || echo "0")
+
+        # Forward-looking cost preview (best-effort; never blocks the pipeline).
+        if type cp_preview_one >/dev/null 2>&1; then
+            cp_preview_one "$PIPELINE_NAME" "$_cp_complexity" 0 2>/dev/null || true
+        fi
+
+        # Budget check: warn and suggest a downgrade when the estimate exceeds
+        # the remaining daily budget (unless explicitly ignored).
+        _cp_remaining=$(cost_remaining_budget 2>/dev/null | tail -n1 || echo "unlimited")
+        if [[ "${IGNORE_BUDGET:-false}" != "true" && "$_cp_remaining" =~ ^[0-9]+\.?[0-9]*$ ]] \
+            && awk -v e="$_cp_est" -v r="$_cp_remaining" 'BEGIN{ exit !(e > r) }'; then
+            warn "Estimated cost \$${_cp_est} exceeds remaining budget \$${_cp_remaining}."
+            local _cp_suggest
+            _cp_suggest=$(cp_select "$_cp_complexity" 0 2>/dev/null | tail -n1 || echo "")
+            if [[ -n "$_cp_suggest" && "$_cp_suggest" != "$PIPELINE_NAME" ]]; then
+                echo -e "  ${DIM}Suggested downgrade: --pipeline ${_cp_suggest} (or --auto-template)${RESET}"
+            fi
+            echo -e "  ${DIM}Override with --ignore-budget to proceed anyway.${RESET}"
+        fi
+
+        # Record the estimate for later accuracy scoring.
+        if type cp_record_estimate >/dev/null 2>&1; then
+            _CP_ESTIMATE_RUN_ID=$(cp_record_estimate "$PIPELINE_NAME" "$_cp_complexity" "$_cp_est" \
+                "${SHIPWRIGHT_PIPELINE_ID:-$$}" 2>/dev/null || echo "")
+        fi
     fi
 
     # Check for existing pipeline
@@ -1256,6 +1311,24 @@ pipeline_start() {
     # Persist cost entry to costs.json + SQLite (was missing — tokens accumulated but never written)
     if type cost_record >/dev/null 2>&1; then
         cost_record "$TOTAL_INPUT_TOKENS" "$TOTAL_OUTPUT_TOKENS" "$model_key" "pipeline" "${ISSUE_NUMBER:-}" 2>/dev/null || true
+    fi
+
+    # Record actual cost against the recorded estimate and emit accuracy signal.
+    # Feeds `cost accuracy` (MAPE) and the historical blend in cp_estimate_template.
+    if [[ -n "${_CP_ESTIMATE_RUN_ID:-}" ]] && type cp_record_actual >/dev/null 2>&1; then
+        cp_record_actual "${PIPELINE_NAME:-standard}" "${_CP_ESTIMATE_COMPLEXITY:-50}" \
+            "${total_cost:-0}" "${_CP_ESTIMATE_RUN_ID}" 2>/dev/null || true
+        local _cp_estimated _cp_abs_err _cp_pct_err
+        _cp_estimated=$(cp_estimate_template "${PIPELINE_NAME:-standard}" "${_CP_ESTIMATE_COMPLEXITY:-50}" 2>/dev/null || echo "0")
+        _cp_abs_err=$(awk -v e="$_cp_estimated" -v a="${total_cost:-0}" 'BEGIN{ d=e-a; if(d<0)d=-d; printf "%.4f", d }')
+        _cp_pct_err=$(awk -v e="$_cp_estimated" -v a="${total_cost:-0}" 'BEGIN{ if(a==0){print "0";exit} d=e-a; if(d<0)d=-d; printf "%.2f", d/a*100 }')
+        emit_event "cost.estimate_accuracy" \
+            "template=${PIPELINE_NAME:-standard}" \
+            "estimated_usd=${_cp_estimated}" \
+            "actual_usd=${total_cost:-0}" \
+            "abs_error_usd=${_cp_abs_err}" \
+            "pct_error=${_cp_pct_err}" \
+            "run_id=${_CP_ESTIMATE_RUN_ID}" 2>/dev/null || true
     fi
 
     # Record pipeline outcome for Thompson sampling / outcome-based learning

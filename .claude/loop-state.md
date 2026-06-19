@@ -219,16 +219,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-19T19:12:44Z
-last_iteration_at: 2026-06-19T19:12:44Z
+started_at: 2026-06-19T19:22:44Z
+last_iteration_at: 2026-06-19T19:22:44Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -239,4 +239,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-06-19T19:22:44Z)
+### Remaining for future iterations (not yet done — **not** declaring LOOP_COMPLETE)
+- Task 5: `--auto-template` flag on `pipeline start`
+- Task 6/7: pipeline-start preview + budget check + record estimate-at-start / actual-at-finalize + `cost.estimate_accur
 

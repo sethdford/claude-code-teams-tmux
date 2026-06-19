@@ -15,6 +15,7 @@ Shipwright orchestrates autonomous Claude Code agent teams with delivery pipelin
 | `shipwright pipeline start --goal "..."`           | Pipeline from a goal description                  |
 | `shipwright pipeline start --detach`               | Start pipeline in background (tmux detached)      |
 | `shipwright pipeline start --foreground`           | Force foreground even with `--worktree`           |
+| `shipwright pipeline start --auto-template`        | Budget-aware template selection + cost preview    |
 | `shipwright pipeline resume`                       | Resume from last stage                            |
 | `shipwright pipeline attach [issue]`               | Attach to running pipeline's tmux window          |
 | `shipwright pipeline tail [issue]`                 | Stream live pipeline output (like `tail -f`)      |

@@ -648,6 +648,23 @@ test_pipeline_help_text() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 11b. Auto-template flag documented in help
+# ──────────────────────────────────────────────────────────────────────────────
+test_auto_template_help() {
+    invoke_pipeline start --help
+    assert_exit_code 0 "help should succeed" &&
+    assert_output_contains "auto-template" "help documents --auto-template"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 11c. Auto-template flag accepted (not an unknown option) on dry-run
+# ──────────────────────────────────────────────────────────────────────────────
+test_auto_template_flag_accepted() {
+    invoke_pipeline start --goal "auto template smoke" --auto-template --dry-run --skip-gates
+    assert_exit_code 0 "auto-template dry-run should succeed"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 12. Version consistency between pipeline and daemon
 # ──────────────────────────────────────────────────────────────────────────────
 test_version_consistency() {
@@ -789,6 +806,8 @@ main() {
         "test_no_branches_after_dryrun:No feature branches after dry-run"
         "test_artifact_dir_created:Artifact directory created"
         "test_pipeline_help_text:Pipeline help text"
+        "test_auto_template_help:Auto-template documented in help"
+        "test_auto_template_flag_accepted:Auto-template flag accepted on dry-run"
         "test_version_consistency:Version consistency (pipeline vs daemon)"
         "test_goal_flag_accepted:Goal flag accepted"
         "test_invalid_template_errors:Invalid template errors correctly"
