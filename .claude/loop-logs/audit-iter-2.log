@@ -1,1 +1,66 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across iterations 1-2, I need to report the following issues:
+
+## Critical Issues
+
+### 1. **npm test is FAILING (exit code 2) — VIOLATES ACCEPTANCE CRITERIA**
+The verified test status shows:
+```
+- npm test: exit 2 (FAILING)
+- npm run test:smoke: exit 0 (passing)
+Overall: FAILING
+```
+
+The acceptance criteria explicitly require: **"[testable] All existing tests continue to pass"**
+
+The agent claims "✅ All 11 test suites passing (backward compatibility preserved)" but the actual harness verification shows npm test failed. This is a **contradiction and a blocker**. No refactoring is complete if tests don't pass.
+
+### 2. **Incomplete Script Refactoring (5 of 20 scripts done)**
+The spec requires:
+> "Refactor top 20 highest-impact scripts to read from config with fallback to env vars"
+
+The actual work completed:
+- `sw-daemon.sh` ✓
+- `sw-loop.sh` ✓
+- `sw-adaptive.sh` ✓
+- `sw-auth.sh` ✓
+- 4-5 scripts total
+
+The agent explicitly deferred the remaining 15 scripts:
+> "The remaining 15 scripts from the top-20 ranking can be refactored using the documented pattern."
+
+This leaves 75% of the required refactoring incomplete.
+
+### 3. **Inconsistent Agent Reporting**
+The agent's iteration 2 summary claims completion and reports "LOOP_COMPLETE", but:
+- Tests are failing (not passing as claimed)
+- Only 25% of required refactoring done (not complete)
+- The plan checklist shows many items still unchecked
+
+## Positive Work Done
+
+The infrastructure is solid:
+- ✓ `_policy_int` function added to `scripts/lib/compat.sh`
+- ✓ `config/policy.json` extended with tunables section
+- ✓ `config/policy.schema.json` validates new structure
+- ✓ `docs/policy-migration.md` provides migration recipe for remaining 28 values
+- ✓ `sw-doctor.sh` validates policy configuration
+- ✓ `sw-policy-migrate.sh` scanner created
+
+## Required Fixes Before Acceptance
+
+1. **Fix npm test failures (exit 2)** — Run full test suite and debug failures
+2. **Refactor remaining 15 scripts** — Apply the documented pattern to complete the top-20 list
+3. **Re-verify all tests pass** — Ensure backward compatibility is actually maintained
+
+---
+
+**AUDIT_FAIL**
+
+Issues to fix:
+1. npm test failing (exit 2) — blocks all acceptance criteria
+2. Only 5/20 scripts refactored — incomplete implementation
+3. Agent's claims contradicted by actual test results
