@@ -848,6 +848,22 @@ run_pipeline() {
             type record_model_outcome >/dev/null 2>&1 && record_model_outcome "$stage_model_used" "$id" 0 "$stage_dur_s" 0 2>/dev/null || true
             # Cancel any remaining in_progress check runs
             pipeline_cancel_check_runs 2>/dev/null || true
+            # Record the failed run for the impact analyzer (best-effort).
+            if [[ -f "$SCRIPT_DIR/sw-intelligence-impact.sh" ]]; then
+                local _impact_variant="intel_off"
+                if [[ "${SW_INTELLIGENCE_ENABLED:-${INTELLIGENCE_ENABLED:-true}}" == "true" ]]; then
+                    _impact_variant="intel_on"
+                fi
+                local _impact_dur_s=0
+                [[ -n "$PIPELINE_START_EPOCH" ]] && _impact_dur_s=$(( $(now_epoch) - PIPELINE_START_EPOCH ))
+                local _impact_feats=""
+                [[ "$_impact_variant" == "intel_on" ]] && _impact_feats="prediction,adversarial,simulation,architecture,composer,optimization,convergence,adaptive_timeout,model_routing"
+                bash "$SCRIPT_DIR/sw-intelligence-impact.sh" record \
+                    --variant "$_impact_variant" --issue "${ISSUE_NUMBER:-na}" \
+                    --success false --duration "$_impact_dur_s" --cost 0 \
+                    --iterations "${completed:-0}" --failure-type "${LAST_STAGE_ERROR_CLASS:-stage_failure}" \
+                    --features "$_impact_feats" >/dev/null 2>&1 || true
+            fi
             return 1
         fi
     done 3<<< "$stages"
@@ -883,6 +899,24 @@ run_pipeline() {
     # Capture learnings to memory (success or failure)
     if [[ -x "$SCRIPT_DIR/sw-memory.sh" ]]; then
         bash "$SCRIPT_DIR/sw-memory.sh" capture "$STATE_FILE" "$ARTIFACTS_DIR" 2>/dev/null || true
+    fi
+
+    # Record this run for the intelligence feature impact analyzer (best-effort,
+    # never affects pipeline exit status). Variant = whether intelligence ran.
+    if [[ -f "$SCRIPT_DIR/sw-intelligence-impact.sh" ]]; then
+        local _impact_variant="intel_off"
+        if [[ "${SW_INTELLIGENCE_ENABLED:-${INTELLIGENCE_ENABLED:-true}}" == "true" ]]; then
+            _impact_variant="intel_on"
+        fi
+        local _impact_dur_s=0
+        [[ -n "$PIPELINE_START_EPOCH" ]] && _impact_dur_s=$(( $(now_epoch) - PIPELINE_START_EPOCH ))
+        local _impact_feats=""
+        [[ "$_impact_variant" == "intel_on" ]] && _impact_feats="prediction,adversarial,simulation,architecture,composer,optimization,convergence,adaptive_timeout,model_routing"
+        bash "$SCRIPT_DIR/sw-intelligence-impact.sh" record \
+            --variant "$_impact_variant" --issue "${ISSUE_NUMBER:-na}" \
+            --success true --duration "$_impact_dur_s" --cost 0 \
+            --iterations "${completed:-0}" --features "$_impact_feats" \
+            >/dev/null 2>&1 || true
     fi
 
     # Final GitHub progress update

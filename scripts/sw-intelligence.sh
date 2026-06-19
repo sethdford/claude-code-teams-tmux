@@ -1365,6 +1365,7 @@ show_help() {
     echo -e "  ${CYAN}search-memory${RESET} <context> [dir]  Search memory by relevance"
     echo -e "  ${CYAN}estimate-iterations${RESET} <analysis>  Estimate build iterations"
     echo -e "  ${CYAN}recommend-model${RESET} <stage> [cplx] Recommend model for stage"
+    echo -e "  ${CYAN}impact${RESET} <subcommand>            Feature impact analyzer & A/B framework"
     echo -e "  ${CYAN}status${RESET}                         Show intelligence status and config"
     echo -e "  ${CYAN}cache-stats${RESET}                    Show cache statistics"
     echo -e "  ${CYAN}validate-prediction${RESET} <id> <pred> <iters> <success>  Validate prediction accuracy"
@@ -1521,6 +1522,9 @@ main() {
             ;;
         validate-prediction)
             intelligence_validate_prediction "$@"
+            ;;
+        impact)
+            exec "$SCRIPT_DIR/sw-intelligence-impact.sh" "$@"
             ;;
         status)
             cmd_status

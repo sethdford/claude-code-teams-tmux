@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Intelligence analyzer requires sophisticated system design for impact measurement and A/B test framework; builder/tester/optimizer handle implementation, statistical validation, and performance.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781832931,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,233 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "0658f3d072467ddcc3ba90c89eff201c": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "autonomous",
+        "issue_type": "testing",
+        "key_risks": [
+          "Statistical significance: 20 pipeline pairs may be insufficient for reliable ROI calculation across all metrics",
+          "Variable isolation: ensuring A/B tests are truly identical across runs and minimizing environmental noise",
+          "Cost measurement accuracy: need precise token tracking and cost attribution per intelligence feature",
+          "Feature interaction effects: disabling one feature may amplify or diminish impact of others",
+          "Sample bias: selecting representative issues without skewing results toward feature-type distribution",
+          "Auto-disable safety: incorrect ROI recommendations could break workflows; needs simulation before config changes"
+        ],
+        "implementation_hints": [
+          "Use deterministic issue selection (labels/filters) to source 20+ comparable test pairs reproducibly",
+          "Run A/B pairs back-to-back in isolated worktrees to minimize variance from environment and resource contention",
+          "Implement proper statistical tests (Welch's t-test for duration, chi-square for success rates, effect sizes)",
+          "Store raw pipeline metrics alongside aggregated stats for post-hoc analysis and debugging",
+          "Design monthly rolling window (last 30 days) to capture seasonal patterns and stabilize estimates",
+          "Simulate auto-disable recommendations via dry-run before modifying daemon-config.json",
+          "Build correlation matrix in report to account for feature dependencies when interpreting ROI",
+          "Leverage existing feature flags in daemon-config.json intelligence section (already gated)",
+          "Stratify test pairs by issue complexity/type to control for confounding variables",
+          "Generate time-series visualization showing per-feature impact trending and confidence intervals"
+        ]
+      },
+      "timestamp": 1781832143,
+      "ttl": 3600
+    },
+    "8e88ddff941e191c2095283c85b6b212": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1781832156,
+      "ttl": 1800
+    },
+    "b344346fc111e684ae4b3cd075d94488": {
+      "result": {
+        "estimated_cost_usd": 38,
+        "estimated_iterations": 5,
+        "estimated_tokens": 550000,
+        "likely_failure_stage": "intelligence",
+        "confidence": 78
+      },
+      "timestamp": 1781832169,
+      "ttl": 3600
+    },
+    "d6b69148f0fd4363c7ec0419e5f053cf": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains 2 comprehensive success patterns (complexity 60-65, 3-4 iterations, $2.50 cost, 45-150s duration) for 'Fix bug' and 'Add authentication feature'. Directly applicable for estimating effort, iteration count, and cost for Intelligence Feature planning."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Documents project structure essential for planning: Node.js with vitest, src/ source directory, *.test.js test pattern, CommonJS imports. Informs test strategy and file organization decisions in the plan."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Shows single auth feature pattern with Iterative TDD approach, module isolation, 5 iterations, 300s duration, $1.5 cost. Demonstrates successful feature delivery methodology applicable to Intelligence Feature design."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Baseline build_duration_s of 2089 provides a reference point for timeline estimation during planning, though this appears to be an outlier case worth investigation."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "Contains documented test infrastructure failures (mktemp directory issues, cleanup output formatting). Informs planning decisions around test environment setup and infrastructure dependencies."
+          }
+        ]
+      },
+      "timestamp": 1781832374,
+      "ttl": 1800
+    },
+    "5c1bcf097996c63269917087d540a044": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Current project conventions (Node.js, vitest, npm, src/ structure, commonjs imports) directly inform plan validation expectations and architecture constraints for the Intelligence Feature"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Two successful feature implementations show complexity 60-65 require 3+ iterations with npm test strategy; validates that Intelligence Feature complexity estimate and iteration plan are realistic"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Contains learned failure patterns and fix strategies from previous development cycles; test-related gotchas and conventions inform what plan validation should check for"
+          }
+        ]
+      },
+      "timestamp": 1781832751,
+      "ttl": 1800
+    },
+    "7214fcca64f00ffec4ac4b788be180dc": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (2026-06-19)",
+            "relevance": 80,
+            "summary": "Contains successful feature development patterns with complexity scores, iterations, file patterns, test strategies, and templates. Shows how features are architected and tested in this Node/vitest codebase—directly applicable for design decisions on the Intelligence Feature Impact Analyzer."
+          },
+          {
+            "file": "patterns.json (sethdford/shipwright, 2026-06-19)",
+            "relevance": 75,
+            "summary": "Documents project conventions (src/ source dir, *.test.js pattern, CommonJS imports, vitest runner). Essential baseline for designing consistent with established codebase patterns."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Contains architecture rules and constraints. While minimal, these rules should inform design boundaries and dependency direction for the Intelligence Feature Impact Analyzer."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Historical issue resolution patterns showing approach, gotchas (e.g., 'check backoff'), and success markers. Provides empirical design guidance from previous similar-complexity work."
+          },
+          {
+            "file": "metrics.json (with baselines)",
+            "relevance": 25,
+            "summary": "Build duration baseline (2089s). Helps inform design decisions around test strategy and iteration cost expectations."
+          }
+        ]
+      },
+      "timestamp": 1781832788,
+      "ttl": 1800
+    },
+    "5baa781a0f87cbf34afca4e077ca306f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 25,
+            "summary": "Contains feature implementation patterns (auth module, bug fixes) showing iterative approaches; provides context on complexity scoring and testing strategies that could inform what NOT to do for Intelligence Feature Impact Analyzer design"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 20,
+            "summary": "Documents test and implementation failures with root causes; the anti-pattern patterns (mktemp directory issues, cleanup logic gaps) demonstrate technical pitfalls relevant to any new feature development"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 15,
+            "summary": "Captures failure signatures and fix strategies with occurrence metrics; while not specific to Intelligence Feature Impact Analyzer, the pattern-based failure documentation provides a template for recording anti-patterns discovered during design"
+          }
+        ]
+      },
+      "timestamp": 1781832803,
+      "ttl": 1800
+    },
+    "3efeeb88eb2de2621255ff134bd4f777": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (project detection)",
+            "relevance": 100,
+            "summary": "Defines project conventions (Node/vitest/npm, src/, *.test.js, commonjs) — essential for understanding build structure and test patterns"
+          },
+          {
+            "file": "success-patterns.json (Add authentication feature)",
+            "relevance": 78,
+            "summary": "Feature development pattern with complexity 65, 3 iterations, standard template, npm test strategy — similar scope to intelligence feature"
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 68,
+            "summary": "Shows iterative TDD approach for feature development, 5 iterations, modular file patterns, unit+integration tests — applicable methodology"
+          },
+          {
+            "file": "metrics.json (baselines)",
+            "relevance": 52,
+            "summary": "Baseline build duration of 2089s provides expected performance reference for the build stage"
+          },
+          {
+            "file": "knowledge.json (failure patterns)",
+            "relevance": 38,
+            "summary": "Test setup failures (mktemp, cleanup) show common pitfalls to avoid during implementation and testing"
+          }
+        ]
+      },
+      "timestamp": 1781832890,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json",
+            "relevance": 90,
+            "summary": "Contains build_duration_s baseline (2089s) — provides performance expectations and detection threshold for build stage anomalies"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Defines project conventions (source_dir, test_runner: vitest, test_pattern, import_style) — essential for configuring and understanding build execution"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Contains successful build/fix patterns with test strategies (npm test, iterations, file patterns) — informs effective build and test approaches"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Records past issue outcomes and success patterns (timeout bug fix using semaphore) — useful gotchas and solutions for build-related issues"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Documents mktemp and test environment failures — relevant for build/test integration issues, though primarily test-focused not build-focused"
+          }
+        ]
+      },
+      "timestamp": 1781832910,
+      "ttl": 1800
     }
   }
 }
