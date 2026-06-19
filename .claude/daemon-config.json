@@ -52,5 +52,19 @@
   "last_optimization": {
     "timestamp": "2026-04-04T18:44:56Z",
     "adjustments": "compound_quality enabled (CFR 25% > 20%); merge stage recommended (deploy freq 3.0/week); "
+  },
+  "clustering": {
+    "enabled": false,
+    "max_events": 500,
+    "min_cluster_size": 2,
+    "similarity_threshold": 0.5,
+    "confidence_tiers": {
+      "high": 0.85,
+      "medium": 0.7,
+      "low": 0.5
+    },
+    "algorithm": "agglomerative",
+    "re_cluster_interval_days": 7,
+    "max_clusters": 50
   }
 }
