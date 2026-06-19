@@ -34,14 +34,15 @@
         "secondary_roles": [
           "optimizer",
           "builder",
-          "tester"
+          "tester",
+          "reviewer"
         ],
         "confidence": 0.85,
-        "reasoning": "Performance optimization requires architectural decisions on cache strategy and index design, implementation by a builder, optimization validation, and comprehensive testing.",
+        "reasoning": "Architect designs query index and cache layer strategy; Optimizer profiles performance gains; Builder implements core functionality; Tester validates correctness; Reviewer ensures quality standards",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1781878439,
+      "timestamp": 1781896596,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1407,30 +1408,28 @@
       "result": {
         "complexity": 6,
         "risk_level": "medium",
-        "success_probability": 78,
+        "success_probability": 73,
         "recommended_template": "standard",
         "issue_type": "performance",
         "key_risks": [
-          "Index corruption causing cache invalidation bugs and incorrect lookups",
-          "Index/cache desynchronization if memory writes aren't atomic",
-          "Performance regression if index/cache overhead exceeds gains",
-          "Breaking changes to memory system which is critical infrastructure",
-          "Backward compatibility issues with existing memory files"
+          "Index corruption or drift if writes aren't atomic/consistent",
+          "Cache invalidation bugs causing stale memory lookups during intelligence pipeline runs",
+          "Performance regression if index rebuild becomes a bottleneck",
+          "Breaking changes to sw-memory.sh interface affecting dependent scripts",
+          "Backward compatibility with existing memory files if format changes"
         ],
         "implementation_hints": [
-          "Implement cache layer first (LRU with max 50 entries), then index",
-          "Use atomic writes (tmp file + mv) for index updates to prevent corruption",
-          "Add checksum validation on index reads with automatic rebuild on mismatch",
-          "Keep fallback to full-scan when index unavailable or corrupted",
-          "Extract query logic to lib/memory-query.sh before refactoring sw-memory.sh",
-          "Profile actual memory lookup patterns to verify cache hit rate assumptions",
-          "Use jq for efficient JSON index operations with clear key schema",
-          "Add debug logging to track cache hits/misses and per-query latency",
-          "Implement index rebuild on corruption detection, log incidents",
-          "Benchmark initial implementation against <100ms goal before optimization"
+          "Design index schema (pattern-hash → file-path mapping) before implementation to avoid rework",
+          "Use atomic file operations (tmp + mv) for index updates to prevent corruption mid-write",
+          "Implement cache as simple array of {key, value, timestamp} with LRU eviction when size > 50",
+          "Add index corruption detection: compare index contents against actual ~/.shipwright/memory/ files on startup",
+          "Extract query functions incrementally into lib/memory-query.sh while keeping sw-memory.sh interface stable",
+          "Instrument with query timing metrics (current, indexed, cached latencies) written to perf log for A/B analysis",
+          "Test with realistic memory query patterns from intelligence pipeline logs to validate cache hit rates",
+          "Consider memory file format stability: document any breaking changes to prevent future regressions"
         ]
       },
-      "timestamp": 1781877916,
+      "timestamp": 1781895564,
       "ttl": 3600
     },
     "75beeb09efdc8fb141d748f59f11ce74": {
@@ -1488,56 +1487,56 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Contains recent test failure patterns (sw-cleanup.sh heartbeat detection, template errors) with root causes. Directly relevant to understanding what types of failures cause plan validation rejection and what fixes have worked in similar contexts."
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 80,
-            "summary": "Captured failure patterns with fix strategies (mktemp path issues, missing output formatting, JSON validation). Provides learned approaches for resolving test failures and infrastructure issues that could inform plan validation requirements."
-          },
-          {
             "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project configuration (vitest, npm, Node/JS, src/ layout, CommonJS imports) establishes conventions for this codebase. Essential for understanding testing and build patterns when validating memory system implementation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Recent successful 'Fix bug' pattern (3 iterations, intelligence-cache.json modifications, outcome-feedback.sh changes) shows how similar performance optimization work was completed. Directly applicable to current memory system refactor approach."
+          },
+          {
+            "file": "failures.json",
             "relevance": 70,
-            "summary": "Project conventions for Shipwright (Node.js, vitest, src/ source directory, CommonJS imports). Essential context for understanding project structure and testing approach needed to satisfy plan validation criteria."
+            "summary": "Test failure patterns and root causes from recent runs (up to 2026-06-19) including sw-cleanup.sh heartbeat detection issues. Provides validation failure context and test expectations to avoid during plan implementation."
           }
         ]
       },
-      "timestamp": 1781878242,
+      "timestamp": 1781896293,
       "ttl": 1800
     },
     "3f4dee35ef9d85e8d2f76d8cb87db6df": {
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 82,
-            "summary": "Contains iterative approaches, complexity scoring (60-65), test strategies, file patterns, and template preferences. Directly applicable to understanding how to architect performance-optimized systems with multiple iterations and testing strategies."
+            "file": "patterns.json (project conventions - Node.js)",
+            "relevance": 70,
+            "summary": "Project structure conventions (src/, test/, commonjs imports, vitest) are essential for designing the memory system module to follow established patterns"
           },
           {
-            "file": "knowledge.json",
-            "relevance": 68,
-            "summary": "Knowledge base with 5 documented patterns including failure signatures, fix strategies, and approach explanations. Relevant for learning what architectural decisions failed before and how to avoid similar issues in cache/index layer design."
+            "file": "success-patterns.json (second entry - feature patterns)",
+            "relevance": 65,
+            "summary": "Feature implementation patterns show complexity scoring, test strategies, iteration counts, and file organization patterns relevant for designing the query index and cache layer architecture"
           },
           {
-            "file": "patterns.json",
-            "relevance": 58,
-            "summary": "Project conventions including source_dir (src/), test_pattern, import_style, and project metadata (node, vitest, npm). Informs where to place memory system code and how to structure it within project conventions."
+            "file": "metrics.json (baseline performance metrics)",
+            "relevance": 55,
+            "summary": "Build duration baseline and performance metrics provide context for optimization targets when designing the cache layer and query index performance requirements"
           },
           {
-            "file": "failures.json",
-            "relevance": 48,
-            "summary": "Non-empty failure log showing sw-cleanup.sh heartbeat detection issues and root causes. Relevant for understanding edge cases and system behavior patterns when designing cache invalidation and state management."
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Existing architecture rules must be considered during design to ensure the memory system integrates with established architectural constraints and patterns"
           },
           {
-            "file": "metrics.json",
-            "relevance": 42,
-            "summary": "Contains performance baselines (build_duration_s: 2089) and update timestamps. Provides reference for performance requirements and expectations for the optimization work."
+            "file": "knowledge.json (failure patterns and conventions)",
+            "relevance": 40,
+            "summary": "Captured failure patterns and conventions provide insights into past issues that the memory system design should avoid or account for"
           }
         ]
       },
-      "timestamp": 1781878280,
+      "timestamp": 1781896342,
       "ttl": 1800
     },
     "d8a97fd422eaa6ddf96395bf8a4b83c8": {
@@ -1545,88 +1544,221 @@
         "results": [
           {
             "file": "knowledge.json",
-            "relevance": 35,
-            "summary": "Contains failure patterns with root causes and fix strategies. While not directly about memory system design, the analytical approach to identifying what failed and why could inform rejected design patterns."
+            "relevance": 55,
+            "summary": "Contains explicit failure patterns with error signatures, fix strategies, and approaches that document what went wrong. Directly captures anti-patterns and lessons learned from past attempts, including test failures and ineffective approaches."
           },
           {
             "file": "failures.json (first)",
-            "relevance": 28,
-            "summary": "Documents specific failures with root causes and fixes. Shows learned anti-patterns from test infrastructure, applicable to understanding system failure modes."
+            "relevance": 42,
+            "summary": "Records recent test failures with root causes and fixes (sw-cleanup heartbeat detection issues). Informs design anti-patterns by documenting what specific approaches failed and why they didn't work."
           },
           {
             "file": "success-patterns.json (second)",
-            "relevance": 18,
-            "summary": "Shows successful delivery patterns from bug fixes and features. Indirectly relevant by contrast—understanding what succeeded helps identify rejected or suboptimal approaches."
+            "relevance": 38,
+            "summary": "Documents recent successful pattern that touched intelligence-cache.json and outcome-feedback scripts. Shows what approaches worked for memory/cache system optimization, providing inverse insight into what not to do."
           }
         ]
       },
-      "timestamp": 1781878298,
+      "timestamp": 1781896361,
       "ttl": 1800
     },
     "48fe8ca5b48f45255223df748a47eddd": {
       "result": {
         "results": [
           {
-            "file": "knowledge.json",
-            "relevance": 72,
-            "summary": "Contains documented failure patterns and learning entries from previous builds, directly informing memory system reliability and caching strategies"
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Project detection showing node/vitest/npm setup directly relevant to build environment for memory system optimization work"
           },
           {
             "file": "success-patterns.json",
-            "relevance": 58,
-            "summary": "Multi-pattern entry showing successful build iterations (3-4 iterations, iterations patterns) applicable to build-stage loop methodology for memory optimization work"
+            "relevance": 85,
+            "summary": "Detailed success patterns for 'Fix bug' and 'Add authentication feature' show iterative development approach, durations, and test strategies applicable to memory system build"
           },
           {
-            "file": "patterns.json",
-            "relevance": 48,
-            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, commonjs imports) required for structuring memory system code and tests correctly"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 42,
-            "summary": "Build baseline of 2089s provides performance anchor for memory system optimization goals and query index efficiency targets"
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Captured test failures and fix strategies (mktemp issues, cleanup.sh patterns, JSON output) inform potential pitfalls in memory system testing and core infrastructure"
           },
           {
             "file": "failures.json",
-            "relevance": 38,
-            "summary": "Test failure patterns (mktemp issues, output formatting) inform memory system test infrastructure requirements and potential edge cases to handle"
+            "relevance": 70,
+            "summary": "Detailed failure patterns for sw-cleanup.sh and heartbeat detection show infrastructure issues relevant to memory system core functionality"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Build duration baseline (2089s) provides performance context for optimization work and sets expectations for memory system build duration"
           }
         ]
       },
-      "timestamp": 1781878416,
+      "timestamp": 1781896554,
       "ttl": 1800
     },
     "47c1451f50b4a8f9faa0f8012f6b922e": {
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Recent test failures (last seen 2026-06-19) with root causes and fixes directly applicable to debugging current build/test stage failures, particularly sw-cleanup.sh and output format issues"
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 90,
-            "summary": "Multiple test failure patterns (mktemp directory issues, missing output) with fix strategies and success rates — directly relevant for test stage troubleshooting"
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 75,
-            "summary": "Two documented successful fixes showing iteration patterns, test strategies (npm test), and file change patterns for similar build/test scenarios"
+            "relevance": 95,
+            "summary": "Shows previous successful builds with 3 iterations, npm test strategy, file change patterns, and 2089s baseline - critical for understanding build expectations and iteration strategy"
           },
           {
             "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Project conventions (test_pattern: *.test.js, test_runner: vitest, import_style: commonjs) needed for proper build setup and test execution"
+            "relevance": 85,
+            "summary": "Project conventions (Node, vitest, src/, commonjs imports) are essential for build configuration and understanding how to run tests"
           },
           {
-            "file": "issues.json",
-            "relevance": 55,
-            "summary": "Documented timeout bug fix using semaphore pattern — relevant precedent for build reliability issues"
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent test failures as of 2026-06-19 (sw-cleanup.sh output formatting issues) are likely to reoccur and should inform build debugging strategy"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline build duration of 2089s helps set time expectations and detect if current build is running abnormally slow"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Contains specific test failure signatures (mktemp, JSON output formatting) that may appear during build setup and test execution"
           }
         ]
       },
-      "timestamp": 1781878430,
+      "timestamp": 1781896579,
+      "ttl": 1800
+    },
+    "c5822f8f1c72279439b6a9d0fc3e5088": {
+      "result": {
+        "estimated_iterations": 7,
+        "reasoning": "Medium-complexity performance optimization (6/10) with atomic write and cache consistency requirements. Key factors: index corruption detection needs careful testing (1 iter), cache implementation with LRU eviction (1 iter), atomic file operations (1 iter), performance instrumentation (1 iter), integration with memory pipeline (1 iter), backward compatibility validation (1 iter), realistic pattern testing (1 iter). Medium risk level and 73% success probability suggest 6-8 iterations; estimating 7 as baseline."
+      },
+      "timestamp": 1781895577,
+      "ttl": 1800
+    },
+    "d9eb781dcf7d394eb967e7b93a4be18c": {
+      "result": {
+        "estimated_cost_usd": 0.95,
+        "estimated_iterations": 3,
+        "estimated_tokens": 18500,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1781895589,
+      "ttl": 3600
+    },
+    "eb3a85b15d42152a9406dac0cb80f07c": {
+      "result": {
+        "issue_type": "performance",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "refactor",
+          "backend",
+          "system-architecture"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Standard complexity: requires index/cache design, persistence layer updates, performance benchmarking, and refactoring of a 2240-line module. Core system exposure (memory lookups touch intelligence, daemon, and loop) elevates risk despite straightforward scope."
+        },
+        "skill_plan": {
+          "plan": [
+            "performance",
+            "architecture-design",
+            "data-pipeline"
+          ],
+          "design": [
+            "architecture-design",
+            "data-pipeline",
+            "performance"
+          ],
+          "build": [
+            "performance",
+            "api-design"
+          ],
+          "review": [
+            "performance",
+            "adversarial-quality",
+            "api-design"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "adversarial-quality",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "observability",
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "performance": "Query index + LRU cache are performance optimizations; need to measure baseline latency, set <100ms target, verify hit rates, and profile the index lookup vs. full-scan tradeoff.",
+          "architecture-design": "Index schema, persistence format, cache eviction policy, and corruption recovery need architectural documentation so future changes don't break assumptions.",
+          "data-pipeline": "Memory lookups are data access patterns; index design mirrors database indexing strategies (pattern hash → file mappings) and cache behavior requires pipeline thinking.",
+          "api-design": "Extracting query logic to lib/memory-query.sh requires clean, testable interfaces; poor API design here makes the module harder to reuse and maintain.",
+          "adversarial-quality": "Cache invalidation bugs, index corruption under concurrent writes, and stale-cache edge cases are non-obvious failure modes; need adversarial testing before shipping.",
+          "testing-strategy": "LRU cache and persistent index have complex correctness properties (eviction order, rebuild correctness, concurrent access); need comprehensive test coverage.",
+          "pr-quality": "Memory system changes are high-leverage (used by intelligence, daemon, loop); PR needs clear before/after benchmarks and explains the index/cache design so reviewers understand trade-offs.",
+          "observability": "Post-deploy monitoring of cache hit rate, query latency, and index freshness is critical to confirm optimization actually works in live pipelines and catch corruption early.",
+          "validation-thoroughness": "Smoke test is insufficient; need to measure actual performance in daemon mode with real workloads (intelligence lookups, pattern searches) to verify <100ms target is met."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Index consistency: Does index stay synchronized with memory file writes? Test concurrent writes, partial failures, and corruption scenarios.",
+          "Cache invalidation: When memory is updated, is the LRU cache properly evicted? Test stale-read edge cases and tag/pattern changes.",
+          "Performance benchmarks: Are <100ms lookups achieved? Measure baseline (full-scan) vs. optimized (index+cache) and verify 50-entry cache is sufficient.",
+          "Corruption recovery: Does index auto-rebuild when corrupted? Test file truncation, JSON parse errors, and manual corruption scenarios.",
+          "API cleanliness: Is lib/memory-query.sh well-factored? Verify no business logic creep, functions have single responsibility, and interface is testable.",
+          "Backwards compatibility: Can agents using old memory lookups still work? Test graceful fallback to full-scan if index is missing."
+        ],
+        "risk_areas": [
+          "Cache invalidation bugs under concurrent multi-agent writes could serve stale memory patterns to intelligence modules.",
+          "Persistent index file corruption could break memory lookups for all agents; recovery must be automatic and correct.",
+          "Index lookup performance could regress if hash collisions or linear probing is inefficient; needs profiling.",
+          "50-entry LRU cache size assumption not validated; actual workload may have different access patterns (e.g., ~1000 unique patterns searched).",
+          "Integration gap: lib/memory-query.sh abstraction could be over-engineered (adding latency) or under-engineered (missing cleanup hooks)."
+        ]
+      },
+      "timestamp": 1781895753,
+      "ttl": 3600
+    },
+    "86624bd74ef4d6b08cdf1a3bf8bd35da": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Shows successful refactoring patterns with multiple iterations, cost tracking, file patterns (.claude/*.json, .claude/loop-logs/*.log, scripts/lib/*.sh), and test strategy. Directly applicable to planning memory system optimization."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Documents project conventions (Node.js, vitest, src/ structure, commonjs imports). Essential for understanding codebase structure when planning implementation."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Provides baseline metrics (build_duration_s: 2089). Establishes performance baseline for measuring improvement post-optimization."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Shows successful feature addition with TDD approach, unit+integration tests, iterations, and cost tracking. Methodology applicable to optimization work."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Captures past test failures and fixes (mktemp paths, output formatting). Helps avoid repeating similar issues during memory system refactoring."
+          }
+        ]
+      },
+      "timestamp": 1781895858,
       "ttl": 1800
     }
   }
