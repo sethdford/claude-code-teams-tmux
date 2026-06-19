@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "optimizer",
+          "builder",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Performance optimization requires architectural decisions on cache strategy and index design, implementation by a builder, optimization validation, and comprehensive testing.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781878439,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,232 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "e3df19c47c59275d79b07ef45a048e85": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "performance",
+        "key_risks": [
+          "Index corruption causing cache invalidation bugs and incorrect lookups",
+          "Index/cache desynchronization if memory writes aren't atomic",
+          "Performance regression if index/cache overhead exceeds gains",
+          "Breaking changes to memory system which is critical infrastructure",
+          "Backward compatibility issues with existing memory files"
+        ],
+        "implementation_hints": [
+          "Implement cache layer first (LRU with max 50 entries), then index",
+          "Use atomic writes (tmp file + mv) for index updates to prevent corruption",
+          "Add checksum validation on index reads with automatic rebuild on mismatch",
+          "Keep fallback to full-scan when index unavailable or corrupted",
+          "Extract query logic to lib/memory-query.sh before refactoring sw-memory.sh",
+          "Profile actual memory lookup patterns to verify cache hit rate assumptions",
+          "Use jq for efficient JSON index operations with clear key schema",
+          "Add debug logging to track cache hits/misses and per-query latency",
+          "Implement index rebuild on corruption detection, log incidents",
+          "Benchmark initial implementation against <100ms goal before optimization"
+        ]
+      },
+      "timestamp": 1781877916,
+      "ttl": 3600
+    },
+    "75beeb09efdc8fb141d748f59f11ce74": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1781877929,
+      "ttl": 1800
+    },
+    "825d26181b4592ef1768ca18d5168a90": {
+      "result": {
+        "estimated_cost_usd": 2.05,
+        "estimated_iterations": 2,
+        "estimated_tokens": 45000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1781877947,
+      "ttl": 3600
+    },
+    "ac14124254cd9e6394070c777369b008": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Success pattern for 'Add authentication feature' with complexity 65, 3+ iterations, iterative approach, standard template, npm test strategy—directly applicable to planning memory system feature implementation and understanding expected scope/effort."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Success pattern for 'Fix bug' with bc syntax debugging, 3 iterations, autonomous loop progression, outcome-feedback iteration—shows iterative refinement process and testing/audit patterns relevant to build phase."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure baseline (Node.js, vitest, src/test/ convention, commonjs imports)—necessary context for planning implementation approach and test strategy."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 40,
+            "summary": "Success pattern for 'Fix authentication bug' with complexity 60, 3 iterations, standard template, npm test—shows similar complexity and iteration patterns for planning."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Success pattern for 'add auth module' with TDD approach, 5 iterations, module isolation, integration testing—demonstrates iterative development and test strategy applicable to memory system component."
+          }
+        ]
+      },
+      "timestamp": 1781878095,
+      "ttl": 1800
+    },
+    "9fed8d21c4211a6930c637cf195d6aa1": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains recent test failure patterns (sw-cleanup.sh heartbeat detection, template errors) with root causes. Directly relevant to understanding what types of failures cause plan validation rejection and what fixes have worked in similar contexts."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 80,
+            "summary": "Captured failure patterns with fix strategies (mktemp path issues, missing output formatting, JSON validation). Provides learned approaches for resolving test failures and infrastructure issues that could inform plan validation requirements."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions for Shipwright (Node.js, vitest, src/ source directory, CommonJS imports). Essential context for understanding project structure and testing approach needed to satisfy plan validation criteria."
+          }
+        ]
+      },
+      "timestamp": 1781878242,
+      "ttl": 1800
+    },
+    "3f4dee35ef9d85e8d2f76d8cb87db6df": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Contains iterative approaches, complexity scoring (60-65), test strategies, file patterns, and template preferences. Directly applicable to understanding how to architect performance-optimized systems with multiple iterations and testing strategies."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 68,
+            "summary": "Knowledge base with 5 documented patterns including failure signatures, fix strategies, and approach explanations. Relevant for learning what architectural decisions failed before and how to avoid similar issues in cache/index layer design."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 58,
+            "summary": "Project conventions including source_dir (src/), test_pattern, import_style, and project metadata (node, vitest, npm). Informs where to place memory system code and how to structure it within project conventions."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Non-empty failure log showing sw-cleanup.sh heartbeat detection issues and root causes. Relevant for understanding edge cases and system behavior patterns when designing cache invalidation and state management."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 42,
+            "summary": "Contains performance baselines (build_duration_s: 2089) and update timestamps. Provides reference for performance requirements and expectations for the optimization work."
+          }
+        ]
+      },
+      "timestamp": 1781878280,
+      "ttl": 1800
+    },
+    "d8a97fd422eaa6ddf96395bf8a4b83c8": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Contains failure patterns with root causes and fix strategies. While not directly about memory system design, the analytical approach to identifying what failed and why could inform rejected design patterns."
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 28,
+            "summary": "Documents specific failures with root causes and fixes. Shows learned anti-patterns from test infrastructure, applicable to understanding system failure modes."
+          },
+          {
+            "file": "success-patterns.json (second)",
+            "relevance": 18,
+            "summary": "Shows successful delivery patterns from bug fixes and features. Indirectly relevant by contrast—understanding what succeeded helps identify rejected or suboptimal approaches."
+          }
+        ]
+      },
+      "timestamp": 1781878298,
+      "ttl": 1800
+    },
+    "48fe8ca5b48f45255223df748a47eddd": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Contains documented failure patterns and learning entries from previous builds, directly informing memory system reliability and caching strategies"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Multi-pattern entry showing successful build iterations (3-4 iterations, iterations patterns) applicable to build-stage loop methodology for memory optimization work"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 48,
+            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, commonjs imports) required for structuring memory system code and tests correctly"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 42,
+            "summary": "Build baseline of 2089s provides performance anchor for memory system optimization goals and query index efficiency targets"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 38,
+            "summary": "Test failure patterns (mktemp issues, output formatting) inform memory system test infrastructure requirements and potential edge cases to handle"
+          }
+        ]
+      },
+      "timestamp": 1781878416,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Recent test failures (last seen 2026-06-19) with root causes and fixes directly applicable to debugging current build/test stage failures, particularly sw-cleanup.sh and output format issues"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Multiple test failure patterns (mktemp directory issues, missing output) with fix strategies and success rates — directly relevant for test stage troubleshooting"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Two documented successful fixes showing iteration patterns, test strategies (npm test), and file change patterns for similar build/test scenarios"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Project conventions (test_pattern: *.test.js, test_runner: vitest, import_style: commonjs) needed for proper build setup and test execution"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Documented timeout bug fix using semaphore pattern — relevant precedent for build reliability issues"
+          }
+        ]
+      },
+      "timestamp": 1781878430,
+      "ttl": 1800
     }
   }
 }
