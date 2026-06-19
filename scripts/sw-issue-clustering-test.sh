@@ -187,6 +187,19 @@ test_due_schedule() {
     assert_eq "0" "$code" "due after interval elapses"
 }
 
+test_metrics_command() {
+    echo "Test: 'metrics' reports match rate and success rate"
+    seed_events
+    bash "$CLUSTERING" run >/dev/null 2>&1
+    SW_CLUSTERING_SIMILARITY_THRESHOLD=0.1 bash "$CLUSTERING" match "daemon timeout SIGKILL" >/dev/null 2>&1
+    local out
+    out="$(bash "$CLUSTERING" metrics 2>/dev/null)"
+    assert_contains "$out" '"pattern_matches"' "metrics emits machine-readable JSON"
+    local matches
+    matches="$(echo "$out" | jq '.pattern_matches')"
+    assert_ge "$matches" "1" "at least one pattern match recorded"
+}
+
 test_node_unit_tests() {
     echo "Test: Node unit tests (node:test) pass"
     local unit_file="$SCRIPT_DIR/../tests/issue-clustering.test.js"
@@ -223,6 +236,7 @@ test_run_empty_events
 test_match_command
 test_status_command
 test_due_schedule
+test_metrics_command
 test_node_unit_tests
 test_help_and_version
 

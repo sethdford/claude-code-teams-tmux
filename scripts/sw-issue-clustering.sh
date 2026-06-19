@@ -61,6 +61,7 @@ COMMANDS
   match <text>      Match an issue (free text or JSON) to the nearest cluster
   show              Print the current clusters
   status            Show cluster count, age, and freshness
+  metrics           Show match rate and mean cluster success rate
   due               Exit 0 if a weekly re-cluster is due, else exit 1
 
 OPTIONS
@@ -216,6 +217,49 @@ _clustering_status() {
     info "Generated: $generated (${age_days}d ago)"
 }
 
+# Report clustering effectiveness metrics from events.jsonl: how often new
+# issues match a cluster, and the mean success rate of matched clusters.
+_clustering_metrics() {
+    local events="$EVENTS_FILE"
+    if [[ ! -f "$events" ]]; then
+        info "No events file — no metrics yet"
+        return 0
+    fi
+
+    local matched total_clusters avg_cluster_success
+    # Count clustering.matched events (a match means the new issue found a cluster).
+    matched="$(grep -c '"type":"clustering.matched"' "$events" 2>/dev/null || true)"
+    matched="${matched:-0}"
+
+    if [[ -f "$CLUSTERS_FILE" ]]; then
+        total_clusters="$(jq '.clusters | length' "$CLUSTERS_FILE" 2>/dev/null || echo 0)"
+        # Mean success rate across clusters that have an outcome-bearing rate.
+        avg_cluster_success="$(jq -r '
+            [.clusters[].success_metrics.success_rate | select(. != null)] as $r
+            | if ($r | length) > 0 then (($r | add) / ($r | length)) else null end
+        ' "$CLUSTERS_FILE" 2>/dev/null || echo "null")"
+    else
+        total_clusters=0
+        avg_cluster_success="null"
+    fi
+
+    # Human summary to stderr so stdout stays pure JSON (pipeable, like 'match').
+    info "Pattern matches recorded: $matched" >&2
+    info "Clusters: $total_clusters" >&2
+    if [[ "$avg_cluster_success" != "null" && -n "$avg_cluster_success" ]]; then
+        info "Mean cluster success rate: $avg_cluster_success" >&2
+    else
+        info "Mean cluster success rate: n/a (no outcomes yet)" >&2
+    fi
+
+    # Machine-readable line for dashboards/aggregators.
+    jq -n \
+        --argjson matched "${matched:-0}" \
+        --argjson clusters "${total_clusters:-0}" \
+        --argjson success "${avg_cluster_success:-null}" \
+        '{pattern_matches: $matched, clusters: $clusters, mean_cluster_success_rate: $success}'
+}
+
 # Exit 0 when a weekly re-cluster is due (used by the daemon poll loop).
 _clustering_due() {
     local interval_days last now interval_s
@@ -253,6 +297,7 @@ main() {
         match)  _clustering_match "${positional[0]:-}" "${threshold:-$(_cfg_threshold)}" ;;
         show)   _clustering_show ;;
         status) _clustering_status ;;
+        metrics) _clustering_metrics ;;
         due)    _clustering_due ;;
         -h|--help|help|"") show_help ;;
         -v|--version) echo "$VERSION" ;;

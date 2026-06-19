@@ -629,6 +629,19 @@ daemon_poll_loop() {
                     _LAST_DECISION_EPOCH=$now_e
                 fi
             fi
+
+            # Weekly issue re-clustering (if enabled). Runs only during quiet
+            # periods; the script's own 'due' check enforces the interval.
+            local _clustering_enabled
+            _clustering_enabled=$(_smart_int "clustering.enabled" "0" 2>/dev/null || echo "0")
+            if [[ "$_clustering_enabled" == "true" || "$_clustering_enabled" == "1" ]]; then
+                if [[ -f "$SCRIPT_DIR/sw-issue-clustering.sh" ]] && \
+                   bash "$SCRIPT_DIR/sw-issue-clustering.sh" due 2>/dev/null; then
+                    daemon_log INFO "Re-clustering issues (weekly schedule)"
+                    bash "$SCRIPT_DIR/sw-issue-clustering.sh" run 2>/dev/null || \
+                        daemon_log WARN "Issue clustering failed — continuing"
+                fi
+            fi
         fi
 
         # ── Adaptive poll interval: adjust sleep based on queue state ──
