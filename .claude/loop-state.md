@@ -290,12 +290,12 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-19T19:29:38Z
-last_iteration_at: 2026-06-19T19:29:38Z
+started_at: 2026-06-19T19:46:58Z
+last_iteration_at: 2026-06-19T19:46:58Z
 consecutive_failures: 0
 total_commits: 1
 audit_enabled: true
@@ -308,8 +308,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-19T19:29:38Z)
-- `sw-daemon.sh` — `validation` config block.
-- `.claude/CLAUDE.md` — full section + "Adding a New Stage Output Schema" guide.
-**Verified:** new suite 67/0, `sw-lib-pipeline-stages`, `sw-lib-pipeline-state`, `sw-daemon`, and the main `sw-pipeline-
 
