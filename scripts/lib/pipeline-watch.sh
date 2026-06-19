@@ -372,8 +372,9 @@ pipeline_watch() {
     done
 }
 
-# Restore terminal state (show cursor) on interrupt.
+# Restore terminal state (show cursor) and clear any snapshot temp on interrupt.
 _watch_cleanup_term() {
     printf '\033[?25h'
+    rm -f "${TMPDIR:-/tmp}/sw-watch-snap-$$" 2>/dev/null || true
     echo ""
 }

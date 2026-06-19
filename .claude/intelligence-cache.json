@@ -32,15 +32,16 @@
       "result": {
         "primary_role": "builder",
         "secondary_roles": [
+          "architect",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.90,
+        "reasoning": "Feature implementation for real-time streaming pipeline progress tracking; architect needed for design, tester for validation, reviewer for quality assurance",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781832969,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,231 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "089c964b104459120ca23a77c17a405f": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "WebSocket connection stability and reconnection handling across long-running streams",
+          "Log parsing reliability as pipeline output format evolves",
+          "Performance: high-frequency updates to multiple concurrent terminals",
+          "State synchronization between watch client and actual pipeline state",
+          "Fallback mechanism (log tailing) reliability and lag",
+          "Cross-platform terminal compatibility and ANSI escape code handling"
+        ],
+        "implementation_hints": [
+          "Leverage existing pipeline-state.md and .claude/pipeline-artifacts/ directory for state tracking",
+          "Use structured JSON logging format for reliable, future-proof parsing",
+          "Reuse existing dashboard WebSocket server infrastructure instead of building new one",
+          "Implement graceful degradation: attempt WebSocket first, fallback to inotifywait-based log tailing",
+          "Cache state locally in watch command to reduce connection overhead and enable offline fallback",
+          "Rate-limit terminal updates to 5-10 second intervals to prevent spam and reduce load",
+          "Store progress state in machine-readable format (.json) with timestamps for easy consumption",
+          "Use file watch events rather than polling for efficiency"
+        ]
+      },
+      "timestamp": 1781832129,
+      "ttl": 3600
+    },
+    "b8b8552ad994315ede641728405d8da8": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1781832142,
+      "ttl": 1800
+    },
+    "23a2e791b48c6c541e1c0ac82f24c2e2": {
+      "result": {
+        "estimated_cost_usd": 1.25,
+        "estimated_iterations": 2,
+        "estimated_tokens": 45000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1781832156,
+      "ttl": 3600
+    },
+    "6232b1dfe61ff7c04c3e1574623a4d9d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (second entry with 'Fix bug' and 'Add authentication feature')",
+            "relevance": 85,
+            "summary": "Shows completed feature implementation pattern with 3-4 iterations, 45-150s duration, cost estimates, file patterns, and test strategy using 'npm test'. Directly applicable to planning this new feature."
+          },
+          {
+            "file": "patterns.json (project info with project type and conventions)",
+            "relevance": 75,
+            "summary": "Node.js project with vitest test runner and commonjs imports. Tech stack understanding is essential for planning a new real-time streaming feature."
+          },
+          {
+            "file": "success-patterns.json (first entry with 'add auth module')",
+            "relevance": 70,
+            "summary": "Feature implementation showing 5 iterations, iterative TDD approach, files in src/ and test/, complexity 60. Relevant pattern for multi-file feature planning."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Documents timeout bug fix in daemon scripts with semaphore solution. Relevant for understanding timing and daemon coordination patterns needed for real-time progress streaming."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 55,
+            "summary": "Baseline build duration of 2089s. Provides performance context for understanding current pipeline behavior before implementing progress streaming feature."
+          }
+        ]
+      },
+      "timestamp": 1781832401,
+      "ttl": 1800
+    },
+    "f588437e539e89612ef7f3f6c98c7a0b": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Contains error signatures and fix strategies from past test/validation failures (mktemp directory issues, output validation failures, JSON formatting). Directly applicable to understanding and fixing plan validation rejections."
+          },
+          {
+            "file": "success-patterns.json (with bug fix and auth feature)",
+            "relevance": 76,
+            "summary": "Shows successful delivery patterns with detailed approaches, iteration counts (3-4 iterations), test strategies (npm test), and templates (standard). Provides reference patterns for planning the rejected feature."
+          },
+          {
+            "file": "patterns.json (project structure)",
+            "relevance": 68,
+            "summary": "Shows this is a Node.js project using vitest test runner with CommonJS imports. Project conventions and test infrastructure are relevant to validation requirements and implementation planning."
+          }
+        ]
+      },
+      "timestamp": 1781832734,
+      "ttl": 1800
+    },
+    "072825328390680a158a448dc268e6c5": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (sethdford/shipwright)",
+            "relevance": 88,
+            "summary": "Project conventions for source structure (src/), test patterns (*.test.js), language (JavaScript), and package manager (npm). Essential baseline for designing architecture in this specific codebase."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Historical feature development patterns show complexity scoring, iteration counts, and approach patterns for similar-scale work. Relevant for estimating design stage scope and identifying proven architectural strategies."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 62,
+            "summary": "Contains architecture rules that design decisions must adhere to. Minimal detail but directly constrains design choices for real-time stream architecture."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 48,
+            "summary": "Shows past issue resolutions (e.g., semaphore for timeout bugs). Relevant for understanding architectural patterns that have worked in this codebase's pipeline context."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 38,
+            "summary": "Build duration baseline (2089s) provides context for performance constraints in design, though indirectly relevant to architecture pattern selection."
+          }
+        ]
+      },
+      "timestamp": 1781832768,
+      "ttl": 1800
+    },
+    "de069878995a089f3c5f2598901aac91": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Contains iterative implementation patterns with real durations, test strategies ('npm test'), and file modification templates (.claude/*, scripts/*). Shows multi-iteration feature delivery approaches relevant to designing complex streaming systems."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "Documents successful fix pattern 'added semaphore' for timeout bugs in daemon systems. Real-time streaming and stage-level transparency require synchronization design; this shows a pattern that has worked in similar infrastructure."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Captures 4 failure patterns with fix strategies and root causes. Understanding what failed (mktemp issues, sw-cleanup.sh output, JSON formatting) helps identify anti-patterns to avoid when designing real-time progress infrastructure."
+          }
+        ]
+      },
+      "timestamp": 1781832789,
+      "ttl": 1800
+    },
+    "d7c7e3daf83c518e4e11593438165fc9": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Contains project conventions (source_dir: src/, test_pattern: *.test.js, import_style: commonjs) — essential for understanding codebase structure and test setup during build"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Contains 4 documented failure patterns from previous builds (mktemp directory issues, sw-cleanup output format) with specific fix strategies — prevents repeating these test failures"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Bug fix pattern showing 3 successful iterations, npm test strategy, shell script changes ($2.50 cost) — demonstrates proven iteration pattern for similar complexity work"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recent test failure (sw-cleanup.sh output format) with documented fix strategy — specific actionable issue seen 3 times, likely to reoccur in build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Baseline build duration of 2089s (~35 minutes) provides expectation calibration for build stage performance and timeout configuration"
+          }
+        ]
+      },
+      "timestamp": 1781832939,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Defines project conventions (vitest, src/ dir, *.test.js pattern, commonjs) that directly govern how build stage compiles and tests code"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Documents successful build/test strategies from past iterations (test_strategy: npm test, loop iterations, file patterns) applicable to current build"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Multiple mktemp failures in /tmp/claude directory are direct build/test environment issues that could block current build stage test execution"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline build_duration_s: 2089 provides performance expectation for current build stage to detect regressions or unusual slowdowns"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "sw-cleanup.sh test failure pattern is relevant if build stage cleanup runs; documents a known test failure that could recur"
+          }
+        ]
+      },
+      "timestamp": 1781832954,
+      "ttl": 1800
     }
   }
 }
