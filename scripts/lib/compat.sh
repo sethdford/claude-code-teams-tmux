@@ -196,7 +196,22 @@ detect_test_framework() {
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
     local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local mtime
+    # GNU stat: -c '%Y'. BSD/macOS stat: -f %m. Validate each result is a pure
+    # integer — GNU `stat -f %m` treats %m as a filesystem arg and emits
+    # multi-line "File:" garbage to stdout while exiting non-zero, so a bare
+    # `||` chain would capture that pollution. Numeric validation rejects it.
+    mtime=$(stat -c '%Y' "$file" 2>/dev/null) || mtime=""
+    case "$mtime" in
+        ''|*[!0-9]*) mtime="" ;;
+    esac
+    if [[ -z "$mtime" ]]; then
+        mtime=$(stat -f %m "$file" 2>/dev/null) || mtime=""
+        case "$mtime" in
+            ''|*[!0-9]*) mtime="0" ;;
+        esac
+    fi
+    echo "$mtime"
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
