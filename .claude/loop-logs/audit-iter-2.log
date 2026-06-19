@@ -1,1 +1,56 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Based on my comprehensive audit of the cumulative work, I've identified one critical blocking issue:
+
+## Issue: Pre-Existing Test Suite Failure
+
+**Location**: `scripts/sw-code-review-test.sh:40`
+
+**Problem**: The full `npm test` suite fails due to a cross-platform sed compatibility bug in sw-code-review-test.sh:
+
+```bash
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+```
+
+This uses BSD sed syntax (`-i ''`) which fails on GNU sed (Linux). The error is:
+```
+sed: can't read s|$TEST_TEMP_DIR|/tmp/sw-test-auto.S6DBkY|g: No such file or directory
+```
+
+**Why this matters**: While the agent's work is excellent and the prebuild-validate tests pass (36/36), the full test suite (`npm test`) fails immediately when this file is sourced, preventing validation of the complete implementation.
+
+**Note**: This is NOT a bug introduced by the agent—it's a pre-existing issue that was refactored in commit 273f154b. But it's now blocking the build.
+
+---
+
+## Summary of Agent's Work (Otherwise Solid)
+
+**What was completed:**
+- ✓ Pre-build validation stage fully implemented (379 lines, bash 3.2 compatible)
+- ✓ 6 validation checks working correctly (manifest syntax, lock files, test runner, lint, git state, env vars)
+- ✓ Comprehensive test suite (36/36 passing)
+- ✓ All 8 pipeline templates correctly wired
+- ✓ Fixed a recurring `file_mtime()` bug that was blocking cleanup tests
+- ✓ Proper integration into pipeline execution chain
+
+**Quality**: The new code is well-structured, properly handles edge cases, uses bash 3.2 compatible syntax, and follows project conventions.
+
+---
+
+## Required Fix
+
+Before marking this complete, fix the sed -i compatibility issue in `scripts/sw-code-review-test.sh:40`:
+
+```bash
+# Change from:
+sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+
+# To (matching the pattern in sw-pipeline-test.sh):
+if sed -i '' "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git" 2>/dev/null; then :; else
+    sed -i "s|\$TEST_TEMP_DIR|$TEST_TEMP_DIR|g" "$TEST_TEMP_DIR/bin/git"
+fi
+```
+
+After this fix, `npm test` should pass completely, validating the entire implementation.
