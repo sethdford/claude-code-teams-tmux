@@ -3,19 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
-      "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
-      "seen_count": 4,
-      "last_seen": "2026-06-19T01:49:04Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed command references TEST_TEMP_DIR variable that was not expanded/substituted before being passed as a sed script argument",
-      "fix": "Ensure TEST_TEMP_DIR is exported and properly interpolated in the sed command — use double quotes around the sed expression or pre-expand the variable before calling sed",
+      "root_cause": "sw-cleanup.sh heartbeat detection does not output stale agent names or summary 'Found N items' / '--force' hint in dry-run mode",
+      "fix": "Fix the stale-heartbeat detection block in sw-cleanup.sh to print the agent name when a stale heartbeat is found and add a summary line with 'Found <n> item(s)' and '--force' hint when items are detected",
       "seen_count": 1,
-      "last_seen": "2026-06-19T08:30:37Z",
+      "last_seen": "2026-06-19T08:30:57Z",
       "category": "test_failure"
     }
   ]
