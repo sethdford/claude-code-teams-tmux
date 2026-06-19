@@ -1068,6 +1068,14 @@ daemon_init() {
     "architecture_enabled": false,
     "ab_test_ratio": 0.2,
     "anomaly_threshold": 3.0
+  },
+  "validation": {
+    "enabled": true,
+    "strict_mode": false,
+    "schema_dir": "config/stage-schemas",
+    "metrics_enabled": true,
+    "timeout_seconds": 30,
+    "disable_for_stages": []
   }
 }
 CONFIGEOF

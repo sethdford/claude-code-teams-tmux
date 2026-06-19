@@ -278,6 +278,7 @@ main() {
         # Command groups
         agent)          route_agent "$@" ;;
         quality)        route_quality "$@" ;;
+        validate-stage-output|validate-output) exec "$SCRIPT_DIR/sw-validate-stage-output.sh" "$@" ;;
         observe)        route_observe "$@" ;;
         release)        route_release "$@" ;;
         intel)          route_intel "$@" ;;

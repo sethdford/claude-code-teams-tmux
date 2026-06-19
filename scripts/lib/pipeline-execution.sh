@@ -36,6 +36,13 @@ elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
     source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
 fi
 
+# Stage output schema validator (contract enforcement at stage boundaries)
+if [[ -f "$SCRIPT_DIR/validate.sh" ]]; then
+    source "$SCRIPT_DIR/validate.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/lib/validate.sh" ]]; then
+    source "$SCRIPT_DIR/lib/validate.sh" 2>/dev/null || true
+fi
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -784,6 +791,18 @@ run_pipeline() {
         local stage_model_used="${CLAUDE_MODEL:-${MODEL:-opus}}"
         if run_stage_with_retry "$id"; then
             mark_stage_complete "$id"
+
+            # Contract enforcement: validate this stage's output artifact against
+            # its schema. Warn-by-default; blocks only when strict mode is on.
+            if type validate_stage_hook >/dev/null 2>&1; then
+                PIPELINE_ARTIFACTS_DIR="${ARTIFACTS_DIR:-${WORK_DIR:-.}/.claude/pipeline-artifacts}" \
+                    validate_stage_hook "$id" || {
+                        error "Pipeline halted: stage '$id' output failed schema validation (strict mode)."
+                        emit_event "stage.failed" "issue=${ISSUE_NUMBER:-0}" "stage=$id" "reason=schema_validation"
+                        return 1
+                    }
+            fi
+
             completed=$((completed + 1))
             # Capture project pattern after intake (for memory context in later stages)
             if [[ "$id" == "intake" ]] && [[ -x "$SCRIPT_DIR/sw-memory.sh" ]]; then

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/schemas/stage-outputs/v1/intake.json",
+  "title": "Intake Stage Output",
+  "type": "object",
+  "required": [
+    "goal"
+  ],
+  "properties": {
+    "goal": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "issue": {
+      "type": "string"
+    },
+    "template": {
+      "type": "string"
+    },
+    "test_cmd": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/schemas/stage-outputs/v1/spec_generation.json",
+  "title": "Spec Generation Stage Output",
+  "type": "object",
+  "required": [
+    "title",
+    "goals"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "goals": {
+      "type": "array"
+    },
+    "acceptance_criteria": {
+      "type": "array"
+    },
+    "edge_cases": {
+      "type": "array"
+    },
+    "security_requirements": {
+      "type": "array"
+    },
+    "constraints": {
+      "type": "array"
+    }
+  }
+}
