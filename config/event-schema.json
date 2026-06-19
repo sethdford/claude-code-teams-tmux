@@ -100,6 +100,52 @@
       "required": ["status"],
       "optional": []
     },
+    "cost.template_selected": {
+      "required": ["template"],
+      "optional": ["estimated_usd", "remaining", "complexity"]
+    },
+    "cost.estimate_accuracy": {
+      "required": ["template"],
+      "optional": [
+        "estimated_usd",
+        "actual_usd",
+        "abs_error_usd",
+        "pct_error",
+        "run_id"
+      ]
+    },
+    "feedback_post_merge_monitor": {
+      "required": [],
+      "optional": ["merge_sha", "environment", "errors"]
+    },
+    "feedback_detect_regression": {
+      "required": [],
+      "optional": ["merge_sha", "regression", "severity"]
+    },
+    "feedback_correlate": {
+      "required": [],
+      "optional": ["pr", "confidence"]
+    },
+    "feedback_auto_respond": {
+      "required": [],
+      "optional": ["severity", "type"]
+    },
+    "feedback_learn_from_outcome": {
+      "required": [],
+      "optional": ["pr", "merge_result", "regression"]
+    },
+    "feedback_collect": {
+      "required": [],
+      "optional": ["errors", "file"]
+    },
+    "feedback_issue_created": {
+      "required": [],
+      "optional": ["url", "errors"]
+    },
+    "feedback_rollback": {
+      "required": [],
+      "optional": ["environment", "reason", "status"]
+    },
     "scale.recommendation": {
       "required": [],
       "optional": ["iterations", "coverage", "modules", "has_recommendations"]
