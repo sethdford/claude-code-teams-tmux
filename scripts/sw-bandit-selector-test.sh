@@ -35,10 +35,10 @@ source "$SCRIPT_DIR/lib/bandit-selector.sh"
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -48,10 +48,10 @@ assert_equals() {
 assert_not_empty() {
     local actual="$1" description="${2:-}"
     if [[ -n "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Value was empty"
     fi
@@ -60,10 +60,10 @@ assert_not_empty() {
 assert_file_exists() {
     local path="$1" description="${2:-}"
     if [[ -f "$path" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $path"
     fi
@@ -74,10 +74,10 @@ assert_json_field() {
     local actual
     actual=$(echo "$json" | jq -r "$field" 2>/dev/null || echo "PARSE_ERROR")
     if [[ "$actual" == "$expected" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -243,17 +243,17 @@ test_report_output() {
     local output
     output=$(bandit_report "model" 2>&1)
     if echo "$output" | grep -q "build:opus"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m bandit_report shows arm data"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m bandit_report shows arm data"
     fi
     if echo "$output" | grep -q "Exploration rate"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m bandit_report shows exploration rate"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m bandit_report shows exploration rate"
     fi
 }
@@ -363,20 +363,20 @@ test_report_filter() {
     local output
     output=$(bandit_report "model" "build:" 2>&1)
     if echo "$output" | grep -q "build:opus"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m bandit_report filter includes matching arms"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m bandit_report filter includes matching arms"
     fi
     # review arms should be filtered out in the data lines
     local review_in_data
     review_in_data=$(echo "$output" | grep -c "review:" 2>/dev/null || true)
     if [[ "${review_in_data:-0}" -eq 0 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m bandit_report filter excludes non-matching arms"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m bandit_report filter excludes non-matching arms"
     fi
 }

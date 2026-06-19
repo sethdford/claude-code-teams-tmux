@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
     local haystack="$1" needle="$2" description="${3:-}"
     if echo "$haystack" | grep -q "$needle"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    Actual: $haystack"
@@ -38,10 +38,10 @@ assert_contains() {
 assert_not_empty() {
     local value="$1" description="${2:-}"
     if [[ -n "$value" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Value was empty"
     fi
@@ -50,10 +50,10 @@ assert_not_empty() {
 assert_file_exists() {
     local path="$1" description="${2:-}"
     if [[ -f "$path" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $path"
     fi
@@ -64,10 +64,10 @@ assert_json_field() {
     local actual
     actual=$(echo "$json" | jq -r "$field" 2>/dev/null || echo "PARSE_ERROR")
     if [[ "$actual" == "$expected" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Field $field — expected: $expected, actual: $actual"
     fi
@@ -199,7 +199,7 @@ test_suggest_partial_match() {
     # Should either find a partial match or return none
     if [[ "$confidence" == "none" ]]; then
         # No partial match found — that's acceptable since we don't have ts:bug:*
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m suggest returns none when no partial match"
     else
         local tier
@@ -330,7 +330,7 @@ test_multiple_buckets() {
 test_module_guard() {
     # Source again — should not error
     source "$SCRIPT_DIR/lib/policy-learner.sh" 2>/dev/null
-    ((PASS++))
+    PASS=$((PASS+1))
     echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m module guard allows re-source without error"
 }
 

@@ -14,10 +14,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -27,10 +27,10 @@ assert_equals() {
 assert_contains() {
     local needle="$1" haystack="$2" description="${3:-}"
     if echo "$haystack" | grep -qF "$needle"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    Actual: $haystack"
@@ -40,10 +40,10 @@ assert_contains() {
 assert_in_range() {
     local min="$1" max="$2" actual="$3" description="${4:-}"
     if awk -v a="$actual" -v mn="$min" -v mx="$max" 'BEGIN { exit (a >= mn && a <= mx) ? 0 : 1 }'; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected range: [$min, $max]"
         echo "    Actual: $actual"
