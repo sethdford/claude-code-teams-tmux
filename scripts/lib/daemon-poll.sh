@@ -542,6 +542,27 @@ daemon_cleanup_stale() {
     fi
 }
 
+# ─── Weekly Issue Re-Clustering ───────────────────────────────────────────────
+
+# Trigger a weekly issue re-cluster during quiet periods when enabled.
+# The clustering script's own 'due' check enforces the interval, so this is
+# a cheap no-op when not yet due. Disabled by default — zero external calls.
+# Returns 0 always; failures are logged as WARN and never abort the poll loop.
+daemon_maybe_recluster() {
+    local enabled
+    enabled=$(_smart_int "clustering.enabled" "0" 2>/dev/null || echo "0")
+    [[ "$enabled" == "true" || "$enabled" == "1" ]] || return 0
+
+    [[ -x "$SCRIPT_DIR/sw-issue-clustering.sh" || -f "$SCRIPT_DIR/sw-issue-clustering.sh" ]] || return 0
+
+    if bash "$SCRIPT_DIR/sw-issue-clustering.sh" due 2>/dev/null; then
+        daemon_log INFO "Re-clustering issues (weekly schedule)"
+        bash "$SCRIPT_DIR/sw-issue-clustering.sh" run 2>/dev/null || \
+            daemon_log WARN "Issue clustering failed — continuing"
+    fi
+    return 0
+}
+
 # ─── Poll Loop ───────────────────────────────────────────────────────────────
 
 POLL_CYCLE_COUNT=0
@@ -632,16 +653,7 @@ daemon_poll_loop() {
 
             # Weekly issue re-clustering (if enabled). Runs only during quiet
             # periods; the script's own 'due' check enforces the interval.
-            local _clustering_enabled
-            _clustering_enabled=$(_smart_int "clustering.enabled" "0" 2>/dev/null || echo "0")
-            if [[ "$_clustering_enabled" == "true" || "$_clustering_enabled" == "1" ]]; then
-                if [[ -f "$SCRIPT_DIR/sw-issue-clustering.sh" ]] && \
-                   bash "$SCRIPT_DIR/sw-issue-clustering.sh" due 2>/dev/null; then
-                    daemon_log INFO "Re-clustering issues (weekly schedule)"
-                    bash "$SCRIPT_DIR/sw-issue-clustering.sh" run 2>/dev/null || \
-                        daemon_log WARN "Issue clustering failed — continuing"
-                fi
-            fi
+            daemon_maybe_recluster || true
         fi
 
         # ── Adaptive poll interval: adjust sleep based on queue state ──

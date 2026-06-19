@@ -341,4 +341,64 @@ BACKOFF_SECS=150
 BACKOFF_SECS=$((BACKOFF_SECS * 2))
 assert_eq "Integer arithmetic on backoff" "300" "$BACKOFF_SECS"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Weekly issue re-clustering (daemon_maybe_recluster)
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Issue re-clustering during quiet periods"
+
+# Mock clustering binary in an isolated SCRIPT_DIR. It records each invocation
+# (subcommand) to a log and honors CLUSTER_DUE / CLUSTER_RUN_RC to simulate the
+# 'due' gate and run outcome.
+CLUSTER_DIR="$TEST_TEMP_DIR/cluster-bin"
+mkdir -p "$CLUSTER_DIR"
+cat > "$CLUSTER_DIR/sw-issue-clustering.sh" <<'MOCK'
+#!/usr/bin/env bash
+echo "$1" >> "$CLUSTER_INVOKE_LOG"
+case "$1" in
+    due) [[ "${CLUSTER_DUE:-1}" == "0" ]] && exit 0 || exit 1 ;;
+    run) exit "${CLUSTER_RUN_RC:-0}" ;;
+esac
+exit 0
+MOCK
+chmod +x "$CLUSTER_DIR/sw-issue-clustering.sh"
+
+export CLUSTER_INVOKE_LOG="$TEST_TEMP_DIR/cluster-invoke.log"
+
+# Capture daemon_log output for assertions
+_CLUSTER_LOG="$TEST_TEMP_DIR/cluster-daemon.log"
+daemon_log() { echo "$1 ${*:2}" >> "$_CLUSTER_LOG"; }
+
+# Controllable config stub: clustering.enabled driven by CLUSTERING_ENABLED
+_smart_int() {
+    case "$1" in
+        clustering.enabled) echo "${CLUSTERING_ENABLED:-0}" ;;
+        *) echo "$2" ;;
+    esac
+}
+
+run_recluster() { ( SCRIPT_DIR="$CLUSTER_DIR" daemon_maybe_recluster ); }
+
+# Case 1: disabled (default) → no external calls at all
+: > "$CLUSTER_INVOKE_LOG"; : > "$_CLUSTER_LOG"
+CLUSTERING_ENABLED="0" run_recluster
+assert_eq "Disabled: clustering script never invoked" "" "$(cat "$CLUSTER_INVOKE_LOG")"
+
+# Case 2: enabled but not due → only 'due' probe, no 'run'
+: > "$CLUSTER_INVOKE_LOG"; : > "$_CLUSTER_LOG"
+CLUSTERING_ENABLED="true" CLUSTER_DUE="1" run_recluster
+assert_eq "Enabled+not-due: only 'due' probe runs" "due" "$(cat "$CLUSTER_INVOKE_LOG")"
+
+# Case 3: enabled and due → both 'due' and 'run' invoked, INFO logged
+: > "$CLUSTER_INVOKE_LOG"; : > "$_CLUSTER_LOG"
+CLUSTERING_ENABLED="1" CLUSTER_DUE="0" CLUSTER_RUN_RC="0" run_recluster
+assert_contains "Enabled+due: 'run' is invoked" "$(cat "$CLUSTER_INVOKE_LOG")" "run"
+assert_contains "Enabled+due: INFO log emitted" "$(cat "$_CLUSTER_LOG")" "Re-clustering"
+
+# Case 4: run fails → WARN logged, function still returns 0 (no loop abort)
+: > "$CLUSTER_INVOKE_LOG"; : > "$_CLUSTER_LOG"
+CLUSTERING_ENABLED="true" CLUSTER_DUE="0" CLUSTER_RUN_RC="3" run_recluster
+_recluster_rc=$?
+assert_eq "Run failure: function returns 0 (poll loop continues)" "0" "$_recluster_rc"
+assert_contains "Run failure: WARN log emitted" "$(cat "$_CLUSTER_LOG")" "WARN"
+
 print_test_results
