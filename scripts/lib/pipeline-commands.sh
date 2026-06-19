@@ -986,6 +986,7 @@ pipeline_start() {
         emit_event "pipeline.completed" \
             "issue=${ISSUE_NUMBER:-0}" \
             "result=success" \
+            "goal=${GOAL:0:200}" \
             "duration_s=${total_dur_s:-0}" \
             "iterations=$((SELF_HEAL_COUNT + 1))" \
             "template=${PIPELINE_NAME}" \

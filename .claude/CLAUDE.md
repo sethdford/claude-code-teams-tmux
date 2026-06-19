@@ -136,25 +136,28 @@ Shipwright orchestrates autonomous Claude Code agent teams with delivery pipelin
 
 ### Data, Learning & Memory
 
-| Command                               | Purpose                                            |
-| ------------------------------------- | -------------------------------------------------- |
-| `shipwright memory show`              | View captured failure patterns & learnings         |
-| `shipwright knowledge mine`           | Mine fleet-wide recurring patterns across repos    |
-| `shipwright knowledge transfer`       | Promote cross-repo patterns into global memory     |
-| `shipwright knowledge inject <task>`  | Inject ranked fleet patterns into a pipeline stage |
-| `shipwright cost show`                | Token usage and spending dashboard                 |
-| `shipwright cost budget set <amount>` | Set daily budget limit                             |
-| `shipwright db <cmd>`                 | SQLite persistence layer management                |
-| `shipwright eventbus subscribe`       | Subscribe to real-time events by type              |
-| `shipwright eventbus reaper`          | Clean up expired/consumed events                   |
-| `shipwright eventbus watch`           | Live event stream viewer                           |
-| `shipwright eventbus replay`          | Replay events from a time range                    |
-| `shipwright eventbus status`          | Show bus health and pending event counts           |
-| `shipwright eventbus clean`           | Purge old events beyond retention window           |
-| `shipwright discovery <cmd>`          | Cross-pipeline real-time learning                  |
-| `shipwright feedback <cmd>`           | Production feedback loop                           |
-| `shipwright regression`               | Regression detection pipeline                      |
-| `shipwright otel`                     | OpenTelemetry observability                        |
+| Command                                                 | Purpose                                                 |
+| ------------------------------------------------------- | ------------------------------------------------------- |
+| `shipwright memory show`                                | View captured failure patterns & learnings              |
+| `shipwright knowledge mine`                             | Mine fleet-wide recurring failure patterns across repos |
+| `shipwright knowledge mine-success`                     | Mine successful pipeline configs from the event log     |
+| `shipwright knowledge recommend "<title>" <complexity>` | Recommend a proven pipeline approach for a new issue    |
+| `shipwright knowledge patterns-report`                  | Success-pattern library health & reuse report           |
+| `shipwright knowledge transfer`                         | Promote cross-repo patterns into global memory          |
+| `shipwright knowledge inject <task>`                    | Inject ranked fleet patterns into a pipeline stage      |
+| `shipwright cost show`                                  | Token usage and spending dashboard                      |
+| `shipwright cost budget set <amount>`                   | Set daily budget limit                                  |
+| `shipwright db <cmd>`                                   | SQLite persistence layer management                     |
+| `shipwright eventbus subscribe`                         | Subscribe to real-time events by type                   |
+| `shipwright eventbus reaper`                            | Clean up expired/consumed events                        |
+| `shipwright eventbus watch`                             | Live event stream viewer                                |
+| `shipwright eventbus replay`                            | Replay events from a time range                         |
+| `shipwright eventbus status`                            | Show bus health and pending event counts                |
+| `shipwright eventbus clean`                             | Purge old events beyond retention window                |
+| `shipwright discovery <cmd>`                            | Cross-pipeline real-time learning                       |
+| `shipwright feedback <cmd>`                             | Production feedback loop                                |
+| `shipwright regression`                                 | Regression detection pipeline                           |
+| `shipwright otel`                                       | OpenTelemetry observability                             |
 
 ### Setup, Maintenance & Configuration
 
@@ -928,6 +931,8 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 - Machine registry: `~/.shipwright/machines.json`
 - Cost data: `~/.shipwright/costs.json, ~/.shipwright/budget.json`
 - Intelligence cache: `.claude/intelligence-cache.json`
+- Fleet failure knowledge: `~/.shipwright/memory/fleet-knowledge.json`
+- Fleet success patterns: `~/.shipwright/fleet-patterns.json`
 - Optimization data: `~/.shipwright/optimization/`
 - Baselines: `~/.shipwright/baselines/`
 - Architecture models: `~/.shipwright/memory/<repo-hash>/architecture.json`

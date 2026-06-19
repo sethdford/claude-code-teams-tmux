@@ -268,6 +268,8 @@ Checkpoints:.claude/pipeline-artifacts/checkpoints/
 Machine registry:~/.shipwright/machines.json
 Cost data:~/.shipwright/costs.json, ~/.shipwright/budget.json
 Intelligence cache:.claude/intelligence-cache.json
+Fleet failure knowledge:~/.shipwright/memory/fleet-knowledge.json
+Fleet success patterns:~/.shipwright/fleet-patterns.json
 Optimization data:~/.shipwright/optimization/
 Baselines:~/.shipwright/baselines/
 Architecture models:~/.shipwright/memory/<repo-hash>/architecture.json

@@ -70,6 +70,21 @@ KM_CROSS_REPO_THRESHOLD="${KM_CROSS_REPO_THRESHOLD:-2}"
 # Cap on how many patterns are promoted into global.json per transfer.
 KM_TRANSFER_CAP="${KM_TRANSFER_CAP:-50}"
 
+# ─── Success-pattern store (separate from failure knowledge) ────────────────
+# Mines *successful* pipeline configurations (template, iterations, cost,
+# complexity) from the event log into a distinct schema-v1 document. The event
+# log (~/.shipwright/events.jsonl) is the source of truth — the library
+# regenerates fully on every mine, so a corrupt/deleted file self-heals.
+FLEET_PATTERNS_FILE="${HOME}/.shipwright/fleet-patterns.json"
+EVENTS_FILE="${HOME}/.shipwright/events.jsonl"
+# A recommendation must score at least this (0-100) to be surfaced.
+SW_FLEET_RECOMMEND_THRESHOLD="${SW_FLEET_RECOMMEND_THRESHOLD:-60}"
+# Minimum successful applications before a pattern is trustworthy enough to
+# recommend (guards against one-off flukes).
+SW_FLEET_MIN_APPLIED="${SW_FLEET_MIN_APPLIED:-2}"
+# Minimum success rate (%) before a pattern is recommendable.
+SW_FLEET_MIN_SUCCESS_RATE="${SW_FLEET_MIN_SUCCESS_RATE:-50}"
+
 # ─── Helpers ──────────────────────────────────────────────────────────────
 
 ensure_memory_root() {
@@ -546,6 +561,324 @@ cmd_report() {
     fi
 }
 
+# ════════════════════════════════════════════════════════════════════════════
+# SUCCESS-PATTERN MINING & RECOMMENDATION (issue #668)
+# ════════════════════════════════════════════════════════════════════════════
+
+# Seed an empty schema-v1 fleet-patterns.json if missing or unparseable, or if
+# the on-disk version is not the version we understand (forward-only: unknown
+# versions are reseeded rather than transformed in place).
+fp_ensure_file() {
+    mkdir -p "$(dirname "$FLEET_PATTERNS_FILE")"
+    if [[ ! -f "$FLEET_PATTERNS_FILE" ]] \
+       || ! jq -e '.patterns and .metrics and (.version == 1)' "$FLEET_PATTERNS_FILE" >/dev/null 2>&1; then
+        atomic_write "$FLEET_PATTERNS_FILE" '{
+  "version": 1,
+  "generated_at": "",
+  "patterns": [],
+  "metrics": {
+    "total_patterns": 0,
+    "repos_scanned": 0,
+    "events_scanned": 0,
+    "total_recommendations": 0,
+    "total_reuses": 0,
+    "reuse_rate": 0,
+    "avg_success_rate": 0,
+    "last_mine_at": ""
+  }
+}'
+    fi
+}
+
+# fp_complexity_bucket <complexity-int> — coarse bucket used in the grouping
+# signature so semantically similar issues consolidate even when their numeric
+# complexity differs slightly.
+fp_complexity_bucket() {
+    local c="${1:-0}"
+    [[ "$c" =~ ^[0-9]+$ ]] || c=0
+    if   [[ "$c" -lt 4 ]]; then echo "low"
+    elif [[ "$c" -le 7 ]]; then echo "medium"
+    else echo "high"
+    fi
+}
+
+# fp_tokenize <text> — lowercase, split on non-alphanumeric, drop empties,
+# dedupe. Emits a compact JSON array. Mirrors the recommend-time tokenizer so
+# mine and recommend agree on token identity.
+fp_tokenize() {
+    printf '%s' "${1:-}" \
+        | jq -Rc 'ascii_downcase | gsub("[^a-z0-9]+";" ") | split(" ") | map(select(length>0)) | unique'
+}
+
+# ─── cmd_mine_success ───────────────────────────────────────────────────────
+# SOLE WRITER of fleet-patterns.json. Reads events.jsonl tolerantly (torn lines
+# are dropped, never abort), selects successful pipeline.completed events,
+# consolidates by (template | complexity_bucket | goal_tokens) signature, and
+# writes aggregate success metadata. Always exits 0.
+cmd_mine_success() {
+    fp_ensure_file
+
+    info "Mining successful pipeline patterns from ${EVENTS_FILE}..."
+
+    local projected
+    projected=$(mktemp "${TMPDIR:-/tmp}/sw-fp-proj.XXXXXX")
+
+    # Tolerant, line-by-line projection. A malformed line yields a jq error that
+    # is swallowed (|| true), so a single torn write never aborts the mine.
+    if [[ -f "$EVENTS_FILE" ]]; then
+        local line
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            printf '%s\n' "$line" | jq -c '
+                select(.type == "pipeline.completed")
+                | {
+                    result: (.result // "unknown"),
+                    template: (.template // "standard"),
+                    complexity: (((.complexity // 0) | tonumber?) // 0),
+                    iterations: (((.iterations // 1) | tonumber?) // 1),
+                    cost: (((.total_cost // 0) | tonumber?) // 0),
+                    repo: (.repo // "local"),
+                    ts: (.ts // "")
+                  }
+                + { tokens: ((.goal // "") | ascii_downcase | gsub("[^a-z0-9]+";" ") | split(" ") | map(select(length>0)) | unique) }
+                | . + { bucket: (if .complexity < 4 then "low" elif .complexity <= 7 then "medium" else "high" end) }
+                | . + { sigkey: "\(.template)|\(.bucket)|\(.tokens | join(" "))" }
+            ' 2>/dev/null || true
+        done < "$EVENTS_FILE" > "$projected"
+    fi
+
+    local events_scanned
+    events_scanned=$(grep -c '' "$projected" 2>/dev/null || true)
+    events_scanned=${events_scanned:-0}
+
+    # Consolidate by signature. A group is kept only if it has >=1 success;
+    # success_rate is computed over all runs (success+failure) sharing the
+    # signature, while averages use only the successful runs.
+    local grouped
+    grouped=$(jq -s '
+        group_by(.sigkey)
+        | map(
+            . as $g
+            | ($g | map(select(.result == "success"))) as $s
+            | ($s | length) as $sc
+            | select($sc > 0)
+            | {
+                sigkey: $g[0].sigkey,
+                template: $g[0].template,
+                complexity: (($s | map(.complexity) | add) / $sc | floor),
+                goal_tokens: $g[0].tokens,
+                repos: ([$s[].repo] | unique),
+                repo_count: ([$s[].repo] | unique | length),
+                applied_count: $sc,
+                total_runs: ($g | length),
+                success_rate: (($sc * 100 / ($g | length)) | floor),
+                avg_iterations: (($s | map(.iterations) | add) / $sc | floor),
+                avg_cost_usd: ((($s | map(.cost) | add) / $sc * 100 | round) / 100),
+                last_seen: ([$s[].ts] | max // "")
+              }
+          )
+    ' "$projected" 2>/dev/null || echo "[]")
+    [[ -z "$grouped" ]] && grouped="[]"
+
+    # Recount reuse events per signature (reconcile, never increment — see ADR).
+    # Build a flat list of recommended signatures first.
+    local rec_file
+    rec_file=$(mktemp "${TMPDIR:-/tmp}/sw-fp-rec.XXXXXX")
+    if [[ -f "$EVENTS_FILE" ]]; then
+        grep '"type":"knowledge.pattern_recommended"' "$EVENTS_FILE" 2>/dev/null \
+            | jq -r '.signature // empty' 2>/dev/null > "$rec_file" || true
+    fi
+    local total_recommendations
+    total_recommendations=$(grep -c '' "$rec_file" 2>/dev/null || true)
+    total_recommendations=${total_recommendations:-0}
+
+    # Attach a stable signature + reconciled reuse count to each pattern.
+    local count i sigkey sig reuses scored="[]" total_reuses=0
+    count=$(jq 'length' <<< "$grouped" 2>/dev/null || echo 0)
+    i=0
+    while [[ "$i" -lt "$count" ]]; do
+        sigkey=$(jq -r ".[$i].sigkey" <<< "$grouped")
+        sig=$(km_signature "$sigkey")
+        reuses=$(grep -cxF "$sig" "$rec_file" 2>/dev/null || true)
+        reuses=${reuses:-0}
+        total_reuses=$((total_reuses + reuses))
+        scored=$(jq \
+            --argjson e "$(jq ".[$i]" <<< "$grouped")" \
+            --arg sig "$sig" \
+            --argjson reuses "$reuses" \
+            --arg mined "$(now_iso)" \
+            '. + [($e | del(.sigkey, .total_runs)) + {signature: $sig, total_reuses: $reuses, mined_at: $mined}]' \
+            <<< "$scored")
+        i=$((i + 1))
+    done
+    scored=$(jq 'sort_by(-.success_rate, -.applied_count, -.repo_count)' <<< "$scored")
+
+    local total_patterns repos_scanned avg_success reuse_rate
+    total_patterns=$(jq 'length' <<< "$scored")
+    repos_scanned=$(jq -s '[.[] | select(.result == "success") | .repo] | unique | length' "$projected" 2>/dev/null || echo 0)
+    avg_success=$(jq 'if length == 0 then 0 else ([.[].success_rate] | add / length | floor) end' <<< "$scored")
+    if [[ "$total_recommendations" -gt 0 ]]; then
+        reuse_rate=$(( total_reuses * 100 / total_recommendations ))
+    else
+        reuse_rate=0
+    fi
+
+    local doc
+    doc=$(jq -n \
+        --argjson patterns "$scored" \
+        --arg ts "$(now_iso)" \
+        --argjson total "$total_patterns" \
+        --argjson repos "$repos_scanned" \
+        --argjson scanned "$events_scanned" \
+        --argjson recs "$total_recommendations" \
+        --argjson reuses "$total_reuses" \
+        --argjson rate "$reuse_rate" \
+        --argjson avg "$avg_success" \
+        '{
+            version: 1,
+            generated_at: $ts,
+            patterns: $patterns,
+            metrics: {
+                total_patterns: $total,
+                repos_scanned: $repos,
+                events_scanned: $scanned,
+                total_recommendations: $recs,
+                total_reuses: $reuses,
+                reuse_rate: $rate,
+                avg_success_rate: $avg,
+                last_mine_at: $ts
+            }
+        }')
+
+    atomic_write "$FLEET_PATTERNS_FILE" "$doc"
+    rm -f "$projected" "$rec_file"
+
+    emit_event "knowledge.success_mined" \
+        "patterns=$total_patterns" \
+        "events=$events_scanned" \
+        "repos=$repos_scanned"
+
+    success "Mined $total_patterns success pattern(s) from $events_scanned completed event(s)"
+    info "Fleet patterns: $FLEET_PATTERNS_FILE"
+    return 0
+}
+
+# ─── cmd_recommend ──────────────────────────────────────────────────────────
+# PURE READ. Ranks success patterns against an issue (title + complexity) by a
+# pinned, deterministic scoring formula and prints the qualifying matches.
+# Emits nothing, writes nothing. Usage:
+#   knowledge recommend [--json] "<title>" <complexity> [max]
+cmd_recommend() {
+    local as_json=false
+    if [[ "${1:-}" == "--json" ]]; then as_json=true; shift; fi
+
+    local title="${1:-}"
+    local complexity="${2:-5}"
+    local max="${3:-3}"
+    [[ "$complexity" =~ ^[0-9]+$ ]] || complexity=5
+
+    if [[ -z "$title" ]]; then
+        error "Usage: shipwright knowledge recommend [--json] \"<title>\" <complexity> [max]"
+        return 1
+    fi
+    fp_ensure_file
+
+    local tokens
+    tokens=$(fp_tokenize "$title")
+    [[ -z "$tokens" ]] && tokens="[]"
+
+    local ranked
+    ranked=$(jq \
+        --argjson tokens "$tokens" \
+        --argjson ci "$complexity" \
+        --argjson thr "$SW_FLEET_RECOMMEND_THRESHOLD" \
+        --argjson minapp "$SW_FLEET_MIN_APPLIED" \
+        --argjson minsr "$SW_FLEET_MIN_SUCCESS_RATE" \
+        --argjson n "$max" '
+        [.patterns[]
+         | . as $p
+         | ($p.goal_tokens // []) as $pt
+         | (($tokens + $pt) | unique | length) as $union
+         | ([$tokens[] | select(. as $x | $pt | index($x))] | length) as $inter
+         | (if $union == 0 then 0 else ($inter / $union) end) as $overlap
+         | ($ci - ($p.complexity // 0)) as $d
+         | (if $d < 0 then -$d else $d end) as $ad
+         | ([[ (1 - ($ad / 10)), 0] | max, 1] | min) as $cm
+         | (([($p.repo_count // 1), 5] | min) / 5) as $rn
+         | (100 * (0.5 * $overlap + 0.3 * $cm + 0.2 * $rn) + 0.5 | floor) as $score
+         | $p + {score: $score, match_overlap: (($overlap * 100) | floor)}]
+        | map(select(.score >= $thr and (.success_rate // 0) >= $minsr and (.applied_count // 0) >= $minapp))
+        | sort_by(-.score, -.success_rate, -.repo_count)
+        | .[:$n]
+    ' "$FLEET_PATTERNS_FILE" 2>/dev/null || echo "[]")
+    [[ -z "$ranked" ]] && ranked="[]"
+
+    if [[ "$as_json" == "true" ]]; then
+        echo "$ranked"
+        return 0
+    fi
+
+    local n
+    n=$(jq 'length' <<< "$ranked" 2>/dev/null || echo 0)
+    echo "# Fleet Pattern Recommendation"
+    echo "# Issue: ${title}"
+    echo "# Complexity: ${complexity}  ·  Threshold: ${SW_FLEET_RECOMMEND_THRESHOLD}"
+    echo ""
+    if [[ "$n" -eq 0 ]]; then
+        echo "NO_RECOMMENDATION — no success pattern cleared the gate (score >= ${SW_FLEET_RECOMMEND_THRESHOLD}, success_rate >= ${SW_FLEET_MIN_SUCCESS_RATE}%, applied >= ${SW_FLEET_MIN_APPLIED})."
+        return 0
+    fi
+    jq -r '.[]
+        | "- template: \(.template) (score \(.score), success_rate \(.success_rate)%, applied \(.applied_count)x across \(.repo_count) repo(s))"
+        + "\n    avg_iterations: \(.avg_iterations)  ·  avg_cost: $\(.avg_cost_usd)  ·  signature: \(.signature)"' \
+        <<< "$ranked" 2>/dev/null || true
+}
+
+# ─── cmd_patterns_report ─────────────────────────────────────────────────────
+# Health/activity report for the success-pattern library, including the
+# event-schema drift signal (events_scanned vs total_patterns).
+cmd_patterns_report() {
+    fp_ensure_file
+
+    local total repos scanned recs reuses rate avg last_mine
+    total=$(jq -r '.metrics.total_patterns // 0' "$FLEET_PATTERNS_FILE")
+    repos=$(jq -r '.metrics.repos_scanned // 0' "$FLEET_PATTERNS_FILE")
+    scanned=$(jq -r '.metrics.events_scanned // 0' "$FLEET_PATTERNS_FILE")
+    recs=$(jq -r '.metrics.total_recommendations // 0' "$FLEET_PATTERNS_FILE")
+    reuses=$(jq -r '.metrics.total_reuses // 0' "$FLEET_PATTERNS_FILE")
+    rate=$(jq -r '.metrics.reuse_rate // 0' "$FLEET_PATTERNS_FILE")
+    avg=$(jq -r '.metrics.avg_success_rate // 0' "$FLEET_PATTERNS_FILE")
+    last_mine=$(jq -r '.metrics.last_mine_at // "never"' "$FLEET_PATTERNS_FILE")
+
+    echo ""
+    echo "  Fleet Success-Pattern Report"
+    echo "  ═══════════════════════════════════════════"
+    echo "  Success patterns mined:   $total"
+    echo "  Repos represented:        $repos"
+    echo "  Completed events scanned: $scanned"
+    echo "  Avg success rate:         ${avg}%"
+    echo "  Recommendations made:     $recs"
+    echo "  Pattern reuses:           $reuses"
+    echo "  Reuse rate:               ${rate}%"
+    echo "  Last mined:               $last_mine"
+    echo ""
+
+    # Drift alarm: events were scanned but consolidated into zero patterns —
+    # the most likely cause is an event-schema rename (template/complexity/etc).
+    if [[ "$scanned" -gt 0 && "$total" -eq 0 ]]; then
+        warn "Drift signal: scanned $scanned completed event(s) but mined 0 patterns — check pipeline.completed event fields (template/complexity/result)."
+        echo ""
+    fi
+
+    if [[ "$total" -gt 0 ]]; then
+        echo "  Top success patterns:"
+        jq -r '.patterns | sort_by(-.success_rate, -.applied_count) | .[:5][]
+            | "    • \(.template) — \(.success_rate)% over \(.applied_count) run(s), \(.repo_count) repo(s), ~\(.avg_iterations) iter, $\(.avg_cost_usd) [\(.goal_tokens | join(" "))]"' \
+            "$FLEET_PATTERNS_FILE" 2>/dev/null || true
+        echo ""
+    fi
+}
+
 # ─── Help ─────────────────────────────────────────────────────────────────
 show_help() {
     cat <<'EOF'
@@ -556,8 +889,15 @@ USAGE:
 
 COMMANDS:
   mine                      Mine all per-repo memory, consolidate recurring
-                            patterns by cross-repo signature, score confidence,
-                            and write fleet-knowledge.json
+                            FAILURE patterns by cross-repo signature, score
+                            confidence, and write fleet-knowledge.json
+  mine-success              Mine SUCCESSFUL pipeline configurations from the
+                            event log (template, iterations, cost, success rate)
+                            into fleet-patterns.json
+  recommend [--json] "<title>" <complexity> [max]
+                            Recommend a proven pipeline approach for a new issue
+                            by similarity + complexity + cross-repo breadth
+  patterns-report           Success-pattern library health & reuse report
   transfer                  Promote cross-repo patterns into global.json
                             (additive, deduped, capped)
   inject <task_type> [n]    Emit ranked injectable context for a pipeline stage
@@ -570,12 +910,16 @@ ALIASES:
   'mine' is also reachable directly as 'shipwright mine'
 
 ENVIRONMENT:
-  KM_CROSS_REPO_THRESHOLD   Min repos for a pattern to be "fleet-wide" (default 2)
-  KM_TRANSFER_CAP           Max patterns promoted per transfer (default 50)
+  KM_CROSS_REPO_THRESHOLD       Min repos for a pattern to be "fleet-wide" (default 2)
+  KM_TRANSFER_CAP               Max patterns promoted per transfer (default 50)
+  SW_FLEET_RECOMMEND_THRESHOLD  Min score (0-100) to recommend a pattern (default 60)
+  SW_FLEET_MIN_APPLIED          Min successful applications to recommend (default 2)
+  SW_FLEET_MIN_SUCCESS_RATE     Min success rate %% to recommend (default 50)
 
 STORAGE:
-  ~/.shipwright/memory/fleet-knowledge.json   Consolidated fleet knowledge
+  ~/.shipwright/memory/fleet-knowledge.json   Consolidated fleet FAILURE knowledge
   ~/.shipwright/memory/global.json            Transfer target (common patterns)
+  ~/.shipwright/fleet-patterns.json           Mined SUCCESS patterns (schema v1)
 EOF
 }
 
@@ -585,6 +929,9 @@ main() {
     shift || true
     case "$cmd" in
         mine)            cmd_mine "$@" ;;
+        mine-success)    cmd_mine_success "$@" ;;
+        recommend)       cmd_recommend "$@" ;;
+        patterns-report) cmd_patterns_report "$@" ;;
         transfer)        cmd_transfer "$@" ;;
         inject)          cmd_inject "$@" ;;
         search)          cmd_search "$@" ;;

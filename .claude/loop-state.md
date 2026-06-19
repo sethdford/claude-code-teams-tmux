@@ -2,45 +2,52 @@
 goal: "Fleet-Wide Pattern Mining & Knowledge Transfer Engine
 
 ## Plan Summary
-# Implementation Plan — Fleet-Wide Pattern Mining & Knowledge Transfer Engine
+The plan file write requires approval. I'll deliver the plan as my response — the revised plan addresses all four validator objections (broken serial chain via schema contract, resolved reuse-tracking ownership, pinned scoring formulas, codebase-specific failure modes).
 
-## Summary
+---
 
-Shipwright already captures learning at three disconnected altitudes:
+# Implementation Plan — Fleet-Wide Pattern Mining & Knowledge Transfer Engine (#668)
 
-- **Per-repo memory** (`~/.shipwright/memory/{repo_hash}/{failures,patterns,decisions,metrics}.json`) — rich, but siloed per repository.
-- **Real-time discovery** (`~/.shipwright/discoveries.jsonl`) — ephemeral, 24h TTL, intra-fleet broadcast.
-- **A thin `global.json`** (`common_patterns[]`, `cross_repo_learnings[]`) — populated opportunistically by `optimize_evolve_memory`, but with no systematic cross-repo *mining* step.
+## Summary & Grounding
 
-The gap this feature closes: **nothing periodically mines all per-repo memory stores, finds patterns that recur across *multiple* repos, scores their fleet-wide confidence, and transfers the consolidated knowledge back into new pipelines.** A failure fixed in repo A today does not benefit repo B's next build unless it happens to be live in the 24h discovery window.
+`scripts/sw-knowledge.sh` (603 lines, v3.3.0) **already exists** and mines *failure* patterns from per-repo memory into `~/.shipwright/memory/fleet-knowledge.json` (commands `mine | transfer | inject | search | show | report`). This issue is a **distinct but complementary** capability: mine *successful pipeline configurations* (template, iterations, model routing, cost) into a separate `~/.shipwright/fleet-patterns.json` and auto-recommend them.
 
-This feature adds a **Fleet-Wide Pattern Mining & Knowledge Transfer Engine**: a new `shipwright knowledge` command (script `scripts/sw-knowledge.sh`) that (1) **mines** per-repo memory across the fleet, (2) **consolidates** recurring patterns into a durable `~/.shipwright/memory/fleet-knowledge.json` with cross-repo occurrence counts and confidence scores, and (3) **transfers** that knowledge by injecting fleet-wide patterns into pipeline stages — so a new repo benefits from learnings mined anywhere in the fleet.
+**Key grounding discovery:** the data is already emitted. Every successful run writes a `pipeline.completed` event to `~/.shipwright/events.jsonl` carrying `result=success`, `template`, `complexity`, `iterations`, `total_cost`, `duration_s`, `issue` (verified `scripts/lib/pipeline-commands.sh:986`). **We mine the event log — we do not modify the pipeline hot path.** Smallest blast radius.
 
-### Design Reasoning (Socratic refinement — answered, not asked)
+## Alternatives Considered
 
-- **Minimum viable change?** A standalone bash module that reads existing per-repo memory JSON (already written by `sw-memory.sh`), aggregates by a stable pattern *signature*, and writes one consolidated `fleet-knowledge.json`, plus an `inject` path pipeline stages can call. We reuse all existing storage; no migration of existing files.
-- **Implicit requirements?** Bash 3.2 compatible, `NO_GITHUB`-safe (this is pure local filesystem work — no GitHub needed), atomic writes, and **additive** (existing tests must pass — the sole stated acceptance criterion).
-- **Two approaches considered** (see *Alternatives Considered*). Chosen: a **standalone mining module reading existing memory files**, because it minimizes blast radius — it *reads* existing data and writes one *new* file, touching no existing read/write paths in `sw-memory.sh`.
-- **Reuse over rebuild:** signature/dedup logic mirrors `memory_capture_failure`; injection mirrors `memory_inject_context`; cross-repo promotion mirrors `optimize_evolve_memory`; confidence scoring mirrors `discovery_score_confidence`. We follow these patterns rather than invent new ones.
+1. **New standalone `sw-fleet-patterns.sh` (rejected).** Duplicates signature/atomic-write/confidence helpers; needs a new router entry. ~250 lines duplicated, no isolation benefit.
+2. **Extend `sw-knowledge.sh` (CHOSEN).** Adds `mine-success`, `recommend`, `patterns-report` reusing `km_signature`, `atomic_write`, `emit_event`. One larger file, reuse, single test harness, **zero router change** (verified: `scripts/sw:348` `exec`s positionally).
+3. **Write patterns from the pipeline at completion (rejected).** Touches the hot path and write-couples pipeline→library; violates the read-only/fail-safe boundary. The event log already has the data.
+
+## Architecture (ADR)
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
 # Design: Fleet-Wide Pattern Mining & Knowledge Transfer Engine
 ## Context
 ## Decision
-### Component Diagram
-### Interface Contracts
-### Data Flow
-### Error Boundaries
 ## Alternatives Considered
 ## Implementation Plan
-## Validation Criteria
+## Data Pipeline Mandatory Sections
+### Schema Changes
+### Data Flow Diagram
+### Idempotency Strategy
+### Rollback Plan
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Fleet-Wide Pattern Mining & Knowledge Transfer Engine
 
 ### Goals
-- Fleet-Wide Pattern Mining & Knowledge Transfer Engine
+- Pattern extraction: Analyze successful pipelines and extract reusable patterns (template, config, approach)
+- Pattern library: Store patterns in `~/.shipwright/fleet-patterns.json` with success rate, complexity, cost metadata
+- Auto-recommendation: When a new issue matches a known pattern (by similarity/clustering), recommend the successful approach
+- Cross-repo knowledge transfer: Daemon checks pattern library before composing pipeline
+- Metrics tracking: Track pattern reuse rate and success rate improvement from pattern application
+- **Priority**: P2
+- **Complexity**: standard
+- **Generated by**: Strategic Intelligence Agent
+- **Strategy alignment**: P2: Intelligence & Learning
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -49,29 +56,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "fleet-knowledge.json",
       "relevance": 95,
-      "summary": "Recent test failures from 2026-06-19 (today) with documented root causes and fixes: sw-cleanup.sh output format issues, template error handling, mktemp directory creation. Critical for avoiding test failures during build."
-    },
-    {
-      "file": "success-patterns.json",
-      "relevance": 88,
-      "summary": "Two complete build patterns: bug fix (60 complexity, 3 iterations, 45s) and auth feature (65 complexity, 3 iterations, 150s). Shows file patterns, test strategies (npm test), and commit workflow for successful builds."
+      "summary": "Directly represents the fleet-wide knowledge base structure that the feature creates and manages—shows schema for pattern entries, publishing/querying metrics, and injection tracking"
     },
     {
       "file": "knowledge.json",
       "relevance": 85,
-      "summary": "Knowledge base with 4 documented failure patterns and fixes: mktemp directory creation (occurrences: 4), cleanup.sh output format (occurrences: 2), regression detection JSON validation. Enables pattern recognition to avoid repeated failures."
+      "summary": "Contains captured failure and pattern knowledge with metrics (occurrences, success_rate, query_hits)—exemplifies what patterns should be mined and transferred across the fleet"
     },
     {
-      "file": "patterns.json",
-      "relevance": 82,
-      "summary": "Current project structure from 2026-06-19: Node.js project with vitest test runner, commonjs imports, src/ source directory, *.test.js pattern. Essential baseline for build environment setup."
+      "file": "success-patterns.json (second instance)",
+      "relevance": 80,
+      "summary": "Shows detailed successful build patterns with iterations, approaches, file patterns, test strategies, and cost data—represents the pattern mining output for fleet-wide transfer"
     },
     {
-      "file": "issues.json",
-      "relevance": 70,
-      "summary": "Past successful issue resolution showing: daemon timeout bug fix using semaphore pattern. Demonstrates troubleshooting approach for complex shell script issues affecting build stability."
+      "file": "failures.json (first instance)",
+      "relevance": 75,
+      "summary": "Documents recurring failure patterns with root causes and fixes across runs—demonstrates failure pattern mining that should be transferred to prevent similar issues fleet-wide"
+    },
+    {
+      "file": "metrics.json (first instance)",
+      "relevance": 65,
+      "summary": "Contains baseline build metrics (build_duration_s: 2089)—provides performance context for evaluating pattern mining efficiency and build stage progress"
     }
   ]
 }
@@ -84,42 +91,235 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Fleet-Wide Pattern Mining & Knowledge Transfer Engine
 
 ## Implementation Checklist
-- [ ] Task 1: Scaffold `sw-knowledge.sh` with house boilerplate + `VERSION=3.3.0`
-- [ ] Task 2: Implement `ensure_knowledge_file`, `km_atomic_write`, `km_signature`, `km_iter_repos`
-- [ ] Task 3: Implement `cmd_mine` (extract → group by signature → score confidence → atomic write)
-- [ ] Task 4: Implement `cmd_transfer` (additive promotion into `global.json`, capped/deduped)
-- [ ] Task 5: Implement `cmd_inject` (Jaccard tag ranking → injectable context, bump metrics)
-- [ ] Task 6: Implement `cmd_search`, `cmd_show`, `cmd_report`, `show_help`
-- [ ] Task 7: Implement `main()` case dispatch with unknown-command handling
-- [ ] Task 8: Register `knowledge|mine` subcommand in `scripts/sw`
-- [ ] Task 9: Write `sw-knowledge-test.sh` (cross-repo collapse, confidence bounds, inject, transfer, malformed input)
-- [ ] Task 10: Register test in `package.json` `test` script
-- [ ] Task 11: `shipwright docs sync` + add Fleet Knowledge doc note
-- [ ] Task 12: Run `npm test`; verify all suites pass (acceptance criterion)
-- [ ] `scripts/sw-knowledge.sh` exists, executable, `set -euo pipefail`, `VERSION` matches `package.json`.
-- [ ] `shipwright knowledge mine` produces a valid `~/.shipwright/memory/fleet-knowledge.json`; cross-repo patterns merge by signature with correct `repo_count`/`total_occurrences`.
-- [ ] `shipwright knowledge inject <task_type>` emits ranked, relevant injectable context; `transfer` updates `global.json` additively.
-- [ ] `knowledge` (and `mine` alias) dispatch correctly from `scripts/sw`.
-- [ ] `sw-knowledge-test.sh` passes and is registered in `package.json`.
-- [ ] All writes atomic (tmp + `mv`); any GitHub-touching code (none expected) guarded by `NO_GITHUB`; all `jq` uses `--arg`.
-- [ ] No Bash 3.2 violations.
-- [ ] `npm test` is green — **all existing tests continue to pass** (spec acceptance criterion).
+- [ ] Task 1: Bump `VERSION` in `sw-knowledge.sh` + `package.json` (blocks nothing).
+- [ ] Task 2: Add `FLEET_PATTERNS_FILE` storage + `ensure_patterns_file()`.
+- [ ] Task 3: Implement `_km_extract_success` jq extractor. *(blocks Task 4)*
+- [ ] Task 4: Extend `cmd_mine` to consolidate success patterns → `fleet-patterns.json`. *(blocked by 3)*
+- [ ] Task 5: Implement `cmd_recommend` with similarity scoring + threshold + `--json`. *(blocked by 4)*
+- [ ] Task 6: Add reuse/recommendation/success-rate metrics to `cmd_report`/`cmd_show`.
+- [ ] Task 7: Add `recommend)` to the case dispatch.
+- [ ] Task 8: Implement `composer_consult_knowledge()` in `sw-pipeline-composer.sh` (read-only, fail-safe). *(blocked by 5)*
+- [ ] Task 9: Wire `total_reuses` bump when composer applies a recommendation. *(blocked by 8)*
+- [ ] Task 10: Add unit tests: success extraction, recommend scoring boundaries (59/60/61), empty DB, metrics math.
+- [ ] Task 11: Add mocked composer-integration test (recommend returns → composed-pipeline annotated; recommend fails → composition unchanged).
+- [ ] Task 12: Update `.claude/CLAUDE.md` AUTO sections + `shipwright docs sync`; verify `shipwright knowledge recommend` is discoverable.
+- [ ] Task 13: Run `./scripts/sw-knowledge-test.sh` + `shipwright version check` + `shipwright doctor`.
+- [ ] `knowledge mine` extracts successful pipeline approaches and writes `~/.shipwright/fleet-patterns.json` with success-rate, complexity, cost metadata.
+- [ ] `knowledge recommend --issue "<t>"` returns a ranked successful approach by similarity, with confidence score.
+- [ ] Composer consults the pattern library before composing; recommendation acts as a prior, never overriding explicit config, and never aborts composition on error.
+- [ ] Reuse rate and success-rate metrics tracked and shown in `knowledge report`.
+- [ ] All new + existing `sw-knowledge` and composer tests pass; `version check` and `doctor` clean.
+- [ ] Docs (AUTO sections) regenerated; new command discoverable via CLI.
 
 ## Context
-- Pipeline: autonomous
-- Branch: ci/issue-668
-- Issue: none
-- Generated: 2026-06-19T14:13:01Z"
-iteration: 1
+- Pipeline: standard
+- Branch: feat/fleet-wide-pattern-mining-knowledge-tran-668
+- Issue: #668
+- Generated: 2026-06-19T19:05:32Z
+
+## Skill Guidance (infrastructure issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **data-pipeline**: Core ETL pipeline needed to extract patterns from pipeline execution data, aggregate across repos, store in library, and feed recommendations back to daemon.
+- **collection-system-validation**: Validate that pattern extraction correctly captures data from heterogeneous sources (different repos, daemon configs, pipeline templates) without loss or corruption.
+- **pattern-matching-similarity-scoring**: The engine for identifying which incoming issues match known successful patterns; critical for recommendation accuracy and fleet-wide knowledge transfer.
+
+## Data Pipeline Expertise
+
+Apply these data engineering patterns:
+
+### Schema Design
+- Define schemas explicitly — never rely on implicit structure
+- Use migrations for all schema changes (never manual ALTER TABLE)
+- Add indexes for frequently queried columns
+- Consider denormalization for read-heavy paths
+
+### Data Integrity
+- Use transactions for multi-step operations
+- Implement idempotency keys for operations that could be retried
+- Validate data at ingestion — reject bad data early
+- Use constraints (NOT NULL, UNIQUE, FOREIGN KEY) in the database layer
+
+### Query Patterns
+- Avoid N+1 queries — use JOINs or batch loading
+- Use EXPLAIN to verify query plans for complex queries
+- Paginate large result sets — never SELECT * without LIMIT
+- Use parameterized queries — never string concatenation for SQL
+
+### Migration Safety
+- Migrations must be reversible (include rollback steps)
+- Test migrations on a copy of production data
+- Add new columns as nullable, then backfill, then add NOT NULL
+- Never drop columns in the same deploy as code changes
+
+### Backpressure & Resilience
+- Implement circuit breakers for external data sources
+- Use dead letter queues for failed processing
+- Set timeouts on all external calls
+- Monitor queue depths and processing latency
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Schema Changes**: Full migration SQL with both forward and rollback scripts, plus data backfill strategy if required
+2. **Data Flow Diagram**: Text diagram showing data ingestion → processing → output with failure points marked
+3. **Idempotency Strategy**: How the system handles duplicate requests (idempotency keys, deduplication, side-effect safety)
+4. **Rollback Plan**: Step-by-step process to revert schema changes and restore data consistency
+
+If any section is not applicable, explicitly state why it's skipped.
+
+## Collection System Validation & Auto-Repair
+
+### Core Responsibility
+Design and implement validators that check heterogeneous data collection systems (events.jsonl, pipeline state, DORA metrics, cost tracking, memory patterns) for health, detect gaps systematically, and safely auto-repair broken collectors.
+
+### Multi-System Validation Architecture
+
+**System-Specific Validators**
+- Events system: Check events.jsonl writes, verify timestamps are recent, detect missing event types (pipeline_start, pipeline_complete, stage_start)
+- Pipeline state: Verify .claude/pipeline-state.md writes work, timestamps are fresh
+- Cost tracking: Validate ~/.shipwright/costs.json updates, compare against expected frequency
+- DORA metrics: Check metrics.json is populated, has recent data points
+- Memory system: Validate memory files created, readable, contain valid patterns
+
+**Gap Detection Patterns**
+- Missing events for active pipelines (spawn time + expected stages = missing events)
+- Stale timestamps (last write > threshold, e.g., 24h)
+- Unreachable files (ENOENT, EPERM on expected paths)
+- Incomplete writes (truncated JSON, missing closing braces)
+- Permission issues (ls -l reveals 000 or other broken states)
+
+**Health Scoring**
+- Per-system: 0-100 based on recency, write success rate, completeness
+- Overall: Weighted average (events 30%, state 25%, cost 15%, DORA 20%, memory 10%)
+- Thresholds: Critical (<30), Warning (30-70), Healthy (>70)
+
+### Auto-Repair Strategies (Safety First)
+
+**File System Repairs**
+- Fix permissions: `chmod 755 ~/.shipwright/` (idempotent, safe)
+- Create missing dirs: `mkdir -p` on standard paths (safe if idempotent)
+- Cleanup truncated files: Back up to `.bak`, recreate empty or last-known-good version
+- Rotate stale logs: Move logs >30d to archive (preserve data)
+
+**Collector Restarts**
+- Daemon restart: Signal SIGHUP, not SIGKILL (graceful)
+- Loop restart: Only if process is hung (check for zombie)
+- Checkpoint restore: Use last valid state from .claude/checkpoints/ before restart
+
+**Data Restoration**
+- Never delete data unilaterally—always preserve backups
+- Restore from last checkpoint if available
+- If repair requires data loss, alert and wait for manual approval
+
+### Health Reporting Format
+[... skills truncated: 14619→8000 chars ...]
+
+## Integration Points
+
+1. **sw-memory.sh**
+   - Call `memory_get_patterns()` to retrieve all patterns with timestamps, failure_type, root_cause
+   - Call `memory_add_outcome_tracking()` to record success/failure outcome
+
+2. **sw-intelligence.sh**
+   - Integrate pattern scoring into `intake` stage
+   - Score issue at pipeline spawn time (before plan stage)
+   - Return top 3 matching patterns sorted by score
+
+3. **Pipeline prompt composition**
+   - Add `memory_pattern_context` section to prompt if score > threshold
+   - Include confidence score so agent is aware this is a suggestion, not a fact
+
+4. **Pipeline state tracking**
+   - Add `memory_patterns` section to pipeline-state.md with injected pattern details
+   - Track injection_score, outcome_recorded=true/false
+
+5. **Loop iteration context**
+   - If issue re-runs in build loop, re-score with new error context
+   - Emerging error signatures may match different patterns on retry
+
+## Testing Strategy
+
+**Unit tests:**
+- Similarity scoring against known issue pairs with ground truth
+- Threshold boundary behavior (59, 60, 61)
+- Weight adjustment: verify 0.4 + 0.35 + 0.25 = 1.0
+
+**Edge cases:**
+- Empty pattern database → score undefined, no injection
+- Identical issues with different outcomes → verify both outcomes tracked
+- Pattern with malformed error_signature → graceful fallback
+- Very high similarity (> 95%) → verify no over-confidence
+
+**Integration tests:**
+- Inject pattern, verify it appears in pipeline prompt
+- Run build, record outcome, verify outcome_tracking fires
+- Query dashboard, verify metrics match recorded outcomes
+
+**Effectiveness validation:**
+- Mock a failure type, populate patterns database, run scoring
+- Verify pattern was injected at expected score
+- Mock outcome (failure_prevented=true/false), verify metrics compute correctly
+
+## Configuration Example
+
+```json
+{
+  "memory_pattern_matching": {
+    "enabled": true,
+    "similarity_threshold": 60,
+    "weights": {
+      "title_similarity": 0.4,
+      "file_overlap": 0.35,
+      "error_signature": 0.25
+    },
+    "confidence_tiers": {
+      "high": 80,
+      "medium": 60,
+      "low": 30
+    },
+    "max_patterns_to_inject": 3,
+    "metrics_retention_days": 90,
+    "anomaly_detection_enabled": true
+  }
+}
+```
+
+## Risk Mitigation
+
+**Risk 1: False positive injection**
+- Monitoring: alert if false_positive_rate > 15%
+- Mitigation: lower threshold, disable for specific pattern types, or retire pattern
+
+**Risk 2: Outcome attribution confusion**
+- Always show confidence_in_prevention as a float (0.0-1.0), never binary
+- Document that "prevented" is inferred, not measured
+- Quarterly review of patterns with low confidence
+
+**Risk 3: Circular reasoning**
+- Patterns must capture ROOT CAUSE, not just "solution"
+- Red flag: if pattern root_cause is identical to another pattern → merge
+- Quarterly audit of pattern root_cause quality
+
+**Risk 4: Performance at scale**
+- Scoring 100+ patterns should be < 500ms
+- Use cached similarity scores if possible
+- Parallel scoring if pattern database grows beyond 500
+
+**Risk 5: Stale patterns**
+- Patterns from > 180 days ago with < 5 uses → mark for review
+- Dashboard should surface "patterns never injected" for root cause analysis
+"
+iteration: 0
 max_iterations: 20
-status: error
+status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-06-19T14:32:00Z
-last_iteration_at: 2026-06-19T14:32:00Z
+started_at: 2026-06-19T19:14:40Z
+last_iteration_at: 2026-06-19T19:14:40Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

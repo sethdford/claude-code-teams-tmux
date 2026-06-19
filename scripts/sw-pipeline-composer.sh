@@ -45,6 +45,10 @@ if [[ -f "$SCRIPT_DIR/sw-intelligence.sh" ]]; then
     INTELLIGENCE_AVAILABLE=true
 fi
 
+# ─── Source fleet success-pattern advisory hook (read-only, issue #668) ──────
+# shellcheck source=lib/pipeline-composer-fleet.sh
+[[ -f "$SCRIPT_DIR/lib/pipeline-composer-fleet.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-composer-fleet.sh"
+
 # ─── Default template directory ─────────────────────────────────────────────
 TEMPLATES_DIR="${REPO_DIR}/templates/pipelines"
 ARTIFACTS_DIR=".claude/pipeline-artifacts"
@@ -87,6 +91,29 @@ composer_create_pipeline() {
 
     mkdir -p "$output_dir"
 
+    # Read-only fleet advisory: consult mined success patterns for a proven
+    # template. Acts purely as a prior recorded in the composed pipeline — it
+    # never overrides intelligence/fallback selection and never aborts on error.
+    local fleet_rec_template=""
+    if [[ "$(type -t composer_fleet_recommendation 2>/dev/null)" == "function" ]] && [[ -n "$issue_analysis" ]]; then
+        fleet_rec_template=$(composer_fleet_recommendation "$issue_analysis" 2>/dev/null || echo "")
+        [[ -n "$fleet_rec_template" ]] && info "Fleet advisory: a proven approach used template '${fleet_rec_template}'" >&2
+    fi
+    # _annotate_fleet <file> — best-effort: record the advisory on the composed
+    # pipeline without ever failing composition.
+    _annotate_fleet() {
+        local f="$1"
+        [[ -n "$fleet_rec_template" && -f "$f" ]] || return 0
+        local tmp annotated
+        annotated=$(jq --arg t "$fleet_rec_template" \
+            '. + {fleet_recommendation: {template: $t, source: "fleet-success-mining", advisory: true}}' \
+            "$f" 2>/dev/null) || return 0
+        [[ -z "$annotated" ]] && return 0
+        tmp=$(mktemp "${f}.XXXXXX") || return 0
+        printf '%s' "$annotated" > "$tmp" && mv "$tmp" "$f" || rm -f "$tmp"
+        return 0
+    }
+
     # Enrich with GitHub CI history if available
     local ci_history
     ci_history=$(_composer_github_ci_history 2>/dev/null || echo "{}")
@@ -127,6 +154,8 @@ composer_create_pipeline() {
                 stage_count=$(echo "$composed" | jq '.stages | length')
                 success "Composed pipeline: ${stage_count} stages" >&2
 
+                _annotate_fleet "$output_file"
+
                 emit_event "composer.created" \
                     "stages=${stage_count}" \
                     "source=intelligence" \
@@ -152,6 +181,8 @@ composer_create_pipeline() {
         trap "rm -f '$tmp_file'" RETURN
         cp "$fallback_template" "$tmp_file"
         mv "$tmp_file" "$output_file"
+
+        _annotate_fleet "$output_file"
 
         emit_event "composer.created" \
             "stages=$(jq '.stages | length' "$output_file")" \
