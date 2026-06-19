@@ -78,16 +78,16 @@ Historical context (lessons from previous pipelines):
 Discoveries from other pipelines:
 ✓ Injected 1 new discoveries
 [design] Design completed for Memory System Performance Optimization with Query Index & Cache Layer — Resolution: "
-iteration: 0
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-19T14:14:00Z
-last_iteration_at: 2026-06-19T14:14:00Z
+started_at: 2026-06-19T14:32:07Z
+last_iteration_at: 2026-06-19T14:32:07Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true

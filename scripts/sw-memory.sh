@@ -47,6 +47,14 @@ fi
 # shellcheck source=lib/memory-effectiveness.sh
 [[ -f "$SCRIPT_DIR/lib/memory-effectiveness.sh" ]] && source "$SCRIPT_DIR/lib/memory-effectiveness.sh"
 
+# ─── Query Index (L2) & Result Cache (L1) ──────────────────────────────────
+# Both are strictly additive and fail-open — when absent, ranked search runs a
+# full scan exactly as before.
+# shellcheck source=lib/memory-index.sh
+[[ -f "$SCRIPT_DIR/lib/memory-index.sh" ]] && source "$SCRIPT_DIR/lib/memory-index.sh"
+# shellcheck source=lib/memory-cache.sh
+[[ -f "$SCRIPT_DIR/lib/memory-cache.sh" ]] && source "$SCRIPT_DIR/lib/memory-cache.sh"
+
 # ─── Memory Storage Paths ──────────────────────────────────────────────────
 MEMORY_ROOT="${HOME}/.shipwright/memory"
 GLOBAL_MEMORY="${MEMORY_ROOT}/global.json"
@@ -99,6 +107,19 @@ memory_ranked_search() {
         emit_event "memory.not_available" "path=$memory_dir" "action=auto_created"
         echo "[]"
         return 0
+    fi
+
+    # ── L1 cache: return a byte-identical prior result when one is fresh ──
+    # Keyed by query + source-version, so any memory write invalidates it.
+    # Disable with SW_MEMORY_CACHE=0. Fail-open: a miss runs the full scan.
+    if [[ "${SW_MEMORY_CACHE:-1}" != "0" ]] && \
+       [[ "$(type -t memory_cache_get 2>/dev/null)" == "function" ]]; then
+        local _cached
+        if _cached="$(memory_cache_get "$memory_dir" "$query" "$max_results")"; then
+            emit_event "memory.cache_hit" "dir=$memory_dir" "max=$max_results"
+            printf '%s\n' "$_cached"
+            return 0
+        fi
     fi
 
     # Extract and expand query keywords
@@ -183,6 +204,13 @@ memory_ranked_search() {
         output="[]"
     fi
     rm -f "$results_file" 2>/dev/null || true
+
+    # ── L1 cache: memoize this exact output for repeat queries ──
+    if [[ "${SW_MEMORY_CACHE:-1}" != "0" ]] && \
+       [[ "$(type -t memory_cache_put 2>/dev/null)" == "function" ]]; then
+        memory_cache_put "$memory_dir" "$query" "$max_results" "$output" || true
+    fi
+
     echo "$output"
 }
 
