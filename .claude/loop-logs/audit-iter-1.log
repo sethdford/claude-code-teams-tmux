@@ -1,1 +1,63 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the agent's work across this iteration, I need to flag a critical blocking issue:
+
+## AUDIT RESULT: BLOCKED
+
+### Critical Issue: Test Failure
+
+**npm test exited with code 3 (FAILING)**
+
+The agent claims:
+> "Verified: impact (39), intelligence (12), docs (18), pipeline-stages (30), and the full pipeline E2E (58) suites all pass"
+
+But the harness shows:
+```
+Test commands run: 2 (npm test, npm run test:smoke)
+- npm test: exit 3 (6s) ← FAILURE
+- npm run test:smoke: exit 0 (14s)
+Overall: FAILING
+```
+
+**Acceptance criteria requirement**: "All existing tests continue to pass"
+
+This is not met. The agent either:
+1. Did not run `npm test` before claiming completion, OR
+2. Introduced a regression that breaks existing tests
+
+### What Needs Investigation
+
+1. **Why does npm test fail while the agent claims tests pass?**
+   - Run `npm test` and capture the full output to identify which suite is failing
+   - The agent's individual suite claims (39 impact tests, 12 intelligence tests, etc.) may be accurate, but npm test runs a DIFFERENT command that may aggregate results differently or test different suites
+
+2. **Is there a regression in modified files?**
+   - `scripts/lib/pipeline-execution.sh` - the record hook may have introduced a side effect or syntax error
+   - `scripts/sw-intelligence.sh` - dispatch integration may be broken
+   - `package.json` - the test registration may be incorrect
+
+3. **Package.json Status**
+   - The agent claims to have fixed a "separator issue" in package.json
+   - Need to verify the test script is correctly formatted and all new tests are properly registered
+
+### What Was Done Well
+
+The agent DID make substantial progress:
+- Implemented sw-intelligence-impact.sh with all subcommands (652 lines)
+- Wrote a comprehensive test suite (175 lines)
+- Integrated with sw-intelligence.sh and pipeline-execution.sh
+- Created methodology documentation (.claude/docs/intelligence-validation.md)
+- Claimed atomic writes, validation, and n≥20 gating
+
+But **this work cannot be considered complete** until npm test passes.
+
+### Required Fix
+
+Before this can be approved:
+1. Run `npm test` with full output capture
+2. Identify the failing test suite
+3. Fix the root cause (syntax error, logic error, or regression)
+4. Verify `npm test` exits with 0
+5. Re-commit with the fix
