@@ -139,6 +139,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/pipeline-execution.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-execution.sh"
 # shellcheck source=lib/pipeline-commands.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-commands.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-commands.sh"
+# shellcheck source=lib/pipeline-watch.sh
+[[ -f "$SCRIPT_DIR/lib/pipeline-watch.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-watch.sh"
 
 # ─── Defaults ───────────────────────────────────────────────────────────────
 GOAL=""
@@ -265,6 +267,7 @@ case "$SUBCOMMAND" in
     show)           pipeline_show ;;
     attach)         pipeline_attach "${ISSUE_NUMBER:-${2:-}}" ;;
     tail|logs)      pipeline_tail "${ISSUE_NUMBER:-${2:-}}" ;;
+    watch)          pipeline_watch "${ISSUE_NUMBER:-${2:-}}" ;;
     test)
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         exec "$SCRIPT_DIR/sw-pipeline-test.sh" "$@"

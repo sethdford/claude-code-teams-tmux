@@ -35,6 +35,7 @@ show_help() {
     echo -e "  ${CYAN}start${RESET}   --goal \"...\"    Start a new pipeline"
     echo -e "  ${CYAN}resume${RESET}                  Continue from last completed stage"
     echo -e "  ${CYAN}status${RESET}                  Show pipeline progress dashboard"
+    echo -e "  ${CYAN}watch${RESET}   [issue]         Live progress stream (refreshes every ~5s)"
     echo -e "  ${CYAN}abort${RESET}                   Stop pipeline and mark aborted"
     echo -e "  ${CYAN}list${RESET}                    Show available pipeline templates"
     echo -e "  ${CYAN}show${RESET}    <name>          Display pipeline stages"
@@ -114,6 +115,7 @@ show_help() {
     echo -e "  ${DIM}# Resume / monitor / abort${RESET}"
     echo -e "  ${DIM}shipwright pipeline resume${RESET}"
     echo -e "  ${DIM}shipwright pipeline status${RESET}"
+    echo -e "  ${DIM}shipwright pipeline watch${RESET}"
     echo -e "  ${DIM}shipwright pipeline abort${RESET}"
     echo ""
 }
