@@ -1479,6 +1479,64 @@ else
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
+# 14b. Policy & Tunables Configuration
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${PURPLE}${BOLD}  POLICY & TUNABLES${RESET}"
+echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+_POLICY_FILE="$(pwd)/config/policy.json"
+if [[ ! -f "$_POLICY_FILE" ]]; then
+    _SCRIPT_DIR_POLICY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _REPO_ROOT_POLICY="$(cd "$_SCRIPT_DIR_POLICY/.." 2>/dev/null && pwd)"
+    [[ -f "$_REPO_ROOT_POLICY/config/policy.json" ]] && _POLICY_FILE="$_REPO_ROOT_POLICY/config/policy.json"
+fi
+
+if [[ -f "$_POLICY_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    # Check policy.json is valid JSON
+    if jq empty "$_POLICY_FILE" 2>/dev/null; then
+        check_pass "policy.json is valid JSON"
+    else
+        check_fail "policy.json is invalid JSON"
+    fi
+
+    # Check tunables section exists
+    if jq -e '.tunables' "$_POLICY_FILE" >/dev/null 2>&1; then
+        _tunables_sections=$(jq '.tunables | keys | length' "$_POLICY_FILE")
+        _tunables_count=$(jq '.tunables | [.. | numbers] | length' "$_POLICY_FILE")
+        check_pass "tunables section found: ${_tunables_sections} sections, ${_tunables_count} values"
+    else
+        check_warn "tunables section missing from policy.json"
+    fi
+
+    # Check for required env_var names in tunables
+    _bad_env_vars=0
+    while IFS= read -r env_var; do
+        if [[ ! "$env_var" =~ ^SW_[A-Z_]+$ ]]; then
+            _bad_env_vars=$((_bad_env_vars + 1))
+        fi
+    done < <(jq -r '.tunables | .. | objects | select(has("env_var")) | .env_var' "$_POLICY_FILE" 2>/dev/null)
+
+    if [[ "$_bad_env_vars" -eq 0 ]]; then
+        check_pass "All env_var names follow SW_* convention"
+    else
+        check_warn "Found ${_bad_env_vars} env_var names not following SW_* convention"
+    fi
+
+    # Check schema file exists
+    _SCHEMA_FILE="${_POLICY_FILE%.json}.schema.json"
+    if [[ -f "$_SCHEMA_FILE" ]]; then
+        check_pass "policy.schema.json found"
+    else
+        check_warn "policy.schema.json not found at $(dirname $_POLICY_FILE)/policy.schema.json"
+    fi
+elif [[ ! -f "$_POLICY_FILE" ]]; then
+    check_warn "config/policy.json not found — run: shipwright prep"
+else
+    check_warn "jq not installed — cannot validate policy.json"
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # 15a. Claude Code Feature Configuration
 # ═════════════════════════════════════════════════════════════════════════════
 echo ""
