@@ -230,6 +230,13 @@ cp "$FIXTURE" "$PATTERNS"
 #   floor(100*(0.5*0.2 + 0.3*1 + 0.2*1) + 0.5) = floor(60.5) = 60
 score=$(bash "$KNOWLEDGE" recommend --json "alpha zzz" 5 9 | jq -r '.[] | select(.template=="standard") | .score')
 assert_eq "pinned formula scores probe at exactly 60" "60" "$score"
+# Deterministic 59/60/61 boundary probes against the same fixture pattern
+# (standard, c5, repo_count5, tokens=[alpha,beta,gamma,delta], repo_norm=1.0,
+# complexity_match=1.0): vary token_overlap → floor(50*overlap + 50.5).
+score61=$(SW_FLEET_RECOMMEND_THRESHOLD=0 bash "$KNOWLEDGE" recommend --json "alpha beta n1 n2 n3 n4 n5" 5 9 | jq -r '.[] | select(.template=="standard") | .score')
+assert_eq "overlap 2/9 probe scores exactly 61" "61" "$score61"
+score59=$(SW_FLEET_RECOMMEND_THRESHOLD=0 bash "$KNOWLEDGE" recommend --json "alpha beta n1 n2 n3 n4 n5 n6 n7" 5 9 | jq -r '.[] | select(.template=="standard") | .score')
+assert_eq "overlap 2/11 probe scores exactly 59" "59" "$score59"
 
 # ─── Test 21: gate boundary — threshold 60 passes, 61 rejects ────────────────
 n60=$(SW_FLEET_RECOMMEND_THRESHOLD=60 bash "$KNOWLEDGE" recommend --json "alpha zzz" 5 9 | jq -r '[.[] | select(.template=="standard")] | length')
