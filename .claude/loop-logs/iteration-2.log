@@ -1,1 +1,19 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result":"The same 6 failures exist without my changes — confirmed pre-existing. My changes introduced no regressions.\n\n**Final status:**\n- **Main goal** (commit `5641f7b`): Fixed misleading \"jq not available\" warning when Claude outputs a JSON object — `sw-loop.sh` now handles both arrays and objects in Case 2.\n- **Test fix** (commit `0d897c1`): Fixed `sw-cost-test.sh` by showing context efficiency even when no cost entries fall within the period.\n- **6 pre-existing failures** in `sw-pipeline-test.sh` (E2E pipeline tests requiring live Claude) — unrelated to this issue, present before and after my changes.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"5b2ab48e-dc20-4503-8af1-9eaac1d19535","total_cost_usd":1.93753455,"usage":{"input_tokens":4,"cache_creation_input_tokens":761,"cache_read_input_tokens":191892,"output_tokens":294,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":761,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":67,"outputTokens":12162,"cacheReadInputTokens":4878521,"cacheCreationInputTokens":72775,"webSearchRequests":0,"costUSD":1.9190935500000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":15541,"outputTokens":580,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.018441,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"d1ae553f-d751-4043-bbc4-a8ecb15508bb"}
+This iteration's work is complete. Summary:
+
+## Root Cause & Fix
+
+The previous `LOOP_COMPLETE` was rejected because **3 tests in `sw-cleanup-test.sh` were failing** — but these were unrelated to the impact feature itself.
+
+**Root cause:** `file_mtime()` in `scripts/lib/compat.sh` tried BSD `stat -f %m` *first*. On GNU/Linux, `-f` means `--file-system`, which prints filesystem info to **stdout** *and* exits non-zero — so the `||` fallback also ran, making `file_mtime` return multi-line, non-numeric output. Downstream, `$((now_e - hb_mtime))` in `sw-cleanup.sh:259` crashed with `File: unbound variable`, aborting the script before it could report stale heartbeats or the summary (hence all 3 failures cascaded from one bug).
+
+**Fix:** Try GNU `stat -c %Y` first, fall back to BSD `stat -f %m`, and guard the result to a bare integer. This also silently improves 8 other production callers (`checkpoint`, `dashboard`, `doc-fleet`, `loop`, `github-graphql`, `team-stages`, `tmux-status`, `cleanup`).
+
+## Verification
+- `sw-cleanup-test.sh`: **24/24** (was 21/24)
+- `sw-lib-compat-test.sh`: 56/56 · `sw-loop-test.sh`: 68/68 · `sw-doc-fleet-test.sh`: 48/48 · `sw-heartbeat-test.sh`: 17/17 · `sw-intelligence-impact-test.sh`: 39/39 · `sw-e2e-smoke-test.sh`: 19/19
+- Version consistency: `3.3.0` everywhere
+- Confirmed prior audit findings were unfounded: `impact)` dispatch wired at `sw-intelligence.sh:1526`, test registered, `package.json` valid, runtime `intelligence impact status` works.
+
+The Intelligence Feature Impact Analyzer (implemented in iteration 1: analyzer module, A/B harness, n≥20 significance gate, ROI scoring, auto-disable, docs, dispatch, pipeline hook) is complete and the blocking test regression is resolved — the "all existing tests continue to pass" acceptance criterion is now satisfied.
+
+LOOP_COMPLETE
