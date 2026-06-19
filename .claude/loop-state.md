@@ -1,14 +1,45 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Cost Impact Preview & Budget-Aware Template Selector
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan — Cost Impact Preview & Budget-Aware Template Selector
+
+## Summary
+
+Give operators a **forward-looking cost preview** for any pipeline template and an
+**automatic budget-aware template selector** that picks the richest pipeline template
+whose predicted cost fits the remaining daily budget. Today Shipwright only reports
+*historical* spend (`cost show`) and has a human-only estimate table
+(`model estimate`) that ignores which stages a template actually enables. This feature
+closes the gap between "what will this run cost?" and "what should I run given my budget?".
+
+## Brainstorming / Socratic Reasoning (answered, not asked)
+
+**Minimum viable change.** A cost estimator that (a) reads the *real* stage set and
+per-stage model routing from a template JSON, (b) multiplies by the existing pricing
+table and a per-stage token model, and (c) compares the result to
+`cost_remaining_budget`. Everything else (selector, JSON output) builds on that single
+estimator function.
+
+**Implicit requirements.** Must be Bash 3.2 compatible, must degrade gracefully when no
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Cost Impact Preview & Budget-Aware Template Selector
+## Context
+## Decision
+## Alternatives Considered
+## Implementation Plan
+## Component Diagram
+## Interface Contracts
+## Error Boundaries
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Cost Impact Preview & Budget-Aware Template Selector
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Cost Impact Preview & Budget-Aware Template Selector
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +48,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "patterns.json (project detection)",
       "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "summary": "Defines project structure (Node.js, vitest, src/test directories, commonjs). Essential for build stage to understand what files to run, test patterns, and conventions."
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "metrics.json (first entry with baselines)",
+      "relevance": 90,
+      "summary": "Contains build_duration_s baseline of 2089s (~35 min). Critical for budget-aware template selector to estimate costs and select appropriate pipeline template."
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "success-patterns.json (second entry with bug fix and auth feature)",
+      "relevance": 85,
+      "summary": "Shows successful builds with 3-4 iterations, $2.50 cost, specific file patterns (.claude/*, scripts/lib/*). Provides cost and iteration benchmarks for current build."
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "failures.json (first entry with test failures)",
+      "relevance": 70,
+      "summary": "Recent test failures (cleanup.sh output format, template errors). Build stage should watch for these patterns to avoid regressions."
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "knowledge.json (failure patterns with fixes)",
+      "relevance": 68,
+      "summary": "Captured test failures (mktemp directory issues, cleanup output format) with fix strategies. Helps build stage prevent known test failures."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Cost Impact Preview & Budget-Aware Template Selector — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Cost Impact Preview & Budget-Aware Template Selector
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/cost-preview.sh` scaffold (version, source guards, no side effects on source).
+- [ ] Task 2: Implement `_cp_stage_tokens` (Bash 3.2 case map, default fallback).
+- [ ] Task 3: Implement `_cp_stage_model` (jq with `--arg`, layered fallback).
+- [ ] Task 4: Implement `cp_estimate_template` (enabled-stages-only, awk accumulation, missing-template error path).
+- [ ] Task 5: Implement `cp_preview_one` with human + `--json` output.
+- [ ] Task 6: Implement `cp_preview_all` (sorted ascending by cost, human + JSON, skip-bad-file).
+- [ ] Task 7: Implement `cp_select` budget-aware algorithm + `emit_event`.
+- [ ] Task 8: Wire `preview`/`select` subcommands and help text into `sw-cost.sh`.
+- [ ] Task 9: Refactor `estimate_cost` in `sw-model-router.sh` to reuse token map (output-compatible).
+- [ ] Task 10: Write `scripts/sw-cost-preview-test.sh`.
+- [ ] Task 11: Register new test in `package.json`.
+- [ ] Task 12: Update `.claude/CLAUDE.md` cost command rows.
+- [ ] Task 13: Sync `VERSION` and run `npm test`; confirm green.
+- [ ] `cost preview <template> [complexity]`, `cost preview --all`, and `cost select` work and are documented in `show_help` + `.claude/CLAUDE.md`.
+- [ ] `--json` output for all three is valid (`jq -e .` exits 0).
+- [ ] Estimates respect each template's actual `enabled` stages and per-stage model routing.
+- [ ] `cp_select` is budget-aware: unlimited → default; tight → most-capable-that-fits; none → cheapest + warn; emits `cost.template_selected`.
+- [ ] New `scripts/sw-cost-preview-test.sh` passes and is registered in `package.json`.
+- [ ] `sw-cost-test.sh` and `sw-model-router-test.sh` still pass; full `npm test` green.
+- [ ] All new/edited scripts are Bash 3.2 compatible, `set -euo pipefail`, atomic writes, `jq --arg`, `VERSION` synced.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-670
+- Issue: none
+- Generated: 2026-06-19T14:13:17Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-06-19T14:17:37Z
+last_iteration_at: 2026-06-19T14:17:37Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 

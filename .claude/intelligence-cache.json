@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Task requires system design of cost modeling and budget-aware template selection logic; Builder implements post-architecture; Optimizer analyzes template cost trade-offs.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781878656,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,229 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "e53a21c0a95c9d0a0a4816586ed68d61": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "cost-aware",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Cost estimation accuracy depends on sufficient historical data across templates and complexity levels",
+          "Prediction model may not account for edge cases (large codebases, custom test suites, integration failures)",
+          "Auto-template selection logic could recommend suboptimal templates if success rate thresholds are not well-calibrated",
+          "Adding cost preview adds latency to pipeline start path; caching strategy needed",
+          "Budget exhaustion still possible if estimates are conservative and pipeline runs longer than predicted"
+        ],
+        "implementation_hints": [
+          "Aggregate historical cost data by template, complexity score, and language/framework to build prediction model",
+          "Use percentile-based estimates (p50, p95) rather than point estimates to account for variance",
+          "Implement cost check as intake stage gate before heavy computation starts",
+          "Cache cost predictions per (template, complexity) pair with TTL to avoid repeated calculations",
+          "Log predicted vs actual cost deltas to continuously improve model accuracy",
+          "Consider offering cost ranges (min/p50/max) in preview, not just single estimate",
+          "Make --auto-template testable with mock historical data for validation before production"
+        ]
+      },
+      "timestamp": 1781877948,
+      "ttl": 3600
+    },
+    "8fe6144f52b6b9f2afaea5b124e0952c": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1781877955,
+      "ttl": 1800
+    },
+    "d9412c4457afd060f9635660429d6828": {
+      "result": {
+        "estimated_cost_usd": 3.25,
+        "estimated_iterations": 2,
+        "estimated_tokens": 185000,
+        "likely_failure_stage": "test",
+        "confidence": 58
+      },
+      "timestamp": 1781877971,
+      "ttl": 3600
+    },
+    "d020ad2b7ea67781750191ad53538d2e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (with 'Fix bug' and 'Add authentication feature')",
+            "relevance": 95,
+            "summary": "Contains real examples of feature/bug work with cost_usd, complexity scores, iterations, duration, and template selection. Directly applicable to designing a budget-aware template selector that predicts cost impact based on issue type and complexity."
+          },
+          {
+            "file": "success-patterns.json (with 'Fix authentication bug')",
+            "relevance": 85,
+            "summary": "Shows cost tracking pattern (cost_usd: 2.50) linked to complexity (60) and template selection. Demonstrates the relationship between issue complexity and cost that a cost-impact preview needs to model."
+          },
+          {
+            "file": "patterns.json (with source_dir, test_pattern, import_style conventions)",
+            "relevance": 80,
+            "summary": "Project structure and conventions (test runner, package manager, file patterns) are essential inputs for accurately predicting build/test costs when selecting a template."
+          },
+          {
+            "file": "metrics.json (with build_duration_s baseline)",
+            "relevance": 75,
+            "summary": "Contains baseline performance metrics (build_duration_s: 2089) that inform cost estimation models. Historical baselines are critical for previewing cost impact of template choices."
+          },
+          {
+            "file": "knowledge.json (failure patterns)",
+            "relevance": 40,
+            "summary": "Failure signatures and fix strategies provide insights into complexity factors that affect iteration count and total cost. Understanding common failure modes helps estimate cost impact of riskier code paths."
+          }
+        ]
+      },
+      "timestamp": 1781878045,
+      "ttl": 1800
+    },
+    "0a2d4c65700aed3c19bccfd0b5707720": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 92,
+            "summary": "Contains successful patterns with complexity scoring (60-65), cost estimation ($2.50), template selection, file change patterns, test strategies, and iteration counts—directly relevant to understanding what successful plan validation looks like for similar feature work"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 68,
+            "summary": "Provides project conventions and metadata (node, vitest, test pattern, import style) that define the environment context for which the plan was created; relevant for understanding whether plan validation checks project-specific constraints"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 54,
+            "summary": "Shows test failure patterns including template validation issues; relevant as template selector plan validation might hit similar template-related checks that have failed in the past"
+          }
+        ]
+      },
+      "timestamp": 1781878426,
+      "ttl": 1800
+    },
+    "5d356c1217e17a380d03675bc97dce98": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Contains 2 patterns with cost metrics ($2.50–$2.5), complexity scores (60–65), iteration counts (3–4), template choices (standard), and detailed approaches. Directly informs budget-aware template selector design by providing historical cost data for similar feature complexity."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Shows project conventions (Node.js, vitest, CommonJS, src/ directory structure). Constrains architectural design choices and test strategy patterns relevant to designing new features that must fit existing conventions."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Contains baseline build duration (2089s). Provides ground truth for cost prediction models and budget calculations used by the template selector to forecast impact."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Pattern for auth module feature (complexity 60, iterations 5, cost $1.5). Shows cost behavior for iterative TDD approach with similar complexity; useful for template cost calibration and iteration prediction."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 40,
+            "summary": "One resolved issue (timeout bug fix) with gotcha about checking backoff. Minimal but provides a pattern showing debugging workflow and complexity mitigation approach for future template design."
+          }
+        ]
+      },
+      "timestamp": 1781878465,
+      "ttl": 1800
+    },
+    "a8f43d1ef9db5a7f554ee2e741d7863b": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Contains patterns for feature development with complexity scoring (65), iterations (3-4), duration tracking, and cost metrics ($2.50 USD). Demonstrates successful iterative approaches and cost measurement, providing baseline understanding of what design approaches have worked for similar complexity features."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Contains baseline metrics including build_duration_s (2089s), which is foundational for cost impact estimation and budget planning. Relevant for understanding historical performance baselines needed to design cost-aware features."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Contains patterns of test failures and root causes across stages. Helps identify anti-patterns and what implementation approaches led to failures, though entries are primarily infrastructure-related rather than cost/budget-specific."
+          }
+        ]
+      },
+      "timestamp": 1781878495,
+      "ttl": 1800
+    },
+    "83085dcb7109d8d5cbdc635dd3b63fd4": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json (project detection)",
+            "relevance": 95,
+            "summary": "Defines project structure (Node.js, vitest, src/test directories, commonjs). Essential for build stage to understand what files to run, test patterns, and conventions."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 90,
+            "summary": "Contains build_duration_s baseline of 2089s (~35 min). Critical for budget-aware template selector to estimate costs and select appropriate pipeline template."
+          },
+          {
+            "file": "success-patterns.json (second entry with bug fix and auth feature)",
+            "relevance": 85,
+            "summary": "Shows successful builds with 3-4 iterations, $2.50 cost, specific file patterns (.claude/*, scripts/lib/*). Provides cost and iteration benchmarks for current build."
+          },
+          {
+            "file": "failures.json (first entry with test failures)",
+            "relevance": 70,
+            "summary": "Recent test failures (cleanup.sh output format, template errors). Build stage should watch for these patterns to avoid regressions."
+          },
+          {
+            "file": "knowledge.json (failure patterns with fixes)",
+            "relevance": 68,
+            "summary": "Captured test failures (mktemp directory issues, cleanup output format) with fix strategies. Helps build stage prevent known test failures."
+          }
+        ]
+      },
+      "timestamp": 1781878613,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 100,
+            "summary": "Active test failures (sw-cleanup.sh output format, template errors) that directly block build completion. Last failures recorded 2026-06-19, critical for understanding current test blockers."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 95,
+            "summary": "Specific test failure signatures with fix strategies: mktemp /tmp/claude issues (4 occurrences), sw-cleanup.sh output format, regression detection JSON. Provides actionable solutions for build-blocking test failures."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Two successful iterations showing proven patterns: bug fix cycle with loop iterations, test cleanup strategies, and file change patterns. First pattern includes mktemp /tmp fix matching current failure signature."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Example issue resolution showing timeout bug fix with semaphore approach. Demonstrates pattern of adding synchronization for complex failures, relevant for understanding fix strategies."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project conventions (vitest test runner, npm package manager, commonjs imports, src/ source dir) establish build environment baseline. Helps configure test execution correctly in build stage."
+          }
+        ]
+      },
+      "timestamp": 1781878638,
+      "ttl": 1800
     }
   }
 }
