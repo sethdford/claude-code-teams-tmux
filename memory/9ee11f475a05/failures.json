@@ -6,14 +6,14 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
       "seen_count": 5,
-      "last_seen": "2026-06-19T14:20:47Z",
+      "last_seen": "2026-06-19T14:20:23Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed, tests expect 'agent-1', 'Found', and '--force' in dry-run output but those strings are no longer emitted",
-      "fix": "Update sw-cleanup.sh to emit heartbeat filenames and a summary line with 'Found N items' and '--force' hint in dry-run mode, or update the test expectations to match current output format",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output does not match expected strings 'agent-1', 'Found', or '--force'",
+      "fix": "Update sw-cleanup.sh heartbeat detection to output the agent ID and fix dry-run summary to print 'Found N items' and '--force' hint text",
       "seen_count": 1,
       "last_seen": "2026-06-19T08:36:44Z",
       "category": "test_failure"
