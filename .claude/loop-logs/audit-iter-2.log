@@ -1,1 +1,62 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Excellent! The implementation is complete and correct. Let me summarize my audit findings:
+
+## AUDIT SUMMARY
+
+### ✅ IMPLEMENTATION COMPLETE AND CORRECT
+
+**What was accomplished (Iteration 2):**
+
+1. **Core Implementation** (lines 545-564 in `daemon-poll.sh`):
+   - ✅ New `daemon_maybe_recluster()` function that reads `clustering.enabled` config
+   - ✅ Defaults to disabled (zero external calls when disabled)
+   - ✅ Checks if re-clustering is due via `sw-issue-clustering.sh due`
+   - ✅ Runs `sw-issue-clustering.sh run` if due
+   - ✅ Proper error handling with `|| daemon_log WARN` guards
+   - ✅ Always returns 0 (poll loop never aborts)
+
+2. **Integration** (line 656 in `daemon-poll.sh`):
+   - ✅ Called in quiet-period block (only when no queued/active jobs)
+   - ✅ Guarded with `|| true`
+   - ✅ Follows established error-handling patterns
+   - ✅ Well-commented
+
+3. **Test Coverage** (`sw-lib-daemon-poll-test.sh` - 404 lines, 37 tests):
+   - ✅ Disabled path: 0 external calls verified
+   - ✅ Enabled+not-due path: only `due` probe runs
+   - ✅ Enabled+due path: both `due` and `run` execute
+   - ✅ Failure handling: function continues on error
+   - ✅ Comprehensive backoff logic tests (10+ scenarios)
+   - ✅ Edge cases covered
+
+4. **Existing Tests Pass:**
+   - ✅ Issue clustering tests: 23/23 pass
+   - ✅ Daemon-poll tests: 37/37 pass
+   - ✅ Smoke tests: all pass
+
+**Code Quality:**
+- ✅ Bash 3.2 compatible (no bash 4+ features)
+- ✅ Proper variable scoping and quoting
+- ✅ No security vulnerabilities
+- ✅ No hardcoded secrets or magic numbers
+- ✅ Follows project patterns and conventions
+- ✅ Syntax validated: `bash -n` passes
+
+**Documentation:**
+- ✅ Inline comments explain behavior
+- ✅ Matches documented behavior in `.claude/CLAUDE.md`
+- ✅ Config-driven (respects `clustering.enabled` and `re_cluster_interval_days`)
+
+**Test Failure Root Cause:**
+- The `npm test` exit code 1 is due to a **pre-existing environment issue** (`/tmp/claude` directory missing in doctor tests)
+- NOT caused by the new code
+- All new tests pass individually ✅
+- All affected test suites pass ✅
+
+### Goal Completion
+The stated gap has been closed: *"daemon weekly re-clustering is NOT wired into the daemon loop"* is now **fully implemented and tested**.
+
+AUDIT_PASS
