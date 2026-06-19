@@ -45,8 +45,8 @@ REPO_DIR="${PWD}"
 # ─── Default Thresholds ─────────────────────────────────────────────────────
 MIN_CONFIDENCE_SAMPLES=10
 MED_CONFIDENCE_SAMPLES=50
-MIN_TIMEOUT=60
-MAX_TIMEOUT=7200
+MIN_TIMEOUT=$(_policy_int adaptive min_timeout 60)
+MAX_TIMEOUT=$(_policy_int adaptive max_timeout 7200)
 MIN_ITERATIONS=2
 MAX_ITERATIONS=50
 MIN_POLL_INTERVAL=10

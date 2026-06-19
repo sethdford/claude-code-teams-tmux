@@ -44,7 +44,7 @@ DEVICE_FLOW_ENDPOINT="$(_config_get "urls.github_device_login" "https://github.c
 API_ENDPOINT="$(_config_get "urls.github_api" "https://api.github.com")"
 OAUTH_CLIENT_ID="${GITHUB_OAUTH_CLIENT_ID:-Iv1.d3f6a7e8c9b2a1d4}"  # Shipwright app ID
 # shellcheck disable=SC2034
-OAUTH_TIMEOUT=900  # 15 minutes
+OAUTH_TIMEOUT=$(_policy_int auth oauth_timeout 900)
 
 # Ensure auth storage directory exists
 ensure_auth_dir() {

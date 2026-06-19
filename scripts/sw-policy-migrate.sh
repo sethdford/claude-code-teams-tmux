@@ -324,8 +324,15 @@ main() {
             ;;
         rank)
             shift
-            local top_n="${1:-20}"
-            local rank_format="${2:-text}"
+            local top_n=20
+            local rank_format="text"
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --limit|--top) top_n="${2:-20}"; shift 2 ;;
+                    --format) rank_format="${2:-text}"; shift 2 ;;
+                    *) shift ;;
+                esac
+            done
             rank_candidates "$top_n" "$rank_format"
             ;;
         migrate)

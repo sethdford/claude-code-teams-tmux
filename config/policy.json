@@ -29,7 +29,12 @@
       "dashboard/**",
       "templates/pipelines/**"
     ],
-    "low": ["docs/**", "website/**", "**/*.md", "**"]
+    "low": [
+      "docs/**",
+      "website/**",
+      "**/*.md",
+      "**"
+    ]
   },
   "mergePolicy": {
     "critical": {
@@ -41,23 +46,37 @@
         "shellcheck"
       ],
       "requiredReviewers": 1,
-      "requiredEvidence": ["cli", "api"],
+      "requiredEvidence": [
+        "cli",
+        "api"
+      ],
       "requireDocsDriftCheck": true
     },
     "high": {
-      "requiredChecks": ["risk-policy-gate", "test", "smoke"],
+      "requiredChecks": [
+        "risk-policy-gate",
+        "test",
+        "smoke"
+      ],
       "requiredReviewers": 0,
-      "requiredEvidence": ["cli"],
+      "requiredEvidence": [
+        "cli"
+      ],
       "requireDocsDriftCheck": false
     },
     "medium": {
-      "requiredChecks": ["risk-policy-gate", "test"],
+      "requiredChecks": [
+        "risk-policy-gate",
+        "test"
+      ],
       "requiredReviewers": 0,
       "requiredEvidence": [],
       "requireDocsDriftCheck": false
     },
     "low": {
-      "requiredChecks": ["risk-policy-gate"],
+      "requiredChecks": [
+        "risk-policy-gate"
+      ],
       "requiredReviewers": 0,
       "requiredEvidence": [],
       "requireDocsDriftCheck": false
@@ -67,15 +86,22 @@
     "trackedPairs": [
       {
         "source": "config/policy.json",
-        "docs": ["docs/config-policy.md", "README.md"]
+        "docs": [
+          "docs/config-policy.md",
+          "README.md"
+        ]
       },
       {
         "source": ".github/workflows/**",
-        "docs": ["docs/config-policy.md"]
+        "docs": [
+          "docs/config-policy.md"
+        ]
       },
       {
         "source": "scripts/sw-pipeline.sh",
-        "docs": ["website/src/content/docs/guides/pipeline.mdx"]
+        "docs": [
+          "website/src/content/docs/guides/pipeline.mdx"
+        ]
       }
     ],
     "failOnDrift": false,
@@ -90,14 +116,20 @@
         "type": "browser",
         "entrypoint": "/",
         "baseUrl": "http://localhost:8767",
-        "assertions": ["page-title-visible", "websocket-connected"]
+        "assertions": [
+          "page-title-visible",
+          "websocket-connected"
+        ]
       },
       {
         "name": "pipeline-status",
         "type": "browser",
         "entrypoint": "/pipeline",
         "baseUrl": "http://localhost:8767",
-        "assertions": ["stage-list-rendered", "progress-indicator-visible"]
+        "assertions": [
+          "stage-list-rendered",
+          "progress-indicator-visible"
+        ]
       },
       {
         "name": "dashboard-api-health",
@@ -105,7 +137,10 @@
         "method": "GET",
         "url": "http://localhost:8767/api/health",
         "expectedStatus": 200,
-        "assertions": ["status-ok", "response-has-version"]
+        "assertions": [
+          "status-ok",
+          "response-has-version"
+        ]
       },
       {
         "name": "dashboard-ws-connect",
@@ -113,28 +148,37 @@
         "method": "GET",
         "url": "http://localhost:8767/api/ws-status",
         "expectedStatus": 200,
-        "assertions": ["websocket-active"]
+        "assertions": [
+          "websocket-active"
+        ]
       },
       {
         "name": "pipeline-cli-smoke",
         "type": "cli",
         "command": "bash scripts/sw-pipeline.sh status",
         "expectedExitCode": 0,
-        "assertions": ["has-pipeline-state"]
+        "assertions": [
+          "has-pipeline-state"
+        ]
       },
       {
         "name": "policy-validation",
         "type": "cli",
         "command": "jq empty config/policy.json",
         "expectedExitCode": 0,
-        "assertions": ["valid-json"]
+        "assertions": [
+          "valid-json"
+        ]
       },
       {
         "name": "db-schema-integrity",
         "type": "database",
         "command": "bash scripts/sw-db.sh health",
         "expectedExitCode": 0,
-        "assertions": ["schema-valid", "db-accessible"]
+        "assertions": [
+          "schema-valid",
+          "db-accessible"
+        ]
       }
     ]
   },
@@ -250,6 +294,42 @@
         "env_var": "SW_DAEMON_STALL_TIMEOUT_MINUTES",
         "adaptive_hint": "adaptive",
         "rationale": "Detect pipeline stalls; abort if no progress after this duration."
+      },
+      "patrol_failures_threshold": {
+        "default": 3,
+        "env_var": "SW_DAEMON_PATROL_FAILURES_THRESHOLD",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Abort patrol after this many consecutive checks fail; tuned by health monitoring."
+      },
+      "patrol_retry_threshold": {
+        "default": 2,
+        "env_var": "SW_DAEMON_PATROL_RETRY_THRESHOLD",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Retry threshold for patrol operations; tuned by failure patterns."
+      },
+      "auto_scale_interval": {
+        "default": 5,
+        "env_var": "SW_DAEMON_AUTO_SCALE_INTERVAL",
+        "adaptive_hint": "adaptive",
+        "rationale": "Rebalance worker pool every N seconds."
+      },
+      "max_workers": {
+        "default": 8,
+        "env_var": "SW_DAEMON_MAX_WORKERS",
+        "adaptive_hint": "self-optimize",
+        "rationale": "Maximum concurrent workers; limited by available CPU and memory."
+      },
+      "min_workers": {
+        "default": 1,
+        "env_var": "SW_DAEMON_MIN_WORKERS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Minimum concurrent workers; ensure at least one is always active."
+      },
+      "backoff_secs": {
+        "default": 0,
+        "env_var": "SW_DAEMON_BACKOFF_SECS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Initial backoff for daemon operations; exponentially increases on retry."
       }
     },
     "loop": {
@@ -276,6 +356,12 @@
         "env_var": "SW_LOOP_MAX_EXTENSIONS",
         "adaptive_hint": "self-optimize",
         "rationale": "Maximum number of iteration extension rounds allowed."
+      },
+      "fast_test_interval": {
+        "default": 5,
+        "env_var": "SW_LOOP_FAST_TEST_INTERVAL",
+        "adaptive_hint": "adaptive",
+        "rationale": "Run full test suite every N iterations; use fast subset between full runs."
       }
     },
     "pipeline": {
@@ -292,6 +378,36 @@
         "env_var": "SW_QUALITY_GATE_SCORE_THRESHOLD",
         "adaptive_hint": "self-optimize",
         "rationale": "Minimum quality gate score to auto-merge; tuned by quality history."
+      }
+    },
+    "adaptive": {
+      "min_timeout": {
+        "default": 60,
+        "env_var": "SW_ADAPTIVE_MIN_TIMEOUT",
+        "adaptive_hint": "adaptive",
+        "rationale": "Minimum timeout for adaptive tuning; prevents too-short stage timeouts."
+      },
+      "max_timeout": {
+        "default": 7200,
+        "env_var": "SW_ADAPTIVE_MAX_TIMEOUT",
+        "adaptive_hint": "adaptive",
+        "rationale": "Maximum timeout for adaptive tuning; prevents runaway stage timeouts."
+      }
+    },
+    "auth": {
+      "oauth_timeout": {
+        "default": 900,
+        "env_var": "SW_AUTH_OAUTH_TIMEOUT",
+        "adaptive_hint": "none",
+        "rationale": "OAuth flow timeout (seconds); must be long enough for user interaction."
+      }
+    },
+    "cleanup": {
+      "heartbeat_stale_seconds": {
+        "default": 3600,
+        "env_var": "SW_CLEANUP_HEARTBEAT_STALE_SECONDS",
+        "adaptive_hint": "adaptive",
+        "rationale": "Consider heartbeat stale after this duration; detect zombie agents."
       }
     }
   }

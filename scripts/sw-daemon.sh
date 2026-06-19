@@ -225,12 +225,9 @@ REPO_FILTER=""
 
 # Auto-scaling defaults (policy overrides when present)
 AUTO_SCALE=false
-AUTO_SCALE_INTERVAL=5
-if type policy_get >/dev/null 2>&1; then
-    AUTO_SCALE_INTERVAL=$(policy_get ".daemon.auto_scale_interval_cycles" "5")
-fi
-MAX_WORKERS=8
-MIN_WORKERS=1
+AUTO_SCALE_INTERVAL=$(_policy_int daemon auto_scale_interval 5)
+MAX_WORKERS=$(_policy_int daemon max_workers 8)
+MIN_WORKERS=$(_policy_int daemon min_workers 1)
 WORKER_MEM_GB=4
 EST_COST_PER_JOB=5.0
 FLEET_MAX_PARALLEL=""
@@ -241,11 +238,11 @@ PATROL_MAX_ISSUES="${PATROL_MAX_ISSUES:-5}"
 PATROL_LABEL="${PATROL_LABEL:-auto-patrol}"
 PATROL_DRY_RUN=false
 PATROL_AUTO_WATCH=false
-PATROL_FAILURES_THRESHOLD=3
+PATROL_FAILURES_THRESHOLD=$(_policy_int daemon patrol_failures_threshold 3)
 PATROL_DORA_ENABLED=true
 PATROL_UNTESTED_ENABLED=true
 PATROL_RETRY_ENABLED=true
-PATROL_RETRY_THRESHOLD=2
+PATROL_RETRY_THRESHOLD=$(_policy_int daemon patrol_retry_threshold 2)
 LAST_PATROL_EPOCH=0
 
 # Team dashboard coordination
