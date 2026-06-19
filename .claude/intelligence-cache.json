@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Semantic clustering engine requires upfront system design for algorithm selection, data structures, and pipeline integration; builder implements; tester validates clustering quality; reviewer ensures best practices.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781832799,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,366 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "8ba8279afaf43a05ac7fecfa7fb6efa1": {
+      "result": {
+        "complexity": 7,
+        "risk_level": "medium",
+        "success_probability": 70,
+        "recommended_template": "standard",
+        "issue_type": "backend",
+        "key_risks": [
+          "Clustering quality depends heavily on issue data characteristics - poor similarity metrics could produce unhelpful recommendations",
+          "Performance degradation with large historical issue datasets during weekly re-clustering",
+          "Concurrent access and data corruption risks to cluster.json file without proper locking/atomic writes",
+          "Difficulty measuring actual success rate improvement - causal attribution between recommendations and outcomes",
+          "Reliability and observability of weekly re-clustering scheduler in daemon context"
+        ],
+        "implementation_hints": [
+          "Use established NLP library for TF-IDF vectorization (e.g., natural.js or scikit-learn if Python sidecar)",
+          "Implement atomic file writes to issue-clusters.json using temp file + mv pattern (existing Shipwright convention)",
+          "Start with sample validation set to measure clustering quality before processing full events.jsonl",
+          "Store minimal cluster metadata: centroid vector hash, success_rate, recommended_template, cluster_size, sample_issue_ids",
+          "Cache cluster computations and implement change detection - only re-cluster if significant drift detected",
+          "Add dry-run mode to test pattern recommendations without applying them to pipeline behavior",
+          "Integrate with existing shipwright daemon scheduling (cron job wrapper in .claude/hooks/)",
+          "Track metrics: cluster_match_rate, recommendation_adoption_rate, success_improvement_delta per cluster",
+          "Add comprehensive logging for cluster assignments and recommendation outcomes to events.jsonl",
+          "Include unit tests validating TF-IDF cosine similarity calculations against known issue pairs"
+        ]
+      },
+      "timestamp": 1781832022,
+      "ttl": 3600
+    },
+    "05631f129e93e0acf21deaac168261dd": {
+      "result": {
+        "estimated_iterations": 10
+      },
+      "timestamp": 1781832031,
+      "ttl": 1800
+    },
+    "c9f527d341ab0eb497a8fde553c81531": {
+      "result": {
+        "estimated_cost_usd": 2.35,
+        "estimated_iterations": 7,
+        "estimated_tokens": 145000,
+        "likely_failure_stage": "test",
+        "confidence": 78,
+        "breakdown": {
+          "intake": {
+            "cost_usd": 0.08,
+            "tokens": 5000,
+            "iterations": 1
+          },
+          "plan": {
+            "cost_usd": 0.32,
+            "tokens": 18000,
+            "iterations": 1
+          },
+          "build": {
+            "cost_usd": 1.15,
+            "tokens": 72000,
+            "iterations": 3
+          },
+          "test": {
+            "cost_usd": 0.45,
+            "tokens": 28000,
+            "iterations": 2
+          },
+          "review": {
+            "cost_usd": 0.28,
+            "tokens": 16000,
+            "iterations": 1
+          },
+          "pr": {
+            "cost_usd": 0.07,
+            "tokens": 6000,
+            "iterations": 1
+          }
+        },
+        "risk_factors": {
+          "clustering_quality_uncertainty": "high",
+          "concurrent_file_access": "medium",
+          "daemon_scheduler_reliability": "medium",
+          "large_dataset_performance": "medium"
+        },
+        "notes": "Complexity 7 with medium risk. Test stage most likely failure point due to NLP quality validation and performance concerns with large historical datasets. Success probability 70% already factored into cost via retry overhead."
+      },
+      "timestamp": 1781832043,
+      "ttl": 3600
+    },
+    "f7552c325aae4662127b74654d66b705": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "data-pipeline",
+          "machine-learning",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Requires implementing TF-IDF + clustering algorithm, integration with events system, continuous learning loop, and metrics tracking. Standard complexity with some ML components."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "pattern-matching-similarity-scoring",
+            "data-pipeline"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "data-pipeline"
+          ],
+          "build": [
+            "pattern-matching-similarity-scoring",
+            "data-pipeline",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "observability",
+            "collection-system-validation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety",
+            "observability"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge core assumptions about similarity metrics, clustering frequency (weekly is arbitrary?), and how to handle new issue types that don't fit existing clusters.",
+          "pattern-matching-similarity-scoring": "This skill directly addresses the core challenge: matching new issues against historical patterns using similarity scoring and recommending proven approaches from past clusters.",
+          "data-pipeline": "Clustering is fundamentally a data pipeline: ingest events.jsonl, vectorize with TF-IDF, compute similarities, partition into clusters, and persist to issue-clusters.json.",
+          "architecture-design": "Clarify integration points: how does clustering interact with daemon issue dispatch, when are recommendations injected, what's the feedback loop for validating recommendations work.",
+          "api-design": "Pattern recommendation API needs clear contract: input (new issue) → output (cluster ID, recommended config, confidence score), with versioning for algorithm changes.",
+          "testing-strategy": "Clustering quality is empirical: test that known-similar issues cluster together, dissimilar issues don't, and match rates stay above threshold across dataset changes.",
+          "adversarial-quality": "Attack vectors: can malformed issue descriptions break vectorization, do clusters drift over time, can an attacker craft issues to trigger wrong recommendations, what happens with extremely rare issue types.",
+          "two-stage-review": "Pass 1: verify TF-IDF vectorization, cosine similarity math, and clustering algorithm correctness. Pass 2: validate integration (pattern recommendation injection, metrics accuracy, weekly batch reliability).",
+          "observability": "Success rate and match rate metrics are acceptance criteria, not afterthoughts—design metrics collection from the start: track which clusters recommendations came from, whether they improved outcomes.",
+          "collection-system-validation": "Validate that events.jsonl contains sufficient signal for clustering (title/description quality, label consistency) and that clusters.json maintains consistency across weekly regenerations.",
+          "pr-quality": "Algorithm choice (TF-IDF + cosine vs. alternatives) and performance implications (time complexity, storage growth) need clear documentation for reviewers.",
+          "deploy-safety": "Clustering recommendations affect which configs/templates are suggested—roll out cautiously: shadow mode first, compare recommendations to human baseline, monitor match rate in production.",
+          "validation-thoroughness": "Smoke tests on unit clustering aren't enough: validate that pattern recommendations actually improve pipeline success rates by running A/B test (cluster-recommended vs. manual selection).",
+          "performance": "TF-IDF vectorization and clustering must scale to 10K+ historical events; weekly re-clustering should complete in <5min; similarity queries on new issue arrival must be <1sec latency."
+        },
+        "generated_skills": [
+          {
+            "name": "cluster-quality-assurance",
+            "reason": "Existing skills cover pattern matching (pattern-matching-similarity-scoring) and data pipelines (data-pipeline), but no skill addresses cluster quality validation, stability testing, or continuous learning metrics—all core to acceptance criteria.",
+            "content": "## Cluster Quality Assurance for Semantic Issue Clustering\n\nValidating clustering quality is empirical, not theoretical. This skill provides validation frameworks for cluster stability, recommendation accuracy, and continuous learning health.\n\n### Cluster Quality Metrics\n\n**Silhouette Score** (per cluster): Measure -1 to 1 where >0.5 indicates cohesive clusters. Track over time—degradation signals clustering drift.\n\n**Recommendation Match Rate**: % of new issues matching an existing cluster within confidence threshold (e.g., cosine similarity > 0.7). Target >70% match rate; <50% indicates poor cluster coverage.\n\n**Success Rate per Cluster**: Track outcomes of issues recommended from each cluster. If cluster A's pattern succeeds 80% of the time, weight its recommendations higher. Update weekly.\n\n**Intra-cluster Variance**: Average pairwise distance within cluster—should stay stable across re-clusterings. High variance = unstable cluster membership.\n\n### Stability Testing\n\n**Temporal Stability**: Re-cluster yesterday's events, compare cluster membership to previous week. >90% membership consistency is healthy. If consistency drops, clustering may be overfitting to recent data.\n\n**Synthetic Perturbation**: Add 10% noise to TF-IDF vectors (randomly flip 10% of term weights), re-cluster, measure membership changes. Clusters should be robust to small input variations.\n\n**Edge Case Coverage**: Track issues that fail to match any cluster (match_rate < 0.5). These are innovation opportunities—if >5% of issues are orphaned, clustering is too strict.\n\n### Recommendation Validation\n\n**A/B Testing**: For sampled new issues, show cluster-recommended config to 50% of agents, manual selection to control 50%. Track success rates, time-to-resolution, outcome quality. If cluster-recommended underperforms by >5%, pause recommendations and re-cluster.\n\n**Offline Validation**: Replay historical issues through clustering, compare recommended configs to what was actually used. If recommendation accuracy is <60%, data quality or algorithm needs investigation.\n\n**Failure Root Cause**: When a cluster-recommended pattern fails, investigate: was it a cluster mismatch (wrong issue matched to cluster) or a pattern failure (matched correct cluster but pattern didn't work for that specific issue)?\n\n### Continuous Learning Health\n\n**Weekly Re-clustering Checklist**:\n1. Verify events.jsonl hasn't been corrupted (row count, JSON validity)\n2. Run TF-IDF on new events—if vocabulary diverges >20% from previous week, alert (new issue types?)\n3. Compare cluster centroids to previous week—if >30% of centroids moved >0.5 cosine distance, flag for manual review\n4. Check for cluster merging/splitting—if two clusters converge, investigate why\n5. Validate new clusters have >3 members (singletons don't constitute a pattern)\n\n**Metrics Dashboard**: Track silhouette score, match rate, success rate per cluster, orphan rate, vocabulary drift over time. Alert if match rate drops >10% week-over-week or silhouette score declines.\n\n### Implementation Priorities\n\n1. **MVP**: Silhouette score + match rate tracking (1-2 day effort)\n2. **Phase 2**: Success rate per cluster, A/B testing framework (3-4 days)\n3. **Phase 3**: Temporal stability testing, automated re-clustering health checks (2-3 days)"
+          }
+        ],
+        "review_focus": [
+          "TF-IDF vectorization: term frequency capping, stop word handling, rare term treatment",
+          "Cosine similarity calculation: numerical stability, handling zero vectors, edge case confidence scores",
+          "Clustering algorithm: K choice (elbow method used?), convergence guarantees, handling identical issues",
+          "Pattern recommendation accuracy: does top-N similarity threshold yield usable recommendations?",
+          "Weekly re-clustering reliability: atomic writes to clusters.json, no data loss if process interrupted",
+          "Metrics accuracy: are match rates and success rates calculated correctly, no double-counting?",
+          "Integration point: where are recommendations injected into pipeline, how does daemon consume cluster data?"
+        ],
+        "risk_areas": [
+          "Algorithm performance degrades with event.jsonl growth (10K→100K events); weekly re-clustering may become bottleneck",
+          "Cluster drift over time: weekly re-clustering with new events can destabilize membership, breaking pattern consistency",
+          "False positive recommendations: wrong issue matched to cluster, leads agent down ineffective path, wasting iteration budget",
+          "Cold start: first week has no historical data, clustering is unreliable; needs fallback to random/heuristic recommendations",
+          "Storage explosion: events.jsonl + clusters.json both grow unbounded; need retention policy",
+          "Vectorization brittleness: malformed issue titles/descriptions (very short, non-English, binary data) may break TF-IDF"
+        ]
+      },
+      "timestamp": 1781832148,
+      "ttl": 3600
+    },
+    "8daa34ab43d73f2a9ac70268716f221f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Shows how similar features were implemented (auth module, authentication features), complexity levels (60-65), iteration counts (3-5), file change patterns, and test strategies. Essential for estimating scope, effort, and architectural approach for the clustering engine."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Defines project structure: Node.js, vitest test runner, src/ source dir, *.test.js pattern, commonjs imports. Critical for planning where clustering logic should live and how to structure tests."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Contains existing architecture rules (rule1-3) that the clustering engine design must respect. Important for ensuring the feature integrates with established patterns and dependency constraints."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "Contains failure patterns and fixes from previous work (mktemp issues, test output validation). Useful for risk assessment during planning and identifying technical gotchas to avoid."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 50,
+            "summary": "Establishes baseline build duration (2089s). Relevant for understanding performance constraints and estimating planning overhead for the new clustering feature."
+          }
+        ]
+      },
+      "timestamp": 1781832231,
+      "ttl": 1800
+    },
+    "d19054f2441e39041d8228e461d73788": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains captured failure patterns, error signatures, and fix strategies across test failures and environment issues. For a rejected plan, understanding past failures (mktemp issues, output format mismatches, test setup failures) informs why validation might have failed and what assumptions were wrong."
+          },
+          {
+            "file": "success-patterns.json (second entry with 'Fix bug' and 'Add authentication feature')",
+            "relevance": 70,
+            "summary": "Shows detailed success patterns for similar complexity issues (60-65 score) with 3-4 iterations, file patterns, and test strategies. Provides reference for what working approaches look like when comparable features succeed, useful for diagnosing why this plan's approach may have been rejected."
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 62,
+            "summary": "Documents recent test failures with root causes (sw-cleanup.sh output detection issues, stale heartbeat tracking). Shows current pain points in the codebase that a new feature plan must account for, relevant to understanding validation criteria that rejected this plan."
+          }
+        ]
+      },
+      "timestamp": 1781832500,
+      "ttl": 1800
+    },
+    "a0ed68cfb9cd03f470b402a7aa993d59": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (position 7)",
+            "relevance": 95,
+            "summary": "Contains two detailed patterns (bug fix, authentication feature) with goal, complexity, issue_type, approach, iterations, files_changed, file_patterns, and test_strategy. This is the core dataset the clustering engine will operate on, showing exact structure and attributes needed for semantic analysis."
+          },
+          {
+            "file": "patterns.json (position 4)",
+            "relevance": 85,
+            "summary": "Shows project detection with conventions (source_dir, test_pattern, import_style) and metadata (language, framework, test_runner). Essential for understanding how patterns are contextualized and what semantic dimensions drive clustering decisions across different project types."
+          },
+          {
+            "file": "knowledge.json (position 3)",
+            "relevance": 82,
+            "summary": "Contains pattern entries with semantic tagging (kind, error_type, tags, error_signature), fix strategies, and metrics. Demonstrates pattern classification scheme and how patterns can be semantically related and looked up, directly informing the clustering architecture."
+          },
+          {
+            "file": "issues.json (position 5)",
+            "relevance": 72,
+            "summary": "Shows real issues with outcomes, success patterns, and gotchas (timeout handling, semaphore patterns). Demonstrates what concrete issues the engine must cluster and how success patterns map to real-world problems."
+          },
+          {
+            "file": "success-patterns.json (position 1)",
+            "relevance": 70,
+            "summary": "Shows a single auth module pattern with test_strategy, file_patterns, and metrics. Provides additional example of pattern structure with emphasis on test strategy and file organization patterns for reuse across pipelines."
+          }
+        ]
+      },
+      "timestamp": 1781832576,
+      "ttl": 1800
+    },
+    "2b600e31355ada7a3352bad5098f777a": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Contains detailed failure analysis with error signatures and fix strategies from previous pipeline work; understanding past failures (test infrastructure, mktemp issues, JSON output) informs what design approaches and implementations to avoid"
+          },
+          {
+            "file": "failures.json (first entry with data)",
+            "relevance": 28,
+            "summary": "Documents failure patterns with root causes (e.g., stale heartbeat detection, summary output formatting); shows what approaches failed in related systems, informing anti-patterns for the clustering engine"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 22,
+            "summary": "Contains architectural rules and constraints; while minimal, provides boundary conditions that rejected design approaches must respect, relevant for understanding design space constraints"
+          }
+        ]
+      },
+      "timestamp": 1781832596,
+      "ttl": 1800
+    },
+    "7f6817e433533d0af71713a51648ac38": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Provides project conventions (src/, *.test.js, commonjs, vitest) — essential for structuring the clustering engine code correctly"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Shows that feature work typically requires 3+ iterations with TDD approach, npm test strategy, and touches multiple files — directly applicable to this feature build"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline build_duration_s of 2089s provides time budget expectation for the build stage execution"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Contains 4+ test failure patterns from this repo (mktemp issues, test output formatting) — valuable for avoiding similar pitfalls during clustering engine testing"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Documents real test failures (sw-cleanup.sh, stale heartbeats) that occurred in recent builds — patterns to avoid during feature development"
+          }
+        ]
+      },
+      "timestamp": 1781832771,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Defines project conventions (Node/vitest/CommonJS) essential for understanding build environment, test framework, and import style during build stage"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Documents two successful bug fixes with 3-6 iterations each, showing effective fix strategies and test approaches relevant for current 20-iteration build limit"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent test failure in sw-cleanup.sh with documented root cause and fix; build stage likely runs tests so this known issue could be encountered"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Entry kb_b8239eb18d7d documents mktemp failure in test setup that causes build/test initialization to fail; applicable to build stage test execution"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "One issue on timeout bug fixed with semaphore pattern; moderately relevant if build encounters timing-related failures in daemon components"
+          }
+        ]
+      },
+      "timestamp": 1781832786,
+      "ttl": 1800
     }
   }
 }
