@@ -3,11 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh heartbeat detection and summary output changed — dry-run no longer prints stale heartbeat agent names or 'Found N' summary with '--force' hint",
-      "fix": "Update sw-cleanup.sh to print stale heartbeat filenames and a 'Found N items' summary with '--force' hint in dry-run mode, or update the tests to match current output format",
-      "seen_count": 5,
-      "last_seen": "2026-06-19T08:31:07Z",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
+      "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
+      "seen_count": 4,
+      "last_seen": "2026-06-19T01:49:04Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-06-19T08:36:44Z"
     }
   ]
 }
