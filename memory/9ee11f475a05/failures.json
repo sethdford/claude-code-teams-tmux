@@ -12,10 +12,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection test fails to output valid JSON from the feedback script's regression detection subcommand",
-      "fix": "Fix the regression detection output in sw-feedback.sh to produce valid JSON when detecting regressions",
+      "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
+      "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
       "seen_count": 2,
-      "last_seen": "2026-06-19T19:23:15Z",
+      "last_seen": "2026-06-19T19:31:05Z",
       "category": "test_failure"
     }
   ]
