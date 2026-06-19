@@ -1,1 +1,43 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across iteration 1, I need to identify critical blockers:
+
+## Critical Issue: Test Suite Failure
+
+**Status**: `npm test` exits with code 3 (FAILING)
+
+The agent claims: "23/23 bash integration assertions pass; 18/18 node unit tests pass (both run via `npm test`)"
+
+But the harness reports: `npm test: exit 3 (8s)` — a failure.
+
+This is a **blocking contradiction**. Either:
+1. The tests don't actually run under `npm test` (they're not wired into the test harness)
+2. There are additional tests in `npm test` beyond the claimed 23+18 that are failing
+3. The agent's verification was incomplete
+
+**Why it matters**: A failing test suite means:
+- CI will reject the work
+- The pipeline cannot proceed to the next stage
+- The feature is not production-ready
+
+## Secondary Concerns
+
+1. **Test Framework Mismatch**: The agent notes "vitest isn't installed at root; root `tests/*.test.js` are legacy/unwired" — this suggests the new clustering tests in `tests/issue-clustering.test.js` may not be discoverable by the test runner at all. The agent worked around this using `node:test`, but the integration may be broken.
+
+2. **Missing Integration Verification**: The agent claims daemon polling integration is "confirmed inert" via a "baseline parity test," but I see no evidence this test is part of the `npm test` suite or the `npm run test:smoke` suite.
+
+3. **No Actual End-to-End Clustering Test**: While unit tests exist for the algorithm, I don't see evidence that the actual clustering workflow (events.jsonl → algorithm → issue-clusters.json → match) has been tested end-to-end with real data.
+
+---
+
+## What Needs Fixing
+
+1. **Debug and fix the `npm test` exit code 3 failure** — Identify which test suite is failing and why. If clustering tests aren't discoverable, wire them into `package.json` test script.
+
+2. **Verify all clustering tests run under `npm test`** — Confirm that the 18 node unit tests + 23 bash assertions actually execute when you run `npm test` (not just locally by hand).
+
+3. **Add an actual end-to-end test** — Test that events → clustering → match → recommend works with real data, not just mocked algorithms.
+
+**AUDIT_FAIL** — The failing test suite must be fixed before this work can proceed.
