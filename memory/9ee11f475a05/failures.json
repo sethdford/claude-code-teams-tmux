@@ -2,11 +2,11 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh does not detect stale heartbeat files or output 'Found'/'--force' summary hint in dry-run mode",
-      "fix": "Add stale heartbeat detection logic and 'Found N items, use --force' summary output to the dry-run code path in sw-cleanup.sh",
-      "seen_count": 3,
-      "last_seen": "2026-06-18T19:49:20Z",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed command passed a substitution expression as a filename instead of using -e flag or inline syntax",
+      "fix": "change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|$TEST_TEMP_DIR|...|g\"` or use proper quoting so the expression is passed as an argument not a filename",
+      "seen_count": 1,
+      "last_seen": "2026-06-19T01:53:14Z",
       "category": "test_failure"
     }
   ]
