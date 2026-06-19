@@ -1,1 +1,22 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result":"The same 6 failures exist without my changes — confirmed pre-existing. My changes introduced no regressions.\n\n**Final status:**\n- **Main goal** (commit `5641f7b`): Fixed misleading \"jq not available\" warning when Claude outputs a JSON object — `sw-loop.sh` now handles both arrays and objects in Case 2.\n- **Test fix** (commit `0d897c1`): Fixed `sw-cost-test.sh` by showing context efficiency even when no cost entries fall within the period.\n- **6 pre-existing failures** in `sw-pipeline-test.sh` (E2E pipeline tests requiring live Claude) — unrelated to this issue, present before and after my changes.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"5b2ab48e-dc20-4503-8af1-9eaac1d19535","total_cost_usd":1.93753455,"usage":{"input_tokens":4,"cache_creation_input_tokens":761,"cache_read_input_tokens":191892,"output_tokens":294,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":761,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":67,"outputTokens":12162,"cacheReadInputTokens":4878521,"cacheCreationInputTokens":72775,"webSearchRequests":0,"costUSD":1.9190935500000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":15541,"outputTokens":580,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.018441,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"d1ae553f-d751-4043-bbc4-a8ecb15508bb"}
+Iteration 2 complete. Summary of what I did:
+
+## Root Cause Found & Fixed
+
+The loop was blocked by **3 failing `sw-cleanup-test.sh` tests** (`dry-run detects stale heartbeat`, `summary shows found count`, `summary shows --force hint`) — a pattern memory flagged as recurring 3×. These were **not** about the prebuild feature.
+
+**Root cause** (`scripts/lib/compat.sh` `file_mtime()`): The old `stat -f %m || stat -c '%Y'` chain breaks on GNU/Linux. `stat -f %m` treats `%m` as a *filesystem argument*, printing multi-line `File: ...` garbage to stdout while exiting non-zero. The captured mtime became polluted text, so `$((now_e - hb_mtime))` in the heartbeat scan died with `File: unbound variable` under `set -u`, aborting before the summary printed.
+
+**Fix:** Try GNU `stat -c '%Y'` first, validate each result is a pure integer (`case … *[!0-9]*`) before accepting, then fall back to validated BSD `-f %m`. Committed as `c13111f5`.
+
+## Verification
+- sw-cleanup: 24/24 ✓ (was 21/24)
+- compat: 56/56 ✓ · heartbeat: 17/17 ✓ · prebuild-validate: 36/36 ✓
+- e2e-smoke: 19/19 ✓ · pipeline-stages lib: 30/30 ✓
+
+## Audit concerns resolved
+- Prebuild test **is** registered in `package.json` ✓
+- All 9 templates wired; **fast/hotfix use `"enabled": false`** (answering "how are stages disabled?") ✓
+- All template JSON valid (9/9) ✓
+- Stage **is** dispatched: executor calls `"stage_${stage_id}"` dynamically → `stage_pre_build_validate` (defined + sourced via `pipeline-stages.sh`) ✓
+
+The previously-failing tests now pass and the feature is fully wired. Recorded the recurring root cause to memory. Not declaring LOOP_COMPLETE yet — the fix should run through the full quality gate first.
