@@ -14,26 +14,18 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
       "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
-      "seen_count": 3,
-      "last_seen": "2026-06-20T01:54:44Z",
+      "seen_count": 2,
+      "last_seen": "2026-06-19T19:31:05Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "All tests passed — no actual failure in the log output provided",
-      "fix": "No fix needed; review pipeline failure detection logic as all test suites show passing results",
+      "root_cause": "jq fails parsing quality-profile.json because a confidence field is empty/null, producing invalid JSON output for learned rules",
+      "fix": "Guard against empty confidence values before writing quality-profile.json, e.g. default empty confidence to '0' or '0.0' so jq can parse the field",
       "seen_count": 1,
-      "last_seen": "2026-06-20T01:48:52Z",
-      "category": "unknown"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "",
-      "fix": "",
-      "seen_count": 1,
-      "last_seen": "2026-06-20T02:01:47Z"
+      "last_seen": "2026-06-20T01:51:00Z",
+      "category": "test_failure"
     }
   ]
 }
