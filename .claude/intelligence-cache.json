@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Pipeline pre-flight health validation is fundamentally a CI/CD and infrastructure reliability concern; DevOps engineer excels at deployment pipelines, monitoring, and incident prevention with architect support for validation framework design and tester for comprehensive validation scenarios.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1781919570,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,314 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "c7290c255873fe6edee6b3fa18cd1b87": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pre-flight checks too strict, blocking legitimate pipelines unnecessarily",
+          "Incomplete or incorrect health checks missing real failure scenarios",
+          "False positives from environmental variation (e.g., transient GitHub API rate limits)",
+          "Performance overhead from synchronous checks at pipeline startup",
+          "Checks becoming outdated or misaligned with actual requirements over time"
+        ],
+        "implementation_hints": [
+          "Create modular check functions with consistent interface and error handling",
+          "Design checks to fail fast (test connectivity before making API calls)",
+          "Structure error messages with actionable remediation steps (e.g., retry times)",
+          "Consider caching some checks to avoid redundant API calls",
+          "Provide --skip-preflight flag as escape hatch for advanced users and CI",
+          "Separate critical checks that block from warnings that inform",
+          "Emit preflight-failed event with detailed failure codes for observability",
+          "Make individual checks configurable via daemon-config.json",
+          "Create comprehensive test suite mocking various failure scenarios",
+          "Measure check performance to avoid blocking pipeline startup"
+        ]
+      },
+      "timestamp": 1781918824,
+      "ttl": 3600
+    },
+    "b7bc4569cbd3ea03c79aa4a397058d81": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1781918837,
+      "ttl": 1800
+    },
+    "e7ff0aaef189c48f1383d44be9aaf8dc": {
+      "result": {
+        "estimated_cost_usd": 0.32,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 20500,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1781918853,
+      "ttl": 3600
+    },
+    "b2d402158c387c6f8ab1a1e2f778c4a6": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "cli-tooling",
+          "devops",
+          "reliability"
+        ],
+        "complexity_assessment": {
+          "score": 4,
+          "reasoning": "Labeled 'fast' complexity. Straightforward system checks (disk, rate limits, connectivity), CLI flag integration, event emission. Primary challenge is robust environment mocking in tests and ensuring fast, non-blocking pre-flight execution."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming"
+          ],
+          "design": [
+            "api-design",
+            "preflight-validator-pattern"
+          ],
+          "build": [
+            "preflight-validator-pattern",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "security-audit",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "architecture-design": "Pre-flight validation touches pipeline lifecycle, CLI entry points, and event emission—an ADR clarifies how this integrates without disrupting existing pipeline flow.",
+          "brainstorming": "Challenge assumptions: Is 5GB disk threshold universal? Should rate limit checks be proactive (check now) or reactive (warn if likely to hit)? Should pre-flight be extensible for custom checks?",
+          "api-design": "The `--skip-preflight` flag and the validator interface must fit cleanly into the CLI. Design it so operators understand when to use --skip-preflight and downstream code can add new checks without API churn.",
+          "preflight-validator-pattern": "Specific implementation pattern for environment health checkers: checkpoint strategy, fast-fail ordering, mocking for tests, and actionable error context.",
+          "testing-strategy": "Test coverage must span mocked conditions: rate-limited API, low disk, missing Claude CLI, network failure. Tests should run fast (pre-flight itself must not be slow).",
+          "adversarial-quality": "Failure modes: What if a check hangs? What if rate limit check itself exceeds the limit? What if disk space check writes temp files? Adversarial thinking prevents false confidence.",
+          "security-audit": "GitHub API auth validation and network connectivity checks have security implications. Ensure no credentials leak in error messages, no TOCTOU race conditions on disk/network state.",
+          "pr-quality": "Error messages and event structure must be precise. PR reviewer should understand failure scenarios and test coverage at a glance.",
+          "validation-thoroughness": "Smoke tests (does pre-flight run?) are insufficient. Validate: Does it actually block pipeline on failure? Are error messages actionable? Do events have correct structure?"
+        },
+        "generated_skills": [
+          {
+            "name": "preflight-validator-pattern",
+            "reason": "No existing skill covers the specific pattern of environment health validation: checkpoint ordering, early-exit strategy, mocking heterogeneous system dependencies, and emitting structured failure events. This is a recurring pattern across infrastructure validation and deserves focused guidance.",
+            "content": "## Pre-Flight Validator Pattern\n\nPre-flight validators run synchronously at CLI entry points, check environment dependencies, and fail fast with actionable guidance. Use this pattern to implement robust environment health checks without blocking normal operations.\n\n### Checkpoint Ordering\n\n1. **Fast checks first** — Disk space, tmux availability (no I/O delays)\n2. **Network checks second** — GitHub API rate limits, connectivity (may be slow)\n3. **Auth checks last** — Claude CLI validation (requires subprocess, slowest)\n\nOrder matters: if disk is full, skip network checks. If network is down, don't bother checking GitHub rate limits.\n\n### Fast-Fail Strategy\n\n- Return immediately on first critical failure (e.g., <500MB disk)\n- Collect non-critical warnings and emit them all together\n- Never block pipeline start for warnings—only failures\n- Each check should have a timeout (e.g., rate limit check times out after 2s)\n\n### Actionable Error Messages\n\nStructure each failure with: (1) what failed, (2) why, (3) how to fix it.\n\n```\nGitHub API Rate Limited\n  - Current: 45/60 requests remaining\n  - Retry in: 23 minutes\n  - Fix: Wait or use --skip-preflight if necessary\n```\n\nNot just: \"GitHub API check failed.\"\n\n### Environment Mocking for Tests\n\nMock by overriding check functions, not by manipulating system state:\n\n```bash\n# In test\nmock_disk_free() { echo 1048576; }  # 1GB\nmock_github_rate_limit() { echo 5; }  # 5 requests left\npreflight_validate  # Uses mocked functions\n```\n\nDo NOT create temp files or consume real disk; do NOT call real GitHub API in tests.\n\n### Event Emission\n\nEmit `preflight-failed` event only on blocking failures. Include:\n\n```json\n{\n  \"type\": \"preflight-failed\",\n  \"timestamp\": \"2026-06-20T01:27:37Z\",\n  \"failures\": [\n    {\"check\": \"disk_space\", \"reason\": \"<500MB free\", \"available_mb\": 256}\n  ],\n  \"skip_flag_used\": false\n}\n```\n\n### Integration with CLI\n\nAdd a `preflight_validate` function callable from `shipwright pipeline start` before pipeline init:\n\n```bash\nif ! preflight_validate; then\n  [[ \"$SKIP_PREFLIGHT\" == \"true\" ]] && warn \"Skipping pre-flight\" || exit 1\nfi\n```\n\nThe `--skip-preflight` flag should be documented as \"Use only when you've manually verified environment health.\"\n\n### Extension Points\n\nDesign the validator as a registry so new checks can be added:\n\n```bash\nregister_preflight_check \"my_custom_check\" \"check_function\" \"critical|warning\"\n```\n\nThis prevents coupling and keeps the core validator stable."
+          }
+        ],
+        "review_focus": [
+          "Error message quality — are failures actionable? (e.g., 'rate limited, retry in 23 min' vs 'GitHub API check failed')",
+          "Test coverage completeness — all five checks (rate limits, disk, Claude CLI, connectivity, tmux) tested with mocked conditions",
+          "Fast-fail ordering — do checks run in order (fast first) and short-circuit appropriately?",
+          "Event structure — does preflight-failed event have correct schema and include failure reasons?",
+          "Performance — pre-flight validation itself shouldn't take >3 seconds, no unnecessary retries",
+          "Integration safety — does --skip-preflight bypass checks without breaking downstream pipeline stages?",
+          "CLI documentation — is --skip-preflight use case clear and warnings emphasized?",
+          "Extensibility — can new checks be added without modifying core validator logic?"
+        ],
+        "risk_areas": [
+          "Rate limit check accuracy — GitHub API queries to check rate limits consume rate limit quota; ensure check is efficient",
+          "Network timeout handling — if GitHub is slow/unreachable, pre-flight shouldn't hang; set 2-3s timeout per check",
+          "False positives on disk space — account for system reserved space; 5GB free is reasonable but not universal across environments",
+          "Concurrency edge case — if pipeline starts twice concurrently, both check rate limits before either runs; ensure idempotency",
+          "Test isolation — mocked checks must not leak state between test cases; use function restoration patterns",
+          "Integration point fragility — hooking into pipeline start requires careful placement; must not interfere with existing error handling or flags"
+        ]
+      },
+      "timestamp": 1781918931,
+      "ttl": 3600
+    },
+    "d3a889a6e6cb7642e545560818fed44f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Contains completed delivery patterns with complexity scoring (60-65), iterations (3-5), durations (45-150s), test strategies, and file change patterns. Directly informs complexity estimation, iteration planning, and resource allocation for this DevOps feature."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 76,
+            "summary": "Shows project type (node), test runner (vitest), import style (commonjs), and source/test directories. Critical for planning file structure, testing approach, and tooling decisions for the pre-flight validator."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 64,
+            "summary": "Provides baseline metric (build_duration_s: 2089) for estimating pre-flight health validation scope and performance targets. Helps inform SLA and timeout decisions in the plan."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Shows recurring test failures (cleanup output format, sed invocation patterns) and root causes. Informs planning to avoid similar pitfalls in the validator's test harness design."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 52,
+            "summary": "Contains past issue resolution (daemon timeout fix using semaphore). Relevant precedent for planning pre-flight health checks on daemon/pipeline components."
+          }
+        ]
+      },
+      "timestamp": 1781919006,
+      "ttl": 1800
+    },
+    "6152cb9179d6c5923c2dbfd207b09d2e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 78,
+            "summary": "Contains two documented test/validation failures with root causes and fixes (sw-cleanup.sh heartbeat detection output format, sed invocation in sw-code-review-test.sh). Directly addresses validation failure patterns and remediation strategies applicable to plan validation."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 52,
+            "summary": "Documents successful past deliveries with complexity metrics (60-65), iteration counts (3-5), file patterns, test strategies, and approach details. Shows planning patterns that led to successful outcomes, useful for structuring valid plans."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 38,
+            "summary": "Contains failure analysis entries with error signatures, fix strategies, and approach explanations (e.g., mktemp directory creation issues, JSON output validation). Provides failure taxonomy and remediation patterns that inform plan validation requirements."
+          }
+        ]
+      },
+      "timestamp": 1781919368,
+      "ttl": 1800
+    },
+    "5e36daa9b12cf65161abdaa3e6005c78": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (detailed)",
+            "relevance": 85,
+            "summary": "Contains 2 concrete patterns showing file organization, test strategies, iteration counts, and complexity metrics—directly informs architectural decisions for new features"
+          },
+          {
+            "file": "patterns.json (project conventions)",
+            "relevance": 80,
+            "summary": "Documents project structure (Node.js, vitest, commonjs, src/test folders)—essential for designing consistent architecture within project conventions"
+          },
+          {
+            "file": "knowledge.json (failure patterns)",
+            "relevance": 65,
+            "summary": "Captures test failure signatures and fixes (mktemp, JSON output formatting)—informs design choices to avoid common pitfalls in test harness and setup"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Shows complexity patterns (timeout bug, daemon-dispatch interaction, semaphore solution)—relevant for understanding pre-flight health validator complexity tier"
+          },
+          {
+            "file": "metrics.json (baselines)",
+            "relevance": 50,
+            "summary": "Build duration baseline (2089s)—informs performance expectations and timeout design for pre-flight health checks"
+          }
+        ]
+      },
+      "timestamp": 1781919410,
+      "ttl": 1800
+    },
+    "95c7da170900759ef12e5c296fbe60df": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Contains failure patterns and fix strategies (mktemp path issues, cleanup.sh output formatting, JSON generation problems). Directly informs which approaches have been tried and failed, enabling anti-pattern identification."
+          },
+          {
+            "file": "patterns.json (with conventions)",
+            "relevance": 58,
+            "summary": "Provides project conventions (Node, vitest, CommonJS imports, src/ and test/ layout). Essential context for understanding design constraints and what patterns the project follows, informing what design approaches align with the codebase."
+          },
+          {
+            "file": "failures.json (with seen_count)",
+            "relevance": 52,
+            "summary": "Documents recurring test failures with root causes (sw-cleanup.sh heartbeat output, sed argument ordering). Shows anti-patterns in implementation and testing that would be relevant to avoid in the Pre-Flight Health Validator design."
+          }
+        ]
+      },
+      "timestamp": 1781919426,
+      "ttl": 1800
+    },
+    "fe4ee585d1ac48b5d4c2cde5286c09ab": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Identifies project type (Node.js), test runner (vitest), source directory (src/), and import style. Essential for understanding build conventions and test execution strategy."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains two successful build patterns showing iterative approaches (3-4 iterations), npm test strategy, and standard template usage. Directly applicable to pre-flight validator build."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Documents test failures including sed invocation issues and heartbeat detection problems that could block the build. Seen 2-5 times, indicating recurring issues to avoid."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Captured test failures (mktemp /tmp/claude directory missing, output format mismatches) with fix strategies. Directly relevant to build setup and test execution phase."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Provides baseline build_duration_s of 2089 seconds (~35 min), useful for detecting stalls or unexpected delays during the build stage execution."
+          }
+        ]
+      },
+      "timestamp": 1781919541,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Contains two successful build patterns with specific approaches (loop iterations, test strategies, file patterns changed, commit counts). Directly applicable to understanding what build/fix strategies have worked in this codebase."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 85,
+            "summary": "Provides build_duration_s baseline of 2089 seconds. Critical for understanding expected build performance and identifying if current build is on track or stalled."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Defines project structure (source_dir, test_pattern, test_runner: vitest, package_manager: npm). Essential for understanding where to find code and how to run builds/tests."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Contains a resolved daemon timeout issue with success pattern 'added semaphore'. Relevant for understanding specific build/stability problems that have been fixed previously."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Mostly test-stage failures (mktemp, test output issues). Less directly relevant to build stage, though environment setup issues could indirectly impact builds."
+          }
+        ]
+      },
+      "timestamp": 1781919556,
+      "ttl": 1800
     }
   }
 }
