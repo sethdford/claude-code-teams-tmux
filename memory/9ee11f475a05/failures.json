@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
       "seen_count": 6,
-      "last_seen": "2026-06-20T08:45:31Z",
+      "last_seen": "2026-06-20T08:31:38Z",
       "category": "test_failure"
     },
     {
@@ -14,15 +14,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
       "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
-      "seen_count": 3,
-      "last_seen": "2026-06-20T08:56:27Z",
+      "seen_count": 2,
+      "last_seen": "2026-06-19T19:31:05Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary line with '--force' hint",
-      "fix": "Fix the heartbeat detection logic in sw-cleanup.sh to scan heartbeat files in dry-run mode and emit a 'Found <n> item(s)' summary line with a '--force' hint when items are found",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection outputs different text than expected by tests, and summary section missing 'Found' and '--force' keywords",
+      "fix": "Update sw-cleanup.sh dry-run output to include 'agent-1' in heartbeat detection output and add 'Found' count and '--force' hint to the summary section",
       "seen_count": 1,
       "last_seen": "2026-06-20T01:51:00Z",
       "category": "test_failure"
