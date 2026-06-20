@@ -1068,6 +1068,14 @@ daemon_init() {
     "architecture_enabled": false,
     "ab_test_ratio": 0.2,
     "anomaly_threshold": 3.0
+  },
+  "clustering": {
+    "enabled": false,
+    "max_events": 500,
+    "min_cluster_size": 2,
+    "similarity_threshold": 0.5,
+    "re_cluster_interval_days": 7,
+    "max_clusters": 50
   }
 }
 CONFIGEOF
