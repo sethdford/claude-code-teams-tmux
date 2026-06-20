@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
-      "seen_count": 5,
-      "last_seen": "2026-06-19T14:20:13Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-20T08:36:51Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "jq fails parsing quality-profile.json because a confidence field is empty/null, producing invalid JSON output for learned rules",
-      "fix": "Guard against empty confidence values before writing quality-profile.json, e.g. default empty confidence to '0' or '0.0' so jq can parse the field",
+      "root_cause": "sw-cleanup-test.sh expects heartbeat detection and summary output ('agent-1', 'Found', '--force') that the cleanup script no longer produces",
+      "fix": "Update sw-cleanup.sh to output stale heartbeat filenames, a 'Found N items' summary line, and a '--force' hint when items are detected in dry-run mode",
       "seen_count": 1,
       "last_seen": "2026-06-20T01:51:00Z",
       "category": "test_failure"
