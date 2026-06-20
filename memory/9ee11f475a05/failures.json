@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
-      "seen_count": 6,
-      "last_seen": "2026-06-20T08:29:27Z",
+      "seen_count": 7,
+      "last_seen": "2026-06-20T19:03:57Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a filename instead of as a substitution expression — missing -e flag or the argument order is wrong",
-      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` or verify the variable substitution and argument ordering in the sed invocation within sw-code-review-test.sh",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output don't match expected strings 'agent-1', 'Found', and '--force'",
+      "fix": "Update sw-cleanup.sh to output 'agent-1' in heartbeat detection output and include 'Found' count and '--force' hint in the dry-run summary section",
       "seen_count": 1,
       "last_seen": "2026-06-20T01:51:00Z",
       "category": "test_failure"
