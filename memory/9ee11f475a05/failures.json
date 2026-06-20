@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
       "seen_count": 7,
-      "last_seen": "2026-06-20T19:09:45Z",
+      "last_seen": "2026-06-20T19:06:00Z",
       "category": "test_failure"
     },
     {
@@ -15,25 +15,17 @@
       "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
       "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
       "seen_count": 6,
-      "last_seen": "2026-06-20T19:41:26Z",
+      "last_seen": "2026-06-20T19:37:19Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "regression detection test fails to output valid JSON from the post-merge monitoring or regression detection subcommand",
-      "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs well-formed JSON, likely by adding missing quotes, braces, or using jq for serialization",
+      "root_cause": "All test suites passed with no failures detected in the provided log output",
+      "fix": "No fix needed — all tests passed successfully",
       "seen_count": 1,
       "last_seen": "2026-06-20T01:51:00Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "",
-      "fix": "",
-      "seen_count": 1,
-      "last_seen": "2026-06-20T19:49:02Z"
+      "category": "unknown"
     }
   ]
 }
