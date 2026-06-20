@@ -1,1 +1,25 @@
-You've hit your session limit · resets 6pm (UTC)
+All changes are isolated, tested, and clean. Let me summarize the state against the goal.
+
+## Summary
+
+The Semantic Issue Clustering Engine was substantially pre-built across prior iterations (TF-IDF + cosine clustering algorithm, bash orchestrator, CLI routing, weekly daemon re-clustering, cluster storage with per-cluster success rates). This iteration completed the **one genuinely missing spec goal** — the metrics surface — and closed two task-list items.
+
+**What I implemented:**
+
+1. **`success_rate_improvement` metric** (spec goal #5): mean cluster success rate − pooled baseline success rate (`Σsuccess_count / Σtotal_with_outcome` across clusters). Quantifies the lift from following a cluster's recommended approach vs. going in blind. `null` until outcomes exist — never fabricated.
+
+2. **`match_rate` metric** (spec goal #5): `matched / attempts`. To get an honest denominator, `match` now emits `clustering.unmatched` on a miss alongside the existing `clustering.matched` on a hit. `null` before any attempts.
+
+3. **Schema registration**: added `clustering.unmatched` to `config/event-schema.json`.
+
+4. **Tests**: 5 new assertions (null-denominator, 0.5 mixed hit/miss, 1.0 all-hit, presence, improvement = mean − baseline). Both rates derived in `jq` so they emit as canonical JSON numbers.
+
+5. **Config discoverability** (Task 5): seeded a documented `clustering` block into the `daemon init` config template.
+
+6. **Docs** (Task 7): updated CLAUDE.md metrics description, event list, and added a metrics-fields reference.
+
+**Verification:** clustering 31/31, daemon-poll 37/37, daemon 66/66, node unit tests pass. Schema valid JSON. No other test suite references the changed surfaces (verified via grep). No leftover TODO/FIXME markers. Live smoke confirms correct numeric output. VERSION consistent (`3.3.0`).
+
+All five spec goals are now demonstrably satisfied and the acceptance criterion ("all existing tests continue to pass") holds for every affected suite.
+
+LOOP_COMPLETE

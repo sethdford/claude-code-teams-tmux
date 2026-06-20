@@ -1,29 +1,27 @@
 # Tasks — Semantic Issue Clustering Engine for Pattern Reuse Across Pipelines
 
 ## Status: In Progress
-Pipeline: autonomous | Branch: ci/issue-672
+Pipeline: standard | Branch: feat/semantic-issue-clustering-engine-for-pat-672
 
 ## Checklist
-- [ ] Task 1: Confirm quiet-period insertion point and config-access (`policy_get`) pattern in `scripts/lib/daemon-poll.sh`.
-- [ ] Task 2: Add `clustering.enabled` read (default `false`).
-- [ ] Task 3: Insert `due`→`run` block with `|| daemon_log WARN` guards and an INFO log line.
-- [ ] Task 4: Add `[[ -x "$SCRIPT_DIR/sw-issue-clustering.sh" ]]` guard; verify path resolution.
-- [ ] Task 5: Bump `VERSION` in `scripts/sw-daemon.sh` to match `package.json`.
-- [ ] Task 6: Add daemon poll test asserting enabled→invoked / disabled→skipped via mock binary.
-- [ ] Task 7: `bash scripts/sw-issue-clustering-test.sh` stays 23/0.
-- [ ] Task 8: `bash scripts/sw-daemon-test.sh` (+ `sw-lib-daemon-poll-test.sh`) green.
-- [ ] Task 9: `bash -n` lint on modified scripts; confirm no bash 4 constructs.
-- [ ] Task 10: `shipwright docs check` reports no newly-stale sections.
-- [ ] Task 11: Smoke: `clustering.enabled=true`, `re_cluster_interval_days=0`, quiet state → assert `clustering.completed` appears in `events.jsonl`.
-- [ ] `scripts/lib/daemon-poll.sh` invokes `clustering due`→`run` during quiet periods only when `clustering.enabled=true`.
-- [ ] Disabled (default) path adds zero external calls — verified by test.
-- [ ] A clustering failure logs a WARN and the poll loop continues (no crash under `set -euo pipefail`).
-- [ ] `scripts/sw-issue-clustering-test.sh` passes 23/0 (no regression).
-- [ ] New daemon test passes; daemon test suites green.
-- [ ] `VERSION` in `sw-daemon.sh` matches `package.json`.
-- [ ] `shipwright docs check` clean; documented daemon behavior now matches code.
-- [ ] `git grep clustering scripts/lib/daemon-poll.sh` shows the new wiring (gap closed).
+- [ ] Task 1: Run clustering suite; confirm 23/23 green (baseline before changes).
+- [ ] Task 2: Compute baseline vs. clustered-recommendation success rates from events.
+- [ ] Task 3: Add `success_rate_improvement` to metrics JSON (`jq -n --argjson`, `null`-safe).
+- [ ] Task 4: Add metrics-field test (null-case + known-delta fixture).
+- [ ] Task 5: Seed documented `clustering` block into `sw-init.sh` config template (absent-only).
+- [ ] Task 6: (Optional) Add clustering health check to `sw-doctor.sh`.
+- [ ] Task 7: Update CLAUDE.md metrics row for parity.
+- [ ] Task 8: Run clustering + `sw-lib-daemon-poll-test.sh`; confirm no regressions.
+- [ ] Task 9: Manual smoke — `shipwright clustering metrics | jq .` shows the new field.
+- [ ] Task 10: Confirm VERSION == package.json (`3.3.0`); verify config discoverable via init.
+- [ ] Existing 23 clustering tests + new metrics assertion pass.
+- [ ] `metrics` emits `success_rate_improvement` (numeric or `null`, never fabricated).
+- [ ] `daemon-config.json` from `init` contains a documented `clustering` block.
+- [ ] No regressions in `sw-lib-daemon-poll-test.sh`.
+- [ ] CLAUDE.md metrics description matches actual output.
+- [ ] VERSION == package.json (`3.3.0`).
+- [ ] All 5 acceptance criteria demonstrably satisfied (mapping below).
 
 ## Notes
-- Generated from pipeline plan at 2026-06-19T14:12:05Z
+- Generated from pipeline plan at 2026-06-20T01:35:42Z
 - Pipeline will update status as tasks complete
