@@ -5,18 +5,27 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
-      "seen_count": 5,
-      "last_seen": "2026-06-19T14:20:13Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-20T00:56:30Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
-      "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
-      "seen_count": 2,
-      "last_seen": "2026-06-19T19:31:05Z",
+      "root_cause": "sed expression passed without -e flag causes it to be interpreted as a filename; $TEST_TEMP_DIR is unexpanded (literal) making the substitution string an invalid file path",
+      "fix": "Change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e \"s|${TEST_TEMP_DIR}|...|g\"` with proper quoting and -e flag in sw-code-review-test.sh",
+      "seen_count": 3,
+      "last_seen": "2026-06-20T01:23:06Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "mktemp cannot create temp directories under /tmp/claude/ because that parent directory does not exist",
+      "fix": "Add 'mkdir -p /tmp/claude' before any mktemp calls that use '/tmp/claude/' as the template base, or use the default system tmp dir by omitting the path prefix in the mktemp template",
+      "seen_count": 1,
+      "last_seen": "2026-06-20T01:40:58Z",
+      "category": "config"
     }
   ]
 }
