@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
       "seen_count": 7,
-      "last_seen": "2026-06-20T19:11:41Z",
+      "last_seen": "2026-06-20T19:15:29Z",
       "category": "test_failure"
     },
     {
@@ -15,14 +15,14 @@
       "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
       "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
       "seen_count": 6,
-      "last_seen": "2026-06-20T19:40:02Z",
+      "last_seen": "2026-06-20T19:36:12Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sed command references a literal string 's|$TEST_TEMP_DIR|...|g' as a file path instead of as a substitution expression, likely missing the -e flag or the expression was passed as a filename argument",
-      "fix": "Add -e flag before the sed expression: change `sed 's|$TEST_TEMP_DIR|...|g'` to `sed -e 's|$TEST_TEMP_DIR|...|g'` in the code-review test script",
+      "root_cause": "regression detection test expects valid JSON output but the command produces non-JSON output",
+      "fix": "ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON when called from tests",
       "seen_count": 1,
       "last_seen": "2026-06-20T01:51:00Z",
       "category": "test_failure"
