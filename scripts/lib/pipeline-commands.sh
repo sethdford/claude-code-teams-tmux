@@ -729,6 +729,16 @@ pipeline_start() {
     # Pre-flight checks
     preflight_checks || exit 1
 
+    # Environment health validation (resource/connectivity/rate-limit health)
+    if [[ "${SKIP_PREFLIGHT:-false}" == "true" ]]; then
+        warn "Skipping pre-flight health checks (--skip-preflight)"
+    elif type preflight_health_check >/dev/null 2>&1; then
+        if ! preflight_health_check; then
+            error "Pre-flight health check failed. Fix the issues above or re-run with --skip-preflight."
+            exit 1
+        fi
+    fi
+
     # Initialize GitHub integration
     gh_init
 

@@ -190,6 +190,14 @@
       "required": [],
       "optional": ["issue"]
     },
+    "preflight.passed": {
+      "required": [],
+      "optional": ["skip_flag_used"]
+    },
+    "preflight.failed": {
+      "required": ["count", "reasons"],
+      "optional": ["skip_flag_used"]
+    },
     "loop.iteration_start": {
       "required": ["iteration"],
       "optional": ["issue", "goal"]

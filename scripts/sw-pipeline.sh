@@ -135,6 +135,8 @@ fi
 [[ -f "$SCRIPT_DIR/lib/pipeline-cli.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-cli.sh"
 # shellcheck source=lib/pipeline-util.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-util.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-util.sh"
+# shellcheck source=lib/pipeline-preflight.sh
+[[ -f "$SCRIPT_DIR/lib/pipeline-preflight.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-preflight.sh"
 # shellcheck source=lib/pipeline-execution.sh
 [[ -f "$SCRIPT_DIR/lib/pipeline-execution.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-execution.sh"
 # shellcheck source=lib/pipeline-commands.sh
@@ -150,6 +152,7 @@ MODEL=""
 AGENTS=""
 PIPELINE_AGENT_ID="${PIPELINE_AGENT_ID:-pipeline-$$}"
 SKIP_GATES=false
+SKIP_PREFLIGHT=false
 HEADLESS=false
 GIT_BRANCH=""
 GITHUB_ISSUE=""
