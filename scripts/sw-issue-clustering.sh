@@ -185,12 +185,19 @@ _clustering_match() {
     }
 
     echo "$match"
+    # Record every match attempt as an event so 'metrics' can compute an honest
+    # match rate (matched / attempts). A hit emits clustering.matched; a miss
+    # emits clustering.unmatched. Both denominate the match-rate calculation.
+    local cid=""
     if [[ "$match" != "null" && -n "$match" ]]; then
-        local cid sim
+        local sim
         cid="$(echo "$match" | jq -r '.cluster_id' 2>/dev/null || echo "")"
         sim="$(echo "$match" | jq -r '.similarity_score' 2>/dev/null || echo "")"
-        [[ -n "$cid" && "$cid" != "null" ]] && emit_event "clustering.matched" \
-            "cluster_id=$cid" "similarity_score=$sim"
+    fi
+    if [[ -n "$cid" && "$cid" != "null" ]]; then
+        emit_event "clustering.matched" "cluster_id=$cid" "similarity_score=$sim"
+    else
+        emit_event "clustering.unmatched" "threshold=$threshold"
     fi
 }
 
@@ -226,10 +233,14 @@ _clustering_metrics() {
         return 0
     fi
 
-    local matched total_clusters avg_cluster_success
-    # Count clustering.matched events (a match means the new issue found a cluster).
+    local matched unmatched attempts total_clusters
+    local avg_cluster_success baseline_success
+    # Count match attempts: a hit emits clustering.matched, a miss clustering.unmatched.
     matched="$(grep -c '"type":"clustering.matched"' "$events" 2>/dev/null || true)"
     matched="${matched:-0}"
+    unmatched="$(grep -c '"type":"clustering.unmatched"' "$events" 2>/dev/null || true)"
+    unmatched="${unmatched:-0}"
+    attempts=$(( matched + unmatched ))
 
     if [[ -f "$CLUSTERS_FILE" ]]; then
         total_clusters="$(jq '.clusters | length' "$CLUSTERS_FILE" 2>/dev/null || echo 0)"
@@ -238,13 +249,22 @@ _clustering_metrics() {
             [.clusters[].success_metrics.success_rate | select(. != null)] as $r
             | if ($r | length) > 0 then (($r | add) / ($r | length)) else null end
         ' "$CLUSTERS_FILE" 2>/dev/null || echo "null")"
+        # Baseline = pooled success rate across ALL outcomes (success_count summed
+        # over total_with_outcome). This is what you'd expect going in blind.
+        baseline_success="$(jq -r '
+            [.clusters[].success_metrics | select(.total_with_outcome > 0)] as $m
+            | ($m | map(.success_count) | add) as $s
+            | ($m | map(.total_with_outcome) | add) as $t
+            | if ($t // 0) > 0 then ($s / $t) else null end
+        ' "$CLUSTERS_FILE" 2>/dev/null || echo "null")"
     else
         total_clusters=0
         avg_cluster_success="null"
+        baseline_success="null"
     fi
 
     # Human summary to stderr so stdout stays pure JSON (pipeable, like 'match').
-    info "Pattern matches recorded: $matched" >&2
+    info "Pattern matches recorded: $matched / $attempts attempts" >&2
     info "Clusters: $total_clusters" >&2
     if [[ "$avg_cluster_success" != "null" && -n "$avg_cluster_success" ]]; then
         info "Mean cluster success rate: $avg_cluster_success" >&2
@@ -252,12 +272,29 @@ _clustering_metrics() {
         info "Mean cluster success rate: n/a (no outcomes yet)" >&2
     fi
 
-    # Machine-readable line for dashboards/aggregators.
+    # Machine-readable line for dashboards/aggregators. match_rate and
+    # success_rate_improvement are derived in jq so they emit as canonical
+    # numbers; both are null when their inputs are unknown (no attempts /
+    # no outcomes), never a fabricated 0/0.
+    #   match_rate                = matched / attempts
+    #   success_rate_improvement  = mean cluster success rate − pooled baseline
     jq -n \
         --argjson matched "${matched:-0}" \
+        --argjson attempts "${attempts:-0}" \
         --argjson clusters "${total_clusters:-0}" \
         --argjson success "${avg_cluster_success:-null}" \
-        '{pattern_matches: $matched, clusters: $clusters, mean_cluster_success_rate: $success}'
+        --argjson baseline "${baseline_success:-null}" \
+        '{
+            pattern_matches: $matched,
+            match_attempts: $attempts,
+            match_rate: (if $attempts > 0 then ($matched / $attempts) else null end),
+            clusters: $clusters,
+            mean_cluster_success_rate: $success,
+            baseline_success_rate: $baseline,
+            success_rate_improvement:
+                (if ($success != null and $baseline != null)
+                 then ($success - $baseline) else null end)
+        }'
 }
 
 # Exit 0 when a weekly re-cluster is due (used by the daemon poll loop).

@@ -198,6 +198,52 @@ test_metrics_command() {
     local matches
     matches="$(echo "$out" | jq '.pattern_matches')"
     assert_ge "$matches" "1" "at least one pattern match recorded"
+    # New fields: match_rate, baseline, and success_rate_improvement are present.
+    assert_contains "$out" '"match_rate"' "metrics emits match_rate"
+    assert_contains "$out" '"success_rate_improvement"' "metrics emits success_rate_improvement"
+    # A recorded hit with no misses yields match_rate 1 (canonical number).
+    local rate
+    rate="$(echo "$out" | jq '.match_rate')"
+    assert_eq "1" "$rate" "match_rate is 1 when all attempts hit"
+    # success_rate_improvement equals mean - baseline (verified via jq arithmetic).
+    local imp_ok
+    imp_ok="$(echo "$out" | jq '
+        if (.mean_cluster_success_rate != null and .baseline_success_rate != null)
+        then (.success_rate_improvement ==
+              (.mean_cluster_success_rate - .baseline_success_rate))
+        else (.success_rate_improvement == null) end')"
+    assert_eq "true" "$imp_ok" "success_rate_improvement equals mean minus baseline"
+}
+
+test_metrics_improvement_field() {
+    echo "Test: 'metrics' computes success_rate_improvement and match_rate honestly"
+    seed_events
+    bash "$CLUSTERING" run >/dev/null 2>&1
+
+    # No match attempts yet -> match_rate must be null (never a fabricated 0/0).
+    local out0 rate0
+    out0="$(bash "$CLUSTERING" metrics 2>/dev/null)"
+    rate0="$(echo "$out0" | jq '.match_rate')"
+    assert_eq "null" "$rate0" "match_rate is null before any attempts"
+
+    # Record one hit and one miss; match_rate must be 0.5.
+    SW_CLUSTERING_SIMILARITY_THRESHOLD=0.1 bash "$CLUSTERING" match "daemon timeout SIGKILL" >/dev/null 2>&1
+    SW_CLUSTERING_SIMILARITY_THRESHOLD=0.99 bash "$CLUSTERING" match "totally unrelated quantum foobar" >/dev/null 2>&1
+    local out rate attempts
+    out="$(bash "$CLUSTERING" metrics 2>/dev/null)"
+    attempts="$(echo "$out" | jq '.match_attempts')"
+    assert_eq "2" "$attempts" "two match attempts recorded (one hit, one miss)"
+    rate="$(echo "$out" | jq '.match_rate')"
+    assert_eq "0.5" "$rate" "match_rate is 0.5 for one hit of two attempts"
+
+    # improvement = mean_cluster_success_rate - baseline_success_rate (jq arithmetic).
+    local imp_ok
+    imp_ok="$(echo "$out" | jq '
+        if (.mean_cluster_success_rate != null and .baseline_success_rate != null)
+        then (.success_rate_improvement ==
+              (.mean_cluster_success_rate - .baseline_success_rate))
+        else (.success_rate_improvement == null) end')"
+    assert_eq "true" "$imp_ok" "improvement equals mean minus baseline"
 }
 
 test_node_unit_tests() {
@@ -237,6 +283,7 @@ test_match_command
 test_status_command
 test_due_schedule
 test_metrics_command
+test_metrics_improvement_field
 test_node_unit_tests
 test_help_and_version
 

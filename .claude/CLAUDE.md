@@ -1012,7 +1012,7 @@ shipwright clustering run                 # Re-cluster issues into issue-cluster
 shipwright clustering match "<text>"      # Match an issue to the nearest cluster (JSON out)
 shipwright clustering show                # Print current clusters
 shipwright clustering status              # Cluster count and age
-shipwright clustering metrics             # Match rate + mean cluster success rate (JSON out)
+shipwright clustering metrics             # Match rate + success rate improvement vs baseline (JSON out)
 shipwright clustering due                 # Exit 0 if a weekly re-cluster is due
 ```
 
@@ -1022,7 +1022,8 @@ shipwright clustering due                 # Exit 0 if a weekly re-cluster is due
 
 - Clusters: `~/.shipwright/issue-clusters.json` — id, size, per-cluster `success_rate`, representative issue, common files, error signature, centroid terms, and a `recommended_approach`.
 - The daemon re-clusters weekly during quiet periods when `clustering.enabled` is true; the `due` check enforces `clustering.re_cluster_interval_days`.
-- Events: `clustering.started`, `clustering.completed`, `clustering.failed`, `clustering.matched` (registered in `config/event-schema.json`).
+- Events: `clustering.started`, `clustering.completed`, `clustering.failed`, `clustering.matched`, `clustering.unmatched` (registered in `config/event-schema.json`). Match attempts emit `matched` on a hit and `unmatched` on a miss, so `metrics` can compute an honest match rate.
+- `metrics` JSON fields: `pattern_matches`, `match_attempts`, `match_rate` (matched/attempts, `null` before any attempts), `clusters`, `mean_cluster_success_rate`, `baseline_success_rate` (pooled across all outcomes), and `success_rate_improvement` (mean cluster rate − baseline; `null` until outcomes exist). Rates are never fabricated from a 0/0 denominator.
 
 ### Configuration (`daemon-config.json` → `clustering`)
 
