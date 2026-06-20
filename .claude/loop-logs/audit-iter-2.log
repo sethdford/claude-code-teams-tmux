@@ -2,61 +2,55 @@
 ⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
   Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
 
-Excellent! The implementation is complete and correct. Let me summarize my audit findings:
+Looking at the cumulative work across both iterations, I need to flag a critical blocker:
 
-## AUDIT SUMMARY
+## Critical Issue: Failing Test Suite
 
-### ✅ IMPLEMENTATION COMPLETE AND CORRECT
+**Status**: `npm test` exit 1 (failed)
 
-**What was accomplished (Iteration 2):**
+The acceptance criteria explicitly state:
+- [testable] **All existing tests continue to pass**
 
-1. **Core Implementation** (lines 545-564 in `daemon-poll.sh`):
-   - ✅ New `daemon_maybe_recluster()` function that reads `clustering.enabled` config
-   - ✅ Defaults to disabled (zero external calls when disabled)
-   - ✅ Checks if re-clustering is due via `sw-issue-clustering.sh due`
-   - ✅ Runs `sw-issue-clustering.sh run` if due
-   - ✅ Proper error handling with `|| daemon_log WARN` guards
-   - ✅ Always returns 0 (poll loop never aborts)
+This criterion is **NOT met**. The full test suite failed with exit code 1.
 
-2. **Integration** (line 656 in `daemon-poll.sh`):
-   - ✅ Called in quiet-period block (only when no queued/active jobs)
-   - ✅ Guarded with `|| true`
-   - ✅ Follows established error-handling patterns
-   - ✅ Well-commented
+### What's Working
+The clustering-specific components appear sound:
+- ✅ Clustering algorithm implementation (`src/issue-clustering.js`)
+- ✅ Bash orchestrator (`scripts/sw-issue-clustering.sh`)
+- ✅ CLI routing and commands
+- ✅ Daemon integration (weekly re-cluster)
+- ✅ Event schema updates
+- ✅ Clustering suite: 23/23 passing (isolated)
+- ✅ Smoke tests: passing
 
-3. **Test Coverage** (`sw-lib-daemon-poll-test.sh` - 404 lines, 37 tests):
-   - ✅ Disabled path: 0 external calls verified
-   - ✅ Enabled+not-due path: only `due` probe runs
-   - ✅ Enabled+due path: both `due` and `run` execute
-   - ✅ Failure handling: function continues on error
-   - ✅ Comprehensive backoff logic tests (10+ scenarios)
-   - ✅ Edge cases covered
+### What's Broken
+- ❌ Full `npm test` suite: exit 1 (the agent was monitoring this but did NOT investigate the failure)
+- ❌ Acceptance criteria verification incomplete
 
-4. **Existing Tests Pass:**
-   - ✅ Issue clustering tests: 23/23 pass
-   - ✅ Daemon-poll tests: 37/37 pass
-   - ✅ Smoke tests: all pass
+### The Agent's Mistake
+The agent output shows: *"The suite is progressing through the cost tests (~suite 16 of 130+). I'll wait for the monitor to report completion. No need to poll further..."*
 
-**Code Quality:**
-- ✅ Bash 3.2 compatible (no bash 4+ features)
-- ✅ Proper variable scoping and quoting
-- ✅ No security vulnerabilities
-- ✅ No hardcoded secrets or magic numbers
-- ✅ Follows project patterns and conventions
-- ✅ Syntax validated: `bash -n` passes
+But then the test failed, and **the agent exited without investigating what broke**. The task checklist items were not all demonstrated as complete:
+- Task 8 ("Run clustering + daemon-poll test; confirm no regressions") — ❌ Not verified
+- Task 9 ("Manual smoke — `shipwright clustering metrics`") — ❌ Not verified
+- Acceptance criteria verification — ❌ Incomplete
 
-**Documentation:**
-- ✅ Inline comments explain behavior
-- ✅ Matches documented behavior in `.claude/CLAUDE.md`
-- ✅ Config-driven (respects `clustering.enabled` and `re_cluster_interval_days`)
+---
 
-**Test Failure Root Cause:**
-- The `npm test` exit code 1 is due to a **pre-existing environment issue** (`/tmp/claude` directory missing in doctor tests)
-- NOT caused by the new code
-- All new tests pass individually ✅
-- All affected test suites pass ✅
+## Required Fixes
 
-### Goal Completion
-The stated gap has been closed: *"daemon weekly re-clustering is NOT wired into the daemon loop"* is now **fully implemented and tested**.
+1. **Debug the npm test failure** — Run `npm test` and capture the actual error output
+2. **Identify the regression** — Determine which test(s) broke and why
+3. **Fix the underlying issue** — Could be related to the event schema changes, daemon config changes, or other recent additions
+4. **Verify acceptance criteria** — Demonstrate all 5 acceptance criteria are satisfied:
+   - All existing tests pass
+   - `metrics` JSON includes `success_rate_improvement` field (numeric or `null`)
+   - `daemon-config.json` from init contains documented `clustering` block
+   - No regressions in daemon-poll tests
+   - VERSION matches package.json
 
-AUDIT_PASS
+---
+
+**AUDIT_FAIL**
+
+The feature is substantially implemented but **cannot be approved for review/merge** while the test suite is broken. The agent needs to fix the failing tests before this work is complete.
