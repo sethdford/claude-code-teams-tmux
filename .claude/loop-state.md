@@ -218,16 +218,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-20T01:38:48Z
-last_iteration_at: 2026-06-20T01:38:48Z
+started_at: 2026-06-20T01:48:50Z
+last_iteration_at: 2026-06-20T01:48:50Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -238,4 +238,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-06-20T01:48:50Z)
+5. **Config discoverability** (Task 5): seeded a documented `clustering` block into the `daemon init` config template.
+6. **Docs** (Task 7): updated CLAUDE.md metrics description, event list, and added a metrics-fields reference.
+**Verification:** clustering 31/31, daemon-poll 37/37, daemon 66/66, node unit tests pass. Schema valid JSON. No other t
 
