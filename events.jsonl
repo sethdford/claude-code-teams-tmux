@@ -1700,77 +1700,990 @@
 {"ts":"2026-06-21T07:42:11Z","ts_epoch":1782027731,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
 {"ts":"2026-06-21T07:42:11Z","ts_epoch":1782027731,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
 {"ts":"2026-06-21T07:42:12Z","ts_epoch":1782027732,"type":"patrol.issue_created","check":"untested_scripts","count":5}
-{"ts":"2026-06-21T07:59:48Z","ts_epoch":1782028788,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":78,"recommended_template":"autonomous","issue_type":"infrastructure"}
-{"ts":"2026-06-21T07:59:48Z","ts_epoch":1782028788,"type":"reasoning.trace","job_id":"pipeline-3875-691","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-06-21T08:00:07Z","ts_epoch":1782028807,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":78,"recommended_template":"standard","issue_type":"infrastructure"}
-{"ts":"2026-06-21T08:00:22Z","ts_epoch":1782028822,"type":"intelligence.estimate_iterations","estimate":5,"complexity":5,"source":"claude"}
-{"ts":"2026-06-21T08:00:35Z","ts_epoch":1782028835,"type":"intelligence.prediction","estimated_cost":0.42,"estimated_iterations":2,"complexity":5}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"checks.pipeline_start","stages":11}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"pipeline.started","issue":691,"template":"standard","complexity":5,"machine":"runnervm7b5n9","pipeline":"standard","model":"opus","goal":""}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"pipeline.started","event_id":"evt-1782028838-4105394041","payload":"{\"issue\":\"691\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"intelligence.model_ab","issue":691,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-06-21T08:00:38Z","ts_epoch":1782028838,"type":"stage.started","issue":691,"stage":"intake"}
-{"ts":"2026-06-21T08:02:56Z","ts_epoch":1782028976,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/self-healing-transient-failure-recovery-with-exponential-bac.json","complexity":"very_complex","issue":691}
-{"ts":"2026-06-21T08:02:57Z","ts_epoch":1782028977,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
-{"ts":"2026-06-21T08:02:58Z","ts_epoch":1782028978,"type":"stage.complete","event_id":"evt-1782028978-3911512096","payload":"{\"stage\":\"intake\",\"issue\":\"691\",\"timing\":\"2m 19s\"}"}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"stage.completed","issue":691,"stage":"intake","duration_s":141,"result":"success"}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"vitals.snapshot","issue":691,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"intelligence.model","stage":"spec_generation","complexity":7,"model":"haiku","source":"heuristic"}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"intelligence.model_ab","issue":691,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-06-21T08:02:59Z","ts_epoch":1782028979,"type":"stage.started","issue":691,"stage":"spec_generation"}
-{"ts":"2026-06-21T08:03:49Z","ts_epoch":1782029029,"type":"spec_generation.completed","issue":691,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
-{"ts":"2026-06-21T08:03:51Z","ts_epoch":1782029031,"type":"stage.complete","event_id":"evt-1782029031-1775623556","payload":"{\"stage\":\"spec_generation\",\"issue\":\"691\",\"timing\":\"51s\"}"}
-{"ts":"2026-06-21T08:03:51Z","ts_epoch":1782029031,"type":"stage.completed","issue":691,"stage":"spec_generation","duration_s":52,"result":"success"}
-{"ts":"2026-06-21T08:03:51Z","ts_epoch":1782029031,"type":"vitals.snapshot","issue":691,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-06-21T08:03:51Z","ts_epoch":1782029031,"type":"intelligence.model","stage":"plan","complexity":7,"model":"haiku","source":"heuristic"}
-{"ts":"2026-06-21T08:03:51Z","ts_epoch":1782029031,"type":"intelligence.model_ab","issue":691,"stage":"plan","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
-{"ts":"2026-06-21T08:03:52Z","ts_epoch":1782029032,"type":"stage.started","issue":691,"stage":"plan"}
-{"ts":"2026-06-21T08:08:56Z","ts_epoch":1782029336,"type":"plan.validated","issue":691,"valid":"true","attempts":1}
-{"ts":"2026-06-21T08:08:57Z","ts_epoch":1782029337,"type":"stage.complete","event_id":"evt-1782029337-2029729546","payload":"{\"stage\":\"plan\",\"issue\":\"691\",\"timing\":\"5m 4s\"}"}
-{"ts":"2026-06-21T08:08:58Z","ts_epoch":1782029338,"type":"stage.completed","issue":691,"stage":"plan","duration_s":306,"result":"success"}
-{"ts":"2026-06-21T08:08:58Z","ts_epoch":1782029338,"type":"vitals.snapshot","issue":691,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-06-21T08:08:58Z","ts_epoch":1782029338,"type":"intelligence.model","stage":"design","complexity":7,"model":"haiku","source":"heuristic"}
-{"ts":"2026-06-21T08:08:58Z","ts_epoch":1782029338,"type":"intelligence.model_ab","issue":691,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-06-21T08:08:58Z","ts_epoch":1782029338,"type":"stage.started","issue":691,"stage":"design"}
-{"ts":"2026-06-21T08:11:54Z","ts_epoch":1782029514,"type":"stage.complete","event_id":"evt-1782029514-2511438020","payload":"{\"stage\":\"design\",\"issue\":\"691\",\"timing\":\"2m 55s\"}"}
-{"ts":"2026-06-21T08:11:54Z","ts_epoch":1782029514,"type":"stage.completed","issue":691,"stage":"design","duration_s":176,"result":"success"}
-{"ts":"2026-06-21T08:11:54Z","ts_epoch":1782029514,"type":"vitals.snapshot","issue":691,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-06-21T08:11:54Z","ts_epoch":1782029514,"type":"vitals.adaptive_limit","issue":691,"context":"build_test","original":2,"vitals_limit":6}
-{"ts":"2026-06-21T08:12:59Z","ts_epoch":1782029579,"type":"build.parallelism_suggested","issue":691,"current_agents":1}
-{"ts":"2026-06-21T08:13:19Z","ts_epoch":1782029599,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
-{"ts":"2026-06-21T08:13:19Z","ts_epoch":1782029599,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-06-21T08:13:19Z","ts_epoch":1782029599,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":19341,"trimmed_prompt_chars":19341,"trim_ratio":0.0,"budget_utilization":9.7,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":1,"restart":1}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":1}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":1}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.tracked_restart","restart":1,"iteration":1,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":1}
-{"ts":"2026-06-21T08:19:22Z","ts_epoch":1782029962,"type":"loop.restart","restart":1,"max":3,"iteration":1}
-{"ts":"2026-06-21T08:19:24Z","ts_epoch":1782029964,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
-{"ts":"2026-06-21T08:19:24Z","ts_epoch":1782029964,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-06-21T08:19:25Z","ts_epoch":1782029965,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":20887,"trimmed_prompt_chars":20887,"trim_ratio":0.0,"budget_utilization":10.4,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-06-21T08:19:28Z","ts_epoch":1782029968,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":1,"restart":2}
-{"ts":"2026-06-21T08:19:28Z","ts_epoch":1782029968,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":1}
-{"ts":"2026-06-21T08:19:28Z","ts_epoch":1782029968,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":1}
-{"ts":"2026-06-21T08:19:28Z","ts_epoch":1782029968,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
-{"ts":"2026-06-21T08:19:29Z","ts_epoch":1782029969,"type":"session.tracked_restart","restart":2,"iteration":1,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
-{"ts":"2026-06-21T08:19:29Z","ts_epoch":1782029969,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":1}
-{"ts":"2026-06-21T08:19:29Z","ts_epoch":1782029969,"type":"loop.restart","restart":2,"max":3,"iteration":1}
-{"ts":"2026-06-21T08:19:31Z","ts_epoch":1782029971,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"ts":"2026-06-21T07:58:18Z","ts_epoch":1782028698,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":68,"recommended_template":"standard","issue_type":"backend"}
+{"ts":"2026-06-21T07:58:18Z","ts_epoch":1782028698,"type":"reasoning.trace","job_id":"pipeline-3881-699","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T07:58:37Z","ts_epoch":1782028717,"type":"intelligence.analysis","complexity":7,"risk_level":"high","success_probability":68,"recommended_template":"full","issue_type":"backend"}
+{"ts":"2026-06-21T07:58:56Z","ts_epoch":1782028736,"type":"intelligence.estimate_iterations","estimate":10,"complexity":5,"source":"claude"}
+{"ts":"2026-06-21T07:59:09Z","ts_epoch":1782028749,"type":"intelligence.prediction","estimated_cost":32.50,"estimated_iterations":3,"complexity":5}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"pipeline.started","issue":699,"template":"standard","complexity":5,"machine":"runnervm7b5n9","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"pipeline.started","event_id":"evt-1782028751-2070510795","payload":"{\"issue\":\"699\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"intelligence.model_ab","issue":699,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-21T07:59:11Z","ts_epoch":1782028751,"type":"stage.started","issue":699,"stage":"intake"}
+{"ts":"2026-06-21T08:01:09Z","ts_epoch":1782028869,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/historical-success-pattern-mining--auto-application-engine.json","complexity":"very_complex","issue":699}
+{"ts":"2026-06-21T08:01:09Z","ts_epoch":1782028869,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-06-21T08:01:10Z","ts_epoch":1782028870,"type":"stage.complete","event_id":"evt-1782028870-1838661831","payload":"{\"stage\":\"intake\",\"issue\":\"699\",\"timing\":\"1m 58s\"}"}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"stage.completed","issue":699,"stage":"intake","duration_s":120,"result":"success"}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"vitals.snapshot","issue":699,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"intelligence.model","stage":"spec_generation","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"intelligence.model_ab","issue":699,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-21T08:01:11Z","ts_epoch":1782028871,"type":"stage.started","issue":699,"stage":"spec_generation"}
+{"ts":"2026-06-21T08:01:52Z","ts_epoch":1782028912,"type":"spec_generation.completed","issue":699,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"stage.complete","event_id":"evt-1782028914-1144206443","payload":"{\"stage\":\"spec_generation\",\"issue\":\"699\",\"timing\":\"41s\"}"}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"stage.completed","issue":699,"stage":"spec_generation","duration_s":43,"result":"success"}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"vitals.snapshot","issue":699,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"intelligence.model","stage":"plan","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"intelligence.model_ab","issue":699,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-21T08:01:54Z","ts_epoch":1782028914,"type":"stage.started","issue":699,"stage":"plan"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:01Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:01Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"2"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:05:02Z","status":"success","patterns":"2"}
+{"ts":"2026-06-21T08:09:11Z","ts_epoch":1782029351,"type":"plan.validated","issue":699,"valid":"true","attempts":1}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"stage.complete","event_id":"evt-1782029352-2914733001","payload":"{\"stage\":\"plan\",\"issue\":\"699\",\"timing\":\"7m 17s\"}"}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"stage.completed","issue":699,"stage":"plan","duration_s":439,"result":"success"}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"vitals.snapshot","issue":699,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"intelligence.model","stage":"design","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"intelligence.model_ab","issue":699,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-06-21T08:09:13Z","ts_epoch":1782029353,"type":"stage.started","issue":699,"stage":"design"}
+{"ts":"2026-06-21T08:11:32Z","ts_epoch":1782029492,"type":"stage.complete","event_id":"evt-1782029492-3538216103","payload":"{\"stage\":\"design\",\"issue\":\"699\",\"timing\":\"2m 18s\"}"}
+{"ts":"2026-06-21T08:11:33Z","ts_epoch":1782029493,"type":"stage.completed","issue":699,"stage":"design","duration_s":140,"result":"success"}
+{"ts":"2026-06-21T08:11:33Z","ts_epoch":1782029493,"type":"vitals.snapshot","issue":699,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-06-21T08:11:33Z","ts_epoch":1782029493,"type":"vitals.adaptive_limit","issue":699,"context":"build_test","original":2,"vitals_limit":6}
+{"ts":"2026-06-21T08:12:46Z","ts_epoch":1782029566,"type":"loop.iteration_start","iteration":1,"max":30,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:13:03Z","status":"success","patterns":"1"}
+{"type":"pattern.matching","timestamp":"2026-06-21T08:13:05Z","incoming_title":"Historical Success Pattern Mining & Auto-Application Engine
+
+## Plan Summary
+# Implementation Plan — Historical Success Pattern Mining & Auto-Application Engine (#699)
+
+## State of Play (what the WIP commit already built)
+
+This issue is **~60% implemented** by commit `9f31ff60` (WIP). Verified ground truth before planning:
+
+| Component | File | Status | Tests |
+|-----------|------|--------|-------|
+| Pattern miner (events.jsonl → success-patterns.json) | `scripts/sw-pattern-miner.sh` | ✅ Built | 10/10 pass, registered in `package.json` |
+| Similarity scorer (title 40% / file 35% / error 25%, keyword/Jaccard overlap) | `scripts/sw-pattern-matcher.sh` | ✅ Built | 12/12 pass, registered |
+| Pattern injector (token-budgeted formatting + outcome tracking) | `scripts/sw-pattern-injector.sh` | ⚠️ Built but **orphaned** — no test, **not wired** into loop | none |
+| Build-loop injection (iteration 1) | `scripts/sw-loop.sh:2235-2280` | ⚠️ Works, but uses **inline** ad-hoc formatting that **bypasses** the injector (no token budget, no outcome tracking, no top-3 persistence) | indirect |
+| Composer iteration adjustment from history | `scripts/sw-pipeline-composer.sh:283` | ❌ `composer_estimate_iterations` accepts a `historical_data` arg but **nobody computes it from matched patterns** | n/a |
+
+**Conclusion:** This is a *completion + integration* task, not greenfield. The plan closes the 5 remaining acceptance-criteria gaps with minimum viable change, reusing the three existing scripts rather than rewriting them.
+
+### Acceptance-criteria gap analysis
+
+| # | Criterion | Status | Remaining work |
+|---|-----------|--------|----------------|
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Historical Success Pattern Mining & Auto-Application Engine
+## Context
+## Decision
+### Component decomposition (each has one reason to change)
+### Data flow
+### Error handling / boundaries
+## Alternatives Considered
+## Interface Contracts
+# sw-pattern-miner.sh  — emits success-patterns.json (array)
+# pattern record (new fields appended; old records without them still match):
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Historical Success Pattern Mining & Auto-Application Engine
+
+### Goals
+- Extract success features from events.jsonl (stages used, iteration counts, file patterns, completion time)
+- Similarity scoring between new issue and historical successes (embeddings or keyword overlap)
+- Auto-inject context from similar successful runs into build loop prompt
+- Pipeline composer adjusts iteration limits based on historical similar issues
+- Test suite validates pattern extraction and similarity matching
+- Memory system stores top-3 similar successes per new issue
+- **Priority**: P2
+- **Complexity**: full
+- **Generated by**: Strategic Intelligence Agent
+- **Strategy alignment**: P2: Intelligence & Learning
+
+### Acceptance Criteria
+- [testable] All existing tests continue to pass
+
+Historical context (lessons from previous pipelines):
+{
+  "results": [
+    {
+      "file": "success-patterns.json (sixth entry)",
+      "relevance": 82,
+      "summary": "Contains two substantive patterns ('Fix bug' and 'Add authentication feature') with complexity scores, iteration counts, actual file changes, and cost metrics. These exemplify the data structures the mining engine should capture and auto-apply."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 71,
+      "summary": "Project metadata (node/vitest/npm/commonjs) and conventions that define the context for pattern mining. Essential for understanding repo-specific patterns."
+    },
+    {
+      "file": "knowledge.json",
+      "relevance": 58,
+      "summary": "Historical failure patterns with error signatures, fix strategies, and success rates. Informs what problems patterns should address and avoid."
+    },
+    {
+      "file": "success-patterns.json (fourth entry, test-repo-789)",
+      "relevance": 51,
+      "summary": "Concrete pattern example for daemon timeout fix with explicit approach ('Add handler v2'), root_cause ('Missing logic'), and file-level targeting (scripts/sw-daemon.sh). Shows pattern richness."
+    },
+    {
+      "file": "success-patterns.json (second entry, test-repo-456)",
+      "relevance": 44,
+      "summary": "Pattern structure example showing iterations_needed (2), complexity scoring (medium), and test_strategy. Demonstrates metrics the mining engine should capture."
+    }
+  ]
+}
+
+Discoveries from other pipelines:
+✓ Injected 1 new discoveries
+[design] Design completed for Historical Success Pattern Mining & Auto-Application Engine — Resolution: 
+
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Historical Success Pattern Mining & Auto-Application Engine
+
+## Implementation Checklist
+- [ ] Task 1: Miner extracts `completion_time_seconds` + `stages_executed`; bump VERSION 1.1.0 *(blocks Task 7)*
+- [ ] Task 2: Add `store_top_matches()` writing `similar-successes.json` (atomic, jq-escaped) *(blocks Task 3, Task 6)*
+- [ ] Task 3: Replace inline loop injection with `sw-pattern-injector.sh` call + top-3 persistence *(depends on Task 2)*
+- [ ] Task 4: Add `composer_historical_iterations()` + deterministic offline override in `composer_estimate_iterations` *(blocks Task 8)*
+- [ ] Task 5: Add `historical` subcommand to composer router
+- [ ] Task 6: Create `scripts/sw-pattern-injector-test.sh` (5 cases) *(depends on Task 2, Task 3)*
+- [ ] Task 7: Extend `sw-pattern-miner-test.sh` for completion_time/stages *(depends on Task 1)*
+- [ ] Task 8: Extend `sw-pipeline-composer-test.sh` for historical adjustment *(depends on Task 4)*
+- [ ] Task 9: Register `sw-pattern-injector-test.sh` in `package.json`
+- [ ] Task 10: Update AUTO sections in `.claude/CLAUDE.md` (docs sync)
+- [ ] Task 11: Run full regression (pattern + composer + loop + intelligence suites, then `npm test` for touched suites)
+- [ ] All 6 acceptance criteria satisfied (miner extracts completion_time + stages; similarity scoring present; injector wired into loop; composer adjusts iterations from history; tests validate extraction + matching; top-3 persisted to memory).
+- [ ] `sw-pattern-injector.sh` is invoked by the loop (no orphaned script); inline duplicate formatter removed.
+- [ ] `composer_estimate_iterations` measurably changes output when similar historical successes exist, including offline (`INTELLIGENCE_AVAILABLE=false`).
+- [ ] `~/.shipwright/memory/<hash>/similar-successes.json` contains top-3 per processed issue.
+- [ ] Tests green: miner (≥12), matcher (12), injector (5), composer (+2), loop suite.
+- [ ] `sw-pattern-injector-test.sh` registered in `package.json`; `npm test` passes for touched suites.
+- [ ] Bash 3.2 compatible (no `declare -A`, `${var,,}`, `readarray`); `set -euo pipefail`; atomic writes; `jq --arg` escaping; VERSION bumped & in sync.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated (`shipwright docs check` clean).
+
+## Context
+- Pipeline: standard
+- Branch: feat/historical-success-pattern-mining-auto-a-699
+- Issue: #699
+- Generated: 2026-06-21T08:08:32Z
+
+## Skill Guidance (backend issue, AI-selected)
+## API Design Expertise
+
+Apply these API design patterns:
+
+### RESTful Conventions
+- Use nouns for resources, HTTP verbs for actions (GET /users, POST /users, DELETE /users/:id)
+- Return appropriate status codes: 200 OK, 201 Created, 400 Bad Request, 404 Not Found, 422 Unprocessable
+- Use consistent error response format: `{ "error": { "code": "...", "message": "..." } }`
+- Version APIs when breaking changes are needed (/v1/users, /v2/users)
+
+### Request/Response Design
+- Accept and return JSON (Content-Type: application/json)
+- Use camelCase for JSON field names
+- Include pagination for list endpoints (limit, offset or cursor)
+- Support filtering and sorting via query parameters
+
+### Input Validation
+- Validate ALL input at the API boundary — never trust client data
+- Return specific validation errors with field names
+- Sanitize strings against injection (SQL, XSS, command injection)
+- Set reasonable size limits on request bodies
+
+### Error Handling
+- Never expose stack traces or internal errors to clients
+- Log full error details server-side
+- Use consistent error codes that clients can programmatically handle
+- Include request-id in responses for debugging
+
+### Authentication & Authorization
+- Verify auth on EVERY endpoint (don't rely on frontend-only checks)
+- Use principle of least privilege for authorization
+- Validate tokens/sessions on each request
+- Rate limit sensitive endpoints (login, password reset)
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Endpoint Specification**: For each endpoint: HTTP method, path, request body schema, response schema, success/error status codes
+2. **Error Codes**: Complete list of all possible error responses with status code and error message format
+3. **Rate Limiting**: If applicable, specify rate limit strategy (requests per minute, burst limits, throttle behavior)
+4. **Versioning**: API version number and deprecation policy if breaking changes are possible
+
+If any section is not applicable, explicitly state why it's skipped.
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+","matches_found":"0"}
+{"ts":"2026-06-21T08:13:05Z","ts_epoch":1782029585,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-06-21T08:13:05Z","ts_epoch":1782029585,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":15732,"trimmed_prompt_chars":15732,"trim_ratio":0.0,"budget_utilization":7.9,"budget_chars":200000,"job_id":"standard"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:20Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:21Z","status":"success","patterns":"2"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:21Z","status":"success","patterns":"2"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:21Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:21Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:14:21Z","status":"success","patterns":"1"}
+{"ts":"2026-06-21T08:15:41Z","ts_epoch":1782029741,"type":"reasoning.trace","job_id":"pipeline-90293-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:41Z","ts_epoch":1782029741,"type":"reasoning.trace","job_id":"pipeline-90961-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:42Z","ts_epoch":1782029742,"type":"reasoning.trace","job_id":"pipeline-91686-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:43Z","ts_epoch":1782029743,"type":"reasoning.trace","job_id":"pipeline-92357-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:44Z","ts_epoch":1782029744,"type":"reasoning.trace","job_id":"pipeline-92970-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:45Z","ts_epoch":1782029745,"type":"reasoning.trace","job_id":"pipeline-93652-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:46Z","ts_epoch":1782029746,"type":"reasoning.trace","job_id":"pipeline-94322-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:47Z","ts_epoch":1782029747,"type":"reasoning.trace","job_id":"pipeline-95159-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:47Z","ts_epoch":1782029747,"type":"reasoning.trace","job_id":"pipeline-95833-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:48Z","ts_epoch":1782029748,"type":"reasoning.trace","job_id":"pipeline-96752-0","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:49Z","ts_epoch":1782029749,"type":"reasoning.trace","job_id":"pipeline-97420-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:50Z","ts_epoch":1782029750,"type":"reasoning.trace","job_id":"pipeline-97719-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:50Z","ts_epoch":1782029750,"type":"reasoning.trace","job_id":"pipeline-98390-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:51Z","ts_epoch":1782029751,"type":"reasoning.trace","job_id":"pipeline-99060-42","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-06-21T08:15:52Z","ts_epoch":1782029752,"type":"reasoning.trace","job_id":"pipeline-99730-42","complexity":"medium","risk":50,"template":"standard"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:12Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:12Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"2"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"2"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:13Z","status":"success","patterns":"1"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:16:14Z","status":"success","patterns":"1"}
+{"ts":"2026-06-21T08:18:35Z","ts_epoch":1782029915,"type":"convergence.scored","iteration":1,"score":40,"trend":"declining","status":"progressing","recommendation":"continue","test_passed":"false","code_lines":1}
+{"ts":"2026-06-21T08:18:35Z","ts_epoch":1782029915,"type":"loop.iteration_complete","iteration":1,"max":30,"job_id":"standard","agent":1,"test_passed":"false","commits":1,"status":"running"}
+{"ts":"2026-06-21T08:18:37Z","ts_epoch":1782029917,"type":"loop.iteration_start","iteration":2,"max":30,"job_id":"standard","agent":1,"test_passed":"false"}
+{"ts":"2026-06-21T08:18:37Z","ts_epoch":1782029917,"type":"memory.failure","stage":"test","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly... [38;2;74;222;128m✓"}
+{"ts":"2026-06-21T08:18:37Z","ts_epoch":1782029917,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-06-21T08:18:38Z","ts_epoch":1782029918,"type":"loop.context_efficiency","iteration":2,"raw_prompt_chars":19670,"trimmed_prompt_chars":19670,"trim_ratio":0.0,"budget_utilization":9.8,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":2,"restart":1}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":2}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":2}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.tracked_restart","restart":1,"iteration":2,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":2}
+{"ts":"2026-06-21T08:18:41Z","ts_epoch":1782029921,"type":"loop.restart","restart":1,"max":3,"iteration":2}
+{"ts":"2026-06-21T08:18:43Z","ts_epoch":1782029923,"type":"intelligence.model","stage":"build","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-06-21T08:18:43Z","ts_epoch":1782029923,"type":"loop.iteration_start","iteration":1,"max":30,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:19:02Z","status":"success","patterns":"1"}
+{"type":"pattern.matching","timestamp":"2026-06-21T08:19:03Z","incoming_title":"Historical Success Pattern Mining & Auto-Application Engine
+
+## Plan Summary
+# Implementation Plan — Historical Success Pattern Mining & Auto-Application Engine (#699)
+
+## State of Play (what the WIP commit already built)
+
+This issue is **~60% implemented** by commit `9f31ff60` (WIP). Verified ground truth before planning:
+
+| Component | File | Status | Tests |
+|-----------|------|--------|-------|
+| Pattern miner (events.jsonl → success-patterns.json) | `scripts/sw-pattern-miner.sh` | ✅ Built | 10/10 pass, registered in `package.json` |
+| Similarity scorer (title 40% / file 35% / error 25%, keyword/Jaccard overlap) | `scripts/sw-pattern-matcher.sh` | ✅ Built | 12/12 pass, registered |
+| Pattern injector (token-budgeted formatting + outcome tracking) | `scripts/sw-pattern-injector.sh` | ⚠️ Built but **orphaned** — no test, **not wired** into loop | none |
+| Build-loop injection (iteration 1) | `scripts/sw-loop.sh:2235-2280` | ⚠️ Works, but uses **inline** ad-hoc formatting that **bypasses** the injector (no token budget, no outcome tracking, no top-3 persistence) | indirect |
+| Composer iteration adjustment from history | `scripts/sw-pipeline-composer.sh:283` | ❌ `composer_estimate_iterations` accepts a `historical_data` arg but **nobody computes it from matched patterns** | n/a |
+
+**Conclusion:** This is a *completion + integration* task, not greenfield. The plan closes the 5 remaining acceptance-criteria gaps with minimum viable change, reusing the three existing scripts rather than rewriting them.
+
+### Acceptance-criteria gap analysis
+
+| # | Criterion | Status | Remaining work |
+|---|-----------|--------|----------------|
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Historical Success Pattern Mining & Auto-Application Engine
+## Context
+## Decision
+### Component decomposition (each has one reason to change)
+### Data flow
+### Error handling / boundaries
+## Alternatives Considered
+## Interface Contracts
+# sw-pattern-miner.sh  — emits success-patterns.json (array)
+# pattern record (new fields appended; old records without them still match):
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Historical Success Pattern Mining & Auto-Application Engine
+
+### Goals
+- Extract success features from events.jsonl (stages used, iteration counts, file patterns, completion time)
+- Similarity scoring between new issue and historical successes (embeddings or keyword overlap)
+- Auto-inject context from similar successful runs into build loop prompt
+- Pipeline composer adjusts iteration limits based on historical similar issues
+- Test suite validates pattern extraction and similarity matching
+- Memory system stores top-3 similar successes per new issue
+- **Priority**: P2
+- **Complexity**: full
+- **Generated by**: Strategic Intelligence Agent
+- **Strategy alignment**: P2: Intelligence & Learning
+
+### Acceptance Criteria
+- [testable] All existing tests continue to pass
+
+Historical context (lessons from previous pipelines):
+{
+  "results": [
+    {
+      "file": "success-patterns.json (sixth entry)",
+      "relevance": 82,
+      "summary": "Contains two substantive patterns ('Fix bug' and 'Add authentication feature') with complexity scores, iteration counts, actual file changes, and cost metrics. These exemplify the data structures the mining engine should capture and auto-apply."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 71,
+      "summary": "Project metadata (node/vitest/npm/commonjs) and conventions that define the context for pattern mining. Essential for understanding repo-specific patterns."
+    },
+    {
+      "file": "knowledge.json",
+      "relevance": 58,
+      "summary": "Historical failure patterns with error signatures, fix strategies, and success rates. Informs what problems patterns should address and avoid."
+    },
+    {
+      "file": "success-patterns.json (fourth entry, test-repo-789)",
+      "relevance": 51,
+      "summary": "Concrete pattern example for daemon timeout fix with explicit approach ('Add handler v2'), root_cause ('Missing logic'), and file-level targeting (scripts/sw-daemon.sh). Shows pattern richness."
+    },
+    {
+      "file": "success-patterns.json (second entry, test-repo-456)",
+      "relevance": 44,
+      "summary": "Pattern structure example showing iterations_needed (2), complexity scoring (medium), and test_strategy. Demonstrates metrics the mining engine should capture."
+    }
+  ]
+}
+
+Discoveries from other pipelines:
+✓ Injected 1 new discoveries
+[design] Design completed for Historical Success Pattern Mining & Auto-Application Engine — Resolution: 
+
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Historical Success Pattern Mining & Auto-Application Engine
+
+## Implementation Checklist
+- [ ] Task 1: Miner extracts `completion_time_seconds` + `stages_executed`; bump VERSION 1.1.0 *(blocks Task 7)*
+- [ ] Task 2: Add `store_top_matches()` writing `similar-successes.json` (atomic, jq-escaped) *(blocks Task 3, Task 6)*
+- [ ] Task 3: Replace inline loop injection with `sw-pattern-injector.sh` call + top-3 persistence *(depends on Task 2)*
+- [ ] Task 4: Add `composer_historical_iterations()` + deterministic offline override in `composer_estimate_iterations` *(blocks Task 8)*
+- [ ] Task 5: Add `historical` subcommand to composer router
+- [ ] Task 6: Create `scripts/sw-pattern-injector-test.sh` (5 cases) *(depends on Task 2, Task 3)*
+- [ ] Task 7: Extend `sw-pattern-miner-test.sh` for completion_time/stages *(depends on Task 1)*
+- [ ] Task 8: Extend `sw-pipeline-composer-test.sh` for historical adjustment *(depends on Task 4)*
+- [ ] Task 9: Register `sw-pattern-injector-test.sh` in `package.json`
+- [ ] Task 10: Update AUTO sections in `.claude/CLAUDE.md` (docs sync)
+- [ ] Task 11: Run full regression (pattern + composer + loop + intelligence suites, then `npm test` for touched suites)
+- [ ] All 6 acceptance criteria satisfied (miner extracts completion_time + stages; similarity scoring present; injector wired into loop; composer adjusts iterations from history; tests validate extraction + matching; top-3 persisted to memory).
+- [ ] `sw-pattern-injector.sh` is invoked by the loop (no orphaned script); inline duplicate formatter removed.
+- [ ] `composer_estimate_iterations` measurably changes output when similar historical successes exist, including offline (`INTELLIGENCE_AVAILABLE=false`).
+- [ ] `~/.shipwright/memory/<hash>/similar-successes.json` contains top-3 per processed issue.
+- [ ] Tests green: miner (≥12), matcher (12), injector (5), composer (+2), loop suite.
+- [ ] `sw-pattern-injector-test.sh` registered in `package.json`; `npm test` passes for touched suites.
+- [ ] Bash 3.2 compatible (no `declare -A`, `${var,,}`, `readarray`); `set -euo pipefail`; atomic writes; `jq --arg` escaping; VERSION bumped & in sync.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated (`shipwright docs check` clean).
+
+## Context
+- Pipeline: standard
+- Branch: feat/historical-success-pattern-mining-auto-a-699
+- Issue: #699
+- Generated: 2026-06-21T08:08:32Z
+
+## Skill Guidance (backend issue, AI-selected)
+## API Design Expertise
+
+Apply these API design patterns:
+
+### RESTful Conventions
+- Use nouns for resources, HTTP verbs for actions (GET /users, POST /users, DELETE /users/:id)
+- Return appropriate status codes: 200 OK, 201 Created, 400 Bad Request, 404 Not Found, 422 Unprocessable
+- Use consistent error response format: `{ "error": { "code": "...", "message": "..." } }`
+- Version APIs when breaking changes are needed (/v1/users, /v2/users)
+
+### Request/Response Design
+- Accept and return JSON (Content-Type: application/json)
+- Use camelCase for JSON field names
+- Include pagination for list endpoints (limit, offset or cursor)
+- Support filtering and sorting via query parameters
+
+### Input Validation
+- Validate ALL input at the API boundary — never trust client data
+- Return specific validation errors with field names
+- Sanitize strings against injection (SQL, XSS, command injection)
+- Set reasonable size limits on request bodies
+
+### Error Handling
+- Never expose stack traces or internal errors to clients
+- Log full error details server-side
+- Use consistent error codes that clients can programmatically handle
+- Include request-id in responses for debugging
+
+### Authentication & Authorization
+- Verify auth on EVERY endpoint (don't rely on frontend-only checks)
+- Use principle of least privilege for authorization
+- Validate tokens/sessions on each request
+- Rate limit sensitive endpoints (login, password reset)
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Endpoint Specification**: For each endpoint: HTTP method, path, request body schema, response schema, success/error status codes
+2. **Error Codes**: Complete list of all possible error responses with status code and error message format
+3. **Rate Limiting**: If applicable, specify rate limit strategy (requests per minute, burst limits, throttle behavior)
+4. **Versioning**: API version number and deprecation policy if breaking changes are possible
+
+If any section is not applicable, explicitly state why it's skipped.
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+","matches_found":"0"}
+{"ts":"2026-06-21T08:19:04Z","ts_epoch":1782029944,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-06-21T08:19:04Z","ts_epoch":1782029944,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":18081,"trimmed_prompt_chars":18081,"trim_ratio":0.0,"budget_utilization":9.0,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-06-21T08:19:06Z","ts_epoch":1782029946,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":1,"restart":2}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":1}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":1}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"session.tracked_restart","restart":2,"iteration":1,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":1}
+{"ts":"2026-06-21T08:19:07Z","ts_epoch":1782029947,"type":"loop.restart","restart":2,"max":3,"iteration":1}
+{"ts":"2026-06-21T08:19:09Z","ts_epoch":1782029949,"type":"loop.iteration_start","iteration":1,"max":30,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:19:29Z","status":"success","patterns":"1"}
+{"type":"pattern.matching","timestamp":"2026-06-21T08:19:31Z","incoming_title":"Historical Success Pattern Mining & Auto-Application Engine
+
+## Plan Summary
+# Implementation Plan — Historical Success Pattern Mining & Auto-Application Engine (#699)
+
+## State of Play (what the WIP commit already built)
+
+This issue is **~60% implemented** by commit `9f31ff60` (WIP). Verified ground truth before planning:
+
+| Component | File | Status | Tests |
+|-----------|------|--------|-------|
+| Pattern miner (events.jsonl → success-patterns.json) | `scripts/sw-pattern-miner.sh` | ✅ Built | 10/10 pass, registered in `package.json` |
+| Similarity scorer (title 40% / file 35% / error 25%, keyword/Jaccard overlap) | `scripts/sw-pattern-matcher.sh` | ✅ Built | 12/12 pass, registered |
+| Pattern injector (token-budgeted formatting + outcome tracking) | `scripts/sw-pattern-injector.sh` | ⚠️ Built but **orphaned** — no test, **not wired** into loop | none |
+| Build-loop injection (iteration 1) | `scripts/sw-loop.sh:2235-2280` | ⚠️ Works, but uses **inline** ad-hoc formatting that **bypasses** the injector (no token budget, no outcome tracking, no top-3 persistence) | indirect |
+| Composer iteration adjustment from history | `scripts/sw-pipeline-composer.sh:283` | ❌ `composer_estimate_iterations` accepts a `historical_data` arg but **nobody computes it from matched patterns** | n/a |
+
+**Conclusion:** This is a *completion + integration* task, not greenfield. The plan closes the 5 remaining acceptance-criteria gaps with minimum viable change, reusing the three existing scripts rather than rewriting them.
+
+### Acceptance-criteria gap analysis
+
+| # | Criterion | Status | Remaining work |
+|---|-----------|--------|----------------|
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Historical Success Pattern Mining & Auto-Application Engine
+## Context
+## Decision
+### Component decomposition (each has one reason to change)
+### Data flow
+### Error handling / boundaries
+## Alternatives Considered
+## Interface Contracts
+# sw-pattern-miner.sh  — emits success-patterns.json (array)
+# pattern record (new fields appended; old records without them still match):
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Historical Success Pattern Mining & Auto-Application Engine
+
+### Goals
+- Extract success features from events.jsonl (stages used, iteration counts, file patterns, completion time)
+- Similarity scoring between new issue and historical successes (embeddings or keyword overlap)
+- Auto-inject context from similar successful runs into build loop prompt
+- Pipeline composer adjusts iteration limits based on historical similar issues
+- Test suite validates pattern extraction and similarity matching
+- Memory system stores top-3 similar successes per new issue
+- **Priority**: P2
+- **Complexity**: full
+- **Generated by**: Strategic Intelligence Agent
+- **Strategy alignment**: P2: Intelligence & Learning
+
+### Acceptance Criteria
+- [testable] All existing tests continue to pass
+
+Historical context (lessons from previous pipelines):
+{
+  "results": [
+    {
+      "file": "success-patterns.json (sixth entry)",
+      "relevance": 82,
+      "summary": "Contains two substantive patterns ('Fix bug' and 'Add authentication feature') with complexity scores, iteration counts, actual file changes, and cost metrics. These exemplify the data structures the mining engine should capture and auto-apply."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 71,
+      "summary": "Project metadata (node/vitest/npm/commonjs) and conventions that define the context for pattern mining. Essential for understanding repo-specific patterns."
+    },
+    {
+      "file": "knowledge.json",
+      "relevance": 58,
+      "summary": "Historical failure patterns with error signatures, fix strategies, and success rates. Informs what problems patterns should address and avoid."
+    },
+    {
+      "file": "success-patterns.json (fourth entry, test-repo-789)",
+      "relevance": 51,
+      "summary": "Concrete pattern example for daemon timeout fix with explicit approach ('Add handler v2'), root_cause ('Missing logic'), and file-level targeting (scripts/sw-daemon.sh). Shows pattern richness."
+    },
+    {
+      "file": "success-patterns.json (second entry, test-repo-456)",
+      "relevance": 44,
+      "summary": "Pattern structure example showing iterations_needed (2), complexity scoring (medium), and test_strategy. Demonstrates metrics the mining engine should capture."
+    }
+  ]
+}
+
+Discoveries from other pipelines:
+✓ Injected 1 new discoveries
+[design] Design completed for Historical Success Pattern Mining & Auto-Application Engine — Resolution: 
+
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Historical Success Pattern Mining & Auto-Application Engine
+
+## Implementation Checklist
+- [ ] Task 1: Miner extracts `completion_time_seconds` + `stages_executed`; bump VERSION 1.1.0 *(blocks Task 7)*
+- [ ] Task 2: Add `store_top_matches()` writing `similar-successes.json` (atomic, jq-escaped) *(blocks Task 3, Task 6)*
+- [ ] Task 3: Replace inline loop injection with `sw-pattern-injector.sh` call + top-3 persistence *(depends on Task 2)*
+- [ ] Task 4: Add `composer_historical_iterations()` + deterministic offline override in `composer_estimate_iterations` *(blocks Task 8)*
+- [ ] Task 5: Add `historical` subcommand to composer router
+- [ ] Task 6: Create `scripts/sw-pattern-injector-test.sh` (5 cases) *(depends on Task 2, Task 3)*
+- [ ] Task 7: Extend `sw-pattern-miner-test.sh` for completion_time/stages *(depends on Task 1)*
+- [ ] Task 8: Extend `sw-pipeline-composer-test.sh` for historical adjustment *(depends on Task 4)*
+- [ ] Task 9: Register `sw-pattern-injector-test.sh` in `package.json`
+- [ ] Task 10: Update AUTO sections in `.claude/CLAUDE.md` (docs sync)
+- [ ] Task 11: Run full regression (pattern + composer + loop + intelligence suites, then `npm test` for touched suites)
+- [ ] All 6 acceptance criteria satisfied (miner extracts completion_time + stages; similarity scoring present; injector wired into loop; composer adjusts iterations from history; tests validate extraction + matching; top-3 persisted to memory).
+- [ ] `sw-pattern-injector.sh` is invoked by the loop (no orphaned script); inline duplicate formatter removed.
+- [ ] `composer_estimate_iterations` measurably changes output when similar historical successes exist, including offline (`INTELLIGENCE_AVAILABLE=false`).
+- [ ] `~/.shipwright/memory/<hash>/similar-successes.json` contains top-3 per processed issue.
+- [ ] Tests green: miner (≥12), matcher (12), injector (5), composer (+2), loop suite.
+- [ ] `sw-pattern-injector-test.sh` registered in `package.json`; `npm test` passes for touched suites.
+- [ ] Bash 3.2 compatible (no `declare -A`, `${var,,}`, `readarray`); `set -euo pipefail`; atomic writes; `jq --arg` escaping; VERSION bumped & in sync.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated (`shipwright docs check` clean).
+
+## Context
+- Pipeline: standard
+- Branch: feat/historical-success-pattern-mining-auto-a-699
+- Issue: #699
+- Generated: 2026-06-21T08:08:32Z
+
+## Skill Guidance (backend issue, AI-selected)
+## API Design Expertise
+
+Apply these API design patterns:
+
+### RESTful Conventions
+- Use nouns for resources, HTTP verbs for actions (GET /users, POST /users, DELETE /users/:id)
+- Return appropriate status codes: 200 OK, 201 Created, 400 Bad Request, 404 Not Found, 422 Unprocessable
+- Use consistent error response format: `{ "error": { "code": "...", "message": "..." } }`
+- Version APIs when breaking changes are needed (/v1/users, /v2/users)
+
+### Request/Response Design
+- Accept and return JSON (Content-Type: application/json)
+- Use camelCase for JSON field names
+- Include pagination for list endpoints (limit, offset or cursor)
+- Support filtering and sorting via query parameters
+
+### Input Validation
+- Validate ALL input at the API boundary — never trust client data
+- Return specific validation errors with field names
+- Sanitize strings against injection (SQL, XSS, command injection)
+- Set reasonable size limits on request bodies
+
+### Error Handling
+- Never expose stack traces or internal errors to clients
+- Log full error details server-side
+- Use consistent error codes that clients can programmatically handle
+- Include request-id in responses for debugging
+
+### Authentication & Authorization
+- Verify auth on EVERY endpoint (don't rely on frontend-only checks)
+- Use principle of least privilege for authorization
+- Validate tokens/sessions on each request
+- Rate limit sensitive endpoints (login, password reset)
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Endpoint Specification**: For each endpoint: HTTP method, path, request body schema, response schema, success/error status codes
+2. **Error Codes**: Complete list of all possible error responses with status code and error message format
+3. **Rate Limiting**: If applicable, specify rate limit strategy (requests per minute, burst limits, throttle behavior)
+4. **Versioning**: API version number and deprecation policy if breaking changes are possible
+
+If any section is not applicable, explicitly state why it's skipped.
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+","matches_found":"0"}
 {"ts":"2026-06-21T08:19:31Z","ts_epoch":1782029971,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-06-21T08:19:31Z","ts_epoch":1782029971,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":20887,"trimmed_prompt_chars":20887,"trim_ratio":0.0,"budget_utilization":10.4,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":1,"restart":3}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":1}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":1}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.tracked_restart","restart":3,"iteration":1,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":1}
-{"ts":"2026-06-21T08:19:35Z","ts_epoch":1782029975,"type":"loop.restart","restart":3,"max":3,"iteration":1}
-{"ts":"2026-06-21T08:19:37Z","ts_epoch":1782029977,"type":"loop.iteration_start","iteration":1,"max":20,"job_id":"standard","agent":1,"test_passed":"unknown"}
-{"ts":"2026-06-21T08:19:37Z","ts_epoch":1782029977,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
-{"ts":"2026-06-21T08:19:38Z","ts_epoch":1782029978,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":20887,"trimmed_prompt_chars":20887,"trim_ratio":0.0,"budget_utilization":10.4,"budget_chars":200000,"job_id":"standard"}
-{"ts":"2026-06-21T08:19:41Z","ts_epoch":1782029981,"type":"pipeline.context_exhaustion","issue":691,"stage":"build"}
-{"ts":"2026-06-21T08:19:43Z","ts_epoch":1782029983,"type":"stage.failed","event_id":"evt-1782029983-4155500592","payload":"{\"stage\":\"build\",\"issue\":\"691\",\"timing\":\"7m 46s\"}"}
+{"ts":"2026-06-21T08:19:31Z","ts_epoch":1782029971,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":18081,"trimmed_prompt_chars":18081,"trim_ratio":0.0,"budget_utilization":9.0,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.restart_capture","state_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-state.json","iteration":1,"restart":3}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.briefing_generated","briefing_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-briefing.md","iteration":1}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.restart_reason","classification":"unknown","reason":"unknown","iteration":1}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.strategy_suggested","reason":"unknown","priority":"normal"}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.tracked_restart","restart":3,"iteration":1,"history_file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/restart-history.json"}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"session.progress_enhanced","progress_file":"/home/runner/work/shipwright/shipwright/.claude/loop-logs/progress.md","iteration":1}
+{"ts":"2026-06-21T08:19:34Z","ts_epoch":1782029974,"type":"loop.restart","restart":3,"max":3,"iteration":1}
+{"ts":"2026-06-21T08:19:36Z","ts_epoch":1782029976,"type":"loop.iteration_start","iteration":1,"max":30,"job_id":"standard","agent":1,"test_passed":"unknown"}
+{"type":"pattern.mining","timestamp":"2026-06-21T08:19:57Z","status":"success","patterns":"1"}
+{"type":"pattern.matching","timestamp":"2026-06-21T08:19:58Z","incoming_title":"Historical Success Pattern Mining & Auto-Application Engine
+
+## Plan Summary
+# Implementation Plan — Historical Success Pattern Mining & Auto-Application Engine (#699)
+
+## State of Play (what the WIP commit already built)
+
+This issue is **~60% implemented** by commit `9f31ff60` (WIP). Verified ground truth before planning:
+
+| Component | File | Status | Tests |
+|-----------|------|--------|-------|
+| Pattern miner (events.jsonl → success-patterns.json) | `scripts/sw-pattern-miner.sh` | ✅ Built | 10/10 pass, registered in `package.json` |
+| Similarity scorer (title 40% / file 35% / error 25%, keyword/Jaccard overlap) | `scripts/sw-pattern-matcher.sh` | ✅ Built | 12/12 pass, registered |
+| Pattern injector (token-budgeted formatting + outcome tracking) | `scripts/sw-pattern-injector.sh` | ⚠️ Built but **orphaned** — no test, **not wired** into loop | none |
+| Build-loop injection (iteration 1) | `scripts/sw-loop.sh:2235-2280` | ⚠️ Works, but uses **inline** ad-hoc formatting that **bypasses** the injector (no token budget, no outcome tracking, no top-3 persistence) | indirect |
+| Composer iteration adjustment from history | `scripts/sw-pipeline-composer.sh:283` | ❌ `composer_estimate_iterations` accepts a `historical_data` arg but **nobody computes it from matched patterns** | n/a |
+
+**Conclusion:** This is a *completion + integration* task, not greenfield. The plan closes the 5 remaining acceptance-criteria gaps with minimum viable change, reusing the three existing scripts rather than rewriting them.
+
+### Acceptance-criteria gap analysis
+
+| # | Criterion | Status | Remaining work |
+|---|-----------|--------|----------------|
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Historical Success Pattern Mining & Auto-Application Engine
+## Context
+## Decision
+### Component decomposition (each has one reason to change)
+### Data flow
+### Error handling / boundaries
+## Alternatives Considered
+## Interface Contracts
+# sw-pattern-miner.sh  — emits success-patterns.json (array)
+# pattern record (new fields appended; old records without them still match):
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Historical Success Pattern Mining & Auto-Application Engine
+
+### Goals
+- Extract success features from events.jsonl (stages used, iteration counts, file patterns, completion time)
+- Similarity scoring between new issue and historical successes (embeddings or keyword overlap)
+- Auto-inject context from similar successful runs into build loop prompt
+- Pipeline composer adjusts iteration limits based on historical similar issues
+- Test suite validates pattern extraction and similarity matching
+- Memory system stores top-3 similar successes per new issue
+- **Priority**: P2
+- **Complexity**: full
+- **Generated by**: Strategic Intelligence Agent
+- **Strategy alignment**: P2: Intelligence & Learning
+
+### Acceptance Criteria
+- [testable] All existing tests continue to pass
+
+Historical context (lessons from previous pipelines):
+{
+  "results": [
+    {
+      "file": "success-patterns.json (sixth entry)",
+      "relevance": 82,
+      "summary": "Contains two substantive patterns ('Fix bug' and 'Add authentication feature') with complexity scores, iteration counts, actual file changes, and cost metrics. These exemplify the data structures the mining engine should capture and auto-apply."
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 71,
+      "summary": "Project metadata (node/vitest/npm/commonjs) and conventions that define the context for pattern mining. Essential for understanding repo-specific patterns."
+    },
+    {
+      "file": "knowledge.json",
+      "relevance": 58,
+      "summary": "Historical failure patterns with error signatures, fix strategies, and success rates. Informs what problems patterns should address and avoid."
+    },
+    {
+      "file": "success-patterns.json (fourth entry, test-repo-789)",
+      "relevance": 51,
+      "summary": "Concrete pattern example for daemon timeout fix with explicit approach ('Add handler v2'), root_cause ('Missing logic'), and file-level targeting (scripts/sw-daemon.sh). Shows pattern richness."
+    },
+    {
+      "file": "success-patterns.json (second entry, test-repo-456)",
+      "relevance": 44,
+      "summary": "Pattern structure example showing iterations_needed (2), complexity scoring (medium), and test_strategy. Demonstrates metrics the mining engine should capture."
+    }
+  ]
+}
+
+Discoveries from other pipelines:
+✓ Injected 1 new discoveries
+[design] Design completed for Historical Success Pattern Mining & Auto-Application Engine — Resolution: 
+
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Historical Success Pattern Mining & Auto-Application Engine
+
+## Implementation Checklist
+- [ ] Task 1: Miner extracts `completion_time_seconds` + `stages_executed`; bump VERSION 1.1.0 *(blocks Task 7)*
+- [ ] Task 2: Add `store_top_matches()` writing `similar-successes.json` (atomic, jq-escaped) *(blocks Task 3, Task 6)*
+- [ ] Task 3: Replace inline loop injection with `sw-pattern-injector.sh` call + top-3 persistence *(depends on Task 2)*
+- [ ] Task 4: Add `composer_historical_iterations()` + deterministic offline override in `composer_estimate_iterations` *(blocks Task 8)*
+- [ ] Task 5: Add `historical` subcommand to composer router
+- [ ] Task 6: Create `scripts/sw-pattern-injector-test.sh` (5 cases) *(depends on Task 2, Task 3)*
+- [ ] Task 7: Extend `sw-pattern-miner-test.sh` for completion_time/stages *(depends on Task 1)*
+- [ ] Task 8: Extend `sw-pipeline-composer-test.sh` for historical adjustment *(depends on Task 4)*
+- [ ] Task 9: Register `sw-pattern-injector-test.sh` in `package.json`
+- [ ] Task 10: Update AUTO sections in `.claude/CLAUDE.md` (docs sync)
+- [ ] Task 11: Run full regression (pattern + composer + loop + intelligence suites, then `npm test` for touched suites)
+- [ ] All 6 acceptance criteria satisfied (miner extracts completion_time + stages; similarity scoring present; injector wired into loop; composer adjusts iterations from history; tests validate extraction + matching; top-3 persisted to memory).
+- [ ] `sw-pattern-injector.sh` is invoked by the loop (no orphaned script); inline duplicate formatter removed.
+- [ ] `composer_estimate_iterations` measurably changes output when similar historical successes exist, including offline (`INTELLIGENCE_AVAILABLE=false`).
+- [ ] `~/.shipwright/memory/<hash>/similar-successes.json` contains top-3 per processed issue.
+- [ ] Tests green: miner (≥12), matcher (12), injector (5), composer (+2), loop suite.
+- [ ] `sw-pattern-injector-test.sh` registered in `package.json`; `npm test` passes for touched suites.
+- [ ] Bash 3.2 compatible (no `declare -A`, `${var,,}`, `readarray`); `set -euo pipefail`; atomic writes; `jq --arg` escaping; VERSION bumped & in sync.
+- [ ] `.claude/CLAUDE.md` AUTO sections updated (`shipwright docs check` clean).
+
+## Context
+- Pipeline: standard
+- Branch: feat/historical-success-pattern-mining-auto-a-699
+- Issue: #699
+- Generated: 2026-06-21T08:08:32Z
+
+## Skill Guidance (backend issue, AI-selected)
+## API Design Expertise
+
+Apply these API design patterns:
+
+### RESTful Conventions
+- Use nouns for resources, HTTP verbs for actions (GET /users, POST /users, DELETE /users/:id)
+- Return appropriate status codes: 200 OK, 201 Created, 400 Bad Request, 404 Not Found, 422 Unprocessable
+- Use consistent error response format: `{ "error": { "code": "...", "message": "..." } }`
+- Version APIs when breaking changes are needed (/v1/users, /v2/users)
+
+### Request/Response Design
+- Accept and return JSON (Content-Type: application/json)
+- Use camelCase for JSON field names
+- Include pagination for list endpoints (limit, offset or cursor)
+- Support filtering and sorting via query parameters
+
+### Input Validation
+- Validate ALL input at the API boundary — never trust client data
+- Return specific validation errors with field names
+- Sanitize strings against injection (SQL, XSS, command injection)
+- Set reasonable size limits on request bodies
+
+### Error Handling
+- Never expose stack traces or internal errors to clients
+- Log full error details server-side
+- Use consistent error codes that clients can programmatically handle
+- Include request-id in responses for debugging
+
+### Authentication & Authorization
+- Verify auth on EVERY endpoint (don't rely on frontend-only checks)
+- Use principle of least privilege for authorization
+- Validate tokens/sessions on each request
+- Rate limit sensitive endpoints (login, password reset)
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Endpoint Specification**: For each endpoint: HTTP method, path, request body schema, response schema, success/error status codes
+2. **Error Codes**: Complete list of all possible error responses with status code and error message format
+3. **Rate Limiting**: If applicable, specify rate limit strategy (requests per minute, burst limits, throttle behavior)
+4. **Versioning**: API version number and deprecation policy if breaking changes are possible
+
+If any section is not applicable, explicitly state why it's skipped.
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+","matches_found":"0"}
+{"ts":"2026-06-21T08:19:58Z","ts_epoch":1782029998,"type":"intelligence.cache_hit","cache_key":"search_memory_82ea7560e91989ce3cb658229a6d20f3"}
+{"ts":"2026-06-21T08:19:59Z","ts_epoch":1782029999,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":18081,"trimmed_prompt_chars":18081,"trim_ratio":0.0,"budget_utilization":9.0,"budget_chars":200000,"job_id":"standard"}
+{"ts":"2026-06-21T08:20:01Z","ts_epoch":1782030001,"type":"pipeline.context_exhaustion","issue":699,"stage":"build"}
+{"ts":"2026-06-21T08:20:03Z","ts_epoch":1782030003,"type":"stage.failed","event_id":"evt-1782030003-2625624164","payload":"{\"stage\":\"build\",\"issue\":\"699\",\"timing\":\"8m 28s\"}"}
