@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh heartbeat detection and summary output format changed, causing tests expecting 'agent-1', 'Found', and '--force' text to not appear in dry-run output",
       "fix": "Update sw-cleanup.sh heartbeat detection section to output 'agent-1' identifier and summary to print 'Found N items' with '--force' hint, or update the test expectations to match current output format",
       "seen_count": 8,
-      "last_seen": "2026-06-21T01:56:18Z",
+      "last_seen": "2026-06-21T01:19:17Z",
       "category": "test_failure"
     },
     {
@@ -14,17 +14,26 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sed invocation in sw-code-review-test.sh passes the substitution expression as a filename because the -e flag is missing, causing 's|$TEST_TEMP_DIR|...|g' to be interpreted as a file path",
       "fix": "Add -e flag to the sed call: sed -e \"s|$TEST_TEMP_DIR|...|g\" or ensure argument order is correct (expression before filename)",
-      "seen_count": 6,
-      "last_seen": "2026-06-20T19:37:19Z",
+      "seen_count": 7,
+      "last_seen": "2026-06-21T01:58:25Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
-      "root_cause": "sw-cleanup.sh dry-run mode does not output 'agent-1' when detecting stale heartbeats, and does not output 'Found' count or '--force' hint in summary",
-      "fix": "Update sw-cleanup.sh dry-run output to include the heartbeat filename, 'Found N items' summary line, and '--force' hint when stale items are detected",
+      "root_cause": "All test suites passed with no failures detected in the provided log output",
+      "fix": "No fix needed — all tests passed successfully",
+      "seen_count": 2,
+      "last_seen": "2026-06-21T01:43:07Z",
+      "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113mFailed:\u001b[0m 1",
+      "root_cause": "sw-hello-test.sh test suite reported 1 failure but the log does not show its output, suggesting it failed silently or was the last suite run",
+      "fix": "Run sw-hello-test.sh in isolation to capture its full output and identify which of its tests is failing",
       "seen_count": 1,
-      "last_seen": "2026-06-20T01:51:00Z",
+      "last_seen": "2026-06-21T01:08:43Z",
       "category": "test_failure"
     }
   ]
