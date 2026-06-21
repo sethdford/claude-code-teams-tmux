@@ -5,8 +5,17 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
+      "seen_count": 2,
+      "last_seen": "2026-06-21T13:19:01Z"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-code-review-test.sh uses a sed command that references a file path as the script argument instead of an inline expression, causing 'No such file or directory' error",
+      "fix": "Fix the sed invocation in sw-code-review-test.sh to use -e flag for inline expressions: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of treating the substitution as a file path",
       "seen_count": 1,
-      "last_seen": "2026-06-21T08:18:37Z"
+      "last_seen": "2026-06-21T13:12:46Z",
+      "category": "test_failure"
     }
   ]
 }
