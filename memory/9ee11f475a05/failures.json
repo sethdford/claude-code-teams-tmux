@@ -6,16 +6,24 @@
       "root_cause": "",
       "fix": "",
       "seen_count": 2,
-      "last_seen": "2026-06-25T19:44:51Z"
+      "last_seen": "2026-06-25T19:50:38Z"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sed called without -e flag causes the substitution pattern s|$TEST_TEMP_DIR|...|g to be treated as a filename rather than an inline expression, breaking test output sanitization in sw-code-review-test.sh",
-      "fix": "Add -e flag to the sed invocation: `sed -e \"s|$TEST_TEMP_DIR|...|g\"` instead of `sed \"s|...|g\"`",
+      "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
+      "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
       "seen_count": 1,
-      "last_seen": "2026-06-25T19:35:25Z",
+      "last_seen": "2026-06-25T19:39:50Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-06-25T20:12:06Z"
     }
   ]
 }
