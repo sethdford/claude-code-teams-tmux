@@ -19,6 +19,11 @@ _COMPAT="$SCRIPT_DIR/lib/compat.sh"
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
 [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
 
+# Progress / ETA estimation (reads historical stage durations from SQLite)
+# shellcheck source=lib/pipeline-eta.sh
+[[ -f "$SCRIPT_DIR/sw-db.sh" ]] && source "$SCRIPT_DIR/sw-db.sh" 2>/dev/null || true
+[[ -f "$SCRIPT_DIR/lib/pipeline-eta.sh" ]] && source "$SCRIPT_DIR/lib/pipeline-eta.sh" 2>/dev/null || true
+
 # Portable ISO timestamp parsing (macOS uses -j -f, Linux uses -d)
 _parse_iso_epoch() {
     local ts="$1"
@@ -549,6 +554,28 @@ if [[ -f "$STATE_FILE" ]]; then
                         fi
                     done
                     echo -e "           ${DIM}${progress_bar}${RESET}"
+
+                    # Progress % + ETA from historical stage durations.
+                    if type pipeline_eta_estimate >/dev/null 2>&1; then
+                        eta_enabled=""
+                        eta_completed=""
+                        for entry in $stage_progress; do
+                            es_name="${entry%%:*}"
+                            es_stat="${entry#*:}"
+                            eta_enabled="${eta_enabled:+$eta_enabled,}${es_name}"
+                            [[ "$es_stat" == "complete" ]] && eta_completed="${eta_completed:+$eta_completed,}${es_name}"
+                        done
+                        eta_elapsed=0
+                        if [[ -n "$a_started" && "$a_started" != "null" ]]; then
+                            es_epoch=$(_parse_iso_epoch "$a_started")
+                            [[ "$es_epoch" -gt 0 ]] && eta_elapsed=$(( $(date +%s) - es_epoch ))
+                        fi
+                        eta_json=$(pipeline_eta_estimate "$eta_enabled" "$eta_completed" "$eta_elapsed" 2>/dev/null || true)
+                        if [[ -n "$eta_json" ]]; then
+                            eta_line=$(pipeline_eta_format "$eta_json" 2>/dev/null || true)
+                            [[ -n "$eta_line" ]] && echo -e "           ${CYAN}${eta_line}${RESET}"
+                        fi
+                    fi
                 fi
 
                 # Elapsed time

@@ -1359,6 +1359,35 @@ query_runs() {
     sqlite3 -header -column "$DB_FILE" "$query"
 }
 
+# Return historical completed-stage durations as JSON: {"build":[120,130,...],"test":[...]}
+# Optional $1 restricts to a single stage. Only successful stages with duration > 0
+# are included. Output is safe to feed to jq-based percentile helpers.
+query_stage_durations() {
+    local stage_filter="${1:-}"
+
+    if ! check_sqlite3; then return 1; fi
+
+    # Input validation — stage names are lowercase identifiers only.
+    if [[ -n "$stage_filter" && ! "$stage_filter" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        warn "query_stage_durations: invalid stage name: ${stage_filter}"
+        return 1
+    fi
+
+    local where="WHERE status = 'complete' AND duration_secs > 0"
+    [[ -n "$stage_filter" ]] && where="${where} AND stage_name = '${stage_filter}'"
+
+    local rows
+    rows=$(_db_query "SELECT stage_name || '|' || duration_secs FROM pipeline_stages ${where} ORDER BY stage_name;") || return 1
+
+    printf '%s\n' "$rows" | jq -R -s '
+        split("\n")
+        | map(select(length > 0))
+        | reduce .[] as $line ({};
+            ($line | split("|")) as $p
+            | .[$p[0]] = ((.[$p[0]] // []) + [$p[1] | tonumber])
+          )'
+}
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Sync Functions (HTTP-based, vendor-neutral)
 # ═══════════════════════════════════════════════════════════════════════════

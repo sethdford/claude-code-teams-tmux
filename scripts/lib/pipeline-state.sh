@@ -492,6 +492,14 @@ write_state() {
         stage_progress=$(build_stage_progress)
     fi
 
+    # Serialize per-stage timings to a single space-separated line so an
+    # interrupted pipeline restores elapsed/stage durations on resume and the
+    # dashboard/ETA layer can read real start/end epochs.
+    local stage_timings_line=""
+    if [[ -n "$STAGE_TIMINGS" ]]; then
+        stage_timings_line=$(echo "$STAGE_TIMINGS" | grep -E '_(start|end):[0-9]+' | tr '\n' ' ' | xargs || true)
+    fi
+
     cat > "$STATE_FILE" <<'_SW_STATE_END_'
 ---
 _SW_STATE_END_
@@ -506,6 +514,7 @@ _SW_STATE_END_
         printf 'current_stage: %s\n' "$CURRENT_STAGE"
         printf 'current_stage_description: "%s"\n' "${cur_stage_desc}"
         printf 'stage_progress: "%s"\n' "${stage_progress}"
+        printf 'stage_timings: "%s"\n' "${stage_timings_line}"
         printf 'started_at: %s\n' "${STARTED_AT:-$(now_iso)}"
         printf 'updated_at: %s\n' "$(now_iso)"
         printf 'elapsed: %s\n' "${total_dur:-0s}"
@@ -553,6 +562,13 @@ resume_state() {
                 current_stage:*)       CURRENT_STAGE="$(echo "${line#current_stage:}" | xargs)" ;;
                 current_stage_description:*) ;; # computed field — skip on resume
                 stage_progress:*)      ;; # computed field — skip on resume
+                stage_timings:*)
+                    local _timings_raw
+                    _timings_raw="$(echo "${line#stage_timings:}" | sed 's/^ *"//;s/" *$//')"
+                    if [[ -n "$_timings_raw" ]]; then
+                        STAGE_TIMINGS=$(echo "$_timings_raw" | tr ' ' '\n')
+                    fi
+                    ;;
                 started_at:*)          STARTED_AT="$(echo "${line#started_at:}" | xargs)" ;;
                 pr_number:*)           PR_NUMBER="$(echo "${line#pr_number:}" | xargs)" ;;
                 progress_comment_id:*) PROGRESS_COMMENT_ID="$(echo "${line#progress_comment_id:}" | xargs)" ;;
