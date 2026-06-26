@@ -297,17 +297,22 @@ Your output MUST include these sections when this skill is active:
 3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
 
 If any section is not applicable, explicitly state why it's skipped.
-"
-iteration: 1
+
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 30
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-26T01:44:33Z
-last_iteration_at: 2026-06-26T01:44:33Z
+started_at: 2026-06-26T01:53:35Z
+last_iteration_at: 2026-06-26T01:53:35Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -322,4 +327,9 @@ max_extensions: 3
 - **Test pyramid (this layer):** 28 unit tests covering the scheduler's pure business logic. Integration/E2E (`run_pipel
 - **Critical paths covered:** happy path (diamond, wide fan-out, single stage); error cases (2-cycle, transitive 3-cycle
 Registered the suite in `package.json` and verified bash-3.2 compatibility + syntax. Both commits are in.
+
+### Iteration 2 (2026-06-26T01:53:35Z)
+- `parallel_run_layer` — capped fan-out, waits **all** in-flight siblings even on first failure (no orphan PIDs), reco
+- `parallel_merge_logs` — deterministic, non-interleaved merge in template order.
+Bash 3.2 compatible (PID↔id via space-separated strings). Added 17 tests covering partition rules, concurrency timing,
 
