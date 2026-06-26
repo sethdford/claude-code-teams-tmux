@@ -258,14 +258,14 @@ If any section is not applicable, explicitly state why it's skipped.
 "
 iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
 model: haiku
 agents: 1
-started_at: 2026-06-26T01:45:07Z
-last_iteration_at: 2026-06-26T01:45:07Z
+started_at: 2026-06-26T02:04:37Z
+last_iteration_at: 2026-06-26T02:04:37Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -276,8 +276,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-06-26T01:45:07Z)
-✅ **Recovery tested** — E2E test validates both .bak and checkpoint scenarios  
-✅ **Pipeline continues** — `resume_state()` resumes from recovered stage  
-✅ **All existing tests pass** — 46 pipeline-state tests + 37 helpers tests ✓  
 
