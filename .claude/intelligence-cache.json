@@ -30,17 +30,16 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.75,
+        "reasoning": "Analyzing project structure to detect type and selecting optimal pipeline configurations requires architectural decision-making and pipeline template expertise",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1782438859,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1556,6 +1555,151 @@
         ]
       },
       "timestamp": 1782437320,
+      "ttl": 1800
+    },
+    "7a69a1fe7b89e2fb18ef3035457cc7e1": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Directly captures project-type auto-detection output (type: node, test_runner: vitest, conventions). Essential for validating whether detection logic works correctly."
+          },
+          {
+            "file": "success-patterns.json (detailed)",
+            "relevance": 78,
+            "summary": "Shows templates used for successful issues at varying complexity levels (60-65). Directly informs optimal template selection heuristics and what makes templates successful."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 62,
+            "summary": "Records issue outcomes, success patterns, and gotchas. Provides real examples of what worked/failed, useful for validating template selection decisions."
+          }
+        ]
+      },
+      "timestamp": 1782438642,
+      "ttl": 1800
+    },
+    "3f4da915cbbeffe70ff650ab6ad97e6e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Shows current project-type detection scheme (node/javascript/vitest/npm). Essential baseline for understanding how the auto-detector currently identifies projects and what the template selector works with."
+          },
+          {
+            "file": "success-patterns.json (comprehensive: patterns f4af3e2a & 0bcf0637)",
+            "relevance": 90,
+            "summary": "Contains detailed real-world success patterns across feature and bug-fix types with varying complexity (60-65), iteration counts, file patterns, test strategies, and template usage. Directly informs what pipeline templates work for different scenarios."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 80,
+            "summary": "Records real issues with outcomes, errors, and success patterns (e.g., timeout bugs with semaphore solutions). Provides concrete examples of problem types that the template selector must classify and handle."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Captures failure patterns and fix strategies (mktemp paths, test output formats). Helps inform what edge cases and environment assumptions the auto-detector should account for."
+          },
+          {
+            "file": "success-patterns.json (test-repo-789: high-complexity timeout fix)",
+            "relevance": 65,
+            "summary": "Detailed pattern showing 3-iteration high-complexity scenario (1200s, $2.00 cost). Demonstrates resource intensity patterns needed to properly weight template selection for complex issues."
+          }
+        ]
+      },
+      "timestamp": 1782438684,
+      "ttl": 1800
+    },
+    "ecd531803d4d247e9c709025946ac21b": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Shows current project detection schema (type, framework, test_runner, package_manager, language) and conventions (source_dir, test_pattern, import_style) — directly informs what attributes inform template selection and potential anti-patterns in detection logic"
+          },
+          {
+            "file": "success-patterns.json (comprehensive with Fix bug/Add authentication)",
+            "relevance": 72,
+            "summary": "Demonstrates successful template selection outcomes (standard template for feature/bug work, npm test strategy, complexity-to-iterations mapping) — provides baseline for what template choices succeeded vs. rejected approaches"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 58,
+            "summary": "Documents failure patterns and anti-patterns (convention violations, test infrastructure issues) — shows what detection/classification approaches failed and should be avoided in project-type auto-detection"
+          }
+        ]
+      },
+      "timestamp": 1782438705,
+      "ttl": 1800
+    },
+    "2f07b57e111b6a42921876989b421bb3": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Direct project type detection output for sethdford/shipwright (Node, vitest, npm, javascript) — shows exactly what the auto-detection feature should produce"
+          },
+          {
+            "file": "success-patterns.json (shipwright repo)",
+            "relevance": 85,
+            "summary": "Success patterns from this exact repo showing bug fixes with 3 iterations, npm test strategy, standard template — demonstrates proven build patterns for this project type"
+          },
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 75,
+            "summary": "Shows staged pipeline execution through intake→plan→build→test→review with npm test strategy — demonstrates how build stage fits into template-driven pipeline"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 70,
+            "summary": "Captures failure patterns (mktemp, test output formatting, JSON generation) that build stage needs to avoid — provides learned fixes from prior attempts"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Baseline build duration (2089s) enables template selector to optimize stage timeouts and iteration limits based on historical performance"
+          }
+        ]
+      },
+      "timestamp": 1782438823,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Defines project conventions and structure (node, vitest, npm, JavaScript) that the build stage must respect when working with the codebase"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Historical records of successful build loops showing iteration strategies, file patterns, and test approaches that worked on similar complexity tasks"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Recent test failures (mktemp, JSON validation, sw-feedback.sh) that are likely to recur during build stage test execution"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Captured test failures with specific fix strategies (mktemp /tmp/claude issue, sw-cleanup.sh output format) useful for avoiding known test breakage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Build duration baseline (~2089s) provides context for expected iteration time and timeout configuration in autonomous build loop"
+          }
+        ]
+      },
+      "timestamp": 1782438839,
       "ttl": 1800
     }
   }

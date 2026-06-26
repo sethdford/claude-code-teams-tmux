@@ -9,6 +9,10 @@ REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
 NO_GITHUB="${NO_GITHUB:-false}"
 
+# Optional: Project detection (for template recommendation)
+# shellcheck source=project-detect.sh
+[[ -f "$SCRIPT_DIR/project-detect.sh" ]] && source "$SCRIPT_DIR/project-detect.sh"
+
 # Extract dependency issue numbers from issue text
 extract_issue_dependencies() {
     local text="$1"
@@ -436,7 +440,28 @@ select_pipeline_template() {
         fi
     fi
 
-    # ── Score-based selection ──
+    # ── Project-type aware selection (with confidence gating) ──
+    if type project_recommend_template >/dev/null 2>&1; then
+        local detection_result
+        detection_result=$(project_recommend_template "${REPO_DIR:-.}" 2>/dev/null || echo "{}")
+        if [[ "$detection_result" != "{}" && "$detection_result" != "" ]]; then
+            local detected_template detected_confidence
+            detected_template=$(echo "$detection_result" | jq -r '.template // ""' 2>/dev/null || echo "")
+            detected_confidence=$(echo "$detection_result" | jq -r '.confidence // 0' 2>/dev/null || echo "0")
+
+            # Use detected template if confidence >= 75
+            if [[ -n "$detected_template" && "$detected_confidence" -ge 75 ]]; then
+                daemon_log INFO "Project detection: template=${detected_template} (confidence=${detected_confidence}%)" >&2
+                emit_event "daemon.project_template" \
+                    "template=$detected_template" \
+                    "confidence=$detected_confidence"
+                echo "$detected_template"
+                return
+            fi
+        fi
+    fi
+
+    # ── Score-based selection (fallback) ──
     if [[ "$score" -ge 70 ]]; then
         echo "fast"
     elif [[ "$score" -ge 40 ]]; then
