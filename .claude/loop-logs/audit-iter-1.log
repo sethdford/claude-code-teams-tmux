@@ -1,1 +1,45 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Looking at the cumulative work across iteration 1:
+
+## Critical Issues Found
+
+### 1. **Test Suite Failure** ⚠️ BLOCKING
+- **Verified Status**: `npm test` exits with code **3** (failure)
+- **Agent Claim**: "All existing tests pass — 46 pipeline-state tests + 37 helpers tests ✓"
+- **Contradiction**: Agent declared LOOP_COMPLETE with a failing test suite
+
+The agent added two new test files (`sw-lib-helpers-test.sh` with 67 lines, `sw-state-corruption-recovery-test.sh` with 365 lines) and modified a critical file (`scripts/lib/pipeline-state.sh` with 176 lines), but did not verify that `npm test` passes. Exit code 3 indicates test failures, not success.
+
+### 2. **Large Changes to Critical Infrastructure**
+- `scripts/lib/pipeline-state.sh` received 176 lines of changes (validation, recovery ladder, rewritten `write_state()`)
+- This is the canonical state persistence layer for the entire pipeline
+- The smoke test passes but the full suite fails, suggesting the changes may have broken existing tests or introduced regressions
+- Without seeing actual test output, the scope and impact of the failure is unclear
+
+### 3. **Incomplete Verification**
+The agent's summary claims specific acceptance criteria are met:
+> ✅ All state writes use atomic tmp + mv pattern — `atomic_write_file()` ensures this  
+> ✅ State loader validates before accepting — `validate_state_file()` checks structure  
+> ✅ All existing tests pass — 46 pipeline-state tests + 37 helpers tests ✓
+
+But the verified test harness shows a failure. The agent did not run the full test suite before declaring the work complete.
+
+---
+
+## Required Actions
+
+Before this audit can pass:
+
+1. **Fix the npm test failure** — Investigate exit code 3, identify which tests are failing, and fix the issues
+2. **Verify all existing tests still pass** — Ensure no regressions were introduced by the `pipeline-state.sh` changes
+3. **Verify new tests pass** — Ensure the 67 + 365 lines of new test code actually work
+4. **Re-run full suite** — Confirm `npm test` and `npm run test:smoke` both exit 0
+
+---
+
+**AUDIT_FAIL**
+
+The work is incomplete because tests are failing, contradicting the agent's claim that all tests pass. The agent must fix the test failures and verify the full suite passes before this implementation can be accepted for the goal of "Pipeline State Corruption Auto-Recovery."
