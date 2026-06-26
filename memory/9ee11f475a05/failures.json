@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
-      "seen_count": 14,
-      "last_seen": "2026-06-26T21:02:07Z"
+      "seen_count": 11,
+      "last_seen": "2026-06-26T14:39:22Z"
     },
     {
       "stage": "test",
@@ -14,7 +14,7 @@
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
       "seen_count": 5,
-      "last_seen": "2026-06-26T19:41:20Z",
+      "last_seen": "2026-06-26T20:56:52Z",
       "category": "test_failure"
     },
     {
@@ -29,19 +29,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and dry-run summary output don't match what tests expect — either output format changed or heartbeat age check logic differs",
-      "fix": "Update sw-cleanup.sh to output 'agent-1' when detecting stale heartbeats and include 'Found' count and '--force' hint in dry-run summary, or update tests to match current output format",
+      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint from output",
+      "fix": "Fix sw-cleanup.sh to scan and display stale heartbeat files in dry-run mode and always print the Found count summary with --force hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-06-26T14:25:28Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Pipeline exit code is 1 despite all visible tests passing — likely a test suite that reported 'All 0 tests passed' (guild tests) or sw-hello-test.sh exiting nonzero",
-      "fix": "Check sw-hello-test.sh exit code and investigate why guild test suite reports '0 tests passed' which may indicate a missing test count or registration issue",
-      "seen_count": 1,
-      "last_seen": "2026-06-26T20:24:03Z",
       "category": "test_failure"
     }
   ]
