@@ -298,16 +298,16 @@ Your output MUST include these sections when this skill is active:
 
 If any section is not applicable, explicitly state why it's skipped.
 "
-iteration: 0
+iteration: 1
 max_iterations: 30
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-06-26T01:37:33Z
-last_iteration_at: 2026-06-26T01:37:33Z
+started_at: 2026-06-26T01:44:33Z
+last_iteration_at: 2026-06-26T01:44:33Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -318,4 +318,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-06-26T01:44:33Z)
+- **Test pyramid (this layer):** 28 unit tests covering the scheduler's pure business logic. Integration/E2E (`run_pipel
+- **Critical paths covered:** happy path (diamond, wide fan-out, single stage); error cases (2-cycle, transitive 3-cycle
+Registered the suite in `package.json` and verified bash-3.2 compatibility + syntax. Both commits are in.
 
