@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
-          "reviewer"
+          "optimizer"
         ],
         "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "reasoning": "Parallel stage execution engine with dependency graph scheduler is fundamentally an architecture task—requires system design, scalability decisions, dependency management strategy, and core execution model design before implementation begins.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1782437852,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,332 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "5d45fe00cd4b9a2f31a5227e016c567a": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "critical",
+        "success_probability": 68,
+        "recommended_template": "enterprise",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Race conditions in parallel execution and state synchronization across tmux panes",
+          "DAG scheduling complexity with potential for deadlocks, cycles, or incorrect dependency resolution",
+          "Complex debugging and error propagation when multiple stages fail simultaneously",
+          "tmux pane management fragility (cleanup, signal handling, zombie processes)",
+          "Coordinated logging loss of event ordering and contextual information across parallel processes",
+          "Breaking changes to existing sequential pipeline assumptions in dependent code paths",
+          "Synchronization overhead could negate parallelization performance gains if poorly implemented"
+        ],
+        "implementation_hints": [
+          "Implement DAG generation and topological sorting in pipeline composer with cycle detection",
+          "Build a central stage coordinator that manages readiness queue and execution order",
+          "Use tmux panes for stage isolation but establish centralized state tracking and health monitoring",
+          "Implement comprehensive error handling: abort all dependent stages cleanly if a stage fails",
+          "Create a logging aggregator that preserves event sequence across parallel processes",
+          "Add extensive metrics collection (wall-clock time, parallelization ratio, bottleneck analysis)",
+          "Design test suite with mock stages, failure injection, and race condition scenarios",
+          "Implement health checks and timeouts to detect and handle hung or slow stages",
+          "Consider queue-based readiness tracking instead of time-based polling for stage dependencies",
+          "Document DAG schema, scheduler algorithm, and example dependency graphs for operators"
+        ]
+      },
+      "timestamp": 1782437132,
+      "ttl": 3600
+    },
+    "72d551d6ec6bd614946984306af669fe": {
+      "result": {
+        "estimated_iterations": 20
+      },
+      "timestamp": 1782437147,
+      "ttl": 1800
+    },
+    "463d1e19a36ecda6248ebb1274885d27": {
+      "result": {
+        "estimated_cost_usd": 18.50,
+        "estimated_iterations": 4,
+        "estimated_tokens": 285000,
+        "likely_failure_stage": "build",
+        "confidence": 68
+      },
+      "timestamp": 1782437157,
+      "ttl": 3600
+    },
+    "06e4baa82796c1b51461b49d089e6512": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.87,
+        "secondary_domains": [
+          "performance",
+          "architecture",
+          "reliability"
+        ],
+        "complexity_assessment": {
+          "score": 8,
+          "reasoning": "Requires designing and implementing a DAG scheduler, coordinating parallel tmux execution, handling error propagation across independent stages, and comprehensive testing of concurrency patterns. Significant architectural change with subtle distributed systems considerations."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "brainstorming",
+            "performance"
+          ],
+          "design": [
+            "architecture-design",
+            "api-design",
+            "parallel-dag-scheduler-patterns",
+            "observability"
+          ],
+          "build": [
+            "parallel-dag-scheduler-patterns",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "architecture-design",
+            "two-stage-review"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "adversarial-quality",
+            "performance"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "architecture-design": "DAG-based scheduling is a fundamental architectural decision; an ADR documenting stage dependencies, topological ordering, and error propagation strategy will guide both implementation and future maintenance.",
+          "brainstorming": "Challenge whether all claimed independent stages are truly parallelizable—some stages may have implicit dependencies through shared state, temporary files, or side effects that aren't obvious from stage definitions.",
+          "performance": "Parallel execution's value is measured in wall-clock time saved; the design must minimize overhead (pane creation, logging aggregation) and the build must optimize the scheduler itself.",
+          "api-design": "Stage dependency declarations must be simple for users to express (e.g., a `depends_on` field); poor API design here cascades into complexity throughout the system.",
+          "parallel-dag-scheduler-patterns": "This issue requires deep knowledge of DAG construction (cycle detection), topological sorting, deadlock-free scheduling, and race condition prevention—patterns that don't fit other skills.",
+          "observability": "Parallel execution multiplies logging complexity; the design must support correlating logs by stage, tracing execution flow, and identifying which parallel stage failed first.",
+          "testing-strategy": "Race conditions and deadlocks are nearly impossible to catch in manual testing; test design must include stress tests with many parallel stages, timeout scenarios, and partial failure injection.",
+          "adversarial-quality": "Find failure modes: what if a stage in the middle of a parallel group fails? What if tmux pane creation fails? What if logging buffers overflow? What if the DAG has cycles?",
+          "two-stage-review": "This change is complex enough to benefit from a staged review: Pass 1 validates DAG logic and scheduler correctness; Pass 2 validates integration, error handling, and logging.",
+          "validation-thoroughness": "Smoke tests pass but pipeline doesn't actually run 30% faster—verify against realistic multi-stage templates with actual stage durations, not mock instant-return stages.",
+          "pr-quality": "The parallel execution model is non-obvious; the PR must include a diagram of an example DAG, before/after timing, and the topological sort algorithm.",
+          "documentation": "Users need to understand which stages can run in parallel and how to declare dependencies; examples showing how existing pipelines benefit from parallelization are essential.",
+          "deploy-safety": "This is a core pipeline change; deploy behind a feature flag (e.g., `--enable-parallel-stages` or `PARALLEL_STAGES=1`) and monitor for regressions."
+        },
+        "generated_skills": [
+          {
+            "name": "parallel-dag-scheduler-patterns",
+            "reason": "No existing skill covers the specialized patterns needed for DAG-based parallel execution scheduling: cycle detection, topological sorting, deadlock-free scheduling, coordinating multiple concurrent processes, and handling partial failures in a dependency graph.",
+            "content": "## Parallel DAG Scheduler Design Patterns\n\nImplementing a dependency-aware parallel scheduler requires careful handling of graph structure, execution ordering, and distributed failure modes. These patterns ensure correctness and reliability.\n\n### 1. DAG Representation & Validation\n\n**Pattern**: Represent stages as nodes; dependencies as directed edges. Detect cycles before execution.\n\n```bash\n# Cycle detection via topological sort\nif ! topological_sort(dag) 2>/dev/null; then\n  echo \"ERROR: Circular dependency in stages\" >&2; exit 1\nfi\n```\n\nWhy: Cycles deadlock the scheduler. Detect early, fail fast, with clear error message showing the cycle path.\n\nPitfall: `A depends_on B, B depends_on A` is a direct cycle. But also check transitive: `A→B→C→A`.\n\n### 2. Topological Sorting for Execution Order\n\n**Pattern**: Sort nodes by in-degree. Execute a node only after all its dependencies complete.\n\n```\nInput DAG:  A → B → D\n            A → C → D\n\nExecution layers (no stage in layer N depends on anything outside layers 0..N-1):\n  Layer 0: [A]\n  Layer 1: [B, C]  # Both depend on A, can run in parallel\n  Layer 2: [D]     # Depends on B and C\n```\n\nWhy: Layers directly map to synchronization points. You can spawn all stages in a layer as parallel processes, then wait for the layer to complete before advancing.\n\nPitfall: Don't execute layer 1 stages sequentially—that defeats parallelism.\n\n### 3. Coordinating Parallel Execution\n\n**Pattern**: Spawn stages in the same layer in separate tmux panes/processes. Use file-based signaling or process exit codes to detect completion.\n\n```bash\nfor stage in ${layer[@]}; do\n  tmux new-window -t $session -n $stage \"run_stage $stage && echo $stage > /tmp/$session/$stage.done\"\ndone\n\n# Wait for all panes to signal completion\nwhile [ $(ls /tmp/$session/*.done 2>/dev/null | wc -l) -lt ${#layer[@]} ]; do\n  sleep 0.1\ndone\n```\n\nWhy: Tmux panes run asynchronously; you need explicit synchronization. File-based signaling is bash 3.2 compatible and survives pane crashes.\n\nPitfall: `wait` builtin waits for background jobs, but tmux panes are not jobs—use explicit signaling or `tmux capture-pane` polling.\n\n### 4. Error Handling & Partial Failure\n\n**Pattern**: When a stage fails, immediately cancel dependent stages (siblings can continue), then fail the pipeline.\n\n```bash\nif [ -f /tmp/$session/$stage.error ]; then\n  echo \"Stage $stage failed. Canceling dependents: ${dependents[@]}\"\n  for dep in ${dependents[@]}; do\n    tmux kill-pane -t $session:$dep\n  done\n  exit 1\nfi\n```\n\nWhy: Clean shutdown prevents cascading timeouts and logs. Allows independent stages to finish (useful for diagnostics).\n\nPitfall: `kill -9` on a process may leave cleanup incomplete (temp files, locks). Use process groups and SIGTERM, with timeout fallback to SIGKILL.\n\n### 5. Logging Aggregation\n\n**Pattern**: Each stage logs to its own file. After execution, merge logs in execution order (or by timestamp) for readability.\n\n```bash\n# Stage runs with dedicated log\nrun_stage $stage > /tmp/$session/$stage.log 2>&1\n\n# After all complete, merge\nfor stage in $(cat /tmp/$session/execution-order.txt); do\n  cat /tmp/$session/$stage.log\ndone > .claude/pipeline-artifacts/unified.log\n```\n\nWhy: Avoids interleaved output chaos. Timestamps let readers reconstruct actual execution order even if logs are merged out of order.\n\nPitfall: Stage logs contain ANSI color codes and tmux escape sequences—sanitize before merging.\n\n### 6. Deadlock Prevention\n\n**Pattern**: Avoid circular waits. A stage must not wait for another stage's output (stages are independent by definition). If one stage needs output from another, they have a dependency—encode it in the DAG.\n\nWhy: Cycles in waits = deadlock. The DAG already encodes all true dependencies.\n\nPitfall: Implicit inter-stage dependencies (e.g., stage B reads a file stage A writes) must be explicit in DAG, or parallelization breaks correctness.\n\n### 7. Performance Tuning\n\n**Pattern**: Measure actual parallelism achieved. Wall-clock time is the metric, not \"number of stages in parallel.\"\n\n```bash\ntime ./pipeline --parallel  # Should be ~max(all_dependency_paths) in duration\n```\n\nWhy: A pipeline with 10 stages in parallel but with deep sequential chains gains little speedup.\n\nPitfall: Overhead of spawning tmux panes, logging, and coordination can outweigh gains for short-running stages. Minimum stage duration matters.\n\n### 8. Testing Parallel Execution\n\n**Pattern**: Use mock stages with controllable duration. Run the same DAG multiple times (different random orderings of shell command execution due to scheduling variance). Verify output is identical each run.\n\n```bash\nfor i in {1..10}; do\n  ./pipeline --seed $RANDOM > /tmp/run-$i.log\n  diff -q /tmp/run-1.log /tmp/run-$i.log || echo \"Non-deterministic output on run $i\"\ndone\n```\n\nWhy: Catches race conditions that only manifest under certain scheduling. A deterministic pipeline must produce identical output regardless of execution order.\n\nPitfall: Mock stages that are too fast (return instantly) hide real-world timing issues. Include realistic sleep durations."
+          }
+        ],
+        "review_focus": [
+          "DAG cycle detection logic—verify the algorithm handles transitive dependencies correctly and error messages show the cycle path",
+          "Race conditions in parallel stage execution—check for shared state (temp files, logs, environment variables), file locking, and proper process cleanup on failure",
+          "Logging correctness and aggregation—verify logs from parallel stages can be reconstructed in chronological order and stage attribution is unambiguous",
+          "Error propagation across dependent stages—confirm that when a stage fails, only true dependents are cancelled and independent stages continue cleanly",
+          "Backward compatibility—existing sequential pipeline definitions must not break; parallel execution must be opt-in or auto-detected without requiring DAG redeclaration",
+          "Performance validation—actual wall-clock time reductions match the 30% target on realistic templates; overhead of parallelization (pane creation, logging) is acceptable",
+          "Tmux window/pane management—confirm panes are created, tracked, and cleaned up correctly even under failure scenarios (network disruption, pane crashes, rapid cancellation)",
+          "Integration with existing pipeline state tracking—ensure .claude/pipeline-state.md, progress.json, and check runs reflect accurate stage status across parallel execution"
+        ],
+        "risk_areas": [
+          "Hidden dependencies between stages not explicit in DAG—side effects (shared temp files, database state, environment mutations) could cause silent data corruption when stages run in parallel",
+          "Cascading timeouts—if one stage in a parallel group hangs, the timeout mechanism must cleanly cancel it without deadlocking other stages or leaving zombie processes",
+          "Logging complexity explosion—interleaved output from 5+ parallel stages makes debugging significantly harder; logs must be analyzable without custom parsing",
+          "Feature creep during review—the complexity of this change may reveal other pipeline improvements that should be out of scope (e.g., stage resource limits, priority queues); maintain focus on parallel DAG execution only",
+          "Non-idempotent stages—if a stage has side effects (modifying shared config, pushing commits) it cannot safely run in parallel with siblings; the DAG validation must catch these",
+          "Test harness coverage gap—integration tests with mock stages pass, but real pipeline with real build/test/review stages may expose unforeseen concurrency issues",
+          "Documentation burden—users must understand when parallel execution is safe and how to declare dependencies; incomplete docs lead to silent correctness failures"
+        ]
+      },
+      "timestamp": 1782437259,
+      "ttl": 3600
+    },
+    "698937eb05fce2cc3d0502c6a57b1037": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (9778bf00d8f367ac6c193e10db4761c2360e186c2cdad1b2b40443bde824b74e)",
+            "relevance": 80,
+            "summary": "Tracked multi-stage pipeline execution (intake→plan→build→test→review). Explicitly demonstrates stage sequencing and completion, directly applicable to designing a stage execution engine."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Contains daemon timeout fix with 'added semaphore' solution. Semaphores are core to parallel execution synchronization; daemon scheduling is central to understanding dependency orchestration concerns."
+          },
+          {
+            "file": "success-patterns.json (3acfa67aa7e90335958c612032342c952cb7fbdefe9a42dfb07093ffc9179a66)",
+            "relevance": 65,
+            "summary": "High-complexity fix requiring 3 iterations on sw-daemon.sh. Shows iterative approach to solving scheduling/timeout problems; demonstrates how daemon-level parallel concerns are addressed."
+          },
+          {
+            "file": "success-patterns.json (0bcf0637b6e487d78af89f8cd979d6f345ceac82a47adf7d679858271d09634a)",
+            "relevance": 50,
+            "summary": "Multi-iteration feature development pattern (4 iterations shown, 3 completed) with loop-based iteration and cleanup strategies. Relevant for understanding how complex architectures are built incrementally."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project structure context: Node project with vitest, commonjs imports. Provides baseline understanding of the repo's test infrastructure and conventions for planning considerations."
+          }
+        ]
+      },
+      "timestamp": 1782437343,
+      "ttl": 1800
+    },
+    "e98906d35bc46b1a0cd0847c5b098299": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Contains captured failure patterns with fix strategies and approaches — relevant for understanding common validation failures in test setup, output format, and JSON generation that could apply to plan validation"
+          },
+          {
+            "file": "success-patterns.json (final entry)",
+            "relevance": 65,
+            "summary": "Shows successful patterns from bug fixes and feature additions with iteration counts, file change patterns, and commit strategies — provides baseline of what passing plans look like"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 58,
+            "summary": "Records past issue resolution with success patterns and gotchas (e.g., 'check backoff' for timeout issues) — provides context on common pitfalls that could cause plan validation to fail"
+          }
+        ]
+      },
+      "timestamp": 1782437645,
+      "ttl": 1800
+    },
+    "2a9907d583a83305c4e8cc5d8113fdc0": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Contains 'Staged fix' pattern with multi-stage execution sequence (intake→plan→build→test→review). Demonstrates pipeline stage orchestration and dependencies — directly relevant to designing stage execution engines."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Documents daemon timeout issue fixed with 'semaphore' approach. Semaphores are core synchronization primitives for parallel execution and dependency management in scheduling engines."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 60,
+            "summary": "Contains 'Fix timeout' pattern (test-repo-789) with high complexity (3 iterations) in daemon.sh. Shows patterns for managing timing and resource constraints in parallel execution contexts."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Defines project conventions (Node, vitest, CommonJS). Architectural patterns should align with established project type and testing infrastructure decisions."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Contains failure patterns and fix strategies including mktemp directory issues and cleanup logic. Some patterns inform resource management and error handling considerations for scheduler design."
+          }
+        ]
+      },
+      "timestamp": 1782437693,
+      "ttl": 1800
+    },
+    "313d4cab055be7ff4081022202020fa7": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 42,
+            "summary": "Contains failure patterns and anti-patterns (mktemp issues, test infrastructure failures, JSON output problems) that document what doesn't work. While not specifically about parallel execution engines, it demonstrates anti-patterns in real implementation."
+          },
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 28,
+            "summary": "Shows timeout handling pattern with 'Add handler v2' and 'Missing logic' root cause. Indicates iterative rejection of earlier approaches, suggesting design evolution in handling concurrent/parallel concerns."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 22,
+            "summary": "Documents daemon timeout bug with 'added semaphore' as solution pattern. Indicates synchronization and parallel execution challenges, implying rejected lock-free or simpler approaches."
+          }
+        ]
+      },
+      "timestamp": 1782437708,
+      "ttl": 1800
+    },
+    "81245829f7f63f4d94edb22e04d7d2cb": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 90,
+            "summary": "Contains 'Staged fix' pattern with stages_executed array showing full pipeline (intake, plan, build, test, review). Directly relevant to understanding how multiple stages execute in sequence—core to parallel execution engine design."
+          },
+          {
+            "file": "success-patterns.json (sethdford/shipwright repo)",
+            "relevance": 85,
+            "summary": "Recent successful patterns from this actual repo (Build bug fixes, 3 iterations, 45-150s duration). Shows iteration strategies and file change patterns relevant to this project's build stage work."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Project metadata: Node.js, vitest, CommonJS, src/ and test/ directories. Essential context for understanding the build environment and test strategy for the parallel execution engine."
+          },
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 65,
+            "summary": "High-complexity timeout fix (3 iterations, 1200s) in build stage involving scripts/sw-daemon.sh. Relevant to handling timeouts in parallel/scheduled execution."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Contains failure patterns (mktemp, sw-cleanup, sw-feedback) from test infrastructure. Useful for avoiding known test failures during build stage implementation."
+          }
+        ]
+      },
+      "timestamp": 1782437829,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Previous successful builds with similar complexity (60-65) show 3-4 iterations needed, test strategies using npm test, and file patterns matching current codebase. Directly applicable to planning build iterations."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 82,
+            "summary": "Build baseline of 2089s provides temporal constraint reference. Critical for understanding expected duration and iteration time budget for 20-iteration loop."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 76,
+            "summary": "Recent test stage failures (regression detection JSON output, mktemp path issues) are direct predecessors to build stage. These patterns inform what to avoid during build iteration."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 68,
+            "summary": "Project conventions (vitest runner, CommonJS imports, src/ directory) are required for correct build execution. Ensures build respects established project structure."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 59,
+            "summary": "Failed fix strategies from mktemp and test setup issues document common build pitfalls. Entries show 0% success rate but document patterns to avoid (directory creation, path templates)."
+          }
+        ]
+      },
+      "timestamp": 1782437843,
+      "ttl": 1800
     }
   }
 }
