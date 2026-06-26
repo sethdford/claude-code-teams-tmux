@@ -268,16 +268,16 @@ Use **P50 (median)** for the most likely completion time and **P90** for the con
 
 Post-deploy, track `estimate_error = (actual_duration - predicted_duration) / predicted_duration` per pipeline. Target: |error| < 15% for P50, <30% for P90. If accuracy drops below target, disable cache and show stage-count-only estimates until data quality recovers.
 "
-iteration: 0
+iteration: 1
 max_iterations: 20
-status: running
+status: error
 test_cmd: "npm test"
-model: opus
+model: haiku
 agents: 1
-started_at: 2026-06-26T01:39:22Z
-last_iteration_at: 2026-06-26T01:39:22Z
+started_at: 2026-06-26T02:04:43Z
+last_iteration_at: 2026-06-26T02:04:43Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
