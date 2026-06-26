@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
-      "seen_count": 9,
-      "last_seen": "2026-06-26T15:15:59Z"
+      "seen_count": 11,
+      "last_seen": "2026-06-26T14:39:22Z"
     },
     {
       "stage": "test",
@@ -14,26 +14,26 @@
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
       "seen_count": 4,
-      "last_seen": "2026-06-26T13:33:53Z",
+      "last_seen": "2026-06-26T13:30:35Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "mktemp fails because /tmp/claude/ directory does not exist on this system",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use '/tmp/sw-test-XXXXXX' as the template instead",
-      "seen_count": 2,
-      "last_seen": "2026-06-26T09:22:10Z",
+      "fix": "Replace `mktemp -d /tmp/claude/sw-test-XXXXXX` with `mktemp -d /tmp/sw-test-XXXXXX` or create /tmp/claude/ before calling mktemp",
+      "seen_count": 3,
+      "last_seen": "2026-06-26T14:56:38Z",
       "category": "config"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "All individual test suites passed but the pipeline exit code is 1, suggesting a test runner aggregation or script-level failure unrelated to individual test outcomes",
-      "fix": "Check the npm test runner script and sw-hello-test.sh for non-zero exit codes or missing test registration that causes the overall test command to exit 1 despite all suites passing",
-      "seen_count": 2,
-      "last_seen": "2026-06-26T14:49:56Z",
-      "category": "unknown"
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
+      "root_cause": "classify_failure function is not called within daemon_on_failure, breaking the intelligence-wired retry classification path",
+      "fix": "Add a classify_failure call inside daemon_on_failure before the retry logic executes",
+      "seen_count": 1,
+      "last_seen": "2026-06-26T14:25:28Z",
+      "category": "test_failure"
     }
   ]
 }
