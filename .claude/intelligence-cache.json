@@ -1401,6 +1401,162 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "e849ea8315512e11fa19498fdba6baef": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 80,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Detection logic may fail for monorepos or multi-language projects",
+          "Performance impact if detection runs on every command invocation",
+          "Breaking changes for users with explicit template dependencies",
+          "Edge cases in test framework detection across different project types",
+          "Override mechanism complexity and user expectation management"
+        ],
+        "implementation_hints": [
+          "Create modular detection functions per project type to enable independent testing",
+          "Cache detection results in .claude/project-type.json to avoid repeated filesystem checks",
+          "Implement clear precedence: --template flag > SW_TEMPLATE env var > auto-detection",
+          "Add --detect-only flag to shipwright setup and pipeline start for debugging",
+          "Start with highest-ROI types (Node.js, Go, Python) before expanding to Rust/Java",
+          "Create sample test repositories for each project type to validate detection accuracy",
+          "Document detection heuristics clearly so users understand when manual override is needed"
+        ]
+      },
+      "timestamp": 1782437126,
+      "ttl": 3600
+    },
+    "4dd41ab302bef02bc53fa6fa2dc98a7a": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1782437139,
+      "ttl": 1800
+    },
+    "b3e6dcc42beba7dc2720ef8388ef84bd": {
+      "result": {
+        "estimated_cost_usd": 48,
+        "estimated_iterations": 3,
+        "estimated_tokens": 68000,
+        "likely_failure_stage": "test",
+        "confidence": 78
+      },
+      "timestamp": 1782437148,
+      "ttl": 3600
+    },
+    "9652460a3599f44d7af06d539551941c": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "developer experience",
+          "automation",
+          "testing"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Well-scoped with clear acceptance criteria. Core tasks are detection logic, template mapping, and integration with existing commands. Requires attention to edge cases but implementation is straightforward."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "product-thinking"
+          ],
+          "design": [
+            "architecture-design",
+            "testing-strategy"
+          ],
+          "build": [],
+          "review": [
+            "security-audit"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality",
+            "documentation"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about what constitutes reliable detection heuristics and edge cases before committing to a detection algorithm",
+          "product-thinking": "Optimize the user experience of auto-detection so it removes friction from setup and pipeline initialization without confusing users about template selection",
+          "architecture-design": "Design the detection system architecture, template recommendation engine, and integration points with setup and pipeline start commands in a way that's maintainable and extensible for future project types",
+          "testing-strategy": "Plan a comprehensive test strategy for validating detection against sample projects for all 5+ supported types, handling edge cases like monorepos and minimal/malformed configs",
+          "security-audit": "Ensure file-based detection logic doesn't introduce security vulnerabilities when parsing configuration files (injection, path traversal, unsafe deserialization)",
+          "adversarial-quality": "Find edge cases and failure modes: unusual project structures, mixed-type projects, empty/malformed configs, symlinks, and ways detection could misclassify",
+          "validation-thoroughness": "Thoroughly validate detection against real sample projects of each type (not just syntactically valid), verify template recommendations are optimal, test override mechanism",
+          "pr-quality": "Clearly explain the detection algorithm, prioritization order for ambiguous cases, template mapping rationale, and override examples so reviewers understand the design quickly",
+          "documentation": "Document the detection logic, supported project types, heuristic priority order, and step-by-step examples of how users can override template selection when auto-detection doesn't match their needs"
+        },
+        "generated_skills": [
+          {
+            "name": "safe-config-file-detection",
+            "reason": "No existing skill specifically addresses safe, performant detection of project types from configuration files with proper edge-case handling and security considerations",
+            "content": "## Safe Configuration File Detection & Project Type Classification\n\n### Detection Strategy\nFollow this priority order to reliably classify project types:\n\n1. **Read configuration files safely** — Use `test -f` to check existence, `jq` or safe parsing for JSON/TOML\n2. **Definitive markers** — Some files uniquely identify a type: package.json → Node.js, go.mod → Go, Cargo.toml → Rust\n3. **Fallback heuristics** — Check for alternative config files (e.g., setup.py or pyproject.toml → Python)\n4. **Directory structure** — When multiple types detected, use file layout to identify primary language\n5. **Metadata files** — Look at hidden files and directories (.python-version, .ruby-version, etc.) as secondary signals\n\n### Common Detection Markers\n- **Node.js**: package.json present + (npm/yarn/pnpm lockfile or node_modules/)\n- **Go**: go.mod or go.sum present\n- **Python**: pyproject.toml, setup.py, requirements.txt, Pipfile, or .python-version present\n- **Rust**: Cargo.toml present\n- **Java**: pom.xml (Maven), build.gradle (Gradle), or settings.gradle present\n\n### Handling Ambiguous Cases\n1. **Monorepos**: If both package.json and go.mod exist, check top-level directory structure — which has more subdirectories of that type?\n2. **Polyglot projects**: Detect primary language from most abundant source files (count .js vs .go vs .py files in src/)\n3. **Minimal projects**: If detection uncertain, prompt user for explicit selection rather than guessing\n4. **Log confidence**: Record detection confidence (high/medium/low) to help debug why a template was selected\n\n### Security & Performance\n- **Safe parsing**: Use `jq` for JSON (never `eval`), grep for text markers — never execute detected content\n- **Path safety**: Always use absolute paths, validate file paths don't escape repo root\n- **Performance**: Cache detection results; detection should complete in <1 second even for large repos\n- **Empty/malformed files**: Handle gracefully — a missing or empty config file is a valid signal\n\n### Test Coverage\nMinimum test cases:\n- Valid single-type projects for each of 5+ types\n- Monorepos with multiple types (Node + Go, Python + Rust, etc.)\n- Empty/malformed configuration files\n- Minimal projects (only one tiny config file)\n- Edge case: symlinked config files\n- Performance: detection time on a 1000-file repo\n"
+          }
+        ],
+        "review_focus": [
+          "Detection logic correctly identifies all 5+ project types with high confidence",
+          "Edge case handling: monorepos, minimal projects, malformed configs, unusual structures",
+          "Security of file parsing — no unsafe eval, no path traversal, no injection risks",
+          "Template recommendation logic produces sensible results for detected types",
+          "Integration with setup and pipeline start commands maintains backward compatibility",
+          "Override mechanism is clear and documented (how users force a specific template)",
+          "Test coverage validates detection against real sample projects (not just unit tests)",
+          "Performance: detection completes quickly even on large repos"
+        ],
+        "risk_areas": [
+          "Detection heuristics may fail on custom or unusual project structures, causing wrong template selection",
+          "Security vulnerability if configuration file parsing is unsafe (file content injection)",
+          "Breaking changes if integration with setup/pipeline start alters existing behavior unexpectedly",
+          "User confusion if override mechanism is not obvious or template selection reasoning is opaque",
+          "Monorepo detection ambiguity — unclear which language is 'primary' when multiple types present",
+          "Performance regression if detection is slow on large repos or many sample projects"
+        ]
+      },
+      "timestamp": 1782437258,
+      "ttl": 3600
+    },
+    "cf06cf4109509db7395eade72561ee45": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 95,
+            "summary": "Directly captures detected project properties (type: node, test_runner: vitest, language: javascript, conventions). This is exactly what the auto-detection feature must identify and use for template selection."
+          },
+          {
+            "file": "success-patterns.json (sethdford/shipwright detailed)",
+            "relevance": 62,
+            "summary": "Shows multi-iteration feature implementations (complexity 60-65, 3-4 iterations) with detailed approach breakdowns. Relevant for estimating effort and planning iterative development of auto-detection logic."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 48,
+            "summary": "Contains learned failure patterns and fix strategies (e.g., mktemp path issues, JSON output formatting). Planning should account for similar convention violations or edge cases the auto-detector must handle."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 32,
+            "summary": "Records past issue resolutions with gotchas (e.g., 'check backoff' for timeout fixes). Provides precedent for how complex issues with multiple files are tackled, informing planning scope."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 18,
+            "summary": "Baseline build duration (2089s) helps estimate pipeline stage timeouts and resource planning for testing the new auto-detection feature."
+          }
+        ]
+      },
+      "timestamp": 1782437320,
+      "ttl": 1800
     }
   }
 }
