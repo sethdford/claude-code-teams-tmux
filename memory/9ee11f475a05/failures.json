@@ -13,8 +13,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
-      "seen_count": 4,
-      "last_seen": "2026-06-26T13:30:35Z",
+      "seen_count": 5,
+      "last_seen": "2026-06-26T21:08:03Z",
       "category": "test_failure"
     },
     {
@@ -29,8 +29,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "classify_failure function is not called within daemon_on_failure, breaking the intelligence-wired retry classification path",
-      "fix": "Add a classify_failure call inside daemon_on_failure before the retry logic executes",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output do not match test expectations — heartbeat files are not being found or the output format changed",
+      "fix": "Fix heartbeat detection logic in sw-cleanup.sh to correctly identify stale heartbeat files and restore 'Found N' summary line with '--force' hint in dry-run output",
       "seen_count": 1,
       "last_seen": "2026-06-26T14:25:28Z",
       "category": "test_failure"
