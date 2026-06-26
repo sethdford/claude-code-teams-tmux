@@ -192,4 +192,84 @@ assert_eq "CLI 'validate' prints OK on valid DAG" "OK" "$cli_validate"
 echo "$CYCLE" | bash "$DAG_LIB" validate >/dev/null 2>&1 && cli_rc=0 || cli_rc=$?
 assert_eq "CLI 'validate' exits non-zero on cycle" "1" "$cli_rc"
 
+# ─────────────────────────────────────────────────────────────────────────────
+print_test_section "pipeline-parallel — partition (whitelist / gate / mutating)"
+# ─────────────────────────────────────────────────────────────────────────────
+
+# shellcheck disable=SC1090
+source "$SCRIPT_DIR/lib/pipeline-parallel.sh"
+
+PARALLEL_CFG='{"stages":[
+  {"id":"review","gate":"auto"},
+  {"id":"compound_quality","gate":"auto"},
+  {"id":"build","gate":"auto"},
+  {"id":"adversarial","gate":"approve"},
+  {"id":"deploy","gate":"auto"}]}'
+export PIPELINE_CONFIG="$PARALLEL_CFG"
+
+part=$(parallel_partition "review compound_quality build adversarial deploy")
+safe_line=$(printf '%s\n' "$part" | sed -n 's/^SAFE://p')
+single_line=$(printf '%s\n' "$part" | sed -n 's/^SINGLE://p')
+assert_eq "whitelisted read-only stages are parallel-safe" "review compound_quality" "$safe_line"
+assert_contains "mutating stage 'build' forced singleton" "$single_line" "build"
+assert_contains "mutating stage 'deploy' forced singleton" "$single_line" "deploy"
+assert_contains "gate:approve stage forced singleton even if whitelisted" "$single_line" "adversarial"
+
+if parallel_is_safe "review"; then assert_pass "parallel_is_safe true for whitelisted review"
+else assert_fail "parallel_is_safe true for whitelisted review"; fi
+if parallel_is_safe "build"; then assert_fail "parallel_is_safe false for mutating build"
+else assert_pass "parallel_is_safe false for mutating build"; fi
+if parallel_is_safe "test"; then assert_fail "build/test never parallelize (test singleton)"
+else assert_pass "build/test never parallelize (test singleton)"; fi
+if parallel_is_safe "plan"; then assert_fail "non-whitelisted stage is not safe"
+else assert_pass "non-whitelisted stage is not safe"; fi
+
+# Partition preserves template order within each group.
+ordered=$(parallel_partition "compound_quality review" | sed -n 's/^SAFE://p')
+assert_eq "partition preserves input order within safe group" "compound_quality review" "$ordered"
+
+# ─────────────────────────────────────────────────────────────────────────────
+print_test_section "pipeline-parallel — run_layer (concurrency / failure / no orphans)"
+# ─────────────────────────────────────────────────────────────────────────────
+
+PARALLEL_LOG_DIR="$(mktemp -d)"
+export PARALLEL_LOG_DIR
+_mock_stage() { sleep 0.3; echo "ran $1"; [[ "$1" == "boom" ]] && return 9; return 0; }
+export PARALLEL_STAGE_RUNNER=_mock_stage
+
+# Concurrency: 3 stages @0.3s under cap 3 must finish well under the serial 0.9s.
+export SW_PARALLEL_MAX_CONCURRENCY=3
+_t0=$(date +%s%N)
+parallel_run_layer "a b c" && _rc=0 || _rc=$?
+_par_ms=$(( ($(date +%s%N) - _t0) / 1000000 ))
+assert_eq "run_layer returns 0 when all stages succeed" "0" "$_rc"
+if [[ $_par_ms -lt 700 ]]; then assert_pass "3 stages run concurrently (${_par_ms}ms < 700ms)"
+else assert_fail "3 stages run concurrently (${_par_ms}ms not < 700ms)"; fi
+
+# Concurrency cap honored: cap 1 serializes (2 stages ≥ 0.6s).
+export SW_PARALLEL_MAX_CONCURRENCY=1
+_t0=$(date +%s%N)
+parallel_run_layer "a b" && _rc=0 || _rc=$?
+_ser_ms=$(( ($(date +%s%N) - _t0) / 1000000 ))
+if [[ $_ser_ms -ge 550 ]]; then assert_pass "concurrency cap=1 serializes (${_ser_ms}ms >= 550ms)"
+else assert_fail "concurrency cap=1 serializes (${_ser_ms}ms not >= 550ms)"; fi
+export SW_PARALLEL_MAX_CONCURRENCY=3
+
+# Failure propagation + first-failure capture.
+parallel_run_layer "a boom c" && _rc=0 || _rc=$?
+assert_eq "run_layer propagates the failing stage's exit code" "9" "$_rc"
+assert_eq "PARALLEL_FAILED_STAGE records the failed stage" "boom" "$PARALLEL_FAILED_STAGE"
+
+# No orphan PIDs after a failed layer.
+_orphans=$(jobs -p | wc -l | tr -d ' ')
+assert_eq "no orphan PIDs after failed layer (all siblings waited)" "0" "$_orphans"
+
+# Deterministic, non-interleaved merge in the requested order.
+merged=$(parallel_merge_logs "c a")
+assert_contains "merged logs include per-stage header" "$merged" "stage: c"
+first_stage=$(printf '%s\n' "$merged" | sed -n 's/^───── stage: \(.*\) ─────/\1/p' | head -1)
+assert_eq "merge order follows requested id order, not completion" "c" "$first_stage"
+
+rm -rf "$PARALLEL_LOG_DIR"
+
 print_test_results
