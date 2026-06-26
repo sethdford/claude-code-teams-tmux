@@ -22,7 +22,33 @@ import type {
   PipelineInfo,
   QueueItem,
   EventItem,
+  EtaEstimate,
 } from "../types/api";
+
+// Render the progress bar + ETA badge for a pipeline card.
+// Falls back to "N/M stages" when there is insufficient history for an ETA.
+function renderEtaProgress(eta?: EtaEstimate): string {
+  if (!eta || eta.total_stages <= 0) return "";
+  const pct = Math.max(0, Math.min(100, eta.progress_pct));
+  let label: string;
+  if (eta.basis === "p50_history" && eta.eta_seconds != null) {
+    const mins = Math.round(eta.eta_seconds / 60);
+    label =
+      mins < 1
+        ? `${pct}% · ~${eta.eta_seconds}s remaining`
+        : `${pct}% · ~${mins} min remaining`;
+  } else if (eta.basis === "complete") {
+    label = "100% · complete";
+  } else {
+    label = `${eta.completed_stages}/${eta.total_stages} stages`;
+  }
+  return (
+    `<div class="pipeline-eta">` +
+    `<div class="eta-bar-track"><div class="eta-bar-fill" style="width:${pct}%"></div></div>` +
+    `<span class="eta-label">${label}</span>` +
+    `</div>`
+  );
+}
 
 function renderStats(data: FleetState): void {
   const d = data.daemon || ({} as any);
@@ -123,6 +149,7 @@ function renderOverviewPipelines(data: FleetState): void {
       `<span class="pipeline-title">${escapeHtml(p.title)}</span>` +
       `<span class="pipeline-elapsed">${formatDuration(p.elapsed_s)}</span></div>` +
       `<div class="pipeline-svg-wrap">${renderPipelineSVG(p)}</div>` +
+      renderEtaProgress(p.eta) +
       `<div class="pipeline-iter">` +
       `<span class="pipeline-iter-label">Iteration ${curIter}/${maxIter}</span>` +
       `<div class="iter-bar-track"><div class="iter-bar-fill" style="width:${iterPct}%"></div></div></div>` +

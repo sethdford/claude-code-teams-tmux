@@ -10,13 +10,13 @@ Pipeline: standard | Branch: feat/pipeline-progress-estimation-with-real-t-692
 - [x] Task 4: Create `scripts/lib/pipeline-eta.sh` (percentile + estimate + 24h cache) *(needs 1,2)*
 - [x] Task 5: Implement no-history fallback (`MIN_SAMPLES`, stage-count output)
 - [x] Task 6: Wire `sw-status.sh` → `Progress: X% (~Y min remaining)` *(needs 4)*
-- [ ] Task 7: Upgrade `server.ts` metrics to P50/P90 + attach progress/eta fields *(needs 3)*
-- [ ] Task 8: Extend `dashboard/src/types/api.ts` interfaces
-- [ ] Task 9: Render progress bar + ETA badge in `overview.ts` + `styles.css` *(needs 8)*
-- [ ] Task 10: `emit_event "eta.computed"` for accuracy observability
+- [x] Task 7: Upgrade `server.ts` metrics to P50/P90 + attach progress/eta fields *(needs 3)*
+- [x] Task 8: Extend `dashboard/src/types/api.ts` interfaces
+- [x] Task 9: Render progress bar + ETA badge in `overview.ts` + `styles.css` *(needs 8)*
+- [x] Task 10: `emit_event "eta.computed"` for accuracy observability
 - [x] Task 11: Write `sw-pipeline-eta-test.sh` (mock DB/cache) + bash/TS parity fixture
 - [x] Task 12: Register test in `package.json`; run `npm test`
-- [ ] Task 13: Update `.claude/CLAUDE.md`; bump `VERSION` in new/edited scripts
+- [x] Task 13: Update `.claude/CLAUDE.md`; bump `VERSION` in new/edited scripts
 - [ ] `stage_timings` persisted to `pipeline-state.md`; durations land in `pipeline_stages`
 - [ ] `query_stage_durations()` returns correct P50/P90 via `percentile()`
 - [ ] `shipwright status` shows `Progress: X% (~Y min remaining)` for running pipelines

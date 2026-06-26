@@ -202,6 +202,7 @@ interface Pipeline {
   stagesDone: string[];
   linesWritten: number;
   testsPassing: boolean;
+  eta?: EtaEstimate;
 }
 
 interface QueueItem {
@@ -1189,8 +1190,21 @@ function getFleetState(): FleetState {
       else state.metrics.failed++;
     }
   }
+  const etaDurationMap = buildStageDurationMap(events);
   for (const p of state.pipelines) {
     if (issueStages[p.issue]) p.stagesDone = issueStages[p.issue];
+    // Progress % + ETA from enabled-vs-complete stages and historical durations.
+    const { enabled, completed } = parseStageProgress(
+      findWorktreeBase(p.issue),
+    );
+    if (enabled.length > 0) {
+      p.eta = computeEtaEstimate(
+        enabled,
+        completed,
+        p.elapsed_s,
+        etaDurationMap,
+      );
+    }
   }
 
   // Add team data if any developers are connected
@@ -1273,6 +1287,150 @@ function readFileOr(filePath: string, fallback: string): string {
 }
 
 // ─── Pipeline Detail ─────────────────────────────────────────────────
+// ─── Progress / ETA estimation ───────────────────────────────────────
+// TS mirror of scripts/lib/pipeline-eta.sh. MUST stay numerically identical —
+// see the bash/TS parity fixture in scripts/sw-pipeline-eta-test.sh.
+const ETA_MIN_SAMPLES = 3;
+
+interface EtaEstimate {
+  progress_pct: number;
+  eta_seconds: number | null;
+  eta_p90_seconds: number | null;
+  confidence: "high" | "medium" | "low" | "none";
+  basis: "p50_history" | "stage_count" | "complete";
+  total_stages: number;
+  completed_stages: number;
+  elapsed_seconds: number;
+}
+
+// Linear-neighbour percentile (matches sw-adaptive.sh::percentile).
+function etaPercentile(values: number[], p: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const len = sorted.length;
+  if (len === 0) return 0;
+  const idx = Math.floor((p / 100) * (len - 1));
+  if (idx >= len - 1) return sorted[len - 1];
+  return (sorted[idx] + sorted[idx + 1]) / 2;
+}
+
+// IQR outlier filter — keeps [Q1 - 1.5*IQR, Q3 + 1.5*IQR]; <4 elements pass through.
+function etaFilterOutliers(values: number[]): number[] {
+  const s = [...values].sort((a, b) => a - b);
+  const n = s.length;
+  if (n < 4) return s;
+  const q1 = s[Math.floor((n - 1) * 0.25)];
+  const q3 = s[Math.floor((n - 1) * 0.75)];
+  const iqr = q3 - q1;
+  const lo = q1 - 1.5 * iqr;
+  const hi = q3 + 1.5 * iqr;
+  return s.filter((v) => v >= lo && v <= hi);
+}
+
+// Compute the estimate from enabled/completed stages and a duration map.
+function computeEtaEstimate(
+  enabled: string[],
+  completed: string[],
+  elapsedSecs: number,
+  durationMap: Record<string, number[]>,
+): EtaEstimate {
+  const completedSet = new Set(completed);
+  const total = enabled.length;
+  const done = enabled.filter((s) => completedSet.has(s)).length;
+  const progressPct = total > 0 ? Math.floor((done * 100) / total) : 0;
+
+  let remainingP50 = 0;
+  let remainingP90 = 0;
+  let minSamples = Number.MAX_SAFE_INTEGER;
+  let covered = true;
+  let remainingCount = 0;
+
+  for (const stage of enabled) {
+    if (completedSet.has(stage)) continue;
+    remainingCount++;
+    const raw = durationMap[stage] || [];
+    if (raw.length < ETA_MIN_SAMPLES) {
+      covered = false;
+      continue;
+    }
+    const filtered = etaFilterOutliers(raw);
+    // Truncate at each step to match the bash awk '%d' accumulation.
+    remainingP50 = Math.trunc(remainingP50 + etaPercentile(filtered, 50));
+    remainingP90 = Math.trunc(remainingP90 + etaPercentile(filtered, 90));
+    minSamples = Math.min(minSamples, raw.length);
+  }
+
+  let etaSeconds: number | null = null;
+  let etaP90: number | null = null;
+  let basis: EtaEstimate["basis"];
+  let confidence: EtaEstimate["confidence"];
+
+  if (remainingCount <= 0) {
+    etaSeconds = 0;
+    etaP90 = 0;
+    basis = "complete";
+    confidence = "high";
+  } else if (covered) {
+    etaSeconds = remainingP50;
+    etaP90 = remainingP90;
+    basis = "p50_history";
+    confidence = minSamples >= 10 ? "high" : minSamples >= 5 ? "medium" : "low";
+  } else {
+    basis = "stage_count";
+    confidence = "none";
+  }
+
+  return {
+    progress_pct: progressPct,
+    eta_seconds: etaSeconds,
+    eta_p90_seconds: etaP90,
+    confidence,
+    basis,
+    total_stages: total,
+    completed_stages: done,
+    elapsed_seconds: elapsedSecs,
+  };
+}
+
+// Build the per-stage duration map from historical stage.completed events.
+function buildStageDurationMap(
+  events: DaemonEvent[],
+): Record<string, number[]> {
+  const map: Record<string, number[]> = {};
+  for (const e of events) {
+    if (e.type === "stage.completed" && e.stage) {
+      const d = e.duration_s || 0;
+      if (d > 0) {
+        if (!map[e.stage]) map[e.stage] = [];
+        map[e.stage].push(d);
+      }
+    }
+  }
+  return map;
+}
+
+// Parse `stage_progress: "intake:complete build:running ..."` from pipeline-state.md.
+function parseStageProgress(worktreeBase: string | null): {
+  enabled: string[];
+  completed: string[];
+} {
+  const empty = { enabled: [] as string[], completed: [] as string[] };
+  if (!worktreeBase) return empty;
+  const statePath = join(worktreeBase, ".claude", "pipeline-state.md");
+  const raw = readFileOr(statePath, "");
+  if (!raw) return empty;
+  const match = raw.match(/^stage_progress:\s*"([^"]*)"/m);
+  if (!match || !match[1]) return empty;
+  const enabled: string[] = [];
+  const completed: string[] = [];
+  for (const pair of match[1].trim().split(/\s+/)) {
+    const [name, status] = pair.split(":");
+    if (!name) continue;
+    enabled.push(name);
+    if (status === "complete") completed.push(name);
+  }
+  return { enabled, completed };
+}
+
 interface PipelineDetail {
   issue: number;
   title: string;
@@ -1285,6 +1443,7 @@ interface PipelineDetail {
   elapsed_s: number;
   branch: string;
   prLink: string;
+  eta: EtaEstimate;
 }
 
 function getPipelineDetail(issue: number): PipelineDetail {
@@ -1387,6 +1546,11 @@ function getPipelineDetail(issue: number): PipelineDetail {
   const now = Math.floor(Date.now() / 1000);
   const elapsed_s = pipelineStartEpoch > 0 ? now - pipelineStartEpoch : 0;
 
+  // Progress / ETA from enabled-vs-complete stages + historical durations.
+  const { enabled, completed } = parseStageProgress(worktreeBase);
+  const durationMap = buildStageDurationMap(events);
+  const eta = computeEtaEstimate(enabled, completed, elapsed_s, durationMap);
+
   return {
     issue,
     title,
@@ -1399,6 +1563,7 @@ function getPipelineDetail(issue: number): PipelineDetail {
     elapsed_s,
     branch,
     prLink,
+    eta,
   };
 }
 

@@ -701,6 +701,35 @@ body::-webkit-scrollbar-thumb {
   transition: width 0.6s ease;
 }
 
+.pipeline-eta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.eta-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--ocean);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.eta-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--green, #4ade80));
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.eta-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
 .pipeline-meta {
   font-family: var(--font-mono);
   font-size: 0.7rem;

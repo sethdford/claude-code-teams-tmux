@@ -23,6 +23,20 @@ export interface PipelineInfo {
   cost?: number;
   branch?: string;
   status?: string;
+  eta?: EtaEstimate;
+}
+
+// Progress / ETA estimate — mirror of scripts/lib/pipeline-eta.sh output.
+// eta_seconds is null when basis is "stage_count" (insufficient history).
+export interface EtaEstimate {
+  progress_pct: number;
+  eta_seconds: number | null;
+  eta_p90_seconds: number | null;
+  confidence: "high" | "medium" | "low" | "none";
+  basis: "p50_history" | "stage_count" | "complete";
+  total_stages: number;
+  completed_stages: number;
+  elapsed_seconds: number;
 }
 
 export interface QueueItem {
