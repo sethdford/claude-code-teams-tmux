@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
-      "seen_count": 4,
-      "last_seen": "2026-06-26T08:29:38Z"
+      "seen_count": 6,
+      "last_seen": "2026-06-26T09:32:31Z"
     },
     {
       "stage": "test",
@@ -14,16 +14,16 @@
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
       "seen_count": 3,
-      "last_seen": "2026-06-26T08:11:48Z",
+      "last_seen": "2026-06-26T08:18:52Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "mktemp fails because /tmp/claude directory does not exist on this runner",
-      "fix": "Add 'mkdir -p /tmp/claude' before mktemp calls, or use 'mktemp -d' without a subdirectory prefix to fall back to /tmp directly",
+      "root_cause": "mktemp cannot create temp directories under /tmp/claude/ because that parent directory does not exist",
+      "fix": "Create /tmp/claude/ before calling mktemp, or use mktemp without a custom base directory (e.g., mktemp -d) to fall back to the system default /tmp",
       "seen_count": 2,
-      "last_seen": "2026-06-26T08:36:43Z",
+      "last_seen": "2026-06-26T09:22:10Z",
       "category": "config"
     }
   ]
