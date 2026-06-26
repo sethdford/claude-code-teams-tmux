@@ -580,7 +580,8 @@ write_state() {
     tmp_state=$(mktemp "${STATE_FILE}.tmp.XXXXXX") || return 1
 
     {
-        printf '---\n'
+        printf '%s' '---'
+        printf '\n'
         printf 'pipeline: %s\n' "$PIPELINE_NAME"
         printf 'goal: "%s"\n' "$GOAL"
         printf 'status: %s\n' "$PIPELINE_STATUS"
@@ -597,7 +598,8 @@ write_state() {
         printf 'progress_comment_id: %s\n' "${PROGRESS_COMMENT_ID:-}"
         printf 'stages:\n'
         printf '%s' "${stages_yaml}"
-        printf -- '---\n\n'
+        printf '%s' '---'
+        printf '\n\n'
         printf '## Log\n'
         printf '%s\n' "$LOG_ENTRIES"
     } > "$tmp_state" || { rm -f "$tmp_state"; return 1; }
