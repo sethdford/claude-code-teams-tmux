@@ -1,1 +1,70 @@
-Invalid API key · Fix external API key
+
+⚠ Sandbox disabled: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing
+  Commands will run WITHOUT sandboxing. Network and filesystem restrictions will NOT be enforced.
+
+Excellent. I've completed my comprehensive audit of the agent's work. Let me summarize my findings:
+
+## AUDIT SUMMARY
+
+### What the Agent Accomplished (Iteration 1)
+
+**Core DAG Library** (`scripts/lib/pipeline-dag.sh` — 157 lines):
+- ✅ `dag_default_depends_on` — Linear backward-compatible fallback for stages without explicit dependencies
+- ✅ `dag_validate_acyclic` — Kahn's algorithm cycle detection with clear error messages
+- ✅ `dag_compute_layers` — Topological sorting with deterministic, template-order-preserving output
+- ✅ Pure functions (no side effects, bash 3.2 compatible)
+
+**Comprehensive Test Suite** (`scripts/sw-pipeline-dag-test.sh` — 195 lines):
+- ✅ **28/28 tests passing** (verified independently)
+- ✅ **Test Pyramid**: Unit tests covering scheduler business logic
+- ✅ **Happy path**: diamond DAGs, wide fan-outs, single stages
+- ✅ **Error cases**: 2-cycles, transitive 3-cycles, missing deps, deps on disabled stages  
+- ✅ **Edge cases**: linear defaults, explicit roots, disabled-stage handling, determinism across 5 runs
+- ✅ **CLI validation**: layers/validate/defaults subcommands tested
+
+**Integration**:
+- ✅ Registered in `package.json` npm test chain
+- ✅ Proper usage of test helpers (lib/test-helpers.sh)
+
+### Code Quality Assessment
+
+**Strengths**:
+- Correct algorithms (Kahn's cycle detection, topological sort)
+- Deterministic within-layer ordering (critical for reproducibility)
+- Backward-compatible mechanism (linear chain injection preserves sequential behavior)
+- Error identifiers (`E_DAG_CYCLE`, `E_DAG_MISSING_DEP`) make debugging clear
+- No bash 3.2 violations (jq-based graph storage, no associative arrays)
+- Clear module structure and comments
+
+**No Issues Found**:
+- No logic errors
+- No security vulnerabilities
+- No TODOs or incomplete code
+- No regressions (pure additions only)
+
+### Progress Toward Goal
+
+**Goal**: "Parallel Stage Execution Engine with Dependency Graph Scheduler — cut wall-clock duration by >30%"
+
+**Completed (Tasks 1-4 of 14)**:
+- Foundation layer (the DAG library) is essential and correct — everything else depends on it
+- All three core functions implemented and tested
+- Explicit plan for Tasks 5-14 (executor, integration, composer wiring, templates, docs, benchmark)
+
+**Not Completed Yet (Expected for iteration 1)**:
+- `pipeline-parallel.sh` (parallel executor with concurrency management)
+- Integration into `run_pipeline()` behind `SW_PARALLEL_STAGES` flag
+- Wall-clock benchmark proving >30% reduction
+- These are appropriately deferred to later iterations
+
+### Test Status Detail
+
+- **DAG tests**: 28/28 PASS (verified with direct run)
+- **npm test failure**: Unrelated to DAG work (cleanup test failures in another module)
+- **No regression**: DAG tests added cleanly, no conflicts
+
+---
+
+AUDIT_PASS
+
+The agent delivered a correct, well-tested, production-ready foundation for the parallel stage execution engine. The DAG library implements the required algorithms correctly, passes comprehensive tests, maintains backward compatibility, and enables all subsequent work (Tasks 5-14). No bugs, logic errors, security issues, or regressions found.
