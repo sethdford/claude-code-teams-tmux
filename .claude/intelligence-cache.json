@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
+          "architect",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Pipeline state corruption recovery is fundamentally an infrastructure reliability problem requiring atomic write patterns, state management, recovery mechanisms, and incident response—core DevOps concerns; architect helps design the recovery system, tester validates recovery scenarios.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1782437832,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,245 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "5d4a9df9f53026f0410df93659f68cda": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "high",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Atomic write edge cases under concurrent access or system failures",
+          "Checkpoint corruption or staleness could prevent rollback",
+          "Performance impact of validation on every state load",
+          "State schema evolution breaking recovery logic",
+          "Incomplete test coverage of failure scenarios"
+        ],
+        "implementation_hints": [
+          "Study sw-checkpoint.sh and .claude/pipeline-artifacts/checkpoints/ for existing checkpoint patterns",
+          "Use bash flock or atomic mv pattern for write protection across all pipeline state writes",
+          "Implement state validation as separate testable function using jq for JSON schema",
+          "Create state recovery that tries checkpoints in reverse chronological order",
+          "Add comprehensive test suite covering truncated JSON, malformed state, concurrent writes",
+          "Consider performance impact: cache validation result or use lazy validation only on errors"
+        ]
+      },
+      "timestamp": 1782437116,
+      "ttl": 3600
+    },
+    "76c22a77cd541a2474f963f5311a4d40": {
+      "result": {
+        "estimated_iterations": 7,
+        "reasoning": {
+          "base_iterations": 3,
+          "complexity_6_modifier": 0,
+          "high_risk_modifier": 2,
+          "atomic_writes_modifier": 1,
+          "test_coverage_modifier": 1,
+          "total": 7
+        },
+        "breakdown": {
+          "iteration_1": "Initial atomic write protection with mv pattern",
+          "iteration_2": "State validation function and JSON schema checks",
+          "iteration_3": "Checkpoint recovery logic and prioritization",
+          "iteration_4": "Concurrent write and flock edge cases",
+          "iteration_5": "Corruption detection and truncated JSON handling",
+          "iteration_6": "Performance profiling and validation caching",
+          "iteration_7": "Integration testing and failure scenario coverage"
+        }
+      },
+      "timestamp": 1782437130,
+      "ttl": 1800
+    },
+    "296ac92d6643dac7b1ab2d6ced7c472b": {
+      "result": {
+        "estimated_cost_usd": 3.15,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 225000,
+        "likely_failure_stage": "test",
+        "confidence": 71
+      },
+      "timestamp": 1782437150,
+      "ttl": 3600
+    },
+    "f4c01316c760a841f735cae7e373572b": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Contains daemon timeout bug with scripts/sw-daemon.sh and daemon-dispatch.sh — directly relevant to understanding infrastructure state issues that auto-recovery must handle"
+          },
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 72,
+            "summary": "Captures 'Fix timeout' pattern in sw-daemon.sh with root_cause 'Missing logic' and 3 iterations — provides concrete example of daemon state issues and resolution approach"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 68,
+            "summary": "Failure patterns include mktemp, test infrastructure, and sw-cleanup.sh issues — informs understanding of failure modes that corrupt state and recovery strategies"
+          },
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 62,
+            "summary": "Shows 'Staged fix' with stages_executed [intake,plan,build,test,review] — relevant for understanding pipeline state transitions and multi-stage recovery points"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project structure (Node/vitest) and conventions — useful baseline for planning implementation approach and test strategy for auto-recovery feature"
+          }
+        ]
+      },
+      "timestamp": 1782437372,
+      "ttl": 1800
+    },
+    "d1fe39ee1d59e475d20cf008d35d9b03": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 85,
+            "summary": "Contains failure signatures and recovery strategies for state management issues (mktemp directory creation, heartbeat file detection, cleanup operations). Directly relevant to understanding what corruption patterns have occurred and how recovery was attempted."
+          },
+          {
+            "file": "success-patterns.json (main)",
+            "relevance": 72,
+            "summary": "Shows successful 3-iteration bug fix pattern (id f4af3e...) involving infrastructure scripts and state files (.claude/loop-state.md, intelligence-cache.json). Demonstrates complexity 60 fixes that required multiple iterations—comparable to atomic writes recovery."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 58,
+            "summary": "Documents daemon timeout issue (scripts/sw-daemon.sh) with recovery pattern 'added semaphore' and gotcha 'check backoff'. Relevant for understanding pipeline state coordination and deadlock recovery patterns."
+          }
+        ]
+      },
+      "timestamp": 1782437626,
+      "ttl": 1800
+    },
+    "460bbe838b3d3208a8a36b050e71e20d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (final, with outcome-feedback.sh)",
+            "relevance": 75,
+            "summary": "Contains multi-iteration fix pattern (3 iterations, 45s) modifying lib/outcome-feedback.sh and .claude/intelligence-cache.json — directly relevant to understanding state recovery patterns and atomic state updates in the daemon"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 70,
+            "summary": "Documents daemon timeout bug fix using semaphore approach with backoff strategy — directly addresses concurrency and state consistency concerns critical to atomic recovery design"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captures failure patterns including mktemp directory issues, cleanup logic gaps, and state management failures — provides negative patterns and recovery strategies useful for designing resilient corruption recovery"
+          },
+          {
+            "file": "success-patterns.json (test-repo-789, daemon.sh timeout fix)",
+            "relevance": 60,
+            "summary": "High-complexity daemon fix pattern (3 iterations, 1200s) addressing 'Missing logic' in sw-daemon.sh — demonstrates iteration strategy for complex daemon state management"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project structure and conventions (Node/vitest/commonjs) provide context for test strategy and file organization relevant to designing testable atomic write patterns"
+          }
+        ]
+      },
+      "timestamp": 1782437668,
+      "ttl": 1800
+    },
+    "11b6c61f3d6cf1dc01a7eb0fe769557b": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 80,
+            "summary": "Contains failure patterns with error signatures, fix strategies, and root causes (mktemp directory issues, sw-cleanup output formatting, JSON generation). Directly relevant for understanding what went wrong and how to recover—atomic write patterns and error recovery."
+          },
+          {
+            "file": "success-patterns.json (comprehensive)",
+            "relevance": 65,
+            "summary": "Documents successful approaches to bug fixes and features, including complex iteration strategies and file state management. Inversely identifies what NOT to do and shows patterns that survived multiple iterations—relevant for design validation."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Records past issues with outcomes and gotchas (e.g., daemon timeout fix with semaphore, backoff considerations). Directly relevant to state management failures and recovery patterns in long-running processes."
+          }
+        ]
+      },
+      "timestamp": 1782437683,
+      "ttl": 1800
+    },
+    "d69278e2ec8e155695dfa7b92ab81248": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 85,
+            "summary": "Fix timeout pattern with sw-daemon.sh modifications, 3 iterations needed, high complexity, directly relevant to daemon state management and recovery logic for build stage"
+          },
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 80,
+            "summary": "Staged fix pattern explicitly showing build/test/review stages execution sequence, demonstrates multi-stage pipeline orchestration pattern"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 75,
+            "summary": "Contains concrete issue about daemon timeout bug affecting sw-daemon.sh and daemon-dispatch.sh, directly relevant to pipeline state corruption scenarios"
+          },
+          {
+            "file": "success-patterns.json (main)",
+            "relevance": 68,
+            "summary": "Multi-iteration bug fix patterns (3-4 iterations) showing detailed approach, files changed, and test strategies applicable to complex build stage recovery scenarios"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project structure and conventions (Node, vitest, commonjs) provide baseline context for understanding build environment and test execution patterns"
+          }
+        ]
+      },
+      "timestamp": 1782437803,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Most recent test failures (last seen June 25) that will directly block build stage: mktemp directory issues, sw-feedback-test regression detection output, and template validation errors. Immediately actionable for current test suite run."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 88,
+            "summary": "Detailed failure signatures and proven fix strategies for mktemp path issues (/tmp/claude vs /tmp), sw-cleanup.sh dry-run output validation, and sw-feedback.sh JSON output. 4 documented occurrences with specific remediation steps."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 72,
+            "summary": "Project conventions essential for build stage: vitest test runner, npm package manager, commonjs imports, and test pattern matching. Ensures code changes align with established project structure."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Build duration baseline (2089s) provides performance expectation for current build. Helps detect anomalies or regressions in build time."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Two documented success patterns from bug fixes showing effective loop iteration strategies (3 iterations, standard template). Provides reference for successful build approaches but less immediately actionable than failure prevention."
+          }
+        ]
+      },
+      "timestamp": 1782437820,
+      "ttl": 1800
     }
   }
 }

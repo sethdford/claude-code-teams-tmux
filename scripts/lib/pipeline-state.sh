@@ -461,6 +461,89 @@ initialize_state() {
     write_state
 }
 
+# Validate state file structural integrity (not a full schema, just required keys)
+# Returns 0 if valid, 1 if truncated/missing-goal/empty
+validate_state_file() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    # Check for opening and closing delimiters
+    if ! grep -q "^---$" "$file"; then
+        return 1
+    fi
+
+    # Check for closing delimiter (line with ---)
+    if ! grep -q "^---$" "$file" | tail -1 | grep -q "^---$" 2>/dev/null; then
+        # File must have 2 "---" delimiters (one at start, one after frontmatter)
+        local delim_count
+        delim_count=$(grep -c "^---$" "$file" 2>/dev/null || echo 0)
+        if [[ "$delim_count" -lt 2 ]]; then
+            return 1
+        fi
+    fi
+
+    # Check for required 'goal:' key in frontmatter
+    if ! sed -n '/^---$/,/^---$/ p' "$file" | grep -q "^goal:"; then
+        return 1
+    fi
+
+    return 0
+}
+
+# Recover state from checkpoint (construct minimal valid state from checkpoint data)
+recover_state_from_checkpoint() {
+    local checkpoint_file="$1"
+    [[ ! -f "$checkpoint_file" ]] && return 1
+
+    # Read checkpoint JSON and reconstruct state variables
+    PIPELINE_STATUS=$(jq -r '.status // "pending"' "$checkpoint_file" 2>/dev/null || echo "pending")
+    CURRENT_STAGE=$(jq -r '.stage // "intake"' "$checkpoint_file" 2>/dev/null || echo "intake")
+    GOAL=$(jq -r '.goal // ""' "$checkpoint_file" 2>/dev/null || echo "")
+    GITHUB_ISSUE=$(jq -r '.issue // ""' "$checkpoint_file" 2>/dev/null || echo "")
+
+    if [[ -z "$GOAL" ]]; then
+        return 1
+    fi
+
+    emit_event "state.recovered_from_checkpoint" "stage=$CURRENT_STAGE" "status=$PIPELINE_STATUS" 2>/dev/null || true
+    return 0
+}
+
+# Rollback ladder: try .bak, then latest checkpoint, emit events
+recover_state() {
+    local state_file="$1"
+    local checkpoint_dir="${2:-.claude/pipeline-artifacts/checkpoints}"
+
+    info "Attempting state recovery..."
+
+    # Step 1: Try .bak file
+    if [[ -f "${state_file}.bak" ]]; then
+        if validate_state_file "${state_file}.bak"; then
+            cp "${state_file}.bak" "$state_file" 2>/dev/null || true
+            success "Recovered from .bak backup"
+            emit_event "state.recovered_from_backup" "source=.bak" 2>/dev/null || true
+            return 0
+        fi
+    fi
+
+    # Step 2: Try latest checkpoint
+    if [[ -d "$checkpoint_dir" ]]; then
+        local latest_checkpoint
+        latest_checkpoint=$(ls -t "$checkpoint_dir"/checkpoint-*.json 2>/dev/null | head -1)
+        if [[ -n "$latest_checkpoint" ]]; then
+            if recover_state_from_checkpoint "$latest_checkpoint"; then
+                success "Recovered from checkpoint: $latest_checkpoint"
+                emit_event "state.recovered_from_checkpoint" "file=$latest_checkpoint" "stage=$CURRENT_STAGE" 2>/dev/null || true
+                return 0
+            fi
+        fi
+    fi
+
+    # Step 3: Failure
+    emit_event "state.recovery_failed" "reason=no_backup_or_checkpoint" 2>/dev/null || true
+    return 1
+}
+
 write_state() {
     [[ -z "${STATE_FILE:-}" || -z "${ARTIFACTS_DIR:-}" ]] && return 0
     mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || true
@@ -492,11 +575,12 @@ write_state() {
         stage_progress=$(build_stage_progress)
     fi
 
-    cat > "$STATE_FILE" <<'_SW_STATE_END_'
----
-_SW_STATE_END_
-    # Write state with printf to avoid heredoc delimiter injection
+    # Write to tmp file first
+    local tmp_state
+    tmp_state=$(mktemp "${STATE_FILE}.tmp.XXXXXX") || return 1
+
     {
+        printf '---\n'
         printf 'pipeline: %s\n' "$PIPELINE_NAME"
         printf 'goal: "%s"\n' "$GOAL"
         printf 'status: %s\n' "$PIPELINE_STATUS"
@@ -516,7 +600,13 @@ _SW_STATE_END_
         printf -- '---\n\n'
         printf '## Log\n'
         printf '%s\n' "$LOG_ENTRIES"
-    } >> "$STATE_FILE"
+    } > "$tmp_state" || { rm -f "$tmp_state"; return 1; }
+
+    # Atomic write with validation
+    if ! atomic_write_file "$STATE_FILE" "$tmp_state" validate_state_file; then
+        error "Failed to write pipeline state atomically"
+        return 1
+    fi
 
     # Update pipeline_runs in DB
     if type update_pipeline_status >/dev/null 2>&1 && db_available 2>/dev/null; then
@@ -538,39 +628,51 @@ resume_state() {
 
     info "Resuming pipeline from $STATE_FILE"
 
-    local in_frontmatter=false
-    while IFS= read -r line; do
-        if [[ "$line" == "---" ]]; then
-            if $in_frontmatter; then break; else in_frontmatter=true; continue; fi
+    # Validate state file — recover if corrupt
+    if ! validate_state_file "$STATE_FILE"; then
+        warn "Pipeline state is corrupted or incomplete"
+        if ! recover_state "$STATE_FILE" "${ARTIFACTS_DIR}/checkpoints"; then
+            error "Could not recover pipeline state from backup or checkpoint"
+            exit 1
         fi
-        if $in_frontmatter; then
-            case "$line" in
-                pipeline:*)            PIPELINE_NAME="$(echo "${line#pipeline:}" | xargs)" ;;
-                goal:*)                GOAL="$(echo "${line#goal:}" | sed 's/^ *"//;s/" *$//')" ;;
-                status:*)              PIPELINE_STATUS="$(echo "${line#status:}" | xargs)" ;;
-                issue:*)               GITHUB_ISSUE="$(echo "${line#issue:}" | sed 's/^ *"//;s/" *$//')" ;;
-                branch:*)              GIT_BRANCH="$(echo "${line#branch:}" | sed 's/^ *"//;s/" *$//')" ;;
-                current_stage:*)       CURRENT_STAGE="$(echo "${line#current_stage:}" | xargs)" ;;
-                current_stage_description:*) ;; # computed field — skip on resume
-                stage_progress:*)      ;; # computed field — skip on resume
-                started_at:*)          STARTED_AT="$(echo "${line#started_at:}" | xargs)" ;;
-                pr_number:*)           PR_NUMBER="$(echo "${line#pr_number:}" | xargs)" ;;
-                progress_comment_id:*) PROGRESS_COMMENT_ID="$(echo "${line#progress_comment_id:}" | xargs)" ;;
-                "  "*)
-                    local trimmed
-                    trimmed="$(echo "$line" | xargs)"
-                    if [[ "$trimmed" == *":"* ]]; then
-                        local sid="${trimmed%%:*}"
-                        local sst="${trimmed#*: }"
-                        [[ -n "$sid" && "$sid" != "stages" ]] && STAGE_STATUSES="${STAGE_STATUSES}
+        # State variables have been restored by recover_state_from_checkpoint
+        # Continue with recovery values
+    else
+        # State file is valid — parse it
+        local in_frontmatter=false
+        while IFS= read -r line; do
+            if [[ "$line" == "---" ]]; then
+                if $in_frontmatter; then break; else in_frontmatter=true; continue; fi
+            fi
+            if $in_frontmatter; then
+                case "$line" in
+                    pipeline:*)            PIPELINE_NAME="$(echo "${line#pipeline:}" | xargs)" ;;
+                    goal:*)                GOAL="$(echo "${line#goal:}" | sed 's/^ *"//;s/" *$//')" ;;
+                    status:*)              PIPELINE_STATUS="$(echo "${line#status:}" | xargs)" ;;
+                    issue:*)               GITHUB_ISSUE="$(echo "${line#issue:}" | sed 's/^ *"//;s/" *$//')" ;;
+                    branch:*)              GIT_BRANCH="$(echo "${line#branch:}" | sed 's/^ *"//;s/" *$//')" ;;
+                    current_stage:*)       CURRENT_STAGE="$(echo "${line#current_stage:}" | xargs)" ;;
+                    current_stage_description:*) ;; # computed field — skip on resume
+                    stage_progress:*)      ;; # computed field — skip on resume
+                    started_at:*)          STARTED_AT="$(echo "${line#started_at:}" | xargs)" ;;
+                    pr_number:*)           PR_NUMBER="$(echo "${line#pr_number:}" | xargs)" ;;
+                    progress_comment_id:*) PROGRESS_COMMENT_ID="$(echo "${line#progress_comment_id:}" | xargs)" ;;
+                    "  "*)
+                        local trimmed
+                        trimmed="$(echo "$line" | xargs)"
+                        if [[ "$trimmed" == *":"* ]]; then
+                            local sid="${trimmed%%:*}"
+                            local sst="${trimmed#*: }"
+                            [[ -n "$sid" && "$sid" != "stages" ]] && STAGE_STATUSES="${STAGE_STATUSES}
 ${sid}:${sst}"
-                    fi
-                    ;;
-            esac
-        fi
-    done < "$STATE_FILE"
+                        fi
+                        ;;
+                esac
+            fi
+        done < "$STATE_FILE"
 
-    LOG_ENTRIES="$(sed -n '/^## Log$/,$ { /^## Log$/d; p; }' "$STATE_FILE" 2>/dev/null || true)"
+        LOG_ENTRIES="$(sed -n '/^## Log$/,$ { /^## Log$/d; p; }' "$STATE_FILE" 2>/dev/null || true)"
+    fi
 
     if [[ -n "$GITHUB_ISSUE" && "$GITHUB_ISSUE" =~ ^#([0-9]+)$ ]]; then
         ISSUE_NUMBER="${BASH_REMATCH[1]}"

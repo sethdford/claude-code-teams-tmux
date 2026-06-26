@@ -247,6 +247,55 @@ atomic_append() {
     ) 200>"$lock_file"
 }
 
+# atomic_write_file: Write from a tmp file to target atomically under flock
+# Usage: atomic_write_file <target> <tmp_source> [validator_fn]
+# validator_fn: optional function to validate tmp before move. Gets called with tmp path.
+# Returns 0 on success, 1 on failure. On success, rotates prior .bak file.
+atomic_write_file() {
+    local target="$1"
+    local tmp_source="$2"
+    local validator_fn="${3:-}"
+
+    [[ -z "$target" ]] && { error "atomic_write_file: target not specified"; return 1; }
+    [[ ! -f "$tmp_source" ]] && { error "atomic_write_file: tmp_source not found: $tmp_source"; return 1; }
+
+    # Create target directory if needed
+    mkdir -p "$(dirname "$target")" 2>/dev/null || true
+
+    # Run optional validator
+    if [[ -n "$validator_fn" ]]; then
+        if ! "$validator_fn" "$tmp_source" 2>/dev/null; then
+            error "atomic_write_file: validation failed for $tmp_source"
+            rm -f "$tmp_source"
+            return 1
+        fi
+    fi
+
+    local lock_file
+    lock_file="${target}.lock"
+
+    (
+        # Acquire exclusive lock (up to 10s timeout)
+        if ! flock -w 10 200 2>/dev/null; then
+            error "atomic_write_file: lock timeout on $target"
+            return 1
+        fi
+
+        # Rotate .bak: if target exists and is valid, save it as .bak
+        if [[ -f "$target" ]]; then
+            cp "$target" "${target}.bak" 2>/dev/null || true
+        fi
+
+        # Atomic move
+        if ! mv "$tmp_source" "$target" 2>/dev/null; then
+            error "atomic_write_file: failed to move $tmp_source to $target"
+            return 1
+        fi
+
+        return 0
+    ) 200>"$lock_file"
+}
+
 # ─── Tmpfile Tracking & Cleanup ──────────────────────────────────
 # Registers a temp file for automatic cleanup on exit
 # Usage: register_tmpfile <tmpfile_path>

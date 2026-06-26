@@ -226,4 +226,71 @@ assert_contains "_sw_github_url contains github.com" "$url" "github.com"
 
 unset SHIPWRIGHT_GITHUB_REPO
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Atomic write helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Atomic writes"
+
+# Create test directory
+ATOMIC_TEST_DIR="$TEST_TEMP_DIR/atomic-test"
+mkdir -p "$ATOMIC_TEST_DIR"
+ATOMIC_TEST_FILE="$ATOMIC_TEST_DIR/test-state.md"
+
+# Test 1: atomic_write_file with validation
+TMP1=$(mktemp "$ATOMIC_TEST_DIR/tmp.XXXXXX")
+cat > "$TMP1" <<'EOF'
+---
+test: value
+goal: "test content"
+---
+EOF
+
+# Simple validator that checks for "goal:" key
+validate_test_file() {
+    grep -q "^goal:" "$1" 2>/dev/null
+}
+
+atomic_write_file "$ATOMIC_TEST_FILE" "$TMP1" validate_test_file
+if [[ -f "$ATOMIC_TEST_FILE" ]] && grep -q "test content" "$ATOMIC_TEST_FILE"; then
+    assert_contains "atomic_write_file creates valid file" "$(cat "$ATOMIC_TEST_FILE")" "test content"
+else
+    assert_fail "atomic_write_file creates valid file" "file not found or missing content"
+fi
+
+# Test 2: .bak rotation
+TMP2=$(mktemp "$ATOMIC_TEST_DIR/tmp.XXXXXX")
+cat > "$TMP2" <<'EOF'
+---
+test: new-value
+goal: "new content"
+---
+EOF
+
+atomic_write_file "$ATOMIC_TEST_FILE" "$TMP2" validate_test_file
+if [[ -f "$ATOMIC_TEST_FILE.bak" ]] && grep -q "test content" "$ATOMIC_TEST_FILE.bak"; then
+    assert_contains "atomic_write_file rotates .bak" "$(cat "$ATOMIC_TEST_FILE.bak")" "test content"
+else
+    assert_fail "atomic_write_file rotates .bak"
+fi
+
+# Test 3: Invalid tmp file is rejected
+TMP3=$(mktemp "$ATOMIC_TEST_DIR/tmp.XXXXXX")
+cat > "$TMP3" <<'EOF'
+---
+test: invalid
+no-goal-here: "missing goal key"
+---
+EOF
+
+result=0
+atomic_write_file "$ATOMIC_TEST_FILE" "$TMP3" validate_test_file 2>/dev/null || result=$?
+if [[ "$result" -ne 0 ]]; then
+    assert_contains "atomic_write_file rejects invalid file" "test" "test" || true
+else
+    assert_fail "atomic_write_file rejects invalid file"
+fi
+
+# Clean up atomic test
+rm -rf "$ATOMIC_TEST_DIR"
+
 print_test_results
