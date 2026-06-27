@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
-      "seen_count": 12,
-      "last_seen": "2026-06-27T01:48:44Z"
+      "seen_count": 11,
+      "last_seen": "2026-06-26T14:39:22Z"
     },
     {
       "stage": "test",
@@ -14,7 +14,7 @@
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
       "seen_count": 6,
-      "last_seen": "2026-06-27T01:44:22Z",
+      "last_seen": "2026-06-27T01:46:04Z",
       "category": "test_failure"
     },
     {
@@ -29,11 +29,28 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sed invoked without -e flag in sw-code-review-test.sh — substitution expression treated as a filename, causing 'No such file or directory'",
-      "fix": "Add -e flag to the sed invocation: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of passing the expression as a positional argument",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary output format do not match test expectations: heartbeat file not surfaced in dry-run output and 'Found'/'--force' hint strings missing from summary",
+      "fix": "Update sw-cleanup.sh dry-run heartbeat scan to print detected agent IDs and restore 'Found N item(s)' + '--force' hint lines to the summary output",
       "seen_count": 1,
       "last_seen": "2026-06-26T14:25:28Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-feedback-test.sh regression detection test fails: output is not valid JSON",
+      "fix": "Fix the regression detection output in sw-feedback.sh to emit valid JSON when called from the test",
+      "seen_count": 1,
+      "last_seen": "2026-06-27T02:29:54Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-06-27T02:44:09Z"
     }
   ]
 }
