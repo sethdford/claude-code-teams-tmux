@@ -5,16 +5,16 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "",
       "fix": "",
-      "seen_count": 11,
-      "last_seen": "2026-06-26T14:39:22Z"
+      "seen_count": 12,
+      "last_seen": "2026-06-27T01:48:44Z"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-feedback-test.sh regression detection test expects valid JSON output but the script outputs invalid or missing JSON",
       "fix": "Ensure the regression detection subcommand in sw-feedback.sh outputs valid JSON; check that jq calls are guarded and the output includes required fields",
-      "seen_count": 5,
-      "last_seen": "2026-06-26T20:56:52Z",
+      "seen_count": 6,
+      "last_seen": "2026-06-27T01:44:22Z",
       "category": "test_failure"
     },
     {
@@ -29,8 +29,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "sw-cleanup.sh dry-run mode fails to detect stale heartbeat files and omits the 'Found N items' summary with '--force' hint from output",
-      "fix": "Fix sw-cleanup.sh to scan and display stale heartbeat files in dry-run mode and always print the Found count summary with --force hint when items are detected",
+      "root_cause": "sed invoked without -e flag in sw-code-review-test.sh — substitution expression treated as a filename, causing 'No such file or directory'",
+      "fix": "Add -e flag to the sed invocation: sed -e \"s|$TEST_TEMP_DIR|...|g\" instead of passing the expression as a positional argument",
       "seen_count": 1,
       "last_seen": "2026-06-26T14:25:28Z",
       "category": "test_failure"
