@@ -3,10 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh summary output no longer prints 'Found <n>' count or the '--force' hint text, and stale heartbeat detection dropped the 'agent-1' identifier from output",
-      "fix": "restore the 'Found <n> item(s)' and '--force to remove' summary lines and the agent-1 heartbeat label in sw-cleanup.sh's dry-run/summary output paths",
+      "root_cause": "sw-cleanup.sh test suite expectations drifted from actual command output (stale heartbeat detection and --force hint no longer emit strings the test greps for)",
+      "fix": "Update sw-cleanup.sh output to include 'agent-1', 'Found', and '--force' in summary/detection messages, or update sw-cleanup-test.sh assertions to match current output format",
       "seen_count": 1,
-      "last_seen": "2026-07-02T01:21:14Z",
+      "last_seen": "2026-07-02T01:14:34Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "code-review test suite's cleanup expects a variable/file at $TEST_TEMP_DIR to still exist when its sed command runs, but the temp dir was already removed by a prior test's teardown",
+      "fix": "guard the sed call in sw-code-review-test.sh with a file-existence check or fix test ordering so cleanup doesn't delete TEST_TEMP_DIR before the sed substitution runs",
+      "seen_count": 1,
+      "last_seen": "2026-07-02T01:19:25Z",
       "category": "test_failure"
     }
   ]
