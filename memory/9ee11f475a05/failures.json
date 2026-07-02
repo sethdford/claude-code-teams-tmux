@@ -3,10 +3,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup-test.sh expected --force hint text and stale heartbeat detection output that sw-cleanup.sh no longer emits, indicating cleanup command's output format changed without updating tests",
-      "fix": "Update sw-cleanup.sh output strings (or the test assertions) so 'Found', '--force' hint, and stale heartbeat agent-id are consistently emitted/matched",
+      "root_cause": "sw-cleanup.sh stale-heartbeat detection and force-summary output logic broke, so cleanup no longer reports found agent heartbeats or the --force hint in its summary",
+      "fix": "Check sw-cleanup.sh's heartbeat scan and summary formatting for a recent regression (e.g. changed grep pattern or removed 'Found'/'--force' string) and restore the expected output text",
       "seen_count": 1,
-      "last_seen": "2026-07-02T01:15:42Z",
+      "last_seen": "2026-07-02T01:10:41Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sed in-place substitution failed because $TEST_TEMP_DIR was already removed before the code-review test's cleanup/substitution step ran",
+      "fix": "guard the sed call with a file-existence check or reorder cleanup so temp dir removal happens after all sed substitutions complete",
+      "seen_count": 1,
+      "last_seen": "2026-07-02T01:15:36Z",
       "category": "test_failure"
     }
   ]
