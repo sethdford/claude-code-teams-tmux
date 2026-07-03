@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup-test.sh assertions expect heartbeat/summary output strings ('agent-1', 'Found', '--force') that sw-cleanup.sh no longer emits, indicating a behavior regression in stale-heartbeat detection and summary reporting",
       "fix": "Compare sw-cleanup.sh's dry-run/force summary output against the test's expected strings and restore the missing 'Found N' count and '--force' hint lines, and ensure stale heartbeat detection logs the agent id",
       "seen_count": 3,
-      "last_seen": "2026-07-03T20:10:32Z",
+      "last_seen": "2026-07-03T20:25:38Z",
       "category": "test_failure"
     },
     {
@@ -14,15 +14,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection command outputs malformed or non-JSON data instead of valid JSON",
       "fix": "validate JSON output construction in sw-feedback.sh regression detection path (likely missing jq escaping or unclosed structure)",
-      "seen_count": 2,
-      "last_seen": "2026-07-03T20:23:18Z",
+      "seen_count": 1,
+      "last_seen": "2026-07-03T02:48:08Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection subcommand in sw-feedback.sh returned malformed or non-JSON output, failing the 'outputs valid JSON' assertion",
-      "fix": "Validate and fix JSON construction in the regression detection code path (likely missing jq escaping or an unhandled empty-input case) in scripts/sw-feedback.sh",
+      "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection and summary output (Found count, --force hint) no longer match expected strings",
+      "fix": "Update sw-cleanup.sh's dry-run/summary output to include 'agent-1' heartbeat detection, 'Found' count, and '--force' hint text expected by sw-cleanup-test.sh",
       "seen_count": 2,
       "last_seen": "2026-07-03T04:06:34Z",
       "category": "test_failure"
