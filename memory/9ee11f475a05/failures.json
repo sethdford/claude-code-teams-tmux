@@ -1,13 +1,3 @@
 {
-  "failures": [
-    {
-      "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "Test fixtures for sw-cleanup.sh expect stale heartbeat detection and force-mode summary output ('Found', '--force' hint, 'agent-1'), but the script's actual output no longer matches these strings",
-      "fix": "Update sw-cleanup.sh's stale-heartbeat detection and summary output to include the expected 'Found <n>' count and '--force' hint text, or update the test assertions to match current output",
-      "seen_count": 1,
-      "last_seen": "2026-07-02T01:16:39Z",
-      "category": "test_failure"
-    }
-  ]
+  "failures": []
 }
