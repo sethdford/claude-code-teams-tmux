@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Test Failure Git Bisection Tool with Automatic Root Cause Identification
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan: Test Failure Git Bisection Tool with Automatic Root Cause Identification
+
+## Summary
+
+Add `shipwright bisect` — a new command that, given a failing test command, drives
+`git bisect run` to find the first bad commit that introduced a test failure, then
+feeds the culprit commit's diff + failure output into the existing
+`scripts/lib/root-cause.sh` classifier to produce an automatic root-cause verdict
+(category, confidence, evidence, suggested fix). Output is a human-readable report
+plus a machine-readable JSON artifact for downstream pipeline stages.
+
+This is a **new standalone bash command** following the established
+`scripts/sw-<name>.sh` + router + test-suite pattern. It **reuses** existing
+infrastructure (`root-cause.sh`, `helpers.sh`, `compat.sh`, `emit_event`) rather
+than building new classification logic — that "automatic root cause identification"
+half already lives in the repo (`rootcause_classify`, `rootcause_suggest_fix`).
+
+---
+
+## Design Reasoning (Socratic Refinement)
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Test Failure Git Bisection Tool with Automatic Root Cause Identification
+## Context
+## Decision
+### Component Diagram
+### Interface Contracts
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+## Implementation Plan
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Test Failure Git Bisection Tool with Automatic Root Cause Identification
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Test Failure Git Bisection Tool with Automatic Root Cause Identification
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "knowledge.json",
       "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "summary": "Contains failure patterns with error signatures, fix strategies, and approaches. Directly applicable to root cause identification—tracks occurrences, success rates, and timestamps for test failures like mktemp errors."
+    },
+    {
+      "file": "success-patterns.json (main repo)",
+      "relevance": 78,
+      "summary": "Documents successful build patterns with complexity, iteration count, files changed, and test strategy. Shows proven approaches for 'Fix bug' (60 complexity, 3 iterations) and feature work—useful for understanding what working builds look like."
+    },
+    {
+      "file": "issues.json",
+      "relevance": 72,
+      "summary": "Records specific issues with outcomes and gotchas (e.g., 'Fix timeout bug in daemon' with 'check backoff' gotcha). Provides concrete examples of diagnosed and fixed failures with success patterns."
     },
     {
       "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "relevance": 61,
+      "summary": "Project conventions: test runner (vitest), source dir (src/), import style (commonjs). Contextual for understanding the build environment and test strategy expectations."
     },
     {
       "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
-    },
-    {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "relevance": 48,
+      "summary": "Baseline metrics show historical build_duration_s (2089s). Useful for detecting regressions or unusual timing, but indirect relevance to root cause identification."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Test Failure Git Bisection Tool with Automatic Root Cause Identification — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Test Failure Git Bisection Tool with Automatic Root Cause Identification
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Scaffold `scripts/sw-bisect.sh` header, VERSION, lib sourcing + fallbacks
+- [ ] Task 2: Implement argument parser (`--good/--bad/--test-cmd/--json/--no-classify/-h`)
+- [ ] Task 3: Implement pre-flight guards (git repo, dirty tree, ancestry, capture branch)
+- [ ] Task 4: Install EXIT/INT/TERM trap that runs `git bisect reset` + branch restore
+- [ ] Task 5: Generate atomic exit-code-mapping bisect wrapper script
+- [ ] Task 6: Drive `git bisect start` + `git bisect run`, parse first-bad-commit SHA
+- [ ] Task 7: Collect culprit metadata + capped diff
+- [ ] Task 8: Integrate `root-cause.sh` classification + fix suggestion
+- [ ] Task 9: Write `bisect-result.json` atomically with `jq -n --arg`
+- [ ] Task 10: Human-readable boxed report + `--json` mode
+- [ ] Task 11: `emit_event` observability + optional memory capture
+- [ ] Task 12: Add `bisect)` router case + help text in `scripts/sw`
+- [ ] Task 13: Write `scripts/sw-bisect-test.sh` with real-git repo fixture
+- [ ] Task 14: Register test in `package.json`, update `.claude/CLAUDE.md`
+- [ ] Task 15: `shellcheck` + `bash -n` + run suite; keep VERSION synced
+- [ ] `shipwright bisect --good <ref> --bad <ref> --test-cmd "<cmd>"` finds the first
+- [ ] Working tree and branch are restored on success, failure, AND interrupt.
+- [ ] `.claude/pipeline-artifacts/bisect-result.json` written atomically with a valid
+- [ ] Dirty-tree and non-git inputs rejected with actionable errors.
+- [ ] `scripts/sw-bisect-test.sh` passes and is registered in `package.json`.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-726
+- Issue: none
+- Generated: 2026-07-03T14:47:59Z"
+iteration: 1
+max_iterations: 20
+status: error
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-07-03T14:54:03Z
+last_iteration_at: 2026-07-03T14:54:03Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
