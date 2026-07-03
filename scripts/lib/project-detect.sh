@@ -9,6 +9,7 @@
 #   project_detect_type "/path/to/project"       # Returns JSON with type/framework/build/test
 #   project_detect_all "/path/to/project"        # Full detection report
 #   project_recommend_template "/path/to/project" # Returns JSON with template recommendation
+#   project_detect_summary_line "/path/to/project" # Display-friendly summary
 #
 # Provides:
 #   - project_detect_type(root)         — Detect language + framework + package manager
@@ -17,9 +18,14 @@
 #   - project_detect_build_cmd(root, type) — Detect build command
 #   - project_recommend_template(root)  — Recommend pipeline template
 #   - project_detect_all(root)          — Full detection report (cached)
+#   - project_detect_summary_line(root) — Human-readable detection summary
 
 [[ -n "${_PROJECT_DETECT_LOADED:-}" ]] && return 0
 _PROJECT_DETECT_LOADED=1
+
+# ─── Load cross-platform compatibility helpers ─────────────────────────────
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+[[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
 
 # ─── Helper: Read JSON field safely ────────────────────────────────────────
 _json_field() {
@@ -599,8 +605,10 @@ project_detect_all() {
         cached_at=$(jq -r '.cached_at // ""' "$cache_file" 2>/dev/null || echo "")
 
         if [[ -n "$cached_at" ]]; then
-            local cache_age
-            cache_age=$(($(date +%s) - $(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$cached_at" +%s 2>/dev/null || echo 0)))
+            local cache_age cached_epoch current_epoch
+            cached_epoch=$(date_to_epoch "$cached_at")
+            current_epoch=$(date +%s)
+            cache_age=$((current_epoch - cached_epoch))
 
             if [[ "$cache_age" -lt "$cache_ttl" ]]; then
                 cat "$cache_file"
@@ -641,9 +649,75 @@ project_detect_all() {
             cache_ttl_seconds: $cache_ttl
         }')
 
-    # Cache result
+    # Cache result atomically
     mkdir -p "${root}/.claude"
-    echo "$result" > "$cache_file"
+    local tmp_cache
+    tmp_cache=$(mktemp)
+    echo "$result" > "$tmp_cache"
+    mv "$tmp_cache" "$cache_file"
 
     echo "$result"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# project_detect_summary_line(root)
+# ─────────────────────────────────────────────────────────────────────────────
+# Return a human-readable one-line summary of detection
+# Format: "Node.js project with npm, jest tests, build available"
+project_detect_summary_line() {
+    local root="${1:-.}"
+    [[ -d "$root" ]] || return 1
+
+    local detection
+    detection=$(project_detect_all "$root") || return 1
+
+    local type framework test_cmd build_cmd
+    type=$(_json_field "$detection" "type")
+    framework=$(_json_field "$detection" "framework")
+    test_cmd=$(_json_field "$detection" "test_cmd")
+    build_cmd=$(_json_field "$detection" "build_cmd")
+
+    local summary=""
+    case "$type" in
+        nodejs)
+            summary="${framework} project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with ${test_cmd} tests"
+            [[ -n "$build_cmd" ]] && summary="${summary}, build available"
+            ;;
+        python)
+            summary="Python project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with ${test_cmd} tests"
+            ;;
+        rust)
+            summary="Rust project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with cargo tests"
+            ;;
+        golang)
+            summary="Go project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with go tests"
+            ;;
+        ruby)
+            summary="Ruby project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with ${test_cmd} tests"
+            ;;
+        java)
+            summary="Java project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with tests"
+            ;;
+        dotnet)
+            summary=".NET project"
+            [[ -n "$test_cmd" ]] && summary="${summary} with dotnet tests"
+            ;;
+        c)
+            summary="C project (Makefile)"
+            ;;
+        bash)
+            summary="Shell script project"
+            ;;
+        *)
+            summary="Unknown project type"
+            ;;
+    esac
+
+    echo "$summary"
 }

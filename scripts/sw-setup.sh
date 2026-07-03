@@ -20,6 +20,10 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/compat.sh
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
 
+# ─── Project detection library ──────────────────────────────────────────────
+# shellcheck source=lib/project-detect.sh
+[[ -f "$SCRIPT_DIR/lib/project-detect.sh" ]] && source "$SCRIPT_DIR/lib/project-detect.sh"
+
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
@@ -70,10 +74,11 @@ get_install_cmd() {
 
 # ─── Flag parsing ────────────────────────────────────────────────────────────
 SKIP_DAEMON_PROMPT=false
+NON_INTERACTIVE=false
 for arg in "$@"; do
     case "$arg" in
         --help|-h)
-            echo "Usage: shipwright setup [--skip-daemon-prompt]"
+            echo "Usage: shipwright setup [OPTIONS]"
             echo ""
             echo "Comprehensive onboarding wizard with four phases:"
             echo ""
@@ -84,13 +89,24 @@ for arg in "$@"; do
             echo ""
             echo "Options:"
             echo "  --skip-daemon-prompt  Don't ask about daemon auto-processing"
+            echo "  --yes, --zero-config  Non-interactive mode (CI/daemon friendly)"
             exit 0
             ;;
         --skip-daemon-prompt)
             SKIP_DAEMON_PROMPT=true
             ;;
+        --yes|--zero-config|--non-interactive|--enable-daemon)
+            NON_INTERACTIVE=true
+            SKIP_DAEMON_PROMPT=true
+            ;;
     esac
 done
+
+# Detect non-TTY or CI environment automatically
+if [[ ! -t 0 ]] || [[ -n "${CI:-}" ]]; then
+    NON_INTERACTIVE=true
+    SKIP_DAEMON_PROMPT=true
+fi
 
 # Detect OS once at startup
 OS="$(detect_os)"
@@ -226,64 +242,30 @@ DETECTED_LANGUAGE=""
 DETECTED_FRAMEWORK=""
 DETECTED_TEST_CMD=""
 DETECTED_BUILD_CMD=""
+DETECTED_BUILD_TOOL=""
+DETECTED_TEMPLATE=""
 
-# Detect language and framework
-if [[ -f "package.json" ]]; then
-    DETECTED_LANGUAGE="Node.js"
-    if grep -q '"next"' package.json 2>/dev/null; then
-        DETECTED_FRAMEWORK="Next.js"
-    elif grep -q '"react"' package.json 2>/dev/null; then
-        DETECTED_FRAMEWORK="React"
-    elif grep -q '"express"' package.json 2>/dev/null; then
-        DETECTED_FRAMEWORK="Express.js"
-    elif grep -q '"vue"' package.json 2>/dev/null; then
-        DETECTED_FRAMEWORK="Vue.js"
-    else
-        DETECTED_FRAMEWORK="Node.js (generic)"
-    fi
-
-    # Detect test command
-    if grep -q '"jest"' package.json 2>/dev/null; then
-        DETECTED_TEST_CMD="npm test"
-    elif grep -q '"mocha"' package.json 2>/dev/null; then
-        DETECTED_TEST_CMD="npm test"
-    elif grep -q '"vitest"' package.json 2>/dev/null; then
-        DETECTED_TEST_CMD="npm run test"
-    fi
-
-    # Detect build command
-    if [[ -n "$(grep -o '"build":' package.json 2>/dev/null || true)" ]]; then
-        DETECTED_BUILD_CMD="npm run build"
-    fi
-elif [[ -f "Cargo.toml" ]]; then
-    DETECTED_LANGUAGE="Rust"
-    DETECTED_FRAMEWORK="Cargo"
-    DETECTED_TEST_CMD="cargo test"
-    DETECTED_BUILD_CMD="cargo build"
-elif [[ -f "go.mod" ]]; then
-    DETECTED_LANGUAGE="Go"
-    DETECTED_FRAMEWORK="Go"
-    DETECTED_TEST_CMD="go test ./..."
-    DETECTED_BUILD_CMD="go build"
-elif [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]]; then
-    DETECTED_LANGUAGE="Python"
-    DETECTED_FRAMEWORK="Python"
-    if [[ -f "pyproject.toml" ]] && grep -q 'pytest' pyproject.toml 2>/dev/null; then
-        DETECTED_TEST_CMD="pytest"
-    elif [[ -f "setup.py" ]]; then
-        DETECTED_TEST_CMD="python -m pytest"
-    fi
-    DETECTED_BUILD_CMD="python setup.py build"
+# Detect language, framework, and tools via shared library
+if detection=$(project_detect_all "." 2>/dev/null); then
+    DETECTED_LANGUAGE=$(echo "$detection" | jq -r '.type // ""' 2>/dev/null || echo "")
+    DETECTED_FRAMEWORK=$(echo "$detection" | jq -r '.framework // ""' 2>/dev/null || echo "")
+    DETECTED_TEST_CMD=$(echo "$detection" | jq -r '.test_cmd // ""' 2>/dev/null || echo "")
+    DETECTED_BUILD_CMD=$(echo "$detection" | jq -r '.build_cmd // ""' 2>/dev/null || echo "")
+    DETECTED_BUILD_TOOL=$(echo "$detection" | jq -r '.build_tool // ""' 2>/dev/null || echo "")
+    DETECTED_TEMPLATE=$(echo "$detection" | jq -r '.recommended_template.template // ""' 2>/dev/null || echo "")
 fi
 
 # Display detected info
-if [[ -n "$DETECTED_LANGUAGE" ]]; then
-    info "Detected ${BOLD}${DETECTED_LANGUAGE}${RESET} project"
-    [[ -n "$DETECTED_FRAMEWORK" ]] && echo -e "    ${DIM}Framework: ${DETECTED_FRAMEWORK}${RESET}"
+if [[ -n "$DETECTED_LANGUAGE" ]] && [[ "$DETECTED_LANGUAGE" != "unknown" ]]; then
+    local summary
+    summary=$(project_detect_summary_line "." 2>/dev/null || echo "Project detected")
+    info "Detected ${BOLD}${summary}${RESET}"
+    [[ -n "$DETECTED_BUILD_TOOL" ]] && [[ "$DETECTED_BUILD_TOOL" != "unknown" ]] && echo -e "    ${DIM}Package manager: ${DETECTED_BUILD_TOOL}${RESET}"
     [[ -n "$DETECTED_TEST_CMD" ]] && echo -e "    ${DIM}Test: ${DETECTED_TEST_CMD}${RESET}"
     [[ -n "$DETECTED_BUILD_CMD" ]] && echo -e "    ${DIM}Build: ${DETECTED_BUILD_CMD}${RESET}"
+    [[ -n "$DETECTED_TEMPLATE" ]] && [[ "$DETECTED_TEMPLATE" != "unknown" ]] && echo -e "    ${DIM}Recommended template: ${DETECTED_TEMPLATE}${RESET}"
 else
-    info "Could not auto-detect language (no package.json, Cargo.toml, go.mod, pyproject.toml, or setup.py found)"
+    info "Could not auto-detect language — will use defaults"
 fi
 
 # Check for .claude directory
@@ -305,9 +287,9 @@ echo ""
 "$SCRIPT_DIR/sw-init.sh"
 
 # ═════════════════════════════════════════════════════════════════════════════
-# Ask about daemon auto-processing
+# Ask about daemon auto-processing (skip in non-interactive mode)
 # ═════════════════════════════════════════════════════════════════════════════
-if [[ "$SKIP_DAEMON_PROMPT" == "false" ]]; then
+if [[ "$SKIP_DAEMON_PROMPT" == "false" ]] && [[ "$NON_INTERACTIVE" == "false" ]]; then
     echo ""
     echo -e "  ${CYAN}${BOLD}Daemon Auto-Processing${RESET}"
     echo -e "  ${DIM}──────────────────────────────────────────${RESET}"
