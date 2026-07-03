@@ -1401,6 +1401,164 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "d35f578a19f6bf990717495077d5a749": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "cost-aware",
+        "issue_type": "performance",
+        "key_risks": [
+          "Cache invalidation correctness - serving stale analysis results could mask real bugs",
+          "Dependency fingerprinting incompleteness - missing invalidation triggers delay detection of actual changes",
+          "Unbounded disk growth - TTL/size limit enforcement must be robust",
+          "Cache lookup overhead could negate savings if keys are expensive to compute",
+          "Integration complexity across multiple analysis modules (intelligence, lint, type-check, predictive)"
+        ],
+        "implementation_hints": [
+          "Start with sw-intelligence.sh caching (highest cost impact, isolated scope)",
+          "Use content-addressable keys: SHA256(file_hashes + dependencies + tool_versions)",
+          "Implement a simple JSON metadata index for cache entries with TTL/size tracking",
+          "Add cache hit/miss counters to sw-intelligence.sh and sw-predictive.sh before integration",
+          "Create validation tests comparing cached vs fresh results for correctness",
+          "Include git commit SHA and dependency lock hash in invalidation signals",
+          "Track hit rate and cost savings in cost.json (new fields: cache_hits, cache_savings_usd)",
+          "Use atomic file writes for cache operations to prevent corruption under concurrent access"
+        ]
+      },
+      "timestamp": 1783089776,
+      "ttl": 3600
+    },
+    "276638920f0bfbcca0d3146fbd6c4321": {
+      "result": {
+        "estimated_iterations": 6
+      },
+      "timestamp": 1783089789,
+      "ttl": 1800
+    },
+    "a0bf6cba8622ced49f06b150b5021591": {
+      "result": {
+        "estimated_cost_usd": 4.20,
+        "estimated_iterations": 2,
+        "estimated_tokens": 72000,
+        "likely_failure_stage": "build",
+        "confidence": 68
+      },
+      "timestamp": 1783089799,
+      "ttl": 3600
+    },
+    "984db5efe9274b3829217d35328d9984": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (latest with Fix bug/Add authentication)",
+            "relevance": 90,
+            "summary": "Directly relevant: shows existing cache handling (.claude/intelligence-cache.json modifications), feature implementation complexity (60-65), iteration patterns (3 iterations for similar-complexity work), and cost/duration metrics for planning"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "Moderately relevant: contains architectural patterns, test infrastructure conventions, and failure signatures; informs cache invalidation strategy design and test harness approach"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project-level patterns: documents vitest test runner, CommonJS imports, source layout (src/). Useful for planning cache feature tests and integration points"
+          },
+          {
+            "file": "success-patterns.json (add auth module pattern)",
+            "relevance": 35,
+            "summary": "Comparable feature complexity (60), TDD iteration approach, shows typical file change patterns for Node features; useful for baseline estimation"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 25,
+            "summary": "Shows daemon timeout resolution via semaphore; potentially relevant if cache invalidation needs synchronization primitives to prevent race conditions"
+          }
+        ]
+      },
+      "timestamp": 1783089854,
+      "ttl": 1800
+    },
+    "03ef2aeda676e31dcba4964bc0845845": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Contains captured patterns for completed features showing iteration counts, complexity estimates, files changed, and test strategies. Directly relevant to validating plan estimates for the Cross-Pipeline Result Cache feature."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Tracks failure signatures, fix strategies, and root causes from past issues with metrics on success rates. Informs plan validation by highlighting common failure patterns and correction approaches."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Documents project conventions (vitest, npm, commonjs) and source structure. Provides baseline context for validating that implementation plans conform to established project patterns and tooling."
+          }
+        ]
+      },
+      "timestamp": 1783090215,
+      "ttl": 1800
+    },
+    "71717ef48919c86532c3a862f04a6411": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (sethdford/shipwright - Fix bug pattern)",
+            "relevance": 90,
+            "summary": "High-complexity bug fix from this exact repo showing 3 iterations, 6 files changed across architectural layers (.claude config, loop logs, scripts/lib). Demonstrates multi-component coordination pattern relevant to designing cache invalidation logic."
+          },
+          {
+            "file": "success-patterns.json (sethdford/shipwright - Add authentication feature)",
+            "relevance": 85,
+            "summary": "Complex feature (complexity 65) from this repo showing multi-file integration across .claude and scripts/. Demonstrates how team handles major architectural additions with staged execution and multiple iterations."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Defines this repo's structure: Node/JS with vitest, CommonJS imports, src/ source dir. Cache layer design must integrate with this architecture and testing approach."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "Contains captured patterns about conventions and problem-solving approaches used in this codebase. Entries about test patterns and architectural preferences inform design decisions."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Shows real architectural challenges (daemon timeout requiring semaphore coordination). Demonstrates cross-component communication patterns relevant to cross-pipeline cache invalidation."
+          }
+        ]
+      },
+      "timestamp": 1783090264,
+      "ttl": 1800
+    },
+    "30502cef46ab1505534e0580d9cbc880": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 22,
+            "summary": "Contains detailed approach histories and pattern documentation; could inform what patterns have been successful in this codebase for complex multi-stage work, though no cache-specific patterns are evident in current entries"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 18,
+            "summary": "Establishes project conventions (Node/vitest/commonjs); useful for understanding implementation constraints and patterns that would affect cache layer design decisions"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 12,
+            "summary": "Documents failure signatures and fix strategies from past work; provides context on what has NOT worked, which could inform anti-patterns, though current entries are not cache-related"
+          }
+        ]
+      },
+      "timestamp": 1783090279,
+      "ttl": 1800
     }
   }
 }

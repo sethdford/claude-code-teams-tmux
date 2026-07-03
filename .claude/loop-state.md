@@ -1,103 +1,105 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Cross-Pipeline Result Cache with Change-Based Invalidation
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan — Cross-Pipeline Result Cache with Change-Based Invalidation
+
+## Summary
+
+Add a cache that lets an expensive, deterministic pipeline **stage** (e.g. `plan`,
+`design`, `spec_generation`) reuse a prior run's artifact — **across different
+pipeline runs on the same repo** — when its inputs are unchanged. "Change-based
+invalidation" means the cache key embeds a content fingerprint of the stage's
+inputs (goal + issue body + repo source state). Any relevant change flips the
+fingerprint → cache miss → the stage re-runs normally. On a hit, the stage's
+artifact file(s) are restored into `.claude/pipeline-artifacts/` and the Claude
+invocation is skipped.
+
+The feature ships **disabled by default** behind a `result_cache.enabled` flag so it
+can roll out safely. It mirrors three proven in-repo patterns: the intelligence cache
+(`.claude/intelligence-cache.json` → `{entries:{hash:{result,timestamp,ttl}}}`), the
+GraphQL file-cache (`~/.shipwright/github-cache/`), and the discovery layer's
+cross-run store under `$HOME`.
+
+---
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Cross-Pipeline Result Cache with Change-Based Invalidation
+## Context
+## Decision
+### Component Diagram
+### Data flow
+### Interface Contracts
+### Loop wiring (exact, matching `pipeline-execution.sh:769–786`)
+## Alternatives Considered
+## Implementation Plan
+### Error Boundaries
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Cross-Pipeline Result Cache with Change-Based Invalidation
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Cross-Pipeline Result Cache with Change-Based Invalidation
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
 
 Historical context (lessons from previous pipelines):
-{
-  "results": [
-    {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
-    },
-    {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
-    },
-    {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
-    }
-  ]
-}
+{"error":"memory_search_failed","results":[]}
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Cross-Pipeline Result Cache with Change-Based Invalidation — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Cross-Pipeline Result Cache with Change-Based Invalidation
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Create `scripts/lib/result-cache.sh` scaffold (header, VERSION, dirs, source guard).
+- [ ] Task 2: Implement `result_cache_enabled` gate (config + tool availability).
+- [ ] Task 3: Implement `result_cache_fingerprint` (git HEAD + porcelain hash + goal/body), subshell-safe.
+- [ ] Task 4: Implement `_result_cache_init` + atomic `entries.json` seeding.
+- [ ] Task 5: Implement `result_cache_get` (key, TTL age check, hit/miss events).
+- [ ] Task 6: Implement `result_cache_store` with `jq --arg`, atomic `mv`, `max_entries` eviction.
+- [ ] Task 7: Implement `result_cache_try_restore` + `result_cache_save` hooks (artifact I/O).
+- [ ] Task 8: Wire both hooks into `pipeline-execution.sh` stage loop, fully guarded.
+- [ ] Task 9: Source lib in `pipeline-stages.sh`/`bootstrap.sh` with no-op fallback.
+- [ ] Task 10: Create `scripts/sw-result-cache.sh` CLI (`stats/list/get/clear/invalidate/prune/help`).
+- [ ] Task 11: Register command in `scripts/sw` router.
+- [ ] Task 12: Add `result_cache` block to `.claude/daemon-config.json` (disabled).
+- [ ] Task 13: Write `scripts/sw-result-cache-test.sh`; register in `package.json`.
+- [ ] Task 14: Update `.claude/CLAUDE.md` (Result Cache section, script tables, runtime-state).
+- [ ] Task 15: Run `shipwright version check`, `shellcheck`, and new + related test suites.
+- [ ] Three new files exist and pass `shellcheck` (bash 3.2 safe: no `declare -A`, `readarray`, `${var,,}`/`${var^^}`).
+- [ ] With `result_cache.enabled=false` (default), pipeline behaves **identically** — hooks are provable no-ops (regression suites green).
+- [ ] With the flag on: a second run over an **unchanged** repo restores `plan.md`/`design.md`/`spec.json` and skips the Claude call (verified via `result_cache.hit`).
+- [ ] Any tracked/untracked change, changed goal/issue body, or TTL expiry produces a **miss** (tests 3 & 4) — no stale artifact ever served.
+- [ ] Only `cacheable_stages` are cached; `build`/`test`/`pr`/`merge`/`deploy` never restored.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-725
+- Issue: none
+- Generated: 2026-07-03T14:50:00Z"
+iteration: 1
+max_iterations: 20
+status: error
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-07-03T14:54:18Z
+last_iteration_at: 2026-07-03T14:54:18Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
