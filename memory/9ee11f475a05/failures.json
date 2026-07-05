@@ -1,31 +1,3 @@
 {
-  "failures": [
-    {
-      "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup-test.sh assertions expect heartbeat/summary output strings ('agent-1', 'Found', '--force') that sw-cleanup.sh no longer emits, indicating a behavior regression in stale-heartbeat detection and summary reporting",
-      "fix": "Compare sw-cleanup.sh's dry-run/force summary output against the test's expected strings and restore the missing 'Found N' count and '--force' hint lines, and ensure stale heartbeat detection logs the agent id",
-      "seen_count": 5,
-      "last_seen": "2026-07-04T10:46:57Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection command outputs malformed or non-JSON data instead of valid JSON",
-      "fix": "validate JSON output construction in sw-feedback.sh regression detection path (likely missing jq escaping or unclosed structure)",
-      "seen_count": 2,
-      "last_seen": "2026-07-03T20:20:10Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup-test.sh stale heartbeat detection is broken — dry-run doesn't report the fabricated stale agent-1 heartbeat, causing both the detection and downstream summary-count/--force-hint assertions to fail",
-      "fix": "Fix the stale-heartbeat scan logic in sw-cleanup.sh (path/glob or age-threshold matching for ~/.shipwright/heartbeats/*.json) so dry-run mode detects and reports stale heartbeats, which will also restore the Found count and --force hint output",
-      "seen_count": 2,
-      "last_seen": "2026-07-03T04:06:34Z",
-      "category": "test_failure"
-    }
-  ]
+  "failures": []
 }
