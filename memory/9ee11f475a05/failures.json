@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
       "seen_count": 2,
-      "last_seen": "2026-07-10T13:19:50Z",
+      "last_seen": "2026-07-10T13:17:11Z",
       "category": "test_failure"
     },
     {
@@ -14,15 +14,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "code-review test's sed cleanup runs against a stale $TEST_TEMP_DIR path after the temp directory was already removed by an earlier trap/cleanup",
       "fix": "guard the sed cleanup with a file-existence check (or reorder trap so temp dir removal happens after the sed call) in sw-code-review-test.sh",
-      "seen_count": 5,
-      "last_seen": "2026-07-10T13:34:34Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-10T13:26:53Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sed in-place edit failed because $TEST_TEMP_DIR was already removed before the code-review test suite's cleanup/setup ran",
-      "fix": "guard sed substitution with a check that TEST_TEMP_DIR exists, or reorder cleanup to run after all sed operations complete",
+      "root_cause": "sw-code-review-test.sh invokes sed with the substitution pattern wrapped in single quotes, so $TEST_TEMP_DIR is never expanded and the literal string 's|$TEST_TEMP_DIR|...|g' is passed as a filename argument, which doesn't exist",
+      "fix": "Double-quote the sed script (e.g. sed \"s|$TEST_TEMP_DIR|...|g\" file) so the variable expands before sed parses it, or pass the expression via -e with correct quoting",
       "seen_count": 2,
       "last_seen": "2026-07-09T23:59:48Z",
       "category": "test_failure"
