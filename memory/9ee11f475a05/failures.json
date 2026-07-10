@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
       "seen_count": 2,
-      "last_seen": "2026-07-10T13:09:18Z",
+      "last_seen": "2026-07-10T13:24:49Z",
       "category": "test_failure"
     },
     {
@@ -15,14 +15,14 @@
       "root_cause": "code-review test's sed cleanup runs against a stale $TEST_TEMP_DIR path after the temp directory was already removed by an earlier trap/cleanup",
       "fix": "guard the sed cleanup with a file-existence check (or reorder trap so temp dir removal happens after the sed call) in sw-code-review-test.sh",
       "seen_count": 3,
-      "last_seen": "2026-07-10T13:16:56Z",
+      "last_seen": "2026-07-10T13:31:51Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection command in sw-feedback.sh emits malformed or empty output instead of valid JSON",
-      "fix": "ensure regression detection always writes well-formed JSON (e.g. default empty object/array) even when no data is present, and validate with jq before returning",
+      "root_cause": "sw-code-review-test.sh referenced a stale $TEST_TEMP_DIR path in a sed in-place edit after the temp dir was already removed/rotated",
+      "fix": "capture TEST_TEMP_DIR once and ensure cleanup traps run after all sed operations complete, or recreate the temp dir before the sed call",
       "seen_count": 2,
       "last_seen": "2026-07-09T23:59:48Z",
       "category": "test_failure"
