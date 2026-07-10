@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
       "seen_count": 3,
-      "last_seen": "2026-07-10T21:08:57Z",
+      "last_seen": "2026-07-10T21:06:59Z",
       "category": "test_failure"
     },
     {
@@ -15,16 +15,25 @@
       "root_cause": "code-review test's sed cleanup runs against a stale $TEST_TEMP_DIR path after the temp directory was already removed by an earlier trap/cleanup",
       "fix": "guard the sed cleanup with a file-existence check (or reorder trap so temp dir removal happens after the sed call) in sw-code-review-test.sh",
       "seen_count": 4,
-      "last_seen": "2026-07-10T21:13:57Z",
+      "last_seen": "2026-07-10T21:16:21Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "test harness referenced a stale temp directory path in a sed substitution after cleanup/teardown removed it",
-      "fix": "guard the sed call with a file-existence check or move the cleanup trap after all sed operations complete",
+      "root_cause": "sed in-place substitution used $TEST_TEMP_DIR path as the script file argument instead of -i, so sed tried to read the temp dir path as a file",
+      "fix": "quote and correctly invoke sed as: sed -i \"s|$TEST_TEMP_DIR|...|g\" <target_file>, ensuring the script and target file args aren't swapped/missing",
       "seen_count": 2,
       "last_seen": "2026-07-09T23:59:48Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
+      "root_cause": "The retry-escalation build stage added classify_failure() but never invoked it from daemon_on_failure, so failure classification is defined but dead code in the retry path",
+      "fix": "Call classify_failure on the error output inside daemon_on_failure and route its category into the retry/backoff decision before spawning the next attempt",
+      "seen_count": 1,
+      "last_seen": "2026-07-10T21:25:43Z",
       "category": "test_failure"
     }
   ]
