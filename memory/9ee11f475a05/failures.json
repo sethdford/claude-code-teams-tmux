@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
-      "seen_count": 1,
-      "last_seen": "2026-07-09T23:05:46Z",
+      "seen_count": 2,
+      "last_seen": "2026-07-10T13:25:55Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-hello-test.sh log output is truncated with no visible test results, but overall pipeline exit code defaults to failure (1) despite prior suites all passing",
-      "fix": "Inspect sw-hello-test.sh directly for a failing assertion or non-zero exit before the truncated log cutoff, and ensure the test runner explicitly sets exit code 0 on full success",
+      "root_cause": "sw-cleanup test suite expects heartbeat/summary output strings ('agent-1', 'Found', '--force') that the cleanup script no longer emits, indicating a drift between sw-cleanup.sh output format and its test assertions",
+      "fix": "Update sw-cleanup.sh stale-heartbeat detection and summary output to include agent name and 'Found'/'--force' hint text, or update sw-cleanup-test.sh assertions to match current output format",
       "seen_count": 2,
       "last_seen": "2026-07-09T23:59:48Z",
       "category": "test_failure"
