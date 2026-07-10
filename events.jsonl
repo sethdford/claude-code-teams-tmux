@@ -1260,3 +1260,13 @@
 {"ts":"2026-07-10T13:36:12Z","ts_epoch":1783690572,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":14577,"trimmed_prompt_chars":14577,"trim_ratio":0.0,"budget_utilization":7.3,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-07-10T13:36:15Z","ts_epoch":1783690575,"type":"pipeline.context_exhaustion","issue":765,"stage":"build"}
 {"ts":"2026-07-10T13:36:18Z","ts_epoch":1783690578,"type":"stage.failed","event_id":"evt-1783690578-1396745988","payload":"{\"stage\":\"build\",\"issue\":\"765\",\"timing\":\"25m 7s\"}"}
+{"ts":"2026-07-10T14:22:16Z","ts_epoch":1783693336,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-07-10T14:22:19Z","ts_epoch":1783693339,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-07-10T14:22:23Z","ts_epoch":1783693343,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly..","seen_count":3}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly.."}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-07-10T14:22:24Z","ts_epoch":1783693344,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
+{"ts":"2026-07-10T14:22:25Z","ts_epoch":1783693345,"type":"patrol.issue_created","check":"untested_scripts","count":5}
