@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
       "seen_count": 6,
-      "last_seen": "2026-07-11T09:00:20Z",
+      "last_seen": "2026-07-11T08:50:13Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "code-review test's sed cleanup runs against a stale $TEST_TEMP_DIR path after the temp directory was already removed by an earlier trap/cleanup",
       "fix": "guard the sed cleanup with a file-existence check (or reorder trap so temp dir removal happens after the sed call) in sw-code-review-test.sh",
-      "seen_count": 14,
-      "last_seen": "2026-07-11T10:09:06Z",
+      "seen_count": 6,
+      "last_seen": "2026-07-11T05:13:29Z",
       "category": "test_failure"
     },
     {
@@ -30,10 +30,10 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "Test harness's TMPDIR (/tmp/claude) doesn't exist in this sandbox, so mktemp fails to create the test workdir before sw-hello-test.sh runs",
-      "fix": "Ensure test setup does 'mkdir -p \"${TMPDIR:-/tmp}/claude\"' (or defaults TMPDIR to /tmp) before calling mktemp -d",
-      "seen_count": 2,
-      "last_seen": "2026-07-11T09:22:01Z",
+      "root_cause": "mktemp failed because the parent directory /tmp/claude/sw-test did not exist (test harness assumes it's pre-created)",
+      "fix": "mkdir -p /tmp/claude before invoking mktemp -d, or use mktemp -d with a template under a directory guaranteed to exist (e.g. $TMPDIR or /tmp)",
+      "seen_count": 1,
+      "last_seen": "2026-07-10T21:38:02Z",
       "category": "config"
     }
   ]
