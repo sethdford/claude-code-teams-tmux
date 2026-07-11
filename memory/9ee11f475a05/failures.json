@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh dry-run output no longer prints stale heartbeat entries or a 'Found <n>' / '--force' hint summary line, so heartbeat detection/summary logic was dropped or broken in a recent change",
       "fix": "Restore the stale-heartbeat detection loop and summary block in scripts/sw-cleanup.sh to print detected agent IDs (e.g. 'agent-1'), a 'Found N stale item(s)' count, and a '--force' hint when items are found",
-      "seen_count": 4,
-      "last_seen": "2026-07-11T02:25:27Z",
+      "seen_count": 5,
+      "last_seen": "2026-07-11T04:56:31Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "code-review test's sed cleanup runs against a stale $TEST_TEMP_DIR path after the temp directory was already removed by an earlier trap/cleanup",
       "fix": "guard the sed cleanup with a file-existence check (or reorder trap so temp dir removal happens after the sed call) in sw-code-review-test.sh",
-      "seen_count": 5,
-      "last_seen": "2026-07-10T21:32:16Z",
+      "seen_count": 6,
+      "last_seen": "2026-07-11T05:02:48Z",
       "category": "test_failure"
     },
     {
@@ -23,15 +23,15 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection command emits non-JSON output (likely a log/warning line mixed into stdout), breaking JSON parsing in the test",
       "fix": "ensure sw-feedback.sh regression detection writes only valid JSON to stdout (redirect diagnostics to stderr) and re-run sw-feedback-test.sh",
-      "seen_count": 2,
-      "last_seen": "2026-07-09T23:59:48Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-11T05:17:18Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "Test harness could not create its temp working directory because /tmp/claude does not exist (missing/unwritable parent), causing mktemp to fail before checkpoint/cleanup tests ran",
-      "fix": "Ensure /tmp/claude is created (mkdir -p /tmp/claude) before invoking mktemp, or use TMPDIR=$(mktemp -d) with a guaranteed-existing base path in the test setup",
+      "root_cause": "mktemp cannot create the base temp directory because /tmp/claude does not exist on the test runner",
+      "fix": "Create /tmp/claude (mkdir -p) before invoking mktemp, or use a template rooted in an existing directory like $TMPDIR/${TMPDIR:-/tmp}",
       "seen_count": 1,
       "last_seen": "2026-07-10T21:38:02Z",
       "category": "config"
