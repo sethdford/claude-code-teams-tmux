@@ -51,6 +51,9 @@ fi
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
+# Error repetition detector + auto-escalation ladder (depends on error-actionability + auto-recovery)
+# shellcheck source=lib/loop-error-repetition.sh
+[[ -f "$SCRIPT_DIR/lib/loop-error-repetition.sh" ]] && source "$SCRIPT_DIR/lib/loop-error-repetition.sh" 2>/dev/null || true
 # Test execution optimization (issue #200)
 # shellcheck source=lib/test-optimizer.sh
 [[ -f "$SCRIPT_DIR/lib/test-optimizer.sh" ]] && source "$SCRIPT_DIR/lib/test-optimizer.sh" 2>/dev/null || true
@@ -1682,6 +1685,7 @@ show_summary() {
         circuit_breaker)  status_display="${RED}✗ Circuit breaker tripped${RESET}" ;;
         max_iterations)   status_display="${YELLOW}⚠ Max iterations reached${RESET}" ;;
         budget_exhausted) status_display="${RED}✗ Budget exhausted${RESET}" ;;
+        error_repetition) status_display="${RED}✗ Same error repeated — escalation exhausted, flagged for human${RESET}" ;;
         interrupted)      status_display="${YELLOW}⚠ Interrupted by user${RESET}" ;;
         error)            status_display="${RED}✗ Error${RESET}" ;;
         *)                status_display="${DIM}$STATUS${RESET}" ;;
@@ -2322,6 +2326,55 @@ ${GOAL}"
         # Test gate
         run_test_gate
         write_error_summary
+
+        # Error repetition detector + auto-escalation ladder.
+        # Detects the SAME normalized error recurring across iterations and
+        # advances a graduated escalation ladder (hint → effort → model →
+        # restart → abort). Directives are exported as LER_* and applied below.
+        if type ler_run >/dev/null 2>&1; then
+            ler_run || true
+            case "${LER_ACTION:-none}" in
+                inject_hint)
+                    if [[ -n "${LER_DETAIL:-}" ]]; then
+                        RECOVERY_HINT="${RECOVERY_HINT:+$RECOVERY_HINT
+}[error-repetition] ${LER_DETAIL}"
+                        info "Error repetition: injected targeted hint (repeat ${LER_COUNT:-?})"
+                    fi
+                    ;;
+                bump_effort)
+                    EFFORT_LEVEL="${LER_DETAIL:-high}"
+                    info "Error repetition: bumped effort to ${EFFORT_LEVEL} (repeat ${LER_COUNT:-?})"
+                    ;;
+                escalate_model)
+                    if [[ -n "${LER_DETAIL:-}" ]]; then
+                        # Consumed by loop-iteration.sh compose_prompt (sets MODEL).
+                        # shellcheck disable=SC2034
+                        RECOVERY_ESCALATED_MODEL="${LER_DETAIL}"
+                        info "Error repetition: escalating model to ${LER_DETAIL} (repeat ${LER_COUNT:-?})"
+                    fi
+                    ;;
+                restart_session)
+                    _rep_hard_cap=$(_smart_int "loop.hard_restart_cap" 5)
+                    if [[ "${MAX_RESTARTS:-0}" -gt 0 ]] \
+                        && [[ "${RESTART_COUNT:-0}" -lt "${MAX_RESTARTS:-0}" ]] \
+                        && [[ "${RESTART_COUNT:-0}" -lt "${_rep_hard_cap:-5}" ]]; then
+                        SESSION_RESTART=true
+                        warn "Error repetition: forcing session restart — ${LER_DETAIL}"
+                    else
+                        warn "Error repetition: restart requested but restart budget exhausted"
+                    fi
+                    ;;
+                abort)
+                    STATUS="error_repetition"
+                    warn "Error repetition: ${LER_DETAIL}"
+                    write_state
+                    write_progress 2>/dev/null || true
+                    show_summary
+                    return 1
+                    ;;
+            esac
+        fi
+
         if [[ -n "$TEST_CMD" ]]; then
             if [[ "$TEST_PASSED" == "true" ]]; then
                 echo -e "  ${GREEN}✓${RESET} Tests: passed"

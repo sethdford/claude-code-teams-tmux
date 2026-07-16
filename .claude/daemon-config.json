@@ -44,7 +44,15 @@
     "max_extensions": 3,
     "context_restart_limit": 3,
     "hard_restart_cap": 5,
-    "max_restarts": 3
+    "max_restarts": 3,
+    "error_repetition": {
+      "enabled": true,
+      "threshold": 3,
+      "max_rung": 4,
+      "allow_model_escalation": true,
+      "allow_restart": true,
+      "allow_abort": true
+    }
   },
   "max_turns": {
     "pipeline_stage": 30
