@@ -3,20 +3,28 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "cleanup command's stale-heartbeat detection and summary output no longer print agent id, 'Found' count, or the --force hint, so downstream assertions fail",
-      "fix": "check recent changes to sw-cleanup.sh's heartbeat scan and summary formatting to restore the expected output strings",
+      "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
+      "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 1,
-      "last_seen": "2026-07-16T04:27:16Z",
+      "last_seen": "2026-07-16T04:19:42Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-hello-test.sh test suite likely failed or crashed after this point in the log, truncating output before showing final pass/fail summary",
-      "fix": "Run sw-hello-test.sh in isolation to capture the actual failing assertion or error",
+      "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
+      "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
       "seen_count": 1,
-      "last_seen": "2026-07-16T05:09:07Z",
-      "category": "unknown"
+      "last_seen": "2026-07-16T04:31:18Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-07-16T05:19:30Z"
     }
   ]
 }
