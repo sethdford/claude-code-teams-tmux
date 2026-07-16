@@ -102,6 +102,16 @@ emit_event() {
         echo "$_event_line" >> "$EVENTS_FILE"
     ) 200>"$_lock_file" 2>/dev/null || true
 
+    # Schema-drift validation is an opt-in dev/CI aid (warn-only, never rejects).
+    # It is off by default because config/event-schema.json is not exhaustive —
+    # hundreds of legitimately-emitted event types are unregistered, so an
+    # always-on warn is pure false-positive noise and, worse, pollutes stderr in
+    # a way that corrupts command output captured with 2>&1 and parsed as JSON.
+    # Enable with SW_EVENT_SCHEMA_WARN=1 when auditing the schema for drift.
+    case "${SW_EVENT_SCHEMA_WARN:-0}" in
+        1|true|yes|on) ;;
+        *) return 0 ;;
+    esac
     # Schema validation — auto-detect config repo from BASH_SOURCE location
     local _schema_dir="${_CONFIG_REPO_DIR:-}"
     if [[ -z "$_schema_dir" ]]; then
