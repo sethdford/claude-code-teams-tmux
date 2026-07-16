@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Build Loop Error Repetition Detector with Auto-Escalation
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan: Build Loop Error Repetition Detector with Auto-Escalation
+
+## Summary
+
+Add a dedicated component that detects when the **same error recurs across build-loop
+iterations** (using a *normalized* error signature) and drives a graduated
+**auto-escalation ladder** — inject a stronger targeted hint → bump reasoning effort →
+switch to a stronger/fallback model → force a session restart → abort and flag for human.
+
+The build loop (`scripts/sw-loop.sh`) already has several *partial, disconnected*
+mechanisms for this. The core of this feature is a small new library that (a) provides a
+**stable normalized signature** better than the existing raw-`md5` fingerprint, and
+(b) wires the existing escalation primitives into a single, testable escalation ladder
+that responds specifically to *repetition*, not just to low progress.
+
+---
+
+## Requirements Clarity (Socratic answers)
+
+**Minimum viable change.** A new lib `scripts/lib/loop-error-repetition.sh` sourced by
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Build Loop Error Repetition Detector with Auto-Escalation
+## Context
+## Decision
+### Component Diagram
+### Interface Contracts
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+## Implementation Plan
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Build Loop Error Repetition Detector with Auto-Escalation
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Build Loop Error Repetition Detector with Auto-Escalation
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,84 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "knowledge.json",
+      "relevance": 92,
+      "summary": "Contains structured error signatures, fix strategies, and failure taxonomy with occurrence metrics. Directly applicable for building error repetition detector — provides patterns on what errors repeat and how often."
+    },
+    {
+      "file": "issues.json",
+      "relevance": 87,
+      "summary": "Real examples of recorded issues with error types, outcomes, and success patterns. Shows timeout bugs and semaphore solutions — directly informs error detection and auto-escalation logic."
+    },
+    {
+      "file": "success-patterns.json (main repo, Fix bug pattern)",
+      "relevance": 78,
+      "summary": "Shows successful 3-iteration fix patterns with complexity metrics and file change patterns. Demonstrates how build loops converge — essential for detecting non-convergence and escalation triggers."
     },
     {
       "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "relevance": 72,
+      "summary": "Project conventions (vitest, Node, commonjs) define where to implement detector code and how it integrates with existing build loop infrastructure."
     },
     {
       "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
-    },
-    {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "relevance": 68,
+      "summary": "Baseline build_duration_s (2089s) provides empirical threshold for escalation — helps distinguish normal builds from truly stuck loops requiring intervention."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Build Loop Error Repetition Detector with Auto-Escalation — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Build Loop Error Repetition Detector with Auto-Escalation
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Implement `ler_normalize_signature` (strip line#/hex/ts/pid/path; category+hash)
+- [ ] Task 2: Implement `ler_record_and_count` (atomic tmp+mv, jq-absent fallback, reset semantics)
+- [ ] Task 3: Implement `ler_decide_escalation` ladder (hint→effort→model→restart→abort) + config toggles
+- [ ] Task 4: Implement `ler_current_signature` + `ler_run` orchestrator with `emit_event`
+- [ ] Task 5: Source module in `sw-loop.sh` and call after `write_error_summary`
+- [ ] Task 6: Apply escalation directives + add `error_repetition` status case + bump `VERSION`
+- [ ] Task 7: Add `loop.error_repetition` defaults to `daemon-config.json`
+- [ ] Task 8: Document config keys in `.claude/CLAUDE.md` Loop Configuration
+- [ ] Task 9: Write `scripts/sw-lib-loop-error-repetition-test.sh` (normalize, count, reset, ladder, atomicity, no-jq)
+- [ ] Task 10: Register test in `package.json`
+- [ ] Task 11: `shipwright version check` passes (VERSION sync)
+- [ ] Task 12: `shellcheck` clean (bash 3.2); new suite + `sw-loop-test.sh` green
+- [ ] Task 13: `shipwright docs sync` regenerates AUTO tables
+- [ ] `ler_run` detects 3 consecutive same-signature failures and emits
+- [ ] Escalation ladder advances one rung per crossing; different error/success resets.
+- [ ] `sw-loop.sh` applies each directive (verified via mocked run) without breaking the
+- [ ] New test suite passes and is registered in `package.json`; **all existing tests pass**.
+- [ ] `shellcheck` clean, bash 3.2 compatible; `shipwright version check` passes.
+- [ ] Config documented; AUTO doc tables regenerated.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-770
+- Issue: none
+- Generated: 2026-07-16T04:08:01Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-07-16T04:11:59Z
+last_iteration_at: 2026-07-16T04:11:59Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
