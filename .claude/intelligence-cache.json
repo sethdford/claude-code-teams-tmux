@@ -1651,33 +1651,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "Two successful build patterns showing 3-4 iterations, test strategy (npm test), file patterns changed, and cost per build. Directly informs build stage execution and expected iteration count."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project conventions defining test runner (vitest), source directory (src/), and import style (commonjs). Essential for build stage to follow established patterns."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 70,
-            "summary": "Baseline build duration of 2089 seconds provides performance reference to detect stalls or regressions during the build stage."
+            "summary": "Recent test stage failures (cleanup --force output, regression detection) directly blocking current build. Last seen 2026-07-16."
           },
           {
             "file": "knowledge.json",
-            "relevance": 65,
-            "summary": "Contains test failure patterns (mktemp directory issues, sw-cleanup output) with fix strategies that build stage may encounter during test execution."
+            "relevance": 85,
+            "summary": "Documented mktemp /tmp/claude failures and sw-cleanup.sh test output issues with proven fixes. 4 occurrences with fix strategy ready."
           },
           {
-            "file": "issues.json",
-            "relevance": 55,
-            "summary": "Documents timeout bug fix using semaphore pattern in daemon scripts. Provides defensive knowledge for daemon-related issues that could emerge during build."
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Two successful bug-fix patterns (3 iterations each) showing approach to complex fixes, test strategy (npm test), and iteration patterns."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 45,
+            "summary": "Project type (node, vitest), test pattern (*.test.js), and import style (commonjs) needed for build configuration and test runner setup."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 25,
+            "summary": "Build duration baseline (2089s) useful for monitoring build performance and detecting regressions, but doesn't address current failures."
           }
         ]
       },
-      "timestamp": 1784175108,
+      "timestamp": 1784178568,
       "ttl": 1800
     },
     "eedb1bffbec6f126d4c1508690ce14df": {
@@ -1748,6 +1748,20 @@
         }
       ],
       "timestamp": 1784178148,
+      "ttl": 1800
+    },
+    "efd4ff9473fd629053555c92041a8930": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1784178768,
       "ttl": 1800
     }
   }

@@ -73,10 +73,11 @@ ler_normalize_signature() {
         | sed -E 's/^ +//; s/ +$//' \
         | head -3)
 
-    # Collapse the (up to 3) canonical lines into one string and hash it.
+    # Collapse the (up to 3) canonical lines into one whitespace-normalized
+    # string and hash it. Quote the expansion (no word-splitting) and fold
+    # newlines/runs of spaces deterministically.
     local joined
-    joined=$(printf '%s ' $normalized 2>/dev/null)
-    joined=$(printf '%s' "$joined" | sed -E 's/ +$//')
+    joined=$(printf '%s' "$normalized" | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ +//; s/ +$//')
 
     local hash
     if command -v md5sum >/dev/null 2>&1; then
@@ -185,21 +186,29 @@ ler_record_and_count() {
     # Atomic write (tmp + mv, repo convention).
     local tmp="${state}.tmp.$$"
     if command -v jq >/dev/null 2>&1; then
-        jq -n \
+        if jq -n \
             --arg sig "$signature" \
             --argjson count "$new_count" \
             --argjson rung "$new_rung" \
             --argjson first "${first_seen:-0}" \
             --argjson iter "${ITERATION:-0}" \
             '{signature:$sig,repeat_count:$count,escalation_rung:$rung,first_seen_iteration:$first,last_iteration:$iter}' \
-            > "$tmp" 2>/dev/null && mv "$tmp" "$state" || rm -f "$tmp" 2>/dev/null
+            > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+        else
+            rm -f "$tmp" 2>/dev/null
+        fi
     else
         # jq-absent plain-text fallback (still valid JSON).
         local esc_sig
         esc_sig=$(printf '%s' "$signature" | sed 's/\\/\\\\/g; s/"/\\"/g')
-        printf '{"signature":"%s","repeat_count":%s,"escalation_rung":%s,"first_seen_iteration":%s,"last_iteration":%s}\n' \
+        if printf '{"signature":"%s","repeat_count":%s,"escalation_rung":%s,"first_seen_iteration":%s,"last_iteration":%s}\n' \
             "$esc_sig" "$new_count" "$new_rung" "${first_seen:-0}" "${ITERATION:-0}" \
-            > "$tmp" 2>/dev/null && mv "$tmp" "$state" || rm -f "$tmp" 2>/dev/null
+            > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+        else
+            rm -f "$tmp" 2>/dev/null
+        fi
     fi
 
     echo "$new_count"
@@ -214,11 +223,17 @@ _ler_update_rung() {
     [[ -f "$state" ]] || return 0
     local tmp="${state}.tmp.$$"
     if command -v jq >/dev/null 2>&1; then
-        jq --argjson rung "$new_rung" '.escalation_rung=$rung' "$state" > "$tmp" 2>/dev/null \
-            && mv "$tmp" "$state" || rm -f "$tmp" 2>/dev/null
+        if jq --argjson rung "$new_rung" '.escalation_rung=$rung' "$state" > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+        else
+            rm -f "$tmp" 2>/dev/null
+        fi
     else
-        sed -E "s/(\"escalation_rung\"[[:space:]]*:[[:space:]]*)[0-9]+/\1${new_rung}/" "$state" > "$tmp" 2>/dev/null \
-            && mv "$tmp" "$state" || rm -f "$tmp" 2>/dev/null
+        if sed -E "s/(\"escalation_rung\"[[:space:]]*:[[:space:]]*)[0-9]+/\1${new_rung}/" "$state" > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+        else
+            rm -f "$tmp" 2>/dev/null
+        fi
     fi
 }
 
