@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Cost-Aware Model Retry Cascade for Failed Stages
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Implementation Plan: Cost-Aware Model Retry Cascade for Failed Stages
+
+## Overview
+
+Implement a configurable model retry cascade system that automatically retries failed pipeline stages with progressively more capable (but more expensive) models, while respecting budget constraints and optimizing for cost-efficiency.
+
+## Requirements Clarification
+
+**Minimum Viable Change**: When a pipeline stage fails, automatically retry with a fallback model from a configured cascade sequence (default: haiku → sonnet → opus), tracking costs and budget usage.
+
+**Implicit Requirements**:
+- Integration with existing `daemon-config.json` model_routing and cost tracking
+- Pre-execution budget validation to prevent overspending
+- Failure classification to avoid cascading on non-retryable errors
+- Observable via logs and cost dashboard
+- Backwards compatible—existing pipelines work unchanged
+
+**Acceptance Criteria**:
+1. Stage failures automatically trigger cascade with configurable models
+2. Budget is checked BEFORE each retry attempt
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Cost-Aware Model Retry Cascade for Failed Stages
+## Context
+## Decision
+### Component Diagram
+### Interface Contracts
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+## Implementation Plan
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Cost-Aware Model Retry Cascade for Failed Stages
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Cost-Aware Model Retry Cascade for Failed Stages
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "issues.json",
+      "relevance": 92,
+      "summary": "Contains timeout bug pattern with semaphore solution and backoff gotcha — directly relevant to retry cascade for failed stages"
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "success-patterns.json (test-repo-789)",
+      "relevance": 88,
+      "summary": "High-complexity timeout fix with 3 iterations (retry escalation), build stage focus, $2.00 cost tracking — shows cost-aware retry behavior"
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "success-patterns.json (test-repo-456)",
+      "relevance": 82,
+      "summary": "Timeout fix pattern with 2 iterations, medium complexity, build stage only — relevant to retry cascade detection and retry count tracking"
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "success-patterns.json (final - Fix bug)",
+      "relevance": 75,
+      "summary": "Bug fix with 3 iterations showing retry/escalation behavior, cost tracking ($2.50), demonstrates iteration pattern that informs retry strategy"
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "success-patterns.json (test-repo-stages)",
+      "relevance": 68,
+      "summary": "Staged fix executing intake→plan→build→test→review pipeline — shows multi-stage execution relevant to cascade stage management"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Cost-Aware Model Retry Cascade for Failed Stages — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Cost-Aware Model Retry Cascade for Failed Stages
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Retry cascade executes on stage failure (when enabled)
+- [ ] Models tried in configured order (default: haiku → sonnet → opus)
+- [ ] Stage succeeds if any model in cascade succeeds
+- [ ] Stage fails if all models exhausted
+- [ ] Budget check occurs BEFORE each retry (prevents overspend)
+- [ ] Non-retryable failures fail fast without cascading
+- [ ] Cost tracking accurate per-attempt
+- [ ] Configuration via daemon-config.json (enable/disable, per-stage override)
+- [ ] `retry_cascade.enabled` controls feature on/off
+- [ ] `retry_cascade.model_order` customizable
+- [ ] `retry_cascade.max_cascade_cost_per_stage_usd` enforced
+- [ ] `retry_cascade.per_stage_overrides` work for specific stages
+- [ ] `config/failure-patterns.json` defines retryable vs non-retryable
+- [ ] Unit tests: cascade model selection (correct order)
+- [ ] Unit tests: budget validation (prevents overspend)
+- [ ] Unit tests: failure classification (retryable vs non-retryable)
+- [ ] Integration tests: end-to-end stage failure → cascade → success
+- [ ] Integration tests: budget enforcement stops cascade
+- [ ] E2E tests: cost tracking accurate across retries
+- [ ] All existing tests still pass (backward compatibility)
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-772
+- Issue: none
+- Generated: 2026-07-16T04:04:13Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-07-16T04:09:20Z
+last_iteration_at: 2026-07-16T04:09:20Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 

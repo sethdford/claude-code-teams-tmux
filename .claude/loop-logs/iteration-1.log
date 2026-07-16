@@ -1,1 +1,20 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+Iteration 1 complete. I've landed the tested foundation for the cost-aware retry cascade.
+
+## What I built this iteration
+
+**Core module** — `scripts/lib/retry-cascade.sh` (pure decision functions, bash 3.2 compatible, awk float math, no associative arrays):
+- `cascade_classify_failure` — retryable vs non-retryable via pattern DB (non-retryable wins ties; unknown-when-file-exists → non-retryable to stay budget-safe; missing file → retryable per spec)
+- `cascade_models_after` — escalates only to models strictly *after* the current one (a stage on opus never retries downward); normalizes `claude-opus-4-6` → `opus`
+- `cascade_budget_ok` — pre-flight guard against both the per-stage cap **and** global remaining budget
+- Circuit breaker via a flat TSV ledger keyed `stage:model`
+- `cascade_estimate_cost` — historical average from `costs.json`, per-model fallback constants
+
+**Supporting pieces:**
+- `config/failure-patterns.json` — retryable/non-retryable regex sets
+- `_smart_float` in `compat.sh` — float-safe config reader for the dollar cap
+- `scripts/sw-retry-cascade-test.sh` — **40 unit tests, all passing**, registered in `package.json`
+
+Feature is **off by default**; existing pipelines are byte-identical. The pre-existing `file_mtime` compat-test failure is a sandbox `stat` quirk (verified present without my changes).
+
+## Not done yet (why this isn't `LOOP_COMPLETE`)
+The design's integration point — extending `run_stage_with_retry()` in `pipeline-execution.sh` to actually invoke the cascade on failure with `MODEL` exported — is not wired in. Also pending: daemon-config defaults block, `.claude/CLAUDE.md` docs + feature-flags region, and end-to-end integration tests (stage fails → cascade → success/budget-block). Those are the next iterations.

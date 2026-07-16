@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "optimizer",
+          "devops",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Design cost-aware retry cascade system with model routing optimization; pipeline infrastructure integration required for implementation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1784174959,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,231 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "fdd6aed3b428420fc933cfb1d54bbf10": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "cost-aware",
+        "issue_type": "performance",
+        "key_risks": [
+          "Retry cascade could mask underlying issues if cheaper models succeed on failures that should escalate",
+          "Incorrect cost attribution if model usage tracking gets out of sync with actual retries",
+          "Timeout detection must be accurate to avoid applying cascade to transient failures",
+          "State mutations in optimization data could cause race conditions in concurrent pipelines",
+          "All-models-fail case needs clear fallback and error reporting behavior",
+          "Configuration errors in tier lists could cause unexpected model selection patterns"
+        ],
+        "implementation_hints": [
+          "Hook into stage failure handler to check for timeout before cascade logic triggers",
+          "Add tier list config to daemon-config.json with sensible defaults (opus→sonnet→haiku per stage)",
+          "Track success rates in ~/.shipwright/optimization/model-stage-success.json with atomic writes",
+          "Extend sw-model-router.sh with cascade retry logic or create new sw-retry-cascade.sh module",
+          "Test both success paths (cheaper model works) and escalation paths (need to retry with opus)",
+          "Implement cost delta tracking to measure actual savings from cascade strategy",
+          "Add tier list validation in sw-doctor.sh to catch configuration errors early"
+        ]
+      },
+      "timestamp": 1784174452,
+      "ttl": 3600
+    },
+    "04735c02afd2a39b3a3d5b36cae5f979": {
+      "result": {
+        "estimated_iterations": 10,
+        "reasoning": "Medium complexity (5/10) feature requiring cascade retry logic integration, cost tracking validation, concurrent pipeline safety testing, and multiple edge case scenarios (timeout detection, all-models-fail fallback, configuration validation). Typical progression: basic cascade (2 iterations) → integration debugging (2 iterations) → edge cases and cost validation (3 iterations) → concurrent safety and error handling (2 iterations) → final validation (1 iteration)."
+      },
+      "timestamp": 1784174466,
+      "ttl": 1800
+    },
+    "6f1fd748ca3b1e4d7ccce23e5ae55e47": {
+      "result": {
+        "estimated_cost_usd": 5.8,
+        "estimated_iterations": 4,
+        "estimated_tokens": 62400,
+        "likely_failure_stage": "review",
+        "confidence": 72
+      },
+      "timestamp": 1784174477,
+      "ttl": 3600
+    },
+    "fb7f055ba40c64f8b2157e7b3e956f4d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (id: 3acfa67aa7e90335)",
+            "relevance": 72,
+            "summary": "High-complexity timeout fix (3 iterations, $2.00 cost) shows retry cascade with cost tracking; demonstrates iteration pattern and daemon infrastructure changes relevant to model retry logic"
+          },
+          {
+            "file": "success-patterns.json (id: f4af3e2a8276951b)",
+            "relevance": 60,
+            "summary": "Fix bug with 3 loop iterations and $2.50 cost; illustrates iterative problem-solving strategy and cost per iteration, directly informing retry cascade design"
+          },
+          {
+            "file": "success-patterns.json (id: 0bcf0637b6e487d7)",
+            "relevance": 58,
+            "summary": "Feature implementation with 3 iterations at $2.5 cost; demonstrates cost-to-complexity relationship and multi-iteration approach needed for cascade planning"
+          },
+          {
+            "file": "success-patterns.json (id: 9778bf00d8f367ac)",
+            "relevance": 48,
+            "summary": "Multi-stage pipeline execution (intake→plan→build→test→review) with cost tracking; shows how stages are executed and cost accumulates, foundational for stage-level retry logic"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 42,
+            "summary": "Failure patterns with root causes and fix strategies (e.g., mktemp issues, cleanup output); informs what types of failures should trigger retries vs. escalation in cascade"
+          }
+        ]
+      },
+      "timestamp": 1784174528,
+      "ttl": 1800
+    },
+    "392e1976a41cd2e59e7ad764d750ddf5": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (main repo)",
+            "relevance": 95,
+            "summary": "Contains detailed success patterns with cost tracking, iterations, and complexity metrics. The 'Fix bug' pattern (3 iterations, $2.50 cost) and 'Add authentication' pattern (3 iterations, $2.50 cost) directly model iterative retry behavior and cost optimization that underpins cost-aware retry cascades."
+          },
+          {
+            "file": "test-repo-789/success-patterns.json",
+            "relevance": 78,
+            "summary": "Shows 'Fix timeout' pattern with high complexity (3 iterations needed), $2.00 cost tracking, and sw-daemon.sh involvement. Demonstrates multi-iteration retry strategy and cost awareness in failed stage recovery."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 62,
+            "summary": "Contains failure patterns and root-cause-driven fix strategies (mktemp failures, sw-cleanup issues). These patterns inform what triggers stage failures and what recovery strategies succeed, which is essential for designing retry cascades."
+          }
+        ]
+      },
+      "timestamp": 1784174673,
+      "ttl": 1800
+    },
+    "57c454cf338b8ffb2576bd8afb278fd4": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 85,
+            "summary": "High-complexity timeout fix with 3 iterations, cost tracking ($2.00), and daemon.sh involvement—directly demonstrates retry cascade pattern with cost awareness"
+          },
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 78,
+            "summary": "Staged fix traversing multiple pipeline stages (intake→plan→build→test→review) with cost tracking—shows stage cascade and retry coordination pattern"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 72,
+            "summary": "Timeout bug fix in daemon using semaphore pattern—illustrates classic retry synchronization mechanism and failure recovery for staged execution"
+          },
+          {
+            "file": "success-patterns.json (large, bottom)",
+            "relevance": 68,
+            "summary": "Complex multi-iteration patterns (3+ iterations) with cost tracking and file mutation—demonstrates retry iteration and cost-aware retry strategies"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 58,
+            "summary": "Captured failure patterns and fix strategies (mktemp, cleanup, regression)—provides context on failure recovery approaches and root-cause identification for cascade design"
+          }
+        ]
+      },
+      "timestamp": 1784174754,
+      "ttl": 1800
+    },
+    "f813473fb15543354c8e1342c26bada4": {
+      "result": {
+        "results": [
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Contains failure patterns and fix strategies with error signatures (e.g., mktemp failures, missing logic). Directly applicable to identifying anti-patterns—understanding what failed and why helps define what approaches to reject for the retry cascade."
+          },
+          {
+            "file": "success-patterns.json (main)",
+            "relevance": 76,
+            "summary": "Shows two detailed patterns with iteration counts (3–4), complexity metrics (60–65), and costs ($2.50). The 'Fix bug' pattern with 3 iterations and cost tracking demonstrates retry behavior and cost trade-offs, informing model-routing decisions in the cascade."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 68,
+            "summary": "Daemon timeout fix using 'added semaphore' pattern with 'check backoff' gotcha. Directly relevant to retry backoff anti-patterns and timeout handling—shows specific pitfalls to avoid in cascade retry logic."
+          }
+        ]
+      },
+      "timestamp": 1784174777,
+      "ttl": 1800
+    },
+    "149ba5deb6522a85f40436d5953487ac": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 92,
+            "summary": "Contains timeout bug pattern with semaphore solution and backoff gotcha — directly relevant to retry cascade for failed stages"
+          },
+          {
+            "file": "success-patterns.json (test-repo-789)",
+            "relevance": 88,
+            "summary": "High-complexity timeout fix with 3 iterations (retry escalation), build stage focus, $2.00 cost tracking — shows cost-aware retry behavior"
+          },
+          {
+            "file": "success-patterns.json (test-repo-456)",
+            "relevance": 82,
+            "summary": "Timeout fix pattern with 2 iterations, medium complexity, build stage only — relevant to retry cascade detection and retry count tracking"
+          },
+          {
+            "file": "success-patterns.json (final - Fix bug)",
+            "relevance": 75,
+            "summary": "Bug fix with 3 iterations showing retry/escalation behavior, cost tracking ($2.50), demonstrates iteration pattern that informs retry strategy"
+          },
+          {
+            "file": "success-patterns.json (test-repo-stages)",
+            "relevance": 68,
+            "summary": "Staged fix executing intake→plan→build→test→review pipeline — shows multi-stage execution relevant to cascade stage management"
+          }
+        ]
+      },
+      "timestamp": 1784174926,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "metrics.json",
+            "relevance": 95,
+            "summary": "Contains baseline build duration (2089s), critical for build stage timeout expectations and performance benchmarking"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Defines project structure (node, vitest, npm, javascript, commonjs), essential for understanding build toolchain and test execution"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Contains patterns from successful build/fix cycles with test strategies (npm test) and iteration data, informing current build approach"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Captures test-phase failures (mktemp, sw-cleanup, regression detection) that may recur during build stage, enabling prevention"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 25,
+            "summary": "Historical daemon timeout bug with semaphore solution, only relevant if current build targets daemon-related fixes"
+          }
+        ]
+      },
+      "timestamp": 1784174943,
+      "ttl": 1800
     }
   }
 }
