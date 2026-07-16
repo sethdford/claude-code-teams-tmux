@@ -1232,10 +1232,21 @@ AUDIT_PROMPT
         audit_flags+=("--dangerously-skip-permissions")
     fi
 
-    # Use structured output for machine-parseable audit results
+    # Use structured output for machine-parseable audit results.
+    # The schema files carry a "$schema" meta-reference (draft 2020-12) for
+    # editor tooling, but the claude CLI's --json-schema validator cannot
+    # resolve that remote meta-schema and rejects the whole document. Strip it
+    # (with jq when available, else a sed fallback) before passing it through.
     local schema_file="${SCRIPT_DIR}/../schemas/audit-result.json"
     if [[ -f "$schema_file" ]]; then
-        audit_flags+=("--json-schema" "$(cat "$schema_file")")
+        local schema_json
+        if command -v jq >/dev/null 2>&1; then
+            schema_json="$(jq -c 'del(."$schema")' "$schema_file" 2>/dev/null)"
+        fi
+        if [[ -z "${schema_json:-}" ]]; then
+            schema_json="$(sed '/"\$schema"[[:space:]]*:/d' "$schema_file")"
+        fi
+        audit_flags+=("--json-schema" "$schema_json")
     fi
 
     local exit_code=0

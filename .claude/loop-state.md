@@ -109,17 +109,22 @@ Task tracking (check off items as you complete them):
 - Pipeline: autonomous
 - Branch: ci/issue-772
 - Issue: none
-- Generated: 2026-07-16T04:04:13Z"
-iteration: 1
+- Generated: 2026-07-16T04:04:13Z
+
+## Failure Diagnosis (Iteration 2)
+Classification: unknown
+Strategy: retry_with_context
+Repeat count: 0"
+iteration: 2
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-07-16T04:15:14Z
-last_iteration_at: 2026-07-16T04:15:14Z
+started_at: 2026-07-16T04:31:54Z
+last_iteration_at: 2026-07-16T04:31:54Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -134,4 +139,9 @@ max_extensions: 3
 - `_smart_float` in `compat.sh` — float-safe config reader for the dollar cap
 - `scripts/sw-retry-cascade-test.sh` — **40 unit tests, all passing**, registered in `package.json`
 Feature is **off by default**; existing pipelines are byte-identical. The pre-existing `file_mtime` compat-test failure 
+
+### Iteration 2 (2026-07-16T04:31:54Z)
+**Tests & docs**
+- New `sw-retry-cascade-integration-test.sh` (11 tests) exercising the *real* `run_stage_with_retry` end-to-end; extende
+- Documented `retry_cascade` config in CLAUDE.md.
 

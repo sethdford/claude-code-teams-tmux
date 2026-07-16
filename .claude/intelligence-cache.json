@@ -1599,33 +1599,33 @@
       "result": {
         "results": [
           {
-            "file": "metrics.json",
+            "file": "success-patterns.json",
             "relevance": 95,
-            "summary": "Contains baseline build duration (2089s), critical for build stage timeout expectations and performance benchmarking"
+            "summary": "Shows proven iteration patterns (3-4 iterations), test strategy (npm test), file change patterns, and commit counts for similar bug fixes. Directly applicable to current build stage execution."
           },
           {
             "file": "patterns.json",
-            "relevance": 90,
-            "summary": "Defines project structure (node, vitest, npm, javascript, commonjs), essential for understanding build toolchain and test execution"
+            "relevance": 80,
+            "summary": "Project metadata (node, vitest, npm, commonjs, src/ directory) provides conventions and structure needed during build stage setup and execution."
           },
           {
-            "file": "success-patterns.json",
-            "relevance": 75,
-            "summary": "Contains patterns from successful build/fix cycles with test strategies (npm test) and iteration data, informing current build approach"
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recent test-stage failures (sw-cleanup.sh stale-heartbeat, sed command quoting in sw-code-review-test.sh) are likely to recur during current build testing phase and provide fixes."
           },
           {
             "file": "knowledge.json",
-            "relevance": 50,
-            "summary": "Captures test-phase failures (mktemp, sw-cleanup, regression detection) that may recur during build stage, enabling prevention"
+            "relevance": 40,
+            "summary": "Historical failure patterns including mktemp directory issues, cleanup output formatting, and JSON generation failures that could surface during build or test setup."
           },
           {
-            "file": "issues.json",
+            "file": "metrics.json",
             "relevance": 25,
-            "summary": "Historical daemon timeout bug with semaphore solution, only relevant if current build targets daemon-related fixes"
+            "summary": "Baseline build duration (2089s) provides reference for performance expectations and timeout thresholds during current build execution."
           }
         ]
       },
-      "timestamp": 1784174943,
+      "timestamp": 1784176815,
       "ttl": 1800
     },
     "26f9a125d1372a7dbae89c3c2864ea77": {
@@ -1654,6 +1654,34 @@
         }
       ],
       "timestamp": 1784176169,
+      "ttl": 1800
+    },
+    "ff31a70983af94cf51acd6334c3832da": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1784176476,
+      "ttl": 1800
+    },
+    "1e56461a2c07205b55ed7c53a7505ddb": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1784176713,
       "ttl": 1800
     }
   }

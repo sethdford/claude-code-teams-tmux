@@ -794,6 +794,27 @@ else
     assert_fail "run_audit_agent reads structured test evidence"
 fi
 
+# Test: audit strips the unresolvable "$schema" meta-reference before passing
+# the schema to `claude --json-schema` (the CLI validator can't fetch it).
+if grep -q 'del(."\$schema")' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "run_audit_agent strips \$schema meta-reference for --json-schema"
+else
+    assert_fail "run_audit_agent strips \$schema meta-reference for --json-schema"
+fi
+
+# Test: the stripped audit schema is still valid JSON with no "$schema" key.
+audit_schema="$SCRIPT_DIR/../schemas/audit-result.json"
+if [[ -f "$audit_schema" ]]; then
+    stripped="$(jq -c 'del(."$schema")' "$audit_schema" 2>/dev/null)"
+    if [[ -n "$stripped" ]] && printf '%s' "$stripped" | jq -e 'has("$schema") | not' >/dev/null 2>&1; then
+        assert_pass "audit schema strips cleanly to valid \$schema-free JSON"
+    else
+        assert_fail "audit schema strips cleanly to valid \$schema-free JSON"
+    fi
+else
+    assert_fail "audit schema file exists"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # VERIFICATION GAP TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
