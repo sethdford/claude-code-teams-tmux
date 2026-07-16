@@ -109,16 +109,16 @@ Task tracking (check off items as you complete them):
 - Branch: ci/issue-770
 - Issue: none
 - Generated: 2026-07-16T04:08:01Z"
-iteration: 0
+iteration: 1
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-07-16T04:11:59Z
-last_iteration_at: 2026-07-16T04:11:59Z
+started_at: 2026-07-16T04:27:14Z
+last_iteration_at: 2026-07-16T04:27:14Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 1
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -129,4 +129,8 @@ max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-07-16T04:27:14Z)
+| Config documented; config block added; events registered | ✅ |
+| No TODO/FIXME/HACK/XXX in new code | ✅ |
+**Notes on the two unrelated failures I encountered:** `sw-auto-recovery-test.sh` (exits 1, no output) and one assertion
 
