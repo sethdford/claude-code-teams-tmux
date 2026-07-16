@@ -1,3 +1,22 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
+      "root_cause": "sw-cleanup.sh test suite regressed — stale heartbeat detection no longer outputs 'agent-1', and the cleanup summary no longer prints 'Found' or '--force' hint text",
+      "fix": "Check recent changes to sw-cleanup.sh's heartbeat detection and summary output logic; restore the 'Found N ... use --force' summary line and ensure stale heartbeat agent IDs are printed in dry-run output",
+      "seen_count": 1,
+      "last_seen": "2026-07-16T04:22:33Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-code-review-test.sh performed sed -i editing a temp file path stored in $TEST_TEMP_DIR after the directory was already removed/reassigned, so sed failed with 'No such file or directory'",
+      "fix": "guard sed calls with a file-existence check or ensure $TEST_TEMP_DIR is set/created before use, and avoid reusing a cleaned-up temp dir path across test cases",
+      "seen_count": 1,
+      "last_seen": "2026-07-16T04:34:20Z",
+      "category": "test_failure"
+    }
+  ]
 }
