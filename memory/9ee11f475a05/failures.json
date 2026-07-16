@@ -3,11 +3,29 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup-test.sh assertions expect literal strings 'agent-1', 'Found', and '--force' in cleanup command output, but the current sw-cleanup.sh implementation no longer emits stale-heartbeat detection or the found-count/force-hint summary lines in that format",
-      "fix": "Update sw-cleanup.sh to print the heartbeat agent id, a 'Found N item(s)' summary line, and a '--force' hint in dry-run/summary output, or update the test assertions if the output format intentionally changed",
-      "seen_count": 2,
-      "last_seen": "2026-07-16T04:49:17Z",
+      "root_cause": "sw-cleanup.sh stale-heartbeat detection and summary output logic regressed, no longer printing agent id, 'Found' count, or the --force hint",
+      "fix": "restore/fix the summary formatting in sw-cleanup.sh that emits stale heartbeat details and the Found/--force hint lines",
+      "seen_count": 1,
+      "last_seen": "2026-07-16T04:26:41Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "regression detection subcommand in sw-feedback.sh emits non-JSON or malformed output when computing regressions, failing JSON validation",
+      "fix": "ensure the regression detection code path always writes valid JSON output (e.g. wrap with jq -n or fix unescaped values) even on empty/edge-case input",
+      "seen_count": 4,
+      "last_seen": "2026-07-16T05:09:16Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "Test runner's temp directory /tmp/claude did not exist before mktemp was invoked, so the test harness could not create its scratch directory",
+      "fix": "Ensure /tmp/claude is created (mkdir -p) before the test suite runs, e.g. in test setup or CI environment provisioning",
+      "seen_count": 1,
+      "last_seen": "2026-07-16T04:51:38Z",
+      "category": "config"
     }
   ]
 }
