@@ -6,7 +6,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMPBASE="${TMPDIR:-/tmp/claude}"
+# Fall back to /tmp (always present) rather than a hardcoded /tmp/claude that
+# may not exist when TMPDIR is unset; mkdir -p guards a custom TMPDIR too.
+TMPBASE="${TMPDIR:-/tmp}"
+mkdir -p "$TMPBASE" 2>/dev/null || true
 TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
 MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
 

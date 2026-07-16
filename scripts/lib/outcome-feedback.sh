@@ -356,9 +356,15 @@ generate_learned_rules() {
         count=$(echo "$pattern" | jq -r '.count')
 
         # Compute confidence (count / total_prs, capped at 0.95)
-        # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
+        # For now, use count-based confidence (3 = 0.15, 5 = 0.25, 10+ = 0.95)
+        # awk (not bc) — bc lacks the if/then/else expression syntax and would
+        # emit an empty string, breaking the jq `tonumber` below.
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        confidence=$(awk -v c="$count" 'BEGIN {
+            n = c + 0
+            if (n >= 10) printf "0.95"; else printf "%.2f", n / 20
+        }' 2>/dev/null)
+        [[ -z "$confidence" ]] && confidence="0.60"
 
         # Generate rule text based on category
         local rule_text

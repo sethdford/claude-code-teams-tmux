@@ -14,10 +14,10 @@ TEST_TMP=""
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -27,10 +27,10 @@ assert_equals() {
 assert_true() {
     local condition="$1" description="${2:-}"
     if eval "$condition"; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
     fi
 }
@@ -38,10 +38,10 @@ assert_true() {
 assert_file_exists() {
     local file="$1" description="${2:-}"
     if [[ -f "$file" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $file"
     fi
@@ -52,10 +52,10 @@ assert_json_field() {
     local actual
     actual=$(jq -r "$query" "$file" 2>/dev/null || echo "__jq_error__")
     if [[ "$actual" == "$expected" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -241,7 +241,7 @@ test_spec_generation_creates_spec_when_missing() {
         assert_true "[[ -n '${has_title}' ]]" "generated spec has a title"
     else
         # Still valid — stage handled missing spec gracefully
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m spec_generation handled missing spec gracefully"
     fi
     teardown

@@ -502,9 +502,9 @@ FAIL=0
 
 for test in "${TESTS[@]}"; do
     if $test; then
-        ((PASS++))
+        PASS=$((PASS+1))
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
     fi
 done
 

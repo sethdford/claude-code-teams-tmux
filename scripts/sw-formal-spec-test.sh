@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
     local haystack="$1" needle="$2" description="${3:-}"
     if echo "$haystack" | grep -qF "$needle" 2>/dev/null; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    Actual: $haystack"
@@ -38,10 +38,10 @@ assert_contains() {
 assert_file_exists() {
     local path="$1" description="${2:-}"
     if [[ -f "$path" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $path"
     fi
@@ -60,10 +60,10 @@ source "$SCRIPT_DIR/lib/formal-spec.sh"
 # ─── Test: module loads without error ───────────────────────────────────────
 test_module_loads() {
     if type formal_spec_extract >/dev/null 2>&1; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m module loads and exports formal_spec_extract"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m module loads and exports formal_spec_extract"
     fi
 }
@@ -137,10 +137,10 @@ EOF
     local count
     count=$(jq -r '.count // 0' "$out" 2>/dev/null || echo "0")
     if [[ "$count" -ge 2 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m extracts specs from multiple files in directory"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m extracts specs from multiple files in directory (got $count, expected >= 2)"
     fi
 }
@@ -192,10 +192,10 @@ JSEOF
     local violations
     violations=$(jq -r '.violations // 0' "$report" 2>/dev/null || echo "0")
     if [[ "$violations" -gt 0 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m detects missing precondition validation"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m detects missing precondition validation (got 0 violations)"
     fi
 }
@@ -240,10 +240,10 @@ test_extract_nonexistent() {
     result=$(formal_spec_extract "/nonexistent/file.js" "$out" 2>/dev/null)
     # Should not crash, should echo output path
     if [[ -n "$result" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m extract handles nonexistent file gracefully"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m extract handles nonexistent file gracefully"
     fi
 }
@@ -270,10 +270,10 @@ JSEOF
     local violations
     violations=$(jq -r '.violations // 0' "$report" 2>/dev/null || echo "0")
     if [[ "$violations" -gt 0 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m detects invariant violation (counter < 0 pattern)"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m detects invariant violation (got 0 violations)"
     fi
 }

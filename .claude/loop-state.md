@@ -119,17 +119,27 @@ Repeat count: 0
 ## Failure Diagnosis (Iteration 3)
 Classification: unknown
 Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
+Repeat count: 1
+
+## Failure Diagnosis (Iteration 4)
+Classification: unknown
+Strategy: alternative_approach
+Repeat count: 2
+INSTRUCTION: This error has occurred 2 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:
+- If you were modifying existing code, try rewriting the function from scratch
+- If you were using one library, try a different one
+- If you were adding to a file, try creating a new file instead
+- Step back and reconsider the requirements"
+iteration: 4
 max_iterations: 20
 status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-07-16T04:41:15Z
-last_iteration_at: 2026-07-16T04:41:15Z
+started_at: 2026-07-16T04:51:00Z
+last_iteration_at: 2026-07-16T04:51:00Z
 consecutive_failures: 0
-total_commits: 3
+total_commits: 4
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -152,4 +162,9 @@ Feature is **off by default**; existing pipelines are byte-identical. The pre-ex
 
 ### Iteration 3 (2026-07-16T04:41:15Z)
 I'll wait for the monitor to report the loop result before committing.
+
+### Iteration 4 (2026-07-16T04:51:00Z)
+- Budget check before each retry, per-`stage:model` circuit breaker, per-stage overrides
+- **Off by default** — verified and tested (`disabled cascade preserves legacy single-attempt behavior`)
+- Documented in CLAUDE.md
 

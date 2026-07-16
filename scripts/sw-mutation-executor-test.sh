@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_gt() {
     local threshold="$1" actual="$2" description="${3:-}"
     if [[ "$actual" -gt "$threshold" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected > $threshold, got $actual"
     fi
@@ -37,10 +37,10 @@ assert_gt() {
 assert_file_exists() {
     local path="$1" description="${2:-}"
     if [[ -f "$path" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    File not found: $path"
     fi
@@ -66,10 +66,10 @@ test_module_loads() {
         fi
     done
     if [[ "$all_ok" == "true" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m module loads and exports all functions"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m module loads and exports all functions"
     fi
 }
@@ -143,10 +143,10 @@ JSEOF
         fi
     done
     if [[ "$has_logical" == "true" ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m mutation category tagged as logical_flip"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m mutation category tagged as logical_flip"
     fi
 }
@@ -195,10 +195,10 @@ TESTEOF
     killed=$(echo "$result" | jq -r '.killed // 0' 2>/dev/null || echo "0")
 
     if [[ "$killed" -gt 0 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m mutations killed by good tests ($killed killed)"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m expected some mutations killed, got 0"
     fi
 }
@@ -282,10 +282,10 @@ test_max_mutants_limit() {
     MUTATION_MAX_MUTANTS=50
 
     if [[ "$count" -le 5 ]]; then
-        ((PASS++))
+        PASS=$((PASS+1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m respects MUTATION_MAX_MUTANTS limit ($count <= 5)"
     else
-        ((FAIL++))
+        FAIL=$((FAIL+1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m should respect max mutants limit (got $count, expected <= 5)"
     fi
 }
