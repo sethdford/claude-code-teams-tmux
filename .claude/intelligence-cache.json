@@ -1599,33 +1599,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Shows proven iteration patterns (3-4 iterations), test strategy (npm test), file change patterns, and commit counts for similar bug fixes. Directly applicable to current build stage execution."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 80,
-            "summary": "Project metadata (node, vitest, npm, commonjs, src/ directory) provides conventions and structure needed during build stage setup and execution."
-          },
-          {
             "file": "failures.json",
-            "relevance": 65,
-            "summary": "Recent test-stage failures (sw-cleanup.sh stale-heartbeat, sed command quoting in sw-code-review-test.sh) are likely to recur during current build testing phase and provide fixes."
+            "relevance": 95,
+            "summary": "Recent test failures (sw-cleanup.sh output, regression detection JSON, classify_failure wiring) are blocking the current build's npm test stage. These are active blockers for iteration success."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Previous successful builds used standard template with npm test strategy and 3 iterations. Provides context for expected iteration count, test strategy, and file patterns that succeeded before."
           },
           {
             "file": "knowledge.json",
-            "relevance": 40,
-            "summary": "Historical failure patterns including mktemp directory issues, cleanup output formatting, and JSON generation failures that could surface during build or test setup."
+            "relevance": 70,
+            "summary": "Contains mktemp failures (/tmp/claude missing) and test infrastructure issues that could cause build setup to fail before tests run. Relevant for understanding test environment assumptions."
           },
           {
             "file": "metrics.json",
-            "relevance": 25,
-            "summary": "Baseline build duration (2089s) provides reference for performance expectations and timeout thresholds during current build execution."
+            "relevance": 60,
+            "summary": "Build duration baseline (2089 seconds) helps set expectations and detect if current iterations are timing out abnormally or progressing too slowly."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Historical issue about timeout bug in daemon dispatch logic. Indirectly relevant to build reliability but less critical than active test failures."
           }
         ]
       },
-      "timestamp": 1784176815,
+      "timestamp": 1784178706,
       "ttl": 1800
     },
     "26f9a125d1372a7dbae89c3c2864ea77": {

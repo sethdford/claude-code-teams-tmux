@@ -1,1 +1,16 @@
-Invalid API key · Fix external API key
+Committed as `e9fab5ba`. Here's where this iteration landed.
+
+## Summary
+
+**Primary fix — the reported gate failure.** `sw-daemon-test.sh`'s "classify_failure wired into retry logic" test was failing. Root cause: the assertion `grep -A50 'daemon_on_failure()' … | grep -q classify_failure` breaks under `set -o pipefail` — `grep -q` closes the pipe on first match, the producing `grep` gets SIGPIPE (exit 141), and `pipefail` propagates that as a pipeline failure. It only passed standalone because interactive shells don't set `pipefail`. Rewrote with process substitution so the outer `grep`'s exit status is authoritative. Daemon suite now 66/66; the cascade suites remain green (54 + 11).
+
+**Real bugs unmasked downstream.** Fixing the macOS-only `/tmp/claude` default in `sw-outcome-feedback-test.sh` let the `npm test` chain finally run past it and exposed pre-existing latent defects that `set -e` had been hiding:
+- **`outcome-feedback.sh` (production code):** learned-rule confidence used `bc` with `if/then/else/end` syntax `bc` doesn't support — it silently emitted an empty string that broke jq's `tonumber`, so learned rules never generated. Fixed with `awk`.
+- **15 test suites** aborted on their first assertion: bare `((PASS++))` returns exit 1 when the counter is 0, tripping `set -e`. Rewrote as `PASS=$((PASS+1))`.
+- **`sw-scope-enforcement-test.sh`:** hardcoded macOS `/private/tmp/claude-501` path → `${TMPDIR:-/tmp}`.
+
+Every touched suite was verified green individually.
+
+**Deliberately not done — and why no `LOOP_COMPLETE`.** Once the chain ran further it revealed *another* pre-existing latent bug (`sw-hygiene.sh scan_platform_refactor` has interacting `set -e`/`pipefail` fragilities). This is an unbounded sweep of environment/`set -e` issues in scripts the Linux test chain never previously reached — unrelated to the Cost-Aware Retry Cascade goal. I reverted a partial hygiene edit rather than ship an unverified half-fix, and I'm not declaring the loop complete while the broader `npm test` still has these pre-existing failures outside the feature's scope.
+
+The retry-cascade feature itself remains complete (implemented, wired, documented, off by default, 54+11 tests passing) — this iteration's contribution was unblocking its gating test and fixing genuine bugs along the way.
