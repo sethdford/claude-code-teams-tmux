@@ -367,6 +367,48 @@ _smart_int() {
     echo "$default"
 }
 
+# _smart_float <config_key> <default>
+# Read a float from daemon-config with env override and default fallback.
+# Unlike _smart_int, this validates the value parses as a float (e.g. "5.0",
+# "0.25") — the retry cascade's per-stage cost cap is a dollar amount, and
+# passing it through _smart_int risks silent truncation on some jq/awk paths.
+_smart_float() {
+    local key="$1" default="$2"
+
+    # Sanitize key to alphanumeric/underscore/dot only (prevents eval injection)
+    if [[ ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_.]*$ ]]; then
+        echo "$default"
+        return
+    fi
+
+    # Env override: config.key.path → SW_KEY_PATH
+    local env_key
+    env_key="SW_$(echo "$key" | tr '[:lower:].' '[:upper:]_')"
+    local env_val=""
+    eval 'env_val="${'"$env_key"':-}"' 2>/dev/null || true
+    if [[ -n "$env_val" ]]; then
+        if [[ "$env_val" =~ ^-?[0-9]+\.?[0-9]*$ || "$env_val" =~ ^-?\.[0-9]+$ ]]; then
+            echo "$env_val"
+            return
+        fi
+    fi
+
+    # Daemon config
+    local cfg="${DAEMON_CONFIG:-${WORK_DIR:-.}/.claude/daemon-config.json}"
+    if [[ -f "$cfg" ]]; then
+        local cfg_val
+        cfg_val=$(jq -r --arg k "$key" 'getpath($k | split(".")) // empty' "$cfg" 2>/dev/null || true)
+        if [[ -n "$cfg_val" && "$cfg_val" != "null" ]]; then
+            if [[ "$cfg_val" =~ ^-?[0-9]+\.?[0-9]*$ || "$cfg_val" =~ ^-?\.[0-9]+$ ]]; then
+                echo "$cfg_val"
+                return
+            fi
+        fi
+    fi
+
+    echo "$default"
+}
+
 # _smart_effort <stage>
 # Read effort level from config, with per-stage defaults
 _smart_effort() {

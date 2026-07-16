@@ -1,0 +1,53 @@
+{
+  "$schema_version": "1.0",
+  "description": "Failure classification patterns for the cost-aware model retry cascade. A stage failure is only retried with a more capable model when its captured output matches a 'retryable' pattern AND does not match a 'non_retryable' pattern. Non-retryable patterns are checked first and win ties — retrying a bigger model cannot fix a missing file, a permission error, or a failing user-code assertion, so those fail fast to avoid burning budget for an identical result.",
+  "non_retryable": [
+    {
+      "id": "file-not-found",
+      "pattern": "ENOENT|No such file or directory|Cannot find module|MODULE_NOT_FOUND|command not found",
+      "reason": "Missing file or module — a larger model re-runs into the same missing dependency."
+    },
+    {
+      "id": "permission-denied",
+      "pattern": "Permission denied|EACCES|EPERM|Operation not permitted|not authorized",
+      "reason": "Permission/authorization error — model capability is irrelevant."
+    },
+    {
+      "id": "assertion-failure",
+      "pattern": "AssertionError|assert.*fail|Expected.*but.*(got|received)|test(s)? failed|FAIL(ED)?[: ]",
+      "reason": "Failing tests/assertions reflect user-code behavior, not model incapacity; the build loop owns re-fixing these, not the cascade."
+    },
+    {
+      "id": "syntax-error",
+      "pattern": "SyntaxError|CompileError|error\\[E[0-9]+\\]|Unexpected token|Parse error|cannot parse",
+      "reason": "Deterministic syntax/compile error — reproducible regardless of model."
+    },
+    {
+      "id": "config-error",
+      "pattern": "missing.*env|undefined variable|invalid configuration|config.*not found|EADDRINUSE",
+      "reason": "Environment/configuration problem — escalate, do not cascade."
+    }
+  ],
+  "retryable": [
+    {
+      "id": "rate-limit",
+      "pattern": "rate.?limit|429|Too Many Requests|quota exceeded|overloaded|529",
+      "reason": "Transient provider throttling — a retry (possibly on a different model tier) can succeed."
+    },
+    {
+      "id": "transient-api",
+      "pattern": "timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|socket hang up|502|503|504|Internal Server Error|connection reset",
+      "reason": "Transient network/API error — retry is warranted."
+    },
+    {
+      "id": "truncation",
+      "pattern": "max_tokens|response truncated|incomplete output|output too long|context length exceeded",
+      "reason": "Output truncation or context overflow — a more capable model with a larger budget may complete the task."
+    },
+    {
+      "id": "low-quality",
+      "pattern": "did not produce|empty (response|output)|no changes generated|failed to generate",
+      "reason": "Under-capable output — escalating to a stronger model is exactly the cascade's purpose."
+    }
+  ]
+}
