@@ -287,6 +287,55 @@ cascade_record_attempt() {
         >> "$RETRY_CASCADE_ATTEMPTS_FILE" 2>/dev/null || true
 }
 
+# ─── Orchestration seam ──────────────────────────────────────────────────────
+
+# cascade_next_model <stage> <retryAttempt> <errorOutput> [exitCode]
+# The single decision function the pipeline's run_stage_with_retry calls on a
+# stage failure. On success it echoes the model to use for the retry (exit 0)
+# and records the attempt in the cascade ledger. Otherwise it echoes nothing and
+# returns a distinct code so the caller can emit a precise event:
+#   10 = cascade disabled            (fall through to normal retry logic)
+#   11 = failure is non-retryable    (caller should fail fast)
+#   12 = model order exhausted       (no further model to escalate to)
+#   13 = circuit breaker open        (this stage:model has failed too often)
+#   14 = budget would be exceeded    (caller should stop cascading)
+#
+# retryAttempt is 1-based (first retry = 1) and indexes directly into the
+# configured model_order, so the initial attempt implicitly used order[0] (the
+# cheapest model) and each retry escalates one step. Configure model_order
+# cheapest-first (default: haiku sonnet opus) for cost-aware escalation.
+cascade_next_model() {
+    local stage="$1" attempt="$2" err="${3:-}" code="${4:-1}"
+
+    cascade_enabled || return 10
+
+    if [[ "$(cascade_classify_failure "$err" "$code")" != "retryable" ]]; then
+        return 11
+    fi
+
+    # Select the attempt-th model (0-based) from the configured order.
+    local order model="" idx=0 m
+    order=$(cascade_model_order "$stage")
+    for m in $order; do
+        if [[ "$idx" -eq "$attempt" ]]; then
+            model="$m"
+            break
+        fi
+        idx=$((idx + 1))
+    done
+    [[ -n "$model" ]] || return 12
+
+    cascade_circuit_open "$stage" "$model" && return 13
+
+    local est
+    est=$(cascade_estimate_cost "$stage" "$model")
+    cascade_budget_ok "$stage" "$model" "$est" || return 14
+
+    cascade_record_attempt "$stage" "$model" "$est"
+    echo "$model"
+    return 0
+}
+
 # cascade_reset [stage]
 # Clears the attempt ledger for a fresh cascade. With a stage arg, removes only
 # that stage's rows; otherwise truncates the whole ledger.

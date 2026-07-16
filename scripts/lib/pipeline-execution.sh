@@ -36,6 +36,14 @@ elif [[ -f "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" ]]; then
     source "$SCRIPT_DIR/lib/pipeline-intelligence-skip.sh" 2>/dev/null || true
 fi
 
+# Cost-aware model retry cascade (provides cascade_next_model, off by default).
+# Same dual-path lookup: SCRIPT_DIR may be scripts/ or scripts/lib/.
+if [[ -f "$SCRIPT_DIR/lib/retry-cascade.sh" ]]; then
+    source "$SCRIPT_DIR/lib/retry-cascade.sh" 2>/dev/null || true
+elif [[ -f "$SCRIPT_DIR/retry-cascade.sh" ]]; then
+    source "$SCRIPT_DIR/retry-cascade.sh" 2>/dev/null || true
+fi
+
 # ─── Stage Execution with Retry Logic ──────────────────────────────
 run_stage_with_retry() {
     local stage_id="$1"
@@ -43,12 +51,31 @@ run_stage_with_retry() {
     max_retries=$(jq -r --arg id "$stage_id" '(.stages[] | select(.id == $id) | .config.retries) // 0' "$PIPELINE_CONFIG" 2>/dev/null) || true
     [[ -z "$max_retries" || "$max_retries" == "null" ]] && max_retries=0
 
+    # When the cost-aware cascade is enabled, guarantee enough retry budget to
+    # walk the full model order (one retry per escalation step). This never
+    # shrinks a larger configured retry count.
+    if type cascade_enabled >/dev/null 2>&1 && cascade_enabled; then
+        local _casc_order _casc_steps=0 _cm
+        _casc_order=$(cascade_model_order "$stage_id" 2>/dev/null || true)
+        for _cm in $_casc_order; do _casc_steps=$((_casc_steps + 1)); done
+        # order has N models → N-1 escalation retries beyond the initial attempt.
+        [[ "$_casc_steps" -gt 0 ]] && _casc_steps=$((_casc_steps - 1))
+        [[ "$_casc_steps" -gt "$max_retries" ]] && max_retries="$_casc_steps"
+    fi
+
     local attempt=0
     local prev_error_class=""
+    # Preserve the caller's model so a cascade override never leaks into later
+    # stages (run_stage_with_retry is called once per stage in sequence).
+    local _cascade_orig_model="${MODEL:-}"
     while true; do
         if "stage_${stage_id}"; then
+            MODEL="$_cascade_orig_model"
             return 0
         fi
+        # Restore the original model immediately; a fresh cascade decision below
+        # re-applies an escalated model only for the next iteration.
+        MODEL="$_cascade_orig_model"
 
         # Capture error_class and error snippet for stage.failed / pipeline.completed events
         local error_class
@@ -93,6 +120,61 @@ run_stage_with_retry() {
             "attempt=$attempt" \
             "error_class=$error_class"
 
+        # ─── Cost-aware model retry cascade (opt-in) ─────────────────────────
+        # On failure, escalate to the next model in the configured cascade,
+        # gated by failure classification, per-stage cost cap, remaining daily
+        # budget, and a circuit breaker. When it escalates we bypass the legacy
+        # error-class gate below (the model change is itself the retry strategy).
+        local _cascade_active=false
+        if type cascade_next_model >/dev/null 2>&1 && \
+           type cascade_enabled >/dev/null 2>&1 && cascade_enabled; then
+            local _cascade_model _cascade_rc
+            # Capture rc precisely: `cmd || true` would clobber $? to 0.
+            _cascade_model=$(cascade_next_model "$stage_id" "$attempt" "${LAST_STAGE_ERROR:-}" 1) && _cascade_rc=0 || _cascade_rc=$?
+            case "$_cascade_rc" in
+                0)
+                    _cascade_active=true
+                    MODEL="$_cascade_model"
+                    info "Retry cascade: escalating stage $stage_id to model ${_cascade_model} (attempt $attempt)"
+                    emit_event "cascade.escalated" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=$stage_id" \
+                        "attempt=$attempt" \
+                        "model=$_cascade_model"
+                    ;;
+                11)
+                    error "Retry cascade: failure is non-retryable — failing fast"
+                    emit_event "cascade.non_retryable" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=$stage_id" \
+                        "attempt=$attempt"
+                    return 1
+                    ;;
+                14)
+                    warn "Retry cascade: budget cap reached — stopping cascade for stage $stage_id"
+                    emit_event "cascade.budget_exceeded" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=$stage_id" \
+                        "attempt=$attempt"
+                    return 1
+                    ;;
+                13)
+                    warn "Retry cascade: circuit breaker open — stopping cascade for stage $stage_id"
+                    emit_event "cascade.circuit_open" \
+                        "issue=${ISSUE_NUMBER:-0}" \
+                        "stage=$stage_id" \
+                        "attempt=$attempt"
+                    return 1
+                    ;;
+                *)
+                    # 10 (disabled) or 12 (order exhausted) — fall through to the
+                    # legacy error-class retry logic for backward compatibility.
+                    :
+                    ;;
+            esac
+        fi
+
+        if ! $_cascade_active; then
         case "$error_class" in
             infrastructure)
                 info "Error classified as infrastructure (timeout/network/OOM) — retry makes sense"
@@ -121,6 +203,7 @@ run_stage_with_retry() {
                 ;;
         esac
         prev_error_class="$error_class"
+        fi  # end: if ! $_cascade_active
 
         if type db_save_reasoning_trace >/dev/null 2>&1; then
             local job_id="${SHIPWRIGHT_PIPELINE_ID:-$$}"

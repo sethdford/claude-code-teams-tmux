@@ -229,4 +229,67 @@ echo '{}' > "$DAEMON_CONFIG"
 assert_eq "_smart_float default when unset" "5.0" "$(_smart_float retry_cascade.max_cascade_cost_per_stage_usd 5.0)"
 assert_eq "_smart_float env override" "3.25" "$(SW_RETRY_CASCADE_MAX_CASCADE_COST_PER_STAGE_USD=3.25 _smart_float retry_cascade.max_cascade_cost_per_stage_usd 5.0)"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "cascade_next_model — orchestration seam (decision + codes)"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+cascade_reset
+echo '{}' > "$DAEMON_CONFIG"
+
+# Disabled by default → rc 10, no model.
+out=$(cascade_next_model build 1 "timeout" 1) && rc=0 || rc=$?
+assert_eq "disabled returns rc 10" "10" "$rc"
+assert_eq "disabled emits no model" "" "$out"
+
+# Enable the cascade for the remaining cases.
+echo '{"retry_cascade":{"enabled":true}}' > "$DAEMON_CONFIG"
+cascade_reset
+
+# Retryable transient error, first retry (attempt 1) → order[1] = sonnet.
+out=$(cascade_next_model build 1 "connection reset" 1) && rc=0 || rc=$?
+assert_eq "retryable attempt 1 rc 0" "0" "$rc"
+assert_eq "retryable attempt 1 escalates to sonnet" "sonnet" "$out"
+
+# Second retry (attempt 2) → order[2] = opus.
+out=$(cascade_next_model build 2 "socket hang up" 1) && rc=0 || rc=$?
+assert_eq "retryable attempt 2 escalates to opus" "opus" "$out"
+
+# Beyond the order length → exhausted (rc 12).
+out=$(cascade_next_model build 3 "timeout" 1) && rc=0 || rc=$?
+assert_eq "order exhausted returns rc 12" "12" "$rc"
+assert_eq "order exhausted emits no model" "" "$out"
+
+# Non-retryable failure → rc 11 (fail fast), regardless of attempt.
+cascade_reset
+out=$(cascade_next_model build 1 "AssertionError: expected 1 but got 2" 1) && rc=0 || rc=$?
+assert_eq "non-retryable returns rc 11" "11" "$rc"
+assert_eq "non-retryable emits no model" "" "$out"
+
+# Budget cap: a tiny per-stage cap makes the projected cost exceed → rc 14.
+cascade_reset
+echo '{"retry_cascade":{"enabled":true,"max_cascade_cost_per_stage_usd":0.0001}}' > "$DAEMON_CONFIG"
+out=$(cascade_next_model build 1 "timeout" 1) && rc=0 || rc=$?
+assert_eq "budget cap returns rc 14" "14" "$rc"
+assert_eq "budget cap emits no model" "" "$out"
+
+# Circuit breaker: pre-seed enough sonnet attempts to trip the breaker → rc 13.
+cascade_reset
+echo '{"retry_cascade":{"enabled":true,"circuit_breaker_threshold":2}}' > "$DAEMON_CONFIG"
+cascade_record_attempt build sonnet 0.01
+cascade_record_attempt build sonnet 0.01
+out=$(cascade_next_model build 1 "timeout" 1) && rc=0 || rc=$?
+assert_eq "circuit breaker returns rc 13" "13" "$rc"
+assert_eq "circuit breaker emits no model" "" "$out"
+
+# A successful escalation records the attempt in the ledger.
+cascade_reset
+echo '{"retry_cascade":{"enabled":true}}' > "$DAEMON_CONFIG"
+cascade_next_model review 1 "503 Service Unavailable" 1 >/dev/null
+if grep -q $'^review\tsonnet\t' "$RETRY_CASCADE_ATTEMPTS_FILE"; then
+    assert_pass "escalation records attempt in ledger"
+else
+    assert_fail "escalation records attempt in ledger"
+fi
+echo '{}' > "$DAEMON_CONFIG"
+
 print_test_results
