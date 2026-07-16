@@ -3,37 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh test suite expects a stale-heartbeat file with a fixed mtime past the freshness threshold, but the mock heartbeat fixture's timestamp isn't old enough (or the detection logic no longer flags it), so no stale agents are found — cascading into zero 'Found' and no '--force' hint being printed in the summary",
-      "fix": "Fix the stale-heartbeat test fixture/mock to set an mtime older than the cleanup threshold (or fix sw-cleanup.sh's heartbeat staleness check) so detection succeeds and the summary correctly reports found count and --force hint",
-      "seen_count": 1,
-      "last_seen": "2026-07-16T04:15:16Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Regression detection command in sw-feedback.sh produces malformed or non-JSON output instead of the expected valid JSON structure",
-      "fix": "Fix the regression detection function to properly construct and validate its JSON output before returning",
+      "root_cause": "sw-cleanup-test.sh assertions expect literal strings 'agent-1', 'Found', and '--force' in cleanup command output, but the current sw-cleanup.sh implementation no longer emits stale-heartbeat detection or the found-count/force-hint summary lines in that format",
+      "fix": "Update sw-cleanup.sh to print the heartbeat agent id, a 'Found N item(s)' summary line, and a '--force' hint in dry-run/summary output, or update the test assertions if the output format intentionally changed",
       "seen_count": 2,
-      "last_seen": "2026-07-16T04:41:18Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "The classify_failure function was added and tested in isolation but was never actually invoked from daemon_on_failure, so retry logic doesn't use failure classification",
-      "fix": "Call classify_failure within daemon_on_failure and branch retry/backoff/pause behavior on its returned category",
-      "seen_count": 1,
-      "last_seen": "2026-07-16T04:51:02Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-hygiene.sh platform-refactor subcommand exits 1 instead of 0, likely due to hardcoded/fallback scan detecting flagged patterns and propagating a nonzero exit",
-      "fix": "Ensure platform-refactor subcommand explicitly exits 0 after writing platform-hygiene.json even when scan finds matches, rather than propagating grep's nonzero exit under pipefail",
-      "seen_count": 1,
-      "last_seen": "2026-07-16T05:13:54Z",
+      "last_seen": "2026-07-16T04:49:17Z",
       "category": "test_failure"
     }
   ]
