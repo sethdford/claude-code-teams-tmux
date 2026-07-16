@@ -355,10 +355,17 @@ generate_learned_rules() {
         local count
         count=$(echo "$pattern" | jq -r '.count')
 
-        # Compute confidence (count / total_prs, capped at 0.95)
-        # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
+        # Count-based confidence: 0.3 + 0.1*count, capped at 0.95
+        # (3 = 0.60, 5 = 0.80, 10 = 0.95). awk is used instead of bc because the
+        # prior `if ... then ... else ... end` string was not valid bc grammar —
+        # bc emitted a syntax error, produced empty output, yet exited 0, so the
+        # fallback never fired and confidence came out empty, corrupting the rule.
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        case "$count" in
+            ''|*[!0-9]*) count=0 ;;
+        esac
+        confidence=$(awk -v c="$count" 'BEGIN { v = 0.3 + 0.1 * c; if (v > 0.95) v = 0.95; printf "%.2f", v }' 2>/dev/null)
+        [[ -n "$confidence" ]] || confidence="0.60"
 
         # Generate rule text based on category
         local rule_text
