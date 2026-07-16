@@ -1,1 +1,22 @@
-Invalid API key · Fix external API key
+All verification complete. Summary of this iteration and overall state:
+
+**This iteration (4) — cleared the two blocking quality-gate issues:**
+1. **Audit finding** (`--json-schema` draft-2020-12 error) — already fixed in prior commit `4dc4a1c6` via `del(."$schema")` strip before passing to the CLI validator. Verified the strip fully removes the 2020-12 ref.
+2. **Test failure** (`regression detection outputs valid JSON`) — root cause: the test captures `2>&1`, and unregistered `feedback_*` event types triggered a `WARN` on stderr that polluted the JSON stdout, breaking `jq` parsing. Fixed by registering all 9 `feedback_*` event types in `config/event-schema.json` (commit `2d0ecc03`).
+
+**Verification:**
+- feedback tests: 55/55 ✓
+- retry-cascade unit: 54/54 ✓, integration: 11/11 ✓
+- helpers: 34 ✓, compat: 56 ✓, loop: 70 ✓, e2e-smoke: 19/19 ✓
+
+**Goal completeness (Cost-Aware Model Retry Cascade):**
+- Core logic in `scripts/lib/retry-cascade.sh` (classify → budget → circuit breaker → `cascade_next_model`)
+- Wired into `pipeline-execution.sh` for build & test stages via `run_stage_with_retry`
+- `config/failure-patterns.json` drives retryable vs non-retryable classification
+- Budget check before each retry, per-`stage:model` circuit breaker, per-stage overrides
+- **Off by default** — verified and tested (`disabled cascade preserves legacy single-attempt behavior`)
+- Documented in CLAUDE.md
+
+All checklist items satisfied, both audit findings addressed, all relevant tests green, feature backward-compatible.
+
+LOOP_COMPLETE
