@@ -253,40 +253,40 @@
 {"ts":"2026-07-21T20:27:54Z","ts_epoch":1784665674,"type":"strategic.issue_created","title":"Incremental Change Detection & Express Lane Pipeline Router","priority":"P1","complexity":"fast"}
 {"ts":"2026-07-21T20:27:58Z","ts_epoch":1784665678,"type":"strategic.issue_created","title":"Success Pattern Mining & Automated Playbook Generator","priority":"P2","complexity":"standard"}
 {"ts":"2026-07-21T20:27:58Z","ts_epoch":1784665678,"type":"strategic.cycle_complete","issues_created":4,"issues_skipped":0}
-{"ts":"2026-07-21T20:45:32Z","ts_epoch":1784666732,"type":"intelligence.analysis","complexity":6,"risk_level":"high","success_probability":72,"recommended_template":"full","issue_type":"infrastructure"}
-{"ts":"2026-07-21T20:45:32Z","ts_epoch":1784666732,"type":"reasoning.trace","job_id":"pipeline-3831-787","complexity":"medium","risk":50,"template":"standard"}
-{"ts":"2026-07-21T20:45:51Z","ts_epoch":1784666751,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":70,"recommended_template":"standard","issue_type":"performance"}
-{"ts":"2026-07-21T20:46:01Z","ts_epoch":1784666761,"type":"intelligence.estimate_iterations","estimate":7,"complexity":5,"source":"claude"}
-{"ts":"2026-07-21T20:46:13Z","ts_epoch":1784666773,"type":"intelligence.prediction","estimated_cost":0.42,"estimated_iterations":2,"complexity":5}
-{"ts":"2026-07-21T20:46:16Z","ts_epoch":1784666776,"type":"checks.pipeline_start","stages":11}
-{"ts":"2026-07-21T20:46:16Z","ts_epoch":1784666776,"type":"pipeline.started","issue":787,"template":"standard","complexity":5,"machine":"runnervm3jd5f","pipeline":"standard","model":"opus","goal":""}
-{"ts":"2026-07-21T20:46:16Z","ts_epoch":1784666776,"type":"pipeline.started","event_id":"evt-1784666776-1164428198","payload":"{\"issue\":\"787\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
-{"ts":"2026-07-21T20:46:16Z","ts_epoch":1784666776,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
-{"ts":"2026-07-21T20:46:16Z","ts_epoch":1784666776,"type":"intelligence.model_ab","issue":787,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-07-21T20:46:17Z","ts_epoch":1784666777,"type":"stage.started","issue":787,"stage":"intake"}
-{"ts":"2026-07-21T20:47:45Z","ts_epoch":1784666865,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/pipeline-stage-result-cache--smart-reuse-system.json","complexity":"very_complex","issue":787}
-{"ts":"2026-07-21T20:47:45Z","ts_epoch":1784666865,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"stage.complete","event_id":"evt-1784666867-916992132","payload":"{\"stage\":\"intake\",\"issue\":\"787\",\"timing\":\"1m 28s\"}"}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"stage.completed","issue":787,"stage":"intake","duration_s":90,"result":"success"}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"vitals.snapshot","issue":787,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"intelligence.model","stage":"spec_generation","complexity":6,"model":"haiku","source":"heuristic"}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"intelligence.model_ab","issue":787,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-07-21T20:47:47Z","ts_epoch":1784666867,"type":"stage.started","issue":787,"stage":"spec_generation"}
-{"ts":"2026-07-21T20:48:15Z","ts_epoch":1784666895,"type":"spec_generation.completed","issue":787,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
-{"ts":"2026-07-21T20:48:16Z","ts_epoch":1784666896,"type":"stage.complete","event_id":"evt-1784666896-3194446582","payload":"{\"stage\":\"spec_generation\",\"issue\":\"787\",\"timing\":\"28s\"}"}
-{"ts":"2026-07-21T20:48:16Z","ts_epoch":1784666896,"type":"stage.completed","issue":787,"stage":"spec_generation","duration_s":29,"result":"success"}
-{"ts":"2026-07-21T20:48:16Z","ts_epoch":1784666896,"type":"vitals.snapshot","issue":787,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-07-21T20:48:17Z","ts_epoch":1784666897,"type":"intelligence.model","stage":"plan","complexity":6,"model":"haiku","source":"heuristic"}
-{"ts":"2026-07-21T20:48:17Z","ts_epoch":1784666897,"type":"intelligence.model_ab","issue":787,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-07-21T20:48:17Z","ts_epoch":1784666897,"type":"stage.started","issue":787,"stage":"plan"}
-{"ts":"2026-07-21T20:55:08Z","ts_epoch":1784667308,"type":"plan.validated","issue":787,"valid":"true","attempts":1}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"stage.complete","event_id":"evt-1784667310-3013104821","payload":"{\"stage\":\"plan\",\"issue\":\"787\",\"timing\":\"6m 51s\"}"}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"stage.completed","issue":787,"stage":"plan","duration_s":413,"result":"success"}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"vitals.snapshot","issue":787,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"intelligence.model","stage":"design","complexity":6,"model":"haiku","source":"heuristic"}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"intelligence.model_ab","issue":787,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
-{"ts":"2026-07-21T20:55:10Z","ts_epoch":1784667310,"type":"stage.started","issue":787,"stage":"design"}
-{"ts":"2026-07-21T20:56:03Z","ts_epoch":1784667363,"type":"stage.failed","event_id":"evt-1784667363-3392956544","payload":"{\"stage\":\"design\",\"issue\":\"787\",\"timing\":\"51s\"}"}
-{"ts":"2026-07-21T20:56:03Z","ts_epoch":1784667363,"type":"stage.failed","issue":787,"stage":"design","duration_s":53,"error":"unknown","error_class":"unknown"}
-{"ts":"2026-07-21T20:56:04Z","ts_epoch":1784667364,"type":"vitals.snapshot","issue":787,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-21T20:45:36Z","ts_epoch":1784666736,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":68,"recommended_template":"standard","issue_type":"infrastructure"}
+{"ts":"2026-07-21T20:45:36Z","ts_epoch":1784666736,"type":"reasoning.trace","job_id":"pipeline-3764-789","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-07-21T20:45:59Z","ts_epoch":1784666759,"type":"intelligence.analysis","complexity":6,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"backend"}
+{"ts":"2026-07-21T20:46:14Z","ts_epoch":1784666774,"type":"intelligence.estimate_iterations","estimate":12,"complexity":5,"source":"claude"}
+{"ts":"2026-07-21T20:46:33Z","ts_epoch":1784666793,"type":"intelligence.prediction","estimated_cost":1.68,"estimated_iterations":4,"complexity":5}
+{"ts":"2026-07-21T20:46:34Z","ts_epoch":1784666794,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-07-21T20:46:34Z","ts_epoch":1784666794,"type":"pipeline.started","issue":789,"template":"standard","complexity":5,"machine":"runnervm3jd5f","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-07-21T20:46:34Z","ts_epoch":1784666794,"type":"pipeline.started","event_id":"evt-1784666794-3363764245","payload":"{\"issue\":\"789\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-07-21T20:46:35Z","ts_epoch":1784666795,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-21T20:46:35Z","ts_epoch":1784666795,"type":"intelligence.model_ab","issue":789,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-21T20:46:35Z","ts_epoch":1784666795,"type":"stage.started","issue":789,"stage":"intake"}
+{"ts":"2026-07-21T20:47:58Z","ts_epoch":1784666878,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/success-pattern-mining--automated-playbook-generator.json","complexity":"very_complex","issue":789}
+{"ts":"2026-07-21T20:47:59Z","ts_epoch":1784666879,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"stage.complete","event_id":"evt-1784666880-2389371853","payload":"{\"stage\":\"intake\",\"issue\":\"789\",\"timing\":\"1m 24s\"}"}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"stage.completed","issue":789,"stage":"intake","duration_s":85,"result":"success"}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"vitals.snapshot","issue":789,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"intelligence.model","stage":"spec_generation","complexity":8,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-21T20:48:00Z","ts_epoch":1784666880,"type":"intelligence.model_ab","issue":789,"stage":"spec_generation","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-07-21T20:48:01Z","ts_epoch":1784666881,"type":"stage.started","issue":789,"stage":"spec_generation"}
+{"ts":"2026-07-21T20:48:28Z","ts_epoch":1784666908,"type":"spec_generation.completed","issue":789,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-07-21T20:48:29Z","ts_epoch":1784666909,"type":"stage.complete","event_id":"evt-1784666909-1331207677","payload":"{\"stage\":\"spec_generation\",\"issue\":\"789\",\"timing\":\"27s\"}"}
+{"ts":"2026-07-21T20:48:29Z","ts_epoch":1784666909,"type":"stage.completed","issue":789,"stage":"spec_generation","duration_s":28,"result":"success"}
+{"ts":"2026-07-21T20:48:29Z","ts_epoch":1784666909,"type":"vitals.snapshot","issue":789,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-21T20:48:30Z","ts_epoch":1784666910,"type":"intelligence.model","stage":"plan","complexity":8,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-21T20:48:30Z","ts_epoch":1784666910,"type":"intelligence.model_ab","issue":789,"stage":"plan","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-21T20:48:30Z","ts_epoch":1784666910,"type":"stage.started","issue":789,"stage":"plan"}
+{"ts":"2026-07-21T20:56:00Z","ts_epoch":1784667360,"type":"plan.validated","issue":789,"valid":"true","attempts":1}
+{"ts":"2026-07-21T20:56:01Z","ts_epoch":1784667361,"type":"stage.complete","event_id":"evt-1784667361-2418162701","payload":"{\"stage\":\"plan\",\"issue\":\"789\",\"timing\":\"7m 30s\"}"}
+{"ts":"2026-07-21T20:56:01Z","ts_epoch":1784667361,"type":"stage.completed","issue":789,"stage":"plan","duration_s":451,"result":"success"}
+{"ts":"2026-07-21T20:56:02Z","ts_epoch":1784667362,"type":"vitals.snapshot","issue":789,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-21T20:56:02Z","ts_epoch":1784667362,"type":"intelligence.model","stage":"design","complexity":8,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-21T20:56:02Z","ts_epoch":1784667362,"type":"intelligence.model_ab","issue":789,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-21T20:56:02Z","ts_epoch":1784667362,"type":"stage.started","issue":789,"stage":"design"}
+{"ts":"2026-07-21T20:56:11Z","ts_epoch":1784667371,"type":"stage.failed","event_id":"evt-1784667370-737423390","payload":"{\"stage\":\"design\",\"issue\":\"789\",\"timing\":\"6s\"}"}
+{"ts":"2026-07-21T20:56:11Z","ts_epoch":1784667371,"type":"stage.failed","issue":789,"stage":"design","duration_s":9,"error":"unknown","error_class":"unknown"}
+{"ts":"2026-07-21T20:56:11Z","ts_epoch":1784667371,"type":"vitals.snapshot","issue":789,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
