@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 5,
-      "last_seen": "2026-07-22T08:29:36Z",
+      "last_seen": "2026-07-22T08:48:04Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 7,
-      "last_seen": "2026-07-22T08:48:30Z",
+      "seen_count": 5,
+      "last_seen": "2026-07-22T02:12:12Z",
       "category": "test_failure"
     },
     {
@@ -30,8 +30,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "regression detection JSON output test fails, indicating sw-feedback.sh's regression detection command produces malformed or non-JSON output",
-      "fix": "validate and fix JSON construction in the regression detection function in scripts/sw-feedback.sh (likely missing jq escaping or unhandled empty input)",
+      "root_cause": "sw-cleanup-test.sh's stale heartbeat detection and summary counting logic are broken/misaligned with the CLI's actual output format",
+      "fix": "Update sw-cleanup.sh to emit 'agent-1', 'Found', and '--force' text expected by the test, or fix outdated assertions in sw-cleanup-test.sh to match current output",
       "seen_count": 1,
       "last_seen": "2026-07-22T02:37:12Z",
       "category": "test_failure"
