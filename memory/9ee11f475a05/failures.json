@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 3,
-      "last_seen": "2026-07-22T01:17:04Z",
+      "last_seen": "2026-07-22T01:18:38Z",
       "category": "test_failure"
     },
     {
@@ -14,35 +14,43 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 3,
-      "last_seen": "2026-07-21T19:58:47Z",
+      "seen_count": 6,
+      "last_seen": "2026-07-22T01:41:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary count/hint output regressed, likely from a change to the heartbeat file format or output messages",
-      "fix": "Inspect sw-cleanup.sh's heartbeat staleness check and summary printf lines to restore expected 'agent-1', 'Found', and '--force' output text",
+      "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing the JSON validity assertion in sw-feedback-test.sh",
+      "fix": "ensure the regression detection function outputs strictly valid JSON (proper quoting/escaping via jq) even on empty/error input paths",
       "seen_count": 2,
       "last_seen": "2026-07-21T20:56:57Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "Test suite counted 0 tests for several suites (e.g. trend_arrow, Durable, E2E Orchestrator) despite showing passing checkmarks, indicating the test runner's assertion counter isn't incrementing while assertions still execute — a harness bug in the count/assert helper, not the assertions themselves",
-      "fix": "Audit the shared test-harness assert/count function (likely a counter variable not being incremented or scoped in a subshell) so All N tests passed reflects the actual number of ✓ lines printed",
-      "seen_count": 3,
-      "last_seen": "2026-07-22T02:55:15Z",
-      "category": "test_failure"
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "Test harness's mktemp calls hardcode /tmp/claude as the parent dir for sw-test-XXXXXX, but that directory doesn't exist/wasn't created before the test suite ran",
+      "fix": "Create the /tmp/claude directory (mkdir -p /tmp/claude) before test execution, or make the test harness use mktemp -d without a fixed parent path (e.g. TMPDIR-relative)",
+      "seen_count": 1,
+      "last_seen": "2026-07-22T01:57:59Z",
+      "category": "config"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
-      "root_cause": "daemon_on_failure handler does not invoke classify_failure before applying retry logic, so failures are retried without classification",
-      "fix": "Call classify_failure(error_context) inside daemon_on_failure and route the retry decision off its returned category",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
+      "root_cause": "",
+      "fix": "",
       "seen_count": 1,
-      "last_seen": "2026-07-22T02:22:53Z",
+      "last_seen": "2026-07-22T02:06:32Z"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
+      "root_cause": "sw-hygiene.sh platform-refactor subcommand exits 1 instead of 0, likely due to hardcoded/fallback pattern scan detecting findings and propagating a nonzero exit code",
+      "fix": "Ensure platform-refactor scan reports findings without failing the command (use || true or explicit exit 0 after writing platform-hygiene.json)",
+      "seen_count": 1,
+      "last_seen": "2026-07-22T02:39:12Z",
       "category": "test_failure"
     }
   ]
