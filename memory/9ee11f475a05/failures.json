@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
-      "seen_count": 5,
-      "last_seen": "2026-07-22T02:07:41Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-22T01:17:04Z",
       "category": "test_failure"
     },
     {
@@ -14,17 +14,35 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 4,
-      "last_seen": "2026-07-22T02:28:23Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-21T19:58:47Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection subcommand in sw-feedback.sh emits malformed or non-JSON output, failing the 'outputs valid JSON' assertion",
-      "fix": "inspect the regression detection code path in sw-feedback.sh and ensure it always writes valid JSON (e.g. proper jq construction, no unescaped variables or stray text mixed into stdout)",
+      "root_cause": "sw-cleanup.sh stale heartbeat detection and summary count/hint output regressed, likely from a change to the heartbeat file format or output messages",
+      "fix": "Inspect sw-cleanup.sh's heartbeat staleness check and summary printf lines to restore expected 'agent-1', 'Found', and '--force' output text",
       "seen_count": 2,
       "last_seen": "2026-07-21T20:56:57Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
+      "root_cause": "Test suite counted 0 tests for several suites (e.g. trend_arrow, Durable, E2E Orchestrator) despite showing passing checkmarks, indicating the test runner's assertion counter isn't incrementing while assertions still execute — a harness bug in the count/assert helper, not the assertions themselves",
+      "fix": "Audit the shared test-harness assert/count function (likely a counter variable not being incremented or scoped in a subshell) so All N tests passed reflects the actual number of ✓ lines printed",
+      "seen_count": 3,
+      "last_seen": "2026-07-22T02:55:15Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: classify_failure wired into retry logic... classify_failure not called in daemon_on_failure",
+      "root_cause": "daemon_on_failure handler does not invoke classify_failure before applying retry logic, so failures are retried without classification",
+      "fix": "Call classify_failure(error_context) inside daemon_on_failure and route the retry decision off its returned category",
+      "seen_count": 1,
+      "last_seen": "2026-07-22T02:22:53Z",
       "category": "test_failure"
     }
   ]
