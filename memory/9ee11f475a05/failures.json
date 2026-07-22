@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 6,
-      "last_seen": "2026-07-22T13:16:49Z",
+      "last_seen": "2026-07-22T13:21:00Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 8,
-      "last_seen": "2026-07-22T13:22:40Z",
+      "seen_count": 7,
+      "last_seen": "2026-07-22T08:38:02Z",
       "category": "test_failure"
     },
     {
@@ -30,8 +30,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-code-review-test.sh sed command references a temp-file path variable ($TEST_TEMP_DIR/x4A0Vw) that was already removed/never created before the sed substitution ran, causing 'No such file or directory'",
-      "fix": "Ensure the temp file is created before the sed call, or guard the sed step with a file-existence check and add cleanup ordering so $TEST_TEMP_DIR isn't deleted mid-test",
+      "root_cause": "sw-cleanup.sh heartbeat detection and summary counting logic regressed — missing 'agent-1', 'Found', and '--force' output in stale heartbeat and summary tests",
+      "fix": "Review recent changes to sw-cleanup.sh's stale heartbeat detection and summary count/hint logic; ensure heartbeat files are correctly scanned and summary output includes 'Found N' and '--force' hint text",
       "seen_count": 1,
       "last_seen": "2026-07-22T02:37:12Z",
       "category": "test_failure"
