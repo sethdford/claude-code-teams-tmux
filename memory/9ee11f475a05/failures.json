@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 7,
-      "last_seen": "2026-07-23T19:35:44Z",
+      "last_seen": "2026-07-23T19:00:41Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 9,
-      "last_seen": "2026-07-22T13:44:04Z",
+      "seen_count": 14,
+      "last_seen": "2026-07-23T19:58:42Z",
       "category": "test_failure"
     },
     {
@@ -30,11 +30,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "sw-cleanup.sh tests fail because heartbeat detection and summary output ('Found', '--force') logic broke or changed in this branch's build, not the checkpoint tests which all passed",
-      "fix": "check sw-cleanup.sh's stale heartbeat detection and summary-count/hint output paths for a recent regression in this feature branch and align test fixtures with the new output format",
+      "root_cause": "regression detection command's JSON output failed schema/parse validation, likely due to malformed or empty JSON from an unhandled edge case in sw-feedback.sh's regression detection path",
+      "fix": "Validate the regression detection output with jq before returning and ensure a well-formed JSON object is emitted even when no regressions are found",
       "seen_count": 1,
       "last_seen": "2026-07-22T02:37:12Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
+      "root_cause": "Test setup calls mktemp with a template rooted at /tmp/claude/sw-test-XXXXXX but the parent directory /tmp/claude does not exist, so mktemp cannot create the temp directory",
+      "fix": "Create the /tmp/claude parent directory (mkdir -p /tmp/claude) before mktemp in the test harness setup, or use a template under a guaranteed-existing base like ${TMPDIR:-/tmp}",
+      "seen_count": 1,
+      "last_seen": "2026-07-23T19:27:00Z",
+      "category": "config"
     }
   ]
 }
