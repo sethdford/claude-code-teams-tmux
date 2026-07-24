@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
-      "seen_count": 12,
-      "last_seen": "2026-07-24T21:40:55Z",
+      "seen_count": 11,
+      "last_seen": "2026-07-24T13:15:46Z",
       "category": "test_failure"
     },
     {
@@ -75,8 +75,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-cleanup-test.sh stale-heartbeat detection and summary output assertions fail because the cleanup script's dry-run does not emit expected 'agent-1', 'Found', or '--force' strings, indicating a regression in sw-cleanup.sh output formatting or heartbeat file detection logic",
-      "fix": "Inspect scripts/sw-cleanup.sh dry-run/summary code path for stale heartbeat detection and ensure it prints the agent id and 'Found'/'--force' hint text expected by scripts/sw-cleanup-test.sh",
+      "root_cause": "cleanup-test relies on heartbeat/summary output text that sw-cleanup.sh no longer emits (missing 'agent-1', 'Found', '--force' strings), indicating a drift between the cleanup script's output format and the test's expectations",
+      "fix": "update sw-cleanup.sh to emit the expected stale-heartbeat agent id and summary strings (or update sw-cleanup-test.sh assertions to match current output format)",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
       "category": "test_failure"
