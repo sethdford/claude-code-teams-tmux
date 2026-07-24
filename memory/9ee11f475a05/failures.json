@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 11,
-      "last_seen": "2026-07-24T13:05:25Z",
+      "last_seen": "2026-07-24T13:15:46Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 19,
-      "last_seen": "2026-07-24T13:33:42Z",
+      "seen_count": 18,
+      "last_seen": "2026-07-24T09:42:55Z",
       "category": "test_failure"
     },
     {
@@ -75,8 +75,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-cleanup.sh dry-run and summary output don't emit expected 'agent-1'/'Found'/'--force' strings when detecting stale heartbeats, indicating the heartbeat detection or summary-formatting logic changed without updating output text",
-      "fix": "Check sw-cleanup.sh's stale-heartbeat detection branch and summary printf/echo statements to ensure they still include the agent ID, 'Found <n>' count, and '--force' hint text",
+      "root_cause": "cleanup-test relies on heartbeat/summary output text that sw-cleanup.sh no longer emits (missing 'agent-1', 'Found', '--force' strings), indicating a drift between the cleanup script's output format and the test's expectations",
+      "fix": "update sw-cleanup.sh to emit the expected stale-heartbeat agent id and summary strings (or update sw-cleanup-test.sh assertions to match current output format)",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
       "category": "test_failure"
