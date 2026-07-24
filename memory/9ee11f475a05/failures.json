@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 11,
-      "last_seen": "2026-07-24T13:00:18Z",
+      "last_seen": "2026-07-24T13:03:25Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 20,
-      "last_seen": "2026-07-24T13:18:14Z",
+      "seen_count": 19,
+      "last_seen": "2026-07-24T13:16:20Z",
       "category": "test_failure"
     },
     {
@@ -41,8 +41,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "Test runner attempted mktemp under /tmp/claude which does not exist on this runner, so checkpoint/test sandbox setup aborted mid-suite",
       "fix": "Ensure /tmp/claude is created (mkdir -p) before test stage runs, or set TMPDIR to a guaranteed-writable directory in the test harness setup",
-      "seen_count": 3,
-      "last_seen": "2026-07-24T13:31:00Z",
+      "seen_count": 2,
+      "last_seen": "2026-07-24T01:25:45Z",
       "category": "config"
     },
     {
@@ -75,11 +75,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "mktemp failed because /tmp/claude directory did not exist, breaking test temp-dir creation despite prior test assertions passing",
-      "fix": "Ensure /tmp/claude exists before test run (mkdir -p /tmp/claude) or use TMPDIR fallback in test setup scripts",
+      "root_cause": "sed command received an already-deleted temp directory path ($TEST_TEMP_DIR pointing to /tmp/sw-test-auto.Nr9cae), causing 'sed: can't read' failure in the code-review test suite",
+      "fix": "Guard the sed call with a file-existence check (or ensure $TEST_TEMP_DIR is created before use and not cleaned up early) in sw-code-review-test.sh before invoking sed",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
