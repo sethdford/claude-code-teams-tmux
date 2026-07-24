@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 11,
-      "last_seen": "2026-07-24T13:03:25Z",
+      "last_seen": "2026-07-24T13:05:25Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
       "seen_count": 19,
-      "last_seen": "2026-07-24T13:16:20Z",
+      "last_seen": "2026-07-24T13:33:42Z",
       "category": "test_failure"
     },
     {
@@ -75,8 +75,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sed command received an already-deleted temp directory path ($TEST_TEMP_DIR pointing to /tmp/sw-test-auto.Nr9cae), causing 'sed: can't read' failure in the code-review test suite",
-      "fix": "Guard the sed call with a file-existence check (or ensure $TEST_TEMP_DIR is created before use and not cleaned up early) in sw-code-review-test.sh before invoking sed",
+      "root_cause": "sw-cleanup.sh dry-run and summary output don't emit expected 'agent-1'/'Found'/'--force' strings when detecting stale heartbeats, indicating the heartbeat detection or summary-formatting logic changed without updating output text",
+      "fix": "Check sw-cleanup.sh's stale-heartbeat detection branch and summary printf/echo statements to ensure they still include the agent ID, 'Found <n>' count, and '--force' hint text",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
       "category": "test_failure"
