@@ -767,3 +767,40 @@
 {"ts":"2026-07-24T20:30:17Z","ts_epoch":1784925017,"type":"strategic.issue_created","title":"Repository-Specific Success Pattern Library with Auto-Context Injection","priority":"P2","complexity":"standard"}
 {"ts":"2026-07-24T20:30:21Z","ts_epoch":1784925021,"type":"strategic.issue_created","title":"sw-loop.sh Modular Decomposition: Extract Iteration Management into lib/loop-iteration.sh","priority":"P6","complexity":"full"}
 {"ts":"2026-07-24T20:30:21Z","ts_epoch":1784925021,"type":"strategic.cycle_complete","issues_created":3,"issues_skipped":0}
+{"ts":"2026-07-24T20:35:57Z","ts_epoch":1784925357,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":72,"recommended_template":"standard","issue_type":"refactor"}
+{"ts":"2026-07-24T20:35:57Z","ts_epoch":1784925357,"type":"reasoning.trace","job_id":"pipeline-3837-812","complexity":"medium","risk":50,"template":"standard"}
+{"ts":"2026-07-24T20:36:44Z","ts_epoch":1784925404,"type":"intelligence.analysis","complexity":7,"risk_level":"medium","success_probability":78,"recommended_template":"standard","issue_type":"refactor"}
+{"ts":"2026-07-24T20:36:55Z","ts_epoch":1784925415,"type":"intelligence.estimate_iterations","estimate":8,"complexity":5,"source":"claude"}
+{"ts":"2026-07-24T20:37:08Z","ts_epoch":1784925428,"type":"intelligence.prediction","estimated_cost":20.50,"estimated_iterations":3,"complexity":5}
+{"ts":"2026-07-24T20:37:10Z","ts_epoch":1784925430,"type":"checks.pipeline_start","stages":11}
+{"ts":"2026-07-24T20:37:10Z","ts_epoch":1784925430,"type":"pipeline.started","issue":812,"template":"standard","complexity":5,"machine":"runnervmvrwv9","pipeline":"standard","model":"opus","goal":""}
+{"ts":"2026-07-24T20:37:10Z","ts_epoch":1784925430,"type":"pipeline.started","event_id":"evt-1784925430-1941945893","payload":"{\"issue\":\"812\",\"pipeline\":\"standard\",\"goal\":\"\"}"}
+{"ts":"2026-07-24T20:37:10Z","ts_epoch":1784925430,"type":"intelligence.model","stage":"intake","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-24T20:37:10Z","ts_epoch":1784925430,"type":"intelligence.model_ab","issue":812,"stage":"intake","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-24T20:37:11Z","ts_epoch":1784925431,"type":"stage.started","issue":812,"stage":"intake"}
+{"ts":"2026-07-24T20:38:46Z","ts_epoch":1784925526,"type":"spec_generated","file":"/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/specs/sw-loopsh-modular-decomposition-extract-iteration-management.json","complexity":"very_complex","issue":812}
+{"ts":"2026-07-24T20:38:46Z","ts_epoch":1784925526,"type":"test_holdout_sealed","total":22,"visible":20,"sealed":2,"ratio":30}
+{"ts":"2026-07-24T20:38:47Z","ts_epoch":1784925527,"type":"stage.complete","event_id":"evt-1784925527-667774593","payload":"{\"stage\":\"intake\",\"issue\":\"812\",\"timing\":\"1m 35s\"}"}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"memory.pattern","type":"project","proj_type":"node","framework":""}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"stage.completed","issue":812,"stage":"intake","duration_s":97,"result":"success"}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"vitals.snapshot","issue":812,"stage":"intake","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"intelligence.model","stage":"spec_generation","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"intelligence.model_ab","issue":812,"stage":"spec_generation","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-24T20:38:48Z","ts_epoch":1784925528,"type":"stage.started","issue":812,"stage":"spec_generation"}
+{"ts":"2026-07-24T20:39:18Z","ts_epoch":1784925558,"type":"spec_generation.completed","issue":812,"criteria":1,"edge_cases":0,"security":0,"affected_files":0}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"stage.complete","event_id":"evt-1784925559-3590702033","payload":"{\"stage\":\"spec_generation\",\"issue\":\"812\",\"timing\":\"30s\"}"}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"stage.completed","issue":812,"stage":"spec_generation","duration_s":31,"result":"success"}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"vitals.snapshot","issue":812,"stage":"spec_generation","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"intelligence.model","stage":"plan","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"intelligence.model_ab","issue":812,"stage":"plan","recommended":"haiku","applied":"haiku","ab_group":"experiment","ab_ratio":20}
+{"ts":"2026-07-24T20:39:19Z","ts_epoch":1784925559,"type":"stage.started","issue":812,"stage":"plan"}
+{"ts":"2026-07-24T20:43:55Z","ts_epoch":1784925835,"type":"plan.validated","issue":812,"valid":"true","attempts":1}
+{"ts":"2026-07-24T20:43:56Z","ts_epoch":1784925836,"type":"stage.complete","event_id":"evt-1784925836-512943727","payload":"{\"stage\":\"plan\",\"issue\":\"812\",\"timing\":\"4m 36s\"}"}
+{"ts":"2026-07-24T20:43:56Z","ts_epoch":1784925836,"type":"stage.completed","issue":812,"stage":"plan","duration_s":277,"result":"success"}
+{"ts":"2026-07-24T20:43:57Z","ts_epoch":1784925837,"type":"vitals.snapshot","issue":812,"stage":"plan","iteration":0,"diff_lines":0,"no_progress":0}
+{"ts":"2026-07-24T20:43:57Z","ts_epoch":1784925837,"type":"intelligence.model","stage":"design","complexity":5,"model":"haiku","source":"heuristic"}
+{"ts":"2026-07-24T20:43:57Z","ts_epoch":1784925837,"type":"intelligence.model_ab","issue":812,"stage":"design","recommended":"haiku","applied":"opus","ab_group":"control","ab_ratio":20}
+{"ts":"2026-07-24T20:43:57Z","ts_epoch":1784925837,"type":"stage.started","issue":812,"stage":"design"}
+{"ts":"2026-07-24T20:47:22Z","ts_epoch":1784926042,"type":"stage.failed","event_id":"evt-1784926042-1253223093","payload":"{\"stage\":\"design\",\"issue\":\"812\",\"timing\":\"3m 23s\"}"}
+{"ts":"2026-07-24T20:47:23Z","ts_epoch":1784926043,"type":"stage.failed","issue":812,"stage":"design","duration_s":205,"error":"unknown","error_class":"unknown"}
+{"ts":"2026-07-24T20:47:23Z","ts_epoch":1784926043,"type":"vitals.snapshot","issue":812,"stage":"design","iteration":0,"diff_lines":0,"no_progress":0}
