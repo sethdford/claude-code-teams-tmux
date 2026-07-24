@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 12,
-      "last_seen": "2026-07-24T20:51:22Z",
+      "last_seen": "2026-07-24T21:40:55Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 21,
-      "last_seen": "2026-07-24T21:23:56Z",
+      "seen_count": 18,
+      "last_seen": "2026-07-24T09:42:55Z",
       "category": "test_failure"
     },
     {
@@ -41,8 +41,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "Test runner attempted mktemp under /tmp/claude which does not exist on this runner, so checkpoint/test sandbox setup aborted mid-suite",
       "fix": "Ensure /tmp/claude is created (mkdir -p) before test stage runs, or set TMPDIR to a guaranteed-writable directory in the test harness setup",
-      "seen_count": 3,
-      "last_seen": "2026-07-24T21:35:03Z",
+      "seen_count": 2,
+      "last_seen": "2026-07-24T01:25:45Z",
       "category": "config"
     },
     {
@@ -59,8 +59,8 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "hygiene.sh dead-code subcommand exits 254 due to an unhandled error path (likely an unbound variable or failed command under set -euo pipefail)",
       "fix": "add error handling/guard the failing command in the dead-code subcommand of sw-hygiene.sh and verify exit code 0 on success",
-      "seen_count": 2,
-      "last_seen": "2026-07-24T21:46:27Z",
+      "seen_count": 1,
+      "last_seen": "2026-07-24T01:40:15Z",
       "category": "test_failure"
     },
     {
@@ -75,11 +75,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "Test suite tried to create a temp dir under /tmp/claude which doesn't exist on the runner (mktemp template ‘/tmp/claude/sw-test-XXXXXX’ failed)",
-      "fix": "Ensure /tmp/claude exists before tests run (mkdir -p in test setup) or use $(mktemp -d) with the default system temp base instead of a hardcoded /tmp/claude prefix",
+      "root_cause": "sw-cleanup-test.sh stale-heartbeat detection and summary output assertions fail because the cleanup script's dry-run does not emit expected 'agent-1', 'Found', or '--force' strings, indicating a regression in sw-cleanup.sh output formatting or heartbeat file detection logic",
+      "fix": "Inspect scripts/sw-cleanup.sh dry-run/summary code path for stale heartbeat detection and ensure it prints the agent id and 'Found'/'--force' hint text expected by scripts/sw-cleanup-test.sh",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
