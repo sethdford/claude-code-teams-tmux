@@ -2,48 +2,11 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing: --force\u001b[0m",
-      "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
-      "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
-      "seen_count": 8,
-      "last_seen": "2026-07-24T02:22:50Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
-      "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 17,
-      "last_seen": "2026-07-24T03:05:49Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Test suite ran to completion with all tests passing (15, 12, 20, 17 tests across suites), but a downstream sw-hello-test.sh invocation or the overall test runner exited with the default failure code 1, likely from an unhandled early exit or exit code not being explicitly reset after the last suite",
-      "fix": "Check sw-hello-test.sh and the test runner's final exit code handling — ensure it explicitly exits 0 on success rather than relying on the last command's exit status under set -e/pipefail",
-      "seen_count": 2,
-      "last_seen": "2026-07-21T20:56:57Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m policy_get returns default when key missing",
-      "root_cause": "regression detection command's JSON output failed schema/parse validation, likely due to malformed or empty JSON from an unhandled edge case in sw-feedback.sh's regression detection path",
-      "fix": "Validate the regression detection output with jq before returning and ensure a well-formed JSON object is emitted even when no regressions are found",
-      "seen_count": 2,
-      "last_seen": "2026-07-24T03:19:03Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "Test harness could not create its isolated temp directory because the parent /tmp/claude sandbox directory did not exist on the runner",
-      "fix": "Ensure /tmp/claude is created (mkdir -p /tmp/claude) before test setup runs, or have the test harness fall back to $TMPDIR/system default temp path if /tmp/claude is missing",
-      "seen_count": 2,
-      "last_seen": "2026-07-24T02:50:12Z",
-      "category": "config"
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-07-24T03:20:08Z"
     }
   ]
 }
