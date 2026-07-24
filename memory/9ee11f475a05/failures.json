@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
-      "seen_count": 7,
-      "last_seen": "2026-07-23T19:00:41Z",
+      "seen_count": 8,
+      "last_seen": "2026-07-24T03:17:07Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
-      "root_cause": "Test setup calls mktemp with a template rooted at /tmp/claude/sw-test-XXXXXX but the parent directory /tmp/claude does not exist, so mktemp cannot create the temp directory",
-      "fix": "Create the /tmp/claude parent directory (mkdir -p /tmp/claude) before mktemp in the test harness setup, or use a template under a guaranteed-existing base like ${TMPDIR:-/tmp}",
+      "root_cause": "Test harness invoked mktemp with a template rooted at /tmp/claude/, but the /tmp/claude directory doesn't exist/was never created before the test run",
+      "fix": "Create the parent directory (mkdir -p /tmp/claude) before calling mktemp, or use TMPDIR default /tmp instead of a hardcoded /tmp/claude subpath",
       "seen_count": 1,
       "last_seen": "2026-07-23T19:27:00Z",
       "category": "config"
