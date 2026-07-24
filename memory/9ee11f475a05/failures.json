@@ -59,8 +59,8 @@
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m pattern detection: 3 error_handling comments → detected",
       "root_cause": "hygiene.sh dead-code subcommand exits 254 due to an unhandled error path (likely an unbound variable or failed command under set -euo pipefail)",
       "fix": "add error handling/guard the failing command in the dead-code subcommand of sw-hygiene.sh and verify exit code 0 on success",
-      "seen_count": 1,
-      "last_seen": "2026-07-24T01:40:15Z",
+      "seen_count": 2,
+      "last_seen": "2026-07-24T13:02:25Z",
       "category": "test_failure"
     },
     {
@@ -75,8 +75,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "The test stage output shows only a flaky-retry banner and a single stray passing check line ('deploy failure detects regression'), with no actual test results, indicating the run-all-tests.sh suite crashed or exited abnormally before completing after the flaky retry.",
-      "fix": "Run scripts/run-all-tests.sh directly and inspect full stdout/stderr for the crashing suite (likely non-zero exit from a subprocess despite pipefail) rather than relying on truncated CI log.",
+      "root_cause": "sw-outcome-feedback rule-generation writes an empty/undefined confidence value into quality-profile.json, so jq fails parsing '' at line 5 and no valid rule JSON is produced",
+      "fix": "default the computed confidence to 0 (or another valid JSON number) before writing quality-profile.json, and validate the field with jq before use",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
       "category": "test_failure"
