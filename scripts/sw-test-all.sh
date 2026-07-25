@@ -89,18 +89,36 @@ run_one() {
     local start end rc dur
 
     start=$(date +%s)
+    # `set -m` puts the suite in its own process group so the watchdog can kill
+    # the WHOLE tree. Killing just the suite PID leaves its children running:
+    # sw-e2e-system-test spawns sw-pipeline.sh which spawns sw-loop.sh, and
+    # those survived for over an hour after the suite was killed, piling up
+    # across runs and stealing CPU from later suites.
+    set -m
     bash "$suite" >"$log" 2>&1 &
     local pid=$!
-    ( sleep "$TIMEOUT"; kill -9 "$pid" 2>/dev/null ) &
+    set +m
+    (
+        sleep "$TIMEOUT"
+        # Negative PID = process group. TERM first so traps can clean up temp
+        # dirs, then KILL whatever ignored it.
+        kill -TERM -"$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null
+        sleep 2
+        kill -KILL -"$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
+    ) &
     local watchdog=$!
     wait "$pid" 2>/dev/null; rc=$?
     kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null
+    # Reap stragglers on the normal path too — a suite can exit 0 while leaving
+    # a backgrounded child behind.
+    kill -KILL -"$pid" 2>/dev/null || true
     end=$(date +%s); dur=$((end - start))
 
-    # 137 = SIGKILL. Attribute it to the watchdog only if we actually hit the
-    # limit, so a genuine in-suite SIGKILL is still reported as a failure.
+    # 143 = SIGTERM (watchdog's first signal), 137 = SIGKILL (its follow-up).
+    # Only call it a TIMEOUT if we actually reached the limit, so a genuine
+    # in-suite kill (OOM, self-inflicted) is still reported as a failure.
     local status
-    if [[ $rc -eq 137 && $dur -ge $TIMEOUT ]]; then
+    if [[ ( $rc -eq 137 || $rc -eq 143 ) && $dur -ge $TIMEOUT ]]; then
         status=TIMEOUT
     elif [[ $rc -eq 0 ]]; then
         status=PASS
