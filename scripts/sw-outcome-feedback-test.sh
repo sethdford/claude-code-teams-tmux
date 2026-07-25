@@ -22,13 +22,13 @@ FAIL=0
 # Helper functions
 pass() {
     echo -e "\033[38;2;74;222;128m✓\033[0m $*"
-    ((PASS++))
+    PASS=$((PASS + 1))
     return 0
 }
 
 fail() {
     echo -e "\033[38;2;248;113;113m✗\033[0m $*"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     return 1
 }
 

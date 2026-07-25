@@ -94,12 +94,12 @@ cmd_metrics() {
                     active_pipelines=$((active_pipelines + 1))
                     ;;
                 pipeline_complete|pipeline.completed)
-                    ((active_pipelines--))
+                    active_pipelines=$((active_pipelines - 1))
                     succeeded_pipelines=$((succeeded_pipelines + 1))
                     status_success=$((status_success + 1))
                     ;;
                 pipeline_failed|pipeline.failed)
-                    ((active_pipelines--))
+                    active_pipelines=$((active_pipelines - 1))
                     failed_pipelines=$((failed_pipelines + 1))
                     status_failed=$((status_failed + 1))
                     ;;

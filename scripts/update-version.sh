@@ -49,7 +49,7 @@ COUNT=0
 while IFS= read -r file; do
     sed_i "s/^VERSION=\"[^\"]*\"/VERSION=\"$NEW_VERSION\"/" "$file"
     success "Updated $(basename "$file")"
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
 done < <(grep -rl '^VERSION="' "$REPO_ROOT/scripts/" "$REPO_ROOT/install.sh" 2>/dev/null || true)
 
 # Update package.json
@@ -61,7 +61,7 @@ if [[ -f "$PKG" ]]; then
         sed_i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" "$PKG"
     fi
     success "Updated package.json"
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
 fi
 
 # README.md: version badge, TOC anchor, "What's New" heading, release command examples
@@ -75,7 +75,7 @@ if [[ -f "$README" ]]; then
     sed_i "s/## What's New in v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/## What's New in v$NEW_VERSION/" "$README"
     sed_i "s/shipwright release --version [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/shipwright release --version $NEW_VERSION/g" "$README"
     success "Updated README.md (badge, TOC, What's New, release examples)"
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
 fi
 
 # .claude/hygiene-report.json if present
@@ -87,7 +87,7 @@ if [[ -f "$HYGIENTE" ]]; then
         sed_i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" "$HYGIENTE"
     fi
     success "Updated .claude/hygiene-report.json"
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
 fi
 
 echo ""

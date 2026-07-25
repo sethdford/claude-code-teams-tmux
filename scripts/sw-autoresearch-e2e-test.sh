@@ -34,14 +34,14 @@ export POLICY_MIN_EPISODES=2
 # ─── Test helpers ────────────────────────────────────────────────────────────
 pass() {
     local description="$1"
-    ((PASS++))
+    PASS=$((PASS + 1))
     echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
 }
 
 fail() {
     local description="$1"
     shift
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
     for detail in "$@"; do
         echo "    $detail"
