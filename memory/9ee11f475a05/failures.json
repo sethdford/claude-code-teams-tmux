@@ -5,8 +5,8 @@
       "pattern": "\u001b[2moutput missing: --force\u001b[0m",
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
-      "seen_count": 13,
-      "last_seen": "2026-07-25T09:19:33Z",
+      "seen_count": 14,
+      "last_seen": "2026-07-25T12:53:28Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 26,
-      "last_seen": "2026-07-25T11:35:10Z",
+      "seen_count": 27,
+      "last_seen": "2026-07-25T12:59:08Z",
       "category": "test_failure"
     },
     {
@@ -75,11 +75,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "Test suite log truncated/incomplete before final summary, likely masking a failure in a later or unlisted test file after sw-hello-test.sh",
-      "fix": "Re-run test suite with full output captured and check exit code of sw-hello-test.sh and subsequent suites",
+      "root_cause": "sw-cleanup.sh dry-run output does not include the stale heartbeat agent name, 'Found' count text, or the '--force' hint that the test suite expects",
+      "fix": "Update sw-cleanup.sh dry-run/summary output to print detected stale heartbeat agent IDs, a 'Found N item(s)' count line, and a '--force' hint when items are detected",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
-      "category": "unknown"
+      "category": "test_failure"
     }
   ]
 }
