@@ -25,6 +25,16 @@ esac
 exit 0
 MOCK
     chmod +x "$TEST_TEMP_DIR/bin/git"
+    # `chain execute` shells out to the claude CLI. Without a mock the suite
+    # invoked the caller's real, authenticated CLI: it billed a live request,
+    # returned prose where the test expected JSON, and blocked long enough to
+    # trip the runner's per-suite timeout.
+    cat > "$TEST_TEMP_DIR/bin/claude" <<'MOCK'
+#!/usr/bin/env bash
+echo "Mock claude response"
+exit 0
+MOCK
+    chmod +x "$TEST_TEMP_DIR/bin/claude"
     export PATH="$TEST_TEMP_DIR/bin:$PATH"
     export HOME="$TEST_TEMP_DIR/home"
     export NO_GITHUB=true

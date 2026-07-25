@@ -38,7 +38,10 @@ else
 fi
 
 # ─── Options ────────────────────────────────────────────────────────────────
-TIMEOUT=150
+# 300s, not a tighter value: the heavy suites are legitimately slow rather than
+# hung — sw-loop-test alone takes ~180s and passes. A 150s default reported it
+# as TIMEOUT, which reads identically to "broken" and hides a green suite.
+TIMEOUT=300
 PATTERN=''
 JOBS=1
 LIST_ONLY=0
