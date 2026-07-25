@@ -77,7 +77,10 @@ check_test_count_delta() {
     local baseline="${2:-0}"
 
     local new_test_count=0
-    local changed_test_files
+    # Must be initialised: when $base_branch does not resolve, the assignment
+    # below is skipped entirely and the `-n` test further down would abort the
+    # caller with "unbound variable" under `set -u`.
+    local changed_test_files=""
 
     # Get test files that changed
     if git rev-parse "$base_branch" >/dev/null 2>&1; then

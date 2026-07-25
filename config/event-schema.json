@@ -3,141 +3,769 @@
   "description": "Known Shipwright event types and their expected fields",
   "version": "1",
   "event_types": {
-    "pipeline.started": {
-      "required": ["job_id"],
-      "optional": ["issue", "goal", "template"]
-    },
-    "pipeline.completed": {
-      "required": ["job_id"],
-      "optional": ["duration_s", "result"]
-    },
-    "pipeline.failed": {
-      "required": ["job_id"],
-      "optional": ["error", "stage"]
-    },
-    "stage.started": { "required": ["stage"], "optional": ["issue", "job_id"] },
-    "stage.completed": {
-      "required": ["stage"],
-      "optional": ["issue", "job_id", "duration_s", "result"]
-    },
-    "stage.failed": {
-      "required": ["stage"],
-      "optional": ["issue", "job_id", "error", "error_class", "duration_s"]
-    },
-    "daemon.started": { "required": [], "optional": ["pid", "mode"] },
-    "daemon.stopped": { "required": [], "optional": ["reason"] },
-    "daemon.claimed": { "required": ["issue"], "optional": ["repo", "title"] },
-    "daemon.released": { "required": ["issue"], "optional": ["reason"] },
-    "daemon.spawn": {
-      "required": ["issue"],
-      "optional": ["template", "worktree"]
-    },
-    "daemon.complete": {
-      "required": ["issue"],
-      "optional": ["result", "duration_s"]
-    },
-    "daemon.failure": {
-      "required": ["issue"],
-      "optional": ["error", "retry_count"]
-    },
-    "loop.started": { "required": [], "optional": ["goal", "test_cmd"] },
-    "loop.iteration": {
-      "required": ["iteration"],
-      "optional": ["test_result"]
-    },
-    "loop.completed": { "required": [], "optional": ["iterations", "result"] },
-    "cost.recorded": {
-      "required": ["cost_usd"],
-      "optional": ["model", "tokens_in", "tokens_out", "stage"]
-    },
-    "intelligence.analysis": {
-      "required": ["analysis_type"],
-      "optional": ["result", "cache_hit"]
-    },
-    "memory.captured": {
-      "required": ["memory_type"],
-      "optional": ["pattern", "repo"]
-    },
-    "quality.gate": {
-      "required": ["gate_name", "passed"],
-      "optional": ["score", "details"]
-    },
-    "pr.created": {
-      "required": ["pr_number"],
-      "optional": ["title", "branch"]
-    },
-    "deploy.started": { "required": ["environment"], "optional": ["version"] },
-    "deploy.completed": {
-      "required": ["environment"],
-      "optional": ["version", "duration_s"]
-    },
-    "heartbeat.write": {
-      "required": ["job_id"],
-      "optional": ["stage", "iteration"]
-    },
-    "session.started": {
-      "required": ["session_id"],
-      "optional": ["template", "agents"]
-    },
-    "session.ended": { "required": ["session_id"], "optional": ["duration_s"] },
-    "memory.fix_outcome": {
-      "required": ["pattern"],
-      "optional": ["outcome", "repo"]
-    },
-    "memory.global_aggregated": {
+    "adaptive_model.init": {
       "required": [],
-      "optional": ["repo", "patterns_promoted"]
+      "optional": [
+        "artifacts_dir"
+      ]
     },
-    "memory.not_available": {
-      "required": ["path"],
-      "optional": ["action"]
-    },
-    "memory.export": {
+    "adaptive_model.learned": {
       "required": [],
-      "optional": ["repo"]
-    },
-    "cost.budget_unconfigured": {
-      "required": ["status"],
       "optional": []
     },
-    "scale.recommendation": {
+    "adaptive_model.recorded": {
       "required": [],
-      "optional": ["iterations", "coverage", "modules", "has_recommendations"]
+      "optional": []
     },
-    "pr.skipped": {
-      "required": ["issue"],
-      "optional": ["reason"]
-    },
-    "pr.rejected": {
-      "required": ["issue"],
-      "optional": ["reason"]
-    },
-    "intelligence.compose": {
+    "adaptive_model.using_learned_preferences": {
       "required": [],
-      "optional": ["stage_count", "complexity"]
+      "optional": []
     },
-    "intelligence.synthesize": {
+    "adversarial.converged": {
       "required": [],
-      "optional": ["fix_count", "cause_count"]
+      "optional": [
+        "round",
+        "total_findings"
+      ]
     },
-    "simulation.complete": {
+    "adversarial.delegated": {
       "required": [],
-      "optional": ["issue", "concerns"]
+      "optional": []
+    },
+    "adversarial.finding": {
+      "required": [],
+      "optional": [
+        "category",
+        "index",
+        "severity"
+      ]
+    },
+    "adversarial.round": {
+      "required": [],
+      "optional": [
+        "max_rounds",
+        "round"
+      ]
+    },
+    "adversarial.test": {
+      "required": [],
+      "optional": [
+        "round"
+      ]
+    },
+    "architecture.evolved": {
+      "required": [],
+      "optional": [
+        "repo_hash"
+      ]
+    },
+    "architecture.model_built": {
+      "required": [],
+      "optional": [
+        "layers",
+        "patterns",
+        "repo_hash"
+      ]
+    },
+    "architecture.test": {
+      "required": [],
+      "optional": [
+        "layers"
+      ]
+    },
+    "architecture.validated": {
+      "required": [],
+      "optional": [
+        "issue",
+        "violations"
+      ]
+    },
+    "architecture.violation": {
+      "required": [],
+      "optional": [
+        "pattern",
+        "severity"
+      ]
+    },
+    "artifacts.persist_failed": {
+      "required": [],
+      "optional": [
+        "issue",
+        "stage"
+      ]
+    },
+    "artifacts.persisted": {
+      "required": [],
+      "optional": [
+        "file_count",
+        "issue",
+        "stage"
+      ]
+    },
+    "auth_login": {
+      "required": [],
+      "optional": [
+        "user"
+      ]
+    },
+    "auth_logout": {
+      "required": [],
+      "optional": [
+        "user"
+      ]
+    },
+    "autonomous.delegated_to_daemon": {
+      "required": [],
+      "optional": [
+        "issue",
+        "title"
+      ]
+    },
+    "autonomous.finding_failure": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "autonomous.finding_success": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "autonomous.issue_created": {
+      "required": [],
+      "optional": [
+        "effort",
+        "issue",
+        "priority",
+        "title"
+      ]
+    },
+    "autonomous.paused": {
+      "required": [],
+      "optional": []
+    },
+    "autonomous.pipeline_failure": {
+      "required": [],
+      "optional": [
+        "goal",
+        "status"
+      ]
+    },
+    "autonomous.pipeline_success": {
+      "required": [],
+      "optional": [
+        "goal"
+      ]
+    },
+    "autonomous.pipeline_triggered": {
+      "required": [],
+      "optional": [
+        "issue",
+        "title"
+      ]
+    },
+    "autonomous.recruit_match": {
+      "required": [],
+      "optional": [
+        "issue",
+        "role"
+      ]
+    },
+    "autonomous.resumed": {
+      "required": [],
+      "optional": []
+    },
+    "autonomous.scheduler_started": {
+      "required": [],
+      "optional": []
+    },
+    "autonomous.started": {
+      "required": [],
+      "optional": []
+    },
+    "autonomous.stopped": {
+      "required": [],
+      "optional": []
+    },
+    "build.commit_quality": {
+      "required": [],
+      "optional": []
+    },
+    "build.constitutional_diff": {
+      "required": [],
+      "optional": [
+        "stage",
+        "violations"
+      ]
+    },
+    "build.parallelism_suggested": {
+      "required": [],
+      "optional": [
+        "current_agents",
+        "issue"
+      ]
+    },
+    "causal_graph_built": {
+      "required": [],
+      "optional": []
+    },
+    "causal_trace_completed": {
+      "required": [],
+      "optional": []
+    },
+    "changelog.announce": {
+      "required": [],
+      "optional": [
+        "version"
+      ]
+    },
+    "changelog.generate": {
+      "required": [],
+      "optional": [
+        "commits",
+        "version"
+      ]
+    },
+    "changelog.migrate": {
+      "required": [],
+      "optional": [
+        "version"
+      ]
+    },
+    "checks.annotate": {
+      "required": [],
+      "optional": [
+        "count",
+        "run_id"
+      ]
+    },
+    "checks.complete": {
+      "required": [],
+      "optional": [
+        "conclusion",
+        "run_id"
+      ]
+    },
+    "checks.create": {
+      "required": [],
+      "optional": [
+        "name",
+        "run_id",
+        "status"
+      ]
+    },
+    "checks.pipeline_start": {
+      "required": [],
+      "optional": [
+        "stages"
+      ]
+    },
+    "checks.update": {
+      "required": [],
+      "optional": [
+        "conclusion",
+        "run_id",
+        "status"
+      ]
+    },
+    "ci_badges_generated": {
+      "required": [],
+      "optional": [
+        "repo",
+        "workflow"
+      ]
+    },
+    "ci_cache_optimized": {
+      "required": [],
+      "optional": [
+        "workflow"
+      ]
+    },
+    "ci_matrix_generated": {
+      "required": [],
+      "optional": [
+        "bash_versions",
+        "node_versions",
+        "os"
+      ]
+    },
+    "ci_reusable_generated": {
+      "required": [],
+      "optional": [
+        "template"
+      ]
+    },
+    "ci_runners_listed": {
+      "required": [],
+      "optional": []
+    },
+    "ci_runners_recommended": {
+      "required": [],
+      "optional": []
+    },
+    "ci_secrets_audited": {
+      "required": [],
+      "optional": [
+        "secrets_found"
+      ]
+    },
+    "ci_secrets_checked": {
+      "required": [],
+      "optional": [
+        "owner"
+      ]
+    },
+    "ci_workflow_analyzed": {
+      "required": [],
+      "optional": [
+        "has_cache",
+        "jobs",
+        "steps"
+      ]
+    },
+    "ci_workflow_generated": {
+      "required": [],
+      "optional": [
+        "stages",
+        "workflow"
+      ]
+    },
+    "ci_workflow_validated": {
+      "required": [],
+      "optional": [
+        "file"
+      ]
+    },
+    "code_review.autofix": {
+      "required": [],
+      "optional": [
+        "issues_fixed"
+      ]
+    },
+    "code_review.complete": {
+      "required": [],
+      "optional": [
+        "file_count",
+        "scope",
+        "total_issues"
+      ]
+    },
+    "code_review.scan": {
+      "required": [],
+      "optional": [
+        "total_issues"
+      ]
+    },
+    "composer.created": {
+      "required": [],
+      "optional": []
+    },
+    "composer.models_downgraded": {
+      "required": [],
+      "optional": []
+    },
+    "composer.stage_inserted": {
+      "required": [],
+      "optional": []
+    },
+    "compound.architecture": {
+      "required": [],
+      "optional": []
+    },
+    "compound.cycle": {
+      "required": [],
+      "optional": []
+    },
+    "compound.plateau": {
+      "required": [],
+      "optional": []
+    },
+    "compound.simulation": {
+      "required": [],
+      "optional": []
+    },
+    "compound_quality.dod_failed": {
+      "required": [],
+      "optional": []
+    },
+    "compound_quality.dod_passed": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "constitutional.review_complete": {
+      "required": [],
+      "optional": []
+    },
+    "constitutional.unsafe_check_skipped": {
+      "required": [],
+      "optional": [
+        "cmd"
+      ]
+    },
+    "convergence.agent_complete": {
+      "required": [],
+      "optional": []
+    },
+    "convergence.plateau": {
+      "required": [],
+      "optional": []
+    },
+    "convergence.scored": {
+      "required": [],
+      "optional": []
+    },
+    "convergence.stuck": {
+      "required": [],
+      "optional": []
+    },
+    "convergence.tests_passed": {
+      "required": [],
+      "optional": [
+        "issue",
+        "cycle"
+      ]
+    },
+    "cost.budget_exceeded": {
+      "required": [],
+      "optional": [
+        "budget",
+        "estimated",
+        "today_spent"
+      ]
+    },
+    "cost.budget_set": {
+      "required": [],
+      "optional": [
+        "daily_budget_usd"
+      ]
+    },
+    "cost.budget_unconfigured": {
+      "required": [
+        "status"
+      ],
+      "optional": []
+    },
+    "cost.budget_warning": {
+      "required": [],
+      "optional": [
+        "budget",
+        "pct_used",
+        "today_spent"
+      ]
+    },
+    "cost.outcome_recorded": {
+      "required": [],
+      "optional": []
+    },
+    "cost.pricing_updated": {
+      "required": [],
+      "optional": [
+        "input_per_m",
+        "model",
+        "output_per_m"
+      ]
+    },
+    "cost.record": {
+      "required": [],
+      "optional": []
+    },
+    "cost.recorded": {
+      "required": [
+        "cost_usd"
+      ],
+      "optional": [
+        "model",
+        "tokens_in",
+        "tokens_out",
+        "stage"
+      ]
+    },
+    "costopt.burst_activated": {
+      "required": [],
+      "optional": []
+    },
+    "costopt.init": {
+      "required": [],
+      "optional": []
+    },
+    "costopt.reduction_applied": {
+      "required": [],
+      "optional": []
+    },
+    "daemon.alert": {
+      "required": [],
+      "optional": [
+        "alerts",
+        "cfr_pct",
+        "success_pct"
+      ]
+    },
+    "daemon.auto_pause": {
+      "required": [],
+      "optional": [
+        "class",
+        "count",
+        "reason",
+        "resume_after"
+      ]
+    },
+    "daemon.budget_exhausted": {
+      "required": [],
+      "optional": [
+        "issue",
+        "remaining"
+      ]
+    },
+    "daemon.claimed": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "repo",
+        "title"
+      ]
+    },
+    "daemon.cleanup": {
+      "required": [],
+      "optional": [
+        "age_days",
+        "cleaned"
+      ]
+    },
+    "daemon.complete": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "result",
+        "duration_s"
+      ]
+    },
+    "daemon.composed_pipeline": {
+      "required": [],
+      "optional": [
+        "labels",
+        "score"
+      ]
+    },
+    "daemon.disk_low": {
+      "required": [],
+      "optional": [
+        "free_mb"
+      ]
+    },
+    "daemon.dora_escalation": {
+      "required": [],
+      "optional": []
+    },
+    "daemon.failure": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "error",
+        "retry_count"
+      ]
+    },
+    "daemon.failure_classified": {
+      "required": [],
+      "optional": [
+        "class",
+        "issue"
+      ]
+    },
+    "daemon.fleet_reload": {
+      "required": [],
+      "optional": [
+        "from",
+        "to"
+      ]
     },
     "daemon.hard_limit": {
-      "required": ["issue"],
-      "optional": ["elapsed_s", "limit_s", "pid"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "elapsed_s",
+        "limit_s",
+        "pid"
+      ]
     },
-    "daemon.stalled": {
-      "required": ["issue"],
-      "optional": ["no_progress", "elapsed_s", "pid"]
+    "daemon.health": {
+      "required": [],
+      "optional": [
+        "findings"
+      ]
+    },
+    "daemon.log_rotated": {
+      "required": [],
+      "optional": [
+        "previous_size"
+      ]
     },
     "daemon.nudge": {
-      "required": ["issue"],
-      "optional": ["no_progress", "stage", "elapsed_s"]
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "no_progress",
+        "stage",
+        "elapsed_s"
+      ]
+    },
+    "daemon.optimize": {
+      "required": [],
+      "optional": [
+        "adjustments",
+        "cfr",
+        "cycle_time",
+        "deploy_freq",
+        "mttr"
+      ]
+    },
+    "daemon.poll": {
+      "required": [],
+      "optional": [
+        "active",
+        "issues_found",
+        "mode"
+      ]
+    },
+    "daemon.priority_lane": {
+      "required": [],
+      "optional": [
+        "issue",
+        "score"
+      ]
+    },
+    "daemon.rate_limit": {
+      "required": [],
+      "optional": [
+        "backoff_s",
+        "failures"
+      ]
+    },
+    "daemon.reap": {
+      "required": [],
+      "optional": [
+        "duration_s",
+        "issue",
+        "result"
+      ]
+    },
+    "daemon.recovery": {
+      "required": [],
+      "optional": [
+        "checkpoint",
+        "issue"
+      ]
+    },
+    "daemon.released": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
+    },
+    "daemon.retry": {
+      "required": [],
+      "optional": [
+        "class",
+        "issue",
+        "max",
+        "retry"
+      ]
+    },
+    "daemon.retry_exhausted": {
+      "required": [],
+      "optional": [
+        "issue",
+        "retries"
+      ]
+    },
+    "daemon.scale": {
+      "required": [],
+      "optional": []
+    },
+    "daemon.skip_retry": {
+      "required": [],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "daemon.spawn": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "template",
+        "worktree"
+      ]
+    },
+    "daemon.stale_dead": {
+      "required": [],
+      "optional": [
+        "elapsed_s",
+        "issue",
+        "pid",
+        "reason"
+      ]
+    },
+    "daemon.stale_kill": {
+      "required": [],
+      "optional": [
+        "elapsed_s",
+        "issue",
+        "pid"
+      ]
+    },
+    "daemon.stale_pipeline_state": {
+      "required": [],
+      "optional": [
+        "age_s"
+      ]
+    },
+    "daemon.stale_warning": {
+      "required": [],
+      "optional": [
+        "elapsed_s",
+        "issue",
+        "pid"
+      ]
+    },
+    "daemon.stalled": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "no_progress",
+        "elapsed_s",
+        "pid"
+      ]
+    },
+    "daemon.started": {
+      "required": [],
+      "optional": [
+        "pid",
+        "mode"
+      ]
+    },
+    "daemon.stopped": {
+      "required": [],
+      "optional": [
+        "reason"
+      ]
     },
     "daemon.stuck_kill": {
-      "required": ["issue"],
+      "required": [
+        "issue"
+      ],
       "optional": [
         "no_progress",
         "repeated_errors",
@@ -147,9 +775,2576 @@
         "reason"
       ]
     },
-    "convergence.tests_passed": {
+    "daemon.triage": {
       "required": [],
-      "optional": ["issue", "cycle"]
+      "optional": []
+    },
+    "daemon.watchdog_exhausted": {
+      "required": [],
+      "optional": [
+        "restarts"
+      ]
+    },
+    "daemon.watchdog_restart": {
+      "required": [],
+      "optional": [
+        "backoff",
+        "restart"
+      ]
+    },
+    "dashboard.started": {
+      "required": [],
+      "optional": []
+    },
+    "dashboard.stopped": {
+      "required": [],
+      "optional": []
+    },
+    "decision.approved": {
+      "required": [],
+      "optional": [
+        "id",
+        "issue"
+      ]
+    },
+    "decision.cycle_complete": {
+      "required": [],
+      "optional": [
+        "candidates",
+        "decisions",
+        "dry_run"
+      ]
+    },
+    "decision.executed": {
+      "required": [],
+      "optional": [
+        "action",
+        "id",
+        "score",
+        "tier"
+      ]
+    },
+    "decision.halted": {
+      "required": [],
+      "optional": [
+        "reason"
+      ]
+    },
+    "decision.rejected": {
+      "required": [],
+      "optional": [
+        "id",
+        "reason"
+      ]
+    },
+    "decision.resumed": {
+      "required": [],
+      "optional": []
+    },
+    "decision.tuned": {
+      "required": [],
+      "optional": [
+        "samples"
+      ]
+    },
+    "decompose.analyzed": {
+      "required": [],
+      "optional": [
+        "issue",
+        "result"
+      ]
+    },
+    "decompose.auto_completed": {
+      "required": [],
+      "optional": [
+        "issue",
+        "subtask_count"
+      ]
+    },
+    "decompose.completed": {
+      "required": [],
+      "optional": [
+        "issue",
+        "subtask_count"
+      ]
+    },
+    "decompose.critical_path_analyzed": {
+      "required": [],
+      "optional": [
+        "file"
+      ]
+    },
+    "decompose.scheduled": {
+      "required": [],
+      "optional": [
+        "issue",
+        "total_tasks"
+      ]
+    },
+    "decompose.skipped": {
+      "required": [],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "decompose.subtask_created": {
+      "required": [],
+      "optional": [
+        "parent",
+        "subtask"
+      ]
+    },
+    "decompose.visualized": {
+      "required": [],
+      "optional": [
+        "file",
+        "format"
+      ]
+    },
+    "deploy.completed": {
+      "required": [
+        "environment"
+      ],
+      "optional": [
+        "version",
+        "duration_s"
+      ]
+    },
+    "deploy.create": {
+      "required": [],
+      "optional": [
+        "deploy_id",
+        "environment",
+        "ref"
+      ]
+    },
+    "deploy.pipeline_complete": {
+      "required": [],
+      "optional": [
+        "deploy_id",
+        "environment",
+        "state"
+      ]
+    },
+    "deploy.pipeline_start": {
+      "required": [],
+      "optional": [
+        "deploy_id",
+        "environment",
+        "ref"
+      ]
+    },
+    "deploy.rollback": {
+      "required": [],
+      "optional": [
+        "environment",
+        "new_id",
+        "prev_ref"
+      ]
+    },
+    "deploy.started": {
+      "required": [
+        "environment"
+      ],
+      "optional": [
+        "version"
+      ]
+    },
+    "deploy.status": {
+      "required": [],
+      "optional": [
+        "deploy_id",
+        "state"
+      ]
+    },
+    "deps.batch.completed": {
+      "required": [],
+      "optional": [
+        "approved",
+        "flagged",
+        "merged",
+        "processed"
+      ]
+    },
+    "deps.classify.completed": {
+      "required": [],
+      "optional": [
+        "pr",
+        "risk",
+        "score"
+      ]
+    },
+    "deps.merge.completed": {
+      "required": [],
+      "optional": [
+        "pr",
+        "result"
+      ]
+    },
+    "deps.report.generated": {
+      "required": [],
+      "optional": [
+        "majors",
+        "minors",
+        "patches",
+        "total"
+      ]
+    },
+    "deps.scan.completed": {
+      "required": [],
+      "optional": [
+        "timestamp"
+      ]
+    },
+    "deps.test.completed": {
+      "required": [],
+      "optional": [
+        "passed",
+        "pr"
+      ]
+    },
+    "discovery.consumed": {
+      "required": [],
+      "optional": [
+        "discovery_id",
+        "helpful",
+        "pipeline_id"
+      ]
+    },
+    "discovery.new": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "discovery_id",
+        "priority"
+      ]
+    },
+    "discovery.promoted": {
+      "required": [],
+      "optional": [
+        "category",
+        "discovery_id"
+      ]
+    },
+    "discovery.published": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "discovery_id",
+        "priority"
+      ]
+    },
+    "doc_fleet.audit": {
+      "required": [],
+      "optional": [
+        "checks",
+        "health_score",
+        "issues"
+      ]
+    },
+    "doc_fleet.launch": {
+      "required": [],
+      "optional": [
+        "agents",
+        "mode",
+        "run_id"
+      ]
+    },
+    "doc_fleet.manifest": {
+      "required": [],
+      "optional": [
+        "doc_count"
+      ]
+    },
+    "doc_fleet.report": {
+      "required": [],
+      "optional": [
+        "health",
+        "total_docs",
+        "total_lines"
+      ]
+    },
+    "doc_fleet.retire": {
+      "required": [],
+      "optional": [
+        "agents_retired"
+      ]
+    },
+    "docs.sync": {
+      "required": [],
+      "optional": [
+        "total",
+        "updated"
+      ]
+    },
+    "docs_api_generated": {
+      "required": [],
+      "optional": [
+        "file"
+      ]
+    },
+    "docs_sync_complete": {
+      "required": [],
+      "optional": [
+        "updates"
+      ]
+    },
+    "docs_wiki_generated": {
+      "required": [],
+      "optional": [
+        "dir"
+      ]
+    },
+    "doctor_fix": {
+      "required": [],
+      "optional": [
+        "hook",
+        "path",
+        "type"
+      ]
+    },
+    "evidence.captured": {
+      "required": [],
+      "optional": [
+        "failed",
+        "passed",
+        "total",
+        "type"
+      ]
+    },
+    "evidence.missing": {
+      "required": [],
+      "optional": []
+    },
+    "evidence.quality_score": {
+      "required": [],
+      "optional": [
+        "score"
+      ]
+    },
+    "evidence.verified": {
+      "required": [],
+      "optional": [
+        "failed",
+        "result",
+        "total"
+      ]
+    },
+    "feedback_auto_respond": {
+      "required": [],
+      "optional": [
+        "severity",
+        "type"
+      ]
+    },
+    "feedback_collect": {
+      "required": [],
+      "optional": [
+        "errors",
+        "file"
+      ]
+    },
+    "feedback_correlate": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "pr"
+      ]
+    },
+    "feedback_detect_regression": {
+      "required": [],
+      "optional": [
+        "merge_sha",
+        "regression",
+        "severity"
+      ]
+    },
+    "feedback_incident_learned": {
+      "required": [],
+      "optional": [
+        "cause"
+      ]
+    },
+    "feedback_issue_created": {
+      "required": [],
+      "optional": [
+        "errors",
+        "url"
+      ]
+    },
+    "feedback_learn_from_outcome": {
+      "required": [],
+      "optional": [
+        "merge_result",
+        "pr",
+        "regression"
+      ]
+    },
+    "feedback_post_merge_monitor": {
+      "required": [],
+      "optional": [
+        "environment",
+        "errors",
+        "merge_sha"
+      ]
+    },
+    "feedback_rollback": {
+      "required": [],
+      "optional": [
+        "environment",
+        "reason",
+        "status"
+      ]
+    },
+    "fix.completed": {
+      "required": [],
+      "optional": [
+        "goal",
+        "session"
+      ]
+    },
+    "fix.repo.completed": {
+      "required": [],
+      "optional": [
+        "pr_url",
+        "repo",
+        "session",
+        "status"
+      ]
+    },
+    "fix.repo.started": {
+      "required": [],
+      "optional": [
+        "repo",
+        "session"
+      ]
+    },
+    "fix.started": {
+      "required": [],
+      "optional": [
+        "goal",
+        "repos",
+        "session",
+        "template"
+      ]
+    },
+    "fleet.discover.completed": {
+      "required": [],
+      "optional": []
+    },
+    "fleet.discover.merged": {
+      "required": [],
+      "optional": []
+    },
+    "fleet.distributed_rebalance": {
+      "required": [],
+      "optional": []
+    },
+    "fleet.failover": {
+      "required": [],
+      "optional": []
+    },
+    "fleet.machine_offline": {
+      "required": [],
+      "optional": [
+        "host",
+        "machine"
+      ]
+    },
+    "fleet.rebalance": {
+      "required": [],
+      "optional": []
+    },
+    "fleet.started": {
+      "required": [],
+      "optional": [
+        "repos",
+        "skipped"
+      ]
+    },
+    "fleet.stopped": {
+      "required": [],
+      "optional": [
+        "repos"
+      ]
+    },
+    "formal_spec.extracted": {
+      "required": [],
+      "optional": [
+        "count",
+        "target"
+      ]
+    },
+    "formal_spec.verified": {
+      "required": [],
+      "optional": []
+    },
+    "github.api_failed": {
+      "required": [],
+      "optional": [
+        "attempts"
+      ]
+    },
+    "github.cache_hit": {
+      "required": [],
+      "optional": [
+        "key"
+      ]
+    },
+    "github.cache_miss": {
+      "required": [],
+      "optional": [
+        "key"
+      ]
+    },
+    "github.rate_limited": {
+      "required": [],
+      "optional": [
+        "attempt",
+        "backoff"
+      ]
+    },
+    "github.repo_context": {
+      "required": [],
+      "optional": [
+        "owner",
+        "repo"
+      ]
+    },
+    "github_app.setup": {
+      "required": [],
+      "optional": [
+        "app_id",
+        "install_id"
+      ]
+    },
+    "github_app.token_acquired": {
+      "required": [],
+      "optional": [
+        "installation_id"
+      ]
+    },
+    "guild.add": {
+      "required": [],
+      "optional": [
+        "guild",
+        "title",
+        "type"
+      ]
+    },
+    "guild.learn_requested": {
+      "required": [],
+      "optional": [
+        "pipeline_dir"
+      ]
+    },
+    "harness_gap.created": {
+      "required": [],
+      "optional": [
+        "gap_id",
+        "incident",
+        "sla_hours"
+      ]
+    },
+    "harness_gap.resolved": {
+      "required": [],
+      "optional": [
+        "gap_id",
+        "test_file"
+      ]
+    },
+    "heartbeat.write": {
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "stage",
+        "iteration"
+      ]
+    },
+    "hygiene_fix": {
+      "required": [],
+      "optional": [
+        "fixed",
+        "type"
+      ]
+    },
+    "hygiene_platform_refactor": {
+      "required": [],
+      "optional": [
+        "fallback",
+        "hardcoded",
+        "todo"
+      ]
+    },
+    "hygiene_scan": {
+      "required": [],
+      "optional": [
+        "status"
+      ]
+    },
+    "incident.auto_remediation_complete": {
+      "required": [],
+      "optional": [
+        "incident_id"
+      ]
+    },
+    "incident.auto_remediation_failed": {
+      "required": [],
+      "optional": [
+        "escalated_to",
+        "incident_id"
+      ]
+    },
+    "incident.correlation_complete": {
+      "required": [],
+      "optional": [
+        "groups"
+      ]
+    },
+    "incident.created": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "severity"
+      ]
+    },
+    "incident.deep_analysis_complete": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "incident_id"
+      ]
+    },
+    "incident.detected": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "severity"
+      ]
+    },
+    "incident.escalated_p0": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "issue",
+        "severity"
+      ]
+    },
+    "incident.escalated_p1": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "issue",
+        "severity"
+      ]
+    },
+    "incident.escalated_p2": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "issue",
+        "severity"
+      ]
+    },
+    "incident.escalated_p3": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "severity"
+      ]
+    },
+    "incident.pipeline_triggered": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "issue"
+      ]
+    },
+    "incident.rollback_triggered": {
+      "required": [],
+      "optional": [
+        "incident_id",
+        "reason"
+      ]
+    },
+    "incident.timeline_updated": {
+      "required": [],
+      "optional": [
+        "action",
+        "actor",
+        "incident_id"
+      ]
+    },
+    "instrument_finish": {
+      "required": [],
+      "optional": [
+        "result",
+        "run_id"
+      ]
+    },
+    "instrument_record": {
+      "required": [],
+      "optional": [
+        "metric",
+        "run_id",
+        "stage",
+        "value"
+      ]
+    },
+    "instrument_start": {
+      "required": [],
+      "optional": [
+        "issue",
+        "repo",
+        "run_id"
+      ]
+    },
+    "intelligence.adaptive_iterations": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.analysis": {
+      "required": [
+        "analysis_type"
+      ],
+      "optional": [
+        "result",
+        "cache_hit"
+      ]
+    },
+    "intelligence.backtrack": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.backtrack_blocked": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.budget_cap": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.cache_hit": {
+      "required": [],
+      "optional": [
+        "cache_key"
+      ]
+    },
+    "intelligence.cache_ttl_adjusted": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.compose": {
+      "required": [],
+      "optional": [
+        "stage_count",
+        "complexity"
+      ]
+    },
+    "intelligence.convergence_acceleration": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.divergence_detected": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.estimate_iterations": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.model": {
+      "required": [],
+      "optional": [
+        "complexity",
+        "model",
+        "source",
+        "stage"
+      ]
+    },
+    "intelligence.model_ab": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.model_ucb1": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.prediction": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.prediction_error": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.prediction_validated": {
+      "required": [],
+      "optional": [
+        "actual",
+        "delta",
+        "metric",
+        "predicted"
+      ]
+    },
+    "intelligence.reassessment": {
+      "required": [],
+      "optional": []
+    },
+    "intelligence.synthesize": {
+      "required": [],
+      "optional": [
+        "fix_count",
+        "cause_count"
+      ]
+    },
+    "intelligence.triage": {
+      "required": [],
+      "optional": []
+    },
+    "issue.pr_merged_feedback": {
+      "required": [],
+      "optional": [
+        "issue",
+        "pr"
+      ]
+    },
+    "jira.init": {
+      "required": [],
+      "optional": [
+        "project",
+        "user"
+      ]
+    },
+    "jira.notify": {
+      "required": [],
+      "optional": [
+        "event",
+        "github_issue",
+        "jira_key"
+      ]
+    },
+    "jira.sync": {
+      "required": [],
+      "optional": [
+        "github_issue",
+        "jira_key",
+        "title"
+      ]
+    },
+    "jira.update": {
+      "required": [],
+      "optional": [
+        "github_issue",
+        "jira_key",
+        "status"
+      ]
+    },
+    "linear.init": {
+      "required": [],
+      "optional": [
+        "user"
+      ]
+    },
+    "linear.notify": {
+      "required": [],
+      "optional": [
+        "event",
+        "github_issue"
+      ]
+    },
+    "linear.sync": {
+      "required": [],
+      "optional": [
+        "github_issue",
+        "linear_id",
+        "title"
+      ]
+    },
+    "linear.update": {
+      "required": [],
+      "optional": [
+        "github_issue",
+        "status"
+      ]
+    },
+    "loop.completed": {
+      "required": [],
+      "optional": [
+        "iterations",
+        "result"
+      ]
+    },
+    "loop.context_efficiency": {
+      "required": [],
+      "optional": []
+    },
+    "loop.context_exhaustion": {
+      "required": [],
+      "optional": [
+        "iteration",
+        "max_restarts",
+        "restart_count"
+      ]
+    },
+    "loop.context_trimmed": {
+      "required": [],
+      "optional": [
+        "budget",
+        "original",
+        "trimmed"
+      ]
+    },
+    "loop.iteration": {
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "test_result"
+      ]
+    },
+    "loop.iteration_complete": {
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "issue",
+        "test_result",
+        "duration_s"
+      ]
+    },
+    "loop.iteration_start": {
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "issue",
+        "goal"
+      ]
+    },
+    "loop.push_failed": {
+      "required": [],
+      "optional": [
+        "branch"
+      ]
+    },
+    "loop.restart": {
+      "required": [],
+      "optional": [
+        "issue",
+        "restart_count",
+        "reason"
+      ]
+    },
+    "loop.started": {
+      "required": [],
+      "optional": [
+        "goal",
+        "test_cmd"
+      ]
+    },
+    "loop.stuckness_detected": {
+      "required": [],
+      "optional": [
+        "issue",
+        "iteration",
+        "reason"
+      ]
+    },
+    "loop.verification_gap_confirmed": {
+      "required": [],
+      "optional": []
+    },
+    "loop.verification_gap_resolved": {
+      "required": [],
+      "optional": []
+    },
+    "memeff.archive": {
+      "required": [],
+      "optional": []
+    },
+    "memeff.delete": {
+      "required": [],
+      "optional": []
+    },
+    "memeff.injection": {
+      "required": [],
+      "optional": []
+    },
+    "memeff.outcome": {
+      "required": [],
+      "optional": []
+    },
+    "memeff.prune_complete": {
+      "required": [],
+      "optional": []
+    },
+    "memory.ab_assigned": {
+      "required": [],
+      "optional": []
+    },
+    "memory.ab_result": {
+      "required": [],
+      "optional": []
+    },
+    "memory.analyze": {
+      "required": [],
+      "optional": [
+        "category",
+        "stage"
+      ]
+    },
+    "memory.capture": {
+      "required": [],
+      "optional": []
+    },
+    "memory.captured": {
+      "required": [
+        "memory_type"
+      ],
+      "optional": [
+        "pattern",
+        "repo"
+      ]
+    },
+    "memory.decay_applied": {
+      "required": [],
+      "optional": [
+        "files",
+        "threshold_days"
+      ]
+    },
+    "memory.decision": {
+      "required": [],
+      "optional": [
+        "summary",
+        "type"
+      ]
+    },
+    "memory.error_log_processed": {
+      "required": [],
+      "optional": [
+        "captured"
+      ]
+    },
+    "memory.export": {
+      "required": [],
+      "optional": [
+        "repo"
+      ]
+    },
+    "memory.failure": {
+      "required": [],
+      "optional": [
+        "pattern",
+        "stage"
+      ]
+    },
+    "memory.fix_outcome": {
+      "required": [
+        "pattern"
+      ],
+      "optional": [
+        "outcome",
+        "repo"
+      ]
+    },
+    "memory.forget": {
+      "required": [],
+      "optional": [
+        "repo",
+        "scope"
+      ]
+    },
+    "memory.global_aggregated": {
+      "required": [],
+      "optional": [
+        "repo",
+        "patterns_promoted"
+      ]
+    },
+    "memory.import": {
+      "required": [],
+      "optional": [
+        "file",
+        "repo"
+      ]
+    },
+    "memory.inject": {
+      "required": [],
+      "optional": [
+        "stage"
+      ]
+    },
+    "memory.metric": {
+      "required": [],
+      "optional": [
+        "metric",
+        "value"
+      ]
+    },
+    "memory.not_available": {
+      "required": [
+        "path"
+      ],
+      "optional": [
+        "action"
+      ]
+    },
+    "memory.pattern": {
+      "required": [],
+      "optional": [
+        "framework",
+        "proj_type",
+        "type"
+      ]
+    },
+    "memory.regression": {
+      "required": [],
+      "optional": [
+        "current",
+        "metric",
+        "previous"
+      ]
+    },
+    "merge.approval_pending": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "merge.auto_enabled": {
+      "required": [],
+      "optional": []
+    },
+    "merge.blocked": {
+      "required": [],
+      "optional": [
+        "have",
+        "issue",
+        "need",
+        "reason"
+      ]
+    },
+    "merge.oversight_blocked": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "mission_control.pause": {
+      "required": [],
+      "optional": [
+        "run_id",
+        "stage"
+      ]
+    },
+    "mission_control.resume": {
+      "required": [],
+      "optional": [
+        "run_id"
+      ]
+    },
+    "mission_control.retry_stage": {
+      "required": [],
+      "optional": [
+        "run_id",
+        "stage"
+      ]
+    },
+    "mission_control.skip_stage": {
+      "required": [],
+      "optional": [
+        "run_id",
+        "stage"
+      ]
+    },
+    "model.outcome": {
+      "required": [],
+      "optional": []
+    },
+    "monitor.alert": {
+      "required": [],
+      "optional": []
+    },
+    "monitor.check": {
+      "required": [],
+      "optional": []
+    },
+    "monitor.rollback": {
+      "required": [],
+      "optional": []
+    },
+    "monitor.rollback_verified": {
+      "required": [],
+      "optional": []
+    },
+    "monitor.started": {
+      "required": [],
+      "optional": []
+    },
+    "mutation.executed": {
+      "required": [],
+      "optional": []
+    },
+    "mutation.generated": {
+      "required": [],
+      "optional": []
+    },
+    "mutation.report": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.audit_intensity": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.clusters_updated": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.context_recommendation": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.memory_pruned": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.model_switched": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.outcome_analyzed": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.prediction_bias_corrected": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.report": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.retro_ingested": {
+      "required": [],
+      "optional": []
+    },
+    "optimize.template_tuned": {
+      "required": [],
+      "optional": []
+    },
+    "oversight_appeal_submitted": {
+      "required": [],
+      "optional": [
+        "appeal_number",
+        "review_id"
+      ]
+    },
+    "oversight_review_submitted": {
+      "required": [],
+      "optional": [
+        "commit",
+        "pr",
+        "review_id"
+      ]
+    },
+    "oversight_verdict_rendered": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "review_id",
+        "verdict"
+      ]
+    },
+    "oversight_vote_recorded": {
+      "required": [],
+      "optional": [
+        "confidence",
+        "decision",
+        "review_id",
+        "reviewer"
+      ]
+    },
+    "patrol.ai_analysis": {
+      "required": [],
+      "optional": [
+        "findings",
+        "grep_findings"
+      ]
+    },
+    "patrol.ai_dismissed": {
+      "required": [],
+      "optional": [
+        "reason"
+      ]
+    },
+    "patrol.ai_finding": {
+      "required": [],
+      "optional": [
+        "category",
+        "finding",
+        "severity"
+      ]
+    },
+    "patrol.completed": {
+      "required": [],
+      "optional": [
+        "dry_run",
+        "findings",
+        "issues_created"
+      ]
+    },
+    "patrol.finding": {
+      "required": [],
+      "optional": [
+        "baseline",
+        "check",
+        "count",
+        "current",
+        "issues",
+        "latest",
+        "lines",
+        "metrics",
+        "package",
+        "pattern",
+        "regression",
+        "script",
+        "seen_count",
+        "severity",
+        "usage"
+      ]
+    },
+    "patrol.issue_created": {
+      "required": [],
+      "optional": [
+        "check",
+        "count",
+        "metrics",
+        "package",
+        "pattern"
+      ]
+    },
+    "patrol.meta_autonomous_complete": {
+      "required": [],
+      "optional": [
+        "timestamp"
+      ]
+    },
+    "patrol.meta_issue_created": {
+      "required": [],
+      "optional": [
+        "title"
+      ]
+    },
+    "patrol.meta_learned": {
+      "required": [],
+      "optional": [
+        "category",
+        "issue",
+        "outcome"
+      ]
+    },
+    "patrol.meta_pipeline_started": {
+      "required": [],
+      "optional": [
+        "issue",
+        "title"
+      ]
+    },
+    "patrol.meta_rollback": {
+      "required": [],
+      "optional": [
+        "issue",
+        "pr"
+      ]
+    },
+    "patrol.meta_verified": {
+      "required": [],
+      "optional": [
+        "category",
+        "issue"
+      ]
+    },
+    "patrol.started": {
+      "required": [],
+      "optional": [
+        "dry_run"
+      ]
+    },
+    "pipeline.anomaly": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "metric",
+        "value",
+        "severity"
+      ]
+    },
+    "pipeline.audit_failed": {
+      "required": [],
+      "optional": [
+        "issues"
+      ]
+    },
+    "pipeline.audit_selection": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.audit_warnings": {
+      "required": [],
+      "optional": [
+        "issues"
+      ]
+    },
+    "pipeline.budget_exhausted": {
+      "required": [],
+      "optional": [
+        "remaining"
+      ]
+    },
+    "pipeline.budget_paused": {
+      "required": [],
+      "optional": [
+        "issue",
+        "stage"
+      ]
+    },
+    "pipeline.cleanup": {
+      "required": [],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "pipeline.comment_failed": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "pipeline.completed": {
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "duration_s",
+        "result"
+      ]
+    },
+    "pipeline.composed_loaded": {
+      "required": [],
+      "optional": [
+        "issue",
+        "stages"
+      ]
+    },
+    "pipeline.context_exhaustion": {
+      "required": [],
+      "optional": [
+        "issue",
+        "stage"
+      ]
+    },
+    "pipeline.cost": {
+      "required": [],
+      "optional": [
+        "issue",
+        "stage",
+        "cost_usd",
+        "model"
+      ]
+    },
+    "pipeline.detached": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.dod_verification": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.failed": {
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "error",
+        "stage"
+      ]
+    },
+    "pipeline.human_message": {
+      "required": [],
+      "optional": [
+        "issue",
+        "message",
+        "stage"
+      ]
+    },
+    "pipeline.prompt_truncated": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.push_failed": {
+      "required": [],
+      "optional": [
+        "branch"
+      ]
+    },
+    "pipeline.quality_gate_failed": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.quality_gate_failed_strict": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.quality_score_recorded": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.security_source_scan": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline.stall_aborted": {
+      "required": [],
+      "optional": [
+        "pid",
+        "pipeline_id",
+        "reason"
+      ]
+    },
+    "pipeline.started": {
+      "required": [
+        "job_id"
+      ],
+      "optional": [
+        "issue",
+        "goal",
+        "template"
+      ]
+    },
+    "pipeline.vitals_check": {
+      "required": [],
+      "optional": []
+    },
+    "pipeline_kill": {
+      "required": [],
+      "optional": [
+        "issue",
+        "window"
+      ]
+    },
+    "pipeline_spawn": {
+      "required": [],
+      "optional": [
+        "issue",
+        "pane_id",
+        "window"
+      ]
+    },
+    "plan.validated": {
+      "required": [],
+      "optional": []
+    },
+    "plan.validation_escalated": {
+      "required": [],
+      "optional": []
+    },
+    "plan.validation_failure": {
+      "required": [],
+      "optional": []
+    },
+    "pm.analyze": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "pm.learn": {
+      "required": [],
+      "optional": [
+        "issue",
+        "outcome"
+      ]
+    },
+    "pm.orchestrate": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "pm.recommend": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "pm.team": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "policy.learned": {
+      "required": [],
+      "optional": [
+        "buckets",
+        "episodes"
+      ]
+    },
+    "pr.closed_stale": {
+      "required": [],
+      "optional": [
+        "age_days",
+        "pr"
+      ]
+    },
+    "pr.created": {
+      "required": [
+        "pr_number"
+      ],
+      "optional": [
+        "title",
+        "branch"
+      ]
+    },
+    "pr.merge_failed": {
+      "required": [],
+      "optional": [
+        "head_sha",
+        "pr",
+        "reason"
+      ]
+    },
+    "pr.merged": {
+      "required": [],
+      "optional": [
+        "head_sha",
+        "pr",
+        "risk_tier"
+      ]
+    },
+    "pr.rejected": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
+    },
+    "pr.review_complete": {
+      "required": [],
+      "optional": [
+        "issues_found",
+        "pr"
+      ]
+    },
+    "pr.skipped": {
+      "required": [
+        "issue"
+      ],
+      "optional": [
+        "reason"
+      ]
+    },
+    "pr.warning": {
+      "required": [],
+      "optional": [
+        "issue",
+        "lines",
+        "max",
+        "reason"
+      ]
+    },
+    "pr_patrol.complete": {
+      "required": [],
+      "optional": []
+    },
+    "prediction.anomaly": {
+      "required": [],
+      "optional": []
+    },
+    "prediction.prevented": {
+      "required": [],
+      "optional": [
+        "patterns",
+        "source",
+        "stage"
+      ]
+    },
+    "prediction.risk_assessed": {
+      "required": [],
+      "optional": [
+        "risk",
+        "source"
+      ]
+    },
+    "prediction.validated": {
+      "required": [],
+      "optional": []
+    },
+    "predictive.threshold_adjusted": {
+      "required": [],
+      "optional": []
+    },
+    "process_reward.recorded": {
+      "required": [],
+      "optional": [
+        "composite",
+        "iteration"
+      ]
+    },
+    "public_dashboard_export": {
+      "required": [],
+      "optional": [
+        "path",
+        "privacy"
+      ]
+    },
+    "public_dashboard_revoke": {
+      "required": [],
+      "optional": [
+        "token"
+      ]
+    },
+    "public_dashboard_share": {
+      "required": [],
+      "optional": [
+        "expires_hours",
+        "privacy",
+        "token"
+      ]
+    },
+    "quality.audit": {
+      "required": [],
+      "optional": [
+        "architecture_score",
+        "correctness_score",
+        "security_score"
+      ]
+    },
+    "quality.bash_compat_failed": {
+      "required": [],
+      "optional": []
+    },
+    "quality.bundle": {
+      "required": [],
+      "optional": []
+    },
+    "quality.completion": {
+      "required": [],
+      "optional": [
+        "recommendation"
+      ]
+    },
+    "quality.coverage": {
+      "required": [],
+      "optional": []
+    },
+    "quality.coverage_failed": {
+      "required": [],
+      "optional": []
+    },
+    "quality.gate": {
+      "required": [
+        "gate_name",
+        "passed"
+      ],
+      "optional": [
+        "score",
+        "details"
+      ]
+    },
+    "quality.hard_floor_failed": {
+      "required": [],
+      "optional": []
+    },
+    "quality.index_updated": {
+      "required": [],
+      "optional": [
+        "quality_index",
+        "success_rate"
+      ]
+    },
+    "quality.perf": {
+      "required": [],
+      "optional": []
+    },
+    "quality.score": {
+      "required": [],
+      "optional": [
+        "gate_pass",
+        "overall",
+        "threshold"
+      ]
+    },
+    "quality.security": {
+      "required": [],
+      "optional": []
+    },
+    "quality.untested_functions": {
+      "required": [],
+      "optional": []
+    },
+    "quality.validate": {
+      "required": [],
+      "optional": [
+        "pass",
+        "score"
+      ]
+    },
+    "reasoning.trace": {
+      "required": [],
+      "optional": [
+        "complexity",
+        "job_id",
+        "risk",
+        "template"
+      ]
+    },
+    "recovery_attempted": {
+      "required": [],
+      "optional": []
+    },
+    "recovery_escalated": {
+      "required": [],
+      "optional": []
+    },
+    "recovery_exhausted": {
+      "required": [],
+      "optional": [
+        "attempts"
+      ]
+    },
+    "recovery_needs_human": {
+      "required": [],
+      "optional": []
+    },
+    "recruit_audit": {
+      "required": [],
+      "optional": [
+        "failed",
+        "passed",
+        "score",
+        "total",
+        "warnings"
+      ]
+    },
+    "recruit_audit_decline": {
+      "required": [],
+      "optional": [
+        "failures",
+        "from",
+        "to"
+      ]
+    },
+    "recruit_decompose": {
+      "required": [],
+      "optional": [
+        "gaps",
+        "goal_length",
+        "tasks"
+      ]
+    },
+    "recruit_evolve": {
+      "required": [],
+      "optional": [
+        "analysis"
+      ]
+    },
+    "recruit_ingest": {
+      "required": [],
+      "optional": [
+        "count",
+        "days"
+      ]
+    },
+    "recruit_meta_revert": {
+      "required": [],
+      "optional": [
+        "accuracy",
+        "floor",
+        "reason"
+      ]
+    },
+    "recruit_meta_warning": {
+      "required": [],
+      "optional": [
+        "accuracy",
+        "first_half",
+        "floor",
+        "second_half",
+        "trend"
+      ]
+    },
+    "recruit_mind": {
+      "required": [],
+      "optional": [
+        "agent_id",
+        "method"
+      ]
+    },
+    "recruit_onboarding": {
+      "required": [],
+      "optional": [
+        "role",
+        "style",
+        "timestamp"
+      ]
+    },
+    "recruit_outcome": {
+      "required": [],
+      "optional": [
+        "agent_id",
+        "outcome",
+        "success_rate"
+      ]
+    },
+    "recruit_promotion": {
+      "required": [],
+      "optional": [
+        "agent_id",
+        "from",
+        "reason",
+        "to"
+      ]
+    },
+    "recruit_reflect": {
+      "required": [],
+      "optional": [
+        "accuracy",
+        "corrections"
+      ]
+    },
+    "recruit_role_created": {
+      "required": [],
+      "optional": [
+        "method",
+        "role",
+        "title"
+      ]
+    },
+    "recruit_role_invented": {
+      "required": [],
+      "optional": [
+        "role",
+        "title"
+      ]
+    },
+    "recruit_self_tune": {
+      "required": [],
+      "optional": [
+        "keywords_updated",
+        "total_matches"
+      ]
+    },
+    "recruit_team": {
+      "required": [],
+      "optional": [
+        "cost",
+        "method",
+        "size"
+      ]
+    },
+    "regression.baseline": {
+      "required": [],
+      "optional": []
+    },
+    "regression.check": {
+      "required": [],
+      "optional": [
+        "improvements",
+        "regressions",
+        "status"
+      ]
+    },
+    "release": {
+      "required": [],
+      "optional": [
+        "type",
+        "version"
+      ]
+    },
+    "release.prepare": {
+      "required": [],
+      "optional": [
+        "bump_type",
+        "version"
+      ]
+    },
+    "release.publish": {
+      "required": [],
+      "optional": [
+        "version"
+      ]
+    },
+    "release.rc_create": {
+      "required": [],
+      "optional": [
+        "rc_number",
+        "version"
+      ]
+    },
+    "release.rc_promote": {
+      "required": [],
+      "optional": [
+        "rc_version",
+        "stable_version"
+      ]
+    },
+    "release.rollback": {
+      "required": [],
+      "optional": [
+        "version"
+      ]
+    },
+    "release.schedule": {
+      "required": [],
+      "optional": [
+        "type"
+      ]
+    },
+    "remote.add": {
+      "required": [],
+      "optional": [
+        "host",
+        "machine",
+        "max_workers",
+        "role"
+      ]
+    },
+    "remote.deploy": {
+      "required": [],
+      "optional": [
+        "host",
+        "machine"
+      ]
+    },
+    "remote.remove": {
+      "required": [],
+      "optional": [
+        "machine"
+      ]
+    },
+    "results_aggregated": {
+      "required": [],
+      "optional": []
+    },
+    "retro.completed": {
+      "required": [],
+      "optional": [
+        "from_date",
+        "quality_score",
+        "to_date"
+      ]
+    },
+    "retro.negative_audit": {
+      "required": [],
+      "optional": []
+    },
+    "retry.classified": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "attempt",
+        "error_class"
+      ]
+    },
+    "retry.context_written": {
+      "required": [],
+      "optional": []
+    },
+    "retry.escalated": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "retry.skipped": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "retry.skipped_existing_artifact": {
+      "required": [],
+      "optional": []
+    },
+    "review.blocked": {
+      "required": [],
+      "optional": []
+    },
+    "review.constitutional_diff": {
+      "required": [],
+      "optional": [
+        "stage",
+        "violations"
+      ]
+    },
+    "review.formal_spec": {
+      "required": [],
+      "optional": []
+    },
+    "review.oversight_blocked": {
+      "required": [],
+      "optional": [
+        "issue"
+      ]
+    },
+    "review.rerun_requested": {
+      "required": [],
+      "optional": [
+        "agent",
+        "head_sha",
+        "pr"
+      ]
+    },
+    "review.risk_assessed": {
+      "required": [],
+      "optional": []
+    },
+    "review.spec_complete": {
+      "required": [],
+      "optional": []
+    },
+    "reward_aggregated": {
+      "required": [],
+      "optional": []
+    },
+    "risk.outcome": {
+      "required": [],
+      "optional": []
+    },
+    "rl.episode_recorded": {
+      "required": [],
+      "optional": []
+    },
+    "rl.weights_updated": {
+      "required": [],
+      "optional": [
+        "delta",
+        "success"
+      ]
+    },
+    "rootcause.learned": {
+      "required": [],
+      "optional": [
+        "category",
+        "confidence"
+      ]
+    },
+    "rootcause.platform_issue_created": {
+      "required": [],
+      "optional": [
+        "error_sig",
+        "issue"
+      ]
+    },
+    "scale.recommendation": {
+      "required": [],
+      "optional": [
+        "iterations",
+        "coverage",
+        "modules",
+        "has_recommendations"
+      ]
+    },
+    "session.briefing_generated": {
+      "required": [],
+      "optional": [
+        "briefing_file",
+        "iteration"
+      ]
+    },
+    "session.ended": {
+      "required": [
+        "session_id"
+      ],
+      "optional": [
+        "duration_s"
+      ]
+    },
+    "session.escalation_recommended": {
+      "required": [],
+      "optional": [
+        "restart",
+        "test_status"
+      ]
+    },
+    "session.progress_enhanced": {
+      "required": [],
+      "optional": [
+        "iteration",
+        "progress_file"
+      ]
+    },
+    "session.restart_capture": {
+      "required": [],
+      "optional": [
+        "iteration",
+        "restart",
+        "state_file"
+      ]
+    },
+    "session.restart_reason": {
+      "required": [],
+      "optional": [
+        "classification",
+        "iteration",
+        "reason"
+      ]
+    },
+    "session.started": {
+      "required": [
+        "session_id"
+      ],
+      "optional": [
+        "template",
+        "agents"
+      ]
+    },
+    "session.strategy_suggested": {
+      "required": [],
+      "optional": [
+        "priority",
+        "reason"
+      ]
+    },
+    "session.tracked_restart": {
+      "required": [],
+      "optional": [
+        "history_file",
+        "iteration",
+        "restart"
+      ]
+    },
+    "simulation.addressed": {
+      "required": [],
+      "optional": [
+        "count"
+      ]
+    },
+    "simulation.complete": {
+      "required": [],
+      "optional": [
+        "issue",
+        "concerns"
+      ]
+    },
+    "simulation.objection": {
+      "required": [],
+      "optional": [
+        "concern",
+        "persona",
+        "severity"
+      ]
+    },
+    "some.type": {
+      "required": [],
+      "optional": [
+        "key"
+      ]
+    },
+    "spec_compliance_checked": {
+      "required": [],
+      "optional": []
+    },
+    "spec_generated": {
+      "required": [],
+      "optional": []
+    },
+    "spec_generation.completed": {
+      "required": [],
+      "optional": []
+    },
+    "spec_updated": {
+      "required": [],
+      "optional": [
+        "file"
+      ]
+    },
+    "spec_verification.completed": {
+      "required": [],
+      "optional": []
+    },
+    "stage.artifact_miss": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue"
+      ]
+    },
+    "stage.completed": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id",
+        "duration_s",
+        "result"
+      ]
+    },
+    "stage.failed": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id",
+        "error",
+        "error_class",
+        "duration_s"
+      ]
+    },
+    "stage.skipped": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "reason"
+      ]
+    },
+    "stage.started": {
+      "required": [
+        "stage"
+      ],
+      "optional": [
+        "issue",
+        "job_id"
+      ]
+    },
+    "stage_delegated": {
+      "required": [],
+      "optional": []
+    },
+    "stall_detector.stalled": {
+      "required": [],
+      "optional": [
+        "age_seconds",
+        "job_id",
+        "stage"
+      ]
+    },
+    "strategic.cycle_complete": {
+      "required": [],
+      "optional": [
+        "issues_created",
+        "issues_skipped"
+      ]
+    },
+    "strategic.cycle_failed": {
+      "required": [],
+      "optional": [
+        "reason"
+      ]
+    },
+    "strategic.issue_created": {
+      "required": [],
+      "optional": [
+        "complexity",
+        "priority",
+        "title"
+      ]
+    },
+    "stream.capture_cycle": {
+      "required": [],
+      "optional": []
+    },
+    "stream.config_updated": {
+      "required": [],
+      "optional": [
+        "key",
+        "value"
+      ]
+    },
+    "stream.started": {
+      "required": [],
+      "optional": [
+        "pid",
+        "team"
+      ]
+    },
+    "stream.stopped": {
+      "required": [],
+      "optional": [
+        "pid"
+      ]
+    },
+    "tdd.tests_generated": {
+      "required": [],
+      "optional": []
+    },
+    "team_composed": {
+      "required": [],
+      "optional": []
+    },
+    "template.outcome": {
+      "required": [],
+      "optional": []
+    },
+    "test.completed": {
+      "required": [],
+      "optional": []
+    },
+    "test.escape": {
+      "required": [],
+      "optional": [
+        "msg"
+      ]
+    },
+    "test.event": {
+      "required": [],
+      "optional": [
+        "agent",
+        "count",
+        "key1",
+        "key2"
+      ]
+    },
+    "test.event2": {
+      "required": [],
+      "optional": [
+        "data"
+      ]
+    },
+    "test.holdout_failed": {
+      "required": [],
+      "optional": []
+    },
+    "test.mutation_complete": {
+      "required": [],
+      "optional": []
+    },
+    "test_holdout_sealed": {
+      "required": [],
+      "optional": []
+    },
+    "test_holdout_validated": {
+      "required": [],
+      "optional": []
+    },
+    "testopt.fail_fast": {
+      "required": [],
+      "optional": [
+        "duration",
+        "test"
+      ]
+    },
+    "testopt.recorded": {
+      "required": [],
+      "optional": [
+        "duration",
+        "result",
+        "test"
+      ]
+    },
+    "tracker.init": {
+      "required": [],
+      "optional": [
+        "provider"
+      ]
+    },
+    "tracker.notify": {
+      "required": [],
+      "optional": [
+        "event",
+        "github_issue",
+        "issue",
+        "provider"
+      ]
+    },
+    "triage_analyzed": {
+      "required": [],
+      "optional": [
+        "complexity",
+        "issue",
+        "risk",
+        "type"
+      ]
+    },
+    "triage_batch_complete": {
+      "required": [],
+      "optional": [
+        "issue_count"
+      ]
+    },
+    "triage_labeled": {
+      "required": [],
+      "optional": [
+        "issue",
+        "label_count"
+      ]
+    },
+    "triage_prioritized": {
+      "required": [],
+      "optional": [
+        "issue_count"
+      ]
+    },
+    "triage_report_generated": {
+      "required": [],
+      "optional": []
+    },
+    "triage_team_recommended": {
+      "required": [],
+      "optional": [
+        "agents",
+        "issue",
+        "source",
+        "template"
+      ]
+    },
+    "type": {
+      "required": [],
+      "optional": [
+        "k",
+        "k2"
+      ]
+    },
+    "ux_accessibility": {
+      "required": [],
+      "optional": [
+        "feature"
+      ]
+    },
+    "ux_notification": {
+      "required": [],
+      "optional": [
+        "message",
+        "type"
+      ]
+    },
+    "ux_reset": {
+      "required": [],
+      "optional": [
+        "scope"
+      ]
+    },
+    "ux_theme_changed": {
+      "required": [],
+      "optional": [
+        "theme"
+      ]
+    },
+    "vitals.adaptive_limit": {
+      "required": [],
+      "optional": []
     },
     "vitals.snapshot": {
       "required": [],
@@ -162,57 +3357,33 @@
         "error"
       ]
     },
-    "retry.classified": {
-      "required": ["stage"],
-      "optional": ["issue", "attempt", "error_class"]
-    },
-    "retry.escalated": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
-    },
-    "retry.skipped": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
-    },
-    "pipeline.anomaly": {
-      "required": ["stage"],
-      "optional": ["metric", "value", "severity"]
-    },
-    "pipeline.cost": {
+    "vote_tallied": {
       "required": [],
-      "optional": ["issue", "stage", "cost_usd", "model"]
+      "optional": []
     },
-    "pipeline.cleanup": {
+    "webhook.check_suite_requested": {
       "required": [],
-      "optional": ["issue", "reason"]
+      "optional": []
     },
-    "pipeline.comment_failed": {
+    "webhook.issue_labeled": {
       "required": [],
-      "optional": ["issue"]
+      "optional": [
+        "label"
+      ]
     },
-    "loop.iteration_start": {
-      "required": ["iteration"],
-      "optional": ["issue", "goal"]
-    },
-    "loop.iteration_complete": {
-      "required": ["iteration"],
-      "optional": ["issue", "test_result", "duration_s"]
-    },
-    "loop.restart": {
+    "webhook.pr_opened": {
       "required": [],
-      "optional": ["issue", "restart_count", "reason"]
+      "optional": []
     },
-    "loop.stuckness_detected": {
+    "webhook.pr_review_requested": {
       "required": [],
-      "optional": ["issue", "iteration", "reason"]
+      "optional": []
     },
-    "stage.skipped": {
-      "required": ["stage"],
-      "optional": ["issue", "reason"]
-    },
-    "stage.artifact_miss": {
-      "required": ["stage"],
-      "optional": ["issue"]
+    "webhook.push": {
+      "required": [],
+      "optional": [
+        "ref"
+      ]
     }
   }
 }
