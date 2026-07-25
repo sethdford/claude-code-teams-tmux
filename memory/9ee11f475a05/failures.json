@@ -6,7 +6,7 @@
       "root_cause": "sw-cleanup.sh test suite regressed: stale-heartbeat detection no longer outputs 'agent-1', so downstream summary counts ('Found', '--force' hint) that depend on detecting that heartbeat also fail to render",
       "fix": "Check the heartbeat directory globbing/matching logic in sw-cleanup.sh's stale heartbeat detection path (likely a path or age-comparison bug introduced recently) and restore output of the agent id and summary counts before merging",
       "seen_count": 13,
-      "last_seen": "2026-07-25T07:44:58Z",
+      "last_seen": "2026-07-25T09:19:33Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Invalid template errors correctly... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "regression detection subcommand emits malformed or non-JSON output, failing valid-JSON parse check",
       "fix": "ensure sw-feedback.sh regression detection path always emits well-formed JSON (e.g. via jq) even on empty/edge-case input",
-      "seen_count": 23,
-      "last_seen": "2026-07-25T09:51:44Z",
+      "seen_count": 26,
+      "last_seen": "2026-07-25T11:35:10Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline exit code default is 1 (failure)... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Test suite ran to completion with all tests passing (15, 12, 20, 17 tests across suites), but a downstream sw-hello-test.sh invocation or the overall test runner exited with the default failure code 1, likely from an unhandled early exit or exit code not being explicitly reset after the last suite",
       "fix": "Check sw-hello-test.sh and the test runner's final exit code handling — ensure it explicitly exits 0 on success rather than relying on the last command's exit status under set -e/pipefail",
-      "seen_count": 6,
-      "last_seen": "2026-07-25T09:02:09Z",
+      "seen_count": 5,
+      "last_seen": "2026-07-25T10:03:05Z",
       "category": "test_failure"
     },
     {
@@ -41,8 +41,8 @@
       "pattern": "mktemp: failed to create directory via template ‘/tmp/claude/sw-test-XXXXXX’: No such file or directory",
       "root_cause": "Test runner attempted mktemp under /tmp/claude which does not exist on this runner, so checkpoint/test sandbox setup aborted mid-suite",
       "fix": "Ensure /tmp/claude is created (mkdir -p) before test stage runs, or set TMPDIR to a guaranteed-writable directory in the test harness setup",
-      "seen_count": 2,
-      "last_seen": "2026-07-24T01:25:45Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-25T10:29:10Z",
       "category": "config"
     },
     {
@@ -75,11 +75,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m deploy failure detects regression",
-      "root_cause": "sw-github-deploy-test.sh rollback test asserts on a log line that changed/shifted after prior test output was interleaved, though tests report pass — mislabeled failure likely from harness misparsing combined output near 'sw-hello-test.sh' truncation",
-      "fix": "re-run sw-github-deploy-test.sh in isolation and check the actual exit code rather than log grep; ensure test output separators aren't truncated by the 200-line log window",
+      "root_cause": "Test suite log truncated/incomplete before final summary, likely masking a failure in a later or unlisted test file after sw-hello-test.sh",
+      "fix": "Re-run test suite with full output captured and check exit code of sw-hello-test.sh and subsequent suites",
       "seen_count": 1,
       "last_seen": "2026-07-24T09:23:26Z",
-      "category": "flaky"
+      "category": "unknown"
     }
   ]
 }
