@@ -125,8 +125,19 @@ r=$(helper_greet "Test")
 echo "LOOP_COMPLETE"
 HELTEST
         chmod +x src/helper.sh src/helper-test.sh 2>/dev/null || true
-        git add -A 2>/dev/null || true
-        git commit -m "feat: add helper functions" --allow-empty -q 2>/dev/null || true
+        # Only commit once we are off the base branch. The first JSON-mode call
+        # happens before intake cuts the feature branch, so committing here put
+        # src/helper.sh onto main itself — after which `git diff main...HEAD`
+        # contained nothing but .claude/ artifacts and the PR stage correctly
+        # refused to open a PR ("No real code changes detected"), failing the
+        # pipeline before it could emit pipeline.completed.
+        # Leaving the files uncommitted lets them ride onto the feature branch,
+        # where the next call commits them as a genuine code change.
+        _mock_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        if [[ "$_mock_branch" != "main" && "$_mock_branch" != "master" ]]; then
+            git add -A 2>/dev/null || true
+            git commit -m "feat: add helper functions" --allow-empty -q 2>/dev/null || true
+        fi
     fi
     echo '[{"result":"Implemented helper functions. All tests pass. LOOP_COMPLETE","usage":{"input_tokens":100,"output_tokens":50},"total_cost_usd":0.01}]'
 elif echo "$prompt" | grep -qiE "implementation plan|task checklist|create a.*plan"; then
