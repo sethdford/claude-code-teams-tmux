@@ -85,12 +85,25 @@ create_mock_claude() {
 prompt=""
 use_json=false
 while [[ $# -gt 0 ]]; do
+    _argc_before=$#
     case "$1" in
+        # Valueless flags consume ONE argument. They previously shared the
+        # `shift 2` branch with value-taking flags, and `shift 2` with a single
+        # argument remaining fails without shifting — so whenever sw-loop.sh
+        # passed --dangerously-skip-permissions last (it appends exactly that to
+        # its flag arrays), $# never reached 0 and this loop spun forever at
+        # 100% CPU. That was the sw-e2e-system-test hang.
+        --print|--verbose|--dangerously-skip-permissions) shift ;;
         -p) prompt="${2:-}"; shift 2 ;;
-        --output-format) [[ "$2" == "json" ]] && use_json=true; shift 2 ;;
-        --print|--model|--max-turns|--dangerously-skip-permissions) shift 2 ;;
+        --output-format) [[ "${2:-}" == "json" ]] && use_json=true; shift 2 ;;
+        --model|--max-turns) shift 2 ;;
         *) prompt="${1:-}"; shift ;;
     esac
+    # Guarantee progress. `shift 2` with one argument left fails and shifts
+    # nothing, so any value-taking flag arriving last would spin this loop
+    # forever. Comparing $# before/after is exact — it cannot false-positive
+    # the way comparing argument values would.
+    [[ $# -eq $_argc_before ]] && shift
 done
 
 if [[ "$use_json" == "true" ]]; then
