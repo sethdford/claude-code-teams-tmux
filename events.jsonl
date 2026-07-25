@@ -2057,3 +2057,19 @@
 {"ts":"2026-07-25T12:59:28Z","ts_epoch":1784984368,"type":"loop.context_efficiency","iteration":1,"raw_prompt_chars":18879,"trimmed_prompt_chars":18879,"trim_ratio":0.0,"budget_utilization":9.4,"budget_chars":200000,"job_id":"standard"}
 {"ts":"2026-07-25T12:59:32Z","ts_epoch":1784984372,"type":"pipeline.context_exhaustion","issue":811,"stage":"build"}
 {"ts":"2026-07-25T12:59:35Z","ts_epoch":1784984375,"type":"stage.failed","event_id":"evt-1784984375-2811142754","payload":"{\"stage\":\"build\",\"issue\":\"811\",\"timing\":\"14m 8s\"}"}
+{"ts":"2026-07-25T18:20:11Z","ts_epoch":1785003611,"type":"patrol.started","dry_run":"false"}
+{"ts":"2026-07-25T18:20:14Z","ts_epoch":1785003614,"type":"patrol.issue_created","check":"dead_code","count":1}
+{"ts":"2026-07-25T18:20:18Z","ts_epoch":1785003618,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly..","seen_count":27}
+{"ts":"2026-07-25T18:20:19Z","ts_epoch":1785003619,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Invalid template errors correctly.."}
+{"ts":"2026-07-25T18:20:19Z","ts_epoch":1785003619,"type":"patrol.finding","check":"recurring_failure","pattern":"[2moutput missing: --force[0m","seen_count":14}
+{"ts":"2026-07-25T18:20:20Z","ts_epoch":1785003620,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2moutput missing: --force[0m"}
+{"ts":"2026-07-25T18:20:20Z","ts_epoch":1785003620,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Pipeline exit code default is 1 (fa","seen_count":5}
+{"ts":"2026-07-25T18:20:21Z","ts_epoch":1785003621,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;0;212;255m▸[0m Pipeline exit code default is 1 (fa"}
+{"ts":"2026-07-25T18:20:21Z","ts_epoch":1785003621,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;74;222;128m✓[0m policy_get returns default when ke","seen_count":3}
+{"ts":"2026-07-25T18:20:22Z","ts_epoch":1785003622,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;74;222;128m✓[0m policy_get returns default when ke"}
+{"ts":"2026-07-25T18:20:22Z","ts_epoch":1785003622,"type":"patrol.finding","check":"recurring_failure","pattern":"mktemp: failed to create directory via template ‘/tmp/clau","seen_count":3}
+{"ts":"2026-07-25T18:20:23Z","ts_epoch":1785003623,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
+{"ts":"2026-07-25T18:20:23Z","ts_epoch":1785003623,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
+{"ts":"2026-07-25T18:20:23Z","ts_epoch":1785003623,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
+{"ts":"2026-07-25T18:20:23Z","ts_epoch":1785003623,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
+{"ts":"2026-07-25T18:20:23Z","ts_epoch":1785003623,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
