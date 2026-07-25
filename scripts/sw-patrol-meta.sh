@@ -627,7 +627,7 @@ patrol_meta_learn() {
 
 # ─── Batch Improve: Process Multiple Issues in Parallel ─────────────────────
 patrol_meta_batch_improve() {
-    local -a issues_to_fix
+    local -a issues_to_fix=()
     local count=0
 
     info "  Collecting recent meta-patrol issues to fix..."

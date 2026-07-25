@@ -66,19 +66,19 @@ cmd_metrics() {
 
     # Template counts
     # shellcheck disable=SC2034
-    declare -a templates
+    declare -a templates=()
     # shellcheck disable=SC2034
-    declare -a template_counts
+    declare -a template_counts=()
 
     # Stage timing
     # shellcheck disable=SC2034
-    declare -a stages
-    declare -a stage_durations
+    declare -a stages=()
+    declare -a stage_durations=()
 
     # Model costs
     # shellcheck disable=SC2034
-    declare -a models
-    declare -a model_costs
+    declare -a models=()
+    declare -a model_costs=()
 
     # Parse events.jsonl
     if [[ -f "$EVENTS_FILE" ]]; then
