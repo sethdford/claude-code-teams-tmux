@@ -408,8 +408,16 @@ scan_platform_refactor() {
     grep -rnE "hardcoded|Hardcoded|Fallback:|fallback:|TODO|FIXME|HACK|KLUDGE" "$scripts_dir" --include="*.sh" 2>/dev/null > "$findings_raw" || true
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        # shellcheck disable=SC2318
-        local f="${line%%:*}" rest="${line#*:}" ln="${rest%%:*}"
+        # Split across statements: in a single `local a=… b="${a}"`, bash
+        # declares every name first and only then evaluates the right-hand
+        # sides, so "$rest" resolved to the newly-declared *unset* local and
+        # aborted the function with "rest: unbound variable" under `set -u`.
+        # The loop redirects stderr to /dev/null, so this failed silently and
+        # `hygiene platform-refactor` just exited 1 with no message.
+        # SC2318 is exactly this warning — it was suppressed here rather than fixed.
+        local f="${line%%:*}"
+        local rest="${line#*:}"
+        local ln="${rest%%:*}"
         ln="${ln:-0}"
         printf '{"file":"%s","line":%s}\n' "${f#$REPO_DIR/}" "$ln"
     done < "$findings_raw" > "$findings_file.raw" 2>/dev/null || true

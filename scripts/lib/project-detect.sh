@@ -510,7 +510,7 @@ project_recommend_template() {
         \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
            -o -name "*.py" -o -name "*.rb" -o -name "*.go" -o -name "*.rs" -o -name "*.java" \) \
         -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" \
-        -not -path "*/target/*" 2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+        -not -path "*/target/*" -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
 
     # Heuristics for template recommendation
     if [[ "$src_file_count" -lt 20 && "$test_file_count" -lt 5 && "$has_deploy" == "false" ]]; then
