@@ -500,16 +500,25 @@ test_plugin_direct_clone_fallback() {
 
     # Mock git to pretend cloning works (create plugin dirs)
     mkdir -p "$TEST_TEMP_DIR/mock-bin"
-    cat > "$TEST_TEMP_DIR/mock-bin/git" <<'GITEOF'
+    # Resolve the real git NOW, while mock-bin is not yet on PATH, and bake the
+    # absolute path into the mock. The passthrough used to be `command git "$@"`,
+    # but `command` still resolves through PATH — and the mock's own directory is
+    # prepended to PATH for the init run, so every non-clone git call re-executed
+    # the mock. That recursion never terminated: it hung sw-init-test until the
+    # harness killed it (rc=137 at 420s) and would hang CI indefinitely, since CI
+    # had no per-suite timeout.
+    local real_git
+    real_git="$(command -v git)"
+    cat > "$TEST_TEMP_DIR/mock-bin/git" <<GITEOF
 #!/usr/bin/env bash
 # Mock git: for clone, just mkdir the target
-if [[ "${1:-}" == "clone" ]]; then
-    target="${3:-$2}"
-    mkdir -p "$target"
+if [[ "\${1:-}" == "clone" ]]; then
+    target="\${3:-\$2}"
+    mkdir -p "\$target"
     exit 0
 fi
-# Pass through for other git commands
-command git "$@"
+# Pass through to the real git by absolute path — never via PATH lookup.
+exec "$real_git" "\$@"
 GITEOF
     chmod +x "$TEST_TEMP_DIR/mock-bin/git"
 
