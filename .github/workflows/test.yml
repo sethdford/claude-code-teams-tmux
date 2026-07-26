@@ -59,7 +59,11 @@ jobs:
 
       - name: Install dependencies
         if: env.SKIP_CLAUDE != 'true'
-        run: sudo apt-get update && sudo apt-get install -y tmux jq
+        # bubblewrap + socat are the Claude CLI's sandbox dependencies. Without
+        # them it prints "Sandbox disabled: … bwrap not installed, socat not
+        # installed" and exits 1, which was this job's only failure once the
+        # exit-code reporting bug was fixed (it previously claimed "exit 0").
+        run: sudo apt-get update && sudo apt-get install -y tmux jq bubblewrap socat
 
       - name: Install Claude Code CLI
         if: env.SKIP_CLAUDE != 'true'
@@ -103,7 +107,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        # Pinned, not apt: whatever version the runner image ships drifts from
+        # what developers run locally, and shellcheck changes its findings
+        # between releases. apt's build reported SC2120 on functions that take
+        # optional `${1:-default}` arguments; 0.11.0 correctly does not. That
+        # skew is the classic "passes locally, fails only in CI".
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+        run: |
+          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" \
+            | tar -xJf - --strip-components=1 -C /usr/local/bin "shellcheck-${SHELLCHECK_VERSION}/shellcheck"
+          shellcheck --version
 
       - name: Lint scripts
         # Warning severity is enforced, minus three codes that are structural to
@@ -113,9 +127,15 @@ jobs:
         #   SC1090 — "can't follow non-constant source": every lib load is
         #            "$SCRIPT_DIR/lib/x.sh" by design.
         #   SC2148 — "no shebang": lib files are sourced, never executed.
+        #   SC2119/SC2120 — "references arguments, but none are ever passed":
+        #            fires on functions with optional `${1:-default}` params,
+        #            which is a deliberate pattern here (gen_agent_id,
+        #            optimize_learn_risk_keywords). 0.11.0 no longer reports
+        #            these; the codes stay excluded so an older shellcheck
+        #            cannot resurrect them.
         # Everything else is a real finding and blocks. This gate had been failing
         # continuously since 2026-04-05 on 89 findings; the 15 genuine ones are
         # fixed (a real unbound-variable bug among them) and the gate now passes,
         # so it can actually block regressions instead of being ignored.
         run: |
-          shellcheck -x -S warning -e SC2034,SC1090,SC2148 scripts/sw scripts/sw-*.sh install.sh
+          shellcheck -x -S warning -e SC2034,SC1090,SC2148,SC2119,SC2120 scripts/sw scripts/sw-*.sh install.sh

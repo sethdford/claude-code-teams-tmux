@@ -165,6 +165,23 @@ total=$(wc -l < "$RESULTS_DIR/results.tsv" | tr -d ' ')
 
 printf "\n${DIM}  ══════════════════════════════════════════${RESET}\n\n"
 if [[ $failed -gt 0 || $timedout -gt 0 ]]; then
+    # Echo the tail of each failing suite's log. The per-suite logs live in a
+    # temp dir the EXIT trap removes, so on CI the summary was the only thing
+    # that survived — you could see WHICH suites failed but never why, which
+    # made a Linux-only failure impossible to diagnose without pushing commits
+    # to probe. $FAIL_LOG_LINES=0 suppresses this for a quiet local run.
+    fail_log_lines="${FAIL_LOG_LINES:-25}"
+    if [[ "$fail_log_lines" -gt 0 ]]; then
+        while IFS=$'\t' read -r fname fstatus _; do
+            [[ "$fstatus" == "PASS" ]] && continue
+            printf "\n${RED}${BOLD}━━━ %s (%s) — last %s lines ━━━${RESET}\n" \
+                "$fname" "$fstatus" "$fail_log_lines"
+            tail -n "$fail_log_lines" "$RESULTS_DIR/logs/$fname.log" 2>/dev/null \
+                | sed 's/^/    /' || printf "    (no log captured)\n"
+        done < "$RESULTS_DIR/results.tsv"
+        printf "\n"
+    fi
+
     printf "  ${RED}${BOLD}FAILING SUITES${RESET}\n"
     awk -F'\t' '$2!="PASS" {printf "    %-46s %s\n", $1, $2}' "$RESULTS_DIR/results.tsv"
     printf "\n"
