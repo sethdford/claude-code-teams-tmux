@@ -36,8 +36,8 @@ jobs:
         # applies a per-suite timeout — previously a single hung suite could
         # stall this job until the workflow-level limit killed it with no
         # indication of which suite was responsible.
-        run: bash scripts/sw-test-all.sh --timeout 300
-          echo "All suites passed."
+        run: |
+          bash scripts/sw-test-all.sh --timeout 300
 
   # Budget-limited real-Claude smoke (~$0.25/PR); runs only when Claude secret is set
   integration-claude:
@@ -106,5 +106,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Lint scripts
+        # Warning severity is enforced, minus three codes that are structural to
+        # this codebase rather than defects:
+        #   SC2034 — "appears unused": scripts define config vars that are read
+        #            by other scripts after `source`, which shellcheck cannot see.
+        #   SC1090 — "can't follow non-constant source": every lib load is
+        #            "$SCRIPT_DIR/lib/x.sh" by design.
+        #   SC2148 — "no shebang": lib files are sourced, never executed.
+        # Everything else is a real finding and blocks. This gate had been failing
+        # continuously since 2026-04-05 on 89 findings; the 15 genuine ones are
+        # fixed (a real unbound-variable bug among them) and the gate now passes,
+        # so it can actually block regressions instead of being ignored.
         run: |
-          shellcheck -x -S warning scripts/sw scripts/sw-*.sh install.sh
+          shellcheck -x -S warning -e SC2034,SC1090,SC2148 scripts/sw scripts/sw-*.sh install.sh

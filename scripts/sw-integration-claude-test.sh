@@ -42,8 +42,16 @@ run_claude() {
         claude -p "Reply with exactly: OK" --max-turns 1 2>"$err_file" | head -c 4096 > "$out_file"
     fi
 }
-if ! run_claude; then
-    exit_code=$?
+# `if ! run_claude; then exit_code=$?` captures the status of the `!` negation,
+# which is 0 whenever the branch is taken — so every failure reported
+# "Claude call failed (exit 0)" and the real cause was unrecoverable. Run it
+# outside the condition and read $? directly.
+set +e
+run_claude
+exit_code=$?
+set -e
+
+if [[ "$exit_code" -ne 0 ]]; then
     if [[ "$exit_code" -eq 124 ]]; then
         echo "FAIL: Claude smoke timed out after ${SCRIPT_TIMEOUT}s"
     else

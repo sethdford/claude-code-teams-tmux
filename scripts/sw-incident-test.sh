@@ -300,7 +300,15 @@ INC2EOF
 
 # Run correlation engine (it needs full incident dir setup)
 set +e
-correlations=$(HOME="$HOME" SCRIPT_DIR="$SCRIPT_DIR" bash -c "
+# The env-assignment prefix (HOME=… SCRIPT_DIR=… bash -c "…") reads as though
+# it feeds the script body, but the body is a double-quoted string the PARENT
+# expands before the child ever starts — the prefix only affects the child's
+# environment, never the interpolation. It happens to work because both values
+# are identical, but it is exactly the confusion SC2097/SC2098 flag. Exporting
+# inside the child says what is meant, with the same effect.
+correlations=$(bash -c "
+    export HOME='$HOME'
+    export SCRIPT_DIR='$SCRIPT_DIR'
     export INCIDENTS_DIR='$HOME/.shipwright/incidents'
     source \"$SCRIPT_DIR/sw-incident.sh\" 2>/dev/null || true
     incident_correlate 300 2>/dev/null

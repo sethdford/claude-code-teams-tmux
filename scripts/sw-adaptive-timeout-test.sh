@@ -8,7 +8,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_DIR=$(mktemp -d)
-trap "rm -rf '$TEST_DIR'" EXIT
+trap 'rm -rf "$TEST_DIR"' EXIT
 
 # Mock environment
 export HOME="$TEST_DIR"
