@@ -389,15 +389,36 @@ _smart_effort() {
         fi
     fi
 
-    # 3. Intelligent defaults (same as before, but now overridable)
+    # 3. Intelligent defaults (overridable via config or EFFORT_LEVEL_OVERRIDE)
+    #
+    # Effort is spent ASYMMETRICALLY, not uniformly. Two things drive the shape:
+    #
+    #   - Coding and agentic work is where effort pays off most. `xhigh` is the
+    #     recommended setting for those and is what Claude Code itself defaults
+    #     to; `build` previously sat at `medium`, which underspent on the one
+    #     stage that writes the code.
+    #   - Refinement and review dominate agentic token cost, and a single
+    #     high-effort review pass beats several cheaper ones. So `review` and
+    #     `compound_quality` go to `xhigh` rather than adding more rounds.
+    #
+    # Mechanical stages stay at `low` deliberately — lower effort there means
+    # fewer, more consolidated tool calls and less preamble, which is what you
+    # want from intake/pr/merge. `max` is intentionally not a default anywhere:
+    # it shows diminishing returns and can overthink. Reach for it per-run via
+    # EFFORT_LEVEL_OVERRIDE when correctness matters more than cost.
+    #
+    # spec_generation/spec_verification are listed explicitly because they were
+    # falling through to the `medium` catch-all while the docs claimed `high`.
     case "$stage" in
-        intake)              echo "low" ;;
-        plan|design)         echo "high" ;;
-        build|test)          echo "medium" ;;
-        review|compound_quality) echo "high" ;;
-        pr|merge)            echo "low" ;;
+        intake)                  echo "low" ;;
+        plan|design)             echo "high" ;;
+        spec_generation|spec_verification) echo "high" ;;
+        build)                   echo "xhigh" ;;
+        test)                    echo "medium" ;;
+        review|compound_quality) echo "xhigh" ;;
+        pr|merge)                echo "low" ;;
         deploy|validate|monitor) echo "medium" ;;
-        *)                   echo "medium" ;;
+        *)                       echo "medium" ;;
     esac
 }
 

@@ -233,12 +233,27 @@ All `claude` CLI invocations in the pipeline support these flags:
 
 Per-stage effort levels are config-driven via `daemon-config.json` `effort_levels` section. CLI `--effort` overrides config.
 
-| Stage                                  | Default Effort | Rationale                   |
-| -------------------------------------- | -------------- | --------------------------- |
-| intake, pr, merge                      | low            | Mechanical/formatting tasks |
-| build, test, deploy, validate, monitor | medium         | Standard development work   |
-| plan, design, review, compound_quality | high           | Complex reasoning required  |
-| spec_generation, spec_verification     | high           | Specification analysis      |
+Effort is spent **asymmetrically**. Coding and agentic work is where it pays
+off most, and refinement/review dominates agentic token cost — so `build`,
+`review`, and `compound_quality` get the deep setting, while mechanical stages
+stay cheap (lower effort there means fewer, more consolidated tool calls and
+less preamble, which is what you want from intake/pr/merge). One `xhigh` review
+pass is preferred over adding more review rounds.
+
+| Stage                            | Default Effort | Rationale                                  |
+| -------------------------------- | -------------- | ------------------------------------------ |
+| intake, pr, merge                | low            | Mechanical/formatting tasks                |
+| test, deploy, validate, monitor  | medium         | Standard development work                  |
+| plan, design                     | high           | Complex reasoning, not code authoring      |
+| spec_generation, spec_verification | high         | Specification analysis                     |
+| build                            | xhigh          | Agentic coding — the stage that writes code |
+| review, compound_quality         | xhigh          | One deep pass beats several cheaper rounds |
+
+`max` is deliberately not a default anywhere: it shows diminishing returns and
+can overthink. Reach for it per-run via `EFFORT_LEVEL_OVERRIDE` when
+correctness matters more than cost. The ladder is pinned by tests in
+`scripts/sw-lib-compat-test.sh`, which also assert every stage maps to a level
+the `claude` CLI actually accepts.
 
 Override globally via CLI: `--effort high` or via `daemon-config.json`:
 

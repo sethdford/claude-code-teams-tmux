@@ -294,4 +294,64 @@ sed_i 's/hello/goodbye/' "$TEST_TEMP_DIR/sed_test"
 result=$(cat "$TEST_TEMP_DIR/sed_test")
 assert_eq "sed_i replaces in-place" "goodbye world" "$result"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# _smart_effort
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "_smart_effort"
+
+# Isolate from the developer's own environment and repo config: both an
+# override and a daemon-config effort_levels block outrank the built-in
+# defaults, so leaving either set would make these assertions pass or fail
+# based on the machine rather than the code.
+unset EFFORT_LEVEL_OVERRIDE
+DAEMON_CONFIG="$TEST_TEMP_DIR/no-such-daemon-config.json"
+export DAEMON_CONFIG
+
+# Effort is spent asymmetrically — the point of these assertions is that the
+# expensive levels land on the stages that write and review code, and the cheap
+# level lands on the mechanical ones. A uniform ladder would pass a "returns a
+# valid level" test while defeating the whole design.
+assert_eq "build runs at xhigh (agentic coding)"        "xhigh"  "$(_smart_effort build)"
+assert_eq "review runs at xhigh (one deep pass)"        "xhigh"  "$(_smart_effort review)"
+assert_eq "compound_quality runs at xhigh"              "xhigh"  "$(_smart_effort compound_quality)"
+assert_eq "plan stays high"                             "high"   "$(_smart_effort plan)"
+assert_eq "design stays high"                           "high"   "$(_smart_effort design)"
+assert_eq "intake stays low (mechanical)"               "low"    "$(_smart_effort intake)"
+assert_eq "pr stays low (mechanical)"                   "low"    "$(_smart_effort pr)"
+assert_eq "merge stays low (mechanical)"                "low"    "$(_smart_effort merge)"
+assert_eq "test stays medium"                           "medium" "$(_smart_effort test)"
+
+# These two were documented as high but fell through to the medium catch-all.
+assert_eq "spec_generation is high, not the catch-all"   "high"  "$(_smart_effort spec_generation)"
+assert_eq "spec_verification is high, not the catch-all" "high"  "$(_smart_effort spec_verification)"
+
+assert_eq "unknown stage falls back to medium" "medium" "$(_smart_effort some_unknown_stage)"
+
+# Every level emitted must be one the `claude` CLI actually accepts — a typo
+# here would fail at invocation time in the pipeline, not here.
+effort_invalid=0
+for _stage in intake plan design spec_generation build test review \
+              compound_quality spec_verification pr merge deploy validate \
+              monitor unknown_stage; do
+    case "$(_smart_effort "$_stage")" in
+        low|medium|high|xhigh|max) ;;
+        *) effort_invalid=$((effort_invalid + 1)) ;;
+    esac
+done
+assert_eq "every stage maps to a CLI-valid effort level" "0" "$effort_invalid"
+
+# Override must win over the built-in defaults.
+EFFORT_LEVEL_OVERRIDE=low
+export EFFORT_LEVEL_OVERRIDE
+assert_eq "EFFORT_LEVEL_OVERRIDE outranks stage default" "low" "$(_smart_effort build)"
+unset EFFORT_LEVEL_OVERRIDE
+
+# Config must win over the built-in defaults (and lose to the override above).
+cat > "$TEST_TEMP_DIR/daemon-config.json" <<'CFG'
+{"effort_levels": {"build": "medium"}}
+CFG
+DAEMON_CONFIG="$TEST_TEMP_DIR/daemon-config.json"
+assert_eq "daemon-config effort_levels outranks stage default" "medium" "$(_smart_effort build)"
+assert_eq "stage absent from config still uses default" "xhigh" "$(_smart_effort review)"
+
 print_test_results

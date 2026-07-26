@@ -56,7 +56,25 @@ if [[ "$exit_code" -ne 0 ]]; then
         echo "FAIL: Claude smoke timed out after ${SCRIPT_TIMEOUT}s"
     else
         echo "FAIL: Claude call failed (exit $exit_code)"
-        cat "$err_file" >&2
+        # Dump BOTH streams. The CLI reports most failures — expired
+        # credentials, rate limits, bad flags — on stdout, so printing only
+        # stderr left CI showing a bare "exit 1" with nothing to act on. That
+        # is what made this job's real cause invisible across several runs and
+        # sent an earlier fix after the sandbox warning, which turned out to be
+        # unrelated noise rather than the failure.
+        if [[ -s "$err_file" ]]; then
+            echo "--- stderr ---" >&2
+            cat "$err_file" >&2
+        fi
+        if [[ -s "$out_file" ]]; then
+            echo "--- stdout ---" >&2
+            cat "$out_file" >&2
+        fi
+        if [[ ! -s "$err_file" && ! -s "$out_file" ]]; then
+            echo "--- both streams empty; the CLI exited without reporting a reason ---" >&2
+            echo "Most likely an auth problem: check that CLAUDE_CODE_OAUTH_TOKEN is" >&2
+            echo "still valid (they expire) or that ANTHROPIC_API_KEY is set." >&2
+        fi
     fi
     exit 1
 fi
