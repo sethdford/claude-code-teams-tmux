@@ -71,7 +71,19 @@ jobs:
 
       - name: Run budget-limited Claude integration smoke
         if: env.SKIP_CLAUDE != 'true'
-        run: bash scripts/sw-integration-claude-test.sh
+        # The CLI resolves ANTHROPIC_API_KEY *before* CLAUDE_CODE_OAUTH_TOKEN,
+        # so exporting both lets a stale key shadow a working token — which is
+        # exactly what happened here: the job failed "Invalid API key" while
+        # claude-review, which uses the OAuth token directly, passed on the
+        # same commit. Setting the key to '' does not help; an empty value
+        # still wins its precedence slot and authenticates as an empty key. It
+        # has to be genuinely unset, so prefer the OAuth token when both exist
+        # and fall back to the key only when there is no token.
+        run: |
+          if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
+            unset ANTHROPIC_API_KEY
+          fi
+          bash scripts/sw-integration-claude-test.sh
 
   # Validate integration-claude skip path when no secret (script must exit 0 and skip)
   integration-claude-skip:
