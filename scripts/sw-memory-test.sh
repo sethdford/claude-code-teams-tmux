@@ -390,7 +390,11 @@ test_memory_forget() {
 # 10. Cost calculation for each model
 # ──────────────────────────────────────────────────────────────────────────────
 test_cost_calculation() {
-    # opus: 1M input ($15) + 1M output ($75) = $90
+    # Rates track the current generation. Opus was $15/$75 (Opus 4.0/4.1-era)
+    # and Haiku $0.25/$1.25 (Haiku 3.5-era); both overstated or understated
+    # spend once routing moved to Opus 4.5+ / Haiku 4.5.
+    #
+    # opus: 1M input ($5) + 1M output ($25) = $30
     local opus_cost
     opus_cost=$(bash "$COST_SCRIPT" calculate 1000000 1000000 opus 2>&1)
 
@@ -398,7 +402,7 @@ test_cost_calculation() {
     local sonnet_cost
     sonnet_cost=$(bash "$COST_SCRIPT" calculate 1000000 1000000 sonnet 2>&1)
 
-    # haiku: 1M input ($0.25) + 1M output ($1.25) = $1.50
+    # haiku: 1M input ($1) + 1M output ($5) = $6
     local haiku_cost
     haiku_cost=$(bash "$COST_SCRIPT" calculate 1000000 1000000 haiku 2>&1)
 
@@ -407,8 +411,8 @@ test_cost_calculation() {
     sonnet_cost=$(echo "$sonnet_cost" | tr -d '[:space:]')
     haiku_cost=$(echo "$haiku_cost" | tr -d '[:space:]')
 
-    if [[ "$opus_cost" != "90.0000" ]]; then
-        echo -e "    ${RED}✗${RESET} Opus cost: expected 90.0000, got ${opus_cost}"
+    if [[ "$opus_cost" != "30.0000" ]]; then
+        echo -e "    ${RED}✗${RESET} Opus cost: expected 30.0000, got ${opus_cost}"
         return 1
     fi
 
@@ -417,10 +421,33 @@ test_cost_calculation() {
         return 1
     fi
 
-    if [[ "$haiku_cost" != "1.5000" ]]; then
-        echo -e "    ${RED}✗${RESET} Haiku cost: expected 1.5000, got ${haiku_cost}"
+    if [[ "$haiku_cost" != "6.0000" ]]; then
+        echo -e "    ${RED}✗${RESET} Haiku cost: expected 6.0000, got ${haiku_cost}"
         return 1
     fi
+
+    # Full model IDs must route to the same tier as the bare alias. This is the
+    # case that actually broke: cost_calculate matched on `claude-opus-4*`, so
+    # `claude-opus-5` missed every tier and silently fell through to the
+    # sonnet-priced catch-all — understating Opus spend with no error. The
+    # previous generation is asserted too, because historical costs.json
+    # entries still name those models and must not be repriced.
+    local id expected actual
+    for pair in \
+        "claude-opus-5:30.0000" \
+        "claude-opus-4-6:30.0000" \
+        "claude-sonnet-5:18.0000" \
+        "claude-sonnet-4-6:18.0000" \
+        "claude-haiku-4-5:6.0000"
+    do
+        id="${pair%%:*}"
+        expected="${pair##*:}"
+        actual=$(bash "$COST_SCRIPT" calculate 1000000 1000000 "$id" 2>&1 | tr -d '[:space:]')
+        if [[ "$actual" != "$expected" ]]; then
+            echo -e "    ${RED}✗${RESET} ${id}: expected ${expected}, got ${actual}"
+            return 1
+        fi
+    done
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
