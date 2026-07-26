@@ -32,8 +32,17 @@ source "$SCRIPT_DIR/lib/dod-scorecard.sh"
 print_test_section "check_pr_size_score"
 
 # Mock git diff --stat to return 247 lines
+# `rev-parse` must be mocked too, not just `--stat`. check_pr_size_score guards
+# the whole diff on `git rev-parse \"\$base_branch\"`, so an unmocked rev-parse
+# falls through to real git — and CI checks out a shallow clone of the PR ref
+# where `main` does not exist locally. The guard then fails, the diff never
+# runs, and the score comes back 0. That is why this suite passed on pushes to
+# main (where the ref resolves) and failed on every PR. The mock further down
+# this file already handles rev-parse; these two were just missing it.
 mock_binary git "
-if [[ \"\$2\" == \"--stat\" ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$2\" == \"--stat\" ]]; then
     echo ' file1.js  | 100 +++'
     echo ' file2.js  | 100 +++'
     echo ' file3.js  | 47 ++++'
@@ -57,7 +66,9 @@ assert_eq "PR size limit is 500" "500" "$size_limit"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 mock_binary git "
-if [[ \"\$2\" == \"--stat\" ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$2\" == \"--stat\" ]]; then
     echo ' file1.js  | 600 ++++++'
     echo ' 1 file changed, 600 insertions(+)'
 else
