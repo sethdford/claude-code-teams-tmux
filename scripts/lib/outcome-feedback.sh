@@ -355,10 +355,20 @@ generate_learned_rules() {
         local count
         count=$(echo "$pattern" | jq -r '.count')
 
-        # Compute confidence (count / total_prs, capped at 0.95)
-        # For now, use count-based confidence (3 = 0.60, 5 = 0.80, 10 = 0.95)
+        # Compute confidence: count/20, capped at 0.95 from 10 occurrences up.
+        #
+        # This used `bc` with `if (...) then ... else ... end`, which is not bc
+        # syntax — bc has no `then`/`end` keywords. bc reported a parse error
+        # and, critically, still exited 0, so the `|| echo "0.6"` fallback never
+        # fired and $confidence came back EMPTY on both platforms. jq then hit
+        # `"" | tonumber`, no rule was written, and the profile was left
+        # unparseable ("Expected JSON value while parsing ''").
+        #
+        # awk does the arithmetic in-process: no bc dependency, no reliance on
+        # an exit code, and a guaranteed numeric result.
         local confidence
-        confidence=$(echo "scale=2; if ($count >= 10) then 0.95 else ($count / 20) end" | bc 2>/dev/null || echo "0.6")
+        confidence=$(awk -v c="$count" 'BEGIN { printf "%.2f", (c >= 10 ? 0.95 : c / 20) }' 2>/dev/null)
+        [[ "$confidence" =~ ^[0-9]+\.[0-9]+$ ]] || confidence="0.60"
 
         # Generate rule text based on category
         local rule_text

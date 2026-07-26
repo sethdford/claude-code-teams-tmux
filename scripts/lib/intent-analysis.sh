@@ -299,6 +299,32 @@ ${arch_rules}
     echo "${plan_prompt}${injection}"
 }
 
+# Print the failure-mode section: its heading through the next TOP-LEVEL
+# heading, keeping any `###` subsections inside it.
+#
+# Three call sites previously inlined
+#     sed -n '/[Ff]ailure [Mm]ode/,/^##\|^#[^#]/p'
+# which carried two bugs that cancelled out on macOS and both bit on Linux:
+#   * `\|` alternation is a GNU sed extension. BSD sed reads it literally, so
+#     the end pattern never matched and sed printed to end of file — quietly
+#     scooping up later sections' bullets and inflating the item count.
+#   * `^##` also matches `###`, so under GNU sed the range ended at the first
+#     `### subsection` *inside* the analysis, yielding zero items and failing
+#     validation for plans that were perfectly adequate.
+# Hence "passes on macOS, fails on Linux" for the same input. Matching `## ` /
+# `# ` with a required following space keeps subsections in.
+#
+# Interval expressions like {1,2} are unreliable across awk variants (Ubuntu
+# defaults to mawk), so the two heading levels are spelled out.
+# Usage: _fma_section "$plan_file"
+_fma_section() {
+    awk '
+        !started && /[Ff]ailure [Mm]ode/      { started = 1; print; next }
+        started && (/^## [^#]/ || /^# [^#]/)  { exit }
+        started                               { print }
+    ' "$1" 2>/dev/null || true
+}
+
 # Validate plan has adequate failure mode analysis
 # Returns 0 if valid, 1 if missing/shallow
 # Checks: section exists, at least 3 items, project-specific references
@@ -313,9 +339,8 @@ validate_failure_modes() {
         return 1  # Section not found
     fi
 
-    # Extract the section
     local fma_section
-    fma_section=$(sed -n '/[Ff]ailure [Mm]ode/,/^##\|^#[^#]/p' "$plan_file" 2>/dev/null || true)
+    fma_section=$(_fma_section "$plan_file")
 
     # Count items (lines starting with 1., 2., 3., etc. or bullet points)
     local item_count
@@ -343,7 +368,9 @@ validate_failure_modes() {
 
     # Also accept if failure modes reference specific project concepts from plan
     # (e.g., mentions of specific modules/patterns discussed in the plan itself)
-    if echo "$fma_section" | grep -qi "dependency\|rollback\|revert\|transaction"; then
+    # -E, not BRE: `\|` alternation is a GNU grep extension and is read
+    # literally by BSD grep, so this matched nothing on macOS.
+    if echo "$fma_section" | grep -qiE 'dependency|rollback|revert|transaction'; then
         has_specificity=true
     fi
 
@@ -361,7 +388,7 @@ extract_failure_modes() {
 
     [[ ! -f "$plan_file" ]] && return 1
 
-    sed -n '/[Ff]ailure [Mm]ode/,/^##\|^#[^#]/p' "$plan_file" 2>/dev/null | head -50 || true
+    _fma_section "$plan_file" | head -50
 }
 
 # Helper to return a validation status for plan rejection
@@ -382,7 +409,7 @@ get_failure_mode_validation_status() {
     fi
 
     local fma_section
-    fma_section=$(sed -n '/[Ff]ailure [Mm]ode/,/^##\|^#[^#]/p' "$plan_file" 2>/dev/null || true)
+    fma_section=$(_fma_section "$plan_file")
 
     # Count items
     local item_count

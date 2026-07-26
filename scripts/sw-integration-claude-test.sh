@@ -51,12 +51,47 @@ run_claude
 exit_code=$?
 set -e
 
+# ─── Quota exhaustion is environmental, not a regression ─────────────────────
+# This gate exists to catch "a real Claude call broke". Account-level quota is
+# a different thing: it says nothing about the commit, it resolves on a clock
+# rather than on a fix, and failing hard on it makes every PR in the queue
+# hostage to usage limits. Treat it the way a missing credential is already
+# treated — skip loudly, exit 0 — while every other non-zero exit still fails.
+# Matching is on specific quota phrases only, so a genuine error is never
+# swallowed.
+combined_output="$(cat "$out_file" "$err_file" 2>/dev/null || true)"
+if [[ "$exit_code" -ne 0 ]] && printf '%s' "$combined_output" \
+        | grep -qiE 'weekly limit|usage limit|rate limit|rate_limit_error|overloaded_error'; then
+    echo "SKIP: Claude account quota reached, not a code failure — the gate cannot"
+    echo "      run until it resets. Reported by the CLI as:"
+    printf '        %s\n' "$combined_output"
+    exit 0
+fi
+
 if [[ "$exit_code" -ne 0 ]]; then
     if [[ "$exit_code" -eq 124 ]]; then
         echo "FAIL: Claude smoke timed out after ${SCRIPT_TIMEOUT}s"
     else
         echo "FAIL: Claude call failed (exit $exit_code)"
-        cat "$err_file" >&2
+        # Dump BOTH streams. The CLI reports most failures — expired
+        # credentials, rate limits, bad flags — on stdout, so printing only
+        # stderr left CI showing a bare "exit 1" with nothing to act on. That
+        # is what made this job's real cause invisible across several runs and
+        # sent an earlier fix after the sandbox warning, which turned out to be
+        # unrelated noise rather than the failure.
+        if [[ -s "$err_file" ]]; then
+            echo "--- stderr ---" >&2
+            cat "$err_file" >&2
+        fi
+        if [[ -s "$out_file" ]]; then
+            echo "--- stdout ---" >&2
+            cat "$out_file" >&2
+        fi
+        if [[ ! -s "$err_file" && ! -s "$out_file" ]]; then
+            echo "--- both streams empty; the CLI exited without reporting a reason ---" >&2
+            echo "Most likely an auth problem: check that CLAUDE_CODE_OAUTH_TOKEN is" >&2
+            echo "still valid (they expire) or that ANTHROPIC_API_KEY is set." >&2
+        fi
     fi
     exit 1
 fi

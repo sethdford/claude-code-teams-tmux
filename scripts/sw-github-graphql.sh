@@ -130,7 +130,11 @@ _gh_cache_stats() {
         count=$((count + 1))
         local size
         if [[ "$(uname)" == "Darwin" ]]; then
-            size=$(stat -f '%z' "$f" 2>/dev/null || echo "0")
+            # BSD `-f` is the output format; GNU reads it as --file-system, so
+            # the BSD-only form yields filesystem text or nothing on Linux.
+            size=$(stat -c '%s' "$f" 2>/dev/null) || size=""
+            [[ "$size" =~ ^[0-9]+$ ]] || { size=$(stat -f '%z' "$f" 2>/dev/null) || size=""; }
+            [[ "$size" =~ ^[0-9]+$ ]] || size="0"
         else
             size=$(stat -c '%s' "$f" 2>/dev/null || echo "0")
         fi

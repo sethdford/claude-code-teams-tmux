@@ -85,57 +85,113 @@ detect_dead_code() {
     local unused_functions=0
     local unused_scripts=0
     local orphaned_tests=0
-    local func_limit func_count=0
+    local func_limit
     func_limit=$(_config_get_int "limits.function_scan_limit" 0)
 
-    # Find unused bash functions (simplified for Bash 3.2)
-    while IFS= read -r func_file; do
-        [[ "$func_limit" -gt 0 && "$func_count" -ge "$func_limit" ]] && break
-        # Extract function names
-        local funcs
-        funcs=$(grep -E '^[a-z_][a-z0-9_]*\(\)' "$func_file" 2>/dev/null | sed 's/()$//' | sed 's/^ *//' || true)
-        if [[ "$func_limit" -gt 0 ]]; then
-            funcs=$(echo "$funcs" | head -"$((func_limit - func_count))")
-        fi
+    # Unused functions and scripts are resolved in two linear passes rather than
+    # one recursive grep per symbol.
+    #
+    # The previous shape was O(symbols x tree): every one of the ~4,200 function
+    # definitions ran a fresh `grep -r` across the whole scripts/ tree plus ~4
+    # subprocess spawns, so the scan grew quadratically with the repo. It took
+    # ~190s on an M-series Mac and overran the 300s per-suite budget on
+    # macos-latest — where fork() and BSD grep are both slower than on Linux —
+    # so sw-hygiene-test timed out there while passing on ubuntu-latest. One
+    # pass to list definitions plus one pass to index identifier usage is
+    # O(symbols + tree) and completes in under a second.
+    #
+    # Usage is counted per identifier token instead of per substring, so a
+    # helper named `run` is no longer counted as "used" by an unrelated line
+    # containing the word "running". The unused rule itself is unchanged: a
+    # definition mentions its own name once, so a total of <=1 means nothing
+    # references it.
+    local defs_file names_file scan_out
+    defs_file=$(mktemp "${TMPDIR:-/tmp}/sw-hygiene-defs.XXXXXX")
+    names_file=$(mktemp "${TMPDIR:-/tmp}/sw-hygiene-names.XXXXXX")
+    local files_file
+    files_file=$(mktemp "${TMPDIR:-/tmp}/sw-hygiene-files.XXXXXX")
 
-        while IFS= read -r func; do
-            [[ -z "$func" ]] && continue
-            [[ "$func_limit" -gt 0 && "$func_count" -ge "$func_limit" ]] && break
+    find "$REPO_DIR/scripts" -name "*.sh" -type f 2>/dev/null | LC_ALL=C sort > "$files_file"
 
-            # Check if function is used in other files (count lines with this function name)
-            local usage_count
-            usage_count=$(grep -r "$func" "$REPO_DIR/scripts" --include="*.sh" 2>/dev/null | wc -l || true)
-            usage_count="${usage_count:-0}"
-            usage_count=$(printf '%s' "$usage_count" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # funcname<TAB>defining-file, from a single grep over the tree
+    find "$REPO_DIR/scripts" -name "*.sh" -type f -exec \
+        grep -HE '^[a-z_][a-z0-9_]*\(\)' {} + 2>/dev/null \
+        | awk -F: 'match($2, /^[a-z_][a-z0-9_]*/) {
+              print substr($2, RSTART, RLENGTH) "\t" $1
+          }' > "$defs_file" || true
 
-            # Function definition counts as 1 usage; if only 1, it's unused
-            case "$usage_count" in
-                0|1) [[ $VERBOSE == true ]] && warn "Unused function: $func (in $(basename "$func_file"))"; unused_functions=$((unused_functions + 1)) ;;
+    # Candidate scripts, minus the ones the old loop deliberately skipped
+    find "$REPO_DIR/scripts" -maxdepth 1 -name "sw-*.sh" -type f 2>/dev/null \
+        | awk -F/ '{ b = $NF
+              if (b ~ /-test\.sh$/) next
+              if (b == "sw-hygiene.sh") next
+              print b
+          }' > "$names_file" || true
+
+    scan_out=$(awk -v defs="$defs_file" -v names="$names_file" \
+                   -v filelist="$files_file" -v limit="$func_limit" '
+        # Count each distinct token once per line, matching the old
+        # "lines that mention this symbol" semantics.
+        function index_line(line,   s, t, seen) {
+            split("", seen)
+            s = line
+            while (match(s, /[A-Za-z_][A-Za-z0-9_]*/)) {
+                t = substr(s, RSTART, RLENGTH)
+                if (!(t in seen)) { seen[t] = 1; fcnt[t]++ }
+                s = substr(s, RSTART + RLENGTH)
+            }
+            split("", seen)
+            s = line
+            while (match(s, /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
+                t = substr(s, RSTART, RLENGTH)
+                if (!(t in seen)) { seen[t] = 1; scnt[t]++ }
+                s = substr(s, RSTART + RLENGTH)
+            }
+        }
+        BEGIN {
+            while ((getline l < defs) > 0) {
+                if (limit > 0 && ndef >= limit) break
+                split(l, p, "\t")
+                ndef++; dname[ndef] = p[1]; dfile[ndef] = p[2]
+            }
+            close(defs)
+            while ((getline l < names) > 0) { nscr++; sname[nscr] = l }
+            close(names)
+
+            while ((getline f < filelist) > 0) {
+                while ((getline l < f) > 0) index_line(l)
+                close(f)
+            }
+            close(filelist)
+
+            uf = 0
+            for (i = 1; i <= ndef; i++) {
+                n = (dname[i] in fcnt) ? fcnt[dname[i]] : 0
+                if (n <= 1) { uf++; print "FUNC\t" dname[i] "\t" dfile[i] }
+            }
+            us = 0
+            for (i = 1; i <= nscr; i++) {
+                n = (sname[i] in scnt) ? scnt[sname[i]] : 0
+                if (n <= 1) { us++; print "SCRIPT\t" sname[i] }
+            }
+            print "TOTALS\t" uf "\t" us
+        }')
+
+    rm -f "$defs_file" "$names_file" "$files_file"
+
+    unused_functions=$(printf '%s\n' "$scan_out" | awk -F'\t' '$1=="TOTALS" { print $2; exit }')
+    unused_scripts=$(printf '%s\n' "$scan_out" | awk -F'\t' '$1=="TOTALS" { print $3; exit }')
+    unused_functions="${unused_functions:-0}"
+    unused_scripts="${unused_scripts:-0}"
+
+    if [[ $VERBOSE == true ]]; then
+        while IFS=$'\t' read -r kind field_a field_b; do
+            case "$kind" in
+                FUNC)   warn "Unused function: $field_a (in $(basename "$field_b"))" ;;
+                SCRIPT) warn "Potentially unused script: $field_a" ;;
             esac
-            func_count=$((func_count + 1))
-        done <<< "$funcs"
-    done < <(find "$REPO_DIR/scripts" -name "*.sh" -type f 2>/dev/null)
-
-    # Find scripts referenced nowhere
-    local script_count=0
-    while IFS= read -r script; do
-        local basename_script ref_count
-        basename_script=$(basename "$script")
-
-        # Skip test scripts and main scripts
-        [[ "$basename_script" =~ -test\.sh$ ]] && continue
-        [[ "$basename_script" == "sw-hygiene.sh" ]] && continue
-        [[ "$basename_script" == "sw" ]] && continue
-
-        # Check if script is sourced or executed
-        ref_count=$(grep -r "$basename_script" "$REPO_DIR/scripts" --include="*.sh" 2>/dev/null | wc -l) || ref_count="0"
-        ref_count=$(printf '%s' "$ref_count" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-        case "$ref_count" in
-            0|1) [[ $VERBOSE == true ]] && warn "Potentially unused script: $basename_script"; unused_scripts=$((unused_scripts + 1)) ;;
-        esac
-        script_count=$((script_count + 1))
-    done < <(find "$REPO_DIR/scripts" -maxdepth 1 -name "sw-*.sh" -type f 2>/dev/null)
+        done <<< "$scan_out"
+    fi
 
     # Find test fixtures without corresponding tests
     while IFS= read -r fixture; do
