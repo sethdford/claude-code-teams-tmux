@@ -616,10 +616,10 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-checkpoint.sh` | 605 | Save and restore agent state mid-stage |
 | `scripts/sw-ci.sh` | 589 | GitHub Actions CI/CD Orchestration |
 | `scripts/sw-cleanup.sh` | 350 | Clean up orphaned Claude team sessions & artifacts |
-| `scripts/sw-code-review.sh` | 697 | Clean Code & Architecture Analysis |
+| `scripts/sw-code-review.sh` | 699 | Clean Code & Architecture Analysis |
 | `scripts/sw-connect.sh` | 624 | Sync local state to team dashboard |
 | `scripts/sw-context.sh` | 600 | Context Engine for Pipeline Stages |
-| `scripts/sw-cost.sh` | 1056 | Token Usage & Cost Intelligence |
+| `scripts/sw-cost.sh` | 1070 | Token Usage & Cost Intelligence |
 | `scripts/sw-daemon.sh` | 1420 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
 | `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
@@ -646,7 +646,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-guild.sh` | 556 | Knowledge Guilds & Cross-Team Learning |
 | `scripts/sw-heartbeat.sh` | 316 | File-based agent heartbeat protocol |
 | `scripts/sw-hello.sh` | 67 | Hello World Command |
-| `scripts/sw-hygiene.sh` | 668 | Repository Organization & Cleanup |
+| `scripts/sw-hygiene.sh` | 724 | Repository Organization & Cleanup |
 | `scripts/sw-incident.sh` | 1132 | Autonomous Incident Detection & Response |
 | `scripts/sw-init.sh` | 871 | Complete setup for Shipwright + Shipwright |
 | `scripts/sw-instrument.sh` | 691 | Pipeline Instrumentation & Feedback Loops |
@@ -694,7 +694,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-swarm.sh` | 684 | Dynamic agent swarm management |
 | `scripts/sw-team-stages.sh` | 500 | Multi-agent execution with leader/specialist roles |
 | `scripts/sw-templates.sh` | 228 | Browse and inspect team templates |
-| `scripts/sw-test-all.sh` | 182 | Run every test suite, report the FULL result |
+| `scripts/sw-test-all.sh` | 199 | Run every test suite, report the FULL result |
 | `scripts/sw-testgen.sh` | 567 | Autonomous test generation and coverage maintenance |
 | `scripts/sw-tmux-pipeline.sh` | 538 | Spawn and manage pipelines in tmux windows |
 | `scripts/sw-tmux-role-color.sh` | 81 | Set pane border color by agent role |
@@ -768,7 +768,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-checkpoint-test.sh` | 341 | Validate checkpoint save/restore |
 | `scripts/sw-ci-test.sh` | 198 | GitHub Actions CI/CD orchestration tests |
 | `scripts/sw-cleanup-test.sh` | 168 | Clean up orphaned sessions & artifacts |
-| `scripts/sw-code-review-test.sh` | 173 | Clean code & architecture analysis tests |
+| `scripts/sw-code-review-test.sh` | 175 | Clean code & architecture analysis tests |
 | `scripts/sw-connect-test.sh` | 822 | Validate dashboard connection, heartbeat |
 | `scripts/sw-constitutional-test.sh` | 320 | Constitutional AI Test Suite |
 | `scripts/sw-context-budget-test.sh` | 335 | Context Window Budget Monitor tests |
@@ -816,13 +816,13 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-incident-test.sh` | 442 | Validate incident detection & response |
 | `scripts/sw-init-test.sh` | 654 | E2E validation of init/setup flow |
 | `scripts/sw-instrument-test.sh` | 172 | Pipeline instrumentation & feedback loops |
-| `scripts/sw-integration-claude-test.sh` | 71 | Budget-limited real Claude smoke |
+| `scripts/sw-integration-claude-test.sh` | 106 | Budget-limited real Claude smoke |
 | `scripts/sw-intelligence-test.sh` | 534 | Unit tests for intelligence core |
 | `scripts/sw-intent-analysis-test.sh` | 443 | Test suite for intent analysis module |
 | `scripts/sw-jira-test.sh` | 284 | Validate Jira ↔ GitHub bidirectional sync |
 | `scripts/sw-launchd-test.sh` | 899 | Validate service management on |
 | `scripts/sw-lib-audit-trail-test.sh` | 311 |  |
-| `scripts/sw-lib-compat-test.sh` | 297 | Unit tests for cross-platform helpers |
+| `scripts/sw-lib-compat-test.sh` | 357 | Unit tests for cross-platform helpers |
 | `scripts/sw-lib-compound-audit-test.sh` | 281 |  |
 | `scripts/sw-lib-daemon-dispatch-test.sh` | 421 | Unit tests for spawn/reap/queue |
 | `scripts/sw-lib-daemon-failure-test.sh` | 213 | Unit tests for failure handling |
@@ -851,7 +851,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-oversight-test.sh` | 164 | Quality oversight board tests |
 | `scripts/sw-patrol-meta-test.sh` | 449 | Validate self-improvement patrol |
 | `scripts/sw-pipeline-composer-test.sh` | 632 | Test Suite |
-| `scripts/sw-pipeline-test.sh` | 1961 | E2E validation invoking the REAL pipeline |
+| `scripts/sw-pipeline-test.sh` | 1964 | E2E validation invoking the REAL pipeline |
 | `scripts/sw-pipeline-vitals-test.sh` | 226 | Validate pipeline health scoring |
 | `scripts/sw-pm-test.sh` | 225 | Autonomous PM Agent test suite |
 | `scripts/sw-policy-e2e-test.sh` | 290 | Verify config/policy.json is honored |
