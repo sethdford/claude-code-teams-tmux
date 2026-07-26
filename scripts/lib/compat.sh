@@ -219,6 +219,34 @@ file_mtime() {
     printf '0\n'
 }
 
+# ─── UUID generation (for --session-id, which requires a valid UUID) ───────
+# uuidgen ships with macOS and with util-linux on most distros, but is not
+# guaranteed; /proc/sys/kernel/random/uuid covers Linux images without it, and
+# the awk form is a last resort so callers never have to handle "no UUID".
+# Usage: new_uuid
+new_uuid() {
+    local u=""
+    if command -v uuidgen >/dev/null 2>&1; then
+        u=$(uuidgen 2>/dev/null | tr 'A-Z' 'a-z')
+    fi
+    if [[ ! "$u" =~ ^[0-9a-f-]{36}$ ]] && [[ -r /proc/sys/kernel/random/uuid ]]; then
+        u=$(tr -d '\n' < /proc/sys/kernel/random/uuid)
+    fi
+    if [[ ! "$u" =~ ^[0-9a-f-]{36}$ ]]; then
+        u=$(awk 'BEGIN {
+            srand()
+            h = "0123456789abcdef"
+            for (i = 1; i <= 36; i++) {
+                if (i == 9 || i == 14 || i == 19 || i == 24) { printf "-"; continue }
+                if (i == 15) { printf "4"; continue }
+                if (i == 20) { printf substr("89ab", int(rand() * 4) + 1, 1); continue }
+                printf substr(h, int(rand() * 16) + 1, 1)
+            }
+        }')
+    fi
+    printf '%s\n' "$u"
+}
+
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
 # Usage: _timeout <seconds> <command> [args...]
 _timeout() {

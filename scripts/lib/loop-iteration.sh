@@ -517,6 +517,26 @@ build_claude_flags() {
         flags+=("--fallback-model" "$FALLBACK_MODEL")
     fi
 
+    # Keep the cached prompt prefix stable across iterations. The per-machine
+    # sections (cwd, env info, memory paths, git status) sit at the FRONT of the
+    # system prompt, and prompt caching is a prefix match — so git status
+    # changing between iterations, which it does constantly during a build loop,
+    # invalidated everything after it. This moves them into the first user
+    # message instead. The CLI ignores the flag when a custom --system-prompt is
+    # in play, which this loop does not pass.
+    if [[ "${LOOP_STABLE_PROMPT_PREFIX:-true}" == "true" ]]; then
+        flags+=("--exclude-dynamic-system-prompt-sections")
+    fi
+
+    # Session continuity: reuse one session across iterations so the loop stops
+    # paying a cold start (and a fresh cache write) every time. LOOP_SESSION_ID
+    # is only set when continuity is enabled — see sw-loop.sh — and is
+    # regenerated on a deliberate session restart so context-exhaustion recovery
+    # still gets the clean slate it depends on.
+    if [[ -n "${LOOP_SESSION_ID:-}" ]]; then
+        flags+=("--session-id" "$LOOP_SESSION_ID")
+    fi
+
     echo "${flags[*]}"
 }
 

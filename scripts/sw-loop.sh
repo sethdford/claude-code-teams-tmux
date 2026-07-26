@@ -129,6 +129,25 @@ CONTEXT_EXHAUSTION_PATTERNS="context.length.exceeded|maximum context length|cont
 CONTEXT_RESTART_COUNT=0
 CONTEXT_RESTART_LIMIT=$(_smart_int "loop.context_restart_limit" 2)
 
+# ─── Session Continuity ──────────────────────────────────────────────────────
+# Each iteration currently starts a COLD Claude session: the prompt is
+# recomposed from scratch and the cache is written again rather than read.
+# Passing one --session-id across iterations lets them continue a single
+# conversation instead.
+#
+# Off by default. This changes conversation semantics — the model carries prior
+# turns rather than being re-briefed from progress.md — so it wants a measured
+# rollout (compare `shipwright cost show` with it on and off) rather than being
+# switched on for every existing pipeline at once. Enable with
+# `--session-continuity`, LOOP_SESSION_CONTINUITY=1, or loop.session_continuity
+# in config.
+#
+# LOOP_SESSION_ID stays EMPTY when disabled; build_claude_flags keys off that,
+# so the flag is simply absent in the default path.
+SESSION_CONTINUITY="${LOOP_SESSION_CONTINUITY:-$(_config_get_int "loop.session_continuity" 0 2>/dev/null || echo 0)}"
+[[ "$SESSION_CONTINUITY" == "true" ]] && SESSION_CONTINUITY=1
+LOOP_SESSION_ID=""
+
 # ─── Audit & Quality Gate Defaults ───────────────────────────────────────────
 AUDIT_ENABLED=false
 AUDIT_AGENT_ENABLED=false
@@ -266,6 +285,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --max-turns=*) MAX_TURNS="${1#--max-turns=}"; shift ;;
         --resume) RESUME=true; shift ;;
+        # NOTE: --resume above is shipwright's own (re-read .claude/loop-state.md).
+        # This is different: it continues one *Claude* session across iterations.
+        --session-continuity) SESSION_CONTINUITY=1; shift ;;
+        --no-session-continuity) SESSION_CONTINUITY=0; shift ;;
         --verbose) VERBOSE=true; shift ;;
         --audit) AUDIT_ENABLED=true; shift ;;
         --audit-agent) AUDIT_AGENT_ENABLED=true; shift ;;
@@ -2115,6 +2138,21 @@ run_single_agent_loop() {
     # Save original environment variables before loop starts
     local SAVED_CLAUDE_MODEL="${CLAUDE_MODEL:-}"
     local SAVED_ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+
+    # One session ID per invocation of this function, so the iterations inside
+    # it continue a single conversation instead of cold-starting each time.
+    #
+    # run_loop_with_restarts re-enters this function for every restart, so a
+    # deliberate restart naturally gets a NEW id. That is required, not
+    # incidental: context-exhaustion recovery is *supposed* to drop the old
+    # context and re-orient from progress.md, and reusing the id would defeat
+    # the very thing the restart exists to do.
+    if [[ "${SESSION_CONTINUITY:-0}" == "1" ]]; then
+        LOOP_SESSION_ID=$(new_uuid)
+        info "Session continuity enabled (session ${LOOP_SESSION_ID})"
+    else
+        LOOP_SESSION_ID=""
+    fi
 
     if [[ "$SESSION_RESTART" == "true" ]]; then
         # Restart: state already reset by run_loop_with_restarts, skip init
