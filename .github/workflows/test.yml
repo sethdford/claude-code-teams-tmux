@@ -36,6 +36,11 @@ jobs:
         # applies a per-suite timeout — previously a single hung suite could
         # stall this job until the workflow-level limit killed it with no
         # indication of which suite was responsible.
+        # 25 lines of tail truncated the failing assertion for several suites,
+        # leaving CI showing that a suite failed but not which check. Only
+        # printed on failure, so a green run is unaffected.
+        env:
+          FAIL_LOG_LINES: 120
         run: |
           bash scripts/sw-test-all.sh --timeout 300
 

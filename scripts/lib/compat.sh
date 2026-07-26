@@ -195,8 +195,28 @@ detect_test_framework() {
 # ─── Cross-platform file modification time (epoch) ────────────────────────
 # macOS/BSD: stat -f %m; Linux: stat -c '%Y'
 file_mtime() {
-    local file="$1"
-    stat -f %m "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo "0"
+    local file="$1" out
+
+    # `-f` means two different things: BSD/macOS reads it as the output FORMAT,
+    # GNU coreutils reads it as --file-system. So `stat -f %m FILE` on Linux
+    # does not fail cleanly — it prints filesystem information for FILE on
+    # stdout. The old `stat -f … || stat -c … || echo 0` chain therefore
+    # captured that text (possibly concatenated with the real answer), and
+    # callers got something that was not an epoch. Probe each dialect and
+    # accept the result only if it actually looks like one.
+    out=$(stat -c '%Y' "$file" 2>/dev/null) || out=""
+    if [[ "$out" =~ ^[0-9]+$ ]]; then
+        printf '%s\n' "$out"
+        return 0
+    fi
+
+    out=$(stat -f '%m' "$file" 2>/dev/null) || out=""
+    if [[ "$out" =~ ^[0-9]+$ ]]; then
+        printf '%s\n' "$out"
+        return 0
+    fi
+
+    printf '0\n'
 }
 
 # ─── Timeout command (macOS may lack timeout; gtimeout from coreutils) ─────
