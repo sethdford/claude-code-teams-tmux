@@ -51,6 +51,23 @@ run_claude
 exit_code=$?
 set -e
 
+# ─── Quota exhaustion is environmental, not a regression ─────────────────────
+# This gate exists to catch "a real Claude call broke". Account-level quota is
+# a different thing: it says nothing about the commit, it resolves on a clock
+# rather than on a fix, and failing hard on it makes every PR in the queue
+# hostage to usage limits. Treat it the way a missing credential is already
+# treated — skip loudly, exit 0 — while every other non-zero exit still fails.
+# Matching is on specific quota phrases only, so a genuine error is never
+# swallowed.
+combined_output="$(cat "$out_file" "$err_file" 2>/dev/null || true)"
+if [[ "$exit_code" -ne 0 ]] && printf '%s' "$combined_output" \
+        | grep -qiE 'weekly limit|usage limit|rate limit|rate_limit_error|overloaded_error'; then
+    echo "SKIP: Claude account quota reached, not a code failure — the gate cannot"
+    echo "      run until it resets. Reported by the CLI as:"
+    printf '        %s\n' "$combined_output"
+    exit 0
+fi
+
 if [[ "$exit_code" -ne 0 ]]; then
     if [[ "$exit_code" -eq 124 ]]; then
         echo "FAIL: Claude smoke timed out after ${SCRIPT_TIMEOUT}s"
