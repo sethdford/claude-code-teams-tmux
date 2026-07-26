@@ -231,6 +231,67 @@ else
     assert_fail "build_claude_flags supports --fallback-model"
 fi
 
+# ─── build_claude_flags: cache prefix + session continuity ──────────────────
+# These INVOKE the function and assert on what it emits, rather than grepping
+# the source for a string. A grep passes even when the flag never reaches the
+# command line — which is the whole failure mode worth guarding against here.
+echo -e "${DIM}  prompt-cache and session flags (behavioral)${RESET}"
+_flags_with() {
+    bash -c '
+        source "'"$SCRIPT_DIR"'/lib/compat.sh" >/dev/null 2>&1
+        source "'"$SCRIPT_DIR"'/lib/loop-iteration.sh" >/dev/null 2>&1
+        MODEL=claude-opus-5; SKIP_PERMISSIONS=false; MAX_TURNS=""
+        EFFORT_LEVEL=""; FALLBACK_MODEL=""
+        '"$1"'
+        build_claude_flags
+    ' 2>/dev/null
+}
+
+# Stable prefix is on by default: per-machine sections (notably git status,
+# which changes constantly mid-loop) must not sit in the cached prefix.
+if [[ "$(_flags_with '')" == *"--exclude-dynamic-system-prompt-sections"* ]]; then
+    assert_pass "stable prompt prefix is on by default"
+else
+    assert_fail "stable prompt prefix is on by default"
+fi
+
+if [[ "$(_flags_with 'LOOP_STABLE_PROMPT_PREFIX=false')" != *"--exclude-dynamic-system-prompt-sections"* ]]; then
+    assert_pass "stable prompt prefix can be disabled"
+else
+    assert_fail "stable prompt prefix can be disabled"
+fi
+
+# Session continuity is opt-in, so no --session-id unless LOOP_SESSION_ID is set.
+# A stray --session-id would silently chain unrelated pipeline runs together.
+if [[ "$(_flags_with '')" != *"--session-id"* ]]; then
+    assert_pass "no --session-id when continuity is off"
+else
+    assert_fail "no --session-id when continuity is off"
+fi
+
+if [[ "$(_flags_with 'LOOP_SESSION_ID=11111111-2222-4333-8444-555555555555')" \
+      == *"--session-id 11111111-2222-4333-8444-555555555555"* ]]; then
+    assert_pass "--session-id passed through when continuity is on"
+else
+    assert_fail "--session-id passed through when continuity is on"
+fi
+
+# The CLI rejects a --session-id that is not a valid UUID, so a malformed
+# generator would break every iteration rather than degrade.
+_uuid=$(bash -c 'source "'"$SCRIPT_DIR"'/lib/compat.sh" >/dev/null 2>&1; new_uuid' 2>/dev/null)
+if [[ "$_uuid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    assert_pass "new_uuid emits a valid UUID"
+else
+    assert_fail "new_uuid emits a valid UUID" "got: $_uuid"
+fi
+
+_uuid2=$(bash -c 'source "'"$SCRIPT_DIR"'/lib/compat.sh" >/dev/null 2>&1; new_uuid' 2>/dev/null)
+if [[ "$_uuid" != "$_uuid2" ]]; then
+    assert_pass "new_uuid is unique per call"
+else
+    assert_fail "new_uuid is unique per call"
+fi
+
 # ─── Test 12: Token accumulation parses JSON ────────────────────────────────
 if grep -q 'jq.*usage.input_tokens' "$SCRIPT_DIR/sw-loop.sh"; then
     assert_pass "accumulate_loop_tokens parses JSON usage"

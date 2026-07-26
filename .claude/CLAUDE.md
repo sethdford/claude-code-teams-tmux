@@ -263,6 +263,27 @@ Override globally via CLI: `--effort high` or via `daemon-config.json`:
 
 Environment variables: `SW_EFFORT_LEVEL`, `SW_FALLBACK_MODEL`.
 
+### Prompt-Cache Stability and Session Continuity
+
+Two loop-level controls that affect cost rather than behavior. Both target the
+same thing: the build loop used to start a **cold Claude session every
+iteration**, recomposing the prompt and re-paying cache writes.
+
+| Control | Default | Effect |
+| ------- | ------- | ------ |
+| `LOOP_STABLE_PROMPT_PREFIX` | `true` | Passes `--exclude-dynamic-system-prompt-sections`, moving per-machine sections (cwd, env, memory paths, **git status**) out of the system prompt. Prompt caching is a prefix match, and git status changes constantly mid-loop — leaving it in the prefix invalidated everything after it on every iteration. Set `false` to restore the old behavior. |
+| `--session-continuity` / `LOOP_SESSION_CONTINUITY=1` / `loop.session_continuity` | **off** | Reuses one `--session-id` across iterations so they continue a single conversation instead of cold-starting. |
+
+Session continuity is **opt-in on purpose**. It changes conversation semantics —
+the model carries prior turns rather than being re-briefed from `progress.md` —
+so roll it out measured: run a pipeline with and without it and compare
+`shipwright cost show`. A deliberate session restart (context-exhaustion
+recovery) always allocates a **new** session id, because that path exists
+precisely to drop stale context and re-orient from `progress.md`.
+
+Note `shipwright loop --resume` is unrelated: that re-reads
+`.claude/loop-state.md`, it does not continue a Claude session.
+
 ## Intelligent Defaults
 
 Pipeline behavior is config-driven via `daemon-config.json`. Three helper functions in `scripts/lib/compat.sh` provide intelligent configuration chaining (env var → daemon-config.json → user config → hardcoded default):
