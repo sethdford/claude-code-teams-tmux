@@ -198,8 +198,15 @@ echo "mock recruit"
 MOCK_RECRUIT
 chmod +x "$TEST_TEMP_DIR/bin/sw-recruit.sh"
 
-# Point SCRIPT_DIR to temp dir and copy triage there
+# Point SCRIPT_DIR to temp dir and copy triage there.
+# lib/ must come along: sw-triage.sh sources lib/compat.sh behind a
+# `[[ -f ]]` guard, so a missing lib/ is skipped silently at startup and then
+# surfaces ~600 lines later as `_smart_model: command not found` (exit 127).
+# These tests isolate the *recruit* dependency, not the shared library — a real
+# install always has lib/ next to the scripts.
 cp "$SCRIPT_DIR/sw-triage.sh" "$TEST_TEMP_DIR/bin/sw-triage.sh"
+mkdir -p "$TEST_TEMP_DIR/bin/lib"
+cp "$SCRIPT_DIR/lib"/*.sh "$TEST_TEMP_DIR/bin/lib/" 2>/dev/null || true
 
 output=$(NO_GITHUB=1 SCRIPT_DIR="$TEST_TEMP_DIR/bin" bash "$TEST_TEMP_DIR/bin/sw-triage.sh" team 42 2>&1) && rc=0 || rc=$?
 if [[ "$rc" -eq 0 ]]; then

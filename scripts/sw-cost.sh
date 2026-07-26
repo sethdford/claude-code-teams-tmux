@@ -65,13 +65,18 @@ ensure_cost_dir() {
 }
 
 # ─── Model Pricing (USD per million tokens) ────────────────────────────────
-# Default pricing (fallback when no config file exists)
-_DEFAULT_OPUS_INPUT_PER_M=15.00
-_DEFAULT_OPUS_OUTPUT_PER_M=75.00
+# Default pricing (fallback when no config file exists). These track the
+# CURRENT generation — Claude Opus 5, Sonnet 5, Haiku 4.5 — which is what the
+# pipeline templates route to. The previous Opus figures ($15/$75) were Opus
+# 4.0/4.1-era rates and overstated Opus spend by 3x once routing moved to
+# Opus 4.5+. Override per-machine via $MODEL_PRICING_FILE rather than editing
+# here, and see cost_calculate() for how a model string maps to a tier.
+_DEFAULT_OPUS_INPUT_PER_M=5.00
+_DEFAULT_OPUS_OUTPUT_PER_M=25.00
 _DEFAULT_SONNET_INPUT_PER_M=3.00
 _DEFAULT_SONNET_OUTPUT_PER_M=15.00
-_DEFAULT_HAIKU_INPUT_PER_M=0.25
-_DEFAULT_HAIKU_OUTPUT_PER_M=1.25
+_DEFAULT_HAIKU_INPUT_PER_M=1.00
+_DEFAULT_HAIKU_OUTPUT_PER_M=5.00
 
 MODEL_PRICING_FILE="${HOME}/.shipwright/model-pricing.json"
 
@@ -103,17 +108,26 @@ cost_calculate() {
     local output_tokens="${2:-0}"
     local model="${3:-sonnet}"
 
+    # Each tier matches the bare alias, the current generation (claude-opus-5),
+    # and the previous one (claude-opus-4*). The 4* globs are deliberately kept:
+    # historical entries in costs.json still name those models, and re-costing
+    # them as "unknown" would silently reprice old records at the sonnet rate.
+    #
+    # Adding a new generation means adding a glob HERE, not only in the pipeline
+    # templates. `claude-opus-5` does not match `claude-opus-4*`, so a template
+    # bumped without this case falls through to the catch-all and bills Opus at
+    # sonnet rates — no error, just understated spend.
     local input_rate output_rate
     case "$model" in
-        opus|claude-opus-4*)
+        opus|claude-opus-5*|claude-opus-4*)
             input_rate="$OPUS_INPUT_PER_M"
             output_rate="$OPUS_OUTPUT_PER_M"
             ;;
-        sonnet|claude-sonnet-4*)
+        sonnet|claude-sonnet-5*|claude-sonnet-4*)
             input_rate="$SONNET_INPUT_PER_M"
             output_rate="$SONNET_OUTPUT_PER_M"
             ;;
-        haiku|claude-haiku-4*)
+        haiku|claude-haiku-5*|claude-haiku-4*)
             input_rate="$HAIKU_INPUT_PER_M"
             output_rate="$HAIKU_OUTPUT_PER_M"
             ;;

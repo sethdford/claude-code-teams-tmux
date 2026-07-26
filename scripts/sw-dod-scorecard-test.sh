@@ -32,8 +32,22 @@ source "$SCRIPT_DIR/lib/dod-scorecard.sh"
 print_test_section "check_pr_size_score"
 
 # Mock git diff --stat to return 247 lines
+# EVERY git mock in this file must handle `rev-parse`, not just the operation
+# it is demonstrating. All three scorecard checks (pr_size, test_count_delta,
+# never_ship_violations) guard their work on `git rev-parse "$base_branch"`, so
+# an unmocked rev-parse falls through to real git — and CI checks out a shallow
+# clone of the PR ref, where `main` does not exist locally. The guard then
+# fails, the real check never runs, and the score comes back empty (expected
+# 247, got 0; expected fail, got pass).
+#
+# That is why this suite passed on pushes to main, where the ref resolves, and
+# failed on every PR regardless of its contents. Note the mock at the
+# check_test_count_delta section used `return 0`, which is invalid outside a
+# function in an executed script and failed the same way.
 mock_binary git "
-if [[ \"\$2\" == \"--stat\" ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$2\" == \"--stat\" ]]; then
     echo ' file1.js  | 100 +++'
     echo ' file2.js  | 100 +++'
     echo ' file3.js  | 47 ++++'
@@ -57,7 +71,9 @@ assert_eq "PR size limit is 500" "500" "$size_limit"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 mock_binary git "
-if [[ \"\$2\" == \"--stat\" ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$2\" == \"--stat\" ]]; then
     echo ' file1.js  | 600 ++++++'
     echo ' 1 file changed, 600 insertions(+)'
 else
@@ -83,7 +99,7 @@ cat > "$TEST_TEMP_DIR/bin/git" << 'GITEOF'
 if [[ "$2" == "--name-only" && "$3" == "main...HEAD" ]]; then
     echo "sample_test.sh"
 elif [[ "$1" == "rev-parse" ]]; then
-    return 0
+    exit 0
 else
     /usr/bin/git "$@"
 fi
@@ -137,7 +153,9 @@ EOF
 
 # Mock a diff that contains a violation
 mock_binary git "
-if [[ \"\$*\" == *\"diff\"* ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$*\" == *\"diff\"* ]]; then
     cat << 'DIFF'
 +++ b/app.js
 @@ -1,5 +1,6 @@
@@ -163,7 +181,9 @@ assert_gt "Violations found" "$never_violations" "0"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 mock_binary git "
-if [[ \"\$*\" == *\"diff\"* ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$*\" == *\"diff\"* ]]; then
     cat << 'DIFF'
 +++ b/app.js
 @@ -1,5 +1,6 @@
@@ -339,7 +359,9 @@ cat > "$ARTIFACTS_DIR/quality-profile.json" << 'EOF'
 EOF
 
 mock_binary git "
-if [[ \"\$2\" == \"--stat\" ]]; then
+if [[ \"\$1\" == \"rev-parse\" ]]; then
+    exit 0
+elif [[ \"\$2\" == \"--stat\" ]]; then
     echo ' file1.js  | 200 +++'
     echo ' 1 file changed, 200 insertions(+)'
 else

@@ -53,7 +53,7 @@ assert_contains() {
 
 # ─── Setup ──────────────────────────────────────────────────────
 TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # ───────────────────────────────────────────────────────────────
 # Test: analyze_intent generates valid JSON

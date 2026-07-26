@@ -6,7 +6,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMPBASE="${TMPDIR:-/tmp/claude}"
+# The fallback was "/tmp/claude", which does not exist on a CI runner — TMPDIR
+# is typically unset there, so mktemp tried to create a directory inside a
+# missing parent and the suite died during setup. /tmp is the portable default
+# and always exists; mkdir -p covers a TMPDIR that points somewhere absent.
+TMPBASE="${TMPDIR:-/tmp}"
+mkdir -p "$TMPBASE" 2>/dev/null || TMPBASE=/tmp
 TEST_DIR=$(mktemp -d "$TMPBASE/sw-test-XXXXXX")
 MEMORY_TEST_ROOT="$TMPBASE/sw-memory-test-$$"
 
@@ -22,13 +27,13 @@ FAIL=0
 # Helper functions
 pass() {
     echo -e "\033[38;2;74;222;128m✓\033[0m $*"
-    ((PASS++))
+    PASS=$((PASS + 1))
     return 0
 }
 
 fail() {
     echo -e "\033[38;2;248;113;113m✗\033[0m $*"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     return 1
 }
 

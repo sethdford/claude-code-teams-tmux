@@ -627,7 +627,7 @@ patrol_meta_learn() {
 
 # ─── Batch Improve: Process Multiple Issues in Parallel ─────────────────────
 patrol_meta_batch_improve() {
-    local -a issues_to_fix
+    local -a issues_to_fix=()
     local count=0
 
     info "  Collecting recent meta-patrol issues to fix..."
@@ -693,7 +693,11 @@ patrol_meta_batch_improve() {
     # Sort by score (highest first) using temp file (Bash 3.2 compatible)
     local sorted_file
     sorted_file=$(mktemp)
-    printf '%s\n' "${scored_issues[@]}" | sort -rn > "$sorted_file"
+    # Sort the temp file the loop above actually wrote. This previously read
+    # "${scored_issues[@]}" — an array that is never assigned anywhere in this
+    # file — so under `set -u` the autonomous-fix path aborted here with
+    # "scored_issues: unbound variable" before processing a single issue.
+    sort -rn "$scored_file" > "$sorted_file"
 
     # Process in parallel (limit to 3 concurrent pipelines)
     local active_count=0

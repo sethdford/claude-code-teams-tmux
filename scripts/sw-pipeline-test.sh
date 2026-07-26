@@ -706,7 +706,10 @@ test_resume() {
 
     # Rewrite status from "complete" to "interrupted" so resume will continue
     if [[ "$(uname)" == "Darwin" ]]; then
-        sed -i '' 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
+        # Portable in-place edit: `-i ''` is BSD-only, `-i` with no suffix is
+        # GNU-only. `-i.bak` is accepted by both; drop the backup afterwards.
+        sed -i.bak 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
+        rm -f "$TEST_TEMP_DIR/project/.claude/pipeline-state.md.bak"
     else
         sed -i 's/^status: complete$/status: interrupted/' "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"
     fi

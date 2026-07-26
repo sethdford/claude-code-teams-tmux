@@ -206,19 +206,26 @@ mutation_execute() {
         }
 
         # Apply mutation (cross-platform sed -i)
+        local sed_rc=0
         if type sed_i >/dev/null 2>&1; then
-            sed_i "${line_num}${sed_expr}" "$src_file" 2>/dev/null
-        elif [[ "$(uname -s)" == "Darwin" ]]; then
-            sed -i '' "${line_num}${sed_expr}" "$src_file" 2>/dev/null
+            sed_i "${line_num}${sed_expr}" "$src_file" 2>/dev/null || sed_rc=$?
         else
-            sed -i "${line_num}${sed_expr}" "$src_file" 2>/dev/null
-        fi || {
+            # This branch runs only when sed_i (lib/compat.sh) was never
+            # sourced, so it cannot call sed_i itself. `-i.bak` is the one
+            # in-place form BSD and GNU sed both accept: `-i ''` is BSD-only
+            # and makes GNU sed read '' as the script, while a bare `-i` is
+            # GNU-only and makes BSD sed read the next argument as the suffix.
+            sed -i.bak "${line_num}${sed_expr}" "$src_file" 2>/dev/null || sed_rc=$?
+            rm -f "$src_file.bak" 2>/dev/null || true
+        fi
+
+        if [[ $sed_rc -ne 0 ]]; then
             # Revert on sed failure
             cp "$backup_file" "$src_file" 2>/dev/null || true
             rm -f "$backup_file" 2>/dev/null || true
             errors=$((errors + 1))
             continue
-        }
+        fi
 
         # Run tests against mutant
         local test_exit=0

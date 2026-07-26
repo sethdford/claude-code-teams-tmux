@@ -12,10 +12,10 @@ FAIL=0
 assert_equals() {
     local expected="$1" actual="$2" description="${3:-}"
     if [[ "$expected" == "$actual" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected: $expected"
         echo "    Actual:   $actual"
@@ -25,10 +25,10 @@ assert_equals() {
 assert_contains() {
     local haystack="$1" needle="$2" description="${3:-}"
     if echo "$haystack" | grep -qF "$needle" 2>/dev/null; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected to contain: $needle"
         echo "    In: $(echo "$haystack" | head -3)"
@@ -40,10 +40,10 @@ assert_json_field() {
     local actual
     actual=$(echo "$json" | jq -r "$field" 2>/dev/null || echo "PARSE_ERROR")
     if [[ "$actual" == "$expected" ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m $description"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m $description"
         echo "    Expected $field = $expected"
         echo "    Actual:   $actual"
@@ -161,10 +161,10 @@ EOF
     count=$(echo "$violations" | jq 'length' 2>/dev/null || echo "0")
     # Should find: password match (SEC-001), TODO (QUA-001), error occurred (ERR-001)
     if [[ "$count" -ge 3 ]]; then
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m Check file detects $count violations (>= 3 expected)"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m Check file detects violations"
         echo "    Expected >= 3 violations, got $count"
     fi
@@ -229,10 +229,10 @@ test_self_critique_report() {
     if [[ -f "$report_file" ]]; then
         local verdict
         verdict=$(jq -r '.summary.verdict' "$report_file" 2>/dev/null || echo "")
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m Self-critique generates report file"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m Self-critique generates report file"
     fi
 }
@@ -260,10 +260,10 @@ test_inject_prompt_severity_filter() {
     assert_contains "$output" "SEC-001" "Critical filter includes SEC-001"
     # QUA-001 is low severity, should NOT appear
     if echo "$output" | grep -qF "QUA-001" 2>/dev/null; then
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m Critical filter excludes QUA-001 (low severity)"
     else
-        ((PASS++))
+        PASS=$((PASS + 1))
         echo -e "  \033[38;2;74;222;128m\033[1m✓\033[0m Critical filter excludes QUA-001 (low severity)"
     fi
 }
@@ -292,7 +292,7 @@ test_report_structure() {
         assert_json_field "$(cat "$report_file")" '.summary | has("verdict")' "true" "Report has verdict"
         assert_json_field "$(cat "$report_file")" 'has("violations")' "true" "Report has violations array"
     else
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         echo -e "  \033[38;2;248;113;113m\033[1m✗\033[0m Report file not created for structure check"
     fi
 }

@@ -1823,7 +1823,8 @@ memory_ab_assign_group() {
 
     # Generate random 0-100
     local rand=$((RANDOM % 100))
-    local threshold=$(echo "$ab_ratio * 100" | bc 2>/dev/null || echo "20")
+    local threshold
+    threshold=$(echo "$ab_ratio * 100" | bc 2>/dev/null || echo "20")
     threshold=${threshold%.*}  # Remove decimal
 
     if [[ "$rand" -lt "$threshold" ]]; then

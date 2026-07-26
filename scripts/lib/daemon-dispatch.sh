@@ -222,20 +222,25 @@ daemon_spawn_pipeline() {
     fi
 
     # Build pipeline args
-    local pipeline_args=("start" "--issue" "$issue_num" "--pipeline" "$PIPELINE_TEMPLATE")
-    if [[ "$SKIP_GATES" == "true" ]]; then
+    # Every optional knob is read with a :- default. Under `set -u` a bare
+    # "$SKIP_GATES" aborts the whole daemon when the caller has not exported the
+    # var, which is exactly how the spawn path died when invoked outside a fully
+    # initialised daemon config. MAX_RESTARTS_CFG/FAST_TEST_CMD_CFG below already
+    # did this; these were the inconsistent ones.
+    local pipeline_args=("start" "--issue" "$issue_num" "--pipeline" "${PIPELINE_TEMPLATE:-standard}")
+    if [[ "${SKIP_GATES:-false}" == "true" ]]; then
         pipeline_args+=("--skip-gates")
     fi
-    if [[ -n "$MODEL" ]]; then
+    if [[ -n "${MODEL:-}" ]]; then
         pipeline_args+=("--model" "$MODEL")
     fi
-    if [[ -n "$EFFORT_LEVEL" ]]; then
+    if [[ -n "${EFFORT_LEVEL:-}" ]]; then
         pipeline_args+=("--effort" "$EFFORT_LEVEL")
     fi
-    if [[ -n "$FALLBACK_MODEL" ]]; then
+    if [[ -n "${FALLBACK_MODEL:-}" ]]; then
         pipeline_args+=("--fallback-model" "$FALLBACK_MODEL")
     fi
-    if [[ "$NO_GITHUB" == "true" ]]; then
+    if [[ "${NO_GITHUB:-false}" == "true" ]]; then
         pipeline_args+=("--no-github")
     fi
     # Pass session restart config

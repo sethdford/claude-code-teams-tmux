@@ -17,7 +17,7 @@ jobs:
         os: [macos-latest, ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check version consistency
         run: bash scripts/check-version-consistency.sh
@@ -31,39 +31,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tmux jq
 
       - name: Run all test suites
+        # Same runner as `npm test`, so local and CI results cannot diverge.
+        # It auto-discovers scripts/*-test.sh, runs each independently, and
+        # applies a per-suite timeout — previously a single hung suite could
+        # stall this job until the workflow-level limit killed it with no
+        # indication of which suite was responsible.
+        # 25 lines of tail truncated the failing assertion for several suites,
+        # leaving CI showing that a suite failed but not which check. Only
+        # printed on failure, so a green run is unaffected.
+        env:
+          FAIL_LOG_LINES: 120
         run: |
-          # Auto-discover and run every test script listed in package.json "test"
-          # This ensures CI always matches npm test — no more manual list drift.
-          PASS=0
-          FAIL=0
-          FAILED_SUITES=""
-
-          for test_script in scripts/sw-*-test.sh; do
-            suite_name="$(basename "$test_script" .sh)"
-
-            echo ""
-            echo "═══════════════════════════════════════════════════════"
-            echo "Running: $suite_name"
-            echo "═══════════════════════════════════════════════════════"
-
-            if bash "$test_script"; then
-              PASS=$((PASS + 1))
-              echo "✓ $suite_name passed"
-            else
-              FAIL=$((FAIL + 1))
-              FAILED_SUITES="$FAILED_SUITES $suite_name"
-              echo "✗ $suite_name FAILED"
-            fi
-          done
-
-          echo ""
-          echo "═══════════════════════════════════════════════════════"
-          echo "CI Summary: $PASS passed, $FAIL failed ($(ls scripts/sw-*-test.sh | wc -l | tr -d ' ') total)"
-          if [[ $FAIL -gt 0 ]]; then
-            echo "Failed suites:$FAILED_SUITES"
-            exit 1
-          fi
-          echo "All suites passed."
+          bash scripts/sw-test-all.sh --timeout 300
 
   # Budget-limited real-Claude smoke (~$0.25/PR); runs only when Claude secret is set
   integration-claude:
@@ -80,12 +59,16 @@ jobs:
             echo "SKIP_CLAUDE=true" >> "$GITHUB_ENV"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: env.SKIP_CLAUDE != 'true'
 
       - name: Install dependencies
         if: env.SKIP_CLAUDE != 'true'
-        run: sudo apt-get update && sudo apt-get install -y tmux jq
+        # bubblewrap + socat are the Claude CLI's sandbox dependencies. Without
+        # them it prints "Sandbox disabled: … bwrap not installed, socat not
+        # installed" and exits 1, which was this job's only failure once the
+        # exit-code reporting bug was fixed (it previously claimed "exit 0").
+        run: sudo apt-get update && sudo apt-get install -y tmux jq bubblewrap socat
 
       - name: Install Claude Code CLI
         if: env.SKIP_CLAUDE != 'true'
@@ -93,13 +76,25 @@ jobs:
 
       - name: Run budget-limited Claude integration smoke
         if: env.SKIP_CLAUDE != 'true'
-        run: bash scripts/sw-integration-claude-test.sh
+        # The CLI resolves ANTHROPIC_API_KEY *before* CLAUDE_CODE_OAUTH_TOKEN,
+        # so exporting both lets a stale key shadow a working token — which is
+        # exactly what happened here: the job failed "Invalid API key" while
+        # claude-review, which uses the OAuth token directly, passed on the
+        # same commit. Setting the key to '' does not help; an empty value
+        # still wins its precedence slot and authenticates as an empty key. It
+        # has to be genuinely unset, so prefer the OAuth token when both exist
+        # and fall back to the key only when there is no token.
+        run: |
+          if [[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
+            unset ANTHROPIC_API_KEY
+          fi
+          bash scripts/sw-integration-claude-test.sh
 
   # Validate integration-claude skip path when no secret (script must exit 0 and skip)
   integration-claude-skip:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run integration-claude without secrets (expect skip)
         run: |
           out=$(bash scripts/sw-integration-claude-test.sh 2>&1) || exit 1
@@ -110,12 +105,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install dependencies
         run: npm ci
@@ -126,11 +121,38 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        # Pinned, not apt: whatever version the runner image ships drifts from
+        # what developers run locally, and shellcheck changes its findings
+        # between releases. apt's build reported SC2120 on functions that take
+        # optional `${1:-default}` arguments; 0.11.0 correctly does not. That
+        # skew is the classic "passes locally, fails only in CI".
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+        run: |
+          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" \
+            | tar -xJf - --strip-components=1 -C /usr/local/bin "shellcheck-${SHELLCHECK_VERSION}/shellcheck"
+          shellcheck --version
 
       - name: Lint scripts
+        # Warning severity is enforced, minus three codes that are structural to
+        # this codebase rather than defects:
+        #   SC2034 — "appears unused": scripts define config vars that are read
+        #            by other scripts after `source`, which shellcheck cannot see.
+        #   SC1090 — "can't follow non-constant source": every lib load is
+        #            "$SCRIPT_DIR/lib/x.sh" by design.
+        #   SC2148 — "no shebang": lib files are sourced, never executed.
+        #   SC2119/SC2120 — "references arguments, but none are ever passed":
+        #            fires on functions with optional `${1:-default}` params,
+        #            which is a deliberate pattern here (gen_agent_id,
+        #            optimize_learn_risk_keywords). 0.11.0 no longer reports
+        #            these; the codes stay excluded so an older shellcheck
+        #            cannot resurrect them.
+        # Everything else is a real finding and blocks. This gate had been failing
+        # continuously since 2026-04-05 on 89 findings; the 15 genuine ones are
+        # fixed (a real unbound-variable bug among them) and the gate now passes,
+        # so it can actually block regressions instead of being ignored.
         run: |
-          shellcheck -x -S warning scripts/sw scripts/sw-*.sh install.sh
+          shellcheck -x -S warning -e SC2034,SC1090,SC2148,SC2119,SC2120 scripts/sw scripts/sw-*.sh install.sh
