@@ -310,7 +310,7 @@ run_parallel() {
                 else
                     unset 'pids[$i]'
                 fi
-                ((running--))
+                running=$((running - 1))
             fi
         done
         sleep 0.1

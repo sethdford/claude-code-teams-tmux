@@ -19,7 +19,13 @@ RESET_COLOR="\033[0m"
 # Test counters
 PASS=0
 FAIL=0
-TEST_DIR="/private/tmp/claude-501/scope-test-$$"
+# Was hardcoded to "/private/tmp/claude-501/scope-test-$$" — a macOS-only path
+# (macOS resolves /tmp to /private/tmp) carrying a specific developer's UID.
+# On Linux there is no /private and it cannot be created at the root, so setup
+# died with "mkdir: cannot create directory '/private': Permission denied"
+# before a single assertion ran. mktemp under $TMPDIR is what the rest of the
+# harness uses and works on both platforms.
+TEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/sw-scope-test.XXXXXX")
 
 # Cleanup on exit
 cleanup() {
@@ -39,13 +45,13 @@ assert_equals() {
 
     if [[ "$expected" == "$actual" ]]; then
         echo -e "${PASS_COLOR}✓${RESET_COLOR} $test_name"
-        ((PASS++))
+        PASS=$((PASS + 1))
         return 0
     else
         echo -e "${FAIL_COLOR}✗${RESET_COLOR} $test_name"
         echo "  Expected: $expected"
         echo "  Actual:   $actual"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         return 1
     fi
 }
@@ -57,12 +63,12 @@ assert_contains() {
 
     if echo "$haystack" | grep -q "$needle"; then
         echo -e "${PASS_COLOR}✓${RESET_COLOR} $test_name"
-        ((PASS++))
+        PASS=$((PASS + 1))
         return 0
     else
         echo -e "${FAIL_COLOR}✗${RESET_COLOR} $test_name"
         echo "  Expected to contain: $needle"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         return 1
     fi
 }
@@ -73,12 +79,12 @@ assert_valid_json() {
 
     if echo "$json" | jq . >/dev/null 2>&1; then
         echo -e "${PASS_COLOR}✓${RESET_COLOR} $test_name"
-        ((PASS++))
+        PASS=$((PASS + 1))
         return 0
     else
         echo -e "${FAIL_COLOR}✗${RESET_COLOR} $test_name"
         echo "  Invalid JSON: $json"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         return 1
     fi
 }
@@ -151,10 +157,10 @@ result=$(extract_planned_files "$plan_file")
 # Should contain both files
 if echo "$result" | grep -q "src/index.ts" && echo "$result" | grep -q "src/db.ts"; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} Extract table format files"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} Extract table format files"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # Test 4: Extract with backticks
@@ -267,18 +273,18 @@ assert_valid_json "PR stats is valid JSON" "$stats"
 # Extract fields
 if echo "$stats" | jq -e '.insertions' >/dev/null 2>&1; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} PR stats contains insertions"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} PR stats missing insertions"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 if echo "$stats" | jq -e '.files_changed' >/dev/null 2>&1; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} PR stats contains files_changed"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} PR stats missing files_changed"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # Test 12: Scope report JSON structure
@@ -309,10 +315,10 @@ fields=("planned_files" "actual_files" "planned_and_touched" "planned_but_untouc
 for field in "${fields[@]}"; do
     if echo "$report" | jq -e ".$field" >/dev/null 2>&1; then
         echo -e "${PASS_COLOR}✓${RESET_COLOR} Report contains $field"
-        ((PASS++))
+        PASS=$((PASS + 1))
     else
         echo -e "${FAIL_COLOR}✗${RESET_COLOR} Report missing $field"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
     fi
 done
 
@@ -339,10 +345,10 @@ file_count=$(echo "$result" | grep -c . || true)
 # Should have at least 4 files from mixed formats
 if [[ "$file_count" -ge 4 ]]; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} Mixed formatting extracts multiple files"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} Mixed formatting should extract 4+ files, got $file_count"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # Test 14: Scope creep score is numeric
@@ -353,10 +359,10 @@ if echo "$report" | jq -e '.scope_creep_score' >/dev/null 2>&1; then
     score=$(echo "$report" | jq '.scope_creep_score')
     if [[ "$score" =~ ^0\.[0-9]+$ ]] || [[ "$score" =~ ^[0-9]+$ ]]; then
         echo -e "${PASS_COLOR}✓${RESET_COLOR} Scope creep score is numeric"
-        ((PASS++))
+        PASS=$((PASS + 1))
     else
         echo -e "${FAIL_COLOR}✗${RESET_COLOR} Scope creep score should be numeric"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
     fi
 fi
 
@@ -380,10 +386,10 @@ report=$(cat "$report_file")
 untouched=$(echo "$report" | jq '.planned_but_untouched | length')
 if [[ "$untouched" -eq 2 ]]; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} Detects planned but untouched files"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} Should detect 2 untouched files, got $untouched"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # Test 16: Files to modify with markdown code formatting
@@ -402,20 +408,20 @@ EOF
 result=$(extract_planned_files "$plan_file")
 if echo "$result" | grep -q "src/file"; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} Extracts from code blocks"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} Should extract files from code blocks"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # Test 17: Format report with no report file
 formatted=$(format_scope_report_for_prompt "$TEST_DIR/nonexistent")
 if [[ "$formatted" == *"No scope report"* ]]; then
     echo -e "${PASS_COLOR}✓${RESET_COLOR} Format handles missing report gracefully"
-    ((PASS++))
+    PASS=$((PASS + 1))
 else
     echo -e "${FAIL_COLOR}✗${RESET_COLOR} Should handle missing report gracefully"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 fi
 
 # ─── Summary ──────────────────────────────────────────────────────────────

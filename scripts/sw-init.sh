@@ -512,7 +512,9 @@ elif [[ -f "$SETTINGS_TEMPLATE" ]]; then
 else
     # Create minimal settings.json with agent teams
     # Use restrictive umask for sensitive files (owner-only: 600)
-    local _old_umask_settings
+    # NOT `local` — this branch is at top level, and `local` outside a function
+    # is a fatal bash error, which under `set -euo pipefail` aborted `sw init`
+    # on exactly the path a fresh machine takes (no settings.json, no template).
     _old_umask_settings=$(umask)
     umask 0077
 

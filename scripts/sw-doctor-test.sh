@@ -316,7 +316,7 @@ else
 fi
 
 # ─── Test 17: --fix creates missing directories ──────────────────────────────
-bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix >/dev/null 2>&1 || true
 if [[ -d ".claude" && -d ".claude/pipeline-artifacts" && -d ".claude/agents" ]]; then
     assert_pass "--fix creates .claude directories"
 else
@@ -365,7 +365,7 @@ else
 fi
 
 # ─── Test 21: --fix is idempotent (running twice doesn't break things) ─────────
-bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix >/dev/null 2>&1 || true
 if [[ -f ".claude/daemon-config.json" ]] && jq empty ".claude/daemon-config.json" 2>/dev/null; then
     assert_pass "--fix is idempotent (second run succeeds)"
 else
@@ -375,7 +375,7 @@ fi
 # ─── Test 22: --fix creates backups before overwriting ───────────────────────
 # Manually create a settings.json to test backup creation
 echo '{"old": "config"}' > ".claude/settings.json"
-bash "$SCRIPT_DIR/sw-doctor.sh" --fix 2>&1 > /dev/null || true
+bash "$SCRIPT_DIR/sw-doctor.sh" --fix >/dev/null 2>&1 || true
 # The backup should exist if we overwrote
 if [[ -f ".claude/settings.json.bak" ]] || [[ ! -f ".claude/settings.json" ]] || jq empty ".claude/settings.json" 2>/dev/null; then
     assert_pass "--fix handles existing config files safely"

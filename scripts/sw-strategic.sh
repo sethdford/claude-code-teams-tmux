@@ -46,7 +46,7 @@ fi
 # ─── Constants (policy overrides when config/policy.json exists) ─────────────
 STRATEGIC_MAX_ISSUES=5
 STRATEGIC_COOLDOWN_SECONDS=14400  # 4 hours
-STRATEGIC_MODEL="claude-sonnet-4-5-20250929"
+STRATEGIC_MODEL="claude-sonnet-5"
 # shellcheck disable=SC2034
 STRATEGIC_MAX_TOKENS=4096
 STRATEGIC_STRATEGY_LINES=200

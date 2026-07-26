@@ -467,7 +467,7 @@ collect_mutation() {
 
     local mutation_dir
     mutation_dir=$(mktemp -d "${TMPDIR:-/tmp}/sw-evidence-mutations.XXXXXX")
-    trap "rm -rf '$mutation_dir'" RETURN
+    trap 'rm -rf "$mutation_dir"' RETURN
 
     local total_mutants=0
     local killed_mutants=0
@@ -479,7 +479,8 @@ collect_mutation() {
         [[ ! -f "$REPO_DIR/$file" ]] && continue
 
         # Copy file to mutation dir for testing
-        local file_copy="$mutation_dir/$(basename "$file")"
+        local file_copy
+        file_copy="$mutation_dir/$(basename "$file")"
         cp "$REPO_DIR/$file" "$file_copy"
 
         # Apply mutations: swap operators, negate conditions, change exit codes

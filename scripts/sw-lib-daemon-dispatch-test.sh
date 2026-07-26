@@ -265,7 +265,13 @@ jq -n \
 mkdir -p "$WORKTREE_DIR/daemon-issue-51"
 echo "Pipeline failed" > "$LOG_DIR/issue-51.log"
 daemon_reap_completed 2>/dev/null || true
-assert_eq "Failure reap removes job" "0" "$(jq '.active_jobs | length' "$STATE_FILE" 2>/dev/null || echo 0)"
+# The contract is that the STALE entry for the dead PID is gone — not that
+# active_jobs ends up empty. daemon_on_failure legitimately spawns a retry for
+# the failed issue, which adds a fresh entry with a new PID. Asserting length 0
+# would fail on correct behaviour (and only passed previously because the spawn
+# path aborted on an unbound SKIP_GATES before the retry could be created).
+assert_eq "Failure reap removes stale dead-PID job" "0" \
+    "$(jq --argjson p "$dead_pid2" '[.active_jobs[] | select(.pid == $p)] | length' "$STATE_FILE" 2>/dev/null || echo 0)"
 
 # ─── Tests: daemon_on_success ──────────────────────────────────────────────
 print_test_section "daemon_on_success"
@@ -379,12 +385,12 @@ print_test_section "daemon_is_inflight"
 
 init_daemon_state
 jq '.active_jobs = [{issue: 42}] | .queued = ["43"]' "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
-daemon_is_inflight 42 || true
-inflight_42=$?
-daemon_is_inflight 43 || true
-inflight_43=$?
-daemon_is_inflight 99 || true
-inflight_99=$?
+# `cmd || true` then `$?` always yields 0 — the `|| true` becomes the last
+# command, so the function's real status is discarded. Seed 0 and let the
+# `||` branch overwrite it with the actual non-zero status instead.
+inflight_42=0; daemon_is_inflight 42 || inflight_42=$?
+inflight_43=0; daemon_is_inflight 43 || inflight_43=$?
+inflight_99=0; daemon_is_inflight 99 || inflight_99=$?
 [[ $inflight_42 -eq 0 ]] && assert_pass "Issue 42 is inflight (active)" || assert_fail "Issue 42 inflight" "expected 0"
 [[ $inflight_43 -eq 0 ]] && assert_pass "Issue 43 is inflight (queued)" || assert_fail "Issue 43 inflight" "expected 0"
 [[ $inflight_99 -eq 1 ]] && assert_pass "Issue 99 not inflight" || assert_fail "Issue 99 not inflight" "expected 1"

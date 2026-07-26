@@ -26,13 +26,13 @@ test_case() {
 
 pass() {
     echo -e "${GREEN}${BOLD}PASS${RESET}"
-    ((PASS++))
+    PASS=$((PASS + 1))
 }
 
 fail() {
     local reason="$1"
     echo -e "${RED}${BOLD}FAIL${RESET}: ${reason}"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
 }
 
 # ─── Clean test state ────────────────────────────────────────────────────────

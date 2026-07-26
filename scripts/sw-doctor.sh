@@ -245,7 +245,8 @@ doctor_fix_hooks() {
     if [[ -d "$repo_hooks" ]]; then
         for hook_file in "$repo_hooks"/*.sh; do
             if [[ -f "$hook_file" ]]; then
-                local hook_name="$(basename "$hook_file")"
+                local hook_name
+                hook_name="$(basename "$hook_file")"
                 local dest_hook="$hooks_dir/$hook_name"
                 if [[ ! -f "$dest_hook" ]]; then
                     if [[ "$DOCTOR_FIX_DRY_RUN" == "true" ]]; then

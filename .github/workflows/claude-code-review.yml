@@ -19,20 +19,46 @@ jobs:
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
+
+    # Dependabot and fork PRs run with a read-only token and NO access to repo
+    # secrets, so claude_code_oauth_token interpolates to an empty string and the
+    # action fails at the installation-token step ~12s in. That is what made this
+    # a permanently-red check on every dependabot PR (#583, #635, #636). Lockfile
+    # bumps do not need an AI review pass, so skip rather than paper over it.
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+
     permissions:
       contents: read
       pull-requests: read
       issues: read
       id-token: write
 
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
     steps:
+      # Mirrors the integration-claude job in test.yml: a missing credential is
+      # a skip, not a failure. Without this the job reports red on any PR where
+      # the secret is unset or expired, which is indistinguishable from a real
+      # review finding.
+      - name: Check for Claude credentials
+        run: |
+          if [[ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]]; then
+            echo "No CLAUDE_CODE_OAUTH_TOKEN available — skipping Claude review"
+            echo "SKIP_CLAUDE=true" >> "$GITHUB_ENV"
+          fi
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        if: env.SKIP_CLAUDE != 'true'
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
+        if: env.SKIP_CLAUDE != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

@@ -351,7 +351,9 @@ auto_fix() {
     trailing_ws=$(grep -c '[[:space:]]$' "$target_file" 2>/dev/null || true)
     trailing_ws="${trailing_ws:-0}"
     if [[ $trailing_ws -gt 0 ]]; then
-        sed -i '' 's/[[:space:]]*$//' "$target_file"
+        # sed_i, not `sed -i ''` — the empty-suffix form is BSD-only and makes
+        # GNU sed treat '' as the script, so `code-review --fix` failed on Linux.
+        sed_i 's/[[:space:]]*$//' "$target_file"
         info "Removed $trailing_ws lines of trailing whitespace"
         fixed=$((fixed + trailing_ws))
     fi

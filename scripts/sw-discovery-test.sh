@@ -191,7 +191,7 @@ assert_pass "score returns numeric result: $score_val"
 echo ""
 echo -e "  ${CYAN}acknowledge subcommand${RESET}"
 # Broadcast a discovery first
-bash "$SCRIPT_DIR/sw-discovery.sh" broadcast "test-cat" "test/path" "test discovery" 2>&1 >/dev/null
+bash "$SCRIPT_DIR/sw-discovery.sh" broadcast "test-cat" "test/path" "test discovery" >/dev/null 2>&1
 
 # Extract discovery id from the file
 test_disc_id=$(head -1 "$HOME/.shipwright/discoveries.jsonl" | jq -r '.ts_epoch // "test123"' 2>/dev/null || echo "test123")
