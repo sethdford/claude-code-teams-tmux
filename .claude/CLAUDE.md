@@ -616,13 +616,13 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-doc-fleet.sh` | 815 | Documentation Fleet Orchestrator |
 | `scripts/sw-docs-agent.sh` | 525 | Auto-sync README, wiki, API docs |
 | `scripts/sw-docs.sh` | 626 | Documentation Keeper |
-| `scripts/sw-doctor.sh` | 1635 | Validate Shipwright setup |
+| `scripts/sw-doctor.sh` | 1636 | Validate Shipwright setup |
 | `scripts/sw-dora.sh` | 605 | DORA Metrics Dashboard with Engineering Intelligence |
 | `scripts/sw-durable.sh` | 708 | Durable Workflow Engine |
 | `scripts/sw-e2e-orchestrator.sh` | 535 | Test suite registry & execution |
 | `scripts/sw-event-schema-sync.sh` | 93 | keep config/event-schema.json in step |
 | `scripts/sw-eventbus.sh` | 415 | Durable event bus for real-time inter-component |
-| `scripts/sw-evidence.sh` | 1100 | Machine-Verifiable Proof for Agent Deliveries |
+| `scripts/sw-evidence.sh` | 1101 | Machine-Verifiable Proof for Agent Deliveries |
 | `scripts/sw-feedback.sh` | 999 | Production Feedback Loop |
 | `scripts/sw-fix.sh` | 474 | Bulk Fix Across Multiple Repos |
 | `scripts/sw-fleet-discover.sh` | 550 | Auto-Discovery from GitHub Orgs |
@@ -641,12 +641,12 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
 | `scripts/sw-loop.sh` | 2675 | Continuous agent loop harness for Claude Code |
-| `scripts/sw-memory.sh` | 2240 | Persistent Learning & Context System |
+| `scripts/sw-memory.sh` | 2241 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1056 | Intelligent Model Routing & Cost Optimization |
 | `scripts/sw-otel.sh` | 609 | OpenTelemetry Observability |
 | `scripts/sw-oversight.sh` | 757 | Quality Oversight Board |
-| `scripts/sw-patrol-meta.sh` | 776 | Shipwright Self-Improvement Patrol |
+| `scripts/sw-patrol-meta.sh` | 780 | Shipwright Self-Improvement Patrol |
 | `scripts/sw-pipeline-composer.sh` | 444 | Dynamic Pipeline Composition |
 | `scripts/sw-pipeline-vitals.sh` | 1076 | Pipeline Vitals Engine |
 | `scripts/sw-pipeline.sh` | 279 | Autonomous Feature Delivery (Idea → Production) |
@@ -798,10 +798,10 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-heartbeat-test.sh` | 581 | Validate heartbeat lifecycle, |
 | `scripts/sw-hello-test.sh` | 108 | Hello Command Test Suite |
 | `scripts/sw-hygiene-test.sh` | 198 | Repository Organization & Cleanup tests |
-| `scripts/sw-incident-test.sh` | 434 | Validate incident detection & response |
+| `scripts/sw-incident-test.sh` | 442 | Validate incident detection & response |
 | `scripts/sw-init-test.sh` | 654 | E2E validation of init/setup flow |
 | `scripts/sw-instrument-test.sh` | 172 | Pipeline instrumentation & feedback loops |
-| `scripts/sw-integration-claude-test.sh` | 63 | Budget-limited real Claude smoke |
+| `scripts/sw-integration-claude-test.sh` | 71 | Budget-limited real Claude smoke |
 | `scripts/sw-intelligence-test.sh` | 534 | Unit tests for intelligence core |
 | `scripts/sw-intent-analysis-test.sh` | 443 | Test suite for intent analysis module |
 | `scripts/sw-jira-test.sh` | 284 | Validate Jira ↔ GitHub bidirectional sync |
