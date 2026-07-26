@@ -720,7 +720,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-github-app.sh` | 592 | GitHub App Management & Webhook Receiver |
 | `scripts/sw-github-checks.sh` | 501 | Native GitHub Checks API Integration |
 | `scripts/sw-github-deploy.sh` | 513 | Native GitHub Deployments API Integration |
-| `scripts/sw-github-graphql.sh` | 965 | GitHub GraphQL API Client |
+| `scripts/sw-github-graphql.sh` | 969 | GitHub GraphQL API Client |
 <!-- /AUTO:github-modules -->
 
 ### Issue Tracker Adapters
@@ -789,7 +789,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-docs-agent-test.sh` | 182 | Validate documentation agent operations |
 | `scripts/sw-docs-test.sh` | 781 | Validate documentation keeper, AUTO sections, |
 | `scripts/sw-doctor-test.sh` | 420 | Validate setup diagnostics |
-| `scripts/sw-dod-scorecard-test.sh` | 412 | Machine-Verifiable DoD Scorecard Tests |
+| `scripts/sw-dod-scorecard-test.sh` | 434 | Machine-Verifiable DoD Scorecard Tests |
 | `scripts/sw-dora-test.sh` | 241 | Validate DORA metrics dashboard, DX metrics, |
 | `scripts/sw-durable-test.sh` | 221 | Validate durable workflow engine |
 | `scripts/sw-e2e-integration-test.sh` | 352 | Real Claude + Real GitHub |
@@ -842,12 +842,12 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-loop-test.sh` | 850 | Validate continuous agent loop harness |
 | `scripts/sw-memory-discovery-e2e-test.sh` | 411 | Memory & Discovery E2E Test |
 | `scripts/sw-memory-effectiveness-test.sh` | 495 | Unit tests |
-| `scripts/sw-memory-test.sh` | 871 | Unit tests for memory system & cost tracking |
+| `scripts/sw-memory-test.sh` | 898 | Unit tests for memory system & cost tracking |
 | `scripts/sw-mission-control-test.sh` | 153 | Validate mission control dashboard |
 | `scripts/sw-model-router-test.sh` | 313 | Intelligent model routing & optimization |
 | `scripts/sw-mutation-executor-test.sh` | 309 | Mutation Testing Engine Test Suite |
 | `scripts/sw-otel-test.sh` | 146 | OpenTelemetry observability |
-| `scripts/sw-outcome-feedback-test.sh` | 425 | Unit tests for review capture & quality |
+| `scripts/sw-outcome-feedback-test.sh` | 430 | Unit tests for review capture & quality |
 | `scripts/sw-oversight-test.sh` | 164 | Quality oversight board tests |
 | `scripts/sw-patrol-meta-test.sh` | 449 | Validate self-improvement patrol |
 | `scripts/sw-pipeline-composer-test.sh` | 632 | Test Suite |
@@ -878,7 +878,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-rl-optimizer-test.sh` | 350 | RL Optimizer Test Suite (Phase 7) |
 | `scripts/sw-root-cause-test.sh` | 374 |  |
 | `scripts/sw-scale-test.sh` | 151 | Dynamic agent team scaling |
-| `scripts/sw-scope-enforcement-test.sh` | 435 | Test suite for scope enforcement |
+| `scripts/sw-scope-enforcement-test.sh` | 441 | Test suite for scope enforcement |
 | `scripts/sw-security-audit-test.sh` | 162 | Security auditing tests |
 | `scripts/sw-self-optimize-test.sh` | 837 | Unit tests for learning & tuning system |
 | `scripts/sw-server-api-test.sh` | 713 | Dashboard Server API Test Suite |
