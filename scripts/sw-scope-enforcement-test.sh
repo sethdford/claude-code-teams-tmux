@@ -19,7 +19,13 @@ RESET_COLOR="\033[0m"
 # Test counters
 PASS=0
 FAIL=0
-TEST_DIR="/private/tmp/claude-501/scope-test-$$"
+# Was hardcoded to "/private/tmp/claude-501/scope-test-$$" — a macOS-only path
+# (macOS resolves /tmp to /private/tmp) carrying a specific developer's UID.
+# On Linux there is no /private and it cannot be created at the root, so setup
+# died with "mkdir: cannot create directory '/private': Permission denied"
+# before a single assertion ran. mktemp under $TMPDIR is what the rest of the
+# harness uses and works on both platforms.
+TEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/sw-scope-test.XXXXXX")
 
 # Cleanup on exit
 cleanup() {
