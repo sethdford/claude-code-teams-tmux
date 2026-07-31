@@ -17,6 +17,15 @@
       "seen_count": 1,
       "last_seen": "2026-07-31T02:33:39Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Testing meta-loop can detect declining accuracy... \u001b[38;2;248;113;113m\u001b[1mFAIL\u001b[0m: No meta-loop warning/revert event emitted for declining accuracy",
+      "root_cause": "Meta-loop accuracy-decline detector isn't emitting a warning/revert event when accuracy trends downward, so the assertion in sw-intent-analysis-test (or related suite) that expects that event finds none logged",
+      "fix": "Fix the meta-loop monitor to detect declining accuracy trend and emit the warning/revert event before the check is asserted, then rerun sw-intent-analysis-test",
+      "seen_count": 1,
+      "last_seen": "2026-07-31T06:02:58Z",
+      "category": "test_failure"
     }
   ]
 }
