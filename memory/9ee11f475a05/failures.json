@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
-      "seen_count": 9,
-      "last_seen": "2026-07-31T14:17:18Z",
+      "seen_count": 11,
+      "last_seen": "2026-07-31T17:42:52Z",
       "category": "test_failure"
     },
     {
@@ -23,18 +23,27 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 2,
-      "last_seen": "2026-07-31T10:27:11Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-31T16:19:07Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "sw-cost-test.sh dashboard test asserts CONTEXT EFFICIENCY output but finds no cost entries in the last 30 days because the fixture writes cost entries with stale/out-of-window timestamps",
-      "fix": "Update the test fixture to write cost entries with a current timestamp (e.g. now_iso) instead of a hardcoded/relative date outside the 30-day lookback window",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), with sw-e2e-integration-test also timing out at 301s",
+      "fix": "Run the two failing suites in isolation to capture stderr, fix the underlying assertion/regression, and investigate why sw-e2e-integration-test exceeds the 300s timeout",
       "seen_count": 1,
       "last_seen": "2026-07-31T09:18:23Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
+      "root_cause": "sw-e2e-integration-test timed out at 301s and sw-intent-analysis-test exited with code 1, likely a real API/network dependency or hung process",
+      "fix": "add explicit timeouts/mocking to sw-e2e-integration-test and debug the sw-intent-analysis-test assertion failure directly",
+      "seen_count": 1,
+      "last_seen": "2026-07-31T17:06:08Z",
+      "category": "timeout"
     }
   ]
 }
