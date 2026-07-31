@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
       "seen_count": 11,
-      "last_seen": "2026-07-31T17:42:52Z",
+      "last_seen": "2026-07-31T18:50:58Z",
       "category": "test_failure"
     },
     {
@@ -24,26 +24,26 @@
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
       "seen_count": 3,
-      "last_seen": "2026-07-31T16:19:07Z",
+      "last_seen": "2026-07-31T18:08:49Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), with sw-e2e-integration-test also timing out at 301s",
-      "fix": "Run the two failing suites in isolation to capture stderr, fix the underlying assertion/regression, and investigate why sw-e2e-integration-test exceeds the 300s timeout",
+      "root_cause": "Autoresearch e2e test suite shows all PASS but the aggregate CI summary reports Failed: 1, indicating an unrelated test suite in the full run failed (not captured in this truncated log tail)",
+      "fix": "Re-run with full untruncated log or scripts/sw-test-all.sh output to identify the specific failing suite, then inspect its FAIL lines directly",
       "seen_count": 1,
       "last_seen": "2026-07-31T09:18:23Z",
-      "category": "test_failure"
+      "category": "unknown"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
-      "root_cause": "sw-e2e-integration-test timed out at 301s and sw-intent-analysis-test exited with code 1, likely a real API/network dependency or hung process",
-      "fix": "add explicit timeouts/mocking to sw-e2e-integration-test and debug the sw-intent-analysis-test assertion failure directly",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Memory promotion logic fails to copy cross-repo patterns, likely due to a missing/stale cross-repo memory fixture or path mismatch in the promotion test",
+      "fix": "Inspect sw-self-optimize.sh's promote_memory function and its test fixture paths in sw-self-optimize-test.sh to ensure the source repo-hash directory exists before assertion",
       "seen_count": 1,
-      "last_seen": "2026-07-31T17:06:08Z",
-      "category": "timeout"
+      "last_seen": "2026-07-31T19:24:21Z",
+      "category": "test_failure"
     }
   ]
 }
