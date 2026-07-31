@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 3,
-      "last_seen": "2026-07-31T18:08:49Z",
+      "seen_count": 4,
+      "last_seen": "2026-07-31T21:30:54Z",
       "category": "test_failure"
     },
     {
@@ -39,8 +39,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Memory promotion logic fails to copy cross-repo patterns, likely due to a missing/stale cross-repo memory fixture or path mismatch in the promotion test",
-      "fix": "Inspect sw-self-optimize.sh's promote_memory function and its test fixture paths in sw-self-optimize-test.sh to ensure the source repo-hash directory exists before assertion",
+      "root_cause": "sw-e2e-integration-test exited with code 1, breaking the npm test run before cleanup checks could be evaluated in context",
+      "fix": "Inspect sw-e2e-integration-test.sh output directly to find the failing assertion and fix the underlying integration test setup",
       "seen_count": 1,
       "last_seen": "2026-07-31T19:24:21Z",
       "category": "test_failure"
