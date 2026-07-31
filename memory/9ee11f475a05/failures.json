@@ -3,11 +3,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "sw-e2e-integration-test's GitHub test-issue creation step failed (no valid GitHub auth/token in CI), cascading to skip the pipeline test since 'Must provide --goal or --issue' indicates the created issue number never got passed through",
-      "fix": "Ensure GITHUB_TOKEN/gh auth is available in the test environment before running sw-e2e-integration-test, and have the pipeline step fail fast with a clear message when issue creation fails instead of silently passing an empty --issue",
-      "seen_count": 3,
-      "last_seen": "2026-07-30T20:58:20Z",
-      "category": "config"
+      "root_cause": "Two flaky/environment-dependent suites failed: sw-e2e-integration-test needs live GitHub access to create a test issue (no credentials in CI), and sw-intent-analysis-test expects analyze_intent's JSON output to include version/goal/criteria fields that the current implementation omits",
+      "fix": "Skip sw-e2e-integration-test's GitHub-dependent cases when no GH token/network is available (or mock the GitHub call), and update analyze_intent to emit the required version/goal/criteria schema fields (or update the test if the schema intentionally changed)",
+      "seen_count": 7,
+      "last_seen": "2026-07-31T00:41:05Z",
+      "category": "test_failure"
     }
   ]
 }
