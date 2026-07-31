@@ -3,10 +3,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "sw-loop-test failed with exit 1 (real regression), and sw-e2e-integration-test hung and hit the 300s timeout",
-      "fix": "inspect sw-loop-test.sh output for the failing assertion and fix the underlying loop harness bug; investigate why sw-e2e-integration-test hangs (likely waiting on a mocked Claude/GitHub call) and add a timeout guard or fix the blocking call",
-      "seen_count": 6,
-      "last_seen": "2026-07-31T03:16:49Z",
+      "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
+      "seen_count": 4,
+      "last_seen": "2026-07-31T01:30:14Z",
       "category": "test_failure"
     }
   ]
