@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
-      "seen_count": 6,
-      "last_seen": "2026-07-31T08:30:00Z",
+      "seen_count": 8,
+      "last_seen": "2026-07-31T12:44:59Z",
       "category": "test_failure"
     },
     {
@@ -30,8 +30,8 @@
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "sw-intent-analysis-test fails schema validation for required fields (version, goal, criteria) and sw-loop-test's stuckness detection assertion fails, while sw-e2e-integration-test hangs past the 301s timeout",
-      "fix": "Fix the intent analysis output schema to include version/goal/criteria fields and debug the loop stuckness detection logic; investigate why sw-e2e-integration-test hangs (likely awaiting an external/Claude call) and add a timeout guard or mock",
+      "root_cause": "sw-pipeline-test.sh mock 'claude' shim doesn't emit plan.md/review.md artifacts, so plan/review/E2E/resume/cleanup subtests fail, and a mock JSON payload with a non-numeric field breaks jq parsing in the low-complexity intelligence test",
+      "fix": "update mock claude stub in sw-pipeline-test.sh to write plan.md and review.md artifacts on invocation, and fix the mock episode JSON to emit valid numeric literals so jq parses correctly",
       "seen_count": 1,
       "last_seen": "2026-07-31T09:18:23Z",
       "category": "test_failure"
