@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 3,
-      "last_seen": "2026-07-31T18:08:49Z",
+      "seen_count": 4,
+      "last_seen": "2026-07-31T21:35:53Z",
       "category": "test_failure"
     },
     {
@@ -39,11 +39,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Memory promotion logic fails to copy cross-repo patterns, likely due to a missing/stale cross-repo memory fixture or path mismatch in the promotion test",
-      "fix": "Inspect sw-self-optimize.sh's promote_memory function and its test fixture paths in sw-self-optimize-test.sh to ensure the source repo-hash directory exists before assertion",
+      "root_cause": "Incomplete log excerpt cuts off mid-suite (sw-durable-test) with no failing test visible, so the actual test failure isn't captured in this window",
+      "fix": "Re-run test stage and capture full output including the failing suite name and assertion, or grep sw-test-all.sh output for FAIL/✗ markers",
       "seen_count": 1,
       "last_seen": "2026-07-31T19:24:21Z",
-      "category": "test_failure"
+      "category": "unknown"
     }
   ]
 }
