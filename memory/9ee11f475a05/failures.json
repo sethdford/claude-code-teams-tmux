@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test suite exited non-zero during real Claude/GitHub integration checks",
       "fix": "inspect sw-e2e-integration-test.sh output/logs for the failing assertion and fix the underlying API or auth handling",
-      "seen_count": 2,
-      "last_seen": "2026-07-31T21:28:37Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-31T23:20:15Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 3,
-      "last_seen": "2026-07-31T16:19:07Z",
+      "seen_count": 4,
+      "last_seen": "2026-07-31T22:51:20Z",
       "category": "test_failure"
     },
     {
@@ -48,19 +48,10 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "Two test suites (sw-e2e-integration-test, sw-intent-analysis-test) failed, matching the '1 FAIL' summary",
-      "fix": "Run scripts/sw-e2e-integration-test.sh and scripts/sw-intent-analysis-test.sh directly to inspect assertion failures and fix the underlying logic or test expectations",
-      "seen_count": 2,
-      "last_seen": "2026-07-31T22:58:33Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Memory inject returns context for each stage...     \u001b[38;2;248;113;113m✗\u001b[0m Missing pattern: Review Feedback (review has feedback section)",
-      "root_cause": "sw-pipeline-composer-test.sh expects a 'Review Feedback' section in the composer's review output but the memory-inject/review template was changed without updating this pattern",
-      "fix": "Add the 'Review Feedback' section header to the review-stage output/template in sw-pipeline-composer.sh (or update the test's expected pattern to match the current output format)",
+      "root_cause": "sw-pipeline-test.sh E2E tests fail because the plan stage does not write plan.md (root artifact missing), cascading to review, resume, and full E2E test failures",
+      "fix": "Fix the plan stage in sw-pipeline.sh to write .claude/pipeline-artifacts/plan.md before marking stage complete",
       "seen_count": 1,
-      "last_seen": "2026-07-31T23:40:58Z",
+      "last_seen": "2026-07-31T20:18:34Z",
       "category": "test_failure"
     }
   ]
