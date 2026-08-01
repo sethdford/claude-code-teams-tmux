@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
-      "seen_count": 12,
-      "last_seen": "2026-07-31T20:59:04Z",
+      "seen_count": 13,
+      "last_seen": "2026-08-01T02:30:52Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test suite exited non-zero during real Claude/GitHub integration checks",
       "fix": "inspect sw-e2e-integration-test.sh output/logs for the failing assertion and fix the underlying API or auth handling",
-      "seen_count": 3,
-      "last_seen": "2026-07-31T23:20:15Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-01T01:54:30Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 4,
-      "last_seen": "2026-07-31T22:51:20Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-01T01:18:18Z",
       "category": "test_failure"
     },
     {
@@ -48,10 +48,19 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh E2E tests fail because the plan stage does not write plan.md (root artifact missing), cascading to review, resume, and full E2E test failures",
-      "fix": "Fix the plan stage in sw-pipeline.sh to write .claude/pipeline-artifacts/plan.md before marking stage complete",
+      "root_cause": "Intent analysis JSON schema builder omits required fields (version, goal, criteria) in its generated output",
+      "fix": "Update analyze_intent output construction to include version, goal, and criteria keys matching the expected schema",
       "seen_count": 1,
       "last_seen": "2026-07-31T20:18:34Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
+      "root_cause": "Cross-repo memory promotion test copies patterns using a stale/mocked repo-hash path that no longer matches the test fixture's expected directory structure",
+      "fix": "Update the memory promotion test fixture or repo-hash resolution to align mock source/target paths before asserting the copy",
+      "seen_count": 1,
+      "last_seen": "2026-08-01T03:03:02Z",
       "category": "test_failure"
     }
   ]
