@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
-      "seen_count": 19,
-      "last_seen": "2026-08-01T09:58:15Z",
+      "seen_count": 18,
+      "last_seen": "2026-08-01T10:15:04Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test suite exited non-zero during real Claude/GitHub integration checks",
       "fix": "inspect sw-e2e-integration-test.sh output/logs for the failing assertion and fix the underlying API or auth handling",
-      "seen_count": 5,
-      "last_seen": "2026-08-01T02:03:12Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-01T10:52:47Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), with sw-e2e-integration-test also timing out at 301s",
       "fix": "Run the two failing suites in isolation to capture stderr, fix the underlying assertion/regression, and investigate why sw-e2e-integration-test exceeds the 300s timeout",
-      "seen_count": 1,
-      "last_seen": "2026-07-31T09:18:23Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-01T09:36:13Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-loop-test failed after 173s, likely due to a stale assertion against loop harness state (the running test process holds code parsed at start, per prior known issue)",
-      "fix": "Re-run sw-loop-test in isolation with verbose output to capture the specific failing assertion and diff against current sw-loop.sh before re-fixing",
+      "root_cause": "Cross-repo memory promotion test hit a copy/comparison mismatch, likely a stale fixture path or format assumption in the promotion logic (sw-self-optimize.sh)",
+      "fix": "Inspect the 'Memory promotion copies cross-repo patterns' test case in sw-self-optimize-test.sh for the expected vs actual pattern data and fix the promotion function's copy/path logic accordingly",
       "seen_count": 1,
       "last_seen": "2026-07-31T20:18:34Z",
       "category": "test_failure"
