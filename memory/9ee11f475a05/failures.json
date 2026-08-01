@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 3,
-      "last_seen": "2026-07-31T16:19:07Z",
+      "seen_count": 5,
+      "last_seen": "2026-07-31T23:37:15Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test failed (exit 1 after 37s); sw-e2e-integration-test hit the 301s timeout",
-      "fix": "inspect sw-intent-analysis-test.sh assertion output for the regression and raise/investigate the timeout budget or mock latency in sw-e2e-integration-test",
+      "root_cause": "sw-intent-analysis-test fails with exit 1 after 38s, likely a broken assertion or environment-dependent behavior in the intent analysis module",
+      "fix": "Run scripts/sw-intent-analysis-test.sh directly to capture the failing assertion output and fix the underlying logic or update the test expectation",
       "seen_count": 1,
       "last_seen": "2026-07-31T20:18:34Z",
       "category": "test_failure"
