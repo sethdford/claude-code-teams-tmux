@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test fails on GitHub issue creation (likely missing/invalid GitHub auth or API access in CI), cascading to skip the pipeline test; sw-intent-analysis-test fails because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Ensure GitHub credentials/token are configured for e2e integration test environment, and update the intent-analysis schema generator to include version, goal, and criteria fields",
-      "seen_count": 12,
-      "last_seen": "2026-07-31T20:59:04Z",
+      "seen_count": 13,
+      "last_seen": "2026-07-31T23:56:12Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-intent-analysis-test fails a schema validation assertion (missing version/goal/criteria fields), and sw-e2e-integration-test fails because a prior pipeline lock (pipeline-888) was left in progress, blocking the new pipeline run",
       "fix": "Fix analyze_intent output to include required schema fields (version, goal, criteria), and ensure e2e-integration-test cleans up/releases stale pipeline locks before/after each run (e.g. force-abort or unique lock IDs per test)",
-      "seen_count": 5,
-      "last_seen": "2026-07-31T23:37:15Z",
+      "seen_count": 3,
+      "last_seen": "2026-07-31T16:19:07Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test fails with exit 1 after 38s, likely a broken assertion or environment-dependent behavior in the intent analysis module",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly to capture the failing assertion output and fix the underlying logic or update the test expectation",
+      "root_cause": "Test suite failures unrelated to a single cause: e2e-integration hit a stale pipeline lock from a prior interrupted run, intent-analysis schema validation is missing required fields, and loop-test's stuckness detection assertion regressed",
+      "fix": "Clear the stale pipeline lock before e2e-integration-test runs, add version/goal/criteria to the intent-analysis JSON schema output, and debug the loop stuckness detection logic for a recent regression",
       "seen_count": 1,
       "last_seen": "2026-07-31T20:18:34Z",
       "category": "test_failure"
