@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Cost dashboard's CONTEXT EFFICIENCY test asserts on loop.context_efficiency event data, but the test's cost-entries fixture (last 30 days) is empty, so the dashboard reports 'No cost entries' instead of rendering the expected section",
       "fix": "Seed a cost entry (or mock costs.json) with a recent timestamp in the sw-cost-test.sh fixture setup before invoking the dashboard so the 30-day lookback window is non-empty",
-      "seen_count": 1,
-      "last_seen": "2026-08-06T22:46:42Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-07T02:29:07Z",
       "category": "test_failure"
     },
     {
@@ -21,19 +21,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "Two suites (sw-e2e-integration-test, sw-intent-analysis-test) exited 1 amid an otherwise passing 162-suite run; the reveal-summary line miscounts and reports only 1/3 pass instead of reflecting the true near-total pass count, masking the real signal which is just these two failing suites",
-      "fix": "Investigate sw-e2e-integration-test and sw-intent-analysis-test failures directly (likely missing API keys/env or a flaky external dependency given e2e-integration's name), and separately fix the pass-count aggregation in sw-test-all.sh's summary reveal logic",
+      "root_cause": "sw-intent-analysis-test failed (exit 1, 35s) and sw-e2e-integration-test hung past the 300s timeout, likely a real Claude/API call blocking without a mock",
+      "fix": "run sw-intent-analysis-test.sh locally to inspect the failing assertion, and add/verify a timeout guard or mock for sw-e2e-integration-test's Claude API calls",
       "seen_count": 4,
-      "last_seen": "2026-08-07T04:08:49Z",
+      "last_seen": "2026-08-07T04:50:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "The pipeline log shows all captured test suites passing (PASS counts with 0 FAIL each), but the overall stage reported Failed: 1, indicating a failure occurred in a suite outside the shown log excerpt (log was truncated to last 200 lines) or a test runner exit code mismatch not reflected in the visible PASS/FAIL tallies.",
-      "fix": "Re-run the full test suite output (not just the tail) to identify which specific suite reported the 1 failure, since none of the suites shown in this excerpt failed.",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-intent-analysis-test failed with exit 1 after 38s, likely an assertion or logic mismatch in the intent analysis module",
+      "fix": "Run scripts/sw-intent-analysis-test.sh directly to isolate the failing assertion and inspect the test output for the specific failure",
       "seen_count": 1,
-      "last_seen": "2026-08-07T03:38:30Z",
+      "last_seen": "2026-08-07T04:12:44Z",
       "category": "test_failure"
     }
   ]
