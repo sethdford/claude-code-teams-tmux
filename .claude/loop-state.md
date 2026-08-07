@@ -13,38 +13,40 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "patterns.json",
-      "relevance": 95,
-      "summary": "Describes project structure: node type, vitest runner, npm, JavaScript, src/ layout, *.test.js pattern — essential context for building E2E tests in this codebase"
-    },
-    {
       "file": "failures.json",
-      "relevance": 85,
-      "summary": "Documents E2E test artifact failure: plan.md/review.md not written to .claude/pipeline-artifacts/, causing cascading E2E test failures — directly relevant to understanding E2E test expectations"
-    },
-    {
-      "file": "success-patterns.json",
-      "relevance": 70,
-      "summary": "Contains successful build patterns with iteration counts (3 iterations), durations (~45-150s), and test strategy (npm test) — provides reference for expected build performance and approach"
+      "relevance": 80,
+      "summary": "Contains critical E2E pipeline test failure data: 'plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/', directly addressing artifact generation issues that would affect E2E test implementation"
     },
     {
       "file": "metrics.json",
       "relevance": 55,
-      "summary": "Historical baselines: build_duration_s=7095, test_duration_s=1459 — gives performance context for build and test stages"
+      "summary": "Provides baseline performance metrics (build_duration_s: 7095, test_duration_s: 1459) useful for understanding expected duration of build and test stages in this pipeline run"
+    },
+    {
+      "file": "success-patterns.json",
+      "relevance": 50,
+      "summary": "Shows two successful patterns for complex work (bug fix, feature) that both used npm test strategy and standard template with 3 iterations—useful reference for build stage iteration patterns"
     },
     {
       "file": "knowledge.json",
-      "relevance": 50,
-      "summary": "Captures test infrastructure issues (mktemp directory failures, stale heartbeats) — relevant for understanding test setup and CI environment concerns"
+      "relevance": 35,
+      "summary": "Contains test utility knowledge about common failures (mktemp paths, output formatting, JSON generation) that could apply to E2E test setup and execution"
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 35,
+      "summary": "Captures project conventions (Node/JavaScript, vitest test runner, commonjs imports) that inform how E2E tests should be structured and executed in this build stage"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 7 new discoveries
+✓ Injected 9 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Adaptive Build-Loop Iteration Budget from Historical Outcomes — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -171,8 +173,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-08-07T19:30:27Z
-last_iteration_at: 2026-08-07T19:30:27Z
+started_at: 2026-08-07T19:45:19Z
+last_iteration_at: 2026-08-07T19:45:19Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
