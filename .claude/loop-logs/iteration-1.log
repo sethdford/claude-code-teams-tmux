@@ -1,3 +1,11 @@
-The goal — adding an automated E2E test comment marker to README.md for issue #1370 — has been completed, following the exact established pattern from prior issues (#1357, #1365). The docs test suite (18/18) passes, confirming no regressions.
+Iteration 1 complete — Task 1 and part of Task 14 done.
 
-LOOP_COMPLETE
+**What I found and fixed:** the daemon poll quarantine filter was a dead no-op. `scripts/lib/daemon-poll-github.sh:7` sourced the library as `${SCRIPT_DIR:-<own dir>}/lib/issue-quarantine.sh`, but `SCRIPT_DIR` is set by `sw-daemon.sh` *after* this file is sourced — so the fallback resolved to `scripts/lib/lib/issue-quarantine.sh`, and the trailing `|| true` hid the failure. `quarantine_filter_json` was never defined, and the call site at line 126 has its own fail-open fallback, so the daemon returned every issue unfiltered, E2E test issues included.
+
+**Changes:**
+- `scripts/lib/daemon-poll-github.sh` — resolve the library from `BASH_SOURCE` directly, drop the error suppression so a truly missing library fails loudly.
+- `scripts/sw-lib-issue-quarantine-test.sh` — three regression tests: loads with `SCRIPT_DIR` unset, that load actually *filters* (not just defines the symbol), and a stale `SCRIPT_DIR` doesn't break resolution.
+
+**Verification:** confirmed the regression test fails against the pre-fix code (`git stash` check printed `NOT_LOADED`). Quarantine suite 24/24. Full `npm test`: 163 suites passed, 0 failed, 0 timed out.
+
+Remaining checklist items (Tasks 2–13, 15) — unfiltered consumers in `sw-decide.sh`, `sw-autonomous.sh`, `lib/root-cause.sh`, `sw-patrol-meta.sh`, `lib/daemon-triage.sh`, `sw-release-manager.sh`, `lib/fleet-failover.sh`, plus the `triage quarantine` subcommand, doctor section, and the CLAUDE.md site-count correction — are still open. Not declaring LOOP_COMPLETE.

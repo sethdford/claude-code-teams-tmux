@@ -2,38 +2,38 @@
 goal: "Quarantine E2E Test Issues From Production Issue Tracker
 
 ## Plan Summary
-# Plan — Quarantine E2E Test Issues From Production Issue Tracker (#1303)
+# Plan: Quarantine E2E Test Issues From Production Issue Tracker
 
-## Problem (verified against the repo)
+## Situation Assessment (read this first)
 
-`scripts/sw-e2e-integration-test.sh:117` creates **real** GitHub issues titled
-`E2E test: add comment to README [automated]` (`:39`) with label `e2e-test`. It is the only
-test script that calls a real `gh issue create` (verified:
-`grep -ln "gh issue create" scripts/sw-*e2e*.sh` → only that file). Its cleanup trap
-*closes* the issue but does not delete it, so every integration run leaves a permanent
-closed issue. Downstream consumers then read those issues:
+**The core of this feature is already implemented and merged on `main`.** `git diff main...HEAD --stat` is empty, `scripts/lib/issue-quarantine.sh` (VERSION 3.3.0) exists with all five public functions, `scripts/sw-lib-issue-quarantine-test.sh` passes 21/21, config defaults are in `config/defaults.json`, and `sw-e2e-integration-test.sh` creates its label idempotently and asserts it lands on the issue.
 
-| Consumer | Site | What it reads |
-| --- | --- | --- |
-| Daemon poll | `scripts/lib/daemon-poll-github.sh:70`, `:97` | open issues with `$WATCH_LABEL` |
-| Triage scoring | `scripts/sw-triage.sh:463` | all open issues |
-| Triage unlabeled | `scripts/sw-triage.sh:669` | `--search "no:label"` |
-| Triage label audit | `scripts/sw-triage.sh:695` | all open issues |
-| Strategic title cache | `scripts/sw-strategic.sh:115-116` | open + last 30 closed titles |
-| Strategic analysis | `scripts/sw-strategic.sh:286`, `:380`, `:388` | open + recent closed |
+So this plan is **not** a greenfield build. It closes the gaps between what CLAUDE.md claims and what the code actually does.
+
+What already works:
+
+| Piece | Status |
+|---|---|
+| `lib/issue-quarantine.sh` — 5 functions, fail-open | Done |
+| `config/defaults.json` → `labels.e2e_test`, `labels.quarantine` | Done |
+| E2E suite labels + asserts its synthetic issue | Done |
+| Filtered: daemon poll, triage score, triage audit, triage unlabeled (server-side), strategic titles ×2, strategic analysis ×3 | Done (9 sites) |
+| Unit test suite, registered in `package.json` | Done |
+
+What is **not** done — the actual scope of this issue:
 [... full plan in .claude/pipeline-artifacts/plan.md]
 
 ## Key Design Decisions
-# Architecture Decision Record: Quarantine E2E Test Issues From Production Issue Tracker
+# Design: Quarantine E2E Test Issues From Production Issue Tracker
 ## Context
 ## Decision
+### Component decomposition
+### Interface contracts
+### Data flow
+### Error boundaries
+### The one contract change: loading is not filtering
+# shellcheck source=./issue-quarantine.sh
 ## Alternatives Considered
-## Component Diagram
-## Interface Contracts
-### Quarantine Library (`scripts/lib/issue-quarantine.sh`)
-### E2E Integration Test Harness (`scripts/sw-e2e-integration-test.sh`)
-### Consumption Points (Daemon Poll, Triage, Strategic)
-## Data Flow
 [... full design in .claude/pipeline-artifacts/design.md]
 
 ## Specification: Quarantine E2E Test Issues From Production Issue Tracker
@@ -48,29 +48,29 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json (first)",
-      "relevance": 85,
-      "summary": "Contains specific E2E test failure: 'Pipeline E2E tests fail because plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/' — directly describes E2E test issues and root cause"
+      "file": "failures.json",
+      "relevance": 90,
+      "summary": "Contains specific E2E integration test failures and pipeline artifact issues; directly documents quarantine-related challenges like stale pipeline locks and E2E test setup problems"
+    },
+    {
+      "file": "success-patterns.json",
+      "relevance": 52,
+      "summary": "Captures successful build patterns with test strategies (npm test) and iteration counts; provides data on effective approaches for complex fixes like this one"
     },
     {
       "file": "knowledge.json",
-      "relevance": 62,
-      "summary": "Contains KB entries for test infrastructure failures (mktemp issues, test setup problems) — provides patterns for fixing test environment issues that affect E2E test execution"
+      "relevance": 42,
+      "summary": "Documents test infrastructure failures and fixes (mktemp issues, sw-cleanup.sh); relevant to E2E test isolation setup and cleanup logic"
     },
     {
-      "file": "success-patterns.json (first)",
-      "relevance": 48,
-      "summary": "Shows 'Fix bug' pattern with 3 iterations and standard template — demonstrates iteration strategy and test approach (npm test) applicable to build stage work"
+      "file": "patterns.json",
+      "relevance": 38,
+      "summary": "Project metadata showing node/vitest configuration; establishes conventions for test patterns and package management relevant to E2E test framework"
     },
     {
       "file": "issues.json",
-      "relevance": 42,
-      "summary": "Records issue 'Fix timeout bug in daemon' with success pattern including gotchas — exemplifies how issues are captured and fixed with learned patterns"
-    },
-    {
-      "file": "metrics.json (first)",
-      "relevance": 38,
-      "summary": "Contains baselines for build_duration_s (7095s) and test_duration_s (1459s) — provides context for test execution expectations and potential timeouts"
+      "relevance": 28,
+      "summary": "Recorded issue resolution patterns (timeout bug fixes, semaphore approaches); provides context on build-stage problem-solving techniques"
     }
   ]
 }
@@ -83,48 +83,42 @@ Task tracking (check off items as you complete them):
 # Pipeline Tasks — Quarantine E2E Test Issues From Production Issue Tracker
 
 ## Implementation Checklist
-- [ ] Task 1: Add `labels.e2e_test` + `labels.quarantine` to `config/defaults.json`
-- [ ] Task 2: Create `scripts/lib/issue-quarantine.sh` with fail-open `quarantine_filter_json`
-- [ ] Task 3: `sw-e2e-integration-test.sh` — ensure label exists, apply it, assert it stuck
-- [ ] Task 4: `daemon-poll-github.sh` — filter after `gh_record_success`, before `issue_count`
-- [ ] Task 5: `sw-triage.sh` — filter `:463`, `:695`; search qualifier on `:669`
-- [ ] Task 6: `sw-strategic.sh` — filter `:115`, `:116`, `:286`, `:380`, `:388`
-- [ ] Task 7: Create `scripts/sw-lib-issue-quarantine-test.sh` (14 cases incl. fail-open + wiring)
-- [ ] Task 8: Register suite in `package.json` and `scripts/sw-test-all.sh`
-- [ ] Task 9: Document quarantine label in `.claude/CLAUDE.md` Test Harness section
-- [ ] Task 10: `bash -n` + shellcheck all touched scripts
-- [ ] Task 11: Run new suite + daemon/triage/strategic/poll suites
-- [ ] Task 12: `npm test` green; `shipwright version check` green
-- [ ] Task 13: Verify existing synthetic issues carry a quarantined label; label any strays
-- [ ] `scripts/lib/issue-quarantine.sh` exists, is Bash 3.2 clean, `VERSION` matches `package.json`, idempotently sourceable
-- [ ] `sw-e2e-integration-test.sh` creates its issue with the `sw:e2e-test` label and asserts the label is present on the created issue
-- [ ] `daemon-poll-github.sh`, `sw-triage.sh`, `sw-strategic.sh` exclude quarantined issues by default, and the daemon's logged count reflects the post-filter set
-- [ ] Exclusion is overridable via config (`labels.quarantine`) and env (`SHIPWRIGHT_LABELS_E2E_TEST`) — no hardcoded label strings at any call site
-- [ ] `quarantine_filter_json` provably fails open: malformed and empty input pass through, exit 0 (cases 8–9)
-- [ ] `scripts/sw-lib-issue-quarantine-test.sh` passes 14/14, registered in `package.json`
-- [ ] `npm test` green; `shipwright version check` green; `bash -n` clean on all touched scripts
+- [ ] Task 1: Fix broken `source` fallback in `lib/daemon-poll-github.sh:7`; remove the error-swallowing `|| true`
+- [ ] Task 2: Source `issue-quarantine.sh` in the consumer scripts lacking it
+- [ ] Task 3: Filter `sw-decide.sh:66` dedup query
+- [ ] Task 4: Filter `sw-autonomous.sh` dedup searches (3 sites)
+- [ ] Task 5: Filter `lib/root-cause.sh:188` error-signature dedup (add `--json number,labels`)
+- [ ] Task 6: Filter `sw-patrol-meta.sh:44` and `sw-strategic.sh:655` title dedup
+- [ ] Task 7: Filter `lib/daemon-triage.sh:463` triage score fetch
+- [ ] Task 8: Filter `sw-release-manager.sh:166` blocker count
+- [ ] Task 9: Convert `lib/fleet-failover.sh:25` to `quarantine_search_qualifier` with empty-guard
+- [ ] Task 10: Audit every modified site for `labels` in the `--json` field list
+- [ ] Task 11: Add `shipwright triage quarantine list|apply` with dry-run default
+- [ ] Task 12: Add quarantine validation section to `sw-doctor.sh`
+- [ ] Task 13: Apply quarantine label in `sw-tracker-providers-test.sh`
+- [ ] Task 14: Add regression test — library loads with `SCRIPT_DIR` unset — plus backfill-selector tests
+- [ ] Task 15: Correct consumption-site count and consumer list in `.claude/CLAUDE.md`
+- [ ] `lib/daemon-poll-github.sh` sources the library by self-relative path; a regression test proves it loads with `SCRIPT_DIR` unset
+- [ ] All previously-unfiltered consumers filter quarantined issues; every one requests `labels` in its `--json` fields
+- [ ] Every new filter site is fail-open: malformed JSON yields unfiltered input and exit 0, verified by test
+- [ ] `shipwright triage quarantine list` reports unlabeled synthetic issues; `apply` is dry-run unless `--apply` is passed
+- [ ] `shipwright doctor` reports quarantine config health
 
 ## Context
 - Pipeline: autonomous
 - Branch: ci/issue-1303
 - Issue: none
-- Generated: 2026-08-07T01:54:31Z
-
-## Failure Diagnosis (Iteration 2)
-Classification: syntax_error
-Strategy: fix_syntax
-Repeat count: 0
-INSTRUCTION: This is a syntax error. Carefully check the exact line mentioned in the error. Look for missing brackets, semicolons, commas, or mismatched quotes."
-iteration: 2
+- Generated: 2026-08-07T11:52:33Z"
+iteration: 0
 max_iterations: 20
 status: running
 test_cmd: "npm test"
-model: haiku
+model: opus
 agents: 1
-started_at: 2026-08-07T03:15:40Z
-last_iteration_at: 2026-08-07T03:15:40Z
+started_at: 2026-08-07T11:56:51Z
+last_iteration_at: 2026-08-07T11:56:51Z
 consecutive_failures: 0
-total_commits: 2
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
@@ -135,12 +129,4 @@ max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-08-07T02:42:35Z)
-The goal — adding an E2E test comment to the README — is now complete: an HTML comment marker was added, the relevan
-LOOP_COMPLETE
-
-### Iteration 2 (2026-08-07T03:15:40Z)
-- This resolves the error: "Error: --json-schema is not a valid JSON Schema: no schema with key or ref..."
-- All verification tests pass: issue-quarantine (21/21), daemon-poll (31/31), triage (23/23), strategic (30/30)
-- Version consistency check: PASSED
 
