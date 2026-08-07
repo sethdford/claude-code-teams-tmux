@@ -1610,32 +1610,32 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 90,
-            "summary": "3 recent test failures from last 24h with root causes and fixes: cost dashboard fixture issues, pipeline E2E artifact path problems, and memory promotion test env assumptions. Directly applicable to avoid regressions during build."
+            "relevance": 95,
+            "summary": "Three recent test stage failures (cost dashboard fixture, E2E artifact writing, memory promotion paths) with root causes and fixes. Critical for avoiding regressions in current build."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "2 successful delivery patterns showing iteration counts (3 each), durations (45-150s), test strategy (npm test), and file patterns. Demonstrates approach for bug fixes and features at similar complexity."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 82,
-            "summary": "Baseline expectations: build_duration_s=7095 (~2h), test_duration_s=1459 (~24m). Essential for validating build progress and setting iteration limits during development."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 76,
-            "summary": "Project structure conventions: node project, vitest test runner, src/ directory, *.test.js pattern, commonjs imports. Critical for writing code that matches project standards."
+            "relevance": 90,
+            "summary": "Two documented successful builds (bug fix in 3 iterations/45s, auth feature in 3 iterations/150s) with file patterns, test strategies, and commit counts. Direct iteration guidance for current build."
           },
           {
             "file": "knowledge.json",
-            "relevance": 68,
-            "summary": "5 KB entries documenting recurring test failures: mktemp directory issues, sw-cleanup.sh output formatting, regression detection JSON formatting. Helps avoid or quickly fix common test execution problems."
+            "relevance": 85,
+            "summary": "Five captured test failure patterns including mktemp directory issues, heartbeat detection, and JSON output formatting. Helps avoid known pitfalls during build/test stages."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline metrics show build takes ~7095s and tests take ~1459s. Useful for detecting performance anomalies or stalls in current build iteration."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project conventions (vitest runner, src/ directory, commonjs imports). Provides context for test patterns and file structure in this repo's build process."
           }
         ]
       },
-      "timestamp": 1786067905,
+      "timestamp": 1786069863,
       "ttl": 1800
     },
     "269c2252df579037dbfa6db4ad5112cf": {
@@ -1657,6 +1657,169 @@
         }
       ],
       "timestamp": 1786068518,
+      "ttl": 1800
+    },
+    "9ffec5a1b4309a58b33c35c65fa98a84": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 95,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Issue is automated test artifact that should be closed rather than implemented",
+          "README may have changed since test creation",
+          "Duplicate or stale test issue from previous runs"
+        ],
+        "implementation_hints": [
+          "Verify this is an actual E2E test artifact and close if confirmed safe",
+          "Check if the test framework already handles this issue creation/cleanup",
+          "Review e2e test logs to confirm test completed successfully"
+        ]
+      },
+      "timestamp": 1786069721,
+      "ttl": 3600
+    },
+    "584c03898cab125e5bc082ad6e45a5db": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786069724,
+      "ttl": 1800
+    },
+    "cf3c417f315645366b7240c9798ce930": {
+      "result": {
+        "estimated_iterations": 1
+      },
+      "timestamp": 1786069731,
+      "ttl": 1800
+    },
+    "1d81d51454e28fc2a1386a8dad421025": {
+      "result": {
+        "estimated_cost_usd": 0.04,
+        "estimated_iterations": 1,
+        "estimated_tokens": 8500,
+        "likely_failure_stage": "none",
+        "confidence": 90
+      },
+      "timestamp": 1786069741,
+      "ttl": 3600
+    },
+    "f9c9e8b2bd49e68005879dc608624768": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "documentation",
+          "automation",
+          "e2e-validation"
+        ],
+        "complexity_assessment": {
+          "score": 3,
+          "reasoning": "Straightforward E2E test of Shipwright's documentation modification capability; low risk due to quarantine; primary challenge is ensuring test stability, proper cleanup, and preventing false positives"
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy",
+            "systematic-debugging"
+          ],
+          "design": [
+            "testing-strategy"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "pr-quality",
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "testing-strategy": "E2E tests require explicit acceptance criteria (README modified correctly), edge cases (concurrent modifications, AUTO: markers), and reproducible test patterns across all pipeline stages",
+          "systematic-debugging": "This is an automated E2E test; understanding any prior failures prevents retry loops and informs whether test design or feature implementation is the root cause",
+          "pr-quality": "E2E test code must clearly document the scenario being validated and why, enabling future maintainers to understand test intent and modify safely",
+          "validation-thoroughness": "E2E tests validate real end-to-end flows; test execution alone is insufficient—must verify the test actually detects failures (e.g., would it catch a broken documentation writer?)",
+          "deploy-safety": "E2E tests gate pipeline merges; unreliable tests create false confidence or block legitimate deploys, so stability and flakiness detection are critical"
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Test isolation and quarantine enforcement (verify sw:e2e-test label prevents contamination of production metrics)",
+          "Repository state cleanup (ensure README reverts to original state after test, no leftover artifacts)",
+          "Documentation sync safety (verify test modifications don't conflict with AUTO: sections or DORA/intelligence caching)",
+          "Test flakiness and determinism (confirm test passes reliably on repeated runs without timing assumptions)",
+          "False positive detection (verify test would fail if the feature breaks, not just when it runs)"
+        ],
+        "risk_areas": [
+          "Flaky test causing intermittent pipeline failures and false confidence",
+          "Incomplete cleanup leaving modified README and confusing subsequent runs",
+          "Test passing but not validating the feature (modified README is correct but doesn't mean feature works end-to-end)",
+          "Interference with documentation AUTO: sections or intelligence module caching",
+          "Quarantine label not respected by intelligence/triage modules, leaking into production analysis"
+        ]
+      },
+      "timestamp": 1786069804,
+      "ttl": 3600
+    },
+    "61c5f4a9ce6598c2f1fc048e0a7ce958": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Project structure (Node/vitest/npm/JavaScript) and conventions directly apply to understanding how to implement and test the README change"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 75,
+            "summary": "Shows successful build patterns achieving similar complexity (60-65) using standard template with 3 iterations, providing iteration baseline for documentation task"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Provides build_duration_s and test_duration_s baselines (7095s build, 1459s test) for performance comparison on this build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Contains E2E pipeline test failures related to artifact generation (.claude/pipeline-artifacts/) which is relevant to understanding E2E test execution"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 55,
+            "summary": "Documents test infrastructure issues (mktemp paths, cleanup output format) that could cause test failures during build and test stages"
+          }
+        ]
+      },
+      "timestamp": 1786069843,
+      "ttl": 1800
+    },
+    "7cb46b8dc6fd7dab50b991a7263f2d84": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786069855,
       "ttl": 1800
     }
   }
