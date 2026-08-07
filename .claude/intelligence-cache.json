@@ -1595,33 +1595,33 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Contains 3 recent test failures with root causes and fixes; build stage will execute npm test and loop iterations, so these failure patterns and remediation strategies are directly applicable"
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 90,
-            "summary": "KB entries capture error signatures and fix strategies for common test failures (mktemp paths, sw-cleanup output, JSON formatting); errors with 2-4 occurrences and recorded fixes inform what to watch for during build loop"
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Two previous successful builds show iteration strategy (2-4 iterations), test approach (npm test), file patterns touched, and cost; directly relevant for benchmarking expected build loop behavior and test execution strategy"
+            "relevance": 95,
+            "summary": "Contains 2 successful build patterns (bug fix + feature) with complexity scores, iteration counts, test strategies, file changes, and cost metrics—directly applicable to understanding build stage behavior and what makes builds succeed"
           },
           {
             "file": "metrics.json",
-            "relevance": 72,
-            "summary": "Baseline metrics show build_duration_s: 7095, test_duration_s: 1459; provides expected time budget for current build stage execution"
+            "relevance": 90,
+            "summary": "Baseline metrics for build_duration_s (7095s) and test_duration_s (1459s) are essential context for the build stage to understand expected performance and timeout thresholds"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Recent test failures with root causes directly affecting build execution: artifact writing issues in pipeline stages, cost dashboard test fixtures, and memory promotion path mismatches"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Captured test environment failures (mktemp /tmp/claude issues, cleanup output formatting) and regression detection patterns applicable to debugging build-stage test failures"
           },
           {
             "file": "patterns.json",
             "relevance": 60,
-            "summary": "Project structure: node + vitest + npm, source in src/, commonjs imports; build stage will execute within this environment, so knowing conventions is useful context"
+            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, commonjs imports) define the structure and patterns the build stage operates within"
           }
         ]
       },
-      "timestamp": 1786067741,
+      "timestamp": 1786069745,
       "ttl": 1800
     },
     "b6fa8a3c5379ef6101586498a6bd7d1d": {
@@ -1877,6 +1877,40 @@
       },
       "timestamp": 1786069652,
       "ttl": 3600
+    },
+    "204cfdf8ba3c30292f381777b5e7d5c7": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "high",
+        "success_probability": 72,
+        "recommended_template": "full",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete FIXME marker discovery across the large codebase",
+          "Regression when fixing known-incorrect behavior in core paths",
+          "Prioritization disagreement on which FIXMEs are highest-impact",
+          "Dependencies between fixes creating cascading failures"
+        ],
+        "implementation_hints": [
+          "Use grep -rn 'FIXME' with context to enumerate all 25 markers and categorize by severity",
+          "Create tracking spreadsheet: file:line, current_behavior, fix_impact, correctness_risk",
+          "Score each FIXME by reliability impact (affects tests, critical path, edge cases)",
+          "Write failing tests first to verify known-incorrect behavior before fixing",
+          "Fix in dependency order to prevent cascading failures",
+          "Create follow-up tracking issues for remaining 15 FIXMEs with clear defer rationale",
+          "Regenerate .claude/platform-hygiene.json FIXME count using platform hygiene scan",
+          "Run full test suite after each fix batch to catch regressions early"
+        ]
+      },
+      "timestamp": 1786069728,
+      "ttl": 3600
+    },
+    "28121a07a153af6f7a4e7f1d55e4384b": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786069846,
+      "ttl": 1800
     }
   }
 }

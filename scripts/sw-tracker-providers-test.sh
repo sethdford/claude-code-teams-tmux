@@ -296,6 +296,104 @@ test_github_provider_get_issue_body_calls_gh() {
     grep -q "issue view" "$GH_CALLS" || return 1
 }
 
+test_github_empty_issue_id_guards() {
+    : > "$GH_CALLS"
+    (
+        cd "$TEMP_DIR"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        # Empty issue_id should not call gh
+        provider_get_issue "" 2>/dev/null || true
+    )
+    # gh should not be called
+    [[ $(wc -l < "$GH_CALLS") -eq 0 ]] || return 1
+}
+
+test_github_empty_label_guards() {
+    : > "$GH_CALLS"
+    (
+        cd "$TEMP_DIR"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        # Empty issue_id or label should guard the call
+        provider_add_label "" "label" 2>/dev/null || true
+        provider_add_label "42" "" 2>/dev/null || true
+    )
+    # gh should not be called
+    [[ $(wc -l < "$GH_CALLS") -eq 0 ]] || return 1
+}
+
+test_github_gh_failure_fallback() {
+    # Override mock gh to fail
+    mkdir -p "$TEMP_DIR/bin-fail"
+    cat > "$TEMP_DIR/bin-fail/gh" <<'GH_FAIL'
+#!/bin/bash
+exit 1
+GH_FAIL
+    chmod +x "$TEMP_DIR/bin-fail/gh"
+
+    # When gh fails, provider_get_issue should fail and return empty
+    (
+        cd "$TEMP_DIR"
+        PATH="$TEMP_DIR/bin-fail:$PATH"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        provider_get_issue "42" 2>/dev/null
+    ) && return 1  # Should fail
+    return 0  # Test passes if the command failed
+}
+
+test_github_label_splitting_comma() {
+    : > "$GH_CALLS"
+    (
+        cd "$TEMP_DIR"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        provider_create_issue "Title" "Body" "bug,feature,urgent" 2>/dev/null >/dev/null || true
+    )
+    # All three labels should appear as separate --label args
+    grep -q "bug" "$GH_CALLS" || return 1
+    grep -q "feature" "$GH_CALLS" || return 1
+    grep -q "urgent" "$GH_CALLS" || return 1
+}
+
+test_github_label_splitting_space() {
+    : > "$GH_CALLS"
+    (
+        cd "$TEMP_DIR"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        provider_create_issue "Title" "Body" "label1 label2 label3" 2>/dev/null >/dev/null || true
+    )
+    # All three space-separated labels should appear
+    grep -q "label1" "$GH_CALLS" || return 1
+    grep -q "label2" "$GH_CALLS" || return 1
+    grep -q "label3" "$GH_CALLS" || return 1
+}
+
+test_github_provider_notify_emits_event() {
+    mkdir -p "$TEMP_DIR/home/.shipwright"
+    local events_file="$TEMP_DIR/home/.shipwright/events.jsonl"
+    (
+        cd "$TEMP_DIR"
+        export HOME="$TEMP_DIR/home"
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        provider_notify "create" "42" "test detail" 2>/dev/null || true
+    )
+    # Should emit an event
+    [[ -f "$events_file" ]] && grep -q "tracker.notify" "$events_file" && return 0 || return 1
+}
+
+test_github_no_github_guards_all_functions() {
+    local result
+    (
+        cd "$TEMP_DIR"
+        export NO_GITHUB=1
+        source "$SCRIPT_DIR/sw-tracker-github.sh"
+        # All these should return 0 when NO_GITHUB=1
+        provider_get_issue "42" >/dev/null 2>&1 || return 1
+        provider_get_issue_body "42" >/dev/null 2>&1 || return 1
+        provider_add_label "42" "label" >/dev/null 2>&1 || return 1
+        provider_comment "42" "text" >/dev/null 2>&1 || return 1
+        provider_close_issue "42" >/dev/null 2>&1 || return 1
+    )
+}
+
 test_jira_provider_comment_uses_api() {
     : > "$CURL_CALLS"
     cat > "$TEMP_DIR/home/.shipwright/tracker-config.json" <<'EOF'
@@ -512,6 +610,13 @@ main() {
     run_test "provider_comment calls gh issue comment" test_github_provider_comment_calls_gh
     run_test "provider_close_issue calls gh issue close" test_github_provider_close_calls_gh
     run_test "provider_get_issue_body calls gh issue view" test_github_provider_get_issue_body_calls_gh
+    run_test "empty issue_id guards gh calls" test_github_empty_issue_id_guards
+    run_test "empty label arguments guard gh calls" test_github_empty_label_guards
+    run_test "gh command failures handled gracefully" test_github_gh_failure_fallback
+    run_test "labels split by comma correctly" test_github_label_splitting_comma
+    run_test "labels split by space correctly" test_github_label_splitting_space
+    run_test "provider_notify emits tracker event" test_github_provider_notify_emits_event
+    run_test "NO_GITHUB=1 guards all provider functions" test_github_no_github_guards_all_functions
     echo ""
 
     echo -e "${PURPLE}${BOLD}Linear Provider${RESET}"

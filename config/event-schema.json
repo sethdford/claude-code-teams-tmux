@@ -1131,6 +1131,12 @@
         "total"
       ]
     },
+    "exist.type": {
+      "required": [],
+      "optional": [
+        "key"
+      ]
+    },
     "feedback_auto_respond": {
       "required": [],
       "optional": [
@@ -1642,6 +1648,12 @@
         "status"
       ]
     },
+    "lib.event": {
+      "required": [],
+      "optional": [
+        "lib_key"
+      ]
+    },
     "linear.init": {
       "required": [],
       "optional": [
@@ -1997,6 +2009,12 @@
       "required": [],
       "optional": []
     },
+    "new.type": {
+      "required": [],
+      "optional": [
+        "key"
+      ]
+    },
     "optimize.audit_intensity": {
       "required": [],
       "optional": []
@@ -2310,12 +2328,26 @@
       "required": [],
       "optional": []
     },
+    "pipeline.stage": {
+      "required": [],
+      "optional": [
+        "stage",
+        "status"
+      ]
+    },
     "pipeline.stall_aborted": {
       "required": [],
       "optional": [
         "pid",
         "pipeline_id",
         "reason"
+      ]
+    },
+    "pipeline.start": {
+      "required": [],
+      "optional": [
+        "goal",
+        "issue_id"
       ]
     },
     "pipeline.started": {
@@ -3230,6 +3262,12 @@
     "test.mutation_complete": {
       "required": [],
       "optional": []
+    },
+    "test.new_type": {
+      "required": [],
+      "optional": [
+        "new_key"
+      ]
     },
     "test_holdout_sealed": {
       "required": [],
