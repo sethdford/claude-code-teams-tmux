@@ -1683,31 +1683,31 @@
           {
             "file": "success-patterns.json",
             "relevance": 85,
-            "summary": "Shows proven build strategies with iteration counts (3-4), files touched (shell scripts, JSON config, logs), test strategies (npm test), and timing (2.5 USD cost over ~45-150s). Direct template for this build stage."
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 70,
-            "summary": "Project conventions: source_dir=src/, test_pattern=*.test.js, import_style=commonjs, test_runner=vitest. Build stage needs these to write code matching project standards."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 65,
-            "summary": "Baseline performance: build_duration_s=7095s, test_duration_s=1459s. Build stage can use these to detect stalls and estimate total pipeline time."
+            "summary": "Contains two successful build patterns showing 3-4 iterations, 45-150s duration baseline, files changed during loop (loop-logs, loop-state.md, intelligence-cache.json), and npm test strategy—directly applicable to current build iteration"
           },
           {
             "file": "failures.json",
-            "relevance": 58,
-            "summary": "Test-stage failures: stale pipeline locks, mktemp /tmp/claude issues, fixture seeding problems. Build stage should avoid these anti-patterns (especially mktemp and lock cleanup)."
+            "relevance": 80,
+            "summary": "Documents recent test stage failures including loop iteration behavior, pipeline E2E artifact writing (plan.md/review.md), and stuckness detection—critical context for debugging build failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Baseline metrics show build_duration_s=7095 (2 hours) and test_duration_s=1459, establishing expectations for current build iteration timing"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Project conventions (Node/vitest/npm/commonjs) establish the build framework, test patterns, and package manager context needed for the build stage"
           },
           {
             "file": "knowledge.json",
-            "relevance": 52,
-            "summary": "Captured failure fixes: mktemp -d template issues, cleanup --force hints, regression detection JSON. Knowledge base for debugging common build/test errors."
+            "relevance": 45,
+            "summary": "Test infrastructure issues (mktemp /tmp/claude failures, cleanup stale heartbeats, JSON output formatting) are relevant if build encounters test setup or cleanup errors"
           }
         ]
       },
-      "timestamp": 1786132713,
+      "timestamp": 1786134883,
       "ttl": 1800
     },
     "c72e738dc8a8cfe1aa09ee6ebb35f460": {
@@ -2181,6 +2181,13 @@
       },
       "timestamp": 1786134010,
       "ttl": 3600
+    },
+    "277188d3b90918eb3a5ff533c6280908": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786134836,
+      "ttl": 1800
     }
   }
 }

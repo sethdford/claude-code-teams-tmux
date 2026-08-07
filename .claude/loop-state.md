@@ -41,10 +41,12 @@ Historical context (lessons from previous pipelines):
 }
 
 Discoveries from other pipelines:
-✓ Injected 11 new discoveries
+✓ Injected 13 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Adaptive Build-Loop Iteration Budget from Historical Outcomes — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -126,8 +128,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-08-07T20:21:39Z
-last_iteration_at: 2026-08-07T20:21:39Z
+started_at: 2026-08-07T20:34:45Z
+last_iteration_at: 2026-08-07T20:34:45Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
