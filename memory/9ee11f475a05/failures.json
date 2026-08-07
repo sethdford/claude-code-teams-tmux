@@ -24,7 +24,7 @@
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
       "seen_count": 7,
-      "last_seen": "2026-08-07T08:02:45Z",
+      "last_seen": "2026-08-07T07:15:31Z",
       "category": "flaky"
     },
     {
@@ -38,20 +38,11 @@
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing: Cycle Complete\u001b[0m",
-      "root_cause": "sw-daemon-test and sw-decide-test failed (exit 1 / exit 31), aborting the suite run before reaching completion",
-      "fix": "Fix the failing assertions in sw-daemon-test.sh and sw-decide-test.sh, then re-run the suite",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "Real-events smoke test (Part 6) computed composite=N/A from live events.jsonl/quality-scores.jsonl, indicating a null/missing field broke reward aggregation on real data",
+      "fix": "Add null/type guards in the reward-aggregator composite calculation (or fix the source events schema) so real pipeline data doesn't yield N/A, and assert composite is numeric in the smoke test",
       "seen_count": 1,
-      "last_seen": "2026-08-07T05:40:20Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "Cross-repo memory promotion likely fails an assertion on JSON structure or file path when copying patterns between repo memory stores",
-      "fix": "Inspect sw-self-optimize-test.sh assertions for the promotion test and verify the promoted pattern file/schema matches what the test expects",
-      "seen_count": 1,
-      "last_seen": "2026-08-07T06:35:35Z",
+      "last_seen": "2026-08-07T06:03:11Z",
       "category": "test_failure"
     }
   ]
