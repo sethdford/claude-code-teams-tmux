@@ -107,6 +107,8 @@ RESUME=false
 VERBOSE=false
 MAX_ITERATIONS_EXPLICIT=false
 ADAPTIVE_ITERATIONS=$(_config_get_int "loop.adaptive_iterations" 0 2>/dev/null || echo 0)
+ADAPTIVE_COHORT=""
+ADAPTIVE_BUDGET=0
 MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
@@ -696,12 +698,12 @@ apply_adaptive_budget() {
             suggested=$(adaptive_iterations_suggest "$complexity" "$labels")
             if [[ "$suggested" =~ ^[0-9]+$ ]] && [[ "$suggested" -gt 0 ]]; then
                 MAX_ITERATIONS="$suggested"
-                local cohort
-                cohort=$(adaptive_iterations_cohort "$complexity" "$labels")
-                info "Adaptive iterations: cohort '$cohort' → max $suggested iterations"
+                ADAPTIVE_COHORT=$(adaptive_iterations_cohort "$complexity" "$labels")
+                ADAPTIVE_BUDGET="$suggested"
+                info "Adaptive iterations: cohort '$ADAPTIVE_COHORT' → max $suggested iterations"
                 emit_event "loop.budget_selected" \
                     "source=adaptive_iterations" \
-                    "cohort=$cohort" \
+                    "cohort=$ADAPTIVE_COHORT" \
                     "budget=$suggested"
             fi
         fi
@@ -2492,6 +2494,10 @@ ${GOAL}"
                     # Converged — stop successfully
                     info "Build loop converged — stopping"
                     STATUS="complete"
+                    # Record adaptive budget outcome if adaptive iterations was used
+                    if [[ -n "$ADAPTIVE_COHORT" ]] && type adaptive_iterations_record_outcome >/dev/null 2>&1; then
+                        adaptive_iterations_record_outcome "$ADAPTIVE_COHORT" "$ITERATION" "true" "$ADAPTIVE_BUDGET"
+                    fi
                     write_state
                     write_progress
                     show_summary
@@ -2501,6 +2507,10 @@ ${GOAL}"
                     # Diverging — stop with failure
                     warn "Build loop diverging — stopping (scores declining consistently)"
                     STATUS="diverging"
+                    # Record adaptive budget outcome if adaptive iterations was used
+                    if [[ -n "$ADAPTIVE_COHORT" ]] && type adaptive_iterations_record_outcome >/dev/null 2>&1; then
+                        adaptive_iterations_record_outcome "$ADAPTIVE_COHORT" "$ITERATION" "false" "$ADAPTIVE_BUDGET"
+                    fi
                     write_state
                     write_progress
                     show_summary
@@ -2516,6 +2526,10 @@ ${GOAL}"
         # Guarded completion (replaces naive grep check)
         if guard_completion; then
             STATUS="complete"
+            # Record adaptive budget outcome if adaptive iterations was used
+            if [[ -n "$ADAPTIVE_COHORT" ]] && type adaptive_iterations_record_outcome >/dev/null 2>&1; then
+                adaptive_iterations_record_outcome "$ADAPTIVE_COHORT" "$ITERATION" "true" "$ADAPTIVE_BUDGET"
+            fi
             write_state
             write_progress
             show_summary
@@ -2591,6 +2605,15 @@ HUMAN FEEDBACK (received after iteration $ITERATION): $human_msg"
     done
 
     # Write final state after loop exits
+    # Record adaptive budget outcome if adaptive iterations was used
+    if [[ -n "$ADAPTIVE_COHORT" ]] && type adaptive_iterations_record_outcome >/dev/null 2>&1; then
+        # Determine if we converged based on STATUS or test results
+        local converged="false"
+        if [[ "$STATUS" == "complete" ]]; then
+            converged="true"
+        fi
+        adaptive_iterations_record_outcome "$ADAPTIVE_COHORT" "$ITERATION" "$converged" "$ADAPTIVE_BUDGET"
+    fi
     write_state
     write_progress
     show_summary
