@@ -17,7 +17,7 @@ FAIL=0
 TOTAL=0
 TEMP_DIR=""
 
-cleanup() { [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"; }
+cleanup() { [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"; return 0; }
 trap cleanup EXIT
 
 run_test() {

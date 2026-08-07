@@ -1,5 +1,6 @@
 <!-- E2E test: automated comment added by issue #1349 -->
 <!-- E2E test: automated comment added by issue #1364 -->
+<!-- E2E test: automated comment added by issue #1373 -->
 <p align="center">
   <img src="website/src/assets/logo-dark.svg" alt="Shipwright" width="200">
 </p>
