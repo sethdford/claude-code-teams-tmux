@@ -24,25 +24,16 @@
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
       "seen_count": 11,
-      "last_seen": "2026-08-07T15:44:44Z",
+      "last_seen": "2026-08-07T15:49:27Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255mpublish error handling\u001b[0m",
-      "root_cause": "Test suite output is a clean full-pass log with no failing assertions or error trace present",
-      "fix": "Re-run the test stage in isolation and capture actual stderr/exit code; suite pass/fail counts show 0 failures so investigate CI harness/log truncation instead of test code",
+      "root_cause": "e2e-integration-test hit a stale pipeline lock from a prior interrupted run, and intent-analysis-test's schema assertion is out of sync with analyze_intent's output fields",
+      "fix": "Ensure e2e-integration-test releases/cleans the pipeline lock in setup/teardown (or auto-detect and abort stale locks), and update the intent-analysis schema check to match current required fields (version, goal, criteria)",
       "seen_count": 1,
       "last_seen": "2026-08-07T02:57:53Z",
-      "category": "unknown"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "Real Shipwright data smoke test computed a composite reward of N/A instead of a numeric value, likely from a missing/null field in quality-scores.jsonl or stage-effectiveness.jsonl breaking the reward aggregator's math",
-      "fix": "Add a null/empty-field guard in the reward composite calculation (reward-aggregator.sh) so it defaults missing components instead of propagating N/A, and assert numeric output in the smoke test",
-      "seen_count": 1,
-      "last_seen": "2026-08-07T14:12:04Z",
       "category": "test_failure"
     }
   ]
