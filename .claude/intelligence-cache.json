@@ -1586,33 +1586,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Contains 2 success patterns with complete build metadata: iterations, test strategy (npm test), files changed, commit count, and approach. Directly applicable to planning similar build work."
-          },
-          {
             "file": "failures.json",
             "relevance": 90,
-            "summary": "Documents 4 recent test-stage failures with root causes and fixes. Critical for build stage to avoid known test failures (e.g., missing pipeline artifacts, stale locks, cost dashboard fixtures)."
+            "summary": "Contains recent test failures and root causes directly relevant to build hazards: stale pipeline locks blocking runs, mock stages not writing expected artifacts, cost dashboard seeding issues. These patterns will likely recur during this build stage."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 87,
+            "summary": "Two recent successful patterns (Fix bug, Add authentication) show iteration counts (3), durations (~45-150s), files changed, test strategies, and cost (~$2.50). Directly informs expected build timeline and approach for similar complexity."
           },
           {
             "file": "knowledge.json",
-            "relevance": 85,
-            "summary": "Captures 5+ test failure patterns (mktemp paths, JSON output, heartbeat detection) with fix strategies and error signatures. Prevents build/test setup failures."
+            "relevance": 70,
+            "summary": "Contains recurring failure signatures with fix strategies: mktemp directory creation failures (4 occurrences), regression detection JSON output errors. These are known hazards to avoid during this build iteration."
           },
           {
             "file": "metrics.json",
-            "relevance": 70,
-            "summary": "Provides baseline performance metrics (build: 7095s, test: 1459s). Helps detect performance regressions and set realistic expectations for build duration."
+            "relevance": 60,
+            "summary": "Baselines for build duration (7095s) and test duration (1459s) updated 2026-07-31. Critical for detecting stalls or anomalies in current build/test performance."
           },
           {
-            "file": "patterns.json",
-            "relevance": 65,
-            "summary": "Documents project conventions (source_dir: src/, test_pattern: *.test.js, test_runner: vitest). Needed to understand codebase structure for building correctly."
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Prior successful timeout bug fix showed 'added semaphore' as pattern with gotcha 'check backoff'. Relevant if daemon-related issues emerge during this build stage."
           }
         ]
       },
-      "timestamp": 1786071946,
+      "timestamp": 1786073848,
       "ttl": 1800
     },
     "b6fa8a3c5379ef6101586498a6bd7d1d": {
@@ -2120,6 +2120,27 @@
         }
       ],
       "timestamp": 1786073452,
+      "ttl": 1800
+    },
+    "f86587ffee251acf5eb6f84865a0f0d8": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786073895,
+      "ttl": 1800
+    },
+    "a25bc2675db4236290bfded54c680a9e": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786073994,
       "ttl": 1800
     }
   }
