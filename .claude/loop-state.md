@@ -13,37 +13,39 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
+      "file": "failures.json (first with 3 entries)",
       "relevance": 95,
-      "summary": "Most recent test failures (2026-08-06/07) directly impact E2E tests: pipeline artifacts not written to .claude/pipeline-artifacts/, cost dashboard fixture issue, memory promotion test path mismatch. Critical for understanding current blockers."
+      "summary": "Directly documents pipeline E2E test failures including missing plan.md/review.md artifacts in .claude/pipeline-artifacts/, and stale pipeline lock issues blocking E2E test runs. Highly relevant to debugging E2E test execution in build stage."
+    },
+    {
+      "file": "metrics.json (first)",
+      "relevance": 70,
+      "summary": "Provides baseline metrics: build_duration_s (7095) and test_duration_s (1459). Useful for understanding performance expectations during build and test stages for this E2E test run."
+    },
+    {
+      "file": "success-patterns.json (first with multiple patterns)",
+      "relevance": 65,
+      "summary": "Contains patterns for completed feature work (complexity 60-65) using standard template with iterations and npm test strategy. Applicable to understanding how similar feature builds succeed."
+    },
+    {
+      "file": "patterns.json (first)",
+      "relevance": 60,
+      "summary": "Project metadata showing vitest test runner, npm package manager, Node type, commonjs imports, and src/ directory convention. Necessary context for build environment configuration."
     },
     {
       "file": "knowledge.json",
-      "relevance": 85,
-      "summary": "Specific test failure KB entries document mktemp /tmp/claude path issues, sw-cleanup.sh output formatting, and regression detection JSON problems. Helps avoid repeating known test failures."
-    },
-    {
-      "file": "patterns.json",
-      "relevance": 80,
-      "summary": "Project conventions: Node.js, vitest test runner, npm package manager, commonjs imports. Essential for understanding how to build and run tests in this project."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 70,
-      "summary": "Baseline metrics show build_duration_s: 7095 and test_duration_s: 1459. Helps set performance expectations and detect anomalies during build stage."
-    },
-    {
-      "file": "success-patterns.json",
-      "relevance": 65,
-      "summary": "Successful patterns show bug fixes and features typically complete in 3 iterations with standard template at 2.5 USD cost. Provides reference for typical build approach and complexity expectations."
+      "relevance": 50,
+      "summary": "Contains test infrastructure patterns (mktemp failures, test setup issues, JSON output validation). Provides context for avoiding common test setup pitfalls in E2E test execution."
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 6 new discoveries
+✓ Injected 8 new discoveries
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -138,8 +140,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-08-07T02:38:22Z
-last_iteration_at: 2026-08-07T02:38:22Z
+started_at: 2026-08-07T02:53:41Z
+last_iteration_at: 2026-08-07T02:53:41Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
