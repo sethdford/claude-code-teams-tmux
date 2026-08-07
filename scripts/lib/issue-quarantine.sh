@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-VERSION="1.11.1"
+VERSION="3.3.0"
 
 [[ -n "${_SW_ISSUE_QUARANTINE_LOADED:-}" ]] && return 0
 _SW_ISSUE_QUARANTINE_LOADED=1
