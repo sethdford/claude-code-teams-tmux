@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
-      "seen_count": 14,
-      "last_seen": "2026-08-07T23:00:50Z",
+      "seen_count": 12,
+      "last_seen": "2026-08-07T20:45:07Z",
       "category": "flaky"
     },
     {
@@ -39,10 +39,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Durable: verify_stage_artifacts fails when artifacts missing... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Test file not found errors for plan.md/review.md artifacts (pipeline_test.sh) caused by unrelated mock stage output changes, not the Durable artifact-verification tests, which all passed",
-      "fix": "Fix the plan/review stage mocks in sw-pipeline-test.sh to write plan.md and review.md before assertions run, and fix jq numeric parse errors in the intelligence complexity test",
+      "root_cause": "unknown",
+      "fix": "not a failure - all 29 tests passed, this is a PASS log misclassified as a failure",
       "seen_count": 1,
       "last_seen": "2026-08-07T19:07:45Z",
+      "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "Failed: 1",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed, likely due to missing API credentials or environment-dependent assertions during e2e/integration checks",
+      "fix": "Run the two failing suites locally with verbose output to capture the assertion diff, then fix the underlying logic or gate the tests behind required env vars",
+      "seen_count": 1,
+      "last_seen": "2026-08-07T22:47:12Z",
       "category": "test_failure"
     }
   ]
