@@ -1681,33 +1681,33 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "Recent test failures with root causes (pipeline artifacts, cost dashboard, stale locks) directly block build completion. Last failure 2026-08-07T19:22:12Z shows loop/intent schema issues."
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 90,
-            "summary": "Captured successful build patterns show iteration counts (3-4), test strategy (npm test), duration baselines (~45-150s per fix), and file patterns touched. Critical reference for build execution."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 80,
-            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459. Sets performance expectations and helps detect stalls or regressions during current build."
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 70,
-            "summary": "Knowledge base entries document recurring test failures (mktemp /tmp/claude directory issues, cleanup output formatting, schema validation). Prevents repeat mistakes in build setup."
+            "relevance": 85,
+            "summary": "Shows proven build strategies with iteration counts (3-4), files touched (shell scripts, JSON config, logs), test strategies (npm test), and timing (2.5 USD cost over ~45-150s). Direct template for this build stage."
           },
           {
             "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions: source_dir=src/, test_pattern=*.test.js, import_style=commonjs, test_runner=vitest. Build stage needs these to write code matching project standards."
+          },
+          {
+            "file": "metrics.json",
             "relevance": 65,
-            "summary": "Project structure context: node/vitest/commonjs, src/ source dir, *.test.js pattern. Build stage needs this to understand test discovery and execution paths."
+            "summary": "Baseline performance: build_duration_s=7095s, test_duration_s=1459s. Build stage can use these to detect stalls and estimate total pipeline time."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 58,
+            "summary": "Test-stage failures: stale pipeline locks, mktemp /tmp/claude issues, fixture seeding problems. Build stage should avoid these anti-patterns (especially mktemp and lock cleanup)."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 52,
+            "summary": "Captured failure fixes: mktemp -d template issues, cleanup --force hints, regression detection JSON. Knowledge base for debugging common build/test errors."
           }
         ]
       },
-      "timestamp": 1786130547,
+      "timestamp": 1786132713,
       "ttl": 1800
     },
     "c72e738dc8a8cfe1aa09ee6ebb35f460": {
@@ -2055,6 +2055,97 @@
         }
       ],
       "timestamp": 1786132332,
+      "ttl": 1800
+    },
+    "727865fcd1b22126da929142fcf4baa8": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786132789,
+      "ttl": 1800
+    },
+    "04d93ca1dc8f5efe344a575819ee7c4e": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786132900,
+      "ttl": 1800
+    },
+    "2cc4acd92b2027a5b5430a7a5bd578b4": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786132992,
+      "ttl": 1800
+    },
+    "b5cafb7800ba84044b4d12930b6fc7d9": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786133079,
+      "ttl": 1800
+    },
+    "18e38114daf9c9fe0c8dd84d935376fe": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786133267,
+      "ttl": 1800
+    },
+    "758a2f3abf2aa718d635f0c234af18f5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786133301,
+      "ttl": 1800
+    },
+    "bd83f4838511d70a23ef446adb547750": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786133415,
+      "ttl": 1800
+    },
+    "894b3e5941e3f0137516481056d9d485": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786133657,
       "ttl": 1800
     }
   }
