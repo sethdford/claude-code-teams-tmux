@@ -1,10 +1,46 @@
 ---
-goal: "E2E test: add comment to README [automated]
+goal: "Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
-## Specification: E2E test: add comment to README [automated]
+## Plan Summary
+I have what I need. Here's the plan.
+
+## Findings that shape it
+
+- **`sw-tracker-github.sh`** is *not* uncovered — `sw-tracker-providers-test.sh:189-514` already runs 11 GitHub tests (happy paths + one `NO_GITHUB` case). The real gap is error/edge paths: empty-arg guards, `gh` failure fallbacks, label splitting in `provider_create_issue`, `provider_notify`.
+- **`sw-event-schema-sync.sh`** and **`sw-tmux-status.sh`** have zero test files.
+- `scripts/lib/test-helpers.sh` provides `assert_eq`/`assert_contains`/`assert_exit_code`/`mock_binary`/`print_test_results` — reuse, don't reinvent.
+- Registration is a single `test:legacy-chain` `&&`-chain in `package.json:54`.
+
+---
+
+# Implementation Plan: Test Coverage for 3 Scripts
+
+## Files to Modify
+
+| Path | Action |
+|---|---|
+| `scripts/sw-event-schema-sync-test.sh` | **create** (~260 lines) |
+| `scripts/sw-tmux-status-test.sh` | **create** (~280 lines) |
+| `scripts/sw-tracker-providers-test.sh` | **modify** — add GitHub edge-case tests |
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# ADR: Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
+## Context
+## Decision
+### 1. **sw-tmux-status-test.sh** (280 lines)
+### 2. **sw-event-schema-sync-test.sh** (260 lines)
+### 3. **sw-tracker-providers-test.sh** (extend from 514 → 600+ lines)
+## Component Diagram
+## Interface Contracts
+### sw-tmux-status-test.sh
+# Public functions (tested via sed-stripped source)
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
 ### Goals
-- E2E test: add comment to README [automated]
+- Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -13,43 +49,36 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json (first with 3 entries)",
-      "relevance": 95,
-      "summary": "Directly documents pipeline E2E test failures including missing plan.md/review.md artifacts in .claude/pipeline-artifacts/, and stale pipeline lock issues blocking E2E test runs. Highly relevant to debugging E2E test execution in build stage."
-    },
-    {
-      "file": "metrics.json (first)",
-      "relevance": 70,
-      "summary": "Provides baseline metrics: build_duration_s (7095) and test_duration_s (1459). Useful for understanding performance expectations during build and test stages for this E2E test run."
-    },
-    {
-      "file": "success-patterns.json (first with multiple patterns)",
-      "relevance": 65,
-      "summary": "Contains patterns for completed feature work (complexity 60-65) using standard template with iterations and npm test strategy. Applicable to understanding how similar feature builds succeed."
-    },
-    {
-      "file": "patterns.json (first)",
-      "relevance": 60,
-      "summary": "Project metadata showing vitest test runner, npm package manager, Node type, commonjs imports, and src/ directory convention. Necessary context for build environment configuration."
-    },
-    {
       "file": "knowledge.json",
-      "relevance": 50,
-      "summary": "Contains test infrastructure patterns (mktemp failures, test setup issues, JSON output validation). Provides context for avoiding common test setup pitfalls in E2E test execution."
+      "relevance": 92,
+      "summary": "Contains mktemp directory creation failures and shell script test setup patterns — directly applicable to writing tests for shell scripts. Shows common pitfalls when creating temporary test directories."
+    },
+    {
+      "file": "success-patterns.json (third entry with test.sh files)",
+      "relevance": 85,
+      "summary": "Shows successful shell script testing patterns with file_patterns matching '*.sh' files and npm test strategy. Demonstrates proven test approach for this repo's shell-based work."
+    },
+    {
+      "file": "failures.json (first entry with test failures)",
+      "relevance": 78,
+      "summary": "Documents recent test failures in test stage including pipeline artifacts, E2E tests, and memory promotion issues. Valuable for avoiding similar pitfalls when adding new test coverage."
+    },
+    {
+      "file": "success-patterns.json (first entry with 'Fix bug')",
+      "relevance": 72,
+      "summary": "Shows successful test execution patterns using npm test with standard template across 3 iterations. Provides timing baseline (45s duration) and file pattern guidance for test work."
+    },
+    {
+      "file": "patterns.json (first entry with project metadata)",
+      "relevance": 68,
+      "summary": "Establishes project conventions: vitest test runner, npm package manager, test_pattern '*.test.js'. Useful context for where and how to structure test files for these shell scripts."
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 8 new discoveries
-[spec_generation] Stage spec_generation completed — Resolution: 
+✓ Injected 1 new discoveries
 [design] Design completed for Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[spec_generation] Stage spec_generation completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[spec_generation] Stage spec_generation completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[spec_generation] Stage spec_generation completed — Resolution: 
 
 Task tracking (check off items as you complete them):
 # Pipeline Tasks — Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
@@ -82,76 +111,37 @@ Task tracking (check off items as you complete them):
 - Issue: none
 - Generated: 2026-08-07T01:51:48Z
 
-## Skill Guidance (testing issue, AI-selected)
-### Why these skills were selected (AI-analyzed):
-- **testing-strategy**: E2E testing has unique failure modes (flakiness, environment dependencies, timing issues); this skill ensures the test is robust and covers meaningful user workflows
-
-## Testing Strategy Expertise
-
-Apply these testing patterns:
-
-### Test Pyramid
-- **Unit tests** (70%): Test individual functions/methods in isolation
-- **Integration tests** (20%): Test component interactions and boundaries
-- **E2E tests** (10%): Test critical user flows end-to-end
-
-### What to Test
-- Happy path: the expected successful flow
-- Error cases: what happens when things go wrong?
-- Edge cases: empty inputs, maximum values, concurrent access
-- Boundary conditions: off-by-one, empty collections, null/undefined
-
-### Test Quality
-- Each test should verify ONE behavior
-- Test names should describe the expected behavior, not the implementation
-- Tests should be independent — no shared mutable state between tests
-- Tests should be deterministic — same result every run
-
-### Coverage Strategy
-- Aim for meaningful coverage, not 100% line coverage
-- Focus coverage on business logic and error handling
-- Don't test framework code or simple getters/setters
-- Cover the branches, not just the lines
-
-### Mocking Guidelines
-- Mock external dependencies (APIs, databases, file system)
-- Don't mock the code under test
-- Use realistic test data — edge cases reveal bugs
-- Verify mock interactions when the side effect IS the behavior
-
-### Regression Testing
-- Write a failing test FIRST that reproduces the bug
-- Then fix the bug and verify the test passes
-- Keep regression tests — they prevent the bug from recurring
-
-### Required Output (Mandatory)
-
-Your output MUST include these sections when this skill is active:
-
-1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
-2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
-3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
-
-If any section is not applicable, explicitly state why it's skipped.
-"
-iteration: 0
-max_iterations: 3
+## Failure Diagnosis (Iteration 2)
+Classification: syntax_error
+Strategy: fix_syntax
+Repeat count: 0
+INSTRUCTION: This is a syntax error. Carefully check the exact line mentioned in the error. Look for missing brackets, semicolons, commas, or mismatched quotes."
+iteration: 2
+max_iterations: 20
 status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-08-07T02:53:41Z
-last_iteration_at: 2026-08-07T02:53:41Z
+started_at: 2026-08-07T02:57:50Z
+last_iteration_at: 2026-08-07T02:57:50Z
 consecutive_failures: 0
-total_commits: 0
+total_commits: 2
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: ""
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
+### Iteration 1 (2026-08-07T02:28:44Z)
+The goal — adding a comment to README.md as an E2E test — is complete, verified with the docs test suite (18/18 pass
+LOOP_COMPLETE
+
+### Iteration 2 (2026-08-07T02:57:50Z)
+- All tests use project-standard `lib/test-helpers.sh`
+- Tests are already registered in package.json
+- No existing tests were broken
 
