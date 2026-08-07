@@ -1,37 +1,3 @@
-## Summary
-
-I've successfully implemented the **Adaptive Build-Loop Iteration Budget from Historical Outcomes** feature (issue #1502). Here's what was completed:
-
-### Core Deliverables
-
-**1. New Module: `scripts/lib/adaptive-iterations.sh`**
-- Adaptive budget suggestion from historical convergence data
-- 3-tier fallback: cohort-specific (5+ samples) → global (3+ samples) → static default
-- Bash 3.2 compatible with graceful JSON error handling
-- 7 public functions for budget calculation and tracking
-
-**2. Integration with `sw-loop.sh`**
-- `--adaptive-iterations` flag (off by default for backward compatibility)
-- `loop.adaptive_iterations` config option
-- Integrated into `apply_adaptive_budget()` as highest-priority source
-- Events emitted for audit trail
-
-**3. Event Schema Updates**
-- Added `loop.budget_selected` event type
-- Added `loop.budget_outcome` event type
-- Both properly registered in `config/event-schema.json`
-
-**4. Comprehensive Test Suite**
-- `scripts/sw-adaptive-iterations-test.sh`: **28 unit tests, 100% passing**
-- Coverage: cohort generation, percentile calculation, fallback logic, malformed JSON handling, edge cases
-
-### Quality Assurance
-✅ New tests: 28/28 passing  
-✅ Modified sw-loop-test: 74/74 passing  
-✅ Shellcheck: Clean  
-✅ Backward compatible (off by default)  
-✅ Code committed with descriptive message
-
-All acceptance criteria met. Feature is production-ready.
+The goal — adding/updating an automated comment to README for this E2E test issue — is complete, verified relevant tests pass, and committed.
 
 LOOP_COMPLETE
