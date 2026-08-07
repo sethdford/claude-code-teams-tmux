@@ -1,45 +1,10 @@
 ---
-goal: "Quarantine E2E Test Issues From Production Issue Tracker
+goal: "E2E test: add comment to README [automated]
 
-## Plan Summary
-# Plan — Quarantine E2E Test Issues From Production Issue Tracker (#1303)
-
-## Problem (verified against the repo)
-
-`scripts/sw-e2e-integration-test.sh:117` creates **real** GitHub issues titled
-`E2E test: add comment to README [automated]` (`:39`) with label `e2e-test`. It is the only
-test script that calls a real `gh issue create` (verified:
-`grep -ln "gh issue create" scripts/sw-*e2e*.sh` → only that file). Its cleanup trap
-*closes* the issue but does not delete it, so every integration run leaves a permanent
-closed issue. Downstream consumers then read those issues:
-
-| Consumer | Site | What it reads |
-| --- | --- | --- |
-| Daemon poll | `scripts/lib/daemon-poll-github.sh:70`, `:97` | open issues with `$WATCH_LABEL` |
-| Triage scoring | `scripts/sw-triage.sh:463` | all open issues |
-| Triage unlabeled | `scripts/sw-triage.sh:669` | `--search "no:label"` |
-| Triage label audit | `scripts/sw-triage.sh:695` | all open issues |
-| Strategic title cache | `scripts/sw-strategic.sh:115-116` | open + last 30 closed titles |
-| Strategic analysis | `scripts/sw-strategic.sh:286`, `:380`, `:388` | open + recent closed |
-[... full plan in .claude/pipeline-artifacts/plan.md]
-
-## Key Design Decisions
-# Architecture Decision Record: Quarantine E2E Test Issues From Production Issue Tracker
-## Context
-## Decision
-## Alternatives Considered
-## Component Diagram
-## Interface Contracts
-### Quarantine Library (`scripts/lib/issue-quarantine.sh`)
-### E2E Integration Test Harness (`scripts/sw-e2e-integration-test.sh`)
-### Consumption Points (Daemon Poll, Triage, Strategic)
-## Data Flow
-[... full design in .claude/pipeline-artifacts/design.md]
-
-## Specification: Quarantine E2E Test Issues From Production Issue Tracker
+## Specification: E2E test: add comment to README [automated]
 
 ### Goals
-- Quarantine E2E Test Issues From Production Issue Tracker
+- E2E test: add comment to README [automated]
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -48,36 +13,43 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json (first)",
+      "file": "failures.json",
       "relevance": 85,
-      "summary": "Contains specific E2E test failure: 'Pipeline E2E tests fail because plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/' — directly describes E2E test issues and root cause"
+      "summary": "Contains E2E test failures including stale pipeline locks, missing artifact writes, and integration test issues that directly impact E2E test execution in the build stage"
+    },
+    {
+      "file": "metrics.json",
+      "relevance": 75,
+      "summary": "Provides build_duration_s (7095s) and test_duration_s (1459s) baselines for estimating build stage timing and setting reasonable iteration limits"
+    },
+    {
+      "file": "success-patterns.json",
+      "relevance": 65,
+      "summary": "Shows successful patterns for bug fixes and feature development (complexity 60-65, 3 iterations, standard template) that inform build loop strategy for similar-complexity E2E work"
+    },
+    {
+      "file": "patterns.json",
+      "relevance": 60,
+      "summary": "Project conventions (Node/vitest/npm/commonjs) needed to understand test setup, execution environment, and file structure for the E2E test build"
     },
     {
       "file": "knowledge.json",
-      "relevance": 62,
-      "summary": "Contains KB entries for test infrastructure failures (mktemp issues, test setup problems) — provides patterns for fixing test environment issues that affect E2E test execution"
-    },
-    {
-      "file": "success-patterns.json (first)",
-      "relevance": 48,
-      "summary": "Shows 'Fix bug' pattern with 3 iterations and standard template — demonstrates iteration strategy and test approach (npm test) applicable to build stage work"
-    },
-    {
-      "file": "issues.json",
-      "relevance": 42,
-      "summary": "Records issue 'Fix timeout bug in daemon' with success pattern including gotchas — exemplifies how issues are captured and fixed with learned patterns"
-    },
-    {
-      "file": "metrics.json (first)",
-      "relevance": 38,
-      "summary": "Contains baselines for build_duration_s (7095s) and test_duration_s (1459s) — provides context for test execution expectations and potential timeouts"
+      "relevance": 40,
+      "summary": "Contains test failure patterns and fix strategies (mktemp issues, test setup, JSON validation) that may prevent build failures in the test stage"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 1 new discoveries
+✓ Injected 8 new discoveries
+[spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Quarantine E2E Test Issues From Production Issue Tracker — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 
 Task tracking (check off items as you complete them):
 # Pipeline Tasks — Quarantine E2E Test Issues From Production Issue Tracker
@@ -108,50 +80,78 @@ Task tracking (check off items as you complete them):
 - Pipeline: autonomous
 - Branch: ci/issue-1303
 - Issue: none
-- Generated: 2026-08-07T01:54:31Z"
-iteration: 1
-max_iterations: 20
+- Generated: 2026-08-07T01:54:31Z
+
+## Skill Guidance (testing issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **testing-strategy**: E2E tests require explicit acceptance criteria (README modified correctly), edge cases (concurrent modifications, AUTO: markers), and reproducible test patterns across all pipeline stages
+
+## Testing Strategy Expertise
+
+Apply these testing patterns:
+
+### Test Pyramid
+- **Unit tests** (70%): Test individual functions/methods in isolation
+- **Integration tests** (20%): Test component interactions and boundaries
+- **E2E tests** (10%): Test critical user flows end-to-end
+
+### What to Test
+- Happy path: the expected successful flow
+- Error cases: what happens when things go wrong?
+- Edge cases: empty inputs, maximum values, concurrent access
+- Boundary conditions: off-by-one, empty collections, null/undefined
+
+### Test Quality
+- Each test should verify ONE behavior
+- Test names should describe the expected behavior, not the implementation
+- Tests should be independent — no shared mutable state between tests
+- Tests should be deterministic — same result every run
+
+### Coverage Strategy
+- Aim for meaningful coverage, not 100% line coverage
+- Focus coverage on business logic and error handling
+- Don't test framework code or simple getters/setters
+- Cover the branches, not just the lines
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock the code under test
+- Use realistic test data — edge cases reveal bugs
+- Verify mock interactions when the side effect IS the behavior
+
+### Regression Testing
+- Write a failing test FIRST that reproduces the bug
+- Then fix the bug and verify the test passes
+- Keep regression tests — they prevent the bug from recurring
+
+### Required Output (Mandatory)
+
+Your output MUST include these sections when this skill is active:
+
+1. **Test Pyramid Breakdown**: Explicit count of unit/integration/E2E tests and their coverage targets (e.g., "70 unit tests covering business logic, 12 integration tests for API boundaries, 3 E2E tests for critical paths")
+2. **Coverage Targets**: Target coverage percentage per layer and which critical paths MUST be tested
+3. **Critical Paths to Test**: Specific test cases for the happy path, 2+ error cases, and 2+ edge cases
+
+If any section is not applicable, explicitly state why it's skipped.
+"
+iteration: 0
+max_iterations: 3
 status: running
 test_cmd: "npm test"
-model: haiku
+model: sonnet
 agents: 1
-started_at: 2026-08-07T02:42:35Z
-last_iteration_at: 2026-08-07T02:42:35Z
+started_at: 2026-08-07T03:06:32Z
+last_iteration_at: 2026-08-07T03:06:32Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
+dod_file: ""
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-08-07T02:42:35Z)
-The goal — adding an E2E test comment to the README — is now complete: an HTML comment marker was added, the relevan
-
-### Iteration 2 (2026-08-07T03:10:00Z)
-Fixed critical JSON schema validation error that was causing audit failures. Removed remote $schema references from:
-- schemas/audit-result.json
-- schemas/iteration-result.json
-- schemas/specification.json
-- schemas/stage-handoff.json
-- schemas/quality-gate.json
-
-The Claude API's --json-schema flag cannot resolve remote schema references. This was the root cause of:
-  Error: --json-schema is not a valid JSON Schema: no schema with key or ref "https://json-schema.org/draft/2020-12/schema"
-
-Verification Results:
-✓ sw-lib-issue-quarantine-test.sh: 21/21 tests passed
-✓ sw-lib-daemon-poll-test.sh: 31/31 tests passed
-✓ sw-triage-test.sh: 23/23 tests passed
-✓ sw-strategic-test.sh: 30/30 tests passed
-✓ shipwright version check: PASSED (3.3.0)
-✓ All JSON schema files validate correctly
-
-The quarantine system implementation from iteration 1 is now fully functional with no audit failures.
-
-LOOP_COMPLETE
 
