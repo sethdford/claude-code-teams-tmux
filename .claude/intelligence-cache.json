@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "optimizer",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.82,
+        "reasoning": "Adaptive iteration budgeting is fundamentally a parameter optimization task using historical outcomes; requires performance analysis paired with architectural design and implementation.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1786128207,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,321 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "f6703e76f2f4f6282848cc6972e68df9": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "autonomous",
+        "issue_type": "performance",
+        "key_risks": [
+          "Sparse or biased historical data in new repositories",
+          "Pattern matching may misclassify issues with incomplete similarity signals",
+          "Feedback loop risk: poor initial budget estimates persist in historical data",
+          "Events file corruption or missing data could cause silent degradation",
+          "Complexity score disagreement between decompose and historical patterns"
+        ],
+        "implementation_hints": [
+          "Query events.jsonl for issues with matching labels/file-touches within last 90 days",
+          "Implement fuzzy label matching (Levenshtein distance) since labels may vary",
+          "Use file-touch fingerprint as primary similarity signal: hash(sorted file paths changed)",
+          "Add percentile-based budget: if past similar issues converged in 4-8 iterations, suggest 10",
+          "Implement with --adaptive-iterations flag off by default; add synthetic event tests",
+          "Log budget decision rationale to events.jsonl immediately (before loop starts) for traceability",
+          "Degrade gracefully: if <5 historical samples or events file missing, fall back to static default",
+          "Consider time-weighting: issues from last 30 days get 2x weight in convergence calculation"
+        ]
+      },
+      "timestamp": 1786127613,
+      "ttl": 3600
+    },
+    "e13f59ba8e594166faa5dd727e1173ce": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1786127620,
+      "ttl": 1800
+    },
+    "80d4298d91b4859c66fb0620c1dda151": {
+      "result": {
+        "estimated_cost_usd": 14.00,
+        "estimated_iterations": 7,
+        "estimated_tokens": 210000,
+        "likely_failure_stage": "test",
+        "confidence": 62
+      },
+      "timestamp": 1786127633,
+      "ttl": 3600
+    },
+    "b404d231e47b2b49111f17789ae8c6c7": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "testing",
+          "performance",
+          "data-engineering"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Moderate complexity: requires historical data analysis, statistical reasoning, pattern matching against past issues, and robust error handling for missing/malformed data. Well-scoped with clear acceptance criteria but non-trivial edge cases around data validation and fallback logic."
+        },
+        "skill_plan": {
+          "plan": [
+            "pattern-matching-similarity-scoring",
+            "brainstorming"
+          ],
+          "design": [
+            "collection-system-validation",
+            "architecture-design"
+          ],
+          "build": [
+            "pattern-matching-similarity-scoring",
+            "adaptive-convergence-analysis"
+          ],
+          "review": [
+            "adversarial-quality",
+            "systematic-debugging"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "pattern-matching-similarity-scoring": "Core to the feature: match incoming issues to past issues by label/file-touch-footprint/decompose-score to find historical convergence data for similar cohorts.",
+          "brainstorming": "Challenge the static iteration budget assumption—does a budget based solely on historical averages actually improve outcomes, or do we need per-stage budgets?",
+          "collection-system-validation": "events.jsonl may be malformed, empty, partially written, or missing required convergence fields; design safe readers with schema validation and graceful degradation.",
+          "architecture-design": "Document the decision model: how similarity scores map to iteration budgets, when fallback to static defaults kicks in, and how budget decisions are traced in events.jsonl.",
+          "adaptive-convergence-analysis": "Analyze past convergence rates (iterations-to-completion per cohort), compute statistical measures, and derive budget recommendations; handle outliers and sparse data.",
+          "adversarial-quality": "Test failure modes: corrupted events.jsonl, missing cohorts, division-by-zero in statistics, extreme similarity scores, and malformed event records.",
+          "systematic-debugging": "If a prior attempt failed, investigate root cause (data quality? algorithm? integration point?) before implementing to avoid repeating the same mistake.",
+          "testing-strategy": "Unit tests must cover: no historical data (fallback to static), sufficient clean history (budget adjustment), malformed/missing fields (graceful error), and statistical edge cases.",
+          "pr-quality": "Budget derivation logic is subtle; PR must include decision trace (how this issue was scored, which cohort was matched, what budget was recommended) so reviewers can audit correctness.",
+          "observability": "Log the budget decision to events.jsonl (issue ID, matched cohort, similarity score, recommended iterations, actual iterations used) for post-hoc analysis and continuous improvement."
+        },
+        "generated_skills": [
+          {
+            "name": "adaptive-convergence-analysis",
+            "reason": "No existing skill addresses the specific pattern of extracting convergence-rate statistics from event history and translating similarity scores into adaptive iteration budgets. This goes beyond generic pattern-matching to include time-series analysis, statistical aggregation, and budget derivation with graceful fallback.",
+            "content": "## Adaptive Convergence Analysis for Iteration Budgeting\n\n### Overview\nWhen the build loop encounters an issue, historical convergence data (how many iterations similar past issues took to complete) should inform the iteration budget. This skill guides safe extraction of convergence patterns, statistical analysis, and budget recommendation with robust error handling.\n\n### Core Tasks\n\n#### 1. Convergence Data Extraction\n- Parse `events.jsonl` for past build-loop runs matching this issue's cohort (same labels, similar file-touch footprint, decompose complexity score within ±1)\n- For each historical match, extract `iterations_to_convergence` (when tests passed after nth iteration)\n- Handle missing/null fields: skip that record, log the skip\n- Degrade gracefully if events.jsonl is missing, empty, or unreadable\n\n#### 2. Statistical Aggregation\n- Compute mean, median, and 90th percentile of `iterations_to_convergence` for the cohort\n- Flag outliers (3σ above mean) and decide whether to include or exclude them from the budget recommendation\n- If cohort has fewer than 3 samples, note \"insufficient history\" and apply confidence penalty\n\n#### 3. Similarity Scoring\n- Score current issue against each historical cohort on three dimensions:\n  - **Label overlap**: jaccard(current_labels, historical_labels)\n  - **File-touch similarity**: jaccard(current_file_paths, historical_file_paths)\n  - **Complexity alignment**: 1 - abs(current_complexity - historical_complexity) / 10\n- Weighted sum: `(label_weight * label_score) + (file_weight * file_score) + (complexity_weight * complexity_score)`\n- Find the best-matching cohort (highest weighted score ≥ 0.6)\n\n#### 4. Budget Derivation\n- If best_match score ≥ 0.7 and cohort has ≥ 5 samples: use 90th percentile + 1 (to avoid starving complex outliers)\n- If 0.5 ≤ score < 0.7 and cohort has ≥ 3 samples: use mean + 1 with lower confidence\n- If score < 0.5 or cohort has < 3 samples: fall back to static default `--max-iterations`\n- Cap recommendation at `max_allowed_iterations` to prevent runaway loops\n\n#### 5. Fallback Strategy\n- No events.jsonl: use static default\n- Malformed JSON: log error, use static default\n- No matching cohort found: use static default\n- Empty cohort (< 1 sample): use static default\n- All events are errors: use static default\n\n#### 6. Traceability & Logging\n- Emit a structured event: `{\"type\": \"build_loop_budget_decision\", \"issue_id\": \"...\", \"matched_cohort\": \"...\", \"similarity_score\": 0.72, \"recommended_iterations\": 8, \"fallback_used\": false, \"reasoning\": \"...\"}`\n- Include in `progress.md` so fresh sessions (context restart) can see the decision\n- On build-loop completion, emit outcome event with `actual_iterations_used` for next run's training data\n\n### Edge Cases & Safety\n1. **Division by zero**: Cohort with 0 variance → use mean\n2. **NaN/Inf scores**: Clamp to [0, 1] range\n3. **Sparse events (< 10 total records)**: Trust outliers less, increase confidence penalty\n4. **Events from different Shipwright versions**: May have schema drift; validate required fields before use\n5. **Skewed distribution** (e.g., one issue needed 50 iterations, rest ≤ 5): Use median instead of mean for budget, log the choice\n\n### Configuration\n```json\n{\n  \"adaptive_iterations\": {\n    \"enabled\": false,\n    \"label_weight\": 0.4,\n    \"file_weight\": 0.4,\n    \"complexity_weight\": 0.2,\n    \"min_sample_threshold\": 3,\n    \"min_cohort_score\": 0.6,\n    \"high_confidence_score\": 0.7,\n    \"max_allowed_iterations\": 30,\n    \"outlier_sigma\": 3.0\n  }\n}\n```\n\n### Testing Checklist\n- ✓ No history → static default\n- ✓ Sufficient clean history (≥5 samples) → adjusted budget with confidence ≥ 0.7\n- ✓ Sparse history (1–2 samples) → fallback with warning\n- ✓ Malformed events.jsonl → graceful error, static default\n- ✓ Missing events.jsonl → static default, no crash\n- ✓ Outlier-heavy cohort → median-based budget, logged\n- ✓ Low similarity score (< 0.5) → fallback\n- ✓ Division by zero (0 variance) → uses mean\n- ✓ End-to-end: budget decision logged, acted upon, outcome recorded"
+          }
+        ],
+        "review_focus": [
+          "Data safety: How does the function handle corrupted, missing, or partial events.jsonl records without crashing?",
+          "Fallback robustness: Does every code path that lacks sufficient history gracefully fall back to the static default?",
+          "Statistical correctness: Are similarity scores, statistical aggregations, and budget derivations mathematically sound? Any division-by-zero or NaN edge cases?",
+          "Performance: Is events.jsonl read and parsed efficiently, or should results be cached to avoid repeated I/O on every loop iteration?",
+          "Traceability: Are budget decisions logged to events.jsonl with enough detail for auditing (issue ID, matched cohort, similarity score, recommendation, actual outcome)?",
+          "Backward compatibility: Is the feature gated behind a config flag, defaulting to off, so existing behavior is preserved until explicitly enabled?"
+        ],
+        "risk_areas": [
+          "Malformed or partially-written events.jsonl causing JSON parse errors or missing required fields in historical records",
+          "Empty or insufficient historical data on first run or for novel issue types causing silent fallback without clear logging",
+          "Statistical edge cases: outliers skewing budget upward, zero variance in cohort, or extreme similarity scores breaking downstream logic",
+          "Performance regression: reading/parsing events.jsonl on every loop iteration without caching, especially if the file is large",
+          "Integration point: correctly hooking into sw-loop.sh's `--max-iterations` parameter and respecting circuit-breaker overrides",
+          "Over-fitting to historical noise: budget recommendations following noise in past data rather than true convergence patterns, causing iteration starvation for genuinely complex issues"
+        ]
+      },
+      "timestamp": 1786127725,
+      "ttl": 3600
+    },
+    "0eab1d94c83a3d108c9dc9ac2f0233f9": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains historical success patterns with iteration counts (iterations: 3 for both bug fix and feature), durations (45s-150s), and costs ($2.50). Directly shows how many iterations similar work needed, essential baseline data for adaptive budget planning."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 94,
+            "summary": "Duplicate section with structured pattern metadata including iterations_needed, completion_time_seconds, and cost_usd. Provides historical outcome data in formatted structure suitable for budget modeling."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 76,
+            "summary": "Contains build/test duration baselines (build_duration_s: 7095, test_duration_s: 1459). These historical performance metrics inform how long each iteration will take and how many iterations budget to allocate."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 64,
+            "summary": "Documents loop behavior failures including cost dashboard context efficiency and pipeline artifact writing. Shows failure modes during iteration that adaptive budgets must account for (e.g., when cost-entries are empty)."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 52,
+            "summary": "Historical issue showing timeout bug fix with semaphore solution. Demonstrates past iteration complexity and approach patterns that inform estimation models for different issue types."
+          }
+        ]
+      },
+      "timestamp": 1786127782,
+      "ttl": 1800
+    },
+    "a76ce9f2b7e70b87ff751c9ade4b31dd": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first)",
+            "relevance": 78,
+            "summary": "Contains failure about plan.md/review.md artifacts not being written to .claude/pipeline-artifacts/, directly related to plan validation. Also tracks loop iteration failures, cost tracking issues, and stale pipeline locks—all core to iteration budget logic."
+          },
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 48,
+            "summary": "Documents historical success patterns showing iterations needed (3), duration (45-150s), costs ($2.50), and complexity (60-65). Directly relevant for understanding how to calculate adaptive budgets based on historical outcomes."
+          },
+          {
+            "file": "metrics.json (first)",
+            "relevance": 42,
+            "summary": "Contains baseline metrics for build_duration_s (7095) and test_duration_s (1459). Foundational data for calculating adaptive iteration budgets from historical performance."
+          }
+        ]
+      },
+      "timestamp": 1786128003,
+      "ttl": 1800
+    },
+    "063c42ffe2e725433d46c90067ca1a8f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 95,
+            "summary": "Contains historical outcome data with iterations needed, duration_s, cost_usd, files_changed, and complexity scores. This is the primary source for training an adaptive budget model on how iteration counts correlate with complexity and outcome."
+          },
+          {
+            "file": "metrics.json (first)",
+            "relevance": 80,
+            "summary": "Provides baseline metrics for build_duration_s (7095s) and test_duration_s (1459s). Essential reference data for normalizing iteration budgets against historical performance baselines."
+          },
+          {
+            "file": "failures.json (first)",
+            "relevance": 70,
+            "summary": "Documents failure patterns, root causes, and fixes with seen_count and last_seen timestamps. Shows which issues required extended iteration budgets and why, informing predictive allocation logic."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Contains failure signatures, fix strategies, and metrics on occurrences and success rates. Provides historical context on error patterns that may require additional iterations to resolve."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Shows specific historical issues with recorded outcomes and gotchas (e.g., 'check backoff' for daemon fixes). Provides domain-specific patterns that inform iteration budget allocation per issue type."
+          }
+        ]
+      },
+      "timestamp": 1786128040,
+      "ttl": 1800
+    },
+    "4d45139ddf88757618152255b11c6820": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first)",
+            "relevance": 88,
+            "summary": "Contains 'loop behavior: iterations on test failure' pattern directly addressing iteration handling anti-patterns; root causes show cost dashboard and context efficiency issues central to adaptive budgeting design; seen 3 times, last occurred today"
+          },
+          {
+            "file": "metrics.json (first)",
+            "relevance": 78,
+            "summary": "Provides baseline metrics (build_duration_s: 7095, test_duration_s: 1459) representing historical outcomes needed to train adaptive iteration budget models; updated 2026-07-31"
+          },
+          {
+            "file": "success-patterns.json (first)",
+            "relevance": 72,
+            "summary": "Shows historical success patterns with iteration counts (3), durations (45-150s), file patterns, and costs ($2.50); provides ground truth data for training iteration budgeting heuristics"
+          }
+        ]
+      },
+      "timestamp": 1786128057,
+      "ttl": 1800
+    },
+    "b06f296677892e08fa88343cea94c501": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (with 'Fix bug' and 'Add authentication feature' patterns)",
+            "relevance": 90,
+            "summary": "Shows historical iteration budgets from successful past builds: 3 iterations for bug fixes (45s, $2.50), 3 iterations for features (150s, $2.50). Directly demonstrates iteration counts and costs needed for task completion—core data for adaptive budgeting algorithm."
+          },
+          {
+            "file": "success-patterns.json (with 'Fix authentication bug' pattern)",
+            "relevance": 75,
+            "summary": "Another historical success pattern: 3 iterations, 45s, $2.50 cost. Consistent with bug-fix duration baseline, useful for building statistical distribution of iteration requirements by task type."
+          },
+          {
+            "file": "metrics.json (with baselines)",
+            "relevance": 70,
+            "summary": "Captures baseline performance: build_duration_s=7095s (~2h), test_duration_s=1459s (~24min). Historical outcome data needed to calibrate iteration budget allocation and predict stage durations."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt patterns)",
+            "relevance": 60,
+            "summary": "Low-complexity patterns showing 1 iteration needed, 300s completion time, $0.50 cost. Demonstrates variation in iteration budget by task complexity—important for adaptive algorithm's complexity-based scaling."
+          },
+          {
+            "file": "failures.json (4 failure entries)",
+            "relevance": 50,
+            "summary": "Captures test stage failures with root causes (stale locks, missing artifacts, fixture issues). Useful for understanding failure modes during iteration to inform early-exit conditions and iteration budget exhaustion patterns."
+          }
+        ]
+      },
+      "timestamp": 1786128173,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains recent test failures (including today's 2026-08-07) with root causes and fixes; directly applicable to avoiding pipeline locks, missing artifacts, and cost dashboard issues during build iterations"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Historical success patterns showing typical iteration counts (3 avg), test strategy (npm test), files changed, and cost data; helps replicate successful build approaches and set iteration expectations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 76,
+            "summary": "Baseline metrics for build_duration_s (7095s) and test_duration_s (1459s); establishes performance expectations and helps detect anomalies during the current 20-iteration build run"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 68,
+            "summary": "Project structure patterns (node, vitest, commonjs, src/); provides test discovery conventions and import style context needed for build execution"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 61,
+            "summary": "Known failure patterns (mktemp directory issues, test infrastructure gotchas); helps prevent common test setup failures during build iterations"
+          }
+        ]
+      },
+      "timestamp": 1786128194,
+      "ttl": 1800
+    },
+    "c72e738dc8a8cfe1aa09ee6ebb35f460": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786128694,
+      "ttl": 1800
     }
   }
 }

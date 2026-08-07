@@ -45,6 +45,9 @@ fi
 [[ -f "$SCRIPT_DIR/lib/context-budget.sh" ]] && source "$SCRIPT_DIR/lib/context-budget.sh" 2>/dev/null || true
 # Convergence detection and scoring (issue #203)
 [[ -f "$SCRIPT_DIR/lib/convergence.sh" ]] && source "$SCRIPT_DIR/lib/convergence.sh" 2>/dev/null || true
+# Adaptive iteration budget from historical outcomes (issue #1502)
+# shellcheck source=lib/adaptive-iterations.sh
+[[ -f "$SCRIPT_DIR/lib/adaptive-iterations.sh" ]] && source "$SCRIPT_DIR/lib/adaptive-iterations.sh" 2>/dev/null || true
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
@@ -103,6 +106,7 @@ MAX_TURNS=""
 RESUME=false
 VERBOSE=false
 MAX_ITERATIONS_EXPLICIT=false
+ADAPTIVE_ITERATIONS=$(_config_get_int "loop.adaptive_iterations" 0 2>/dev/null || echo 0)
 MAX_RESTARTS=$(_config_get_int "loop.max_restarts" 0 2>/dev/null || echo 0)
 SESSION_RESTART=false
 RESTART_COUNT=0
@@ -200,6 +204,7 @@ show_help() {
     echo -e "  ${CYAN}--audit-agent${RESET}             Run separate auditor agent (haiku) after each iteration"
     echo -e "  ${CYAN}--quality-gates${RESET}           Enable automated quality gates before accepting completion"
     echo -e "  ${CYAN}--definition-of-done${RESET} FILE DoD checklist file — evaluated by AI against git diff"
+    echo -e "  ${CYAN}--adaptive-iterations${RESET}      Adjust max-iterations from historical outcomes (default: off)"
     echo -e "  ${CYAN}--no-auto-extend${RESET}          Disable auto-extension when max iterations reached"
     echo -e "  ${CYAN}--extension-size${RESET} N         Additional iterations per extension (default: 5)"
     echo -e "  ${CYAN}--max-extensions${RESET} N         Max number of auto-extensions (default: 3)"
@@ -299,6 +304,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --definition-of-done=*) DOD_FILE="${1#--definition-of-done=}"; shift ;;
         --quality-gates) QUALITY_GATES_ENABLED=true; shift ;;
+        --adaptive-iterations) ADAPTIVE_ITERATIONS=1; shift ;;
         --no-auto-extend) AUTO_EXTEND=false; shift ;;
         --extension-size)
             EXTENSION_SIZE="${2:-}"
@@ -681,6 +687,26 @@ TOKJSON
 # ─── Adaptive Iteration Budget ──────────────────────────────────────────────
 # Reads tuning config for smarter iteration/circuit-breaker thresholds.
 apply_adaptive_budget() {
+    # Tier 0: Adaptive iterations from historical outcomes (if enabled)
+    if [[ "$ADAPTIVE_ITERATIONS" == "1" ]] && ! $MAX_ITERATIONS_EXPLICIT; then
+        if type adaptive_iterations_suggest >/dev/null 2>&1; then
+            local complexity="${ISSUE_COMPLEXITY:-${COMPLEXITY:-medium}}"
+            local labels="${ISSUE_LABELS:-}"
+            local suggested
+            suggested=$(adaptive_iterations_suggest "$complexity" "$labels")
+            if [[ "$suggested" =~ ^[0-9]+$ ]] && [[ "$suggested" -gt 0 ]]; then
+                MAX_ITERATIONS="$suggested"
+                local cohort
+                cohort=$(adaptive_iterations_cohort "$complexity" "$labels")
+                info "Adaptive iterations: cohort '$cohort' → max $suggested iterations"
+                emit_event "loop.budget_selected" \
+                    "source=adaptive_iterations" \
+                    "cohort=$cohort" \
+                    "budget=$suggested"
+            fi
+        fi
+    fi
+
     local tuning_file="$HOME/.shipwright/optimization/loop-tuning.json"
     if [[ -f "$tuning_file" ]] && command -v jq >/dev/null 2>&1; then
         local tuned_max tuned_ext tuned_ext_count tuned_cb
