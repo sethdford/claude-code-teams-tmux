@@ -1,14 +1,46 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+I have what I need. Here's the plan.
+
+## Findings that shape it
+
+- **`sw-tracker-github.sh`** is *not* uncovered — `sw-tracker-providers-test.sh:189-514` already runs 11 GitHub tests (happy paths + one `NO_GITHUB` case). The real gap is error/edge paths: empty-arg guards, `gh` failure fallbacks, label splitting in `provider_create_issue`, `provider_notify`.
+- **`sw-event-schema-sync.sh`** and **`sw-tmux-status.sh`** have zero test files.
+- `scripts/lib/test-helpers.sh` provides `assert_eq`/`assert_contains`/`assert_exit_code`/`mock_binary`/`print_test_results` — reuse, don't reinvent.
+- Registration is a single `test:legacy-chain` `&&`-chain in `package.json:54`.
+
+---
+
+# Implementation Plan: Test Coverage for 3 Scripts
+
+## Files to Modify
+
+| Path | Action |
+|---|---|
+| `scripts/sw-event-schema-sync-test.sh` | **create** (~260 lines) |
+| `scripts/sw-tmux-status-test.sh` | **create** (~280 lines) |
+| `scripts/sw-tracker-providers-test.sh` | **modify** — add GitHub edge-case tests |
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# ADR: Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
+## Context
+## Decision
+### 1. **sw-tmux-status-test.sh** (280 lines)
+### 2. **sw-event-schema-sync-test.sh** (260 lines)
+### 3. **sw-tracker-providers-test.sh** (extend from 514 → 600+ lines)
+## Component Diagram
+## Interface Contracts
+### sw-tmux-status-test.sh
+# Public functions (tested via sed-stripped source)
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +49,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "knowledge.json",
+      "relevance": 92,
+      "summary": "Contains mktemp directory creation failures and shell script test setup patterns — directly applicable to writing tests for shell scripts. Shows common pitfalls when creating temporary test directories."
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "success-patterns.json (third entry with test.sh files)",
+      "relevance": 85,
+      "summary": "Shows successful shell script testing patterns with file_patterns matching '*.sh' files and npm test strategy. Demonstrates proven test approach for this repo's shell-based work."
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "failures.json (first entry with test failures)",
+      "relevance": 78,
+      "summary": "Documents recent test failures in test stage including pipeline artifacts, E2E tests, and memory promotion issues. Valuable for avoiding similar pitfalls when adding new test coverage."
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "success-patterns.json (first entry with 'Fix bug')",
+      "relevance": 72,
+      "summary": "Shows successful test execution patterns using npm test with standard template across 3 iterations. Provides timing baseline (45s duration) and file pattern guidance for test work."
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "patterns.json (first entry with project metadata)",
+      "relevance": 68,
+      "summary": "Establishes project conventions: vitest test runner, npm package manager, test_pattern '*.test.js'. Useful context for where and how to structure test files for these shell scripts."
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Add Test Coverage for sw-tracker-github.sh, sw-event-schema-sync.sh, sw-tmux-status.sh
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] 1. Scaffold `sw-tmux-status-test.sh` (header, temp env, EXIT trap, counters)
+- [ ] 2. Tests 1–2: `stage_color` / `stage_icon` full case coverage via the dispatch-stripped copy
+- [ ] 3. Tests 3–6: `pipeline_widget` — absent file, parse, bold-markdown form, upward walk with sentinel
+- [ ] 4. Tests 7–9: `agent_widget` — no dir, fresh, stale, mixed
+- [ ] 5. Tests 10–11: dispatch modes + latency ceiling
+- [ ] 6. Scaffold `sw-event-schema-sync-test.sh` with the fake-repo fixture builder
+- [ ] 7. Tests 12–15: python3 guard, in-sync, drift (no-write assertion), `--write`
+- [ ] 8. Tests 16–18: key extraction, dynamic types, stale preservation
+- [ ] 9. Tests 19–21: counters, idempotence, nested glob
+- [ ] 10. Add `GH_FAIL` branch to the existing `gh` mock in `sw-tracker-providers-test.sh`
+- [ ] 11. Tests 22–24: empty-arg guards assert zero `gh` calls
+- [ ] 12. Tests 25–26: `gh` failure fallbacks
+- [ ] 13. Tests 27–29: label splitting, `NO_GITHUB` guards, `provider_notify` event
+- [ ] 14. Register both suites in `package.json:54`; `chmod +x`
+- [ ] 15. Run all three suites + `shellcheck`; run `shipwright docs sync`
+- [ ] Both new suites exist, are executable, exit 0, print `PASS: n` / `FAIL: 0`
+- [ ] ≥10 assertions per new suite; ≥8 new GitHub assertions
+- [ ] `config/event-schema.json` unmodified after a full run (`git status` clean)
+- [ ] No test invokes real `gh`, `tmux`, or network
+- [ ] All three suites pass on a repo with no `.claude/pipeline-state.md` and no `~/.shipwright/`
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-1234
+- Issue: none
+- Generated: 2026-08-07T01:51:48Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-08-07T01:55:52Z
+last_iteration_at: 2026-08-07T01:55:52Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
