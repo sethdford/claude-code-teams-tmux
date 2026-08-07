@@ -48,20 +48,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Log truncated mid-run at sw-dashboard-test with no visible failing assertion, suggesting the test job was cut off (timeout/OOM/killed) rather than a genuine assertion failure",
-      "fix": "Re-run the full suite and capture complete output; if it truncates again, check runner memory/time limits and increase the 300s timeout or job resources",
+      "root_cause": "Log truncated mid-run at sw-e2e-orchestrator-test with no failing suite visible in the captured output",
+      "fix": "Re-run full suite and inspect complete log for the actual failing assertion",
       "seen_count": 1,
-      "last_seen": "2026-08-07T22:22:57Z",
-      "category": "timeout"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "Test harness fixture mismatch: sw-pipeline-test.sh mock plan/review stages no longer write plan.md/review.md, and complexity-skip logic outputs numeric complexity without expected label, causing jq to fail on non-numeric input",
-      "fix": "Update mock pipeline stage stubs to write plan.md and review.md artifacts, and fix jq parsing of complexity value (quote/validate numeric input) plus align intelligence skip-stage log message with test's expected regex",
-      "seen_count": 1,
-      "last_seen": "2026-08-07T23:05:28Z",
-      "category": "test_failure"
+      "last_seen": "2026-08-07T23:00:48Z",
+      "category": "unknown"
     }
   ]
 }
