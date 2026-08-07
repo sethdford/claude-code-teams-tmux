@@ -1614,31 +1614,31 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Shows known test stage failures with root causes and fixes: missing pipeline artifacts (plan.md/review.md), stale pipeline locks, cost dashboard test issues, and loop stuckness detection. Directly applicable to avoiding known blockers in current build."
+            "summary": "Recent test/build failures with root causes and fixes; directly applicable to troubleshooting build stage issues like E2E pipeline tests, cost dashboard tests, and pipeline lock problems"
           },
           {
             "file": "success-patterns.json",
             "relevance": 90,
-            "summary": "Contains two successful builds with complexity 60-65, 3 iterations each, using npm test strategy and standard template. Shows iteration patterns, durations (45-150s), and file patterns changed. Directly informative for build approach and expectations."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 85,
-            "summary": "Provides baseline metrics: build_duration_s=7095 and test_duration_s=1459. Essential for setting realistic time expectations and detecting performance anomalies during current build stage."
+            "summary": "Historical success patterns from bug fixes showing iteration counts, test strategies (npm test), file patterns, and cost/duration metrics that can guide the current build approach"
           },
           {
             "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Common build/test failure signatures (mktemp, JSON validation, test output formatting) with fix strategies that may prevent known issues during this build"
+          },
+          {
+            "file": "metrics.json",
             "relevance": 60,
-            "summary": "Documents test environment setup pitfalls: mktemp failures with /tmp/claude path, sw-cleanup.sh output issues, regression detection JSON formatting. Relevant for avoiding common build environment setup failures."
+            "summary": "Baseline metrics showing typical build_duration_s (7095) and test_duration_s (1459) provide performance expectations for monitoring build progress"
           },
           {
             "file": "issues.json",
-            "relevance": 45,
-            "summary": "Shows a past daemon timeout bug fix using semaphore pattern with backoff gotcha. Moderately relevant as example of troubleshooting approach if daemon-related issues arise during build."
+            "relevance": 55,
+            "summary": "Past issue resolutions with success patterns (e.g., timeout bug fix with semaphore) and gotchas to watch for during build implementation"
           }
         ]
       },
-      "timestamp": 1786103794,
+      "timestamp": 1786105647,
       "ttl": 1800
     },
     "269c2252df579037dbfa6db4ad5112cf": {
@@ -1666,21 +1666,21 @@
       "result": {
         "complexity": 2,
         "risk_level": "low",
-        "success_probability": 95,
+        "success_probability": 96,
         "recommended_template": "fast",
         "issue_type": "testing",
         "key_risks": [
-          "Issue is automated test artifact that should be closed rather than implemented",
-          "README may have changed since test creation",
-          "Duplicate or stale test issue from previous runs"
+          "Test may not properly clean up README modifications after execution",
+          "Concurrent E2E tests could conflict on shared README resource",
+          "E2E test quarantine label may be missing from issue"
         ],
         "implementation_hints": [
-          "Verify this is an actual E2E test artifact and close if confirmed safe",
-          "Check if the test framework already handles this issue creation/cleanup",
-          "Review e2e test logs to confirm test completed successfully"
+          "Verify issue is labeled with quarantine marker (e.g., sw:e2e-test) to exclude from analytics",
+          "README changes must be idempotent or explicitly reverted in test teardown",
+          "Ensure test runs in isolation to prevent conflicts with parallel E2E test execution"
         ]
       },
-      "timestamp": 1786069721,
+      "timestamp": 1786105366,
       "ttl": 3600
     },
     "584c03898cab125e5bc082ad6e45a5db": {
@@ -1713,19 +1713,15 @@
         "issue_type": "testing",
         "confidence": 0.95,
         "secondary_domains": [
-          "documentation",
           "automation",
-          "e2e-validation"
+          "github-integration"
         ],
         "complexity_assessment": {
-          "score": 3,
-          "reasoning": "Straightforward E2E test of Shipwright's documentation modification capability; low risk due to quarantine; primary challenge is ensuring test stability, proper cleanup, and preventing false positives"
+          "score": 2,
+          "reasoning": "Automated E2E test scenario with a single, well-defined action (add comment to README). Low complexity due to simple scope, pre-defined test parameters, and pre-planned nature as a synthetic test harness issue."
         },
         "skill_plan": {
-          "plan": [
-            "testing-strategy",
-            "systematic-debugging"
-          ],
+          "plan": [],
           "design": [
             "testing-strategy"
           ],
@@ -1733,49 +1729,46 @@
             "testing-strategy"
           ],
           "review": [
-            "pr-quality",
             "testing-strategy",
             "validation-thoroughness"
           ],
           "compound_quality": [
-            "testing-strategy",
             "validation-thoroughness"
           ],
           "pr": [
             "pr-quality"
           ],
-          "deploy": [
-            "deploy-safety"
-          ],
-          "validate": [
-            "validation-thoroughness"
-          ],
+          "deploy": [],
+          "validate": [],
           "monitor": []
         },
         "skill_rationale": {
-          "testing-strategy": "E2E tests require explicit acceptance criteria (README modified correctly), edge cases (concurrent modifications, AUTO: markers), and reproducible test patterns across all pipeline stages",
-          "systematic-debugging": "This is an automated E2E test; understanding any prior failures prevents retry loops and informs whether test design or feature implementation is the root cause",
-          "pr-quality": "E2E test code must clearly document the scenario being validated and why, enabling future maintainers to understand test intent and modify safely",
-          "validation-thoroughness": "E2E tests validate real end-to-end flows; test execution alone is insufficient—must verify the test actually detects failures (e.g., would it catch a broken documentation writer?)",
-          "deploy-safety": "E2E tests gate pipeline merges; unreliable tests create false confidence or block legitimate deploys, so stability and flakiness detection are critical"
+          "testing-strategy": "E2E test implementation must follow Shipwright's test harness patterns, including proper quarantine label setup (`sw:e2e-test`), GitHub API interaction testing, and isolation from production issue processing.",
+          "validation-thoroughness": "Test execution must validate that the comment was actually added to README via GitHub API, not direct file modification, and that quarantine labels prevent real repository state pollution.",
+          "pr-quality": "Test code must be reviewable and document what GitHub API interaction paths are being exercised and how quarantine verification occurs during cleanup."
         },
-        "generated_skills": [],
+        "generated_skills": [
+          {
+            "name": "e2e-test-quarantine-validation",
+            "reason": "No existing skill addresses E2E test quarantine verification and GitHub API interaction testing for synthetic issues. This is critical for Shipwright's E2E harness which isolates test issues from production analytics, daemon polling, triage scoring, and strategic analysis via the `sw:e2e-test` label.",
+            "content": "## E2E Test Quarantine Validation\n\nShipwright's E2E integration test harness creates synthetic GitHub issues for testing. These must be properly quarantined to prevent pollution of production analytics, daemon issue processing, and strategic analysis.\n\n### Quarantine System Architecture\n\n**Label-based filtering**: Tests apply `sw:e2e-test` label (configurable via `labels.e2e_test` in daemon-config.json) at issue creation. Eight downstream consumers filter quarantined issues: daemon poll, triage, strategic analysis, issue decompose, fleet analytics, and three others.\n\n**Fail-safe contract**: If label application fails, jq malforms, or JSON is invalid, issues pass through unfiltered (visible noise beats silent starvation).\n\n### Implementation Checklist\n\n- [ ] Apply `sw:e2e-test` label immediately after issue creation, before any daemon/automation processes it\n- [ ] Test scenario is idempotent and can run multiple times without side effects\n- [ ] GitHub API interactions happen only on synthetic repos or isolated test branches\n- [ ] Cleanup phase verifies labels were applied and respected throughout execution\n- [ ] Test output documents which quarantine consumer paths were verified (daemon skip, triage skip, etc.)\n\n### GitHub API Testing\n\nWhen testing interactions like comments:\n- Use GitHub API to confirm comment was added (not direct file reads)\n- Verify quarantine labels persist after comment addition\n- Query open issues list to confirm test issue is skipped by consumers\n- Validate comment can be cleaned up without leaving orphans\n\n### Common Pitfalls\n\n- Label applied after daemon has already queued the issue\n- Comment added via direct file modification instead of API (doesn't test API layer)\n- Cleanup incomplete: comment or label remains after test\n- No validation that downstream consumers actually skip the test issue"
+          }
+        ],
         "review_focus": [
-          "Test isolation and quarantine enforcement (verify sw:e2e-test label prevents contamination of production metrics)",
-          "Repository state cleanup (ensure README reverts to original state after test, no leftover artifacts)",
-          "Documentation sync safety (verify test modifications don't conflict with AUTO: sections or DORA/intelligence caching)",
-          "Test flakiness and determinism (confirm test passes reliably on repeated runs without timing assumptions)",
-          "False positive detection (verify test would fail if the feature breaks, not just when it runs)"
+          "Verify sw:e2e-test label applied to issue before any daemon/automation processing",
+          "Confirm comment added to README via GitHub API (not direct file modification)",
+          "Ensure test operates on isolated synthetic resources, not production README",
+          "Validate quarantine filtering works: downstream consumers skip this issue",
+          "Verify cleanup removes comment artifact and restores state"
         ],
         "risk_areas": [
-          "Flaky test causing intermittent pipeline failures and false confidence",
-          "Incomplete cleanup leaving modified README and confusing subsequent runs",
-          "Test passing but not validating the feature (modified README is correct but doesn't mean feature works end-to-end)",
-          "Interference with documentation AUTO: sections or intelligence module caching",
-          "Quarantine label not respected by intelligence/triage modules, leaking into production analysis"
+          "Quarantine label applied too late; daemon processes synthetic issue as real before label exists",
+          "Test modifies production README if GitHub context misconfigured or label filtering fails",
+          "Comment orphaned on README after test completion, polluting documentation",
+          "Downstream consumers don't actually skip quarantined issue due to filter bypass or missing labels"
         ]
       },
-      "timestamp": 1786069804,
+      "timestamp": 1786105593,
       "ttl": 3600
     },
     "61c5f4a9ce6598c2f1fc048e0a7ce958": {
@@ -1783,32 +1776,32 @@
         "results": [
           {
             "file": "failures.json",
-            "relevance": 85,
-            "summary": "Contains E2E test failures including stale pipeline locks, missing artifact writes, and integration test issues that directly impact E2E test execution in the build stage"
+            "relevance": 95,
+            "summary": "Contains E2E test failures including 'Pipeline E2E tests fail because plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/' - directly applicable to this E2E test build stage. Also documents pipeline lock issues and test execution failures."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 90,
+            "summary": "Defines project configuration: Node.js, vitest test runner, npm package manager, commonjs imports. Essential for understanding how to execute build and tests in this repo."
           },
           {
             "file": "metrics.json",
             "relevance": 75,
-            "summary": "Provides build_duration_s (7095s) and test_duration_s (1459s) baselines for estimating build stage timing and setting reasonable iteration limits"
+            "summary": "Provides baseline metrics: build_duration_s=7095, test_duration_s=1459. Critical for detecting performance anomalies during this build stage and setting expectations."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 65,
-            "summary": "Shows successful patterns for bug fixes and feature development (complexity 60-65, 3 iterations, standard template) that inform build loop strategy for similar-complexity E2E work"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Project conventions (Node/vitest/npm/commonjs) needed to understand test setup, execution environment, and file structure for the E2E test build"
+            "relevance": 70,
+            "summary": "Shows successful build patterns from prior runs: 3 iterations typical, npm test strategy, standard template, ~45-150s duration. Provides reference for what working builds look like."
           },
           {
             "file": "knowledge.json",
-            "relevance": 40,
-            "summary": "Contains test failure patterns and fix strategies (mktemp issues, test setup, JSON validation) that may prevent build failures in the test stage"
+            "relevance": 65,
+            "summary": "Documents common test setup failures: mktemp /tmp/claude directory issues (4 occurrences), cleanup.sh missing output, regression detection JSON problems. Relevant pitfalls to avoid during test execution."
           }
         ]
       },
-      "timestamp": 1786071962,
+      "timestamp": 1786105633,
       "ttl": 1800
     },
     "7cb46b8dc6fd7dab50b991a7263f2d84": {
@@ -2058,6 +2051,59 @@
         }
       ],
       "timestamp": 1786104244,
+      "ttl": 1800
+    },
+    "ac2f1197c2c544ad64b385b4dfa90bed": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786105368,
+      "ttl": 1800
+    },
+    "a940c58ae3565636571a6a5a405420d4": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1786105376,
+      "ttl": 1800
+    },
+    "cb75ac5f28086fd243c897ef25d90fbc": {
+      "result": {
+        "estimated_cost_usd": 0.12,
+        "estimated_iterations": 1,
+        "estimated_tokens": 17500,
+        "likely_failure_stage": "none",
+        "confidence": 88
+      },
+      "timestamp": 1786105391,
+      "ttl": 3600
+    },
+    "4b2ae93e54d30e8d6c7c8e99961821d0": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786105492,
+      "ttl": 1800
+    },
+    "32591c181a6a440624ae87cbae13b30e": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786105860,
       "ttl": 1800
     }
   }
