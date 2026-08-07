@@ -23,27 +23,27 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
-      "seen_count": 10,
-      "last_seen": "2026-08-07T11:10:58Z",
+      "seen_count": 9,
+      "last_seen": "2026-08-07T11:08:31Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255mpublish error handling\u001b[0m",
-      "root_cause": "Two unrelated pre-existing test suites (sw-e2e-integration-test, sw-intent-analysis-test) failed with exit 1, unrelated to the 'publish error handling' pattern which never actually appears in this log",
-      "fix": "Run sw-e2e-integration-test.sh and sw-intent-analysis-test.sh individually to capture their actual assertion failures, then fix the underlying code or update the tests",
+      "root_cause": "sw-e2e-integration-test failed due to a stale pipeline lock from a prior interrupted run, and sw-intent-analysis-test failed because analyze_intent's output schema is missing required fields (version, goal, criteria)",
+      "fix": "clear/reset the stale pipeline lock before the e2e integration test runs (or add lock cleanup in test setup), and update analyze_intent to emit version, goal, and criteria fields per the schema",
       "seen_count": 1,
       "last_seen": "2026-08-07T02:57:53Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "sw-self-optimize.sh memory promotion test expects patterns copied to a cross-repo memory path that isn't being created/matched correctly",
-      "fix": "check the cross-repo promotion path/glob logic in sw-self-optimize.sh matches the test's mock repo-hash directory structure",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-e2e-integration-test exceeded the 300s per-suite timeout, likely due to a hung real Claude/GitHub API call",
+      "fix": "Add a shorter internal timeout/mock fallback in sw-e2e-integration-test.sh or increase the suite timeout for tests that make live API calls",
       "seen_count": 1,
-      "last_seen": "2026-08-07T10:05:07Z",
-      "category": "test_failure"
+      "last_seen": "2026-08-07T10:34:17Z",
+      "category": "timeout"
     }
   ]
 }
