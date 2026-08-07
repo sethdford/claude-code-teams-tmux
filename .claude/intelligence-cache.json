@@ -1794,6 +1794,89 @@
       ],
       "timestamp": 1786069019,
       "ttl": 1800
+    },
+    "fac4753750a4f27d0e205440ffc3c23f": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete function extraction causing hidden dependencies or circular requires between sw-daemon.sh and new lib",
+          "Daemon behavioral changes silently despite passing tests if state machine mutations are missed in extraction",
+          "New test suite has coverage gaps in triage scoring edge cases or priority calculation boundaries",
+          "Performance regression from added indirection in frequently-called scoring functions during daemon poll loop"
+        ],
+        "implementation_hints": [
+          "Map all scoring/triage functions first—grep 'score_issue|triage|prioritize|complexity' in sw-daemon.sh to identify candidates",
+          "Extract function groups that share state variables as a unit to avoid partial dependencies; trace variable flows before cutting",
+          "Run existing sw-daemon-test.sh unmodified before and after extraction as a regression test—it should show 100% PASS both ways",
+          "Create test fixtures for issue payloads with varying priorities/complexity scores; include edge cases (zero fields, extreme values)",
+          "Validate no net new hardcoded values introduced—extract constants to daemon-config.json if needed for consistency with prior splits"
+        ]
+      },
+      "timestamp": 1786069088,
+      "ttl": 3600
+    },
+    "56b8b2ae013bd3db62cec7a06136fdf2": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786069161,
+      "ttl": 1800
+    },
+    "5b31c66cd619db05710f773c8691cd93": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786069376,
+      "ttl": 1800
+    },
+    "8bf813b520159a4e8daa5bc55b246c66": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786069428,
+      "ttl": 1800
+    },
+    "4b8295d124f4ac6fef5545ac529ee0ac": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 88,
+        "recommended_template": "fast",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Rolling window off-by-one errors in timestamp calculations",
+          "Silent failures if pipeline completion events are not reliably logged to events.jsonl",
+          "False positives from incomplete/in-progress pipelines counted as zero completion"
+        ],
+        "implementation_hints": [
+          "Parse events.jsonl filtering for 'pipeline_completed' events with success=true only",
+          "Implement rolling 7-day window function taking current timestamp, event list, extracting counts",
+          "Add distinct 'stalled' status enum to differentiate from low-success-rate case (0 vs 1+)",
+          "Integrate into sw-dora.sh and sw-pipeline-vitals.sh as a new output line",
+          "Add zero-completion detector to sw-doctor.sh checks section with severity=critical",
+          "Test with fixtures: 0 events, partial events, spanning boundaries of 7-day window"
+        ]
+      },
+      "timestamp": 1786069652,
+      "ttl": 3600
     }
   }
 }
