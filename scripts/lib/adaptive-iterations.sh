@@ -7,6 +7,7 @@
 _ADAPTIVE_ITERATIONS_LOADED=1
 
 # Module version for debugging
+# shellcheck disable=SC2034
 VERSION="3.3.0"
 
 # ─── Configuration ──────────────────────────────────────────────────────────
@@ -17,9 +18,13 @@ ITERATIONS_MAX=50  # Absolute ceiling to prevent runaway loops
 ITERATIONS_DEFAULT=20
 
 # Historical data thresholds
+# shellcheck disable=SC2034
 ITERATIONS_MIN_SAMPLES=3  # Require N samples before using adaptive budget
+# shellcheck disable=SC2034
 ITERATIONS_LOOKBACK=100   # Use last N samples for percentile calculation
+# shellcheck disable=SC2034
 ITERATIONS_COHORT_THRESHOLD=0.6  # Minimum similarity score to match a cohort (0-1)
+# shellcheck disable=SC2034
 ITERATIONS_HIGH_CONFIDENCE_THRESHOLD=0.7  # Score for high-confidence recommendation
 
 # Paths
@@ -88,6 +93,7 @@ _iter_samples_for_cohort() {
 # Groups by job_id and counts iterations per job.
 # $1: events file (default: ITERATIONS_HISTORY_FILE)
 # Returns: newline-separated iteration counts
+# shellcheck disable=SC2120
 _iter_samples_global() {
     local events_file="${1:-$ITERATIONS_HISTORY_FILE}"
 
@@ -179,6 +185,7 @@ adaptive_iterations_suggest() {
 
     # Tier 2: Global data (medium confidence)
     local global_samples
+    # shellcheck disable=SC2119
     global_samples=$(_iter_samples_global)
     local global_count
     global_count=$(echo "$global_samples" | awk 'NF {count++} END {print count+0}')
