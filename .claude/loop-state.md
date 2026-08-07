@@ -1,14 +1,45 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Quarantine E2E Test Issues From Production Issue Tracker
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+# Plan — Quarantine E2E Test Issues From Production Issue Tracker (#1303)
+
+## Problem (verified against the repo)
+
+`scripts/sw-e2e-integration-test.sh:117` creates **real** GitHub issues titled
+`E2E test: add comment to README [automated]` (`:39`) with label `e2e-test`. It is the only
+test script that calls a real `gh issue create` (verified:
+`grep -ln "gh issue create" scripts/sw-*e2e*.sh` → only that file). Its cleanup trap
+*closes* the issue but does not delete it, so every integration run leaves a permanent
+closed issue. Downstream consumers then read those issues:
+
+| Consumer | Site | What it reads |
+| --- | --- | --- |
+| Daemon poll | `scripts/lib/daemon-poll-github.sh:70`, `:97` | open issues with `$WATCH_LABEL` |
+| Triage scoring | `scripts/sw-triage.sh:463` | all open issues |
+| Triage unlabeled | `scripts/sw-triage.sh:669` | `--search "no:label"` |
+| Triage label audit | `scripts/sw-triage.sh:695` | all open issues |
+| Strategic title cache | `scripts/sw-strategic.sh:115-116` | open + last 30 closed titles |
+| Strategic analysis | `scripts/sw-strategic.sh:286`, `:380`, `:388` | open + recent closed |
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Architecture Decision Record: Quarantine E2E Test Issues From Production Issue Tracker
+## Context
+## Decision
+## Alternatives Considered
+## Component Diagram
+## Interface Contracts
+### Quarantine Library (`scripts/lib/issue-quarantine.sh`)
+### E2E Integration Test Harness (`scripts/sw-e2e-integration-test.sh`)
+### Consumption Points (Daemon Poll, Triage, Strategic)
+## Data Flow
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Quarantine E2E Test Issues From Production Issue Tracker
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Quarantine E2E Test Issues From Production Issue Tracker
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +48,85 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "failures.json (first)",
+      "relevance": 85,
+      "summary": "Contains specific E2E test failure: 'Pipeline E2E tests fail because plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/' — directly describes E2E test issues and root cause"
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
+      "file": "knowledge.json",
+      "relevance": 62,
+      "summary": "Contains KB entries for test infrastructure failures (mktemp issues, test setup problems) — provides patterns for fixing test environment issues that affect E2E test execution"
     },
     {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "success-patterns.json (first)",
+      "relevance": 48,
+      "summary": "Shows 'Fix bug' pattern with 3 iterations and standard template — demonstrates iteration strategy and test approach (npm test) applicable to build stage work"
     },
     {
-      "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "file": "issues.json",
+      "relevance": 42,
+      "summary": "Records issue 'Fix timeout bug in daemon' with success pattern including gotchas — exemplifies how issues are captured and fixed with learned patterns"
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "metrics.json (first)",
+      "relevance": 38,
+      "summary": "Contains baselines for build_duration_s (7095s) and test_duration_s (1459s) — provides context for test execution expectations and potential timeouts"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Quarantine E2E Test Issues From Production Issue Tracker — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Quarantine E2E Test Issues From Production Issue Tracker
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Task 1: Add `labels.e2e_test` + `labels.quarantine` to `config/defaults.json`
+- [ ] Task 2: Create `scripts/lib/issue-quarantine.sh` with fail-open `quarantine_filter_json`
+- [ ] Task 3: `sw-e2e-integration-test.sh` — ensure label exists, apply it, assert it stuck
+- [ ] Task 4: `daemon-poll-github.sh` — filter after `gh_record_success`, before `issue_count`
+- [ ] Task 5: `sw-triage.sh` — filter `:463`, `:695`; search qualifier on `:669`
+- [ ] Task 6: `sw-strategic.sh` — filter `:115`, `:116`, `:286`, `:380`, `:388`
+- [ ] Task 7: Create `scripts/sw-lib-issue-quarantine-test.sh` (14 cases incl. fail-open + wiring)
+- [ ] Task 8: Register suite in `package.json` and `scripts/sw-test-all.sh`
+- [ ] Task 9: Document quarantine label in `.claude/CLAUDE.md` Test Harness section
+- [ ] Task 10: `bash -n` + shellcheck all touched scripts
+- [ ] Task 11: Run new suite + daemon/triage/strategic/poll suites
+- [ ] Task 12: `npm test` green; `shipwright version check` green
+- [ ] Task 13: Verify existing synthetic issues carry a quarantined label; label any strays
+- [ ] `scripts/lib/issue-quarantine.sh` exists, is Bash 3.2 clean, `VERSION` matches `package.json`, idempotently sourceable
+- [ ] `sw-e2e-integration-test.sh` creates its issue with the `sw:e2e-test` label and asserts the label is present on the created issue
+- [ ] `daemon-poll-github.sh`, `sw-triage.sh`, `sw-strategic.sh` exclude quarantined issues by default, and the daemon's logged count reflects the post-filter set
+- [ ] Exclusion is overridable via config (`labels.quarantine`) and env (`SHIPWRIGHT_LABELS_E2E_TEST`) — no hardcoded label strings at any call site
+- [ ] `quarantine_filter_json` provably fails open: malformed and empty input pass through, exit 0 (cases 8–9)
+- [ ] `scripts/sw-lib-issue-quarantine-test.sh` passes 14/14, registered in `package.json`
+- [ ] `npm test` green; `shipwright version check` green; `bash -n` clean on all touched scripts
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-1303
+- Issue: none
+- Generated: 2026-08-07T01:54:31Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: haiku
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-08-07T01:58:43Z
+last_iteration_at: 2026-08-07T01:58:43Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
