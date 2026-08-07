@@ -592,3 +592,4 @@ npm test    # 125 shell suites + 16 dashboard test files (141 total), E2E system
 MIT — Seth Ford, 2026.
 
 <!-- e2e-test: automated comment added by issue #1357 -->
+<!-- e2e-test: automated comment added by issue #1365 -->
