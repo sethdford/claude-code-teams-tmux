@@ -159,4 +159,36 @@ for fn in quarantine_label quarantine_labels quarantine_filter_json quarantine_s
     fi
 done
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Regression: consumers must load the library without relying on SCRIPT_DIR
+# daemon-poll-github.sh is sourced before sw-daemon.sh sets SCRIPT_DIR, so a
+# SCRIPT_DIR-relative source silently resolved to lib/lib/ and left
+# quarantine_filter_json undefined — daemon poll ran unfiltered.
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "Regression: SCRIPT_DIR-independent loading"
+
+if env -u SCRIPT_DIR bash -c \
+    "set -euo pipefail; source '$SCRIPT_DIR/lib/daemon-poll-github.sh'; declare -f quarantine_filter_json >/dev/null" \
+    >/dev/null 2>&1; then
+    assert_pass "daemon-poll-github.sh defines quarantine_filter_json with SCRIPT_DIR unset"
+else
+    assert_fail "daemon-poll-github.sh defines quarantine_filter_json with SCRIPT_DIR unset"
+fi
+
+# The same load must actually filter, not just define the symbol.
+regression_input='[{"number":1,"title":"Real","labels":[{"name":"bug"}]},{"number":2,"title":"E2E","labels":[{"name":"sw:e2e-test"}]}]'
+regression_count=$(env -u SCRIPT_DIR bash -c \
+    "set -euo pipefail; source '$SCRIPT_DIR/lib/daemon-poll-github.sh'; printf '%s' '$regression_input' | quarantine_filter_json 'daemon-poll' | jq 'length'" \
+    2>/dev/null || echo "ERR")
+assert_eq "daemon-poll-github.sh load filters quarantined issues" "1" "$regression_count"
+
+# A SCRIPT_DIR pointing elsewhere must not break resolution either.
+if env SCRIPT_DIR="/nonexistent/path" bash -c \
+    "set -euo pipefail; source '$SCRIPT_DIR/lib/daemon-poll-github.sh'; declare -f quarantine_filter_json >/dev/null" \
+    >/dev/null 2>&1; then
+    assert_pass "daemon-poll-github.sh ignores a stale SCRIPT_DIR when locating the library"
+else
+    assert_fail "daemon-poll-github.sh ignores a stale SCRIPT_DIR when locating the library"
+fi
+
 print_test_results

@@ -3,8 +3,13 @@
 [[ -n "${_DAEMON_POLL_GITHUB_LOADED:-}" ]] && return 0
 _DAEMON_POLL_GITHUB_LOADED=1
 
+# Resolve the quarantine library relative to this file, not to SCRIPT_DIR. SCRIPT_DIR
+# is set by sw-daemon.sh well after this file is sourced, so keying off it resolved to
+# lib/lib/issue-quarantine.sh and the `|| true` swallowed the failure — leaving
+# quarantine_filter_json undefined and daemon poll unfiltered.
+_DAEMON_POLL_GITHUB_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./issue-quarantine.sh
-source "${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}/lib/issue-quarantine.sh" 2>/dev/null || true
+source "${_DAEMON_POLL_GITHUB_LIB_DIR}/issue-quarantine.sh"
 
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 DAEMON_DIR="${DAEMON_DIR:-${HOME}/.shipwright}"
