@@ -1597,31 +1597,31 @@
           {
             "file": "success-patterns.json",
             "relevance": 95,
-            "summary": "Contains 2 successful build patterns (bug fix + feature) with complexity scores, iteration counts, test strategies, file changes, and cost metrics—directly applicable to understanding build stage behavior and what makes builds succeed"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 90,
-            "summary": "Baseline metrics for build_duration_s (7095s) and test_duration_s (1459s) are essential context for the build stage to understand expected performance and timeout thresholds"
+            "summary": "Contains 2 success patterns with complete build metadata: iterations, test strategy (npm test), files changed, commit count, and approach. Directly applicable to planning similar build work."
           },
           {
             "file": "failures.json",
-            "relevance": 75,
-            "summary": "Recent test failures with root causes directly affecting build execution: artifact writing issues in pipeline stages, cost dashboard test fixtures, and memory promotion path mismatches"
+            "relevance": 90,
+            "summary": "Documents 4 recent test-stage failures with root causes and fixes. Critical for build stage to avoid known test failures (e.g., missing pipeline artifacts, stale locks, cost dashboard fixtures)."
           },
           {
             "file": "knowledge.json",
-            "relevance": 65,
-            "summary": "Captured test environment failures (mktemp /tmp/claude issues, cleanup output formatting) and regression detection patterns applicable to debugging build-stage test failures"
+            "relevance": 85,
+            "summary": "Captures 5+ test failure patterns (mktemp paths, JSON output, heartbeat detection) with fix strategies and error signatures. Prevents build/test setup failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Provides baseline performance metrics (build: 7095s, test: 1459s). Helps detect performance regressions and set realistic expectations for build duration."
           },
           {
             "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, commonjs imports) define the structure and patterns the build stage operates within"
+            "relevance": 65,
+            "summary": "Documents project conventions (source_dir: src/, test_pattern: *.test.js, test_runner: vitest). Needed to understand codebase structure for building correctly."
           }
         ]
       },
-      "timestamp": 1786069745,
+      "timestamp": 1786071946,
       "ttl": 1800
     },
     "b6fa8a3c5379ef6101586498a6bd7d1d": {
