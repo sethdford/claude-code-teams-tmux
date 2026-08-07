@@ -1238,12 +1238,36 @@ Each test suite uses mock binaries in a temp directory, with PASS/FAIL counters,
 
 The E2E integration test suite (`sw-e2e-integration-test.sh`) creates real GitHub issues to exercise the full pipeline. These synthetic issues are automatically quarantined from production issue tracking and analysis via `lib/issue-quarantine.sh`:
 
-**Quarantine System** — Filters at eight consumption sites:
+**Quarantine System** — Filters at 19 consumption sites:
 
 - `labels.e2e_test` (default: `"sw:e2e-test"`) — label applied to synthetic issues
 - `labels.quarantine` (default: `["sw:e2e-test", "e2e-test"]`) — full filter set (includes legacy labels)
-- **Consumers filtered**: daemon poll, triage (score + audit), strategic analysis (title cache + open/closed queries)
 - **Fail-open contract**: malformed JSON, missing jq, or empty input pass through unfiltered (visible noise, not starvation)
+
+Two filtering modes. `quarantine_filter_json` is client-side and matches on the
+`labels` array, so **every call site must request `labels` in its `--json`
+field list** — one that doesn't filters nothing, silently. `quarantine_search_qualifier`
+is server-side, emitting `-label:"…"` qualifiers appended to a `--search` string;
+use it where the query returns plain text or only issue numbers.
+
+| Consumer                                                          | Sites | Mode                      |
+| ----------------------------------------------------------------- | ----- | ------------------------- |
+| `lib/daemon-poll-github.sh` — daemon poll                         | 1     | filter_json               |
+| `sw-triage.sh` — score, audit, unlabeled                          | 3     | filter_json ×2, qualifier |
+| `sw-strategic.sh` — title cache, open/closed queries, title dedup | 6     | filter_json ×5, qualifier |
+| `lib/daemon-triage.sh` — triage score fetch                       | 1     | filter_json               |
+| `sw-decide.sh` — open-title dedup                                 | 1     | filter_json               |
+| `sw-autonomous.sh` — issue-title dedup                            | 3     | qualifier                 |
+| `lib/root-cause.sh` — error-signature dedup                       | 1     | qualifier                 |
+| `sw-patrol-meta.sh` — title dedup                                 | 1     | qualifier                 |
+| `sw-release-manager.sh` — release blocker count                   | 1     | filter_json               |
+| `lib/fleet-failover.sh` — orphaned-claim search                   | 1     | filter_json               |
+
+Libraries under `scripts/lib/` source the quarantine library by a path relative
+to their own `BASH_SOURCE`, not `SCRIPT_DIR` — callers set `SCRIPT_DIR` after
+sourcing them, so a `SCRIPT_DIR`-relative source resolves to `lib/lib/` and
+leaves the filter undefined. `sw-lib-issue-quarantine-test.sh` pins this, the
+consumer list, and the `labels`-in-`--json` requirement.
 
 Usage:
 

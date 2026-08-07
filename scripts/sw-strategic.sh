@@ -19,6 +19,7 @@ EVENTS_FILE="${EVENTS_FILE:-${HOME}/.shipwright/events.jsonl}"
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
 # shellcheck source=lib/issue-quarantine.sh
 [[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
+[[ "$(type -t quarantine_search_qualifier 2>/dev/null)" == "function" ]] || quarantine_search_qualifier() { :; }
 # Fallbacks when helpers not loaded (e.g. test env, sourced by daemon)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -652,7 +653,7 @@ strategic_create_issue() {
 
     # Dedup: check if an open issue with this exact title already exists
     local existing
-    existing=$(gh issue list --state open --search "$title" --json number,title --jq ".[].title" 2>/dev/null || echo "")
+    existing=$(gh issue list --state open --search "$title $(quarantine_search_qualifier)" --json number,title --jq ".[].title" 2>/dev/null || echo "")
     if echo "$existing" | grep -qF "$title" 2>/dev/null; then
         info "  Skipping duplicate: ${title}" >&2
         return 1

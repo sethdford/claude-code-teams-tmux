@@ -16,6 +16,10 @@ source "$SCRIPT_DIR/lib/policy.sh"
 source "$SCRIPT_DIR/lib/decide-signals.sh"
 source "$SCRIPT_DIR/lib/decide-scoring.sh"
 source "$SCRIPT_DIR/lib/decide-autonomy.sh"
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
+# Fail-open fallbacks when the quarantine library is unavailable
+[[ "$(type -t quarantine_filter_json 2>/dev/null)" == "function" ]] || quarantine_filter_json() { cat; }
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 # shellcheck disable=SC2034
@@ -63,7 +67,9 @@ _dedup_against_issues() {
     # Deduplicate against open GitHub issues
     local open_titles=""
     if [[ "${NO_GITHUB:-false}" != "true" ]]; then
-        open_titles=$(gh issue list --label "shipwright" --state open --json title -q '.[].title' 2>/dev/null || echo "")
+        open_titles=$(gh issue list --label "shipwright" --state open --json title,labels 2>/dev/null \
+            | quarantine_filter_json "decide-dedup" \
+            | jq -r '.[].title' 2>/dev/null || echo "")
     fi
 
     # Deduplicate against recent decisions (DEDUP_WINDOW_DAYS)

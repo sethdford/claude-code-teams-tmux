@@ -18,6 +18,10 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
+# Quarantine library — keeps E2E test issues out of dedup searches
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
+[[ "$(type -t quarantine_search_qualifier 2>/dev/null)" == "function" ]] || quarantine_search_qualifier() { :; }
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -260,7 +264,7 @@ ingest_strategic_findings() {
 
         local issue_num=""
         if [[ "${NO_GITHUB:-false}" != "true" ]] && command -v gh >/dev/null 2>&1; then
-            issue_num=$(gh issue list --state open --search "$title" --json number -q '.[0].number' 2>/dev/null || echo "")
+            issue_num=$(gh issue list --state open --search "$title $(quarantine_search_qualifier)" --json number -q '.[0].number' 2>/dev/null || echo "")
         fi
 
         local finding
@@ -473,7 +477,7 @@ create_issue_from_finding() {
 
     # Dedup: check if an open issue with the same title already exists
     local existing
-    existing=$(gh issue list --state open --search "$title" --json number,title --limit 20 2>/dev/null | jq -r --arg t "$title" '[.[] | select(.title == $t) | .number][0] // empty' || echo "")
+    existing=$(gh issue list --state open --search "$title $(quarantine_search_qualifier)" --json number,title --limit 20 2>/dev/null | jq -r --arg t "$title" '[.[] | select(.title == $t) | .number][0] // empty' || echo "")
     if [[ -n "$existing" ]]; then
         warn "Open issue with same title already exists: #${existing} ($title)"
         return 1
@@ -664,7 +668,7 @@ process_findings() {
         # Strategic findings: issue already created by strategic agent; trigger pipeline and register, skip create
         if [[ "$source" == "strategic" ]]; then
             [[ -z "$issue_num" && "${NO_GITHUB:-false}" != "true" ]] && command -v gh >/dev/null 2>&1 && \
-                issue_num=$(gh issue list --state open --search "$title" --json number -q '.[0].number' 2>/dev/null || echo "")
+                issue_num=$(gh issue list --state open --search "$title $(quarantine_search_qualifier)" --json number -q '.[0].number' 2>/dev/null || echo "")
             if [[ -n "$issue_num" && "$issue_num" =~ ^[0-9]+$ ]]; then
                 trigger_pipeline_for_finding "$issue_num" "$title"
                 autonomous_register_strategic_overlap "$title" "$issue_num" || true

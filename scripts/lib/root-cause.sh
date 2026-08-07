@@ -22,6 +22,12 @@ VERSION="3.3.0"
 # Module guard
 [[ -n "${_ROOT_CAUSE_LOADED:-}" ]] && return 0; _ROOT_CAUSE_LOADED=1
 
+# Quarantine library, resolved relative to this file (not SCRIPT_DIR, which the
+# caller may set later or not at all).
+_ROOT_CAUSE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./issue-quarantine.sh
+source "${_ROOT_CAUSE_LIB_DIR}/issue-quarantine.sh"
+
 # ─── Defaults ──────────────────────────────────────────────────────────────
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -185,7 +191,8 @@ rootcause_create_platform_issue() {
     local error_sig
     error_sig=$(echo "$error_message" | cksum | awk '{print $1}')
     local existing_issues
-    existing_issues=$(gh issue list --state open --search "error-sig:$error_sig" --limit 1 2>/dev/null || true)
+    existing_issues=$(gh issue list --state open \
+        --search "error-sig:$error_sig $(quarantine_search_qualifier)" --limit 1 2>/dev/null || true)
 
     if [[ -n "$existing_issues" ]]; then
         info "Duplicate issue already exists for error signature $error_sig"

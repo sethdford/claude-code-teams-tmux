@@ -746,6 +746,69 @@ cmd_report() {
 
 # ─── Subcommand: help ────────────────────────────────────────────────────
 
+# ─── Quarantine backfill ───────────────────────────────────────────────────
+# Synthetic E2E issues created before the quarantine label existed still show up
+# in production queries. `list` reports them; `apply` labels them, and is a
+# dry-run unless --apply is passed, because relabelling is repo-visible.
+cmd_quarantine() {
+    local action="${1:-list}"
+    shift 2>/dev/null || true
+
+    local do_apply=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --apply) do_apply=true ;;
+            *) error "Unknown option: $1"; return 1 ;;
+        esac
+        shift
+    done
+
+    case "$action" in
+        list|apply) ;;
+        *) error "Usage: triage quarantine <list|apply> [--apply]"; return 1 ;;
+    esac
+
+    check_gh
+
+    local issues_json candidates candidate_count label
+    issues_json=$(gh issue list --state open --limit 200 --json number,title,labels 2>/dev/null || echo "[]")
+    candidates=$(printf '%s' "$issues_json" | quarantine_backfill_candidates)
+    candidate_count=$(printf '%s' "$candidates" | jq 'length' 2>/dev/null || echo 0)
+    label=$(quarantine_label)
+
+    if [[ "$candidate_count" -eq 0 ]]; then
+        success "No unlabeled synthetic issues found"
+        return 0
+    fi
+
+    info "Found ${CYAN}${candidate_count}${RESET} unlabeled synthetic issue(s) matching $(quarantine_title_pattern)"
+    printf '%s' "$candidates" | jq -r '.[] | "  #\(.number)  \(.title)"'
+    echo ""
+
+    if [[ "$action" == "list" ]]; then
+        return 0
+    fi
+
+    if [[ "$do_apply" != "true" ]]; then
+        warn "Dry run — re-run with ${CYAN}--apply${RESET} to add '${label}' to the issues above"
+        return 0
+    fi
+
+    local number failures=0
+    while IFS= read -r number; do
+        [[ -z "$number" ]] && continue
+        if gh issue edit "$number" --add-label "$label" >/dev/null 2>&1; then
+            success "  #${number} labeled '${label}'"
+        else
+            warn "  #${number} could not be labeled"
+            failures=$((failures + 1))
+        fi
+    done < <(printf '%s' "$candidates" | jq -r '.[].number')
+
+    [[ "$failures" -gt 0 ]] && return 1
+    return 0
+}
+
 cmd_help() {
     echo -e "${BOLD}shipwright triage${RESET} — Intelligent Issue Labeling & Prioritization"
     echo ""
@@ -759,6 +822,8 @@ cmd_help() {
     echo -e "  ${CYAN}team <issue>${RESET}           Recommend team size & pipeline template"
     echo -e "  ${CYAN}batch${RESET}                  Analyze + label all unlabeled open issues"
     echo -e "  ${CYAN}report${RESET}                 Show triage statistics (type, complexity, priority)"
+    echo -e "  ${CYAN}quarantine list${RESET}        List synthetic E2E issues missing the quarantine label"
+    echo -e "  ${CYAN}quarantine apply${RESET}       Label them (dry run unless ${CYAN}--apply${RESET} is passed)"
     echo -e "  ${CYAN}help${RESET}                   Show this help message"
     echo ""
     echo -e "${BOLD}EXAMPLES${RESET}"
@@ -770,6 +835,8 @@ cmd_help() {
     echo -e "  ${DIM}shipwright triage team 42${RESET}"
     echo -e "  ${DIM}shipwright triage batch${RESET}"
     echo -e "  ${DIM}shipwright triage report${RESET}"
+    echo -e "  ${DIM}shipwright triage quarantine list${RESET}"
+    echo -e "  ${DIM}shipwright triage quarantine apply --apply${RESET}"
     echo ""
 }
 
@@ -803,6 +870,9 @@ main() {
             ;;
         report)
             cmd_report "$@"
+            ;;
+        quarantine)
+            cmd_quarantine "$@"
             ;;
         help|--help|-h)
             cmd_help

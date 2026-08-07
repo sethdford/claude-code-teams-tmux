@@ -18,6 +18,10 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
+# Quarantine library — E2E test issues must never count as release blockers
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
+[[ "$(type -t quarantine_filter_json 2>/dev/null)" == "function" ]] || quarantine_filter_json() { cat; }
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -163,7 +167,10 @@ check_no_open_blockers() {
     fi
 
     local blockers
-    blockers=$(gh issue list --label "blocker" --state "open" --json "number" 2>/dev/null | jq 'length' || echo "0")
+    blockers=$(gh issue list --label "blocker" --state "open" --json "number,labels" 2>/dev/null \
+        | quarantine_filter_json "release-blockers" \
+        | jq 'length' 2>/dev/null || echo "0")
+    blockers="${blockers:-0}"
 
     if [[ $blockers -gt 0 ]]; then
         error "Found $blockers open blocker issues"

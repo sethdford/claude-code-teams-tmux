@@ -1566,6 +1566,61 @@ echo ""
 doctor_check_intelligence
 
 # ═════════════════════════════════════════════════════════════════════════════
+# 15c. E2E Issue Quarantine
+# ═════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${PURPLE}${BOLD}  E2E ISSUE QUARANTINE${RESET}"
+echo -e "${DIM}  ──────────────────────────────────────────${RESET}"
+
+_QUARANTINE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f "$_QUARANTINE_SCRIPT_DIR/lib/issue-quarantine.sh" ]]; then
+    check_fail "Quarantine library missing: lib/issue-quarantine.sh"
+elif ! command -v jq >/dev/null 2>&1; then
+    check_warn "jq not installed — quarantine filtering degrades to fail-open (unfiltered)"
+else
+    # shellcheck source=lib/issue-quarantine.sh
+    if source "$_QUARANTINE_SCRIPT_DIR/lib/issue-quarantine.sh" 2>/dev/null; then
+        _q_label=$(quarantine_label 2>/dev/null || echo "")
+        _q_all=$(quarantine_labels 2>/dev/null | tr '\n' ' ' | sed 's/ $//' || echo "")
+
+        if [[ -n "$_q_label" ]]; then
+            check_pass "E2E label: ${DIM}${_q_label}${RESET}"
+        else
+            check_fail "labels.e2e_test resolves to an empty value — synthetic issues cannot be labeled"
+        fi
+
+        if [[ -n "$_q_all" ]]; then
+            check_pass "Quarantine filter set: ${DIM}${_q_all}${RESET}"
+        else
+            check_fail "labels.quarantine is empty — all filtering is a no-op"
+        fi
+
+        # The E2E label must be inside the filter set, or the suite labels issues
+        # that nothing filters.
+        if [[ -n "$_q_label" ]] && printf '%s\n' "$_q_all" | tr ' ' '\n' | grep -qxF "$_q_label"; then
+            check_pass "E2E label is covered by the quarantine filter set"
+        else
+            check_fail "E2E label '${_q_label}' is not in the quarantine set — labeled issues would still leak"
+        fi
+
+        # Live check: any open synthetic issues still missing the label?
+        if [[ "${NO_GITHUB:-false}" != "true" ]] && command -v gh >/dev/null 2>&1; then
+            _q_pending=$(gh issue list --state open --limit 200 --json number,title,labels 2>/dev/null \
+                | quarantine_backfill_candidates 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+            if [[ "${_q_pending:-0}" -eq 0 ]]; then
+                check_pass "No unlabeled synthetic issues in the open queue"
+            else
+                check_warn "${_q_pending} unlabeled synthetic issue(s) — run: shipwright triage quarantine list"
+            fi
+        else
+            info "  Live issue scan skipped (no GitHub access)"
+        fi
+    else
+        check_fail "Quarantine library failed to load"
+    fi
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # 14. Platform health (AGI-level self-improvement)
 # ═════════════════════════════════════════════════════════════════════════════
 echo -e "${PURPLE}${BOLD}  PLATFORM HEALTH${RESET}"

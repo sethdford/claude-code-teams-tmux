@@ -107,6 +107,44 @@ quarantine_search_qualifier() {
     [[ ${#qualifiers[@]} -gt 0 ]] && printf '%s ' "${qualifiers[@]}"
 }
 
+# quarantine_title_pattern — Regex identifying synthetic issue titles
+# Chain: SHIPWRIGHT_LABELS_E2E_TITLE_PATTERN env → labels.e2e_title_pattern config → default
+quarantine_title_pattern() {
+    _config_get "labels.e2e_title_pattern" "^E2E test:"
+}
+
+# quarantine_backfill_candidates — Find synthetic issues that predate the label
+# INPUT: JSON array of issues [{number, title, labels}, ...]
+# OUTPUT: JSON array of issues whose title matches the synthetic pattern but
+#         which carry none of the quarantine labels — i.e. need backfilling.
+# FAIL-OPEN: on any error returns [] (nothing to backfill), exit 0. Unlike the
+# filter, the safe failure here is doing nothing rather than relabelling blind.
+quarantine_backfill_candidates() {
+    local input qlabels pattern candidates
+
+    input=$(cat)
+    [[ -z "$input" ]] && { printf '[]'; return 0; }
+
+    pattern=$(quarantine_title_pattern 2>/dev/null) || { printf '[]'; return 0; }
+    [[ -z "$pattern" ]] && { printf '[]'; return 0; }
+
+    qlabels=$(quarantine_labels 2>/dev/null | jq -R -s 'split("\n") | map(select(length > 0))' 2>/dev/null) || {
+        printf '[]'
+        return 0
+    }
+    [[ -z "$qlabels" ]] && { printf '[]'; return 0; }
+
+    candidates=$(printf '%s' "$input" | jq -c \
+        --argjson qlabels "$qlabels" --arg pattern "$pattern" \
+        '[.[]
+          | select((.title // "") | test($pattern))
+          | select((([(.labels // [])[] | .name]) - $qlabels) == ([(.labels // [])[] | .name]))]' \
+        2>/dev/null) || { printf '[]'; return 0; }
+
+    [[ -z "$candidates" || "$candidates" == "null" ]] && { printf '[]'; return 0; }
+    printf '%s' "$candidates"
+}
+
 # quarantine_is_test_issue — Test whether a single GitHub issue is quarantined
 # $1: issue JSON object (from `gh issue view --json`)
 # Return: 0 if quarantined, 1 otherwise

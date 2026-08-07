@@ -4,6 +4,11 @@
 [[ -n "${_FLEET_FAILOVER_LOADED:-}" ]] && return 0
 _FLEET_FAILOVER_LOADED=1
 
+# Quarantine library, resolved relative to this file (callers set SCRIPT_DIR later).
+_FLEET_FAILOVER_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./issue-quarantine.sh
+source "${_FLEET_FAILOVER_LIB_DIR}/issue-quarantine.sh"
+
 fleet_failover_check() {
     local health_file="$HOME/.shipwright/machine-health.json"
     [[ ! -f "$health_file" ]] && return 0
@@ -25,8 +30,10 @@ fleet_failover_check() {
         orphaned_issues=$(gh search issues \
             "label:claimed:${machine}" \
             is:open \
-            --json number,repository \
-            --limit 100 2>/dev/null | jq -r '.[] | "\(.repository.nameWithOwner):\(.number)"' 2>/dev/null)
+            --json number,repository,labels \
+            --limit 100 2>/dev/null \
+            | quarantine_filter_json "fleet-failover" \
+            | jq -r '.[] | "\(.repository.nameWithOwner):\(.number)"' 2>/dev/null)
         [[ -z "$orphaned_issues" ]] && continue
 
         while IFS= read -r issue_key; do

@@ -5,6 +5,13 @@ _DAEMON_TRIAGE_LOADED=1
 
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+# Quarantine library, resolved relative to this file rather than SCRIPT_DIR,
+# which the caller sets after this file is sourced.
+_DAEMON_TRIAGE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./issue-quarantine.sh
+source "${_DAEMON_TRIAGE_LIB_DIR}/issue-quarantine.sh"
+
 REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
 NO_GITHUB="${NO_GITHUB:-false}"
@@ -468,6 +475,9 @@ daemon_triage_show() {
         error "Failed to fetch issues from GitHub"
         exit 1
     }
+
+    issues_json=$(printf '%s' "$issues_json" | quarantine_filter_json "triage-score" \
+        || printf '%s' "$issues_json")
 
     local issue_count
     issue_count=$(echo "$issues_json" | jq 'length' 2>/dev/null || echo 0)
