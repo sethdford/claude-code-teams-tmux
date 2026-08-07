@@ -18,6 +18,8 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
 [[ -f "$SCRIPT_DIR/lib/config.sh" ]] && source "$SCRIPT_DIR/lib/config.sh"
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ -z "${CYAN:-}" ]]  && { [[ -z "${NO_COLOR:-}" ]] && CYAN='\033[38;2;0;212;255m'   || CYAN=''; } || true
 [[ -z "${RESET:-}" ]] && { [[ -z "${NO_COLOR:-}" ]] && RESET='\033[0m'               || RESET=''; } || true
@@ -462,6 +464,9 @@ cmd_prioritize() {
     local issues_json
     issues_json=$(gh issue list --state open --json number,title,body,labels,createdAt,reactions --limit "$(_config_get_int "limits.triage_issues" 100)" 2>/dev/null || echo "[]")
 
+    # Filter out quarantined (E2E test) issues
+    issues_json=$(printf '%s' "$issues_json" | quarantine_filter_json "triage-score" || printf '%s' "$issues_json")
+
     local issue_count
     issue_count=$(echo "$issues_json" | jq 'length')
     info "Found ${CYAN}${issue_count}${RESET} open issues"
@@ -664,9 +669,9 @@ cmd_batch() {
 
     info "Batch analyzing and labeling unlabeled open issues..."
 
-    # Fetch unlabeled open issues
+    # Fetch unlabeled open issues (also exclude quarantined)
     local issues_json
-    issues_json=$(gh issue list --state open --search "no:label" --json number --limit "$(_config_get_int "limits.triage_unlabeled" 50)" 2>/dev/null || echo "[]")
+    issues_json=$(gh issue list --state open --search "no:label $(quarantine_search_qualifier)" --json number --limit "$(_config_get_int "limits.triage_unlabeled" 50)" 2>/dev/null || echo "[]")
 
     local issue_count
     issue_count=$(echo "$issues_json" | jq 'length')
@@ -693,6 +698,9 @@ cmd_report() {
     # Fetch labeled issues
     local issues_json
     issues_json=$(gh issue list --state open --json labels,title,number --limit "$(_config_get_int "limits.triage_issues" 100)" 2>/dev/null || echo "[]")
+
+    # Filter out quarantined (E2E test) issues
+    issues_json=$(printf '%s' "$issues_json" | quarantine_filter_json "triage-audit" || printf '%s' "$issues_json")
 
     local type_counts complexity_counts priority_counts
     type_counts='{}'

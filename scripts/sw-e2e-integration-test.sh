@@ -13,6 +13,8 @@ source "$SCRIPT_DIR/lib/test-helpers.sh"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/compat.sh
 [[ -f "$SCRIPT_DIR/lib/compat.sh" ]] && source "$SCRIPT_DIR/lib/compat.sh"
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
 
 # ─── Colors (matches shipwright theme) ────────────────────────────────────
 
@@ -35,7 +37,7 @@ fi
 
 # ─── Configuration ────────────────────────────────────────────────────────
 MAX_BUDGET_USD="1.00"
-TEST_LABEL="e2e-test"
+TEST_LABEL="$(quarantine_label)"
 TEST_ISSUE_TITLE="E2E test: add comment to README [automated]"
 PIPELINE_TIMEOUT=600  # 10 minutes
 ISSUE_NUMBER=""
@@ -113,6 +115,12 @@ test_set_budget() {
 }
 
 test_create_issue() {
+    # Ensure quarantine label exists (idempotent)
+    gh label create "$TEST_LABEL" \
+        --color ededed \
+        --description "Synthetic issue created by the Shipwright E2E suite — excluded from triage/daemon/strategic" \
+        --force >/dev/null 2>&1 || true
+
     local issue_url
     issue_url=$(gh issue create \
         --title "$TEST_ISSUE_TITLE" \
@@ -128,6 +136,14 @@ test_create_issue() {
 
     # Verify it's numeric
     if ! echo "$ISSUE_NUMBER" | grep -qE '^[0-9]+$'; then
+        return 1
+    fi
+
+    # Assert the label is present on the created issue
+    local labels_json
+    labels_json=$(gh issue view "$ISSUE_NUMBER" --json labels 2>/dev/null) || return 1
+    if ! printf '%s' "$labels_json" | jq -e --arg label "$TEST_LABEL" '.labels[] | select(.name == $label)' >/dev/null 2>&1; then
+        echo "ERROR: Quarantine label $TEST_LABEL not found on created issue #$ISSUE_NUMBER" >&2
         return 1
     fi
 

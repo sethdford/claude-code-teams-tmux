@@ -17,6 +17,8 @@ EVENTS_FILE="${EVENTS_FILE:-${HOME}/.shipwright/events.jsonl}"
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
+# shellcheck source=lib/issue-quarantine.sh
+[[ -f "$SCRIPT_DIR/lib/issue-quarantine.sh" ]] && source "$SCRIPT_DIR/lib/issue-quarantine.sh"
 # Fallbacks when helpers not loaded (e.g. test env, sourced by daemon)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -112,8 +114,8 @@ strategic_load_title_cache() {
     fi
 
     local open_titles closed_titles
-    open_titles=$(gh issue list --state open --json title --jq '.[].title' 2>/dev/null || echo "")
-    closed_titles=$(gh issue list --state closed --limit 30 --json title --jq '.[].title' 2>/dev/null || echo "")
+    open_titles=$(gh issue list --state open --json title,labels 2>/dev/null | quarantine_filter_json "strategic-titles" 2>/dev/null | jq -r '.[].title' 2>/dev/null || echo "")
+    closed_titles=$(gh issue list --state closed --limit 30 --json title,labels 2>/dev/null | quarantine_filter_json "strategic-titles" 2>/dev/null | jq -r '.[].title' 2>/dev/null || echo "")
 
     STRATEGIC_TITLE_CACHE="${open_titles}
 ${closed_titles}"
@@ -130,6 +132,7 @@ strategic_track_outcomes() {
     fi
 
     local strategic_issues
+    # Strategic issues are human-authored and by construction not E2E artifacts; no quarantine filter needed
     strategic_issues=$(gh issue list --label "strategic" --state all --json number,title,state,closedAt,labels --limit 50 2>/dev/null) || return 0
 
     [[ -z "$strategic_issues" || "$strategic_issues" == "[]" ]] && return 0
@@ -283,7 +286,7 @@ strategic_gather_context() {
     # 4. Open issues
     local open_issues=""
     if [[ "${NO_GITHUB:-false}" != "true" ]]; then
-        open_issues=$(gh issue list --state open --json number,title,labels --jq '.[] | "#\(.number): \(.title) [\(.labels | map(.name) | join(","))]"' 2>/dev/null | head -50 || echo "(could not fetch issues)")
+        open_issues=$(gh issue list --state open --json number,title,labels 2>/dev/null | quarantine_filter_json "strategic-analysis" 2>/dev/null | jq -r '.[] | "#\(.number): \(.title) [\(.labels | map(.name) | join(","))]"' 2>/dev/null | head -50 || echo "(could not fetch issues)")
     else
         open_issues="(GitHub access disabled)"
     fi
@@ -377,7 +380,7 @@ strategic_build_prompt() {
     # Open issues
     local open_issues=""
     if [[ "${NO_GITHUB:-false}" != "true" ]]; then
-        open_issues=$(gh issue list --state open --json number,title --jq '.[] | "#\(.number): \(.title)"' 2>/dev/null | head -50 || echo "(could not fetch)")
+        open_issues=$(gh issue list --state open --json number,title,labels 2>/dev/null | quarantine_filter_json "strategic-analysis" 2>/dev/null | jq -r '.[] | "#\(.number): \(.title)"' 2>/dev/null | head -50 || echo "(could not fetch)")
     else
         open_issues="(GitHub access disabled)"
     fi
@@ -385,7 +388,7 @@ strategic_build_prompt() {
     # Recently closed issues (last 20) — so we don't rebuild what was just shipped
     local recent_closed=""
     if [[ "${NO_GITHUB:-false}" != "true" ]]; then
-        recent_closed=$(gh issue list --state closed --limit 20 --json number,title --jq '.[] | "#\(.number): \(.title)"' 2>/dev/null || echo "(could not fetch)")
+        recent_closed=$(gh issue list --state closed --limit 20 --json number,title,labels 2>/dev/null | quarantine_filter_json "strategic-analysis" 2>/dev/null | jq -r '.[] | "#\(.number): \(.title)"' 2>/dev/null || echo "(could not fetch)")
     else
         recent_closed="(GitHub access disabled)"
     fi

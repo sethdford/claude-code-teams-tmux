@@ -3,6 +3,9 @@
 [[ -n "${_DAEMON_POLL_GITHUB_LOADED:-}" ]] && return 0
 _DAEMON_POLL_GITHUB_LOADED=1
 
+# shellcheck source=./issue-quarantine.sh
+source "${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}/lib/issue-quarantine.sh" 2>/dev/null || true
+
 # Defaults for variables normally set by sw-daemon.sh (safe under set -u).
 DAEMON_DIR="${DAEMON_DIR:-${HOME}/.shipwright}"
 STATE_FILE="${STATE_FILE:-${DAEMON_DIR}/daemon-state.json}"
@@ -118,6 +121,9 @@ daemon_poll_issues() {
     # Reset backoff on success
     BACKOFF_SECS=0
     gh_record_success
+
+    # Filter out quarantined (E2E test) issues
+    issues_json=$(printf '%s' "$issues_json" | quarantine_filter_json "daemon-poll" || printf '%s' "$issues_json")
 
     local issue_count
     issue_count=$(echo "$issues_json" | jq 'length' 2>/dev/null || echo 0)
