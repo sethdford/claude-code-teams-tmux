@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Cost dashboard's CONTEXT EFFICIENCY test asserts on loop.context_efficiency event data, but the test's cost-entries fixture (last 30 days) is empty, so the dashboard reports 'No cost entries' instead of rendering the expected section",
       "fix": "Seed a cost entry (or mock costs.json) with a recent timestamp in the sw-cost-test.sh fixture setup before invoking the dashboard so the 30-day lookback window is non-empty",
-      "seen_count": 3,
-      "last_seen": "2026-08-07T09:16:54Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-07T06:46:15Z",
       "category": "test_failure"
     },
     {
@@ -23,15 +23,15 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
-      "seen_count": 9,
-      "last_seen": "2026-08-07T11:20:27Z",
+      "seen_count": 10,
+      "last_seen": "2026-08-07T11:10:58Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255mpublish error handling\u001b[0m",
-      "root_cause": "Mock pipeline test harness fails to write plan.md/review.md and related artifacts, cascading into E2E, resume, complexity-skip, and cleanup test failures",
-      "fix": "Fix the mock plan/review stage generators in sw-pipeline-test.sh to write .claude/pipeline-artifacts/plan.md and review.md before assertions run",
+      "root_cause": "Two unrelated pre-existing test suites (sw-e2e-integration-test, sw-intent-analysis-test) failed with exit 1, unrelated to the 'publish error handling' pattern which never actually appears in this log",
+      "fix": "Run sw-e2e-integration-test.sh and sw-intent-analysis-test.sh individually to capture their actual assertion failures, then fix the underlying code or update the tests",
       "seen_count": 1,
       "last_seen": "2026-08-07T02:57:53Z",
       "category": "test_failure"
@@ -39,10 +39,10 @@
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "Memory promotion test expects cross-repo pattern copy but repo-hash isolation or empty source memory prevents the record from being copied",
-      "fix": "Verify sw-self-optimize.sh memory promotion seeds a source pattern with the expected repo hash before asserting copy, and check the promotion filter logic matches test fixture data",
+      "root_cause": "sw-self-optimize.sh memory promotion test expects patterns copied to a cross-repo memory path that isn't being created/matched correctly",
+      "fix": "check the cross-repo promotion path/glob logic in sw-self-optimize.sh matches the test's mock repo-hash directory structure",
       "seen_count": 1,
-      "last_seen": "2026-08-07T10:40:22Z",
+      "last_seen": "2026-08-07T10:05:07Z",
       "category": "test_failure"
     }
   ]
