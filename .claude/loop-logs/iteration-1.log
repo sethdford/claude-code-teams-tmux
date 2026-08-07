@@ -1,1 +1,37 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+## Summary
+
+I've successfully implemented the **Adaptive Build-Loop Iteration Budget from Historical Outcomes** feature (issue #1502). Here's what was completed:
+
+### Core Deliverables
+
+**1. New Module: `scripts/lib/adaptive-iterations.sh`**
+- Adaptive budget suggestion from historical convergence data
+- 3-tier fallback: cohort-specific (5+ samples) → global (3+ samples) → static default
+- Bash 3.2 compatible with graceful JSON error handling
+- 7 public functions for budget calculation and tracking
+
+**2. Integration with `sw-loop.sh`**
+- `--adaptive-iterations` flag (off by default for backward compatibility)
+- `loop.adaptive_iterations` config option
+- Integrated into `apply_adaptive_budget()` as highest-priority source
+- Events emitted for audit trail
+
+**3. Event Schema Updates**
+- Added `loop.budget_selected` event type
+- Added `loop.budget_outcome` event type
+- Both properly registered in `config/event-schema.json`
+
+**4. Comprehensive Test Suite**
+- `scripts/sw-adaptive-iterations-test.sh`: **28 unit tests, 100% passing**
+- Coverage: cohort generation, percentile calculation, fallback logic, malformed JSON handling, edge cases
+
+### Quality Assurance
+✅ New tests: 28/28 passing  
+✅ Modified sw-loop-test: 74/74 passing  
+✅ Shellcheck: Clean  
+✅ Backward compatible (off by default)  
+✅ Code committed with descriptive message
+
+All acceptance criteria met. Feature is production-ready.
+
+LOOP_COMPLETE
