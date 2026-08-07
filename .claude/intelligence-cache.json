@@ -1683,31 +1683,31 @@
           {
             "file": "failures.json",
             "relevance": 95,
-            "summary": "Contains recent test failures (including today's 2026-08-07) with root causes and fixes; directly applicable to avoiding pipeline locks, missing artifacts, and cost dashboard issues during build iterations"
+            "summary": "Recent test failures with root causes (pipeline artifacts, cost dashboard, stale locks) directly block build completion. Last failure 2026-08-07T19:22:12Z shows loop/intent schema issues."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 88,
-            "summary": "Historical success patterns showing typical iteration counts (3 avg), test strategy (npm test), files changed, and cost data; helps replicate successful build approaches and set iteration expectations"
+            "relevance": 90,
+            "summary": "Captured successful build patterns show iteration counts (3-4), test strategy (npm test), duration baselines (~45-150s per fix), and file patterns touched. Critical reference for build execution."
           },
           {
             "file": "metrics.json",
-            "relevance": 76,
-            "summary": "Baseline metrics for build_duration_s (7095s) and test_duration_s (1459s); establishes performance expectations and helps detect anomalies during the current 20-iteration build run"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 68,
-            "summary": "Project structure patterns (node, vitest, commonjs, src/); provides test discovery conventions and import style context needed for build execution"
+            "relevance": 80,
+            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459. Sets performance expectations and helps detect stalls or regressions during current build."
           },
           {
             "file": "knowledge.json",
-            "relevance": 61,
-            "summary": "Known failure patterns (mktemp directory issues, test infrastructure gotchas); helps prevent common test setup failures during build iterations"
+            "relevance": 70,
+            "summary": "Knowledge base entries document recurring test failures (mktemp /tmp/claude directory issues, cleanup output formatting, schema validation). Prevents repeat mistakes in build setup."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 65,
+            "summary": "Project structure context: node/vitest/commonjs, src/ source dir, *.test.js pattern. Build stage needs this to understand test discovery and execution paths."
           }
         ]
       },
-      "timestamp": 1786128194,
+      "timestamp": 1786130547,
       "ttl": 1800
     },
     "c72e738dc8a8cfe1aa09ee6ebb35f460": {
@@ -1964,6 +1964,41 @@
         }
       ],
       "timestamp": 1786130213,
+      "ttl": 1800
+    },
+    "d6138d8ea111779b1a561e32fdfeffe8": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786130646,
+      "ttl": 1800
+    },
+    "2eeb3d0510fb391555ca1875b025463a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786130807,
+      "ttl": 1800
+    },
+    "9a78f0d80792ca0b32e90910d6f30bfd": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786130866,
       "ttl": 1800
     }
   }
