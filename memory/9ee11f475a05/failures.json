@@ -59,8 +59,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Test failures are unrelated to the target change: sw-e2e-integration-test hits a stale pipeline lock from a prior run, sw-intent-analysis-test's schema is missing required fields, and sw-recruit-test has 5 failing assertions",
       "fix": "Clear/reset the stale pipeline lock before e2e-integration-test runs, add version/goal/criteria to the intent-analysis schema, and inspect sw-recruit-test's 5 FAIL cases individually to isolate the regression",
-      "seen_count": 1,
-      "last_seen": "2026-08-08T03:07:18Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-08T14:32:09Z",
       "category": "test_failure"
     }
   ]
