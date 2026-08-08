@@ -24,7 +24,7 @@
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
       "seen_count": 13,
-      "last_seen": "2026-08-08T01:00:49Z",
+      "last_seen": "2026-08-08T00:59:52Z",
       "category": "flaky"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "Two unrelated test regressions: sw-intent-analysis-test's schema validation dropped required fields (version, goal, criteria) from analyze_intent's output, and sw-lib-daemon-dispatch-test's temp directory cleanup fails because the test leaves files under /tmp/lib-daemon-dispatch.*/home, so rm can't remove a non-empty dir",
-      "fix": "Add version/goal/criteria to the analyze_intent JSON schema/output, and update the dispatch test teardown to rm -rf (or explicitly clean nested home dir contents) instead of a plain rm",
+      "root_cause": "sw-intent-analysis-test asserts the intent analysis JSON schema includes version, goal, and criteria fields, but the schema output is missing one or more of them",
+      "fix": "Update the analyze_intent function in scripts to include the missing version/goal/criteria fields in its JSON output, or update the test if the schema intentionally changed",
       "seen_count": 1,
       "last_seen": "2026-08-07T22:47:12Z",
       "category": "test_failure"
