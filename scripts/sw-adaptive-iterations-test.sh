@@ -488,6 +488,41 @@ explanation=$(adaptive_iterations_explain "medium-feature" "8" "global" "3")
 assert_contains "$explanation" "Global history" "Global tier explanation names the tier"
 assert_contains "$explanation" "3 samples" "Global tier explanation reports the sample count"
 
+# ─── Test 24: Nearest-Rank Percentile Keeps the Slow Tail ─────────────────
+#
+# Regression: the rank was computed by rounding rather than ceiling, which lands
+# one index low for many sample counts (6-9, 16-19, ... at p=90). That silently
+# discarded the slowest runs — the exact tail an iteration budget exists to
+# cover. Six samples is the first divergent count, and sits right above the
+# 5-sample cohort threshold, so real cohorts hit it immediately.
+
+info "Test 24: P90 uses nearest-rank (ceil), not a rounded rank"
+
+# ceil(0.9 * 6) = 6 → the 6th value. A rounded rank would return the 5th (5).
+p90_six=$(printf '1\n2\n3\n4\n5\n20\n' | _iter_percentile 90)
+assert_equals "20" "$p90_six" "P90 of 6 samples takes the 6th value, not the 5th"
+
+# ceil(0.9 * 16) = 15 → the 15th value. A rounded rank would return the 14th.
+p90_sixteen=$(printf '%s\n' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 | _iter_percentile 90)
+assert_equals "15" "$p90_sixteen" "P90 of 16 samples takes the 15th value, not the 14th"
+
+# Exact ranks stay put: ceil(0.9 * 10) = 9, no rounding either way.
+p90_ten=$(printf '%s\n' 1 2 3 4 5 6 7 8 9 10 | _iter_percentile 90)
+assert_equals "9" "$p90_ten" "P90 of 10 samples is unchanged when the rank is exact"
+
+# The budget derived from a divergent cohort reflects the tail (20 + 1).
+cat > "$events_file" <<'EOF'
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"1","cohort":"medium-tail"}
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"2","cohort":"medium-tail"}
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"3","cohort":"medium-tail"}
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"4","cohort":"medium-tail"}
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"5","cohort":"medium-tail"}
+{"ts":"2026-08-01T00:00:00Z","type":"loop.iteration_complete","iteration":"20","cohort":"medium-tail"}
+EOF
+export ITERATIONS_HISTORY_FILE="$events_file"
+budget=$(adaptive_iterations_suggest "medium" "tail")
+assert_equals "21" "$budget" "Six-sample cohort budgets for the slow tail (P90 20 + 1)"
+
 # ─── Summary ───────────────────────────────────────────────────────────────
 
 echo ""

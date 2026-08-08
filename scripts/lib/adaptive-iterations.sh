@@ -170,8 +170,13 @@ _iter_percentile() {
             } else if (count == 1) {
                 print arr[1]
             } else {
-                # Nearest-rank percentile: ceil(p/100 * count)
-                idx = int((p / 100.0) * count + 0.5)
+                # Nearest-rank percentile: ceil(p/100 * count).
+                # Rounding instead of ceiling drops the rank by one for many
+                # sample counts (6-9, 16-19, 26-29, ... at p=90), which discards
+                # exactly the slow tail the budget exists to cover.
+                rank = (p / 100.0) * count
+                idx = int(rank)
+                if (rank > idx) idx = idx + 1
                 if (idx < 1) idx = 1
                 if (idx > count) idx = count
                 print arr[idx]
