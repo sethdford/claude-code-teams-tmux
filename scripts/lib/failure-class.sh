@@ -191,6 +191,34 @@ extract_error_lines() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# fc_json_array — newline-separated lines → JSON array literal, without jq
+#
+# For the degraded no-jq path only. Escapes backslash and quote, drops control
+# characters (build output carries ANSI escapes), and never emits a trailing
+# comma. Printing error_count: 1 next to error_lines: [] is worse than a
+# hand-rolled escape — the reader cannot tell what the error was.
+# ─────────────────────────────────────────────────────────────────────────────
+fc_json_array() {
+    local input="${1:-}"
+    [[ -z "$input" ]] && { printf '[]'; return 0; }
+
+    local out="" line first=1
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        line="$(printf '%s' "$line" \
+            | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/[[:cntrl:]]//g')"
+        if [[ "$first" -eq 1 ]]; then
+            out="\"${line}\""
+            first=0
+        else
+            out="${out},\"${line}\""
+        fi
+    done <<< "$input"
+
+    printf '[%s]' "$out"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # collect_all_failures — evidence file → JSON array of every failing command
 #
 # A typecheck break must not hide a concurrent lint break. Capped at

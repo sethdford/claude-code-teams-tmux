@@ -202,4 +202,36 @@ done
 printf '%s\n' "$big" > "$LOGS/ev-big.json"
 assert_eq "failure list capped" "$FC_MAX_FAILURES" "$(collect_all_failures "$LOGS/ev-big.json" | jq 'length')"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# fc_json_array — hand-rolled JSON escaping for the no-jq path
+# ═══════════════════════════════════════════════════════════════════════════════
+echo -e "\n${BOLD}fc_json_array${RESET}"
+
+assert_eq "empty input → empty array" "[]" "$(fc_json_array "")"
+assert_eq "single line" '["one"]' "$(fc_json_array "one")"
+assert_eq "two lines" '["one","two"]' "$(fc_json_array "one
+two")"
+assert_eq "blank lines skipped" '["one","two"]' "$(fc_json_array "one
+
+two")"
+assert_eq "quotes escaped" '["say \"hi\""]' "$(fc_json_array 'say "hi"')"
+assert_eq "backslashes escaped" '["a\\b"]' "$(fc_json_array 'a\b')"
+
+# Everything it emits must survive a real JSON parser
+out="$(fc_json_array 'error: expected "a\b" at /x/y
+  9:1  warning  quote'"'"'s')"
+if printf '%s' "$out" | jq -e 'type == "array" and length == 2' >/dev/null 2>&1; then
+    assert_pass "escaped output parses as JSON"
+else
+    assert_fail "escaped output parses as JSON" "$out"
+fi
+
+# ANSI escapes are routine in build output and are not valid raw JSON
+out="$(fc_json_array "$(printf 'error\033[0m: red')")"
+if printf '%s' "$out" | jq -e '.[0] | contains("error")' >/dev/null 2>&1; then
+    assert_pass "control characters stripped"
+else
+    assert_fail "control characters stripped" "$out"
+fi
+
 print_test_results

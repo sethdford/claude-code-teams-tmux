@@ -1049,6 +1049,41 @@ summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '{}')"
 assert_json_key "unmatched output flagged as fallback" "$summary" '.truncated_fallback' "true"
 assert_gt "fallback still reports lines" "$(echo "$summary" | jq -r '.error_count')" "0"
 
+# ─── jq unavailable: degraded, but the class must still survive ─────────────
+D="$(wes_dir nojq)"
+mkdir -p "$D/bin"
+for b in bash tail grep sort head cat date basename dirname tr find sed rm mv wc awk; do
+    p="$(type -P "$b" 2>/dev/null || true)"
+    [[ -n "$p" ]] && ln -sf "$p" "$D/bin/$b"
+done
+cat > "$D/tests-iter-7.log" <<'EOF'
+src/a.ts(1,1): error TS2345: Argument of type "x" is not assignable.
+EOF
+(
+    PATH="$D/bin" bash -c '
+        set -euo pipefail
+        LOG_DIR="'"$D"'"; ITERATION=7; TEST_PASSED=false; TEST_CMD="npx tsc --noEmit"
+        TEST_LOG_FILE="$LOG_DIR/tests-iter-7.log"
+        source "'"$SCRIPT_DIR"'/lib/failure-class.sh"
+        source "'"$WES_LIB"'"
+        write_error_summary'
+) >/dev/null 2>&1 || true
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '')"
+if [[ -n "$summary" ]] && echo "$summary" | jq -e '.schema_version == 2' >/dev/null 2>&1; then
+    assert_pass "no-jq path emits valid JSON"
+else
+    assert_fail "no-jq path emits valid JSON" "$summary"
+fi
+assert_json_key "no-jq path keeps failure_class" "$summary" '.failure_class' "typecheck"
+assert_json_key "no-jq path keeps test_cmd" "$summary" '.test_cmd' "npx tsc --noEmit"
+assert_gt "no-jq path emits error lines" "$(echo "$summary" | jq -r '.error_lines | length')" "0"
+# Same key set as the jq path — a consumer must not have to branch on which wrote it
+if [[ "$(echo "$summary" | jq -r 'has("timestamp")')" == "true" ]]; then
+    assert_pass "no-jq path keeps timestamp"
+else
+    assert_fail "no-jq path keeps timestamp" "$summary"
+fi
+
 # ─── No temp-file residue anywhere ──────────────────────────────────────────
 if [[ -z "$(find "$TEST_TEMP_DIR" -name 'error-summary.json.tmp.*' 2>/dev/null)" ]]; then
     assert_pass "no error-summary tmp residue left behind"

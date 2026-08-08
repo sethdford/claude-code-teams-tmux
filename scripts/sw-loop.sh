@@ -1224,11 +1224,19 @@ write_error_summary() {
                 all_failures: $all_failures
             }' > "$tmp_json" 2>/dev/null && mv "$tmp_json" "$error_json" || rm -f "$tmp_json" 2>/dev/null
     else
-        # Fallback: no jq, but the class still has to survive
-        local esc_cmd
+        # Fallback: no jq, but the class and the error lines still have to survive
+        local esc_cmd esc_test_cmd json_lines="[]" json_cats="[]" ts
+        ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
         esc_cmd=$(printf '%s' "$failed_command" | tr -d '"\\')
+        esc_test_cmd=$(printf '%s' "${TEST_CMD:-}" | tr -d '"\\')
+        if type fc_json_array >/dev/null 2>&1; then
+            json_lines="$(fc_json_array "$error_lines_raw")"
+            json_cats="$(fc_json_array "$error_categories")"
+        else
+            error_count=0   # never claim errors we are not emitting
+        fi
         cat > "$tmp_json" <<ERRJSON
-{"schema_version":2,"iteration":${ITERATION:-0},"failure_class":"${failure_class}","failed_command":"${esc_cmd}","error_count":${error_count:-0},"error_lines":[],"error_categories":[],"truncated_fallback":false,"test_cmd":"test","all_failures":[]}
+{"schema_version":2,"iteration":${ITERATION:-0},"timestamp":"${ts}","failure_class":"${failure_class}","failed_command":"${esc_cmd}","error_count":${error_count:-0},"error_lines":${json_lines},"error_categories":${json_cats},"truncated_fallback":${truncated_fallback},"test_cmd":"${esc_test_cmd}","all_failures":[]}
 ERRJSON
         mv "$tmp_json" "$error_json" 2>/dev/null || rm -f "$tmp_json" 2>/dev/null
     fi
