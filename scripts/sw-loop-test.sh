@@ -903,6 +903,217 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ERROR SUMMARY — NON-TEST FAILURE CLASSES (lint / type-check / compile)
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${DIM}  error-summary failure classes${RESET}"
+
+# write_error_summary lives in sw-loop.sh, which runs main() when sourced.
+# Extract just the function so it can be exercised directly.
+WES_LIB="$TEST_TEMP_DIR/write-error-summary.sh"
+awk '/^write_error_summary\(\) \{/,/^\}/' "$SCRIPT_DIR/sw-loop.sh" > "$WES_LIB"
+
+if [[ -s "$WES_LIB" ]] && grep -q 'failure_class' "$WES_LIB"; then
+    assert_pass "write_error_summary extracted for testing"
+else
+    assert_fail "write_error_summary extracted for testing"
+fi
+
+# Runs write_error_summary against a prepared LOG_DIR.
+# Args: log_dir iteration test_passed test_cmd
+run_wes() {
+    (
+        set -euo pipefail
+        LOG_DIR="$1"; ITERATION="$2"; TEST_PASSED="$3"; TEST_CMD="$4"
+        TEST_LOG_FILE="$LOG_DIR/tests-iter-${ITERATION}.log"
+        source "$SCRIPT_DIR/lib/failure-class.sh"
+        source "$SCRIPT_DIR/lib/error-actionability.sh"
+        source "$WES_LIB"
+        write_error_summary
+    ) >/dev/null 2>&1 || true
+}
+
+wes_dir() {
+    local d="$TEST_TEMP_DIR/wes-$1"
+    rm -rf "$d"; mkdir -p "$d"
+    echo "$d"
+}
+
+# ─── Lint fails while tests pass — produced no summary at all before ────────
+D="$(wes_dir lint)"
+cat > "$D/tests-iter-1.log" <<'EOF'
+Test Files  4 passed (4)
+EOF
+cat > "$D/tests-extra-iter-1-0.log" <<'EOF'
+/repo/src/index.js
+  12:7  error  'x' is assigned a value but never used  no-unused-vars
+✖ 1 problem (1 error, 0 warnings)
+EOF
+cat > "$D/test-evidence-iter-1.json" <<'EOF'
+[{"command":"npm test","exit_code":0,"duration_s":3,"log":"tests-iter-1.log"},
+ {"command":"npm run lint","exit_code":1,"duration_s":2,"log":"tests-extra-iter-1-0.log"}]
+EOF
+run_wes "$D" 1 "true" "npm test"
+
+if [[ -f "$D/error-summary.json" ]]; then
+    assert_pass "lint failure with passing tests writes error-summary.json"
+else
+    assert_fail "lint failure with passing tests writes error-summary.json"
+fi
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '{}')"
+assert_json_key "lint failure classified" "$summary" '.failure_class' "lint"
+assert_json_key "failing command recorded" "$summary" '.failed_command' "npm run lint"
+assert_json_key "schema version emitted" "$summary" '.schema_version' "2"
+assert_json_key "test_cmd preserved verbatim" "$summary" '.test_cmd' "npm test"
+assert_gt "lint errors extracted" "$(echo "$summary" | jq -r '.error_count')" "0"
+assert_contains "lint rule surfaced in error lines" \
+    "$(echo "$summary" | jq -r '.error_lines[]?')" "no-unused-vars"
+
+# ─── Test failure keeps its v1 meaning ──────────────────────────────────────
+D="$(wes_dir test)"
+cat > "$D/tests-iter-2.log" <<'EOF'
+FAIL  src/a.test.js > adds numbers
+AssertionError: expected 3 to equal 4
+EOF
+cat > "$D/test-evidence-iter-2.json" <<'EOF'
+[{"command":"npm test","exit_code":1,"duration_s":3,"log":"tests-iter-2.log"}]
+EOF
+run_wes "$D" 2 "false" "npm test"
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '{}')"
+assert_json_key "test failure classified" "$summary" '.failure_class' "test"
+assert_contains "test assertion surfaced" \
+    "$(echo "$summary" | jq -r '.error_lines[]?')" "AssertionError"
+
+# ─── Two simultaneous failures — neither is dropped ─────────────────────────
+D="$(wes_dir multi)"
+cat > "$D/tests-extra-iter-3-0.log" <<'EOF'
+src/a.ts(12,5): error TS2345: Argument of type 'string' is not assignable.
+EOF
+cat > "$D/tests-extra-iter-3-1.log" <<'EOF'
+  9:1  error  Unexpected console statement  no-console
+EOF
+cat > "$D/test-evidence-iter-3.json" <<'EOF'
+[{"command":"npx tsc --noEmit","exit_code":2,"duration_s":5,"log":"tests-extra-iter-3-0.log"},
+ {"command":"npm run lint","exit_code":1,"duration_s":2,"log":"tests-extra-iter-3-1.log"}]
+EOF
+run_wes "$D" 3 "true" "npm test"
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '{}')"
+assert_json_key "first failure is primary" "$summary" '.failure_class' "typecheck"
+assert_eq "both failures retained" "2" "$(echo "$summary" | jq -r '.all_failures | length')"
+assert_json_key "secondary failure kept" "$summary" '.all_failures[1].failure_class' "lint"
+
+# ─── Clean iteration removes a stale summary ────────────────────────────────
+D="$(wes_dir clean)"
+echo '{"schema_version":2,"failure_class":"lint","error_count":3}' > "$D/error-summary.json"
+cat > "$D/tests-iter-4.log" <<'EOF'
+Test Files  4 passed (4)
+EOF
+cat > "$D/test-evidence-iter-4.json" <<'EOF'
+[{"command":"npm test","exit_code":0,"duration_s":3,"log":"tests-iter-4.log"},
+ {"command":"npm run lint","exit_code":0,"duration_s":2,"log":"tests-extra-iter-4-0.log"}]
+EOF
+run_wes "$D" 4 "true" "npm test"
+if [[ ! -f "$D/error-summary.json" ]]; then
+    assert_pass "clean iteration clears stale error-summary.json"
+else
+    assert_fail "clean iteration clears stale error-summary.json"
+fi
+
+# ─── Corrupt evidence must not break the loop ───────────────────────────────
+D="$(wes_dir corrupt)"
+printf 'not json {{{\n' > "$D/test-evidence-iter-5.json"
+cat > "$D/tests-iter-5.log" <<'EOF'
+something went wrong
+EOF
+run_wes "$D" 5 "false" "frobnicate --widgets"
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '')"
+if [[ -n "$summary" ]] && echo "$summary" | jq -e '.schema_version == 2' >/dev/null 2>&1; then
+    assert_pass "corrupt evidence still yields valid JSON"
+else
+    assert_fail "corrupt evidence still yields valid JSON"
+fi
+assert_json_key "unrecognized command → unknown class" "$summary" '.failure_class' "unknown"
+
+# ─── Unmatched output falls back to the log tail, and says so ───────────────
+D="$(wes_dir fallback)"
+cat > "$D/tests-extra-iter-6-0.log" <<'EOF'
+step one complete
+step two complete
+exiting with status 1
+EOF
+cat > "$D/test-evidence-iter-6.json" <<'EOF'
+[{"command":"go build ./...","exit_code":1,"duration_s":4,"log":"tests-extra-iter-6-0.log"}]
+EOF
+run_wes "$D" 6 "true" "npm test"
+summary="$(cat "$D/error-summary.json" 2>/dev/null || echo '{}')"
+assert_json_key "unmatched output flagged as fallback" "$summary" '.truncated_fallback' "true"
+assert_gt "fallback still reports lines" "$(echo "$summary" | jq -r '.error_count')" "0"
+
+# ─── No temp-file residue anywhere ──────────────────────────────────────────
+if [[ -z "$(find "$TEST_TEMP_DIR" -name 'error-summary.json.tmp.*' 2>/dev/null)" ]]; then
+    assert_pass "no error-summary tmp residue left behind"
+else
+    assert_fail "no error-summary tmp residue left behind"
+fi
+
+# ─── Per-command extra logs are what make attribution possible ──────────────
+if grep -q 'tests-extra-iter-\${ITERATION}-\${extra_idx}' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "extra test commands write per-command logs"
+else
+    assert_fail "extra test commands write per-command logs"
+fi
+
+# ─── Prompt composition labels the failure class ────────────────────────────
+if grep -q 'TYPE-CHECK FAILURE' "$SCRIPT_DIR/lib/loop-iteration.sh"; then
+    assert_pass "compose_prompt labels type-check failures"
+else
+    assert_fail "compose_prompt labels type-check failures"
+fi
+
+D="$(wes_dir prompt)"
+cat > "$D/error-summary.json" <<'EOF'
+{"schema_version":2,"iteration":1,"failure_class":"typecheck",
+ "failed_command":"npx tsc --noEmit","error_count":1,
+ "error_lines":["src/a.ts(1,1): error TS2345: nope"],
+ "error_categories":["type"],"truncated_fallback":false,"test_cmd":"npm test",
+ "all_failures":[{"failure_class":"typecheck","command":"npx tsc --noEmit","exit_code":2,"error_count":1},
+                 {"failure_class":"lint","command":"npm run lint","exit_code":1,"error_count":3}]}
+EOF
+render_section() {
+    (
+        set -euo pipefail
+        source "$SCRIPT_DIR/lib/loop-iteration.sh" >/dev/null 2>&1
+        compose_error_summary_section "$1"
+    ) 2>/dev/null || true
+}
+
+section="$(render_section "$D/error-summary.json")"
+assert_contains "prompt labels a type-check failure" "$section" "TYPE-CHECK FAILURE"
+assert_contains "prompt names the failing command" "$section" "npx tsc --noEmit"
+assert_contains "prompt says these are not test failures" "$section" "not test failures"
+assert_contains "prompt surfaces concurrent lint failure" "$section" "lint (3 errors)"
+if echo "$section" | grep -q 'TESTS FAILED'; then
+    assert_fail "type-check failure is not mislabelled as a test failure"
+else
+    assert_pass "type-check failure is not mislabelled as a test failure"
+fi
+
+# A v1 summary (no failure_class) must still render
+cat > "$D/v1-summary.json" <<'EOF'
+{"iteration":1,"error_count":1,"error_lines":["FAIL some.test.js"],"test_cmd":"npm test"}
+EOF
+section="$(render_section "$D/v1-summary.json")"
+assert_contains "v1 summary still renders" "$section" "FAIL some.test.js"
+assert_contains "v1 summary falls back to BUILD FAILURE label" "$section" "BUILD FAILURE"
+
+# Clean/absent summary renders nothing
+assert_eq "absent summary renders nothing" "" "$(render_section "$D/no-such-file.json")"
+cat > "$D/zero-summary.json" <<'EOF'
+{"schema_version":2,"failure_class":"lint","error_count":0,"error_lines":[],"all_failures":[]}
+EOF
+assert_eq "zero-error summary renders nothing" "" "$(render_section "$D/zero-summary.json")"
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

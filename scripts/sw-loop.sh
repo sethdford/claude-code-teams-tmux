@@ -48,6 +48,9 @@ fi
 # Error actionability scoring and enhancement for better error context
 # shellcheck source=lib/error-actionability.sh
 [[ -f "$SCRIPT_DIR/lib/error-actionability.sh" ]] && source "$SCRIPT_DIR/lib/error-actionability.sh" 2>/dev/null || true
+
+# Failure classification — which build command broke (lint/typecheck/compile/test)
+[[ -f "$SCRIPT_DIR/lib/failure-class.sh" ]] && source "$SCRIPT_DIR/lib/failure-class.sh" 2>/dev/null || true
 # Autonomous error recovery with model escalation
 # shellcheck source=lib/auto-recovery.sh
 [[ -f "$SCRIPT_DIR/lib/auto-recovery.sh" ]] && source "$SCRIPT_DIR/lib/auto-recovery.sh" 2>/dev/null || true
@@ -1041,7 +1044,8 @@ run_test_gate() {
         if command -v jq >/dev/null 2>&1; then
             test_results=$(echo "$test_results" | jq --arg cmd "$active_test_cmd" \
                 --argjson exit "$exit_code" --argjson dur "$duration" \
-                '. + [{"command": $cmd, "exit_code": $exit, "duration_s": $dur}]')
+                --arg log "$(basename "$test_log")" \
+                '. + [{"command": $cmd, "exit_code": $exit, "duration_s": $dur, "log": $log}]')
         fi
 
         [[ "$exit_code" -ne 0 ]] && all_passed=false
@@ -1058,9 +1062,15 @@ run_test_gate() {
     fi
     local all_extra=("${ADDITIONAL_TEST_CMDS[@]+"${ADDITIONAL_TEST_CMDS[@]}"}" "${mid_build_cmds[@]+"${mid_build_cmds[@]}"}")
 
+    # Each extra command gets its own log. A shared append target made the
+    # failing command's output impossible to attribute, which is exactly what
+    # the error summary needs in order to name the lint/typecheck failure.
+    local extra_idx=-1
     for extra_cmd in "${all_extra[@]+"${all_extra[@]}"}"; do
         [[ -z "$extra_cmd" ]] && continue
-        local extra_log="${LOG_DIR}/tests-extra-iter-${ITERATION}.log"
+        extra_idx=$((extra_idx + 1))
+        local extra_log="${LOG_DIR}/tests-extra-iter-${ITERATION}-${extra_idx}.log"
+        : > "$extra_log"
         echo -e "  ${DIM}Running additional: ${extra_cmd}${RESET}"
 
         local extra_wrapper="$extra_cmd"
@@ -1078,7 +1088,8 @@ run_test_gate() {
         if command -v jq >/dev/null 2>&1; then
             test_results=$(echo "$test_results" | jq --arg cmd "$extra_cmd" \
                 --argjson exit "$exit_code" --argjson dur "$duration" \
-                '. + [{"command": $cmd, "exit_code": $exit, "duration_s": $dur}]')
+                --arg log "$(basename "$extra_log")" \
+                '. + [{"command": $cmd, "exit_code": $exit, "duration_s": $dur, "log": $log}]')
         fi
 
         [[ "$exit_code" -ne 0 ]] && all_passed=false
@@ -1104,40 +1115,85 @@ run_test_gate() {
 
 write_error_summary() {
     local error_json="$LOG_DIR/error-summary.json"
-
-    # Write on test failure OR build failure (non-zero exit from Claude iteration)
     local build_log="$LOG_DIR/iteration-${ITERATION}.log"
-    if [[ "${TEST_PASSED:-}" != "false" ]]; then
-        # Check for build-level failures (Claude iteration exited non-zero or produced errors)
+    local evidence_file="$LOG_DIR/test-evidence-iter-${ITERATION}.json"
+
+    # Provenance first: a recorded non-zero exit code is authoritative, and it
+    # covers lint/type-check/compile commands as well as tests.
+    local has_recorded_failure=false
+    if [[ -f "$evidence_file" ]] && command -v jq >/dev/null 2>&1; then
+        local nonzero
+        nonzero=$(jq '[.[]? | select((.exit_code // 0) != 0)] | length' "$evidence_file" 2>/dev/null || true)
+        [[ "${nonzero:-0}" -gt 0 ]] && has_recorded_failure=true
+    fi
+
+    if [[ "$has_recorded_failure" != "true" ]] && [[ "${TEST_PASSED:-}" != "false" ]]; then
+        # Heuristic last resort, and only when no exit-code evidence exists at
+        # all: grepping the iteration log false-positives on the agent's own
+        # prose ("no errors found"), so it must never outrank exit codes.
         local build_had_errors=false
-        if [[ -f "$build_log" ]]; then
+        if [[ ! -f "$evidence_file" ]] && [[ -f "$build_log" ]]; then
             local build_err_count
             build_err_count=$(tail -30 "$build_log" 2>/dev/null | grep -ciE '(error|fail|exception|panic|FATAL)' || true)
             [[ "${build_err_count:-0}" -gt 0 ]] && build_had_errors=true
         fi
         if [[ "$build_had_errors" != "true" ]]; then
-            # Clear previous error summary on success
+            # Clear previous error summary on success — a stale file would hand
+            # the next iteration an error that is already fixed.
             rm -f "$error_json" 2>/dev/null || true
             return
         fi
     fi
 
-    # Prefer test log, fall back to build log
-    local test_log="${TEST_LOG_FILE:-$LOG_DIR/tests-iter-${ITERATION}.log}"
-    local source_log="$test_log"
-    if [[ ! -f "$source_log" ]]; then
-        source_log="$build_log"
-    fi
-    [[ ! -f "$source_log" ]] && return
+    # Prefer the test log, fall back to the build log
+    local fallback_log="${TEST_LOG_FILE:-$LOG_DIR/tests-iter-${ITERATION}.log}"
+    [[ -f "$fallback_log" ]] || fallback_log="$build_log"
 
-    # Extract error lines (last 30 lines, grep for error patterns)
-    local error_lines_raw
-    error_lines_raw=$(tail -30 "$source_log" 2>/dev/null | grep -iE '(error|fail|assert|exception|panic|FAIL|TypeError|ReferenceError|SyntaxError)' | head -10 || true)
+    local failure_class="unknown" failed_command="" source_log="$fallback_log"
+    if type detect_failure_class >/dev/null 2>&1; then
+        local detected rest
+        detected="$(detect_failure_class "$evidence_file" "$fallback_log" 2>/dev/null || true)"
+        if [[ -n "$detected" ]]; then
+            failure_class="${detected%%$'\t'*}"
+            rest="${detected#*$'\t'}"
+            failed_command="${rest%%$'\t'*}"
+            source_log="${rest##*$'\t'}"
+        fi
+    fi
+    [[ -z "$source_log" || ! -f "$source_log" ]] && source_log="$fallback_log"
+
+    # Extract error lines, tuned to the failing toolchain
+    local error_lines_raw="" truncated_fallback=false
+    if type extract_error_lines >/dev/null 2>&1; then
+        error_lines_raw="$(extract_error_lines "$source_log" "$failure_class" 10 || true)"
+        # Only meaningful when lines were actually produced: an absent log is
+        # "nothing extracted", not "extracted from the wrong place".
+        if [[ -n "$error_lines_raw" ]] && ! fc_pattern_matched "$source_log" "$failure_class"; then
+            truncated_fallback=true
+        fi
+    elif [[ -f "$source_log" ]]; then
+        error_lines_raw=$(tail -30 "$source_log" 2>/dev/null | grep -iE '(error|fail|assert|exception|panic|FAIL|TypeError|ReferenceError|SyntaxError)' | head -10 || true)
+    fi
 
     local error_count=0
     if [[ -n "$error_lines_raw" ]]; then
-        error_count=$(echo "$error_lines_raw" | wc -l | tr -d ' ')
+        error_count=$(printf '%s\n' "$error_lines_raw" | grep -c . || true)
+        error_count="${error_count:-0}"
     fi
+
+    # Message-shape labels (syntax/type/assertion/...) alongside provenance
+    local error_categories=""
+    if type erract_classify >/dev/null 2>&1 && [[ -n "$error_lines_raw" ]]; then
+        error_categories="$(printf '%s\n' "$error_lines_raw" | while IFS= read -r _line; do
+            [[ -n "$_line" ]] && erract_classify "$_line" 2>/dev/null || true
+        done | sort -u | head -5 || true)"
+    fi
+
+    local all_failures="[]"
+    if type collect_all_failures >/dev/null 2>&1; then
+        all_failures="$(collect_all_failures "$evidence_file" 2>/dev/null || echo '[]')"
+    fi
+    [[ -z "$all_failures" ]] && all_failures="[]"
 
     local tmp_json="${error_json}.tmp.$$"
 
@@ -1146,20 +1202,33 @@ write_error_summary() {
         jq -n \
             --argjson iteration "${ITERATION:-0}" \
             --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --arg failure_class "$failure_class" \
+            --arg failed_command "$failed_command" \
             --argjson error_count "${error_count:-0}" \
             --arg error_lines "$error_lines_raw" \
+            --arg error_categories "$error_categories" \
+            --argjson truncated_fallback "$truncated_fallback" \
+            --argjson all_failures "$all_failures" \
             --arg test_cmd "${TEST_CMD:-}" \
             '{
+                schema_version: 2,
                 iteration: $iteration,
                 timestamp: $timestamp,
+                failure_class: $failure_class,
+                failed_command: $failed_command,
                 error_count: $error_count,
                 error_lines: ($error_lines | split("\n") | map(select(length > 0))),
-                test_cmd: $test_cmd
+                error_categories: ($error_categories | split("\n") | map(select(length > 0))),
+                truncated_fallback: $truncated_fallback,
+                test_cmd: $test_cmd,
+                all_failures: $all_failures
             }' > "$tmp_json" 2>/dev/null && mv "$tmp_json" "$error_json" || rm -f "$tmp_json" 2>/dev/null
     else
-        # Fallback: write plain-text error summary (still machine-parseable)
+        # Fallback: no jq, but the class still has to survive
+        local esc_cmd
+        esc_cmd=$(printf '%s' "$failed_command" | tr -d '"\\')
         cat > "$tmp_json" <<ERRJSON
-{"iteration":${ITERATION:-0},"error_count":${error_count:-0},"error_lines":[],"test_cmd":"test"}
+{"schema_version":2,"iteration":${ITERATION:-0},"failure_class":"${failure_class}","failed_command":"${esc_cmd}","error_count":${error_count:-0},"error_lines":[],"error_categories":[],"truncated_fallback":false,"test_cmd":"test","all_failures":[]}
 ERRJSON
         mv "$tmp_json" "$error_json" 2>/dev/null || rm -f "$tmp_json" 2>/dev/null
     fi

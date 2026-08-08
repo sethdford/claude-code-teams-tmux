@@ -79,6 +79,55 @@ manage_context_window() {
     echo "$trimmed"
 }
 
+# Render error-summary.json as a prompt section, labelled by failure class.
+# Args:  $1 path to error-summary.json
+# Print: the section (empty when there is nothing worth reporting)
+#
+# The label matters: telling the model "tests failed" when tsc broke sends it
+# reading test files for a type error, and it burns an iteration finding out.
+compose_error_summary_section() {
+    local error_json="${1:-}"
+    [[ -z "$error_json" || ! -f "$error_json" ]] && return 0
+
+    local err_count err_lines err_class err_cmd
+    err_count=$(jq -r '.error_count // 0' "$error_json" 2>/dev/null || echo "0")
+    err_lines=$(jq -r '.error_lines[]? // empty' "$error_json" 2>/dev/null | head -10 || true)
+    err_class=$(jq -r '.failure_class // "unknown"' "$error_json" 2>/dev/null || echo "unknown")
+    err_cmd=$(jq -r '.failed_command // ""' "$error_json" 2>/dev/null || echo "")
+    [[ "${err_count:-0}" -gt 0 ]] || return 0
+    [[ -n "$err_lines" ]] || return 0
+
+    local err_label err_guidance err_cmd_line="" err_also=""
+    case "$err_class" in
+        typecheck) err_label="TYPE-CHECK FAILURE"
+                   err_guidance="These are type errors, not test failures. Fix the types." ;;
+        lint)      err_label="LINT FAILURE"
+                   err_guidance="These are lint violations, not test failures. Fix the code the linter flagged." ;;
+        compile)   err_label="COMPILE FAILURE"
+                   err_guidance="The build did not compile. Fix the compile errors before anything else." ;;
+        test)      err_label="TEST FAILURE"
+                   err_guidance="Each line above is one distinct error from the test output." ;;
+        *)         err_label="BUILD FAILURE"
+                   err_guidance="A build command failed. Each line above is one distinct error from its output." ;;
+    esac
+    [[ -n "$err_cmd" ]] && err_cmd_line="Command: \`${err_cmd}\`
+"
+
+    # A lint break must not stay hidden behind a typecheck break.
+    # all_failures[0] is the primary rendered above; the rest are extra.
+    local other_failures
+    other_failures=$(jq -r '(.all_failures // [])[1:] | .[] | "- \(.failure_class) (\(.error_count) errors): \(.command)"' \
+        "$error_json" 2>/dev/null || true)
+    [[ -n "$other_failures" ]] && err_also="
+Also failing:
+${other_failures}"
+
+    printf '%s\n' "## Structured Error Summary — ${err_label} (${err_count} errors)
+${err_cmd_line}${err_lines}
+
+Fix these specific errors. ${err_guidance}${err_also}"
+}
+
 compose_prompt() {
     local recent_log
     # Get last 3 iteration summaries from log entries
@@ -104,18 +153,7 @@ $TEST_OUTPUT"
 
     # Structured error context (machine-readable)
     local error_summary_section=""
-    local error_json="$LOG_DIR/error-summary.json"
-    if [[ -f "$error_json" ]]; then
-        local err_count err_lines
-        err_count=$(jq -r '.error_count // 0' "$error_json" 2>/dev/null || echo "0")
-        err_lines=$(jq -r '.error_lines[]? // empty' "$error_json" 2>/dev/null | head -10 || true)
-        if [[ "$err_count" -gt 0 ]] && [[ -n "$err_lines" ]]; then
-            error_summary_section="## Structured Error Summary (${err_count} errors detected)
-${err_lines}
-
-Fix these specific errors. Each line above is one distinct error from the test output."
-        fi
-    fi
+    error_summary_section="$(compose_error_summary_section "$LOG_DIR/error-summary.json")"
 
     # Build audit sections (captured before heredoc to avoid nested heredoc issues)
     local audit_section

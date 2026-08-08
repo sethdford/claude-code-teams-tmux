@@ -52,7 +52,15 @@ restart_capture_state() {
     # Recent error summary
     local recent_error=""
     if [[ -f "$LOG_DIR/error-summary.json" ]]; then
-        recent_error="$(jq -r '.error_summary // ""' "$LOG_DIR/error-summary.json" 2>/dev/null || echo "")"
+        # A fresh session must inherit *which kind* of failure it is resuming
+        # from — a lint break reads nothing like a test break.
+        recent_error="$(jq -r '
+            if (.failure_class // "") != "" then
+              "\(.failure_class) failure" +
+              (if (.failed_command // "") != "" then " in `\(.failed_command)`" else "" end) +
+              ": " + ((.error_lines // []) | .[0] // "no error detail captured")
+            else (.error_summary // "") end' \
+            "$LOG_DIR/error-summary.json" 2>/dev/null || echo "")"
     fi
 
     # Build JSON atomically
@@ -393,12 +401,18 @@ restart_enhance_progress_md() {
     # Detect anti-patterns from log
     local antipatterns=""
     if [[ -f "$LOG_DIR/error-summary.json" ]]; then
-        local err_count
+        local err_count err_class
         err_count=$(jq -r '.error_count // 0' "$LOG_DIR/error-summary.json" 2>/dev/null || echo "0")
+        err_class=$(jq -r '.failure_class // ""' "$LOG_DIR/error-summary.json" 2>/dev/null || echo "")
         if [[ "$err_count" -gt 5 ]]; then
             antipatterns="$antipatterns
 - Too many distinct errors — narrow focus to one problem at a time"
         fi
+        case "$err_class" in
+            lint|typecheck|compile)
+                antipatterns="$antipatterns
+- The outstanding failure is a ${err_class} failure, not a test failure — fix the ${err_class} errors first" ;;
+        esac
     fi
     if [[ "${CONSECUTIVE_FAILURES:-0}" -ge 2 ]]; then
         antipatterns="$antipatterns
