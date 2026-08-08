@@ -24,7 +24,7 @@
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
       "seen_count": 15,
-      "last_seen": "2026-08-08T07:19:00Z",
+      "last_seen": "2026-08-08T07:14:02Z",
       "category": "flaky"
     },
     {
@@ -57,11 +57,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-1703) from a prior run was left held, blocking the new run with 'pipeline already in progress'; sw-intent-analysis-test failed on a schema assertion missing required fields (version, goal, criteria)",
-      "fix": "Release/clean stale pipeline locks before test run (or have test teardown call `shipwright pipeline abort`), and update analyze_intent to emit version/goal/criteria fields expected by the schema test",
+      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit the 300s timeout, likely due to a hung external call (Claude/GitHub API) not properly mocked or rate-limited",
+      "fix": "Inspect sw-intent-analysis-test.sh failure output for the specific assertion, and add/verify mock binaries or a timeout guard for sw-e2e-integration-test's external calls",
       "seen_count": 1,
       "last_seen": "2026-08-08T03:07:18Z",
-      "category": "test_failure"
+      "category": "timeout"
     }
   ]
 }
