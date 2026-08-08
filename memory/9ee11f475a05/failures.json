@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
-      "seen_count": 18,
-      "last_seen": "2026-08-08T13:04:10Z",
+      "seen_count": 19,
+      "last_seen": "2026-08-08T14:52:44Z",
       "category": "flaky"
     },
     {
@@ -59,8 +59,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Test failures are unrelated to the target change: sw-e2e-integration-test hits a stale pipeline lock from a prior run, sw-intent-analysis-test's schema is missing required fields, and sw-recruit-test has 5 failing assertions",
       "fix": "Clear/reset the stale pipeline lock before e2e-integration-test runs, add version/goal/criteria to the intent-analysis schema, and inspect sw-recruit-test's 5 FAIL cases individually to isolate the regression",
-      "seen_count": 2,
-      "last_seen": "2026-08-08T14:32:09Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-08T03:07:18Z",
       "category": "test_failure"
     }
   ]
