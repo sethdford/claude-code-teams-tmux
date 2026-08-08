@@ -340,6 +340,42 @@ Tune the build loop's resilience and restart behavior:
 | `context_restart_limit`     | `3`     | Max restarts due to context exhaustion            |
 | `hard_restart_cap`          | `5`     | Absolute maximum restarts regardless of cause     |
 | `max_restarts`              | `3`     | Default restart limit for daemon-driven loops     |
+| `adaptive_iterations`       | `0`     | Derive `--max-iterations` from historical outcomes |
+
+### Adaptive Iteration Budget
+
+`--adaptive-iterations` (or `loop.adaptive_iterations`) replaces the static
+`--max-iterations` default with a budget derived from how many iterations
+similar past runs actually needed. An explicit `--max-iterations` always wins.
+
+**Recording is always on; acting on the data is opt-in.** Every loop run tags
+its `loop.iteration_complete` events with a *cohort* key (issue complexity +
+sorted labels, e.g. `medium-bug,infrastructure`) and records a
+`loop.budget_outcome` on exit — whether or not the flag is set. Without this the
+feature could never bootstrap: it would only ever see history from runs that
+already had it enabled.
+
+Budget selection is three-tier, and the chosen tier is reported on
+`loop.budget_selected` alongside the sample count, so a surprising budget is
+traceable rather than mysterious:
+
+| Tier       | Condition                   | Budget                                |
+| ---------- | --------------------------- | ------------------------------------- |
+| `cohort`   | >= 5 samples for the cohort | P90 of cohort iterations + 1          |
+| `global`   | >= 3 samples across jobs    | P90 of per-job max iterations + 1     |
+| `fallback` | otherwise                   | `ITERATIONS_DEFAULT` (20)             |
+
+The `+ 1` avoids starvation — if every past run needed exactly N iterations, a
+budget of N leaves no room for the run that needs N+1. Results are clamped to
+`[1, 50]`.
+
+Reads of `events.jsonl` are bounded by `ITERATIONS_SCAN_LINES` (last 20,000
+lines) and `ITERATIONS_LOOKBACK` (last 100 samples), so loop startup cost does
+not grow with the machine's event history. Cohort keys derive from issue labels
+and are passed to `jq` via `--arg`, never interpolated into the filter program.
+
+Implemented in `scripts/lib/adaptive-iterations.sh`; tested by
+`scripts/sw-adaptive-iterations-test.sh`.
 
 ## Constitutional AI
 
@@ -770,6 +806,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | --- | ---: | --- |
 | `scripts/sw-activity-test.sh` | 219 | Validate live agent activity stream |
 | `scripts/sw-adapters-test.sh` | 197 | Structural/smoke tests for terminal & deploy |
+| `scripts/sw-adaptive-iterations-test.sh` | 484 | Adaptive build-loop iteration budget tests |
 | `scripts/sw-adaptive-model-test.sh` | 417 | Test Suite for Adaptive Model Selection |
 | `scripts/sw-adaptive-test.sh` | 206 | Validate data-driven pipeline tuning |
 | `scripts/sw-adaptive-timeout-test.sh` | 406 | Test Suite for Adaptive Stage Timeout Engine |

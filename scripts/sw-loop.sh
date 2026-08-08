@@ -689,21 +689,33 @@ TOKJSON
 # ─── Adaptive Iteration Budget ──────────────────────────────────────────────
 # Reads tuning config for smarter iteration/circuit-breaker thresholds.
 apply_adaptive_budget() {
-    # Tier 0: Adaptive iterations from historical outcomes (if enabled)
-    if [[ "$ADAPTIVE_ITERATIONS" == "1" ]] && ! $MAX_ITERATIONS_EXPLICIT; then
-        if type adaptive_iterations_suggest >/dev/null 2>&1; then
-            local complexity="${ISSUE_COMPLEXITY:-${COMPLEXITY:-medium}}"
-            local labels="${ISSUE_LABELS:-}"
-            local suggested
-            suggested=$(adaptive_iterations_suggest "$complexity" "$labels")
+    # Tier 0: Adaptive iterations from historical outcomes.
+    #
+    # Recording is always on, acting on the data is opt-in. The cohort key is
+    # computed for every run so loop.iteration_complete carries it and history
+    # accumulates for cohorts nobody has enabled yet — otherwise the feature can
+    # never bootstrap: it would only ever see data from runs that already had it
+    # turned on. Only the budget override below is gated on --adaptive-iterations.
+    if type adaptive_iterations_cohort >/dev/null 2>&1; then
+        local complexity="${ISSUE_COMPLEXITY:-${COMPLEXITY:-medium}}"
+        local labels="${ISSUE_LABELS:-}"
+        ADAPTIVE_COHORT=$(adaptive_iterations_cohort "$complexity" "$labels")
+
+        if [[ "$ADAPTIVE_ITERATIONS" == "1" ]] && ! $MAX_ITERATIONS_EXPLICIT \
+            && type adaptive_iterations_suggest >/dev/null 2>&1; then
+            # Called directly, not via $(...): suggest() reports the tier and
+            # sample count through globals, which a subshell would discard.
+            adaptive_iterations_suggest "$complexity" "$labels" >/dev/null
+            local suggested="${ADAPTIVE_SUGGESTED:-}"
             if [[ "$suggested" =~ ^[0-9]+$ ]] && [[ "$suggested" -gt 0 ]]; then
                 MAX_ITERATIONS="$suggested"
-                ADAPTIVE_COHORT=$(adaptive_iterations_cohort "$complexity" "$labels")
                 ADAPTIVE_BUDGET="$suggested"
-                info "Adaptive iterations: cohort '$ADAPTIVE_COHORT' → max $suggested iterations"
+                info "Adaptive iterations: cohort '$ADAPTIVE_COHORT' (${ADAPTIVE_TIER:-fallback} tier, ${ADAPTIVE_SAMPLES:-0} samples) → max $suggested iterations"
                 emit_event "loop.budget_selected" \
                     "source=adaptive_iterations" \
                     "cohort=$ADAPTIVE_COHORT" \
+                    "tier=${ADAPTIVE_TIER:-fallback}" \
+                    "sample_count=${ADAPTIVE_SAMPLES:-0}" \
                     "budget=$suggested"
             fi
         fi
@@ -2567,6 +2579,7 @@ $summary
                 "agent=${AGENT_NUM:-1}" \
                 "test_passed=${TEST_PASSED:-unknown}" \
                 "commits=$TOTAL_COMMITS" \
+                "cohort=${ADAPTIVE_COHORT:-default}" \
                 "status=${STATUS:-running}"
         fi
 

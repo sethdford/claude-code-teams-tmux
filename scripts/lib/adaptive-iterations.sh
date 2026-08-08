@@ -18,17 +18,25 @@ ITERATIONS_MAX=50  # Absolute ceiling to prevent runaway loops
 ITERATIONS_DEFAULT=20
 
 # Historical data thresholds
-# shellcheck disable=SC2034
-ITERATIONS_MIN_SAMPLES=3  # Require N samples before using adaptive budget
-# shellcheck disable=SC2034
-ITERATIONS_LOOKBACK=100   # Use last N samples for percentile calculation
-# shellcheck disable=SC2034
-ITERATIONS_COHORT_THRESHOLD=0.6  # Minimum similarity score to match a cohort (0-1)
-# shellcheck disable=SC2034
-ITERATIONS_HIGH_CONFIDENCE_THRESHOLD=0.7  # Score for high-confidence recommendation
+ITERATIONS_MIN_COHORT_SAMPLES=5  # Samples required before trusting cohort-specific data
+ITERATIONS_MIN_SAMPLES=3         # Samples required before trusting global data
+ITERATIONS_LOOKBACK=100          # Use at most the last N samples for the percentile
+ITERATIONS_SCAN_LINES=20000      # Only scan the last N lines of events.jsonl
+
+# Percentile used to derive a budget from historical iteration counts.
+ITERATIONS_PERCENTILE=90
 
 # Paths
 ITERATIONS_HISTORY_FILE="${HOME}/.shipwright/events.jsonl"
+
+# ─── Outputs set by adaptive_iterations_suggest() ───────────────────────────
+# suggest() both prints the budget and records how it got there. Read these
+# *after* calling it — and call it directly, not in a command substitution, or
+# the assignments are lost to the subshell (ADAPTIVE_SUGGESTED exists so callers
+# that need the number and the reason can avoid `$(...)` entirely).
+ADAPTIVE_TIER="fallback"   # cohort | global | fallback
+ADAPTIVE_SAMPLES=0         # number of samples the winning tier saw
+ADAPTIVE_SUGGESTED=0       # the budget suggest() last returned
 
 # ─── Utility: Cohort Key Generation ────────────────────────────────────────
 
@@ -66,45 +74,70 @@ adaptive_iterations_cohort() {
 # ─── Utility: Extract Samples for a Cohort ─────────────────────────────────
 
 # _iter_samples_for_cohort() — Extract iteration counts from events.jsonl for a cohort.
-# Reads loop.iteration_complete events and groups by cohort key.
-# Handles malformed JSON gracefully (skip bad lines).
+# Reads loop.iteration_complete events and keeps those matching the cohort key.
+#
+# A single `jq -R` pass handles the whole file: `fromjson?` drops malformed lines
+# without aborting, so one corrupt event does not blind the whole history. The
+# cohort is passed via --arg (never interpolated into the jq program) so labels
+# containing quotes, backslashes, `$` or backticks cannot alter the filter.
+# Scanning is bounded by ITERATIONS_SCAN_LINES (input) and ITERATIONS_LOOKBACK
+# (output) so an events.jsonl that grows without limit stays O(1) to read.
+#
 # $1: cohort key
 # $2: events file (default: ITERATIONS_HISTORY_FILE)
-# Returns: newline-separated iteration counts (or empty if no data)
+# Returns: newline-separated iteration counts, most recent last (or empty)
 _iter_samples_for_cohort() {
-    local cohort="$1"
+    local cohort="${1:-default}"
     local events_file="${2:-$ITERATIONS_HISTORY_FILE}"
 
     [[ -f "$events_file" ]] || return 0
     [[ -z "$cohort" ]] && cohort="default"
 
-    # Read events line-by-line to tolerate malformed JSON
-    # Process each line as raw string, parse with jq, skip errors
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        echo "$line" | jq -r "select(.type == \"loop.iteration_complete\" and (.cohort // \"default\") == \"$cohort\") | .iteration // empty" 2>/dev/null || true
-    done < "$events_file"
+    tail -n "$ITERATIONS_SCAN_LINES" "$events_file" 2>/dev/null \
+        | jq -R -r --arg cohort "$cohort" '
+            (fromjson? // empty)
+            | select(.type == "loop.iteration_complete")
+            | select((.cohort // "default") == $cohort)
+            | (.iteration // empty)
+            | tostring
+            | select(test("^[0-9]+$"))
+          ' 2>/dev/null \
+        | tail -n "$ITERATIONS_LOOKBACK" || true
 }
 
 # ─── Utility: Global Samples (All Cohorts) ───────────────────────────────────
 
 # _iter_samples_global() — Extract all iteration counts from events.jsonl.
-# Used as fallback when no cohort-specific data exists.
-# Groups by job_id and counts iterations per job.
+# Used as fallback when no cohort-specific data exists. Each job contributes one
+# sample: the highest iteration number it reached.
+#
+# Same single-pass `jq -R` + `fromjson?` shape as the cohort reader, so a
+# malformed line cannot abort the scan. job_id and iteration are joined with a
+# tab (job ids may legitimately contain ':'), and the awk max is taken
+# numerically so "10" does not compare below "9".
+#
 # $1: events file (default: ITERATIONS_HISTORY_FILE)
-# Returns: newline-separated iteration counts
+# Returns: newline-separated iteration counts, one per job
 # shellcheck disable=SC2120
 _iter_samples_global() {
     local events_file="${1:-$ITERATIONS_HISTORY_FILE}"
 
     [[ -f "$events_file" ]] || return 0
 
-    # Group by job_id, count iterations, emit max iteration per job
-    # (assuming iteration is 1..N per job)
-    jq -r "select(.type == \"loop.iteration_complete\") | .job_id + \":\" + (.iteration | tostring)" \
-        "$events_file" 2>/dev/null \
-        | awk -F: '{max[$1] = ($2 > max[$1]) ? $2 : max[$1]} END {for (job in max) print max[job]}' \
-        || true
+    tail -n "$ITERATIONS_SCAN_LINES" "$events_file" 2>/dev/null \
+        | jq -R -r '
+            (fromjson? // empty)
+            | select(.type == "loop.iteration_complete")
+            | select(.job_id != null and .iteration != null)
+            | "\(.job_id)\t\(.iteration)"
+          ' 2>/dev/null \
+        | awk -F'\t' '
+            $2 ~ /^[0-9]+$/ {
+                if (!($1 in max) || ($2 + 0) > (max[$1] + 0)) max[$1] = $2
+            }
+            END { for (job in max) print max[job] }
+          ' \
+        | tail -n "$ITERATIONS_LOOKBACK" || true
 }
 
 # ─── Utility: Percentile Calculation ────────────────────────────────────────
@@ -151,9 +184,11 @@ _iter_percentile() {
 
 # adaptive_iterations_suggest() — Suggest a max iteration budget from historical data.
 # 3-tier fallback:
-#   1. Cohort-specific data (if ≥ 5 samples and high confidence score)
-#   2. Global data (if ≥ 3 samples)
+#   1. Cohort-specific data (≥ ITERATIONS_MIN_COHORT_SAMPLES samples)
+#   2. Global data           (≥ ITERATIONS_MIN_SAMPLES samples)
 #   3. Static default
+# Also sets ADAPTIVE_TIER and ADAPTIVE_SAMPLES so the caller can log/emit the
+# reason a budget was chosen, not just the number.
 # $1: complexity (low/medium/high/unknown) or empty
 # $2: labels (comma-separated) or empty
 # Returns: suggested iteration count
@@ -161,49 +196,63 @@ adaptive_iterations_suggest() {
     local complexity="${1:-}"
     local labels="${2:-}"
 
+    ADAPTIVE_TIER="fallback"
+    ADAPTIVE_SAMPLES=0
+    ADAPTIVE_SUGGESTED="$ITERATIONS_DEFAULT"
+
     local cohort
     cohort=$(adaptive_iterations_cohort "$complexity" "$labels")
 
     # Tier 1: Cohort-specific data (high confidence)
-    local cohort_samples
+    local cohort_samples cohort_count
+    # shellcheck disable=SC2119
     cohort_samples=$(_iter_samples_for_cohort "$cohort")
-    local cohort_count
     cohort_count=$(echo "$cohort_samples" | awk 'NF {count++} END {print count+0}')
 
-    if [[ "$cohort_count" -ge 5 ]]; then
-        local p90
-        p90=$(echo "$cohort_samples" | _iter_percentile 90)
-        if [[ "$p90" =~ ^[0-9]+$ ]] && [[ "$p90" -gt 0 ]]; then
-            # Add 1 to avoid starvation (edge case: all past runs used 5, clamp to 6)
-            local suggested=$((p90 + 1))
-            [[ "$suggested" -gt "$ITERATIONS_MAX" ]] && suggested="$ITERATIONS_MAX"
-            [[ "$suggested" -lt "$ITERATIONS_MIN" ]] && suggested="$ITERATIONS_MIN"
-            echo "$suggested"
+    if [[ "$cohort_count" -ge "$ITERATIONS_MIN_COHORT_SAMPLES" ]]; then
+        local p_cohort
+        p_cohort=$(echo "$cohort_samples" | _iter_percentile "$ITERATIONS_PERCENTILE")
+        if [[ "$p_cohort" =~ ^[0-9]+$ ]] && [[ "$p_cohort" -gt 0 ]]; then
+            ADAPTIVE_TIER="cohort"
+            ADAPTIVE_SAMPLES="$cohort_count"
+            _iter_clamp $((p_cohort + 1))
             return 0
         fi
     fi
 
     # Tier 2: Global data (medium confidence)
-    local global_samples
+    local global_samples global_count
     # shellcheck disable=SC2119
     global_samples=$(_iter_samples_global)
-    local global_count
     global_count=$(echo "$global_samples" | awk 'NF {count++} END {print count+0}')
 
-    if [[ "$global_count" -ge 3 ]]; then
-        local p90_global
-        p90_global=$(echo "$global_samples" | _iter_percentile 90)
-        if [[ "$p90_global" =~ ^[0-9]+$ ]] && [[ "$p90_global" -gt 0 ]]; then
-            local suggested_global=$((p90_global + 1))
-            [[ "$suggested_global" -gt "$ITERATIONS_MAX" ]] && suggested_global="$ITERATIONS_MAX"
-            [[ "$suggested_global" -lt "$ITERATIONS_MIN" ]] && suggested_global="$ITERATIONS_MIN"
-            echo "$suggested_global"
+    if [[ "$global_count" -ge "$ITERATIONS_MIN_SAMPLES" ]]; then
+        local p_global
+        p_global=$(echo "$global_samples" | _iter_percentile "$ITERATIONS_PERCENTILE")
+        if [[ "$p_global" =~ ^[0-9]+$ ]] && [[ "$p_global" -gt 0 ]]; then
+            # shellcheck disable=SC2034  # read by the sourcing script (sw-loop.sh)
+            ADAPTIVE_TIER="global"
+            # shellcheck disable=SC2034  # read by the sourcing script (sw-loop.sh)
+            ADAPTIVE_SAMPLES="$global_count"
+            _iter_clamp $((p_global + 1))
             return 0
         fi
     fi
 
     # Tier 3: Static default
     echo "$ITERATIONS_DEFAULT"
+}
+
+# _iter_clamp() — Record and print $1 clamped into [ITERATIONS_MIN, ITERATIONS_MAX].
+# The +1 applied by callers avoids starvation: if every past run needed exactly
+# N iterations, a budget of N leaves no room for the run that needs N+1.
+_iter_clamp() {
+    local value="$1"
+    [[ "$value" -gt "$ITERATIONS_MAX" ]] && value="$ITERATIONS_MAX"
+    [[ "$value" -lt "$ITERATIONS_MIN" ]] && value="$ITERATIONS_MIN"
+    # shellcheck disable=SC2034  # read by the sourcing script (sw-loop.sh)
+    ADAPTIVE_SUGGESTED="$value"
+    echo "$value"
 }
 
 # ─── Recording: Outcome Tracking ────────────────────────────────────────────

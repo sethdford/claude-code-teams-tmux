@@ -1052,7 +1052,18 @@
     },
     "loop.iteration_complete": {
       "required": ["iteration"],
-      "optional": ["issue", "test_result", "duration_s"]
+      "optional": [
+        "issue",
+        "test_result",
+        "duration_s",
+        "max",
+        "job_id",
+        "agent",
+        "test_passed",
+        "commits",
+        "cohort",
+        "status"
+      ]
     },
     "loop.iteration_start": {
       "required": ["iteration"],
@@ -1084,7 +1095,7 @@
     },
     "loop.budget_selected": {
       "required": [],
-      "optional": ["source", "cohort", "budget", "sample_count"]
+      "optional": ["source", "cohort", "tier", "budget", "sample_count"]
     },
     "loop.budget_outcome": {
       "required": [],

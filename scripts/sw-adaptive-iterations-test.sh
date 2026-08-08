@@ -101,7 +101,8 @@ info "Test 5: Suggest budget with no history"
 
 export HOME="$TMPDIR"
 mkdir -p "$TMPDIR/.shipwright"
-budget=$(adaptive_iterations_suggest "medium" "feature")
+adaptive_iterations_suggest "medium" "feature" >/dev/null
+budget="$ADAPTIVE_SUGGESTED"
 assert_equals "20" "$budget" "Default budget when no history"
 
 # ─── Test 6: Suggest Budget (Cohort History) ─────────────────────────────
@@ -234,7 +235,8 @@ events_file="$TMPDIR/.shipwright/empty.jsonl"
 touch "$events_file"
 
 export ITERATIONS_HISTORY_FILE="$events_file"
-budget=$(adaptive_iterations_suggest "medium" "feature")
+adaptive_iterations_suggest "medium" "feature" >/dev/null
+budget="$ADAPTIVE_SUGGESTED"
 assert_equals "20" "$budget" "Empty events file returns default"
 
 # ─── Test 14: Very Low Percentile ─────────────────────────────────────────
@@ -314,6 +316,166 @@ assert_equals "unknown" "$cohort" "Invalid complexity normalized to 'unknown'"
 
 cohort=$(adaptive_iterations_cohort "low" "")
 assert_equals "low" "$cohort" "Valid low complexity preserved"
+
+# ─── Test 19: Cohort Round-Trip (emit → read back) ────────────────────────
+#
+# Regression guard for the defect that made this feature inert in production:
+# every test above hand-authored fixture events carrying a "cohort" field, but
+# sw-loop.sh's real loop.iteration_complete emission did not include one. So the
+# reader always saw cohort "default" and cohort-specific history never
+# accumulated. These assertions close the loop end to end.
+
+info "Test 19: Cohort round-trip through the real emit path"
+
+# The emitter side: sw-loop.sh must actually put a cohort on the event.
+loop_emission=$(grep -A9 'emit_event "loop.iteration_complete"' "$SCRIPT_DIR/sw-loop.sh")
+assert_contains "$loop_emission" "cohort=" \
+    "sw-loop.sh emits cohort= on loop.iteration_complete"
+
+# The cohort must be computed for every run, not only when acting is enabled —
+# otherwise history can never bootstrap.
+budget_fn=$(sed -n '/^apply_adaptive_budget()/,/^}/p' "$SCRIPT_DIR/sw-loop.sh")
+assert_contains "$budget_fn" "ADAPTIVE_COHORT=\$(adaptive_iterations_cohort" \
+    "apply_adaptive_budget computes the cohort key"
+
+# The reader side: events written by the real emit_event are consumable.
+roundtrip_home="$TMPDIR/roundtrip"
+mkdir -p "$roundtrip_home/.shipwright"
+roundtrip_events="$roundtrip_home/.shipwright/events.jsonl"
+
+HOME="$roundtrip_home" EVENTS_FILE="$roundtrip_events" bash -c '
+    set -uo pipefail
+    source "'"$SCRIPT_DIR"'/lib/helpers.sh"
+    for i in 2 4 6 8 10; do
+        emit_event "loop.iteration_complete" \
+            "iteration=$i" "job_id=rt-$i" "cohort=medium-feature" "status=running"
+    done
+' >/dev/null 2>&1
+
+roundtrip_samples=$(_iter_samples_for_cohort "medium-feature" "$roundtrip_events")
+roundtrip_count=$(echo "$roundtrip_samples" | awk 'NF {c++} END {print c+0}')
+assert_equals "5" "$roundtrip_count" \
+    "Real emit_event output is readable by _iter_samples_for_cohort"
+
+roundtrip_p90=$(echo "$roundtrip_samples" | _iter_percentile 90)
+assert_equals "10" "$roundtrip_p90" "Round-tripped samples produce the expected P90"
+
+# A different cohort must not pick these up.
+other_count=$(_iter_samples_for_cohort "high-security" "$roundtrip_events" | awk 'NF {c++} END {print c+0}')
+assert_equals "0" "$other_count" "Cohort filter excludes non-matching cohorts"
+
+# ─── Test 20: Adversarial Cohort Labels ───────────────────────────────────
+#
+# Cohort keys are derived from issue labels, which are attacker-influenced on a
+# public repo. They are passed to jq via --arg and never interpolated into the
+# jq program, so quotes, backslashes, `$` and backticks must be inert.
+
+info "Test 20: Adversarial characters in cohort labels"
+
+adversarial_home="$TMPDIR/adversarial"
+mkdir -p "$adversarial_home/.shipwright"
+adversarial_events="$adversarial_home/.shipwright/events.jsonl"
+
+# shellcheck disable=SC2016  # the metacharacters are the point — do not expand
+adversarial_label='he said "hi" \ $(touch /tmp/sw-pwned) `id` $HOME'
+adversarial_cohort=$(adaptive_iterations_cohort "high" "$adversarial_label")
+
+HOME="$adversarial_home" EVENTS_FILE="$adversarial_events" \
+ADV_COHORT="$adversarial_cohort" bash -c '
+    set -uo pipefail
+    source "'"$SCRIPT_DIR"'/lib/helpers.sh"
+    for i in 1 2 3 4 5; do
+        emit_event "loop.iteration_complete" \
+            "iteration=$i" "job_id=adv-$i" "cohort=$ADV_COHORT"
+    done
+' >/dev/null 2>&1
+
+# Every emitted line must still be valid JSON — no escaping breakage.
+adversarial_valid=$(jq -c . "$adversarial_events" 2>/dev/null | wc -l | tr -d ' ')
+assert_equals "5" "$adversarial_valid" "Adversarial label produces valid JSON events"
+
+adversarial_count=$(_iter_samples_for_cohort "$adversarial_cohort" "$adversarial_events" \
+    | awk 'NF {c++} END {print c+0}')
+assert_equals "5" "$adversarial_count" "Adversarial cohort round-trips exactly"
+
+# The jq filter must not have been altered into matching everything.
+benign_count=$(_iter_samples_for_cohort "high-benign" "$adversarial_events" \
+    | awk 'NF {c++} END {print c+0}')
+assert_equals "0" "$benign_count" "Adversarial label does not widen the jq filter"
+
+# Nothing was executed as a side effect.
+[[ ! -e /tmp/sw-pwned ]] && { success "No command injection from cohort label"; PASS=$((PASS+1)); } || \
+    { error "Cohort label caused command execution"; FAIL=$((FAIL+1)); rm -f /tmp/sw-pwned; }
+
+# ─── Test 21: Lookback and Scan Bounds ────────────────────────────────────
+#
+# events.jsonl grows for the life of the machine. Reading it must stay bounded
+# in both samples considered and wall-clock, or every loop start pays for the
+# whole history. The old implementation spawned one jq per line: on this file it
+# would have been ~10,000 processes.
+
+info "Test 21: Bounded scan over a large events file"
+
+large_events="$TMPDIR/large-events.jsonl"
+{
+    for i in $(seq 1 10000); do
+        echo "{\"ts\":\"2026-08-01T00:00:00Z\",\"type\":\"loop.iteration_complete\",\"iteration\":$(( i % 12 + 1 )),\"job_id\":\"job-$i\",\"cohort\":\"bulk\"}"
+    done
+} > "$large_events"
+
+large_start=$(date +%s)
+large_samples=$(_iter_samples_for_cohort "bulk" "$large_events")
+large_global=$(_iter_samples_global "$large_events")
+large_elapsed=$(( $(date +%s) - large_start ))
+
+large_count=$(echo "$large_samples" | awk 'NF {c++} END {print c+0}')
+assert_equals "$ITERATIONS_LOOKBACK" "$large_count" \
+    "Cohort samples bounded to ITERATIONS_LOOKBACK on a 10k-line file"
+
+global_count=$(echo "$large_global" | awk 'NF {c++} END {print c+0}')
+assert_equals "$ITERATIONS_LOOKBACK" "$global_count" \
+    "Global samples bounded to ITERATIONS_LOOKBACK on a 10k-line file"
+
+[[ "$large_elapsed" -lt 5 ]] && { success "10k-line file scanned in ${large_elapsed}s (< 5s)"; PASS=$((PASS+1)); } || \
+    { error "Scanning 10k lines took ${large_elapsed}s, expected < 5s"; FAIL=$((FAIL+1)); }
+
+# ─── Test 22: Tier and Sample Count Reporting ─────────────────────────────
+#
+# The budget number alone is not traceable — loop.budget_selected must be able
+# to say which tier produced it and how many samples it saw.
+
+info "Test 22: suggest() reports tier and sample count"
+
+tier_events="$TMPDIR/tier-events.jsonl"
+export ITERATIONS_HISTORY_FILE="$tier_events"
+
+: > "$tier_events"
+adaptive_iterations_suggest "medium" "feature" >/dev/null
+budget="$ADAPTIVE_SUGGESTED"
+assert_equals "fallback" "$ADAPTIVE_TIER" "Empty history reports the fallback tier"
+assert_equals "0" "$ADAPTIVE_SAMPLES" "Fallback tier reports zero samples"
+assert_equals "20" "$budget" "Fallback tier returns the static default"
+
+for i in 3 4 5 6 7; do
+    echo "{\"type\":\"loop.iteration_complete\",\"iteration\":$i,\"cohort\":\"medium-feature\"}" >> "$tier_events"
+done
+adaptive_iterations_suggest "medium" "feature" >/dev/null
+budget="$ADAPTIVE_SUGGESTED"
+assert_equals "cohort" "$ADAPTIVE_TIER" "Sufficient cohort history reports the cohort tier"
+assert_equals "5" "$ADAPTIVE_SAMPLES" "Cohort tier reports its sample count"
+assert_equals "8" "$budget" "Cohort tier returns P90 + 1"
+
+: > "$tier_events"
+for j in 1 2 3; do
+    for i in 1 2 3; do
+        echo "{\"type\":\"loop.iteration_complete\",\"iteration\":$i,\"job_id\":\"g$j\"}" >> "$tier_events"
+    done
+done
+adaptive_iterations_suggest "medium" "feature" >/dev/null
+budget="$ADAPTIVE_SUGGESTED"
+assert_equals "global" "$ADAPTIVE_TIER" "No cohort history falls through to the global tier"
+assert_equals "3" "$ADAPTIVE_SAMPLES" "Global tier reports one sample per job"
+assert_equals "4" "$budget" "Global tier returns P90 + 1"
 
 # ─── Summary ───────────────────────────────────────────────────────────────
 
