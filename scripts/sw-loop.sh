@@ -710,7 +710,8 @@ apply_adaptive_budget() {
             if [[ "$suggested" =~ ^[0-9]+$ ]] && [[ "$suggested" -gt 0 ]]; then
                 MAX_ITERATIONS="$suggested"
                 ADAPTIVE_BUDGET="$suggested"
-                info "Adaptive iterations: cohort '$ADAPTIVE_COHORT' (${ADAPTIVE_TIER:-fallback} tier, ${ADAPTIVE_SAMPLES:-0} samples) → max $suggested iterations"
+                info "Adaptive iterations: $(adaptive_iterations_explain \
+                    "$ADAPTIVE_COHORT" "$suggested" "${ADAPTIVE_TIER:-fallback}" "${ADAPTIVE_SAMPLES:-0}")"
                 emit_event "loop.budget_selected" \
                     "source=adaptive_iterations" \
                     "cohort=$ADAPTIVE_COHORT" \

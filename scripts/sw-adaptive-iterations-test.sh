@@ -477,6 +477,17 @@ assert_equals "global" "$ADAPTIVE_TIER" "No cohort history falls through to the 
 assert_equals "3" "$ADAPTIVE_SAMPLES" "Global tier reports one sample per job"
 assert_equals "4" "$budget" "Global tier returns P90 + 1"
 
+# ─── Test 23: Budget Explanation Is Wired Into the Loop ───────────────────
+
+info "Test 23: sw-loop.sh logs the explanation, not just the number"
+
+assert_contains "$budget_fn" "adaptive_iterations_explain" \
+    "apply_adaptive_budget explains the chosen budget"
+
+explanation=$(adaptive_iterations_explain "medium-feature" "8" "global" "3")
+assert_contains "$explanation" "Global history" "Global tier explanation names the tier"
+assert_contains "$explanation" "3 samples" "Global tier explanation reports the sample count"
+
 # ─── Summary ───────────────────────────────────────────────────────────────
 
 echo ""
