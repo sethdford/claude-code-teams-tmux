@@ -48,8 +48,20 @@ classify_failure() {
         echo "invalid_issue"
         return
     fi
-    # Context exhaustion — check progress file
     local issue_worktree_path="${WORKTREE_DIR:-${REPO_DIR}/.worktrees}/daemon-issue-${issue_num}"
+
+    # An explicit reason written by the pipeline beats every heuristic below.
+    local reason_file="${issue_worktree_path}/.claude/pipeline-artifacts/failure-reason.txt"
+    if [[ -f "$reason_file" ]]; then
+        local explicit_reason
+        explicit_reason=$(head -1 "$reason_file" 2>/dev/null | tr -d '[:space:]' || true)
+        if [[ -n "$explicit_reason" ]]; then
+            echo "$explicit_reason"
+            return
+        fi
+    fi
+
+    # Context exhaustion — check progress file
     local progress_file="${issue_worktree_path}/.claude/loop-logs/progress.md"
     if [[ -f "$progress_file" ]]; then
         local cf_iter
@@ -82,6 +94,10 @@ get_max_retries_for_class() {
         auth_error|invalid_issue) echo 0 ;;
         api_error)                echo "${MAX_RETRIES_API_ERROR:-4}" ;;
         context_exhaustion)       echo "${MAX_RETRIES_CONTEXT_EXHAUSTION:-2}" ;;
+        # A diverged loop repeats itself — retrying it is the expensive mistake
+        # this whole feature exists to avoid. One retry, so a false positive
+        # costs a restart rather than the issue.
+        divergent_failure)        echo "${MAX_RETRIES_DIVERGENT:-1}" ;;
         build_failure)           echo "${MAX_RETRIES_BUILD:-2}" ;;
         *)                       echo "${MAX_RETRIES:-2}" ;;
     esac

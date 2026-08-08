@@ -1225,6 +1225,10 @@ daemon_metrics() {
         [$patrol_issues[] | select(. as $p | $completed | any(. == $p))] | length
     ' 2>/dev/null || echo "0")
 
+    # ── Divergent Aborts ──
+    local divergent_aborts
+    divergent_aborts=$(echo "$period_events" | jq -s '[.[] | select(.type == "loop.divergence_detected")] | length')
+
     # ── DORA Scoring ──
     dora_grade() {
         local metric="$1" value="$2"
@@ -1291,6 +1295,7 @@ daemon_metrics() {
             --argjson patrol_findings "$patrol_findings" \
             --argjson patrol_issues_created "$patrol_issues_created" \
             --argjson patrol_auto_resolved "${patrol_auto_resolved:-0}" \
+            --argjson divergent_aborts "${divergent_aborts:-0}" \
             '{
                 period: $period,
                 dora: {
@@ -1318,6 +1323,9 @@ daemon_metrics() {
                     findings: $patrol_findings,
                     issues_created: $patrol_issues_created,
                     auto_resolved: $patrol_auto_resolved
+                },
+                divergence: {
+                    aborts: $divergent_aborts
                 }
             }'
         return 0
@@ -1371,6 +1379,13 @@ daemon_metrics() {
     echo -e "    Issues created      ${patrol_issues_created}"
     echo -e "    Auto-resolved       ${patrol_auto_resolved:-0}"
     echo ""
+
+    if [[ "${divergent_aborts:-0}" -gt 0 ]]; then
+        echo -e "${BOLD}  DIVERGENCE${RESET}"
+        echo -e "    Divergent aborts    ${divergent_aborts}"
+        echo -e "    ${DIM}Loops cut short on a repeating error with no progress${RESET}"
+        echo ""
+    fi
 
     echo -e "${PURPLE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
     echo ""

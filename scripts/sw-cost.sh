@@ -904,6 +904,17 @@ cost_dashboard() {
             echo -e "    Trim events         ${trim_count} / ${ctx_count} iterations"
             echo ""
         fi
+
+        # Divergent aborts — iterations the loop declined to spend
+        local div_count
+        div_count=$(grep -c '"type":"loop.divergence_detected"' "$events_file" 2>/dev/null || true)
+        div_count="${div_count:-0}"
+        if [[ "$div_count" -gt 0 ]]; then
+            echo -e "${BOLD}  DIVERGENT ABORTS${RESET}"
+            echo -e "    Loops cut short     ${div_count}"
+            echo -e "    ${DIM}Same error repeated with no progress — remaining iterations not spent${RESET}"
+            echo ""
+        fi
     fi
 
     echo -e "${PURPLE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"

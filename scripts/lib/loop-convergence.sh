@@ -43,7 +43,9 @@ compute_velocity_avg() {
     fi
 }
 
-check_progress() {
+# Insertion count of the last commit, loop bookkeeping files excluded.
+# Echoes a non-negative integer; never fails.
+_progress_insertions() {
     local changes
     # Exclude loop bookkeeping files — only count real code changes as progress
     changes="$(git -C "$PROJECT_ROOT" diff --stat HEAD~1 \
@@ -52,9 +54,165 @@ check_progress() {
         2>/dev/null | tail -1 || echo "")"
     local insertions
     insertions="$(echo "$changes" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)"
+    echo "${insertions:-0}"
+}
+
+check_progress() {
+    local insertions
+    insertions="$(_progress_insertions)"
     if [[ "${insertions:-0}" -lt "$MIN_PROGRESS_LINES" ]]; then
         return 1  # No meaningful progress
     fi
+    return 0
+}
+
+# ─── Divergence Detection ─────────────────────────────────────────────────────
+# The circuit breaker asks "is the agent making progress?". Divergence asks the
+# stricter question "is the agent producing the *same* error over and over with
+# near-zero code change?" — the signature of a loop that will never converge, and
+# the one case where burning the remaining iteration budget is pure waste.
+
+# 16-char lowercase hex signature of the normalized error_lines[] in
+# error-summary.json. Echoes "" (and never fails) when the artifact is absent,
+# malformed, empty, or jq is unavailable — a corrupt artifact degrades to
+# "no detection", never to a spurious abort.
+_divergence_hash() {
+    local error_json="${LOG_DIR:-}/error-summary.json"
+    [[ -f "$error_json" ]] || { echo ""; return 0; }
+    command -v jq >/dev/null 2>&1 || { echo ""; return 0; }
+
+    local lines
+    lines="$(jq -r '.error_lines[]?' "$error_json" 2>/dev/null || true)"
+    [[ -n "$lines" ]] || { echo ""; return 0; }
+
+    # Normalize away everything that legitimately varies between iterations —
+    # without this the hash is unique every time and the detector is dead code.
+    local normalized
+    normalized="$(printf '%s\n' "$lines" \
+        | sed -e 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
+              -e 's/0x[0-9a-fA-F][0-9a-fA-F]*/HEX/g' \
+              -e 's#\(/[^ ]*\)*/#PATH/#g' \
+              -e 's/[0-9][0-9]*/N/g' \
+        | tr '[:upper:]' '[:lower:]' \
+        | sort -u)"
+    [[ -n "$normalized" ]] || { echo ""; return 0; }
+
+    local digest=""
+    if command -v shasum >/dev/null 2>&1; then
+        digest="$(printf '%s\n' "$normalized" | shasum -a 256 2>/dev/null | cut -c1-16 || true)"
+    elif command -v sha256sum >/dev/null 2>&1; then
+        digest="$(printf '%s\n' "$normalized" | sha256sum 2>/dev/null | cut -c1-16 || true)"
+    else
+        digest="$(printf '%s\n' "$normalized" | cksum 2>/dev/null | tr -d ' ' | cut -c1-16 || true)"
+    fi
+    echo "${digest:-}"
+}
+
+# Append one (iteration, signature, insertions) sample and update the streak
+# counters. Never fails — a lost sample is a missed detection, not a loop error.
+record_divergence_sample() {
+    local sig
+    sig="$(_divergence_hash)"
+
+    # No error signature (tests passed, or artifact unreadable) — streak is over.
+    if [[ -z "$sig" ]]; then
+        DIVERGENCE_REPEAT_COUNT=0
+        DIVERGENCE_LAST_SIG=""
+        return 0
+    fi
+
+    local insertions
+    insertions="$(_progress_insertions)"
+
+    local tracking_file="${DIVERGENCE_TRACKING_FILE:-}"
+    if [[ -n "$tracking_file" ]]; then
+        printf '%s\t%s\t%s\n' "${ITERATION:-0}" "$sig" "${insertions:-0}" \
+            >> "$tracking_file" 2>/dev/null || true
+    fi
+
+    if [[ "$sig" == "${DIVERGENCE_LAST_SIG:-}" ]]; then
+        DIVERGENCE_REPEAT_COUNT=$(( ${DIVERGENCE_REPEAT_COUNT:-0} + 1 ))
+    else
+        DIVERGENCE_REPEAT_COUNT=1
+        DIVERGENCE_LAST_SIG="$sig"
+    fi
+    return 0
+}
+
+# Abort predicate. Returns 1 (abort) only when the signature streak has reached
+# the threshold AND every sample in that streak shows near-zero insertions.
+# Any other outcome — including any read failure — returns 0 (fail open).
+check_divergence() {
+    [[ "${DIVERGENCE_ENABLED:-true}" == "true" ]] || return 0
+
+    local threshold="${DIVERGENCE_THRESHOLD:-3}"
+    [[ "${DIVERGENCE_REPEAT_COUNT:-0}" -ge "$threshold" ]] || return 0
+
+    local tracking_file="${DIVERGENCE_TRACKING_FILE:-}"
+    [[ -n "$tracking_file" && -f "$tracking_file" ]] || return 0
+
+    # Read via process substitution, not a pipe — a subshell would discard the
+    # accumulator below.
+    local samples=0 max_insertions=0
+    local _iter _sig _ins
+    while IFS=$'\t' read -r _iter _sig _ins; do
+        [[ -n "$_sig" ]] || continue
+        samples=$(( samples + 1 ))
+        [[ "${_ins:-0}" -gt "$max_insertions" ]] && max_insertions="${_ins:-0}"
+    done < <(tail -n "$threshold" "$tracking_file" 2>/dev/null || true)
+
+    [[ "$samples" -ge "$threshold" ]] || return 0
+    [[ "$max_insertions" -le "${DIVERGENCE_PROGRESS_LINES:-2}" ]] || return 0
+
+    _write_divergence_artifact "$max_insertions"
+
+    if type emit_event >/dev/null 2>&1; then
+        emit_event "loop.divergence_detected" \
+            "iteration=${ITERATION:-0}" \
+            "signature=${DIVERGENCE_LAST_SIG:-}" \
+            "repeat_count=${DIVERGENCE_REPEAT_COUNT:-0}" \
+            "threshold=${threshold}" \
+            "lines_changed=${max_insertions}"
+    fi
+
+    error "Divergent failure: the same error repeated ${DIVERGENCE_REPEAT_COUNT} times with ≤${max_insertions} lines changed — aborting instead of burning the remaining iterations."
+    STATUS="divergent_failure"
+    return 1
+}
+
+# divergence.json — the discriminant the build stage and the summary read.
+_write_divergence_artifact() {
+    local max_insertions="${1:-0}"
+    local out="${LOG_DIR:-}/divergence.json"
+    [[ -n "${LOG_DIR:-}" ]] || return 0
+    command -v jq >/dev/null 2>&1 || return 0
+
+    local tmp="${out}.tmp.$$"
+    jq -n \
+        --arg reason "divergent_failure" \
+        --argjson iteration "${ITERATION:-0}" \
+        --arg signature "${DIVERGENCE_LAST_SIG:-}" \
+        --argjson repeat_count "${DIVERGENCE_REPEAT_COUNT:-0}" \
+        --argjson threshold "${DIVERGENCE_THRESHOLD:-3}" \
+        --argjson max_insertions "${max_insertions:-0}" \
+        --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+        --arg test_cmd "${TEST_CMD:-}" \
+        '{reason: $reason, iteration: $iteration, signature: $signature,
+          repeat_count: $repeat_count, threshold: $threshold,
+          max_insertions: $max_insertions, timestamp: $timestamp,
+          test_cmd: $test_cmd}' > "$tmp" 2>/dev/null \
+        && mv "$tmp" "$out" \
+        || rm -f "$tmp" 2>/dev/null || true
+    return 0
+}
+
+# Idempotent. Called at loop init and at every session-restart boundary — a
+# fresh session is a legitimate new attempt, not a continuation of the streak.
+_divergence_reset() {
+    DIVERGENCE_REPEAT_COUNT=0
+    DIVERGENCE_LAST_SIG=""
+    [[ -n "${DIVERGENCE_TRACKING_FILE:-}" ]] && : > "$DIVERGENCE_TRACKING_FILE" 2>/dev/null
+    [[ -n "${LOG_DIR:-}" ]] && rm -f "${LOG_DIR}/divergence.json" 2>/dev/null
     return 0
 }
 

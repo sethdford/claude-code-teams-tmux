@@ -124,6 +124,18 @@ EXTENSION_COUNT=0
 CIRCUIT_BREAKER_THRESHOLD=$(_smart_int "loop.circuit_breaker_threshold" 3)
 MIN_PROGRESS_LINES=$(_smart_int "loop.min_progress_lines" 5)
 
+# ─── Divergence Detection (config-driven) ─────────────────────────────────
+# Stricter than the circuit breaker: the same error signature repeating with
+# near-zero code change. The floor is deliberately below MIN_PROGRESS_LINES so
+# divergence is never the looser of the two conditions.
+DIVERGENCE_THRESHOLD=$(_smart_int "loop.divergence_threshold" 3)
+DIVERGENCE_PROGRESS_LINES=$(_smart_int "loop.divergence_progress_lines" 2)
+DIVERGENCE_ENABLED=true
+[[ "${SW_LOOP_DIVERGENCE:-1}" == "0" ]] && DIVERGENCE_ENABLED=false
+DIVERGENCE_TRACKING_FILE=""
+DIVERGENCE_REPEAT_COUNT=0
+DIVERGENCE_LAST_SIG=""
+
 # ─── Context Exhaustion Recovery ────────────────────────────────────────────────
 CONTEXT_EXHAUSTION_PATTERNS="context.length.exceeded|maximum context length|context_length_exceeded|prompt is too long"
 CONTEXT_RESTART_COUNT=0
@@ -203,6 +215,8 @@ show_help() {
     echo -e "  ${CYAN}--no-auto-extend${RESET}          Disable auto-extension when max iterations reached"
     echo -e "  ${CYAN}--extension-size${RESET} N         Additional iterations per extension (default: 5)"
     echo -e "  ${CYAN}--max-extensions${RESET} N         Max number of auto-extensions (default: 3)"
+    echo -e "  ${CYAN}--divergence-threshold${RESET} N   Identical-error repeats before aborting as divergent (default: 3)"
+    echo -e "  ${CYAN}--no-divergence${RESET}           Disable divergent-failure detection"
     echo ""
     echo -e "${BOLD}EXAMPLES${RESET}"
     echo -e "  ${DIM}shipwright loop \"Build user auth with JWT\"${RESET}"
@@ -312,6 +326,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-extensions=*) MAX_EXTENSIONS="${1#--max-extensions=}"; shift ;;
+        --divergence-threshold)
+            DIVERGENCE_THRESHOLD="${2:-}"
+            [[ -z "$DIVERGENCE_THRESHOLD" ]] && { error "Missing value for --divergence-threshold"; exit 1; }
+            shift 2
+            ;;
+        --divergence-threshold=*) DIVERGENCE_THRESHOLD="${1#--divergence-threshold=}"; shift ;;
+        --no-divergence) DIVERGENCE_ENABLED=false; shift ;;
         --fast-test-cmd)
             FAST_TEST_CMD="${2:-}"
             [[ -z "$FAST_TEST_CMD" ]] && { error "Missing value for --fast-test-cmd"; exit 1; }
@@ -1703,6 +1724,14 @@ show_summary() {
     case "$STATUS" in
         complete)         status_display="${GREEN}✓ Complete (LOOP_COMPLETE detected)${RESET}" ;;
         circuit_breaker)  status_display="${RED}✗ Circuit breaker tripped${RESET}" ;;
+        divergent_failure)
+            local _div_detail=""
+            if [[ -f "$LOG_DIR/divergence.json" ]] && command -v jq >/dev/null 2>&1; then
+                _div_detail="$(jq -r '" (signature \(.signature) x\(.repeat_count))"' \
+                    "$LOG_DIR/divergence.json" 2>/dev/null || true)"
+            fi
+            status_display="${RED}✗ Divergent failure — same error, no progress${_div_detail}${RESET}"
+            ;;
         max_iterations)   status_display="${YELLOW}⚠ Max iterations reached${RESET}" ;;
         budget_exhausted) status_display="${RED}✗ Budget exhausted${RESET}" ;;
         interrupted)      status_display="${YELLOW}⚠ Interrupted by user${RESET}" ;;
@@ -2181,6 +2210,8 @@ run_single_agent_loop() {
     STUCKNESS_COUNT=0
     STUCKNESS_TRACKING_FILE="$LOG_DIR/stuckness-tracking.txt"
     : > "$STUCKNESS_TRACKING_FILE" 2>/dev/null || true
+    DIVERGENCE_TRACKING_FILE="$LOG_DIR/divergence-agent-${AGENT_NUM:-1}.txt"
+    _divergence_reset
     : > "${LOG_DIR}/strategy-attempts.txt" 2>/dev/null || true
 
     show_banner
@@ -2192,6 +2223,10 @@ run_single_agent_loop() {
         [[ -n "$SAVED_ANTHROPIC_API_KEY" ]] && export ANTHROPIC_API_KEY="$SAVED_ANTHROPIC_API_KEY"
 
         # Pre-checks (before incrementing — ITERATION tracks completed count)
+        # Divergence runs first: it is the strictly stronger condition (identical
+        # signature AND near-zero insertions), so when both arm on the same
+        # iteration the more informative reason must win.
+        check_divergence || break
         check_circuit_breaker || break
         check_max_iterations || break
         check_budget_gate || {
@@ -2509,6 +2544,10 @@ ${GOAL}"
             echo -e "  ${YELLOW}⚠${RESET} Low progress (${CONSECUTIVE_FAILURES}/${CIRCUIT_BREAKER_THRESHOLD} before circuit breaker)"
         fi
 
+        # Record the error signature + insertion count for divergence detection.
+        # Must run after write_error_summary — it reads that artifact.
+        record_divergence_sample
+
         # Extract summary and update state
         local summary
         summary="$(extract_summary "$log_file")"
@@ -2602,6 +2641,7 @@ run_loop_with_restarts() {
                 CONSECUTIVE_FAILURES=0
                 EXTENSION_COUNT=0
                 STUCKNESS_COUNT=0
+                _divergence_reset
                 STATUS="running"
                 LOG_ENTRIES=""
                 TEST_PASSED=""
@@ -2668,6 +2708,7 @@ run_loop_with_restarts() {
         CONSECUTIVE_FAILURES=0
         EXTENSION_COUNT=0
         STUCKNESS_COUNT=0
+        _divergence_reset
         STATUS="running"
         LOG_ENTRIES=""
         TEST_PASSED=""

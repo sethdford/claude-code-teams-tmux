@@ -1697,6 +1697,20 @@
         "trimmed"
       ]
     },
+    "loop.divergence_detected": {
+      "required": [
+        "iteration"
+      ],
+      "optional": [
+        "agent",
+        "issue",
+        "job_id",
+        "lines_changed",
+        "repeat_count",
+        "signature",
+        "threshold"
+      ]
+    },
     "loop.iteration": {
       "required": [
         "iteration"
@@ -2258,6 +2272,10 @@
         "cost_usd",
         "model"
       ]
+    },
+    "pipeline.divergent_failure": {
+      "required": [],
+      "optional": ["issue", "stage", "signature", "repeat_count"]
     },
     "pipeline.detached": {
       "required": [],

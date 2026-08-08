@@ -903,6 +903,246 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# DIVERGENCE DETECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo "── Divergence detection ──"
+
+# Behavioral harness: source loop-convergence.sh with a stubbed
+# _progress_insertions so insertion counts are controlled rather than read from
+# a real git tree.
+_div_harness() {
+    local body="$1"
+    local dir="$TEST_TEMP_DIR/divergence-$RANDOM"
+    mkdir -p "$dir"
+    (
+        set +e
+        error() { echo "ERR: $*"; }
+        warn()  { :; }
+        info()  { :; }
+        PROJECT_ROOT="$dir"; LOG_DIR="$dir"; MIN_PROGRESS_LINES=5; TEST_CMD="npm test"
+        DIVERGENCE_ENABLED=true; DIVERGENCE_THRESHOLD=3; DIVERGENCE_PROGRESS_LINES=2
+        DIVERGENCE_TRACKING_FILE="$dir/divergence-agent-1.txt"
+        DIVERGENCE_REPEAT_COUNT=0; DIVERGENCE_LAST_SIG=""; STATUS="running"; ITERATION=0
+        FAKE_INS=0
+        source "$SCRIPT_DIR/lib/loop-convergence.sh" >/dev/null 2>&1
+        _progress_insertions() { echo "${FAKE_INS:-0}"; }
+        # Same error every time, modulo line numbers and temp paths.
+        mkerr() {
+            printf '{"error_lines":["FAIL tests/auth.js:%s Expected 3 to be 4","at /tmp/x%s/auth.js:9"]}' \
+                "${1:-1}" "${1:-1}" > "$dir/error-summary.json"
+        }
+        _divergence_reset
+        eval "$body"
+    )
+}
+
+# D1: signature is stable across iterations that differ only in numbers/paths
+_out=$(_div_harness '
+    mkerr 12; a=$(_divergence_hash)
+    mkerr 44; b=$(_divergence_hash)
+    [[ -n "$a" && "$a" == "$b" && ${#a} -eq 16 ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Divergence signature is stable modulo line numbers and paths"
+else
+    assert_fail "Divergence signature is stable modulo line numbers and paths"
+fi
+
+# D2: genuinely different errors produce different signatures
+_out=$(_div_harness '
+    printf "{\"error_lines\":[\"TypeError: undefined is not a function\"]}" > "$dir/error-summary.json"
+    a=$(_divergence_hash)
+    printf "{\"error_lines\":[\"SyntaxError: unexpected token\"]}" > "$dir/error-summary.json"
+    b=$(_divergence_hash)
+    [[ -n "$a" && -n "$b" && "$a" != "$b" ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Distinct errors produce distinct divergence signatures"
+else
+    assert_fail "Distinct errors produce distinct divergence signatures"
+fi
+
+# D3: missing error-summary.json yields an empty signature, not a failure
+_out=$(_div_harness 'rm -f "$dir/error-summary.json"; [[ -z "$(_divergence_hash)" ]] && echo OK')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Missing error-summary.json yields empty signature"
+else
+    assert_fail "Missing error-summary.json yields empty signature"
+fi
+
+# D4: malformed JSON degrades to no detection rather than aborting
+_out=$(_div_harness 'echo "not json at all" > "$dir/error-summary.json"; [[ -z "$(_divergence_hash)" ]] && echo OK')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Malformed error-summary.json yields empty signature"
+else
+    assert_fail "Malformed error-summary.json yields empty signature"
+fi
+
+# D5: threshold repeats with zero progress trips the detector
+_out=$(_div_harness '
+    for ITERATION in 1 2 3; do mkerr $ITERATION; record_divergence_sample; done
+    check_divergence; rc=$?
+    [[ $rc -eq 1 && "$STATUS" == "divergent_failure" ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Repeated signature with no progress trips divergent_failure"
+else
+    assert_fail "Repeated signature with no progress trips divergent_failure"
+fi
+
+# D6: the trip writes a well-formed divergence.json
+_out=$(_div_harness '
+    for ITERATION in 1 2 3; do mkerr $ITERATION; record_divergence_sample; done
+    check_divergence
+    jq -e ".reason == \"divergent_failure\" and .repeat_count == 3 and .threshold == 3 and (.signature | length) == 16" \
+        "$dir/divergence.json" >/dev/null 2>&1 && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Divergence trip writes a well-formed divergence.json"
+else
+    assert_fail "Divergence trip writes a well-formed divergence.json"
+fi
+
+# D7: one productive iteration inside the streak prevents the trip
+_out=$(_div_harness '
+    for ITERATION in 1 2 3 4; do
+        mkerr $ITERATION
+        if [[ $ITERATION -eq 3 ]]; then FAKE_INS=40; else FAKE_INS=0; fi
+        record_divergence_sample
+    done
+    check_divergence && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "A productive iteration inside the streak prevents the trip"
+else
+    assert_fail "A productive iteration inside the streak prevents the trip"
+fi
+
+# D8: varying errors never trip, however many iterations run
+_out=$(_div_harness '
+    printf "{\"error_lines\":[\"TypeError: undefined is not a function\"]}" > "$dir/error-summary.json"
+    ITERATION=1; record_divergence_sample
+    printf "{\"error_lines\":[\"SyntaxError: unexpected token\"]}" > "$dir/error-summary.json"
+    ITERATION=2; record_divergence_sample
+    printf "{\"error_lines\":[\"AssertionError: expected true\"]}" > "$dir/error-summary.json"
+    ITERATION=3; record_divergence_sample
+    check_divergence && [[ "$DIVERGENCE_REPEAT_COUNT" -eq 1 ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "Varying errors never trip divergence"
+else
+    assert_fail "Varying errors never trip divergence"
+fi
+
+# D9: a passing iteration (no error artifact) resets the streak
+_out=$(_div_harness '
+    for ITERATION in 1 2; do mkerr $ITERATION; record_divergence_sample; done
+    rm -f "$dir/error-summary.json"
+    ITERATION=3; record_divergence_sample
+    [[ "$DIVERGENCE_REPEAT_COUNT" -eq 0 && -z "$DIVERGENCE_LAST_SIG" ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "A passing iteration resets the divergence streak"
+else
+    assert_fail "A passing iteration resets the divergence streak"
+fi
+
+# D10: DIVERGENCE_ENABLED=false disables the check entirely
+_out=$(_div_harness '
+    for ITERATION in 1 2 3; do mkerr $ITERATION; record_divergence_sample; done
+    DIVERGENCE_ENABLED=false
+    check_divergence && [[ "$STATUS" == "running" ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "--no-divergence disables detection"
+else
+    assert_fail "--no-divergence disables detection"
+fi
+
+# D11: _divergence_reset clears counters, tracking file, and stale artifact
+_out=$(_div_harness '
+    for ITERATION in 1 2 3; do mkerr $ITERATION; record_divergence_sample; done
+    check_divergence
+    _divergence_reset
+    [[ "$DIVERGENCE_REPEAT_COUNT" -eq 0 && -z "$DIVERGENCE_LAST_SIG" \
+       && ! -s "$DIVERGENCE_TRACKING_FILE" && ! -f "$dir/divergence.json" ]] && echo OK
+')
+if [[ "$_out" == *OK* ]]; then
+    assert_pass "_divergence_reset clears counters, tracking file, and artifact"
+else
+    assert_fail "_divergence_reset clears counters, tracking file, and artifact"
+fi
+
+# D12: check_progress still delegates to _progress_insertions with identical semantics
+_out=$(_div_harness '
+    FAKE_INS=4; check_progress && echo BAD
+    FAKE_INS=5; check_progress && echo OK
+')
+if [[ "$_out" == *OK* && "$_out" != *BAD* ]]; then
+    assert_pass "check_progress semantics unchanged after _progress_insertions extraction"
+else
+    assert_fail "check_progress semantics unchanged after _progress_insertions extraction"
+fi
+
+# ── Wiring assertions ──
+
+# D13: divergence is checked before the circuit breaker
+if awk '/check_divergence \|\| break/{d=NR} /check_circuit_breaker \|\| break/{c=NR} END{exit !(d>0 && c>0 && d<c)}' \
+        "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "check_divergence runs before check_circuit_breaker"
+else
+    assert_fail "check_divergence runs before check_circuit_breaker"
+fi
+
+# D14: samples are recorded each iteration
+if grep -q 'record_divergence_sample' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "record_divergence_sample wired into the iteration loop"
+else
+    assert_fail "record_divergence_sample wired into the iteration loop"
+fi
+
+# D15: the summary renders the new status rather than falling through to raw text
+if grep -q 'divergent_failure)' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "show_summary renders divergent_failure"
+else
+    assert_fail "show_summary renders divergent_failure"
+fi
+
+# D16: CLI surface
+if grep -q -- '--divergence-threshold' "$SCRIPT_DIR/sw-loop.sh" && \
+   grep -q -- '--no-divergence' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Divergence CLI flags are parsed"
+else
+    assert_fail "Divergence CLI flags are parsed"
+fi
+
+# D17: the event is registered in the schema
+if jq -e '.event_types["loop.divergence_detected"].required | index("iteration")' \
+        "$SCRIPT_DIR/../config/event-schema.json" >/dev/null 2>&1; then
+    assert_pass "loop.divergence_detected registered in event-schema.json"
+else
+    assert_fail "loop.divergence_detected registered in event-schema.json"
+fi
+
+# D18: the build stage classifies divergence ahead of the context-exhaustion sniff
+if awk '/failure-reason.txt/{if (!seen) {seen=1; if ($0 ~ /divergent_failure/) ok=1}} END{exit !ok}' \
+        "$SCRIPT_DIR/lib/pipeline-stages-build.sh"; then
+    assert_pass "Build stage writes divergent_failure before the context-exhaustion check"
+else
+    assert_fail "Build stage writes divergent_failure before the context-exhaustion check"
+fi
+
+# D19: the daemon honors the explicit reason and gives divergence its own budget
+if grep -q 'failure-reason.txt' "$SCRIPT_DIR/lib/daemon-failure.sh" && \
+   grep -q 'MAX_RETRIES_DIVERGENT' "$SCRIPT_DIR/lib/daemon-failure.sh"; then
+    assert_pass "Daemon classifies divergent_failure with its own retry budget"
+else
+    assert_fail "Daemon classifies divergent_failure with its own retry budget"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

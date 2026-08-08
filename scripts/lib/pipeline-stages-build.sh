@@ -455,9 +455,35 @@ ${_skill_prompts}
 
     local _token_log="${ARTIFACTS_DIR}/.claude-tokens-build.log"
     export PIPELINE_JOB_ID="${PIPELINE_NAME:-pipeline-$$}"
+
+    # Clear the previous attempt's verdict — a stale reason would be read as this
+    # run's, and the daemon now trusts this file over its own heuristics.
+    rm -f "$ARTIFACTS_DIR/failure-reason.txt" "$ARTIFACTS_DIR/divergence.json" \
+          "${PWD}/.claude/loop-logs/divergence.json" 2>/dev/null || true
+
     sw loop "${loop_args[@]}" < /dev/null 2>"$_token_log" || {
         local _loop_exit=$?
         parse_claude_tokens "$_token_log"
+
+        mkdir -p "$ARTIFACTS_DIR" 2>/dev/null || true
+
+        # Divergence is checked FIRST and short-circuits the context-exhaustion
+        # sniff below — that heuristic fires on any failing-test run, so it would
+        # otherwise misclassify every divergent abort and retry it with a boosted
+        # restart budget: strictly more waste than the run we just cut short.
+        local _divergence_file="${PWD}/.claude/loop-logs/divergence.json"
+        if [[ -f "$_divergence_file" ]]; then
+            local _div_sig _div_repeats
+            _div_sig=$(jq -r '.signature // ""' "$_divergence_file" 2>/dev/null || true)
+            _div_repeats=$(jq -r '.repeat_count // 0' "$_divergence_file" 2>/dev/null || true)
+            warn "Build loop diverged — same error repeated ${_div_repeats:-?} times with no progress"
+            emit_event "pipeline.divergent_failure" "issue=${ISSUE_NUMBER:-0}" "stage=build" \
+                "signature=${_div_sig:-}" "repeat_count=${_div_repeats:-0}"
+            cp "$_divergence_file" "$ARTIFACTS_DIR/divergence.json" 2>/dev/null || true
+            echo "divergent_failure" > "$ARTIFACTS_DIR/failure-reason.txt" 2>/dev/null || true
+            error "Build loop failed"
+            return 1
+        fi
 
         # Detect context exhaustion from progress file
         local _progress_file="${PWD}/.claude/loop-logs/progress.md"

@@ -326,7 +326,9 @@ Tune the build loop's resilience and restart behavior:
     "max_extensions": 3,
     "context_restart_limit": 3,
     "hard_restart_cap": 5,
-    "max_restarts": 3
+    "max_restarts": 3,
+    "divergence_threshold": 3,
+    "divergence_progress_lines": 2
   }
 }
 ```
@@ -340,6 +342,45 @@ Tune the build loop's resilience and restart behavior:
 | `context_restart_limit`     | `3`     | Max restarts due to context exhaustion            |
 | `hard_restart_cap`          | `5`     | Absolute maximum restarts regardless of cause     |
 | `max_restarts`              | `3`     | Default restart limit for daemon-driven loops     |
+| `divergence_threshold`      | `3`     | Identical error signatures before aborting as divergent |
+| `divergence_progress_lines` | `2`     | Insertion ceiling that still counts as "no progress"    |
+
+### Divergent Failure Detection
+
+The circuit breaker asks *"is the agent making progress?"*. Divergence asks the
+stricter question: *"is the agent producing the **same** error over and over with
+near-zero code change?"* — the one case where spending the rest of the iteration
+budget is guaranteed waste.
+
+Each iteration, the loop hashes the normalized `error_lines[]` from
+`error-summary.json` (numbers, paths, and hex addresses are normalized away, so a
+signature is stable across iterations that differ only in line numbers) and pairs
+it with the commit's insertion count. When the same signature repeats
+`divergence_threshold` times **and** every sample in that streak shows
+≤ `divergence_progress_lines` insertions, the loop aborts with
+`STATUS="divergent_failure"`, writes `divergence.json`, and emits
+`loop.divergence_detected`.
+
+The predicate is deliberately conservative — a single productive iteration inside
+a repeated-signature streak prevents the trip, and a passing iteration (no error
+artifact) clears the streak entirely. A missing, malformed, or unreadable
+artifact degrades to *no detection*, never to a spurious abort.
+
+`check_divergence` runs **before** `check_circuit_breaker`: it is the strictly
+stronger condition, so when both arm on the same iteration the more informative
+reason wins. Runs with varying errors reach the circuit breaker on exactly the
+iteration they do today.
+
+`divergent_failure` is classified by `pipeline-stages-build.sh` ahead of the
+context-exhaustion sniff — that heuristic fires on any failing-test run, so left
+alone it would misclassify every divergent abort and retry it with a *boosted*
+restart budget. Its retry budget is `MAX_RETRIES_DIVERGENT` (default 1).
+
+| Control | Default | Effect |
+| ------- | ------- | ------ |
+| `--divergence-threshold N` / `SW_LOOP_DIVERGENCE_THRESHOLD` | `3` | Repeats before aborting |
+| `--no-divergence` / `SW_LOOP_DIVERGENCE=0` | enabled | Disable detection entirely |
+| `SW_LOOP_DIVERGENCE_PROGRESS_LINES` | `2` | Insertion ceiling for "no progress" |
 
 ## Constitutional AI
 
