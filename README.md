@@ -590,3 +590,5 @@ npm test    # 125 shell suites + 16 dashboard test files (141 total), E2E system
 ## License
 
 MIT — Seth Ford, 2026.
+
+<!-- e2e-pipeline-check: this comment is written by the automated end-to-end pipeline test (issue #1679) to prove an issue can travel intake → build → test → PR and land a real change. Safe to leave in place; it renders as nothing. -->

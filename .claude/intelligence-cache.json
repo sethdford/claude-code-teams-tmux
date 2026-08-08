@@ -1680,33 +1680,33 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 95,
-            "summary": "6 recent test failures with root causes and fixes directly applicable to build stage. Covers stale pipeline locks, artifact writing, cost dashboard test issues, and jq parse errors—all blocking current test suite."
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 88,
-            "summary": "Two past successful builds (bug fix in 3 iterations, feature in 3 iterations). Shows file patterns changed, test strategy (npm test), iteration counts, and time/cost baseline for similar complexity work."
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 72,
-            "summary": "4 KB entries on test failures: mktemp directory issues, sw-cleanup.sh dry-run output, regression detection JSON formatting. Captures recurrent test infrastructure gotchas from previous builds."
+            "relevance": 92,
+            "summary": "Contains 2 recent successful build patterns with similar complexity (60-65) showing loop iterations, file changes, test strategies (npm test), and commit counts—directly applicable for understanding successful build structure and approach"
           },
           {
             "file": "metrics.json",
-            "relevance": 65,
-            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459. Establishes expected timeline for current build stage to detect stalls or anomalies."
+            "relevance": 82,
+            "summary": "Provides build duration baseline (7095s) and test duration (1459s), recently updated (2026-07-31)—essential for setting expectations and detecting abnormal performance during iterations"
           },
           {
-            "file": "patterns.json",
-            "relevance": 55,
-            "summary": "Project conventions: Node.js, vitest, commonjs imports, src/ source dir. Provides structural context for build/test execution patterns."
+            "file": "failures.json",
+            "relevance": 72,
+            "summary": "6 recent failure patterns (last seen 2026-08-08) mostly in test stage, showing artifact writing issues, lock cleanup, and fixture seeding problems—helps avoid known pitfalls during build/test execution"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 62,
+            "summary": "5+ KB entries for test failures (mktemp issues, cleanup, output format), mostly test-focused but provides patterns for test setup/teardown and fixture handling applicable to build stage"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 56,
+            "summary": "Daemon timeout bug fix showing semaphore pattern and backoff gotchas (2026-05-09)—relevant for understanding resilience patterns, though somewhat older and daemon-specific"
           }
         ]
       },
-      "timestamp": 1786156913,
+      "timestamp": 1786158980,
       "ttl": 1800
     },
     "52027af25e0a5c475f572ae6983a0391": {
@@ -1756,6 +1756,176 @@
         }
       ],
       "timestamp": 1786157931,
+      "ttl": 1800
+    },
+    "9ffec5a1b4309a58b33c35c65fa98a84": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 92,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Unclear specification of what comment should be added to README",
+          "Ambiguity about whether E2E test has already executed",
+          "Potential merge conflicts if README was recently modified",
+          "Missing context about the test's purpose or success criteria"
+        ],
+        "implementation_hints": [
+          "Review existing README comment patterns for consistent formatting",
+          "Check E2E test framework configuration for expected file changes",
+          "Verify comment placement, indentation, and content against repo standards",
+          "Confirm whether this issue is a post-test verification or a pre-test template"
+        ]
+      },
+      "timestamp": 1786158824,
+      "ttl": 3600
+    },
+    "926436a47c1c8da835e7639992ddd673": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786158826,
+      "ttl": 1800
+    },
+    "93e856832ee224aa66e01780009a0047": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1786158838,
+      "ttl": 1800
+    },
+    "94a5f8943699a649a6759c70dbcca0e8": {
+      "result": {
+        "estimated_cost_usd": 0.042,
+        "estimated_iterations": 1,
+        "estimated_tokens": 24000,
+        "likely_failure_stage": "none",
+        "confidence": 87
+      },
+      "timestamp": 1786158853,
+      "ttl": 3600
+    },
+    "f9c9e8b2bd49e68005879dc608624768": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "documentation",
+          "infrastructure",
+          "automation"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "E2E tests for automated document modification are moderately complex—they require environment setup, idempotency guarantees, and cleanup logic, but the scope is narrow (README comment addition only)."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "testing-strategy"
+          ],
+          "design": [
+            "testing-strategy"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "two-stage-review",
+            "validation-thoroughness"
+          ],
+          "compound_quality": [
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about test scope—is testing comment addition to README the right integration point, or should the test validate higher-level automation workflows (docs-keeper feature end-to-end)?",
+          "testing-strategy": "E2E tests for automated README modification need clear isolation strategies (temp branches vs. live README), idempotency guarantees for re-running, and specific assertions that detect real failures like encoding issues or malformed content.",
+          "two-stage-review": "First pass validates test structure and assertions are sound; second pass adversarially challenges whether the test catches realistic failure modes (concurrent modification, git state corruption, partial writes).",
+          "validation-thoroughness": "Go beyond smoke-test 'did the comment appear'—validate that comment is properly formatted, README structure is preserved, git history is clean, and the test can run repeatedly without side effects.",
+          "adversarial-quality": "Find ways this test could give false positives (file modified but test passes) or false negatives (real regression missed)—critical for infrastructure tests that validate automation correctness.",
+          "pr-quality": "Document what this E2E test validates and why it matters for Shipwright's delivery automation, so reviewers understand the docs-keeper feature integration being tested.",
+          "deploy-safety": "Verify the test passes reliably in deployment environment before marking feature ready—E2E tests often have hidden dependencies on git config, file permissions, or system timing."
+        },
+        "generated_skills": [
+          {
+            "name": "e2e-test-idempotency-isolation",
+            "reason": "No existing skill specifically addresses E2E test design for automated document modification, which requires idempotency guarantees, unique test identifiers, and proper cleanup to prevent polluting shared resources like README.",
+            "content": "## E2E Test Idempotency & Isolation\n\nAutomated E2E tests that modify shared resources (documentation, configuration, version files) must be designed for safe, repeatable execution across multiple runs and parallel execution. Poor isolation creates flaky tests, documentation pollution, and masked failures.\n\n### Design Principles\n\n**1. Idempotent Operations**\n- Test must succeed identically whether run once or 100 times\n- Use unique markers/IDs for each test run to distinguish test-added content from production content\n- Example: add comments with `<!-- TEST_RUN_<UUID> -->` markers, validate by UUID on re-run\n- Verify: `git diff` is empty after test cleanup; re-running test produces identical changes\n\n**2. Cleanup Strategy**\n- Define explicit teardown that removes all test artifacts by ID/marker\n- Use git branches or temp files when possible instead of modifying shared files\n- If modifying shared files (e.g., README), use `git stash` or `git restore` for cleanup, not manual deletion\n- Validate: `git status --porcelain` shows no untracked or modified files after test completes\n- **Critical**: Cleanup must run even if test assertions fail (use finally blocks or trap handlers)\n\n**3. Isolation from Concurrent Tests**\n- Assign each test run a unique identifier (UUID, timestamp, process ID)\n- Use test-ID in comments, branch names, and artifact paths\n- Don't assume tests run serially or in a specific order\n- Validate: tests pass identically when run in parallel and in random order\n\n**4. Detecting Real Failures**\n- Assert on specific content: exact string match, regex pattern, or structure validation (YAML/JSON well-formed)\n- Catch subtle corruption: wrong line endings, encoding issues, comment formatting broken\n- Test both happy path ('comment added correctly') and sad path ('malformed content rejected')\n- Validate: deliberately introduce a corruption (bad encoding, malformed format) and confirm test fails\n\n**5. Git State Safety**\n- Document assumptions: assumes clean working tree, specific branch, no uncommitted changes\n- Validate pre-conditions: fail early with clear message if repo is in unexpected state\n- Handle edge cases: concurrent git operations, merge conflicts in README, force pushes\n- Example: check `git status --porcelain` is empty before test starts\n\n### Checklist\n\n- [ ] Test generates and uses a unique run ID (UUID or `${test_id}_${timestamp}`)\n- [ ] Test markers appear in comments/diffs (e.g., `<!-- TEST_RUN_<ID> -->`)\n- [ ] Teardown explicitly removes artifacts by ID, runs even on failure\n- [ ] Test passes identically on 3+ consecutive runs\n- [ ] Test validates specific content (exact string or regex), not just 'file modified'\n- [ ] `git status --porcelain` is empty after test cleanup\n- [ ] Test can run in parallel with other instances without collision\n- [ ] Test failure produces actionable error (not timeout, not flaky race)\n- [ ] Pre-conditions documented and validated (git state, file permissions, etc.)\n- [ ] Documentation explains what the test validates and integration point in pipeline"
+          }
+        ],
+        "review_focus": [
+          "Test isolation: does it use unique identifiers (UUID, test-run markers) to support parallel/repeated execution without collision?",
+          "Cleanup verification: after test runs, is `git status --porcelain` empty? Does cleanup execute even on assertion failure?",
+          "Assertion specificity: does the test check for exact comment content, correct line ending, proper indentation—not just 'file was modified'?",
+          "False positive detection: deliberately introduce a corruption (wrong encoding, malformed format) and confirm test catches it",
+          "Pre-condition validation: does test fail early with clear error if git working tree is dirty or in unexpected state?"
+        ],
+        "risk_areas": [
+          "README is a shared resource—if test cleanup fails, documentation pollution will break future test runs and confuse git history",
+          "E2E tests are inherently flaky—git operations, file system latency, concurrent writes, and timing sensitivity cause intermittent failures",
+          "Automated test generation (based on branch name suggesting this is synthetic) suggests validation of automation itself—ensure test exercises real docs-keeper feature, not just a technicality",
+          "Git state assumptions—if README has uncommitted changes or uncommitted comment markers before test runs, test may fail, corrupt history, or mask real regressions"
+        ]
+      },
+      "timestamp": 1786158925,
+      "ttl": 3600
+    },
+    "72ecd9db5078528baccfb77263c45df5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158952,
+      "ttl": 1800
+    },
+    "61c5f4a9ce6598c2f1fc048e0a7ce958": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 60,
+            "summary": "Project conventions: node type, vitest test runner, commonjs imports — essential context for building E2E test implementation"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 50,
+            "summary": "Historical baselines: build_duration_s=7095, test_duration_s=1459 — useful for setting expectations and detecting anomalies in current build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 40,
+            "summary": "Pipeline E2E test patterns: artifact generation issues, test setup pitfalls, stale pipeline locks — relevant failure modes to avoid"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 35,
+            "summary": "Similar complexity patterns (complexity 60-65): 3 iterations, standard template, npm test strategy — applicable success model for this build"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 25,
+            "summary": "Test infrastructure patterns: mktemp failures, cleanup output format, schema validation — general knowledge applicable to test reliability"
+          }
+        ]
+      },
+      "timestamp": 1786158960,
       "ttl": 1800
     }
   }
