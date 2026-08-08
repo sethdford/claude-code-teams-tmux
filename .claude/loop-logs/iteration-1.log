@@ -1,14 +1,1 @@
-**Iteration 1 complete.**
-
-The feature itself landed in `2f866415` (previous session). This iteration found and fixed a real gap in it, then verified the whole thing.
-
-**What was wrong:** `write_error_summary()` in `scripts/sw-loop.sh:1226` has two writers — jq when present, a heredoc when not. The heredoc branch emitted `error_count` from the real count but `error_lines: []` and `error_categories: []` unconditionally. A degraded host would tell the next iteration "4 errors" and then show it none — worse than silence, since the prompt reads as precise. `truncated_fallback` was hardcoded `false`, `test_cmd` was the literal string `"test"`, and `timestamp` was absent, so a consumer had to know which branch wrote the file to know which fields to trust.
-
-**Fix:** new `fc_json_array()` in `scripts/lib/failure-class.sh` escapes a newline-separated list into a JSON array without jq (backslash/quote escaped, control chars dropped since build output carries ANSI colour, no trailing comma). If it's somehow unavailable, `error_count` is zeroed rather than left contradicting an empty list. Both branches now emit the same key set with the same meanings.
-
-**Verified:**
-- `sw-lib-failure-class-test.sh` — 60/60 pass (8 new `fc_json_array` cases, including "does the output survive a real JSON parser")
-- `sw-loop-test.sh` — 109/109 pass (5 new no-jq path cases)
-- Direct reproduction against a PATH with no `jq`: valid JSON, `failure_class: "typecheck"`, error line preserved intact.
-
-Committed as `eb6c34e8`. Not declaring LOOP_COMPLETE yet — I want a clean `npm test` across all suites before calling the goal done, which is the next iteration's work.
+You've hit your session limit · resets 4:40am (UTC)
