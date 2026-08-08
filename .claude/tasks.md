@@ -4,27 +4,27 @@
 Pipeline: standard | Branch: feat/adaptive-build-loop-iteration-budget-fro-1502
 
 ## Checklist
-- [ ] Task 1: Create `scripts/lib/adaptive-iterations.sh` — load guard, `VERSION=3.3.0`, tunables
-- [ ] Task 2: Implement `adaptive_iterations_cohort` (bash 3.2 safe, always returns a key)
-- [ ] Task 3: Implement `_iter_samples_for_cohort` with `fromjson? // empty` malformed-line tolerance
-- [ ] Task 4: Implement `_iter_samples_global` (job_id group-by over `loop.iteration_complete`)
-- [ ] Task 5: Implement `_iter_percentile` in awk (no `sort` pipeline)
-- [ ] Task 6: Implement `adaptive_iterations_suggest` — 3-tier fallback + asymmetric clamping
-- [ ] Task 7: Implement `adaptive_iterations_record_outcome` + `adaptive_iterations_explain`
-- [ ] Task 8: Wire into `sw-loop.sh` — source, `--adaptive-iterations` flag, `apply_adaptive_budget()` hook, outcome emit, help text
-- [ ] Task 9: Write `scripts/sw-adaptive-iterations-test.sh` (18 unit tests, table below)
-- [ ] Task 10: Add flag-exists + default-off assertions to `sw-loop-test.sh`
-- [ ] Task 11: Regenerate `config/event-schema.json` via `sw-event-schema-sync.sh --write`
-- [ ] Task 12: Document in `.claude/CLAUDE.md` (config table + cold-start caveat)
-- [ ] Task 13: Run new suite + `sw-loop-test.sh` + full `npm test`
-- [ ] Task 14: `shellcheck` clean; `shipwright version check` passes
-- [ ] `adaptive_iterations_suggest` returns a history-derived budget for a well-sampled cohort and the unmodified static default when history is absent, empty, malformed, or under-sampled — **AC #1**
-- [ ] `shipwright loop --adaptive-iterations` enables it; `loop.adaptive_iterations` in `daemon-config.json` enables it; **default is off** and `git diff` shows no behavior change on any existing path when unset — **AC #2**
-- [ ] All 18 unit tests pass, covering no-history fallback, sufficient-history adjustment, and malformed/missing file degradation — **AC #3**
-- [ ] `loop.budget_selected` (cohort, budget, default, source tier, sample count) and `loop.budget_outcome` (cohort, iterations, converged, budget) appear in `events.jsonl` and are registered in `config/event-schema.json` — **AC #4**
-- [ ] `--max-iterations N` given explicitly still wins — `MAX_ITERATIONS_EXPLICIT` honored
-- [ ] `npm test` green (all auto-discovered suites); `shellcheck` clean; bash 3.2 constructs only
+- [ ] **T1** — Compute `ADAPTIVE_COHORT` unconditionally in `apply_adaptive_budget()`; keep budget application behind the opt-in guard
+- [ ] **T2** — Add `cohort=` to the `loop.iteration_complete` emission *(depends on T1)*
+- [ ] **T3** — Rewrite `_iter_samples_for_cohort()`: single `jq -R --arg` pass, `fromjson?`, `tail` bounds
+- [ ] **T4** — Rewrite `_iter_samples_global()`: same single-pass shape + `fromjson?` guard + scan bound
+- [ ] **T5** — Add `ITERATIONS_SCAN_LINES`; wire `ITERATIONS_LOOKBACK` *(depends on T3, T4)*
+- [ ] **T6** — Replace hardcoded 5/3 with named constants; delete unused threshold constants and `SC2034` disables
+- [ ] **T7** — Add `ADAPTIVE_TIER` / `ADAPTIVE_SAMPLES` globals to `adaptive_iterations_suggest()` *(depends on T6)*
+- [ ] **T8** — Extend `loop.budget_selected` emission with `tier` + `sample_count` *(depends on T7)*
+- [ ] **T9** — Update `config/event-schema.json`; run `sw-event-schema-sync.sh` to confirm zero drift *(depends on T2, T8)*
+- [ ] **T10** — Add cohort round-trip test (emit → read back, proving G1 fixed) *(depends on T2)*
+- [ ] **T11** — Add adversarial-label test: labels with `"`, `\`, `$`, backtick *(depends on T3)*
+- [ ] **T12** — Add lookback-bound test: 10k-line events file, assert bounded samples + runtime < 5s *(depends on T5)*
+- [ ] **T13** — Register test suite in `package.json` `test:legacy-chain`
+- [ ] **T14** — Update `.claude/CLAUDE.md` (Loop Configuration table + `AUTO:test-suites`)
+- [ ] **T15** — Run `shellcheck` on both changed scripts; run `sw-adaptive-iterations-test.sh` + `sw-loop-test.sh`
+- [ ] `loop.iteration_complete` carries a `cohort` field; a fresh loop run's events are consumable by `_iter_samples_for_cohort` (**G1 closed, proven by T10**)
+- [ ] No jq program is built by string interpolation anywhere in `adaptive-iterations.sh`; all values pass via `--arg` (**G2 closed**)
+- [ ] `_iter_samples_for_cohort` and `_iter_samples_global` each spawn exactly one `jq`; a 10k-line events file resolves in < 5s (**G3 closed**)
+- [ ] `scripts/sw-adaptive-iterations-test.sh` runs in `npm test` via `test:legacy-chain` (**G4 closed**)
+- [ ] Test suite passes with **0 failures** and ≥ 38 assertions, including cohort round-trip, adversarial-label, and lookback-bound cases
 
 ## Notes
-- Generated from pipeline plan at 2026-08-07T18:39:45Z
+- Generated from pipeline plan at 2026-08-08T02:38:08Z
 - Pipeline will update status as tasks complete
