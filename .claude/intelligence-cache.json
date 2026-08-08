@@ -35,12 +35,12 @@
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.88,
+        "reasoning": "Refactoring task requiring code extraction, reorganization, and validation—core builder skills with testing and quality assurance to ensure the split maintains functionality.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1786156940,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,330 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "f7f6290fd061ff0f7b72534b7c5334c8": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 85,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Function dependency resolution in bash—risk of circular dependencies or missing sourcing when lib/db-query.sh is source'd",
+          "Extraction errors could break database operations if query/schema functions are incomplete",
+          "Function signatures must remain compatible with existing call sites across the codebase",
+          "Documentation update (AUTO:core-scripts table) could be overlooked during implementation",
+          "Test coverage verification—must confirm all sw-db-test.sh tests pass without modification"
+        ],
+        "implementation_hints": [
+          "Study prior extraction patterns from #1024 and #1089 to match established conventions",
+          "Audit sw-db.sh to identify all query-building and schema-migration functions as candidates for extraction",
+          "Map function call dependencies and sourcing order before moving code to prevent breakage",
+          "Ensure lib/db-query.sh sources any helper functions, constants, or global state it depends on",
+          "Run full test suite including sw-db-test.sh to verify no regression in database operations",
+          "Update AUTO:core-scripts documentation table with lib/db-query.sh entry including extracted line count"
+        ]
+      },
+      "timestamp": 1786156202,
+      "ttl": 3600
+    },
+    "22255c2f00b9f1acda21a97c97610ec5": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1786156215,
+      "ttl": 1800
+    },
+    "14b36460df5251225eba4a57260de64c": {
+      "result": {
+        "estimated_cost_usd": 0.28,
+        "estimated_iterations": 2,
+        "estimated_tokens": 16500,
+        "likely_failure_stage": "test",
+        "confidence": 85,
+        "breakdown": {
+          "intake": {
+            "tokens": 800,
+            "cost_usd": 0.01,
+            "effort": "low"
+          },
+          "plan": {
+            "tokens": 1200,
+            "cost_usd": 0.01,
+            "effort": "low"
+          },
+          "build": {
+            "tokens": 5000,
+            "cost_usd": 0.08,
+            "effort": "high"
+          },
+          "test": {
+            "tokens": 2500,
+            "cost_usd": 0.05,
+            "effort": "high"
+          },
+          "review": {
+            "tokens": 4000,
+            "cost_usd": 0.10,
+            "effort": "high"
+          },
+          "pr": {
+            "tokens": 2000,
+            "cost_usd": 0.03,
+            "effort": "low"
+          }
+        },
+        "risk_factors": {
+          "bash_dependency_resolution": "high",
+          "function_signature_compatibility": "high",
+          "test_regression": "medium",
+          "documentation_sync": "low"
+        },
+        "notes": "Test stage most likely to fail due to sourcing order or missing helper function dependencies. Recommend interactive verification during build loop rather than relying on auto-recovery."
+      },
+      "timestamp": 1786156231,
+      "ttl": 3600
+    },
+    "680dfe2f6018432bae4ed694395d5efc": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Contains 6 documented failures from actual pipeline runs in this repo, including test artifact writing issues and stale lock problems that directly impact refactoring/splitting work"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 82,
+            "summary": "Documents specific shell script failure patterns (mktemp directory issues, test setup problems, cleanup operations) critical for avoiding regressions during bash script refactoring"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 68,
+            "summary": "Shows successful approach patterns for refactoring/feature work: iteration counts (2-4 iterations), file change patterns, test strategies, and cost expectations for standard template pipelines"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Captures project metadata and conventions (node/javascript, vitest test runner, commonjs imports) useful for understanding testing and integration points during modularization"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 48,
+            "summary": "Provides baseline performance metrics (7095s build duration, 1459s test duration) for benchmarking the refactoring work and detecting performance regressions"
+          }
+        ]
+      },
+      "timestamp": 1786156388,
+      "ttl": 1800
+    },
+    "4cd23b87fac9119a37ffea344677f676": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains two directly relevant pipeline failures: (1) 'plan.md/review.md artifacts aren't written to .claude/pipeline-artifacts/' causing E2E test cascades, and (2) 'Pipeline stages (plan, review, cleanup) fail to write expected artifacts' — both directly address plan validation failures and artifact generation"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Documents successful refactoring pattern (3 iterations, standard template, npm test strategy, shell script changes) that demonstrates proven approach to multi-file code changes similar to splitting sw-db.sh"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 28,
+            "summary": "Contains test setup failure patterns (mktemp directory issues, missing fixtures) that could contribute to plan validation test failures if plan-stage tests encounter similar setup problems"
+          }
+        ]
+      },
+      "timestamp": 1786156683,
+      "ttl": 1800
+    },
+    "e236643c11f1c32fb3782bf7bb8060a9": {
+      "result": {
+        "results": [
+          {
+            "file": "issues.json",
+            "relevance": 92,
+            "summary": "Shows successful pattern of extracting daemon functionality into lib/daemon-dispatch.sh (2026-05-09). Directly analogous to splitting sw-db.sh → lib/db-query.sh; demonstrates file splitting conventions and gotchas to check (semaphore patterns)."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 78,
+            "summary": "Documents project conventions (source_dir: src/, test_pattern, import style: commonjs). Essential for designing API contracts and naming consistency when extracting the query layer."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 62,
+            "summary": "Shows iteration counts (3-4 iterations typical), duration (~45-150s), and file change patterns for similar complexity refactors. Helps estimate design stage scope and test strategy."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 48,
+            "summary": "Documents common pitfalls in pipeline refactoring: artifact writing failures, cascading E2E test breakage, stale locks. Relevant for anticipating design-phase edge cases when splitting behavior."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 38,
+            "summary": "Provides baseline build (7095s) and test (1459s) durations. Useful reference point for validating that new lib/db-query.sh doesn't regress performance post-split."
+          }
+        ]
+      },
+      "timestamp": 1786156720,
+      "ttl": 1800
+    },
+    "08354f90530b2b8d4296986d408f7e2e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first)",
+            "relevance": 72,
+            "summary": "Contains detailed test failure patterns and root causes (stale locks, missing artifacts, cascading failures) that exemplify anti-patterns to avoid in refactoring — shows what breaks when abstractions aren't properly coordinated"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 58,
+            "summary": "KB entries on common bash script failures (mktemp directory issues, output formatting errors, schema mismatches) provide concrete anti-patterns relevant to bash refactoring work like db.sh extraction"
+          },
+          {
+            "file": "success-patterns.json (first, detailed)",
+            "relevance": 45,
+            "summary": "Shows successful refactoring/feature approaches (3 iterations, specific file patterns, test strategy) — by inversion, indicates what design choices (overly complex iteration loops, scattered artifacts, weak test coverage) tend to fail"
+          }
+        ]
+      },
+      "timestamp": 1786156740,
+      "ttl": 1800
+    },
+    "29aef9a35e939a86a689d98624f4e62d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (third entry, lines starting with '\"id\":\"b0f17829\"')",
+            "relevance": 40,
+            "summary": "Contains shell script patterns with file_patterns like ['test.sh']. Demonstrates successful refactoring/fix approach with npm test strategy and standard template, directly applicable to bash script modularization."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 35,
+            "summary": "Multiple entries about shell script test setup failures (mktemp issues, directory creation). Directly relevant for anticipating bash script test challenges during sw-db.sh refactoring."
+          },
+          {
+            "file": "success-patterns.json (first entry)",
+            "relevance": 25,
+            "summary": "Shows 'Fix bug' and 'Add authentication feature' patterns with 3 iterations, standard template, and npm test strategy. Provides methodology for similar-complexity refactoring work with proven approaches."
+          },
+          {
+            "file": "failures.json (first entry)",
+            "relevance": 20,
+            "summary": "Contains test failures related to artifacts, loop behavior, and pipeline state. Relevant for understanding testing challenges and artifact handling during the build stage."
+          },
+          {
+            "file": "metrics.json (first entry)",
+            "relevance": 15,
+            "summary": "Provides baseline metrics: build_duration_s (7095) and test_duration_s (1459). Useful for estimating build/test timeline and detecting performance regressions post-refactoring."
+          }
+        ]
+      },
+      "timestamp": 1786156913,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 100,
+            "summary": "Contains 6 test failure patterns with root causes and fixes; directly relevant for avoiding known test/build issues (artifact writing, pipeline locks, cost dashboard timing, etc.)"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Two success patterns showing bug fix and feature delivery with iteration counts (3), test strategies (npm test), file patterns, cost/duration, and commit counts; templates build execution expectations"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 90,
+            "summary": "Baseline build_duration_s (7095) and test_duration_s (1459) provide performance targets and expectations for current build"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 75,
+            "summary": "Five failure patterns with fix strategies (mktemp directory issues, cleanup output format, regression detection JSON); common pitfalls that may surface during build execution"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure (src/, *.test.js pattern, commonjs imports, vitest runner) needed for build configuration and test execution strategy"
+          }
+        ]
+      },
+      "timestamp": 1786158758,
+      "ttl": 1800
+    },
+    "6ad6c6a63eaf258a7edf5287cce0948c": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786157350,
+      "ttl": 1800
+    },
+    "da8bba493556ac178752433bad85a826": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157585,
+      "ttl": 1800
+    },
+    "efaf364fa7588f122f7f6b8f7e70b8ae": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786158306,
+      "ttl": 1800
+    },
+    "4fb40aefaa7505cfdd1360cb59dbea23": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158540,
+      "ttl": 1800
+    },
+    "d5dac84e75fea9312f684b37ad302bf9": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786158880,
+      "ttl": 1800
+    },
+    "0d9b1f7ce0146f714162312e90c92161": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786159113,
+      "ttl": 1800
     }
   }
 }
