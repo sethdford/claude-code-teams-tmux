@@ -1126,9 +1126,14 @@ else
     assert_fail "loop.divergence_detected registered in event-schema.json"
 fi
 
-# D18: the build stage classifies divergence ahead of the context-exhaustion sniff
-if awk '/failure-reason.txt/{if (!seen) {seen=1; if ($0 ~ /divergent_failure/) ok=1}} END{exit !ok}' \
-        "$SCRIPT_DIR/lib/pipeline-stages-build.sh"; then
+# D18: the build stage classifies divergence ahead of the context-exhaustion sniff.
+# Compare the two write sites by line number — matching "failure-reason.txt" alone
+# also hits the artifact cleanup at the top of the function.
+_div_line=$(grep -n 'echo "divergent_failure" > .*failure-reason.txt' \
+    "$SCRIPT_DIR/lib/pipeline-stages-build.sh" | head -1 | cut -d: -f1)
+_ctx_line=$(grep -n 'echo "context_exhaustion" > .*failure-reason.txt' \
+    "$SCRIPT_DIR/lib/pipeline-stages-build.sh" | head -1 | cut -d: -f1)
+if [[ -n "$_div_line" && -n "$_ctx_line" && "$_div_line" -lt "$_ctx_line" ]]; then
     assert_pass "Build stage writes divergent_failure before the context-exhaustion check"
 else
     assert_fail "Build stage writes divergent_failure before the context-exhaustion check"
