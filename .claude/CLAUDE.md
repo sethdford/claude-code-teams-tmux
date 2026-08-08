@@ -643,7 +643,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-cost.sh` | 1070 | Token Usage & Cost Intelligence |
 | `scripts/sw-daemon.sh` | 1420 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
-| `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
+| `scripts/sw-db.sh` | 1360 | SQLite Persistence Layer |
 | `scripts/sw-decide.sh` | 691 | Shipwright Autonomous Decision Engine |
 | `scripts/sw-decompose.sh` | 864 | Intelligent Issue Decomposition |
 | `scripts/sw-deps.sh` | 533 | Automated Dependency Update Management |
@@ -758,9 +758,10 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 
 ### Shared Libraries
 
-| File                    | Lines | Purpose                            |
-| ----------------------- | ----: | ---------------------------------- |
-| `scripts/lib/compat.sh` |     — | Cross-platform compatibility shims |
+| File                      | Lines | Purpose                                          |
+| ------------------------- | ----: | ------------------------------------------------ |
+| `scripts/lib/compat.sh`   |     — | Cross-platform compatibility shims               |
+| `scripts/lib/db-query.sh` |   607 | SQLite gating, SQL helpers, schema DDL/migration |
 
 ### Test Suites
 
