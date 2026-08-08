@@ -1,1 +1,31 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+The verification gap is closed. Working tree is clean for all changed files; the commit stands unchanged.
+
+## Closing the gap I flagged
+
+I said "~15 suites" unverified. It was actually **68** — I'd estimated from the wrong point in the list.
+
+Rather than brute-force all 68 (it was pacing at ~2 more hours), I checked which could reach the changed code:
+
+| Suite | Result |
+|---|---|
+| `sw-memory-test` | PASS |
+| `sw-patrol-meta-test` | PASS |
+| `sw-pipeline-test` | PASS (58/58, verified earlier) |
+| `sw-recruit-test` | PASS |
+| `sw-upgrade-test` | exit 0, but **0 assertions** — environment-gated |
+
+The other 63 reference none of `loop-convergence.sh`, `pipeline-stages-build.sh`, `daemon-failure.sh`, `sw-loop.sh`, `sw-cost.sh`, `sw-daemon.sh`, `event-schema.json`, nor any of `check_progress` / `classify_failure` / `get_max_retries` / `divergen*`. I also ran 42 of them opportunistically before stopping — all passed.
+
+One honest caveat: `sw-upgrade-test` registers zero assertions here (same as `sw-cost-test` did in the full run). It exits 0, but that's a skip, not coverage. If it's gated on something CI provides, that suite's view of `sw-cost.sh` is unverified locally — CI will be the real check there.
+
+## Final tally
+
+Everything that touches this change is green:
+
+- `sw-loop-test` 93/93 — including the 19 new divergence assertions
+- `sw-pipeline-test` 58/58
+- `sw-lib-daemon-failure-test` 34/34, `sw-lib-daemon-dispatch-test` 33/33, `sw-lib-pipeline-stages-test` 30/30
+- `sw-event-schema-sync` — in sync, 0 missing
+- 133 suites total passed across the runs, zero genuine failures
+
+Two things that are *not* mine, for the record: the full-suite runner's watchdog doesn't reap `sw-loop-test`'s loop subprocesses (`sw-test-all.sh:99-110` documents this exact orphan class), and the single mid-run `✗` was my own concurrent invocation of the same suite colliding on shared daemon state — it passes 33/33 alone.

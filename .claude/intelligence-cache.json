@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "devops",
+          "incident-responder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Detecting divergent build-loop failures requires designing convergence detection criteria, termination logic, and monitoring architecture—a core system design concern coupled with pipeline reliability.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1786156932,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,362 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "25f04f192b3a4faeffeadca836c3b1aa": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 87,
+        "recommended_template": "standard",
+        "issue_type": "performance",
+        "key_risks": [
+          "Divergence detector too aggressive, causing false early termination",
+          "Regression in existing circuit_breaker_threshold logic if abort conditions conflict",
+          "Event emission/daemon metrics integration not updating cost tracking properly",
+          "Signature hash collision or flaky error comparison across iterations",
+          "Loop state persistence issue when tracking error signatures between iterations"
+        ],
+        "implementation_hints": [
+          "Leverage existing error-summary.json structure; compute SHA256 hash of error signatures for comparison",
+          "Store per-iteration state (hash, changed_lines, timestamp) in loop-state.md or dedicated tracking file to survive iteration boundaries",
+          "Implement window-based divergence check: compare last N (default 3) consecutive iterations for repeated signature + near-zero delta",
+          "Keep divergence abort distinct: emit event type 'loop_divergence_detected' and set exit reason 'divergent_failure' to surface in cost/metrics",
+          "Add config: loop.divergence_threshold (default 3), loop.progress_threshold_lines (default 5) for near-zero detection",
+          "Guard circuit_breaker and divergence logic with clear precedence/order to prevent double-abort or conflict",
+          "Test with 3+ scenarios: actual divergence (repeated errors, no progress), normal failure (progress/retry succeeds), session restart after divergence"
+        ]
+      },
+      "timestamp": 1786156166,
+      "ttl": 3600
+    },
+    "a621e48a14845fac01567c642098bc4d": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1786156174,
+      "ttl": 1800
+    },
+    "475d22f0133d9f1e2cee5a88333b924e": {
+      "result": {
+        "estimated_cost_usd": 1.92,
+        "estimated_iterations": 5,
+        "estimated_tokens": 275000,
+        "likely_failure_stage": "test",
+        "confidence": 74
+      },
+      "timestamp": 1786156186,
+      "ttl": 3600
+    },
+    "9115899f6b5788ead6c57ed2539276a1": {
+      "result": {
+        "issue_type": "backend",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "infrastructure",
+          "testing",
+          "performance"
+        ],
+        "complexity_assessment": {
+          "score": 7,
+          "reasoning": "Core divergence detection is straightforward (hash comparison, delta tracking), but subtle edge cases around progress measurement, signature stability, and interaction with existing circuit-breaker logic require careful design. Integration with event system and metrics adds complexity."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "pattern-matching-similarity-scoring",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "collection-system-validation"
+          ],
+          "build": [
+            "testing-strategy",
+            "performance"
+          ],
+          "review": [
+            "adversarial-quality",
+            "two-stage-review",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "collection-system-validation",
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Previous loop optimization attempts may have failed; must deeply understand current error handling, circuit-breaker logic, and state persistence before modifying",
+          "pattern-matching-similarity-scoring": "Core feature is pattern matching (error-signature hashing) and similarity scoring (divergence detection across iterations)—this skill directly applies to the detection algorithm",
+          "brainstorming": "Challenge assumptions about divergence thresholds, progress definition, and abort conditions to avoid false positives (premature abort) and false negatives (missed truly stuck loops)",
+          "architecture-design": "Divergence detection integrates with circuit-breaker, event system, session restart logic, and metrics—needs an ADR to document design decisions and integration points",
+          "collection-system-validation": "Error-summary.json signature tracking and changed-line delta metrics must be reliable; validators ensure state consistency and divergence detection accuracy",
+          "testing-strategy": "Divergence logic is subtle; test-first approach clarifies success criteria before implementation and catches edge cases (identical errors with different causes, slow but legitimate progress)",
+          "performance": "Signature hashing and delta computation run every iteration; must not add measurable overhead to loop latency",
+          "adversarial-quality": "Attack the detector: Can it be fooled by random test failures that appear identical? What if progress is slow but real? Edge cases around false positive/negative abort conditions are critical",
+          "two-stage-review": "Pass 1: Verify signature tracking and divergence abort logic are correct and don't break existing circuit-breaker. Pass 2: Validate integration with event emission, metrics, and daemon visibility",
+          "pr-quality": "Two abort mechanisms (circuit-breaker vs divergence) are easily confused; PR description must clearly explain when each triggers and why they coexist",
+          "validation-thoroughness": "Unit tests alone won't catch subtle issues; validate against realistic scenarios (genuinely stalled builds, slow legitimate progress, repeated but slightly-different errors)",
+          "observability": "Divergence aborts must emit distinct events and surface in shipwright cost show / daemon metrics so operators can monitor effectiveness and catch false positives"
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Signature stability: Does error-summary.json hash remain consistent for truly identical errors? Handle edge cases like errors that differ only in line numbers or timestamps",
+          "Progress measurement: Define 'near-zero progress' precisely—what diff size threshold? Risk: overly aggressive threshold aborts legitimate slow work; overly lenient threshold misses stuck loops",
+          "Circuit-breaker coexistence: Ensure divergence abort (signature-based) cleanly coexists with circuit-breaker abort (count-based) with no interaction effects or race conditions",
+          "Configuration validation: Validate loop.divergence_threshold is safe (e.g., reject values ≤0); ensure config propagates correctly through daemon to loop invocations",
+          "Session restart interaction: If divergence abort triggers session restart, verify fresh session doesn't repeat the divergence (no infinite restart loop); clarify whether divergence state should persist across restarts",
+          "Event correctness: Divergence events must be well-formed and distinct (separate reason field) so metrics aggregation and cost tracking work correctly",
+          "State persistence: Confirm changed-line deltas and signature hashes are correctly tracked and available across loop iterations and restarts"
+        ],
+        "risk_areas": [
+          "False positive aborts: Too-aggressive divergence detection (low threshold or broad signature matching) could terminate legitimate work prematurely (e.g., a test that genuinely needs slow incremental fixes)",
+          "False negative misses: Divergence detector fails if error signatures vary slightly due to randomness, flaky tests, or environment differences—legitimate stuck loops escape detection",
+          "Infinite restart loop: If divergence abort triggers session restart and the fresh session repeats the same failures with the same signatures, the restart mechanism could loop indefinitely without user escalation",
+          "Performance regression: Signature hashing and state tracking on every iteration could add measurable latency; must profile and optimize before merge",
+          "Metrics corruption: Malformed divergence events will pollute shipwright cost show and daemon metrics, making observability unreliable",
+          "Backward compatibility break: New divergence logic could interact unexpectedly with existing circuit-breaker, extension, or restart logic—comprehensive regression testing required",
+          "Configuration inconsistency: loop.divergence_threshold might not propagate correctly through daemon config → loop invocation; edge cases in daemon-config.json parsing"
+        ]
+      },
+      "timestamp": 1786156262,
+      "ttl": 3600
+    },
+    "9ef1803782d36097288e53f901c18626": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 6 actual build-loop failure patterns including stale pipeline locks blocking pipelines, missing artifacts (plan.md/review.md), cascading E2E/resume/cleanup failures, and flaky tests. Directly demonstrates divergent failure modes that need detection."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 78,
+            "summary": "Provides baseline performance metrics (build_duration_s: 7095, test_duration_s: 1459) essential for detecting when a build diverges from normal execution time, indicating potential infinite loops or resource exhaustion."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 62,
+            "summary": "Documents recurring failure patterns in test infrastructure (mktemp path issues, cleanup output problems, JSON parsing failures) that can manifest as divergent build-loop symptoms and cascade into subsequent test failures."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 58,
+            "summary": "Shows successful build-loop patterns with typical iteration counts (3), durations (~45-150s), and file-change signatures. Provides baseline for comparison to detect when a loop diverges from expected convergence behavior."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 48,
+            "summary": "Historical issue about timeout bugs in daemon with semaphore-based fix and backoff gotchas. Relevant for understanding how build loops can stall and what recovery patterns (semaphores, timeouts) may apply to divergence detection."
+          }
+        ]
+      },
+      "timestamp": 1786156315,
+      "ttl": 1800
+    },
+    "912f0d7ee7f03569dcfa97d9cefb5bc3": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 6 documented test failures including 'loop behavior: iterations on test failure', pipeline artifact write failures (plan.md/review.md), and stale pipeline lock issues — directly relevant to detecting divergent build-loop behavior and plan validation failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 68,
+            "summary": "Provides build_duration_s (7095s) and test_duration_s (1459s) baselines needed to establish thresholds for detecting divergent behavior; essential for identifying when build loops exceed expected durations"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 52,
+            "summary": "Shows successful 3-iteration patterns with 45s duration and standard pipeline template as reference; useful for comparing actual loop behavior against known-good convergence patterns to detect divergence"
+          }
+        ]
+      },
+      "timestamp": 1786156682,
+      "ttl": 1800
+    },
+    "8b3112d5b70d6c88ee15b259af822c90": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains failures directly addressing divergent loop detection: loop stuckness detection logic, stale pipeline locks blocking new runs, and pipeline state management issues. Pattern shows how to detect when a loop fails to make progress and needs early termination."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Documents heartbeat-based monitoring patterns and stale state detection. Heartbeat protocol could inform detection mechanism for identifying when a loop has diverged from expected behavior."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Shows successful loop iteration patterns across multiple iterations. Understanding success baselines (iteration count, duration, progress markers) helps define thresholds for detecting divergence."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Contains baseline build and test durations. Performance metrics establish reference ranges for normal loop behavior, enabling detection of divergent runs exceeding expected durations."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 30,
+            "summary": "Shows timeout bug fix in daemon using semaphore patterns. Semaphore-based synchronization is relevant architecture pattern for coordinating loop termination."
+          }
+        ]
+      },
+      "timestamp": 1786156726,
+      "ttl": 1800
+    },
+    "0307f8cf1b10ac7c23553de26e6db2b7": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 88,
+            "summary": "Most relevant: Contains multiple recorded failures related to loop stuckness detection, stale pipeline locks blocking new pipelines, and loop iteration behavior on test failures. Directly addresses detecting when loops are stuck or diverged, which is core to the issue."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Moderately relevant: Provides baseline metrics for build_duration_s (7095s) and test_duration_s (1459s). These baselines enable detection of divergence via anomaly detection (when actual duration significantly exceeds baseline)."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 52,
+            "summary": "Marginally relevant: Records a prior timeout bug fixed with a semaphore. Timeout/stall detection and backoff checking are related mechanisms to build-loop divergence detection, though not directly addressing the issue."
+          }
+        ]
+      },
+      "timestamp": 1786156744,
+      "ttl": 1800
+    },
+    "62ee45514ff42fbdc0c935f893cf72d0": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly documents loop and pipeline test failures including stale pipeline locks, loop stuckness detection, artifact writing issues, and E2E integration test cascades — core topics for detecting divergent build-loop failures"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 78,
+            "summary": "Contains successful loop execution patterns showing iteration behavior, post-audit cleanup, autonomous progress, and test strategies — establishes baseline for healthy loop behavior to detect divergence"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 72,
+            "summary": "Provides build and test duration baselines (7095s build, 1459s test) useful for detecting anomalous loop iterations that diverge from expected performance"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Documents recurring test failures (mktemp path issues, cleanup output format, JSON parsing errors) that can cause cascading loop failures if not handled early"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 52,
+            "summary": "Documents a timeout bug fix in sw-daemon.sh and daemon-dispatch.sh related to semaphore handling — relevant to detecting stalled or divergent build-loop iterations"
+          }
+        ]
+      },
+      "timestamp": 1786156898,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "6 recent test failures with root causes and fixes directly applicable to build stage. Covers stale pipeline locks, artifact writing, cost dashboard test issues, and jq parse errors—all blocking current test suite."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 88,
+            "summary": "Two past successful builds (bug fix in 3 iterations, feature in 3 iterations). Shows file patterns changed, test strategy (npm test), iteration counts, and time/cost baseline for similar complexity work."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "4 KB entries on test failures: mktemp directory issues, sw-cleanup.sh dry-run output, regression detection JSON formatting. Captures recurrent test infrastructure gotchas from previous builds."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459. Establishes expected timeline for current build stage to detect stalls or anomalies."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 55,
+            "summary": "Project conventions: Node.js, vitest, commonjs imports, src/ source dir. Provides structural context for build/test execution patterns."
+          }
+        ]
+      },
+      "timestamp": 1786156913,
+      "ttl": 1800
+    },
+    "52027af25e0a5c475f572ae6983a0391": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157313,
+      "ttl": 1800
+    },
+    "668f01a8e93ab52ff1ef19841369e20a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157466,
+      "ttl": 1800
+    },
+    "8d8dfb4b52b11252f3ef60774ab4ba0e": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786157716,
+      "ttl": 1800
+    },
+    "9b1f60b37c757f276abf1ec3b7eb8dec": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157931,
+      "ttl": 1800
     }
   }
 }
