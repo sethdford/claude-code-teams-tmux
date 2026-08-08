@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
-      "seen_count": 18,
-      "last_seen": "2026-08-08T13:19:53Z",
+      "seen_count": 17,
+      "last_seen": "2026-08-08T09:58:06Z",
       "category": "flaky"
     },
     {
@@ -57,10 +57,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Cost dashboard's CONTEXT EFFICIENCY test asserts against loop.context_efficiency event data, but the test fixture has no cost entries in the last 30 days, so costs.json/events are empty when the assertion runs",
-      "fix": "Seed a cost entry with a loop.context_efficiency event (matching the 30-day window) in the sw-cost-test.sh fixture setup before invoking the dashboard render",
+      "root_cause": "sw-intent-analysis-test expects analyze_intent JSON output to include version, goal, and criteria fields, but the schema it produces is missing them",
+      "fix": "Update the analyze_intent implementation to emit version, goal, and criteria in its output JSON, or update the test if the schema was intentionally changed",
+      "seen_count": 2,
+      "last_seen": "2026-08-08T13:40:06Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Testing CONTRACT: record-outcome backfills match outcome... \u001b[38;2;248;113;113m\u001b[1mFAIL\u001b[0m: match-history.jsonl missing after record-outcome",
+      "root_cause": "Test suite for match-history contract expects match-history.jsonl to be written by record-outcome, but the function either doesn't persist it or writes to a different path/filename than the test checks",
+      "fix": "Verify record-outcome writes match-history.jsonl to the expected artifact directory using an atomic tmp-file+mv write, and align the path with what the test asserts",
       "seen_count": 1,
-      "last_seen": "2026-08-08T03:07:18Z",
+      "last_seen": "2026-08-08T13:02:09Z",
       "category": "test_failure"
     }
   ]
