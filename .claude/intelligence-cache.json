@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "architect"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.90,
+        "reasoning": "CI/CD infrastructure task requiring build pipeline configuration for capturing lint/type-check/compile failures; DevOps leads pipeline changes, Builder implements capture hooks, Architect designs error-summary schema",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1786156721,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,331 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "8ef1ed164214b1451eb6775b2f0ab911": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 76,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Regression in existing test-failure capture behavior (explicit requirement: regression-free)",
+          "Build loop is core infrastructure affecting all agents; changes could have cascading effects",
+          "Error format variations across different tools (lint, typecheck, compile) may require robust parsing",
+          "JSON validation could fail on malformed stderr containing special characters or binary data"
+        ],
+        "implementation_hints": [
+          "Study current error-summary.json generation for test failures in sw-loop.sh (~line region for error handling)",
+          "Extend error capture with wrapper pattern to catch lint/typecheck/compile command failures the same way test failures are caught",
+          "Add failure_class field to structured error objects: test|lint|typecheck|compile",
+          "Verify prompt composition includes all failure classes when injecting into next iteration, not just test",
+          "Test comprehensively: individual failure types, multiple failures in one iteration, failure sequences across iterations, and regression on test-only paths"
+        ]
+      },
+      "timestamp": 1786156159,
+      "ttl": 3600
+    },
+    "271ebd50fedf246378802b4e15868de6": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1786156172,
+      "ttl": 1800
+    },
+    "63ad261eb1729f03aaa731dd5034b1b0": {
+      "result": {
+        "estimated_cost_usd": 1.25,
+        "estimated_iterations": 4,
+        "estimated_tokens": 200000,
+        "likely_failure_stage": "build",
+        "confidence": 72
+      },
+      "timestamp": 1786156192,
+      "ttl": 3600
+    },
+    "be274dd745e55e7aa4c267eb966f40cd": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Demonstrates comprehensive failure capture structure with pattern, root_cause, fix, seen_count, category fields—directly applicable to designing error-summary.json schema for build failures"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Shows failure knowledge base entries with error_type, fix_strategy, tags, and metrics—provides pattern for categorizing and tracking build failures systematically"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Contains baseline metrics (build_duration_s, test_duration_s) providing context for why capturing non-test build failures is important for performance monitoring"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 45,
+            "summary": "Shows how to structure captured patterns with approach, iterations, files_changed, and metrics—informs error-summary.json design for tracking failure context"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Documents project conventions (source_dir, test_pattern, test_runner, package_manager)—essential context for understanding lint/type-check/compile failure sources"
+          }
+        ]
+      },
+      "timestamp": 1786156336,
+      "ttl": 1800
+    },
+    "5de1307dc8815fea6d74cf15b80a1696": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly relevant: contains documented failures showing plan/review stages fail to write artifacts to .claude/pipeline-artifacts/, which explains plan validation failures. Also mentions jq parse errors and artifact writing issues that align with error-summary.json capture requirements."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Moderately relevant: contains failure patterns and fix strategies (kb_b8239eb18d7d, kb_3058cd61f212) for test setup, mktemp directory creation, and output formatting. These patterns apply to implementing structured error capture in error-summary.json."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Marginally relevant: demonstrates successful past issue resolution (timeout bug fix via semaphore addition). Provides approach patterns for tackling complex fixes, though not specific to error-summary.json or build failure capture."
+          }
+        ]
+      },
+      "timestamp": 1786156481,
+      "ttl": 1800
+    },
+    "5da92a94d6ffe2d7a7b44dccd474c45b": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Most relevant. Shows structured failure capture with pattern, root_cause, fix, seen_count, last_seen, category — directly applicable to error-summary.json schema design"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 90,
+            "summary": "Highly relevant. Demonstrates how to capture failure knowledge with error_type, error_signature, fix_strategy, approach, tags, evidence, metrics — architecture pattern for error metadata"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 70,
+            "summary": "Moderately relevant. Shows structured pattern capture including files_changed, file_patterns, test_strategy, cost tracking — informs what metadata to collect alongside failures"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Moderately relevant. Contains baseline structure (build_duration_s, test_duration_s) — demonstrates how to track performance metrics that could accompany build failures"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 50,
+            "summary": "Somewhat relevant. Shows basic issue structure with files affected, error type, outcome — simple reference for capturing build context in error-summary.json"
+          }
+        ]
+      },
+      "timestamp": 1786156526,
+      "ttl": 1800
+    },
+    "6f2048688050afcd0adc0e1f06016c57": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json (first comprehensive list)",
+            "relevance": 85,
+            "summary": "Contains 6 documented test/pipeline failures including patterns about artifacts not being written to .claude/pipeline-artifacts/, pipeline lock issues, and cascading E2E test failures. Directly informs what kinds of build/pipeline failures need to be captured and how they manifest."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 72,
+            "summary": "Contains KB entries with error signatures (mktemp failures, cleanup issues) and fix strategies. Provides concrete examples of failure patterns and approaches to handling them, which informs what error categories and metadata should be captured in error-summary.json."
+          },
+          {
+            "file": "metrics.json (first entry with baselines)",
+            "relevance": 45,
+            "summary": "Contains build_duration_s and test_duration_s baselines. Relevant for understanding build performance context and establishing what temporal/performance metrics might be useful to include alongside non-test build failures."
+          }
+        ]
+      },
+      "timestamp": 1786156544,
+      "ttl": 1800
+    },
+    "701843681327160ebfda5573fd5134be": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Contains detailed test/build failure patterns with root causes and fixes. Multiple entries describe pipeline stage failures (plan, review, cleanup), artifact writing issues, and error handling—directly applicable to structuring error-summary.json output"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 42,
+            "summary": "Contains failure signatures like mktemp directory errors and fix strategies. Examples of build setup failures and systematic error documentation patterns relevant to capturing non-test build failures"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 36,
+            "summary": "Documents successful iteration patterns including test strategies, file changes tracked, and approach details. Shows how to structure captured patterns across multiple iterations with metrics"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 30,
+            "summary": "Provides project context: source directory, test patterns, import style, package manager. Helps understand the build environment for proper error classification"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 24,
+            "summary": "Contains baseline metrics for build_duration_s and test_duration_s. Useful for detecting anomalies in build failures and establishing performance thresholds"
+          }
+        ]
+      },
+      "timestamp": 1786156690,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Shows exact build loop patterns: 3 iterations using loop/fix commands, npm test strategy, file change patterns, standard template. Directly applicable to build stage iteration strategy."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project detection shows Node.js with vitest/npm/commonjs. Build stage needs this config to know how to run tests and build commands."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 60,
+            "summary": "6 test failures including stale pipeline locks, missing artifacts in .claude/pipeline-artifacts/, and schema mismatches. Build stage needs to know what fails in tests and how to handle cascading failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 40,
+            "summary": "Baseline metrics (7095s build, 1459s test duration) inform expected stage timeouts and performance bounds for the build stage."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 30,
+            "summary": "Test infrastructure knowledge: mktemp path issues, cleanup output format, JSON validation. Relevant to build environment setup and test execution reliability."
+          }
+        ]
+      },
+      "timestamp": 1786158543,
+      "ttl": 1800
+    },
+    "317a4411f63a88825749163d86e1fce7": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157274,
+      "ttl": 1800
+    },
+    "4c135337a4cbbcea0c5e254411afa3e5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157403,
+      "ttl": 1800
+    },
+    "83831736f95e8868848933ca14874221": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786157662,
+      "ttl": 1800
+    },
+    "cb16980c7855471e68f00bd80823289e": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786157891,
+      "ttl": 1800
+    },
+    "7a04ba87fa36c0a3f83266e74a701cc8": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158269,
+      "ttl": 1800
+    },
+    "8da9a7e5d88386bc787c8924c5517842": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158626,
+      "ttl": 1800
+    },
+    "2b42f815cbd23bee6e953573edeab7a3": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158779,
+      "ttl": 1800
+    },
+    "2ce856bf03f166450b4d8e0aa7036fed": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158848,
+      "ttl": 1800
     }
   }
 }
