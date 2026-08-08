@@ -1689,33 +1689,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Shows proven patterns for similar bug fix and feature work with iteration counts (3-4), duration, file change patterns, test strategies (npm test), and costs ($2.50). Directly applicable to current build stage."
-          },
-          {
             "file": "metrics.json",
             "relevance": 75,
-            "summary": "Provides baseline metrics: build_duration_s (7095), test_duration_s (1459). Critical for setting iteration budgets and understanding expected stage performance."
-          },
-          {
-            "file": "failures.json",
-            "relevance": 70,
-            "summary": "Documents recurring test failures (E2E, artifact writing, cost dashboard, pipeline locks). Build stage should avoid these patterns, especially artifacts and lock cleanup issues."
+            "summary": "Baseline build duration (7095s) and test duration (1459s) provide performance expectations and constraints for the build stage"
           },
           {
             "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project conventions (source_dir: src/, test_pattern: *.test.js, import_style: commonjs, package manager: npm) define what gets built and test discovery"
+          },
+          {
+            "file": "success-patterns.json",
             "relevance": 60,
-            "summary": "Project conventions: source_dir=src/, test_pattern=*.test.js, commonjs imports, vitest runner. Build stage must follow these conventions."
+            "summary": "Past successful build patterns show iteration strategy, test approach (npm test), file patterns touched, and cost/duration metrics that inform build optimization"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 45,
+            "summary": "Test stage failures show pipeline artifact writing issues and test setup problems that affect build validation and downstream stages"
           },
           {
             "file": "issues.json",
-            "relevance": 45,
-            "summary": "Past timeout fix with semaphore approach and backoff gotcha. While daemon-specific, demonstrates iteration/debugging pattern applicable to build loop troubleshooting."
+            "relevance": 30,
+            "summary": "Past issue resolution patterns document test strategy and successful approaches to fixing bugs, providing context for build-time problem-solving"
           }
         ]
       },
-      "timestamp": 1786156961,
+      "timestamp": 1786158876,
       "ttl": 1800
     },
     "c72e738dc8a8cfe1aa09ee6ebb35f460": {
@@ -2396,6 +2396,55 @@
         "raw_response": "Mock claude: ok"
       },
       "timestamp": 1786158694,
+      "ttl": 1800
+    },
+    "2d43e69d8f5e62cfb0b71e897c231303": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786158889,
+      "ttl": 1800
+    },
+    "3c95e7f5bb481213a8f762c8817f79a5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158951,
+      "ttl": 1800
+    },
+    "211c8b57dfcad9a22e697c4ccd570ab4": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786158988,
+      "ttl": 1800
+    },
+    "ff4c9b37539e73a339d0df900af72d21": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786159144,
       "ttl": 1800
     }
   }

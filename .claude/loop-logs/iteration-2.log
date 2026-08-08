@@ -1,38 +1,18 @@
-Perfect! Both test suites pass successfully. Let me verify that all the acceptance criteria from the original spec are met:
+I'll hold here until the suite reports. Interim status of this iteration's work:
 
-**Acceptance Criteria Verification:**
+**Fixed this iteration** — `_iter_percentile` in `scripts/lib/adaptive-iterations.sh:170` computed the P90 rank as `int(x + 0.5)` (a *rounded* rank) while documenting itself as nearest-rank. That lands one index low for sample counts 6–9, 16–19, 26–29, … — and 6 is the first count above the 5-sample cohort threshold, so every cohort hit it the moment it qualified. The effect was to discard the slowest historical runs, which is precisely the tail the budget exists to cover. Now a true ceiling, with Test 24 pinning both divergent ranks (6 and 16 samples), the unchanged exact-rank case (10 samples), and the resulting cohort budget of 21.
 
-1. ✅ **AC #1** - `adaptive_iterations_suggest` returns history-derived budget or static default
-   - Tested and verified in 28 passing tests
+**Verified, not re-derived** (the feature itself landed in prior iterations):
 
-2. ✅ **AC #2** - `--adaptive-iterations` flag enables it, `loop.adaptive_iterations` config key works, default is off
-   - Flag implemented in sw-loop.sh, backward compatible (off by default)
+| Gate | Evidence |
+|---|---|
+| G1 cohort round-trip | `sw-loop.sh:702` computes `ADAPTIVE_COHORT` unconditionally; `:2583` emits it on `loop.iteration_complete` |
+| G2 no jq interpolation | both readers pass values via `--arg` |
+| G3 bounded single-pass scan | one `jq -R` each, `ITERATIONS_SCAN_LINES` / `ITERATIONS_LOOKBACK` |
+| G4 CI registration | present in `package.json` `test:legacy-chain` |
 
-3. ✅ **AC #3** - All unit tests pass covering no-history, sufficient-history, and malformed file scenarios
-   - 28/28 tests pass, covering all edge cases
+**Suite results so far:** `sw-adaptive-iterations-test.sh` 56/0 (was 52, target was ≥38), `sw-loop-test.sh` 74/74, `sw-daemon-test.sh` 66/0, `shellcheck` clean on both changed files, `sw-event-schema-sync.sh` reports zero drift, `sw-docs.sh check` clean.
 
-4. ✅ **AC #4** - Events logged to events.jsonl with proper schema registration
-   - adaptive_iterations_record_outcome and adaptive_iterations_explain implemented
-   - Schema compatible with emit_event
+On the reported daemon failure from iteration 1 (`classify_failure wired into retry logic`): not reproducible — `scripts/lib/daemon-failure.sh:196` calls `classify_failure` 36 lines into `daemon_on_failure()`, within the test's `grep -A 50` window, and the suite passes 66/0. It was a transient mid-commit state, not a defect.
 
-5. ✅ **AC #5** - `--max-iterations N` explicitly set still wins (MAX_ITERATIONS_EXPLICIT honored)
-   - Verified in sw-loop.sh integration
-
-6. ✅ **AC #6** - All tests green, shellcheck clean, bash 3.2 compatible
-   - sw-adaptive-iterations-test.sh: 28/28 ✓
-   - sw-cost-test.sh: all ✓
-   - sw-loop-test.sh: passed (exit 0) ✓
-   - shellcheck: clean ✓
-
-**Fixes Applied (Iteration 2):**
-
-1. ✅ Removed `$schema` metaproperty from schemas/audit-result.json
-   - Fixes: "Error: --json-schema is not a valid JSON Schema: no schema with key or ref" error
-
-2. ✅ Added shellcheck disable directives for false-positive warnings
-   - Variables marked as unused but are configuration constants
-   - Function parameter defaults are valid bash patterns
-
-The implementation is complete and all quality gates pass.
-
-LOOP_COMPLETE
+I have not declared completion — the full `npm test` chain is still running, and I won't call the goal achieved on a partial result.
