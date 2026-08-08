@@ -50,15 +50,15 @@
       "pattern": "Failed: 1",
       "root_cause": "Pipeline stages (plan, review, cleanup) fail to write expected artifacts (plan.md, review.md) and one test hits a jq parse error on non-JSON input, causing cascading E2E/resume/cleanup failures",
       "fix": "Ensure plan and review stage handlers write artifacts to .claude/pipeline-artifacts/ before returning success, and validate/guard jq input in the complexity-skip check to handle non-numeric or malformed values",
-      "seen_count": 1,
-      "last_seen": "2026-08-07T22:47:12Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-08T07:07:13Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Cost dashboard CONTEXT EFFICIENCY test expects cost entries but the fixture has none, so it prints 'No cost entries in the last 30 day(s)' instead of rendering the section",
-      "fix": "Seed a cost entry with a recent timestamp in the test fixture before invoking the dashboard, or relax the assertion to handle the empty-state message",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed (exit 1), unrelated to the patrol label construction log line shown",
+      "fix": "inspect sw-e2e-integration-test.sh and sw-intent-analysis-test.sh failure output directly to identify the actual assertion or environment dependency that broke",
       "seen_count": 1,
       "last_seen": "2026-08-08T03:07:18Z",
       "category": "test_failure"
