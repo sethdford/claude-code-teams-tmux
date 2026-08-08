@@ -24,7 +24,7 @@
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run left status=running, blocking the new pipeline; sw-loop-test and sw-intent-analysis-test failed on unrelated assertions (loop stuckness detection, intent schema missing required fields)",
       "fix": "clear/reset the stale pipeline lock before the e2e-integration test run (or add lock cleanup in test setup/teardown), and separately fix intent analysis schema to include version/goal/criteria and investigate the loop stuckness detection logic",
       "seen_count": 14,
-      "last_seen": "2026-08-08T03:38:19Z",
+      "last_seen": "2026-08-08T03:41:10Z",
       "category": "flaky"
     },
     {
