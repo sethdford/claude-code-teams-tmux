@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "tester",
         "secondary_roles": [
-          "tester",
+          "builder",
           "reviewer"
         ],
         "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "reasoning": "Writing unit test suites directly aligns with Test Specialist responsibilities (test strategy, test case generation, coverage); Builder assists with test implementation; Reviewer ensures test quality and completeness.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1786658104,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,250 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "4bc60c7ec96bca73563c55b4459f2a6e": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 88,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Missing edge cases in tests if scripts' behavior isn't fully understood",
+          "Test setup may need custom mock binaries for unfamiliar script dependencies",
+          "Potential test interference if mock environment isn't properly isolated",
+          "tmux-related scripts may have display-dependent behaviors hard to mock"
+        ],
+        "implementation_hints": [
+          "Read each of the 5 scripts first to identify primary functions and happy/sad paths",
+          "Study similar test suites (sw-tmux-test.sh, sw-tracker-test.sh) for harness patterns",
+          "For tmux scripts (sw-tmux-role-color.sh, sw-tmux-status.sh), mock tmux CLI calls with stub outputs",
+          "Test sw-event-schema-sync.sh by mocking git/jq and verifying config/event-schema.json validation",
+          "Test sw-test-all.sh by mocking test runners and verifying aggregation/reporting logic",
+          "Test sw-tracker-github.sh by mocking GitHub API calls and verifying URL/repo parsing",
+          "Ensure new tests use $TMPDIR for isolation and clean up after each test function",
+          "Register all 5 tests in package.json's test script in consistent alphabetical order"
+        ]
+      },
+      "timestamp": 1786657602,
+      "ttl": 3600
+    },
+    "604a1aefee59cb04a30ac2611c1bb482": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1786657613,
+      "ttl": 1800
+    },
+    "78de24de6b89db8c0222ef842b24c40e": {
+      "result": {
+        "estimated_cost_usd": 5.20,
+        "estimated_iterations": 2,
+        "estimated_tokens": 28000,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1786657625,
+      "ttl": 3600
+    },
+    "33c5967c492f67b0e8ae97503549aec6": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 95,
+            "summary": "Shows 'add auth module' feature with TDD approach, unit+integration test strategy, 5 iterations, realistic for comprehensive test suite addition"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 75,
+            "summary": "Contains test.sh modification patterns using npm test strategy, demonstrates low-complexity test script changes"
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Tracks test_failure pattern in build stage with proven fix (increase timeout), directly applicable to test execution issues"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 70,
+            "summary": "Shows test.sh fix pattern with typo root cause, low complexity single-iteration pattern for simple test modifications"
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 65,
+            "summary": "Contains test.sh patterns with npm test strategy, demonstrates build stage testing approach for shell scripts"
+          }
+        ]
+      },
+      "timestamp": 1786657680,
+      "ttl": 1800
+    },
+    "14338a48f71974f440c65611b3ce7b8b": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains test_failure pattern in build stage with npm test strategy and concrete fix suggestion (increase timeout). Directly relevant to diagnosing test execution issues that may be blocking plan validation."
+          },
+          {
+            "file": "success-patterns.json (test-repo with add auth module)",
+            "relevance": 60,
+            "summary": "Shows successful pattern for adding test suites using iterative TDD approach with unit + integration testing across 5 iterations. Demonstrates viable strategy for test suite creation on complex goals."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo with Specific test goal)",
+            "relevance": 50,
+            "summary": "Demonstrates successful test work on scripts (test.sh pattern) using npm test strategy in build stage. Relevant precedent for adding unit tests to core scripts."
+          }
+        ]
+      },
+      "timestamp": 1786657899,
+      "ttl": 1800
+    },
+    "0067646875a7712e1b68cc12eb969fe0": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 85,
+            "summary": "Shows test suite creation pattern: 'add auth module' feature with TDD approach, unit+integration test strategy, 5 iterations, 60 complexity. Includes test file patterns (test/auth.test.ts) and iterative methodology directly applicable to creating test suites for core scripts."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 65,
+            "summary": "Contains patterns for test.sh and test2.sh scripts with 'npm test' strategy. Though complexity is low (simple fixes), shows test script patterns and strategy that may inform architectural decisions for test suite design."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 60,
+            "summary": "Shows multiple test script patterns (test.sh, test2.sh) with 'npm test' strategy. Demonstrates handling of multiple test-related files and test execution strategy, applicable to multi-script test suite architecture."
+          },
+          {
+            "file": "index.json",
+            "relevance": 45,
+            "summary": "Contains test_failure pattern with fix recommendation (increase timeout values). Provides insights into common test robustness issues that should be considered in test suite design phase."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 40,
+            "summary": "Shows test.sh script pattern with 'npm test' strategy. Though focused on a typo fix rather than suite creation, demonstrates test script handling relevant to the 5 core scripts needing unit tests."
+          }
+        ]
+      },
+      "timestamp": 1786657942,
+      "ttl": 1800
+    },
+    "28b1e42cc91ad387248298aa31cd869f": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo with 'add auth module')",
+            "relevance": 85,
+            "summary": "Pattern for 'add auth module' includes TDD approach with module isolation, unit+integration testing strategy, and iterative test-first development—directly applicable to creating comprehensive test suites for core scripts."
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains test_failure pattern with timeout fixes observed in build stage across multiple sources (api, cli)—relevant for anticipating test execution issues and setting up proper test infrastructure."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 65,
+            "summary": "Two low-complexity patterns for test.sh and test2.sh files using 'npm test' strategy—provides reference for script-based test patterns and estimated iteration counts for test suite creation."
+          }
+        ]
+      },
+      "timestamp": 1786657958,
+      "ttl": 1800
+    },
+    "76a3ccb35ab4784542e38ddb8b928bbe": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 85,
+            "summary": "Pattern shows TDD approach with unit + integration test strategy for feature work, includes test file modifications (test/auth.test.ts). Directly applicable to writing test suites."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 78,
+            "summary": "Two patterns with test.sh file patterns, build stage execution, and npm test strategy. Shows successful low-complexity test script modifications."
+          },
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Contains test_failure pattern in build stage with timeout fix. Directly relevant to build stage issues and test execution in this pipeline context."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 68,
+            "summary": "Two patterns with test.sh file changes in build stage, low complexity, npm test strategy. Shows successful test script writing patterns."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 62,
+            "summary": "Pattern shows test.sh modification in build stage with npm test strategy. Relevant for understanding test script development in this repo context."
+          }
+        ]
+      },
+      "timestamp": 1786658079,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains proven build execution patterns from similar fixes/features showing iteration counts (3-4), typical duration (~45-150s), file patterns affected, test strategy (npm test), and commit workflow—directly applicable to current build stage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 90,
+            "summary": "Provides baseline metrics for build_duration_s (7095s) and test_duration_s (1459s)—essential for predicting build stage time requirements and budget allocation with 20 max iterations"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 80,
+            "summary": "Recent test stage failures (sw-e2e-integration, sw-pipeline-test, progress-reveal) show root causes and fixes—helps inform build decisions to avoid re-introducing these issues"
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Test environment failures (mktemp errors, missing directories, JSON output formatting) suggest potential environmental issues that could recur in build→test pipeline progression"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Historical bug fix pattern (timeout fix in daemon) shows successful approach to similar issues; gotcha about backoff checking is relevant if similar timeouts arise during build"
+          }
+        ]
+      },
+      "timestamp": 1786658096,
+      "ttl": 1800
+    },
+    "f15ac7c26c8d63f958e8c3e4a5847fc0": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786658216,
+      "ttl": 1800
+    },
+    "7beccdb43d7bc5b6c236e6081c6f6c71": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786658462,
+      "ttl": 1800
     }
   }
 }

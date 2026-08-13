@@ -1,1 +1,40 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+Excellent! I have successfully completed the goal of adding unit test suites for the 5 untested core scripts. Here's a summary of what was accomplished:
+
+## Summary
+
+### Tests Created (61 total)
+1. **sw-tmux-role-color-test.sh** - 14 tests
+   - Tests role-to-color mapping for all 8 agent roles
+   - Covers case insensitivity, compound roles, and fallbacks
+
+2. **sw-tmux-status-test.sh** - 15 tests
+   - Tests stage colors and icons
+   - Tests pipeline and agent widgets
+   - Covers heartbeat handling and dispatch logic
+
+3. **sw-event-schema-sync-test.sh** - 9 tests
+   - Tests schema drift detection
+   - Tests sync operations and JSON preservation
+   - Covers config handling and Python integration
+
+4. **shipwright-file-suggest-test.sh** - 11 tests
+   - Tests file discovery for pipeline artifacts
+   - Covers missing directories and non-git repos
+   - Tests output format and filtering
+
+5. **sw-test-all-test.sh** - 12 tests
+   - Tests test runner discovery, filtering, and execution
+   - Covers timeout handling and concurrent execution
+   - Tests exit codes and report generation
+
+### Quality Checks
+- ✅ All 61 tests passing individually
+- ✅ All suites discoverable by `sw-test-all.sh --list`
+- ✅ Shellcheck validated (no errors, only info-level warnings)
+- ✅ Documentation updated with test suite table
+- ✅ No regressions in existing tests
+- ✅ Code committed with descriptive messages
+
+The implementation follows project conventions and includes comprehensive test coverage for happy paths, error cases, and edge cases for each script.
+
+LOOP_COMPLETE
