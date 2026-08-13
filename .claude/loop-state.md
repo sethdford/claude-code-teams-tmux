@@ -1,45 +1,10 @@
 ---
-goal: "Add Unit Test Suites for the 5 Untested Core Scripts
+goal: "E2E test: add comment to README [automated]
 
-## Plan Summary
-# Plan: Add Unit Test Suites for the 5 Untested Core Scripts
-
-## Which 5 scripts, and how they were identified
-
-Derived mechanically, not guessed:
-
-```bash
-ls scripts/*.sh | grep -v -- '-test.sh' | sed 's|scripts/||;s|\.sh$||' | sort > all
-ls scripts/*-test.sh          | sed 's|scripts/||;s|-test\.sh$||' | sort > tested
-comm -23 all tested            # candidates
-# then: grep -rl "<name>" scripts/*-test.sh   → 0 hits = genuinely untested
-```
-
-That leaves 14 candidates. Nine are release/install tooling (`build-release`,
-`update-version`, `check-version-consistency`, `install-*`, `update-homebrew-sha`,
-`test-skill-injection`) or already covered indirectly (`sw-tracker-{github,jira,linear}`
-are exercised by `sw-tracker-providers-test.sh` and `sw-tracker-test.sh` — 2 hits each).
-
-The 5 **core** scripts with **zero** test references anywhere:
-[... full plan in .claude/pipeline-artifacts/plan.md]
-
-## Key Design Decisions
-# Architecture Decision Record: Add Unit Test Suites for 5 Untested Core Scripts
-## Context
-## Decision
-### Component Architecture
-## Interface Contracts
-### Test Helper Library (`scripts/lib/test-helpers.sh`)
-# Setup/Teardown
-# Assertions (return 0 on pass, 1 on fail; print to stdout/stderr)
-# Mocking
-# Reporting
-[... full design in .claude/pipeline-artifacts/design.md]
-
-## Specification: Add Unit Test Suites for the 5 Untested Core Scripts
+## Specification: E2E test: add comment to README [automated]
 
 ### Goals
-- Add Unit Test Suites for the 5 Untested Core Scripts
+- E2E test: add comment to README [automated]
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -48,36 +13,41 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json (test-repo)",
-      "relevance": 85,
-      "summary": "Pattern shows TDD approach with unit + integration test strategy for feature work, includes test file modifications (test/auth.test.ts). Directly applicable to writing test suites."
+      "file": "success-patterns.json (hash-consistency-repo)",
+      "relevance": 95,
+      "summary": "Build-stage pattern with low complexity, 1 iteration, npm test strategy, and test-focused goal—directly matches profile of E2E test task"
     },
     {
-      "file": "success-patterns.json (test-repo-ranking)",
-      "relevance": 78,
-      "summary": "Two patterns with test.sh file patterns, build stage execution, and npm test strategy. Shows successful low-complexity test script modifications."
+      "file": "success-patterns.json (test-repo-complexity)",
+      "relevance": 90,
+      "summary": "Low-complexity build fix completing in 1 iteration with npm test, demonstrates quick single-iteration pattern matching this E2E scenario"
     },
     {
       "file": "index.json",
-      "relevance": 72,
-      "summary": "Contains test_failure pattern in build stage with timeout fix. Directly relevant to build stage issues and test execution in this pipeline context."
+      "relevance": 70,
+      "summary": "Tracks build-stage test failures and provides timeout remediation guidance—relevant if test execution stalls during build"
     },
     {
       "file": "success-patterns.json (test-repo-corrupt)",
-      "relevance": 68,
-      "summary": "Two patterns with test.sh file changes in build stage, low complexity, npm test strategy. Shows successful test script writing patterns."
+      "relevance": 65,
+      "summary": "Two build-stage patterns with npm test and low complexity, shows prior successful builds though less specific to documentation tasks"
     },
     {
-      "file": "success-patterns.json (hash-consistency-repo)",
-      "relevance": 62,
-      "summary": "Pattern shows test.sh modification in build stage with npm test strategy. Relevant for understanding test script development in this repo context."
+      "file": "success-patterns.json (test-repo-ranking)",
+      "relevance": 60,
+      "summary": "Build-stage patterns with npm test and low complexity, provides generic build success baseline but lacks task-specific context"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 1 new discoveries
+✓ Injected 6 new discoveries
+[spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Add Unit Test Suites for the 5 Untested Core Scripts — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 
 Task tracking (check off items as you complete them):
 # Pipeline Tasks — Add Unit Test Suites for the 5 Untested Core Scripts
@@ -108,39 +78,64 @@ Task tracking (check off items as you complete them):
 - Pipeline: autonomous
 - Branch: ci/issue-1714
 - Issue: none
-- Generated: 2026-08-13T21:51:19Z"
-iteration: 1
-max_iterations: 20
+- Generated: 2026-08-13T21:51:19Z
+
+## Skill Guidance (testing issue, AI-selected)
+### Why these skills were selected (AI-analyzed):
+- **e2e-test-orchestration**: Guide implementation of test isolation (worktrees/temp dirs), GitHub API mocking, Shipwright-specific test harness integration, and assertion patterns.
+
+## E2E Test Orchestration for Shipwright
+
+E2E tests in Shipwright must isolate state, mock GitHub, and integrate with the existing test harness (`scripts/sw-*-test.sh` pattern).
+
+### Test Isolation
+
+- Use temporary directories or git worktrees to avoid cross-test contamination
+- Clean up all artifacts (temp files, stashed commits, test branches) in trap handlers
+- Verify no heartbeat files, state files, or lock files leak into next test
+
+### GitHub Mocking
+
+- Mock GitHub API calls with local functions or stub binaries in test's temp directory
+- Stub `gh` CLI if used, or intercept HTTP calls via environment variables (`GH_HOST`, `GITHUB_TOKEN`)
+- Verify mocked API contracts match actual GitHub API expectations (field names, response structures)
+
+### Test Harness Integration
+
+- Follow established pattern: `source scripts/lib/compat.sh`, define test functions, emit PASS/FAIL counters
+- Use `assert_equal "expected" "actual" "test-case-name"` helpers for readable failure output
+- Register test in `package.json` scripts so `npm test` discovers it
+
+### Idempotence & Cleanup
+
+- Each test must produce the same result on repeated runs (no file permission issues, no stale state)
+- `trap "cleanup" EXIT` must remove all temporary state without failing
+- Avoid hardcoded paths—use `${TMPDIR:-/tmp}` for portability
+
+### Assertion Patterns
+
+- Assert on file contents (use `grep`, `jq`, or `diff` to avoid brittle string matching)
+- Assert on exit codes, not just stdout (tests can produce output and still fail)
+- Verify side effects: did the commit get made? Does the branch exist? Check git state directly.
+"
+iteration: 0
+max_iterations: 3
 status: running
 test_cmd: "npm test"
-model: haiku
+model: sonnet
 agents: 1
-started_at: 2026-08-13T22:25:21Z
-last_iteration_at: 2026-08-13T22:25:21Z
+started_at: 2026-08-13T22:38:20Z
+last_iteration_at: 2026-08-13T22:38:20Z
 consecutive_failures: 0
-total_commits: 1
+total_commits: 0
 audit_enabled: true
 audit_agent_enabled: true
 quality_gates_enabled: true
-dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
+dod_file: ""
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-08-13T22:25:21Z)
-- ✅ Documentation updated with test suite table
-- ✅ No regressions in existing tests
-- ✅ Code committed with descriptive messages
-
-### Iteration 2 (2026-08-13T23:XX:XXZ)
-- ✅ Verified all 5 new test suites pass individually (61 total assertions passing)
-  - shipwright-file-suggest-test.sh: 11 tests passed
-  - sw-tmux-role-color-test.sh: 14 tests passed
-  - sw-tmux-status-test.sh: 15 tests passed
-  - sw-event-schema-sync-test.sh: 9 tests passed
-  - sw-test-all-test.sh: 12 tests passed
-- ✅ Fixed audit schema error: Removed unsupported $schema reference from audit-result.json
-- 🔄 Running full test suite validation...
 
