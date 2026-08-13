@@ -2,30 +2,21 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
-      "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 2,
-      "last_seen": "2026-08-13T22:25:23Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
-      "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 1,
-      "last_seen": "2026-08-13T20:08:02Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "Test harness bug: an intermediate mock output line matching the '✓' pattern is parsed as the pass-count summary, so the reveal (final tally) overwrites/undercounts to 1/3 instead of aggregating all suite results",
-      "fix": "Fix the E2E test aggregator in sw-pipeline-test.sh to sum pass/fail counts per subtest block rather than regex-matching the last '✓ N tests passed' line in captured output; also fix underlying artifact-missing failures (plan.md/review.md not created) causing the cascading count mismatch",
-      "seen_count": 3,
-      "last_seen": "2026-08-13T23:07:37Z",
+      "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
+      "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
+      "seen_count": 2,
+      "last_seen": "2026-08-13T21:55:08Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "unknown - log excerpt shows all tests passing (PASS: 26, FAIL: 0) with no visible failure line",
+      "fix": "re-run the test stage and capture full output, as the truncated log does not contain the actual failing assertion",
+      "seen_count": 1,
+      "last_seen": "2026-08-13T22:37:09Z",
+      "category": "unknown"
     }
   ]
 }
