@@ -13,37 +13,41 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json (hash-consistency-repo)",
+      "file": "index.json",
       "relevance": 95,
-      "summary": "Build-stage pattern with low complexity, 1 iteration, npm test strategy, and test-focused goal—directly matches profile of E2E test task"
+      "summary": "Contains build-stage test_failure pattern with fix (timeout increase); directly applicable to current build stage"
     },
     {
       "file": "success-patterns.json (test-repo-complexity)",
-      "relevance": 90,
-      "summary": "Low-complexity build fix completing in 1 iteration with npm test, demonstrates quick single-iteration pattern matching this E2E scenario"
+      "relevance": 92,
+      "summary": "Low complexity build-stage pattern: 1 iteration, npm test strategy, same stage/complexity as current task"
     },
     {
-      "file": "index.json",
-      "relevance": 70,
-      "summary": "Tracks build-stage test failures and provides timeout remediation guidance—relevant if test execution stalls during build"
+      "file": "success-patterns.json (test-repo-corrupt - b0f17829...)",
+      "relevance": 92,
+      "summary": "Low complexity build-stage pattern: 1 iteration, npm test, matches task profile"
     },
     {
-      "file": "success-patterns.json (test-repo-corrupt)",
-      "relevance": 65,
-      "summary": "Two build-stage patterns with npm test and low complexity, shows prior successful builds though less specific to documentation tasks"
+      "file": "success-patterns.json (hash-consistency-repo)",
+      "relevance": 92,
+      "summary": "Low complexity build-stage pattern: 1 iteration, npm test strategy, identical task profile"
     },
     {
-      "file": "success-patterns.json (test-repo-ranking)",
-      "relevance": 60,
-      "summary": "Build-stage patterns with npm test and low complexity, provides generic build success baseline but lacks task-specific context"
+      "file": "success-patterns.json (test-repo-ranking - First pattern)",
+      "relevance": 85,
+      "summary": "Build-stage pattern: low complexity, 1 iteration, npm test; demonstrates fast single-iteration builds"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 6 new discoveries
+✓ Injected 10 new discoveries
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Add Unit Test Suites for the 5 Untested Core Scripts — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -124,8 +128,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-08-13T22:38:20Z
-last_iteration_at: 2026-08-13T22:38:20Z
+started_at: 2026-08-13T22:53:45Z
+last_iteration_at: 2026-08-13T22:53:45Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true

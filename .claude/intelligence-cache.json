@@ -1678,7 +1678,7 @@
       "result": {
         "estimated_iterations": 1
       },
-      "timestamp": 1786659309,
+      "timestamp": 1786661555,
       "ttl": 1800
     },
     "ab85f03ae5bb2dcb700691c6f7783385": {
@@ -1768,33 +1768,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (hash-consistency-repo)",
+            "file": "index.json",
             "relevance": 95,
-            "summary": "Build-stage pattern with low complexity, 1 iteration, npm test strategy, and test-focused goal—directly matches profile of E2E test task"
+            "summary": "Contains build-stage test_failure pattern with fix (timeout increase); directly applicable to current build stage"
           },
           {
             "file": "success-patterns.json (test-repo-complexity)",
-            "relevance": 90,
-            "summary": "Low-complexity build fix completing in 1 iteration with npm test, demonstrates quick single-iteration pattern matching this E2E scenario"
+            "relevance": 92,
+            "summary": "Low complexity build-stage pattern: 1 iteration, npm test strategy, same stage/complexity as current task"
           },
           {
-            "file": "index.json",
-            "relevance": 70,
-            "summary": "Tracks build-stage test failures and provides timeout remediation guidance—relevant if test execution stalls during build"
+            "file": "success-patterns.json (test-repo-corrupt - b0f17829...)",
+            "relevance": 92,
+            "summary": "Low complexity build-stage pattern: 1 iteration, npm test, matches task profile"
           },
           {
-            "file": "success-patterns.json (test-repo-corrupt)",
-            "relevance": 65,
-            "summary": "Two build-stage patterns with npm test and low complexity, shows prior successful builds though less specific to documentation tasks"
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 92,
+            "summary": "Low complexity build-stage pattern: 1 iteration, npm test strategy, identical task profile"
           },
           {
-            "file": "success-patterns.json (test-repo-ranking)",
-            "relevance": 60,
-            "summary": "Build-stage patterns with npm test and low complexity, provides generic build success baseline but lacks task-specific context"
+            "file": "success-patterns.json (test-repo-ranking - First pattern)",
+            "relevance": 85,
+            "summary": "Build-stage pattern: low complexity, 1 iteration, npm test; demonstrates fast single-iteration builds"
           }
         ]
       },
-      "timestamp": 1786659399,
+      "timestamp": 1786661623,
       "ttl": 1800
     },
     "14c663f1a465056d1beab0c0e966ad9d": {
@@ -1865,6 +1865,27 @@
         "raw_response": "Mock claude: ok"
       },
       "timestamp": 1786660978,
+      "ttl": 1800
+    },
+    "00cb1141e3403052111e148f5d2cbcf4": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786661546,
+      "ttl": 1800
+    },
+    "eb67cf6540ed47ff5e3f5590f1804c32": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786661568,
       "ttl": 1800
     }
   }
