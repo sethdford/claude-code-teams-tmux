@@ -1596,33 +1596,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 95,
-            "summary": "Contains proven build execution patterns from similar fixes/features showing iteration counts (3-4), typical duration (~45-150s), file patterns affected, test strategy (npm test), and commit workflow—directly applicable to current build stage"
-          },
-          {
             "file": "metrics.json",
             "relevance": 90,
-            "summary": "Provides baseline metrics for build_duration_s (7095s) and test_duration_s (1459s)—essential for predicting build stage time requirements and budget allocation with 20 max iterations"
+            "summary": "Contains baseline build_duration_s (7095s) and test_duration_s (1459s) — direct performance expectations for the build stage"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 85,
+            "summary": "Project metadata (node, vitest, npm, javascript) defines how the build stage should execute (test runner, package manager, test patterns)"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 72,
+            "summary": "Two success patterns show iteration counts (3), file change patterns, test strategies (npm test), and approaches that worked — informative for build loop strategy"
           },
           {
             "file": "failures.json",
-            "relevance": 80,
-            "summary": "Recent test stage failures (sw-e2e-integration, sw-pipeline-test, progress-reveal) show root causes and fixes—helps inform build decisions to avoid re-introducing these issues"
+            "relevance": 68,
+            "summary": "Three failure patterns highlight stale test fixtures/mocks in sw-pipeline-test.sh and test suite issues that directly affect build stage test execution"
           },
           {
             "file": "knowledge.json",
-            "relevance": 65,
-            "summary": "Test environment failures (mktemp errors, missing directories, JSON output formatting) suggest potential environmental issues that could recur in build→test pipeline progression"
-          },
-          {
-            "file": "issues.json",
-            "relevance": 60,
-            "summary": "Historical bug fix pattern (timeout fix in daemon) shows successful approach to similar issues; gotcha about backoff checking is relevant if similar timeouts arise during build"
+            "relevance": 62,
+            "summary": "Test environment issues (mktemp /tmp/claude failures, test output format problems) could cause build stage test setup to fail"
           }
         ]
       },
-      "timestamp": 1786658096,
+      "timestamp": 1786659942,
       "ttl": 1800
     },
     "f15ac7c26c8d63f958e8c3e4a5847fc0": {
@@ -1844,6 +1844,20 @@
         }
       ],
       "timestamp": 1786659817,
+      "ttl": 1800
+    },
+    "fc014691a0b7597f90c195cdff7aac7a": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786660048,
+      "ttl": 1800
+    },
+    "2c58d61e6f90f82479b83dbf21c50b86": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786660493,
       "ttl": 1800
     }
   }
