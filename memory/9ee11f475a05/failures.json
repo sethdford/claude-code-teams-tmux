@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 1,
-      "last_seen": "2026-08-13T19:29:06Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-13T22:25:23Z",
       "category": "test_failure"
     },
     {
@@ -21,10 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
-      "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 2,
-      "last_seen": "2026-08-13T21:20:16Z",
+      "root_cause": "Test harness bug: an intermediate mock output line matching the '✓' pattern is parsed as the pass-count summary, so the reveal (final tally) overwrites/undercounts to 1/3 instead of aggregating all suite results",
+      "fix": "Fix the E2E test aggregator in sw-pipeline-test.sh to sum pass/fail counts per subtest block rather than regex-matching the last '✓ N tests passed' line in captured output; also fix underlying artifact-missing failures (plan.md/review.md not created) causing the cascading count mismatch",
+      "seen_count": 3,
+      "last_seen": "2026-08-13T23:07:37Z",
       "category": "test_failure"
     }
   ]
