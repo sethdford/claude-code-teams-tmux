@@ -1645,6 +1645,206 @@
       ],
       "timestamp": 1786658462,
       "ttl": 1800
+    },
+    "9ffec5a1b4309a58b33c35c65fa98a84": {
+      "result": {
+        "complexity": 2,
+        "risk_level": "low",
+        "success_probability": 98,
+        "recommended_template": "fast",
+        "issue_type": "documentation",
+        "key_risks": [
+          "README formatting preservation",
+          "Unclear comment location or content from automated test context"
+        ],
+        "implementation_hints": [
+          "Read current README to understand structure and locate insertion point",
+          "Add comment with proper markdown formatting",
+          "Verify no formatting breakage in rendered output",
+          "Issue indicates 'safe to close' so this is likely a test artifact requiring minimal work"
+        ]
+      },
+      "timestamp": 1786659298,
+      "ttl": 3600
+    },
+    "0441acd97c48a610f9ac1e94309313a7": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786659304,
+      "ttl": 1800
+    },
+    "f86d71778c4c02b181601e68d572a6cd": {
+      "result": {
+        "estimated_iterations": 1
+      },
+      "timestamp": 1786659309,
+      "ttl": 1800
+    },
+    "ab85f03ae5bb2dcb700691c6f7783385": {
+      "result": {
+        "estimated_cost_usd": 0.08,
+        "estimated_iterations": 1,
+        "estimated_tokens": 8500,
+        "likely_failure_stage": "none",
+        "confidence": 97
+      },
+      "timestamp": 1786659317,
+      "ttl": 3600
+    },
+    "f9c9e8b2bd49e68005879dc608624768": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "documentation",
+          "infrastructure"
+        ],
+        "complexity_assessment": {
+          "score": 3,
+          "reasoning": "Straightforward E2E test addition. Low complexity, well-scoped integration test for README comment functionality. Likely involves mocking GitHub interactions and verifying state changes."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "testing-strategy"
+          ],
+          "design": [
+            "testing-strategy"
+          ],
+          "build": [
+            "e2e-test-orchestration"
+          ],
+          "review": [
+            "two-stage-review",
+            "testing-strategy"
+          ],
+          "compound_quality": [
+            "adversarial-quality",
+            "validation-thoroughness"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about test scenarios: what edge cases exist when adding comments to README? Concurrent updates? Permission errors? File encoding issues?",
+          "testing-strategy": "Define test structure, assertions, and coverage for this E2E scenario across plan, design, and review stages to ensure complete validation.",
+          "e2e-test-orchestration": "Guide implementation of test isolation (worktrees/temp dirs), GitHub API mocking, Shipwright-specific test harness integration, and assertion patterns.",
+          "two-stage-review": "First pass validates test structure and mock correctness; second pass adversarially checks failure modes and edge cases.",
+          "adversarial-quality": "Think like chaos engineer: what happens if GitHub API returns 5xx? If file permissions fail? If README is already modified? Test must handle these.",
+          "validation-thoroughness": "Smoke test alone isn't enough—verify the actual README file is modified correctly, comment is properly formatted, and no corrupted state is left.",
+          "pr-quality": "Ensure the test code is readable: clear test names, documented assertion intent, integration points with existing test harness are obvious to reviewers."
+        },
+        "generated_skills": [
+          {
+            "name": "e2e-test-orchestration",
+            "reason": "No existing skill covers E2E test implementation patterns specific to Shipwright's multi-repo, multi-stage context: worktree isolation, GitHub mock strategies, test harness integration, and idempotence guarantees.",
+            "content": "## E2E Test Orchestration for Shipwright\n\nE2E tests in Shipwright must isolate state, mock GitHub, and integrate with the existing test harness (`scripts/sw-*-test.sh` pattern).\n\n### Test Isolation\n\n- Use temporary directories or git worktrees to avoid cross-test contamination\n- Clean up all artifacts (temp files, stashed commits, test branches) in trap handlers\n- Verify no heartbeat files, state files, or lock files leak into next test\n\n### GitHub Mocking\n\n- Mock GitHub API calls with local functions or stub binaries in test's temp directory\n- Stub `gh` CLI if used, or intercept HTTP calls via environment variables (`GH_HOST`, `GITHUB_TOKEN`)\n- Verify mocked API contracts match actual GitHub API expectations (field names, response structures)\n\n### Test Harness Integration\n\n- Follow established pattern: `source scripts/lib/compat.sh`, define test functions, emit PASS/FAIL counters\n- Use `assert_equal \"expected\" \"actual\" \"test-case-name\"` helpers for readable failure output\n- Register test in `package.json` scripts so `npm test` discovers it\n\n### Idempotence & Cleanup\n\n- Each test must produce the same result on repeated runs (no file permission issues, no stale state)\n- `trap \"cleanup\" EXIT` must remove all temporary state without failing\n- Avoid hardcoded paths—use `${TMPDIR:-/tmp}` for portability\n\n### Assertion Patterns\n\n- Assert on file contents (use `grep`, `jq`, or `diff` to avoid brittle string matching)\n- Assert on exit codes, not just stdout (tests can produce output and still fail)\n- Verify side effects: did the commit get made? Does the branch exist? Check git state directly."
+          }
+        ],
+        "review_focus": [
+          "Test isolation: does cleanup trap remove all worktrees, temp files, test branches?",
+          "GitHub mocking: are mocked API responses complete and contract-compatible?",
+          "Assertion clarity: are failures readable, or will they produce cryptic diffs?",
+          "Edge case coverage: concurrent updates, permission errors, malformed README, network timeouts",
+          "Integration correctness: does test properly invoke Shipwright commands or GitHub APIs being tested?"
+        ],
+        "risk_areas": [
+          "Test flakiness from timing-dependent mock behavior or CI environment differences",
+          "Insufficient cleanup leaving test artifacts in `.claude/` or git worktrees on disk",
+          "Brittle string assertions that break on whitespace or comment formatting changes",
+          "Missing verification of actual file state (test passes but README not actually modified)",
+          "GitHub API mock contract drift as real API evolves"
+        ]
+      },
+      "timestamp": 1786659364,
+      "ttl": 3600
+    },
+    "61c5f4a9ce6598c2f1fc048e0a7ce958": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 95,
+            "summary": "Build-stage pattern with low complexity, 1 iteration, npm test strategy, and test-focused goal—directly matches profile of E2E test task"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 90,
+            "summary": "Low-complexity build fix completing in 1 iteration with npm test, demonstrates quick single-iteration pattern matching this E2E scenario"
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Tracks build-stage test failures and provides timeout remediation guidance—relevant if test execution stalls during build"
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 65,
+            "summary": "Two build-stage patterns with npm test and low complexity, shows prior successful builds though less specific to documentation tasks"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 60,
+            "summary": "Build-stage patterns with npm test and low complexity, provides generic build success baseline but lacks task-specific context"
+          }
+        ]
+      },
+      "timestamp": 1786659399,
+      "ttl": 1800
+    },
+    "14c663f1a465056d1beab0c0e966ad9d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786659433,
+      "ttl": 1800
+    },
+    "ce6062f4827a65116c864f042e2a4866": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1786659528,
+      "ttl": 1800
+    },
+    "8982d1581b43f5fb526f13ed6c496a68": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786659782,
+      "ttl": 1800
+    },
+    "f96b04a8c3bb685b9c697fe068d0f6d9": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1786659817,
+      "ttl": 1800
     }
   }
 }
