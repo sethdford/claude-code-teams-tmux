@@ -6,14 +6,14 @@
       "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
       "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
       "seen_count": 4,
-      "last_seen": "2026-08-14T01:22:24Z",
+      "last_seen": "2026-08-14T02:42:52Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan/review/dod artifacts are never written to .claude/pipeline-artifacts/, cascading into resume/cleanup/intelligence-skip test failures",
-      "fix": "ensure the plan and review stage handlers actually create plan.md/dod.md/review.md artifacts (and update the low-complexity intelligence-skip check/jq parsing) before running e2e suite",
+      "root_cause": "Stale pipeline lock from a prior run left status 'running', causing sw-e2e-integration-test's fast-pipeline test to abort with 'pipeline already in progress'; sw-intent-analysis-test and sw-loop-test fail on unrelated pre-existing assertions (missing schema fields, loop stuckness detection)",
+      "fix": "Clear/reset the stale pipeline lock before test runs (or add lock cleanup to test setup/teardown) and separately fix intent-analysis schema output and loop stuckness detection logic",
       "seen_count": 1,
       "last_seen": "2026-08-13T22:37:09Z",
       "category": "test_failure"
@@ -21,11 +21,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Log excerpt shows all tests passing (PASS: 29/33/24/26, FAIL: 0) with no actual error present",
-      "fix": "No fix needed — inspect the full CI log for the actual failing suite/stage, as the provided excerpt does not contain a failure",
+      "root_cause": "Pipeline test fixtures assert on plan.md/review.md paths and jq-parsed RL episode fields that no longer match the current sw-pipeline.sh output format, likely due to a prior artifact-path or JSON-output change not reflected in the test mocks",
+      "fix": "Update sw-pipeline-test.sh assertions and mock outputs to match current artifact paths (.claude/pipeline-artifacts/plan.md, review.md) and ensure RL episode JSON is valid before piping to jq",
       "seen_count": 1,
-      "last_seen": "2026-08-14T01:53:45Z",
-      "category": "unknown"
+      "last_seen": "2026-08-14T01:07:49Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Failed: 1",
+      "root_cause": "Cross-repo memory promotion test asserts a pattern copy that the promotion function is not performing (logic/assertion mismatch in sw-self-optimize memory promotion path)",
+      "fix": "Inspect scripts/sw-self-optimize.sh memory promotion function and its test to align expected copy behavior (file path, source/target repo hash, or confidence threshold gating the copy)",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T01:58:41Z",
+      "category": "test_failure"
     }
   ]
 }
