@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
       "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
-      "seen_count": 5,
-      "last_seen": "2026-08-14T04:36:33Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-14T05:20:44Z",
       "category": "test_failure"
     },
     {
@@ -39,10 +39,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hung past the 300s timeout, likely due to a real Claude/API-dependent call blocking without a mock",
-      "fix": "add proper mocking/timeout guards for intent-analysis parsing logic and the e2e-integration Claude API call to prevent hangs and fix the assertion failure",
+      "root_cause": "sw-intent-analysis-test failed (exit 1 after 77s) and sw-e2e-integration-test hung/exceeded the 301s timeout",
+      "fix": "Inspect sw-intent-analysis-test.sh assertion failures and add/raise timeout or mock external calls in sw-e2e-integration-test to prevent hangs",
       "seen_count": 1,
-      "last_seen": "2026-08-14T03:30:26Z",
+      "last_seen": "2026-08-14T03:59:05Z",
       "category": "test_failure"
     }
   ]
