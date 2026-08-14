@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 6,
-      "last_seen": "2026-08-14T04:42:49Z",
+      "seen_count": 7,
+      "last_seen": "2026-08-14T06:43:38Z",
       "category": "test_failure"
     },
     {
@@ -39,20 +39,20 @@
     {
       "stage": "test",
       "pattern": "Testing CONTRACT: pm can parse recruit team --json for team/agents/model... ERROR: scripts/sw-recruit-test.sh:1131 exited with status 5",
-      "root_cause": "sw-recruit-test.sh:1131 (recruit team --json contract) hit an unrelated transient failure — job-log summary shows sw-recruit-test passed cleanly (17s, no FAIL), and the actual failing suites in this run are sw-e2e-integration-test (stale pipeline lock blocking a second run) and sw-intent-analysis-test (JSON schema missing version/goal/criteria fields)",
-      "fix": "Release/clear the stale pipeline-1936 lock before the e2e-integration test reruns (or add lock cleanup to test teardown), and fix analyze_intent's JSON schema generation to include the required version/goal/criteria fields",
+      "root_cause": "sw-recruit-test.sh:1131 asserts 'pm can parse recruit team --json' expects team/agents/model keys but actual JSON output shape from `recruit team --json` diverged from what the test's parser expects",
+      "fix": "Compare current `shipwright recruit team --json` output against the assertion in sw-recruit-test.sh:1131 and update either the JSON schema emitted by sw-recruit.sh or the test's jq query to match",
       "seen_count": 1,
       "last_seen": "2026-08-14T01:46:18Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test exited with status 1 after ~33s, indicating an assertion or command failure in the intent analysis module tests",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly with verbose output to isolate the failing assertion and fix the underlying logic or update the stale expectation",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Test suite passed cleanly; no actual failure occurred (log shows PASS counts with zero failures across all suites)",
+      "fix": "Re-run pipeline; likely a transient log-capture or exit-code mismatch rather than a real test failure",
       "seen_count": 2,
-      "last_seen": "2026-08-14T06:08:10Z",
-      "category": "test_failure"
+      "last_seen": "2026-08-14T07:29:39Z",
+      "category": "flaky"
     }
   ]
 }
