@@ -32,8 +32,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Cross-repo memory promotion test asserts a pattern copy that the promotion function is not performing (logic/assertion mismatch in sw-self-optimize memory promotion path)",
       "fix": "Inspect scripts/sw-self-optimize.sh memory promotion function and its test to align expected copy behavior (file path, source/target repo hash, or confidence threshold gating the copy)",
-      "seen_count": 2,
-      "last_seen": "2026-08-14T10:01:50Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T01:58:41Z",
       "category": "test_failure"
     },
     {
@@ -48,11 +48,20 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
-      "root_cause": "Two flaky/pre-existing failures in sw-e2e-integration-test and sw-intent-analysis-test (loop-test also failed), unrelated to a single systemic change, likely environment-dependent (API keys/timing) test failures",
-      "fix": "Re-run failed suites in isolation with verbose output to confirm flakiness; if reproducible, inspect sw-e2e-integration-test and sw-intent-analysis-test assertions for stale mocks or timing assumptions and fix accordingly",
+      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit the 302s timeout, likely due to a live/slow Claude API dependency or a regression in intent-analysis logic",
+      "fix": "Inspect sw-intent-analysis-test.sh failure output for the specific assertion, and increase or mock the timeout dependency in sw-e2e-integration-test",
       "seen_count": 1,
       "last_seen": "2026-08-14T06:21:34Z",
-      "category": "flaky"
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "Three unrelated suites (sw-e2e-integration-test, sw-intent-analysis-test, sw-recruit-test) failed independently — likely real regressions or environment-sensitive assertions rather than a single shared cause.",
+      "fix": "Inspect each failing suite's output individually (integration/API mocking, intent-analysis scoring thresholds, recruit-test fixtures) and fix or update assertions; rerun with -x to isolate root cause per suite.",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T09:28:49Z",
+      "category": "test_failure"
     }
   ]
 }
