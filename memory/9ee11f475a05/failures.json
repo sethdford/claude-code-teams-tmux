@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
       "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
-      "seen_count": 8,
-      "last_seen": "2026-08-14T08:10:44Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-14T07:58:55Z",
       "category": "test_failure"
     },
     {
@@ -32,27 +32,27 @@
       "pattern": "Failed: 1",
       "root_cause": "Cross-repo memory promotion test asserts a pattern copy that the promotion function is not performing (logic/assertion mismatch in sw-self-optimize memory promotion path)",
       "fix": "Inspect scripts/sw-self-optimize.sh memory promotion function and its test to align expected copy behavior (file path, source/target repo hash, or confidence threshold gating the copy)",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T01:58:41Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-14T10:01:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior interrupted run, and sw-intent-analysis-test/sw-recruit-test/sw-daemon-test have schema/auth-check regressions unrelated to that lock",
-      "fix": "clear stale pipeline lock before e2e run (or auto-abort on lock conflict) and add the missing daemon_preflight_auth_check plus required intent-analysis schema fields (version, goal, criteria)",
+      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hung past the 300s timeout, likely due to a real Claude/API-dependent call blocking without a mock",
+      "fix": "add proper mocking/timeout guards for intent-analysis parsing logic and the e2e-integration Claude API call to prevent hangs and fix the assertion failure",
       "seen_count": 2,
-      "last_seen": "2026-08-14T09:50:24Z",
+      "last_seen": "2026-08-14T07:06:43Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m missing schema file yields no payload",
-      "root_cause": "Cost dashboard test fixture has no cost entries for the last 30 days, so context-efficiency rendering has no data to display",
-      "fix": "Seed a mock costs.json entry with a loop.context_efficiency event before running the dashboard render assertions in sw-cost-test.sh",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
+      "root_cause": "Two flaky/pre-existing failures in sw-e2e-integration-test and sw-intent-analysis-test (loop-test also failed), unrelated to a single systemic change, likely environment-dependent (API keys/timing) test failures",
+      "fix": "Re-run failed suites in isolation with verbose output to confirm flakiness; if reproducible, inspect sw-e2e-integration-test and sw-intent-analysis-test assertions for stale mocks or timing assumptions and fix accordingly",
       "seen_count": 1,
-      "last_seen": "2026-08-14T08:47:22Z",
-      "category": "test_failure"
+      "last_seen": "2026-08-14T06:21:34Z",
+      "category": "flaky"
     }
   ]
 }
