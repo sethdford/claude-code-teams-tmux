@@ -2,21 +2,48 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
-      "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
+      "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
       "seen_count": 2,
-      "last_seen": "2026-08-13T21:55:08Z",
+      "last_seen": "2026-08-13T22:30:18Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "unknown - log excerpt shows all tests passing (PASS: 26, FAIL: 0) with no visible failure line",
-      "fix": "re-run the test stage and capture full output, as the truncated log does not contain the actual failing assertion",
+      "pattern": "Failed: 1",
+      "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
+      "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
       "seen_count": 1,
-      "last_seen": "2026-08-13T22:37:09Z",
+      "last_seen": "2026-08-13T20:08:02Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
+      "root_cause": "sw-cost-test.sh asserts CONTEXT EFFICIENCY dashboard output but no cost entries exist in the last 30 days, so the dashboard prints a no-data warning instead of rendering event-derived stats",
+      "fix": "seed a loop.context_efficiency cost entry (or mock costs.json) in the test fixture before invoking the dashboard render so utilization data is present",
+      "seen_count": 3,
+      "last_seen": "2026-08-13T23:38:28Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "This is not a failure — the log shows all 29+33+24+26 assertions passing (PASS with FAIL: 0) across the RL/autoresearch test suites; the 'error pattern' matched is just an informational patrol log line, not an actual failure",
+      "fix": "Re-check the failure classifier: the test stage should be marked passing since all recorded PASS/FAIL counts show 0 failures; verify the pipeline's failure-detection logic isn't misinterpreting patrol/info log lines as errors",
+      "seen_count": 1,
+      "last_seen": "2026-08-13T22:58:21Z",
       "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
+      "root_cause": "Cross-repo pattern promotion test expects promoted memory patterns to appear in the target repo's memory store, but the promotion function likely isn't writing/matching the expected repo-hash path or pattern schema",
+      "fix": "Inspect scripts/sw-self-optimize-test.sh assertion for 'Memory promotion copies cross-repo patterns' and verify the promote function in sw-self-optimize.sh writes to the correct ~/.shipwright/memory/<repo-hash>/ path with matching pattern format",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T00:09:58Z",
+      "category": "test_failure"
     }
   ]
 }
