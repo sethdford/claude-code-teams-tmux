@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 6,
-      "last_seen": "2026-08-14T15:26:26Z",
+      "seen_count": 7,
+      "last_seen": "2026-08-14T19:04:22Z",
       "category": "test_failure"
     },
     {
@@ -24,7 +24,7 @@
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
       "seen_count": 13,
-      "last_seen": "2026-08-14T17:39:49Z",
+      "last_seen": "2026-08-14T18:08:49Z",
       "category": "test_failure"
     },
     {
@@ -57,29 +57,11 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "Test suite instability: sw-e2e-integration-test failed on a pre-existing pipeline lock (pipeline-2109 already running) rather than the change under test, sw-intent-analysis-test's generated JSON is missing required schema fields (version, goal, criteria), and sw-loop-test's stuckness detection assertion failed",
-      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or add lock cleanup in test setup/teardown), fix analyze_intent's JSON generation to always emit version/goal/criteria fields, and debug the loop stuckness detector's failing assertion in sw-loop-test",
+      "root_cause": "sw-e2e-integration-test hit the 301s harness timeout because it depends on live Claude API / GitHub calls that did not respond within budget",
+      "fix": "increase timeout or mark sw-e2e-integration-test as budget-gated/skippable in CI, and add a hard per-call timeout inside the test itself",
       "seen_count": 1,
       "last_seen": "2026-08-14T11:04:13Z",
-      "category": "flaky"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mocks don't produce plan.md/review.md artifacts, cascading into E2E, resume, and cleanup test failures",
-      "fix": "Update mock claude CLI/stage handlers in sw-pipeline-test.sh to write plan.md and review.md artifacts before assertions run",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T18:15:03Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 81 tests failed\u001b[0m",
-      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test/sw-loop-test failures indicate flaky or environment-dependent test failures (integration test against live services, timing-sensitive loop test)",
-      "fix": "Re-run failing suites in isolation to confirm flakiness; add retry/mocking for external dependencies in sw-e2e-integration-test and increase timeout tolerance in sw-loop-test",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T19:23:05Z",
-      "category": "flaky"
+      "category": "timeout"
     }
   ]
 }
