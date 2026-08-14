@@ -2,38 +2,47 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
-      "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
-      "seen_count": 4,
-      "last_seen": "2026-08-14T02:42:52Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Stale pipeline lock from a prior run left status 'running', causing sw-e2e-integration-test's fast-pipeline test to abort with 'pipeline already in progress'; sw-intent-analysis-test and sw-loop-test fail on unrelated pre-existing assertions (missing schema fields, loop stuckness detection)",
-      "fix": "Clear/reset the stale pipeline lock before test runs (or add lock cleanup to test setup/teardown) and separately fix intent-analysis schema output and loop stuckness detection logic",
-      "seen_count": 1,
-      "last_seen": "2026-08-13T22:37:09Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Pipeline test fixtures assert on plan.md/review.md paths and jq-parsed RL episode fields that no longer match the current sw-pipeline.sh output format, likely due to a prior artifact-path or JSON-output change not reflected in the test mocks",
-      "fix": "Update sw-pipeline-test.sh assertions and mock outputs to match current artifact paths (.claude/pipeline-artifacts/plan.md, review.md) and ensure RL episode JSON is valid before piping to jq",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T01:07:49Z",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
+      "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
+      "seen_count": 3,
+      "last_seen": "2026-08-13T23:30:36Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Failed: 1",
-      "root_cause": "Cross-repo memory promotion test asserts a pattern copy that the promotion function is not performing (logic/assertion mismatch in sw-self-optimize memory promotion path)",
-      "fix": "Inspect scripts/sw-self-optimize.sh memory promotion function and its test to align expected copy behavior (file path, source/target repo hash, or confidence threshold gating the copy)",
+      "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
+      "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
       "seen_count": 1,
-      "last_seen": "2026-08-14T01:58:41Z",
+      "last_seen": "2026-08-13T20:08:02Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
+      "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
+      "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
+      "seen_count": 5,
+      "last_seen": "2026-08-14T03:38:50Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test fail with exit 1, and sw-e2e-integration-test hangs and hits the 300s timeout, indicating regressions or flaky/hanging behavior across three suites",
+      "fix": "Run sw-intent-analysis-test.sh and sw-loop-test.sh locally with verbose output to isolate the failing assertions, and profile sw-e2e-integration-test.sh for a hang (likely a blocking network/API call or missing mock) before re-running the suite",
+      "seen_count": 1,
+      "last_seen": "2026-08-13T22:28:41Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Testing CONTRACT: pm can parse recruit team --json for team/agents/model... ERROR: scripts/sw-recruit-test.sh:1131 exited with status 5",
+      "root_cause": "sw-recruit-test.sh:1131 asserts 'pm can parse recruit team --json' expects team/agents/model keys but actual JSON output shape from `recruit team --json` diverged from what the test's parser expects",
+      "fix": "Compare current `shipwright recruit team --json` output against the assertion in sw-recruit-test.sh:1131 and update either the JSON schema emitted by sw-recruit.sh or the test's jq query to match",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T01:46:18Z",
       "category": "test_failure"
     }
   ]
