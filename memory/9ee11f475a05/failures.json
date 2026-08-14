@@ -2,39 +2,30 @@
   "failures": [
     {
       "stage": "test",
-      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
-      "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 3,
-      "last_seen": "2026-08-13T23:30:36Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
-      "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 1,
-      "last_seen": "2026-08-13T20:08:02Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
-      "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 3,
-      "last_seen": "2026-08-14T00:29:23Z",
+      "root_cause": "E2E pipeline test failures cascade from missing plan.md artifact (Plan stage), which breaks Review, Full E2E, Resume, and Cleanup tests downstream; separately an intelligence test fails on unquoted jq numeric parse error",
+      "fix": "Fix pipeline_stage_plan to write .claude/pipeline-artifacts/plan.md before marking stage complete, and quote/validate the numeric value passed to jq in the complexity-skip check",
+      "seen_count": 4,
+      "last_seen": "2026-08-14T01:22:24Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test fail with exit 1, and sw-e2e-integration-test hangs and hits the 300s timeout, indicating regressions or flaky/hanging behavior across three suites",
-      "fix": "Run sw-intent-analysis-test.sh and sw-loop-test.sh locally with verbose output to isolate the failing assertions, and profile sw-e2e-integration-test.sh for a hang (likely a blocking network/API call or missing mock) before re-running the suite",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Cleanup: Failure handler removes watch label... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan/review/dod artifacts are never written to .claude/pipeline-artifacts/, cascading into resume/cleanup/intelligence-skip test failures",
+      "fix": "ensure the plan and review stage handlers actually create plan.md/dod.md/review.md artifacts (and update the low-complexity intelligence-skip check/jq parsing) before running e2e suite",
       "seen_count": 1,
-      "last_seen": "2026-08-13T22:28:41Z",
+      "last_seen": "2026-08-13T22:37:09Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Log excerpt shows all tests passing (PASS: 29/33/24/26, FAIL: 0) with no actual error present",
+      "fix": "No fix needed — inspect the full CI log for the actual failing suite/stage, as the provided excerpt does not contain a failure",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T01:53:45Z",
+      "category": "unknown"
     }
   ]
 }
