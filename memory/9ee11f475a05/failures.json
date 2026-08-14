@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 7,
-      "last_seen": "2026-08-14T06:43:38Z",
+      "seen_count": 10,
+      "last_seen": "2026-08-14T13:06:33Z",
       "category": "test_failure"
     },
     {
@@ -57,28 +57,10 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-cost-test.sh assumes cost dashboard has entries within the last 30 days, but the test's costs.json fixture has no recent entries so the CONTEXT EFFICIENCY section renders the empty-state message instead of budget utilization data",
-      "fix": "Seed the test fixture with a costs.json entry timestamped within the last 30 days before invoking the cost dashboard, or adjust the assertion to handle the no-data case explicitly",
+      "root_cause": "sw-intent-analysis-test asserts the intent analysis JSON schema includes version, goal, and criteria fields, but the current analyze_intent output omits one or more of them",
+      "fix": "Update analyze_intent's JSON generation (or the schema check) to include the required version, goal, and criteria fields so output matches the expected schema",
       "seen_count": 1,
-      "last_seen": "2026-08-14T11:00:49Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock stubs no longer produce plan.md/review.md artifacts and jq parses a non-numeric RL episode field, cascading into dependent E2E/resume/cleanup test failures",
-      "fix": "fix the plan/review mock stage stubs to write their expected artifact files and correct the RL episode field to emit valid numeric JSON before jq parses it",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T11:40:22Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[2moutput missing: Everything is clean\u001b[0m",
-      "root_cause": "Test harness aggregator failed to print or detect the final 'Everything is clean' summary line despite all individual suites passing, likely due to a missing/renamed final check or truncated output capture in sw-test-all.sh",
-      "fix": "Verify sw-test-all.sh still emits the 'Everything is clean' sentinel after all suites pass and that output capture isn't truncating the final summary line",
-      "seen_count": 3,
-      "last_seen": "2026-08-14T13:02:54Z",
+      "last_seen": "2026-08-14T11:04:13Z",
       "category": "test_failure"
     }
   ]
