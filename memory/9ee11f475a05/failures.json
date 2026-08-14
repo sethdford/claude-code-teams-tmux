@@ -53,6 +53,33 @@
       "seen_count": 2,
       "last_seen": "2026-08-14T07:29:39Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "sw-cost-test.sh assumes cost dashboard has entries within the last 30 days, but the test's costs.json fixture has no recent entries so the CONTEXT EFFICIENCY section renders the empty-state message instead of budget utilization data",
+      "fix": "Seed the test fixture with a costs.json entry timestamped within the last 30 days before invoking the cost dashboard, or adjust the assertion to handle the no-data case explicitly",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T11:00:49Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-pipeline-test.sh mock stubs no longer produce plan.md/review.md artifacts and jq parses a non-numeric RL episode field, cascading into dependent E2E/resume/cleanup test failures",
+      "fix": "fix the plan/review mock stage stubs to write their expected artifact files and correct the RL episode field to emit valid numeric JSON before jq parses it",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T11:40:22Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[2moutput missing: Everything is clean\u001b[0m",
+      "root_cause": "Test harness aggregator failed to print or detect the final 'Everything is clean' summary line despite all individual suites passing, likely due to a missing/renamed final check or truncated output capture in sw-test-all.sh",
+      "fix": "Verify sw-test-all.sh still emits the 'Everything is clean' sentinel after all suites pass and that output capture isn't truncating the final summary line",
+      "seen_count": 3,
+      "last_seen": "2026-08-14T13:02:54Z",
+      "category": "test_failure"
     }
   ]
 }
