@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 6,
-      "last_seen": "2026-08-14T16:39:46Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-14T09:31:53Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
       "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 1,
-      "last_seen": "2026-08-13T20:08:02Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-14T15:12:04Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 13,
-      "last_seen": "2026-08-14T15:38:02Z",
+      "seen_count": 12,
+      "last_seen": "2026-08-14T16:12:57Z",
       "category": "test_failure"
     },
     {
@@ -48,10 +48,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Three test suites (sw-e2e-integration-test, sw-intent-analysis-test, sw-loop-test) exited non-zero, failing the full suite run",
-      "fix": "Inspect the failing suites' output directly (re-run each script standalone) to identify the specific assertion failures and fix the underlying code or update the tests",
+      "root_cause": "Memory promotion test asserts cross-repo pattern copy but the copied pattern's fields (e.g. confidence/timestamp reset) don't match the expected assertion in sw-self-optimize-test.sh",
+      "fix": "Inspect the failing assertion in sw-self-optimize-test.sh for 'Memory promotion copies cross-repo patterns' and align sw-self-optimize.sh's promotion logic output fields with what the test expects",
       "seen_count": 2,
       "last_seen": "2026-08-14T07:29:39Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
+      "root_cause": "2 of 128 tests in the RL/autoresearch suite failed",
+      "fix": "Rerun with full log context to isolate the 2 failing assertions (log excerpt only shows passing tests, likely truncated before the failures) and inspect sw-reward-aggregator-test.sh or related RL module output",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T14:38:10Z",
       "category": "test_failure"
     }
   ]
