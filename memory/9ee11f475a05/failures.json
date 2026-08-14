@@ -41,15 +41,15 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior interrupted run, and sw-intent-analysis-test/sw-recruit-test/sw-daemon-test have schema/auth-check regressions unrelated to that lock",
       "fix": "clear stale pipeline lock before e2e run (or auto-abort on lock conflict) and add the missing daemon_preflight_auth_check plus required intent-analysis schema fields (version, goal, criteria)",
-      "seen_count": 1,
-      "last_seen": "2026-08-14T03:59:05Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-14T09:50:24Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m missing schema file yields no payload",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), likely due to a missing/absent schema fixture causing the intent-analysis JSON payload generation to short-circuit with no output",
-      "fix": "Ensure the expected schema fixture file is present/generated before test setup, and add an explicit assertion/error message when the schema file is missing instead of silently yielding an empty payload",
+      "root_cause": "Cost dashboard test fixture has no cost entries for the last 30 days, so context-efficiency rendering has no data to display",
+      "fix": "Seed a mock costs.json entry with a loop.context_efficiency event before running the dashboard render assertions in sw-cost-test.sh",
       "seen_count": 1,
       "last_seen": "2026-08-14T08:47:22Z",
       "category": "test_failure"
