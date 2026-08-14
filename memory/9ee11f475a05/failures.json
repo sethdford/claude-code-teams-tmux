@@ -6,7 +6,7 @@
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
       "seen_count": 8,
-      "last_seen": "2026-08-14T20:46:47Z",
+      "last_seen": "2026-08-14T22:06:04Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
       "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 2,
-      "last_seen": "2026-08-14T15:12:04Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-14T23:04:27Z",
       "category": "test_failure"
     },
     {
@@ -23,10 +23,9 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 15,
-      "last_seen": "2026-08-14T22:44:09Z",
-      "category": "infra_issue",
-      "confidence": 85
+      "seen_count": 14,
+      "last_seen": "2026-08-14T21:26:59Z",
+      "category": "test_failure"
     },
     {
       "stage": "test",
@@ -58,11 +57,11 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test exited with failure separate from the timed-out e2e-integration-test, indicating a regression in intent analysis scoring/classification logic",
-      "fix": "run scripts/sw-intent-analysis-test.sh locally to view the specific assertion diff and fix the underlying logic or update stale expected fixtures",
+      "root_cause": "sw-loop-test failed (exit 1 after 171s) and sw-e2e-integration-test timed out after 301s, likely due to real Claude/network calls or session-state flakiness rather than a code regression",
+      "fix": "Rerun sw-loop-test standalone to see the actual assertion failure and check if it depends on external API calls that need mocking or a longer timeout",
       "seen_count": 1,
       "last_seen": "2026-08-14T14:38:10Z",
-      "category": "test_failure"
+      "category": "flaky"
     }
   ]
 }
