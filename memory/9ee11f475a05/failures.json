@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 12,
-      "last_seen": "2026-08-15T20:49:55Z",
+      "seen_count": 16,
+      "last_seen": "2026-08-15T20:03:50Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
       "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 3,
-      "last_seen": "2026-08-14T23:04:27Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-15T21:30:39Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 23,
-      "last_seen": "2026-08-15T15:16:58Z",
+      "seen_count": 24,
+      "last_seen": "2026-08-15T20:59:23Z",
       "category": "test_failure"
     },
     {
@@ -59,8 +59,8 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "2 of 128 tests failed in the RL/policy pipeline test suite (autoresearch e2e or a preceding suite), likely a nondeterministic assertion tied to timing/ordering in reward or bandit convergence logic",
       "fix": "Inspect the failing 2 assertions in the pre-summary log output not shown here, then stabilize by removing timing/order dependence or fixing the incorrect expected value",
-      "seen_count": 4,
-      "last_seen": "2026-08-15T19:57:03Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-15T01:35:23Z",
       "category": "flaky"
     },
     {
@@ -75,37 +75,10 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "e2e-integration-test failed because a prior pipeline job left an unreleased lock (pipeline-2370) for issue #2370, causing the fast-pipeline test to see 'already in progress'; intent-analysis-test asserts a JSON schema missing version/goal/criteria fields not yet emitted by analyze_intent; self-optimize-test's memory promotion test passes malformed/empty JSON to jq --argjson",
-      "fix": "Release/clean stale pipeline locks before the e2e-integration suite runs (or add lock cleanup in test setup/teardown), add the missing version/goal/criteria fields to the intent-analysis JSON schema output, and guard the self-optimize memory-promotion jq call with a valid-JSON check before --argjson",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T10:25:28Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock plan/review stage helpers stopped writing plan.md and review.md before test assertions run, cascading into e2e/resume/cleanup/complexity-skip failures that depend on those artifacts",
-      "fix": "restore plan.md/review.md generation in the mocked plan and review stage functions in sw-pipeline-test.sh so downstream artifact checks pass",
+      "root_cause": "Memory promotion test fails because cross-repo pattern copy logic doesn't correctly transfer pattern data between repo memory stores",
+      "fix": "Check sw-self-optimize.sh memory promotion function for path/schema mismatch when copying patterns across repo boundaries",
       "seen_count": 2,
-      "last_seen": "2026-08-15T18:59:26Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m missing list truncates at 15... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Test log truncated at 15 lines mid-run, unrelated to actual assertions (PASS: 29/33/24/26, FAIL: 0 across all suites)",
-      "fix": "Ignore truncation artifact; no code fix needed — increase log capture line limit if full output is required for debugging",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T16:28:25Z",
-      "category": "unknown"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 79 tests failed\u001b[0m",
-      "root_cause": "sw-intent-analysis-test failed an assertion (exit 1) unrelated to the sw-e2e-integration-test timeout",
-      "fix": "Run scripts/sw-intent-analysis-test.sh locally to inspect the specific failing assertion and correct the underlying logic or test expectation",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T17:10:59Z",
+      "last_seen": "2026-08-15T18:02:05Z",
       "category": "test_failure"
     }
   ]
