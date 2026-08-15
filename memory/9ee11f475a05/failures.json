@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 9,
-      "last_seen": "2026-08-15T00:58:24Z",
+      "seen_count": 7,
+      "last_seen": "2026-08-14T19:04:22Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
       "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 3,
-      "last_seen": "2026-08-14T23:04:27Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-15T02:53:51Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 19,
-      "last_seen": "2026-08-15T05:39:18Z",
+      "seen_count": 20,
+      "last_seen": "2026-08-15T10:03:57Z",
       "category": "test_failure"
     },
     {
@@ -48,46 +48,37 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Memory promotion test asserts cross-repo pattern copy but the copied pattern's fields (e.g. confidence/timestamp reset) don't match the expected assertion in sw-self-optimize-test.sh",
-      "fix": "Inspect the failing assertion in sw-self-optimize-test.sh for 'Memory promotion copies cross-repo patterns' and align sw-self-optimize.sh's promotion logic output fields with what the test expects",
-      "seen_count": 2,
-      "last_seen": "2026-08-14T07:29:39Z",
+      "root_cause": "E2E test env not being cleaned/reset between runs causes stale artifacts (plan.md/review.md never generated) and one jq parse error on malformed RL episode JSON, cascading into 6 failures",
+      "fix": "Ensure pipeline_test setup regenerates a clean pipeline-artifacts dir per test and quote/validate JSON before piping to jq in the intelligence complexity test",
+      "seen_count": 4,
+      "last_seen": "2026-08-15T09:23:41Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit a 301s timeout, together accounting for the 4 FAIL count",
+      "fix": "Investigate the intent-analysis assertion failure directly and increase or diagnose the e2e-integration-test timeout (likely a hung external/API call)",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T11:04:13Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
-      "root_cause": "2 of 128 tests failed in the RL/policy pipeline test suite (autoresearch e2e or a preceding suite), likely a nondeterministic assertion tied to timing/ordering in reward or bandit convergence logic",
-      "fix": "Inspect the failing 2 assertions in the pre-summary log output not shown here, then stabilize by removing timing/order dependence or fixing the incorrect expected value",
-      "seen_count": 3,
-      "last_seen": "2026-08-15T07:42:29Z",
+      "root_cause": "Unrelated pre-existing test failures (sw-daemon-test, sw-e2e-integration-test, sw-intent-analysis-test) unrelated to this change caused the 2 FAIL count",
+      "fix": "Investigate and fix sw-daemon-test, sw-e2e-integration-test, and sw-intent-analysis-test failures independently, or rerun to confirm flakiness",
+      "seen_count": 1,
+      "last_seen": "2026-08-14T22:11:33Z",
       "category": "flaky"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2m  audit schema and tool-failure handling\u001b[0m",
-      "root_cause": "Cost dashboard's CONTEXT EFFICIENCY test asserts on event-derived output but no cost entries exist in the 30-day test fixture window, so costs.json is empty at assertion time",
-      "fix": "Seed a cost entry with a recent timestamp (or mock the date window) before running the CONTEXT EFFICIENCY assertions in sw-cost-test.sh",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T06:24:29Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan.md/review.md artifacts are never written by the mocked pipeline stages, cascading into E2E, resume, and cleanup test failures",
-      "fix": "verify the plan and review stage mock/handler writes plan.md and review.md to .claude/pipeline-artifacts/ before the test assertions check for them",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T08:24:46Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Missing template returns error... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a leftover pipeline lock from a prior run left pipeline-2304 marked as running, blocking the fast pipeline test; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "Clear stale pipeline locks before/after e2e-integration-test runs (or add lock cleanup in test teardown), and update analyze_intent to populate version/goal/criteria in its output schema",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T09:34:52Z",
+      "root_cause": "One test in the suite failed but the provided log excerpt only shows passing tests from other suites, truncating the actual failing assertion output",
+      "fix": "Re-run with full untruncated log capture (or isolate the failing test file) to identify which of the 128 tests failed and inspect its specific assertion diff",
+      "seen_count": 3,
+      "last_seen": "2026-08-15T06:31:28Z",
       "category": "test_failure"
     }
   ]
