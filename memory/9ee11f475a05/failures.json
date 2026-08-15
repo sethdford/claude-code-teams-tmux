@@ -5,8 +5,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pre-existing/environmental test failures unrelated to the change (e2e-integration, intent-analysis, and lib-daemon-failure suites) causing the full suite run to fail",
       "fix": "Investigate and fix sw-e2e-integration-test, sw-intent-analysis-test, and sw-lib-daemon-failure-test individually, or exclude environment-dependent e2e/integration suites from the standard test gate",
-      "seen_count": 15,
-      "last_seen": "2026-08-15T18:10:35Z",
+      "seen_count": 11,
+      "last_seen": "2026-08-15T18:02:05Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "Failed: 1",
       "root_cause": "Test suite uses stale fixtures/mocks expecting pipeline artifacts (plan.md, review.md) and jq-parseable pipeline_id output that the current pipeline implementation no longer produces in that format",
       "fix": "Update sw-pipeline-test.sh mocks and assertions to match current artifact paths/output format for plan, review, and intelligence complexity stages",
-      "seen_count": 3,
-      "last_seen": "2026-08-14T23:04:27Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-15T16:01:39Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "Progress reveal function likely counts only the first assertion line per test instead of all matched checkmarks, undercounting pass total when a test's output spans multiple ✓ lines",
       "fix": "Fix the pass-count aggregation in the memory promotion test's reveal/summary logic to count all ✓ occurrences per test block, not just the first",
-      "seen_count": 21,
-      "last_seen": "2026-08-15T14:47:38Z",
+      "seen_count": 24,
+      "last_seen": "2026-08-15T19:22:52Z",
       "category": "test_failure"
     },
     {
@@ -50,8 +50,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Memory promotion test asserts cross-repo pattern copy but the copied pattern's fields (e.g. confidence/timestamp reset) don't match the expected assertion in sw-self-optimize-test.sh",
       "fix": "Inspect the failing assertion in sw-self-optimize-test.sh for 'Memory promotion copies cross-repo patterns' and align sw-self-optimize.sh's promotion logic output fields with what the test expects",
-      "seen_count": 2,
-      "last_seen": "2026-08-14T07:29:39Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-15T14:20:21Z",
       "category": "test_failure"
     },
     {
@@ -59,36 +59,45 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "2 of 128 tests failed in the RL/policy pipeline test suite (autoresearch e2e or a preceding suite), likely a nondeterministic assertion tied to timing/ordering in reward or bandit convergence logic",
       "fix": "Inspect the failing 2 assertions in the pre-summary log output not shown here, then stabilize by removing timing/order dependence or fixing the incorrect expected value",
-      "seen_count": 2,
-      "last_seen": "2026-08-15T01:35:23Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-15T07:42:29Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  audit schema and tool-failure handling\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh's mock claude/loop binary no longer emits plan.md/review.md artifacts and the RL policy jq call receives non-JSON reward output, cascading into 6 stage/artifact/exit-code failures",
-      "fix": "fix the mock stage scripts to write plan.md/dod.md/tasks and review.md before the E2E assertions run, and ensure the RL episode reward line is valid JSON before piping to jq",
+      "root_cause": "Cost dashboard's CONTEXT EFFICIENCY test asserts on event-derived output but no cost entries exist in the 30-day test fixture window, so costs.json is empty at assertion time",
+      "fix": "Seed a cost entry with a recent timestamp (or mock the date window) before running the CONTEXT EFFICIENCY assertions in sw-cost-test.sh",
       "seen_count": 1,
       "last_seen": "2026-08-15T06:24:29Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "Memory promotion test expects cross-repo pattern files to be copied into the target repo's memory store, but the copy step is failing (likely path/fixture mismatch) so the promoted pattern is absent",
-      "fix": "Check sw-self-optimize.sh's promote-memory function for correct source/destination repo-hash paths and ensure the test fixture pre-populates a promotable pattern before asserting",
-      "seen_count": 1,
-      "last_seen": "2026-08-15T10:25:28Z",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan.md/review.md artifacts are never written by the mocked pipeline stages, cascading into E2E, resume, and cleanup test failures",
+      "fix": "verify the plan and review stage mock/handler writes plan.md and review.md to .claude/pipeline-artifacts/ before the test assertions check for them",
+      "seen_count": 2,
+      "last_seen": "2026-08-15T11:48:32Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m flags a JavaScript syntax error",
-      "root_cause": "Test harness uses `jq` to parse a value that isn't valid JSON (likely a plain complexity/reward number or unquoted string emitted by RL episode logging), causing 'jq: parse error: Invalid numeric literal' and cascading artifact/state failures (plan.md, review.md missing) since the pipeline exits early",
-      "fix": "Ensure values piped to jq are valid JSON (quote/escape numeric or string fields before parsing) in the RL episode logging and complexity intelligence output, and verify pipeline stages write expected artifacts (plan.md, review.md) even on early exit paths",
-      "seen_count": 2,
-      "last_seen": "2026-08-15T19:04:46Z",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Missing template returns error... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-e2e-integration-test failed because a leftover pipeline lock from a prior run left pipeline-2304 marked as running, blocking the fast pipeline test; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear stale pipeline locks before/after e2e-integration-test runs (or add lock cleanup in test teardown), and update analyze_intent to populate version/goal/criteria in its output schema",
+      "seen_count": 1,
+      "last_seen": "2026-08-15T09:34:52Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Pipeline: self-awareness hint triggers on >50% failure rate... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "not a failure; log shows all 112 tests passing across bandit/policy/reward RL modules with no errors",
+      "fix": "no fix needed — confirm CI is misclassifying a passing test run as a failure and check the exit code propagation",
+      "seen_count": 1,
+      "last_seen": "2026-08-15T10:27:33Z",
+      "category": "unknown"
     }
   ]
 }
