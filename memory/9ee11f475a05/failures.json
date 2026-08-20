@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 2,
-      "last_seen": "2026-08-20T21:41:23Z",
+      "last_seen": "2026-08-20T21:38:29Z",
       "category": "test_failure"
     },
     {
@@ -20,11 +20,11 @@
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m 3 identical error signatures with no progress trigger early exit",
-      "root_cause": "sw-intent-analysis-test failed with exit 1 and sw-e2e-integration-test hit the 301s timeout, causing the test-all run to stall on repeated identical failures",
-      "fix": "Investigate and fix the sw-intent-analysis-test assertion failure and reduce/mock the slow real-Claude call in sw-e2e-integration-test so it completes within the timeout",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
+      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
       "seen_count": 1,
-      "last_seen": "2026-08-20T20:55:34Z",
+      "last_seen": "2026-08-20T21:04:11Z",
       "category": "test_failure"
     }
   ]
