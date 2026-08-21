@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 10,
-      "last_seen": "2026-08-21T20:08:15Z",
+      "last_seen": "2026-08-21T20:49:18Z",
       "category": "test_failure"
     },
     {
@@ -14,18 +14,36 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T21:07:50Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-20T19:27:04Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed (exit 1) — likely missing/invalid Claude or GitHub API credentials required for real integration calls",
-      "fix": "Ensure required API keys/tokens are set in the test environment or skip real-integration tests when credentials are absent",
-      "seen_count": 3,
-      "last_seen": "2026-08-21T11:19:45Z",
-      "category": "config"
+      "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
+      "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
+      "seen_count": 4,
+      "last_seen": "2026-08-21T17:05:51Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Insert into nonexistent stage fails... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-e2e-integration-test failed on stale pipeline lock from a prior run (pipeline-2755 already 'running'), while sw-intent-analysis-test's generated JSON is missing required schema fields and sw-loop-test's stuckness detection assertion regressed — three unrelated failures, not the passing 'insert into nonexistent stage' case",
+      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or add lock cleanup in test teardown), add version/goal/criteria fields to analyze_intent's generated JSON, and fix/re-check the loop stuckness detection logic in sw-loop.sh",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T19:05:50Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 78 tests failed\u001b[0m",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), and sw-e2e-integration-test hit the 300s timeout, indicating a real regression or environment issue rather than a single flaky assertion",
+      "fix": "Run scripts/sw-intent-analysis-test.sh and scripts/sw-loop-test.sh locally with verbose output to isolate the failing assertions, and investigate why sw-e2e-integration-test exceeds the 300s timeout",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T21:37:21Z",
+      "category": "test_failure"
     }
   ]
 }
