@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 10,
-      "last_seen": "2026-08-21T20:49:18Z",
+      "seen_count": 11,
+      "last_seen": "2026-08-21T22:38:12Z",
       "category": "test_failure"
     },
     {
@@ -30,19 +30,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Insert into nonexistent stage fails... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed on stale pipeline lock from a prior run (pipeline-2755 already 'running'), while sw-intent-analysis-test's generated JSON is missing required schema fields and sw-loop-test's stuckness detection assertion regressed — three unrelated failures, not the passing 'insert into nonexistent stage' case",
-      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or add lock cleanup in test teardown), add version/goal/criteria fields to analyze_intent's generated JSON, and fix/re-check the loop stuckness detection logic in sw-loop.sh",
+      "root_cause": "sw-pipeline-vitals-test failures show duration_anomaly status returning 'unavailable' instead of 'anomaly'/'normal', and the anomaly event isn't emitted — the baseline-anomaly detection isn't picking up the running stage/baseline data during the test",
+      "fix": "Check lib/baseline-anomaly.sh stage lookup against the test's mocked events.jsonl/baseline fixture paths — likely a path or event-schema mismatch causing the detector to see no matching stage as running",
       "seen_count": 1,
       "last_seen": "2026-08-21T19:05:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 78 tests failed\u001b[0m",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1), and sw-e2e-integration-test hit the 300s timeout, indicating a real regression or environment issue rather than a single flaky assertion",
-      "fix": "Run scripts/sw-intent-analysis-test.sh and scripts/sw-loop-test.sh locally with verbose output to isolate the failing assertions, and investigate why sw-e2e-integration-test exceeds the 300s timeout",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "One test in the 128-test suite failed but was not captured in the truncated log excerpt shown (all visible suites report FAIL: 0)",
+      "fix": "Re-run the failing suite alone with verbose output to capture the specific failing assertion, likely in a suite not shown in this excerpt",
       "seen_count": 1,
-      "last_seen": "2026-08-21T21:37:21Z",
+      "last_seen": "2026-08-21T21:09:37Z",
       "category": "test_failure"
     }
   ]
