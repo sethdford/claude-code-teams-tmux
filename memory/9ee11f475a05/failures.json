@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 3,
-      "last_seen": "2026-08-21T01:19:18Z",
+      "last_seen": "2026-08-21T01:36:48Z",
       "category": "test_failure"
     },
     {
@@ -21,10 +21,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a prior pipeline lock for issue #2583 was left running/held, so the fast-pipeline test couldn't acquire it; unrelated pre-existing failures in sw-daemon-test (classify_failure not wired into retry logic) and sw-intent-analysis-test (schema missing version/goal/criteria fields) are stale and not caused by this change",
-      "fix": "Ensure test setup releases/aborts any stale pipeline lock before running (or use a unique/isolated lock dir per test run), and separately fix classify_failure wiring in daemon_on_failure and add the missing version/goal/criteria fields to the intent-analysis schema",
+      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
+      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "One test in the suite failed but its assertion output is not present in the visible log tail (only passing suites shown)",
+      "fix": "Re-run the specific failing suite with full output (e.g. increase log tail or run npm test -- --reporter=verbose) to identify and fix the failing assertion",
+      "seen_count": 2,
+      "last_seen": "2026-08-21T02:11:59Z",
       "category": "test_failure"
     }
   ]
