@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 5,
-      "last_seen": "2026-08-21T03:35:55Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-21T07:20:03Z",
       "category": "test_failure"
     },
     {
@@ -21,19 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test asserts analyze_intent's output JSON contains required fields (version, goal, criteria) but the schema is missing them",
-      "fix": "add version, goal, and criteria fields to the intent analysis JSON schema/output in sw-intent-analysis.sh (or wherever analyze_intent builds its result)",
+      "root_cause": "sw-loop-test 'Loop stuckness detection' assertion failed while two other suites (e2e-integration, intent-analysis) failed for unrelated reasons — a stale pipeline lock and a missing schema field",
+      "fix": "Investigate the stuckness-detection test in sw-loop-test.sh for a timing/threshold regression, clear the stale pipeline lock before e2e-integration-test runs, and add the missing version/goal/criteria fields to the intent analysis schema",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-cost-test.sh asserts on cost dashboard's CONTEXT EFFICIENCY output but the test fixture's costs.json has no entries in the last 30 days, so the dashboard prints the 'No cost entries' fallback instead of utilization data",
-      "fix": "seed the test's mock costs.json/events with a recent-dated cost entry (or loop.context_efficiency event) before invoking the dashboard so it has data within the 30-day window to render",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T07:00:39Z",
       "category": "test_failure"
     }
   ]
