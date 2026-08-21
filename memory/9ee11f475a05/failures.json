@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 6,
-      "last_seen": "2026-08-21T07:06:19Z",
+      "last_seen": "2026-08-21T06:59:49Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-2632) was still held, and intent-analysis-test failed because analyze_intent's output JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "clear/expire stale pipeline locks before test runs (or add lock cleanup in test setup/teardown) and update analyze_intent to emit version, goal, and criteria fields per the schema",
+      "root_cause": "sw-cost-test.sh CONTEXT EFFICIENCY assertions fail because no cost entries exist in the last 30 days, so the dashboard renders the 'No cost entries' fallback instead of event-derived utilization data",
+      "fix": "seed costs.json / loop.context_efficiency events with a recent-dated fixture in the test setup before asserting on dashboard output",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
       "category": "test_failure"
