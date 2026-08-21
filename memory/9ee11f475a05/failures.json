@@ -26,6 +26,24 @@
       "seen_count": 2,
       "last_seen": "2026-08-21T09:18:28Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
+      "root_cause": "One of the 80 shipwright test suites failed an assertion during scripts/sw-test-all.sh execution, but the failing suite name/output is truncated before the 200-line log window",
+      "fix": "Re-run scripts/sw-test-all.sh with verbose output and grep for the FAIL marker to identify the specific suite and assertion, then patch the failing script or its test expectations",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T11:06:16Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Failed: 1",
+      "root_cause": "sw-pipeline-test.sh mock artifacts drift: plan/review stage mocks no longer write plan.md/review.md (or a shared setup helper regressed), cascading to E2E, resume, and cleanup tests that depend on those files existing",
+      "fix": "Fix the plan/review stage mocks in sw-pipeline-test.sh to write plan.md and review.md as expected, then rerun the dependent E2E/resume/cleanup/intelligence-complexity subtests",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T11:53:34Z",
+      "category": "test_failure"
     }
   ]
 }
