@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 2,
-      "last_seen": "2026-08-20T21:38:29Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-21T01:19:18Z",
       "category": "test_failure"
     },
     {
@@ -21,28 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
-      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
+      "root_cause": "sw-e2e-integration-test failed because a prior pipeline lock for issue #2583 was left running/held, so the fast-pipeline test couldn't acquire it; unrelated pre-existing failures in sw-daemon-test (classify_failure not wired into retry logic) and sw-intent-analysis-test (schema missing version/goal/criteria fields) are stale and not caused by this change",
+      "fix": "Ensure test setup releases/aborts any stale pipeline lock before running (or use a unique/isolated lock dir per test run), and separately fix classify_failure wiring in daemon_on_failure and add the missing version/goal/criteria fields to the intent-analysis schema",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "✓ findings text names the failing check",
-      "root_cause": "sw-daemon-test's classify_failure was refactored/renamed but daemon_on_failure's retry path was not updated to call it, and sw-e2e-integration-test hit a stale pipeline lock from a prior run blocking a new pipeline start",
-      "fix": "wire classify_failure into daemon_on_failure's retry logic in sw-daemon.sh, and ensure sw-e2e-integration-test clears/aborts any pre-existing pipeline lock before starting its fast pipeline test",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T00:45:58Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "One test assertion in the suite failed (Failed: 1), but the failing test name/assertion isn't present in the truncated log excerpt shown",
-      "fix": "Re-run the specific test file with verbose output to capture the failing assertion name and stack trace, then inspect that assertion against recent changes to the touched module",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T00:04:05Z",
       "category": "test_failure"
     }
   ]
