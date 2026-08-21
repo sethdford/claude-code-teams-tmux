@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 3,
-      "last_seen": "2026-08-21T01:36:48Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-21T01:33:14Z",
       "category": "test_failure"
     },
     {
@@ -21,19 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
-      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
+      "root_cause": "sw-intent-analysis-test asserts analyze_intent's output JSON contains required fields (version, goal, criteria) but the schema is missing them",
+      "fix": "add version, goal, and criteria fields to the intent analysis JSON schema/output in sw-intent-analysis.sh (or wherever analyze_intent builds its result)",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test in the suite failed but its assertion output is not present in the visible log tail (only passing suites shown)",
-      "fix": "Re-run the specific failing suite with full output (e.g. increase log tail or run npm test -- --reporter=verbose) to identify and fix the failing assertion",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T02:11:59Z",
       "category": "test_failure"
     }
   ]
