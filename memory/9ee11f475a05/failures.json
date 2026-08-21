@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 6,
-      "last_seen": "2026-08-21T06:59:49Z",
+      "seen_count": 8,
+      "last_seen": "2026-08-21T09:27:59Z",
       "category": "test_failure"
     },
     {
@@ -21,28 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-cost-test.sh CONTEXT EFFICIENCY assertions fail because no cost entries exist in the last 30 days, so the dashboard renders the 'No cost entries' fallback instead of event-derived utilization data",
-      "fix": "seed costs.json / loop.context_efficiency events with a recent-dated fixture in the test setup before asserting on dashboard output",
+      "root_cause": "sw-pipeline-test.sh mocks don't create expected artifacts (plan.md, review.md) causing plan/review/E2E/resume/cleanup tests to fail, plus a jq numeric parse error in the RL episode complexity context breaks the low-complexity intelligence skip test",
+      "fix": "fix mock claude CLI in sw-pipeline-test.sh to write plan.md/dod.md/review.md artifacts on invocation, and quote/cast the complexity value before piping to jq to avoid invalid numeric literal errors",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m missing --grep shows error",
-      "root_cause": "sw-cost-test.sh sets up a test fixture with no cost entries, so the dashboard correctly reports 'No cost entries' but the test still asserts CONTEXT EFFICIENCY/budget-utilization output is rendered",
-      "fix": "seed the test's costs.json with at least one loop.context_efficiency entry before asserting the dashboard renders CONTEXT EFFICIENCY and avg budget utilization",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T09:03:31Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh plan stage never writes plan.md/dod.md, cascading into review, resume, and full E2E test failures, likely due to a mocked claude CLI or artifact path mismatch",
-      "fix": "verify pipeline_stage_plan writes to .claude/pipeline-artifacts/plan.md via the mock claude binary and fix the artifact path or mock response used in the test harness",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T09:28:03Z",
       "category": "test_failure"
     }
   ]
