@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 6,
-      "last_seen": "2026-08-21T07:20:03Z",
+      "last_seen": "2026-08-21T06:58:28Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-loop-test 'Loop stuckness detection' assertion failed while two other suites (e2e-integration, intent-analysis) failed for unrelated reasons — a stale pipeline lock and a missing schema field",
-      "fix": "Investigate the stuckness-detection test in sw-loop-test.sh for a timing/threshold regression, clear the stale pipeline lock before e2e-integration-test runs, and add the missing version/goal/criteria fields to the intent analysis schema",
+      "root_cause": "sw-loop-test's 'Loop stuckness detection' test fails because a stale pipeline lock (pipeline-2627) from a prior interrupted run left the lock/state file in place, which also caused sw-e2e-integration-test to fail on 'already in progress'; sw-intent-analysis-test fails independently because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Release/clean stale pipeline locks before test runs (or have loop-test mock isolate its own lock dir) and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
       "category": "test_failure"
