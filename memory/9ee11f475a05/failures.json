@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 8,
-      "last_seen": "2026-08-21T11:26:35Z",
+      "seen_count": 7,
+      "last_seen": "2026-08-21T09:54:02Z",
       "category": "test_failure"
     },
     {
@@ -21,10 +21,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test fail, with loop-test hitting the max-iteration/circuit-breaker path on repeated test failure without converging",
-      "fix": "run the two failing suites in isolation with verbose output to capture the assertion diff, then fix the underlying loop iteration/circuit-breaker logic or update stale test expectations",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T09:18:28Z",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1) and sw-e2e-integration-test hung until the 301s timeout, indicating a regression in loop iteration/restart handling or intent analysis logic rather than infra flakiness",
+      "fix": "Run sw-loop-test.sh and sw-intent-analysis-test.sh locally with verbose output to isolate the failing assertions, and add a timeout guard or mock for sw-e2e-integration-test's Claude/network calls to prevent hangs",
+      "seen_count": 4,
+      "last_seen": "2026-08-21T11:25:07Z",
       "category": "test_failure"
     }
   ]
