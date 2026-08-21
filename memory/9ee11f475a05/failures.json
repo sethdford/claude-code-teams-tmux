@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 5,
-      "last_seen": "2026-08-21T01:07:05Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-20T23:49:17Z",
       "category": "test_failure"
     },
     {
@@ -21,10 +21,28 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed due to a stale/leftover pipeline lock from a prior run leaving status 'running', blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "Clear stale pipeline locks before/after e2e-integration-test runs (or add lock staleness detection with auto-release), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
+      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
+      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
       "seen_count": 1,
       "last_seen": "2026-08-20T21:04:11Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m 3 identical error signatures with no progress trigger early exit",
+      "root_cause": "sw-intent-analysis-test fails with exit 1 after 37s, blocking the full test suite",
+      "fix": "Run scripts/sw-intent-analysis-test.sh directly to capture the failing assertion output and fix the underlying logic or test expectation",
+      "seen_count": 1,
+      "last_seen": "2026-08-20T23:10:17Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Testing CONTRACT: record-outcome backfills match outcome... \u001b[38;2;248;113;113m\u001b[1mFAIL\u001b[0m: match-history.jsonl missing after record-outcome",
+      "root_cause": "record-outcome writes to an in-memory/temp store but never persists to match-history.jsonl, so the contract test finds the file missing after the call",
+      "fix": "make record-outcome append the result to match-history.jsonl (create the file if absent) before returning, and verify the write with a flush/fsync in the test setup",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T00:57:49Z",
       "category": "test_failure"
     }
   ]
