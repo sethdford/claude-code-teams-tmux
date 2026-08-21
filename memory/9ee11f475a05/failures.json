@@ -14,27 +14,18 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-20T19:27:04Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-21T12:53:01Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-2695) from a prior run was left in progress, blocking the new run; sw-intent-analysis-test failed because analyze_intent's output JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or have the test abort any in-progress pipeline first), and update analyze_intent to always populate version, goal, and criteria in its output schema",
+      "root_cause": "Test suite likely hit a failing/timing-out suite later in the run, but truncated log only shows successful early suites so exact failure isn't visible",
+      "fix": "Re-run scripts/sw-test-all.sh with full output captured and inspect the specific suite that failed past line 200 of the log",
       "seen_count": 3,
       "last_seen": "2026-08-21T11:19:45Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Intelligence: Consecutive failure auto-pause (3 threshold)... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-daemon-test and sw-dashboard-test (and sw-e2e-integration-test) fail with exit 1, tripping the intelligence consecutive-failure auto-pause at 3 threshold",
-      "fix": "run sw-daemon-test.sh, sw-dashboard-test.sh, and sw-e2e-integration-test.sh individually to capture their assertion output and fix the underlying regressions before resuming the pipeline",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T12:51:30Z",
-      "category": "test_failure"
+      "category": "unknown"
     }
   ]
 }
