@@ -21,11 +21,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1) and sw-e2e-integration-test hung until the 301s timeout, indicating a regression in loop iteration/restart handling or intent analysis logic rather than infra flakiness",
-      "fix": "Run sw-loop-test.sh and sw-intent-analysis-test.sh locally with verbose output to isolate the failing assertions, and add a timeout guard or mock for sw-e2e-integration-test's Claude/network calls to prevent hangs",
-      "seen_count": 4,
-      "last_seen": "2026-08-21T11:25:07Z",
+      "root_cause": "sw-e2e-integration-test hung past the 300s suite timeout and sw-intent-analysis-test failed with a real assertion error (exit 1)",
+      "fix": "investigate and fix the sw-intent-analysis-test assertion failure, and add an internal timeout/mock guard to sw-e2e-integration-test so it fails fast instead of hanging to the global timeout",
+      "seen_count": 2,
+      "last_seen": "2026-08-21T09:18:28Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Gate 3 reports skipped rather than passing when it cannot run",
+      "root_cause": "sw-e2e-integration-test fails because Gate 3 reports 'skipped' status when required Claude/GitHub credentials or network access are unavailable, rather than a passing/neutral result compatible with the test harness's exit code handling",
+      "fix": "Update sw-e2e-integration-test.sh Gate 3 to exit 0 (or a dedicated skip exit code recognized by sw-test-all.sh) when preconditions are unmet, instead of propagating exit 1",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T10:51:54Z",
+      "category": "config"
     }
   ]
 }
