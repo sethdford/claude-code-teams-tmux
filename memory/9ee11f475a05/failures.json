@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 10,
-      "last_seen": "2026-08-21T21:07:14Z",
+      "last_seen": "2026-08-21T20:08:15Z",
       "category": "test_failure"
     },
     {
@@ -14,27 +14,18 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-20T19:27:04Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-21T21:07:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale/lock-held pipeline (pipeline-2742 already running) causing it to skip remaining assertions, while sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
-      "fix": "clear/reset the pipeline lock before the e2e-integration suite runs (or use a unique issue/lock id per test run) and update analyze_intent to always emit version, goal, and criteria fields in its JSON output",
+      "root_cause": "sw-e2e-integration-test failed (exit 1) — likely missing/invalid Claude or GitHub API credentials required for real integration calls",
+      "fix": "Ensure required API keys/tokens are set in the test environment or skip real-integration tests when credentials are absent",
       "seen_count": 3,
       "last_seen": "2026-08-21T11:19:45Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-loop-test and sw-intent-analysis-test fail (exit 1) alongside an sw-e2e-integration-test timeout, indicating a regression or environment flakiness in the loop harness/intent-analysis modules rather than the reported single-suite FAIL count",
-      "fix": "Run scripts/sw-loop-test.sh and scripts/sw-intent-analysis-test.sh locally with verbose output to isolate the failing assertion, then patch the underlying script and re-run sw-test-all.sh",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T19:44:03Z",
-      "category": "test_failure"
+      "category": "config"
     }
   ]
 }
