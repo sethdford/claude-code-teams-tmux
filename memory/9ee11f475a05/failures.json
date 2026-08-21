@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 4,
-      "last_seen": "2026-08-21T03:25:16Z",
+      "last_seen": "2026-08-21T01:33:14Z",
       "category": "test_failure"
     },
     {
@@ -21,29 +21,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh: plan/review/artifact tests fail because expected artifacts (plan.md, review.md) are never written, cascading into E2E, resume, and cleanup test failures; a separate jq parse error breaks the intelligence complexity-skip test on non-numeric input",
-      "fix": "ensure the plan and review stage mocks/handlers actually write .claude/pipeline-artifacts/plan.md and review.md before asserting on them, and guard jq calls against non-numeric complexity values",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T02:39:43Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "✓ findings text names the failing check",
-      "root_cause": "sw-daemon-test's classify_failure was refactored/renamed but daemon_on_failure's retry path was not updated to call it, and sw-e2e-integration-test hit a stale pipeline lock from a prior run blocking a new pipeline start",
-      "fix": "wire classify_failure into daemon_on_failure's retry logic in sw-daemon.sh, and ensure sw-e2e-integration-test clears/aborts any pre-existing pipeline lock before starting its fast pipeline test",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T00:45:58Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "sw-pipeline-test.sh mock stubs no longer produce plan.md/review.md artifacts, so all tests depending on plan/review stage output cascade-fail (plan, review, full e2e, resume, cleanup); a separate jq parse error breaks the intelligence complexity-skip test",
-      "fix": "fix the mocked plan/review stage generators in sw-pipeline-test.sh to write plan.md and review.md as expected, and quote/validate the numeric value passed to jq in the complexity test",
+      "root_cause": "sw-intent-analysis-test asserts analyze_intent's output JSON contains required fields (version, goal, criteria) but the schema is missing them",
+      "fix": "add version, goal, and criteria fields to the intent analysis JSON schema/output in sw-intent-analysis.sh (or wherever analyze_intent builds its result)",
       "seen_count": 1,
-      "last_seen": "2026-08-21T00:04:05Z",
+      "last_seen": "2026-08-20T21:04:11Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m✗ FAILED\u001b[0m",
+      "root_cause": "",
+      "fix": "",
+      "seen_count": 1,
+      "last_seen": "2026-08-21T03:27:04Z"
     }
   ]
 }
