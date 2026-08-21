@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 7,
-      "last_seen": "2026-08-21T09:54:02Z",
+      "seen_count": 8,
+      "last_seen": "2026-08-21T12:53:17Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-2695) from a prior run was left in progress, blocking the new run; sw-intent-analysis-test failed because analyze_intent's output JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or have the test abort any in-progress pipeline first), and update analyze_intent to always populate version, goal, and criteria in its output schema",
+      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-2719) from a prior run was still held, so the new run refused to start; the other two failures (sw-intent-analysis-test schema fields, sw-loop-test stuckness detection) are unrelated pre-existing assertion failures in those modules",
+      "fix": "Have the e2e integration test suite release/reset any stale pipeline lock before starting (or run 'shipwright pipeline abort' in test setup/teardown), and separately fix the intent-analysis schema to include version/goal/criteria and investigate the loop stuckness-detection regression",
       "seen_count": 3,
       "last_seen": "2026-08-21T11:19:45Z",
       "category": "test_failure"
