@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 9,
-      "last_seen": "2026-08-21T11:24:49Z",
+      "last_seen": "2026-08-21T11:55:55Z",
       "category": "test_failure"
     },
     {
@@ -21,8 +21,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh stage functions (plan/review) are not writing expected artifact files, cascading into E2E, resume, and cleanup test failures, plus a jq parse error from non-numeric input in the complexity-skip test",
-      "fix": "fix plan/review stage handlers in sw-pipeline.sh to write plan.md/review.md artifacts and quote/validate the value passed to jq in the intelligence complexity test",
+      "root_cause": "sw-intent-analysis-test asserts analyze_intent JSON output includes version, goal, and criteria fields that the current implementation omits",
+      "fix": "Update analyze_intent to emit version, goal, and criteria in its JSON schema (or update the test if the schema intentionally changed)",
       "seen_count": 2,
       "last_seen": "2026-08-21T09:18:28Z",
       "category": "test_failure"
