@@ -21,20 +21,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hung past the 300s suite timeout and sw-intent-analysis-test failed with a real assertion error (exit 1)",
-      "fix": "investigate and fix the sw-intent-analysis-test assertion failure, and add an internal timeout/mock guard to sw-e2e-integration-test so it fails fast instead of hanging to the global timeout",
-      "seen_count": 2,
-      "last_seen": "2026-08-21T09:18:28Z",
+      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-2695) from a prior run was left in progress, blocking the new run; sw-intent-analysis-test failed because analyze_intent's output JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or have the test abort any in-progress pipeline first), and update analyze_intent to always populate version, goal, and criteria in its output schema",
+      "seen_count": 3,
+      "last_seen": "2026-08-21T11:19:45Z",
       "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Gate 3 reports skipped rather than passing when it cannot run",
-      "root_cause": "sw-e2e-integration-test fails because Gate 3 reports 'skipped' status when required Claude/GitHub credentials or network access are unavailable, rather than a passing/neutral result compatible with the test harness's exit code handling",
-      "fix": "Update sw-e2e-integration-test.sh Gate 3 to exit 0 (or a dedicated skip exit code recognized by sw-test-all.sh) when preconditions are unmet, instead of propagating exit 1",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T10:51:54Z",
-      "category": "config"
     }
   ]
 }
