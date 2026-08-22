@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 17,
-      "last_seen": "2026-08-22T08:13:32Z",
+      "seen_count": 13,
+      "last_seen": "2026-08-22T09:06:25Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-20T19:27:04Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-22T03:03:02Z",
       "category": "test_failure"
     },
     {
@@ -30,46 +30,46 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Insert into nonexistent stage fails... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-pipeline-vitals-test failures show duration_anomaly status returning 'unavailable' instead of 'anomaly'/'normal', and the anomaly event isn't emitted — the baseline-anomaly detection isn't picking up the running stage/baseline data during the test",
-      "fix": "Check lib/baseline-anomaly.sh stage lookup against the test's mocked events.jsonl/baseline fixture paths — likely a path or event-schema mismatch causing the detector to see no matching stage as running",
+      "root_cause": "sw-e2e-integration-test failed on stale pipeline lock from a prior run (pipeline-2755 already 'running'), while sw-intent-analysis-test's generated JSON is missing required schema fields and sw-loop-test's stuckness detection assertion regressed — three unrelated failures, not the passing 'insert into nonexistent stage' case",
+      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or add lock cleanup in test teardown), add version/goal/criteria fields to analyze_intent's generated JSON, and fix/re-check the loop stuckness detection logic in sw-loop.sh",
       "seen_count": 1,
       "last_seen": "2026-08-21T19:05:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test in the 128-test suite failed but was not captured in the truncated log excerpt shown (all visible suites report FAIL: 0)",
-      "fix": "Re-run the failing suite alone with verbose output to capture the specific failing assertion, likely in a suite not shown in this excerpt",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 78 tests failed\u001b[0m",
+      "root_cause": "One test assertion in the 78-test suite failed during the test stage run",
+      "fix": "Inspect the specific failing test's output/diff and correct the code or test expectation causing the mismatch",
       "seen_count": 1,
-      "last_seen": "2026-08-21T21:09:37Z",
+      "last_seen": "2026-08-21T21:37:21Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 91 tests failed\u001b[0m",
-      "root_cause": "One assertion among 91 in the test run failed but the specific failing test isn't visible in the captured log tail (only passing suites shown)",
-      "fix": "Re-run with full output or increase log tail depth to capture the FAIL line and stack trace, then fix the failing assertion",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T00:22:23Z",
+      "pattern": "Failed: 1",
+      "root_cause": "sw-pipeline-test.sh mocks don't create plan.md/review.md, so plan/review/E2E/resume/cleanup tests fail on missing artifacts, plus a jq parse error in the low-complexity intelligence test consumes malformed JSON",
+      "fix": "fix mock claude/plan/review stage stubs to write plan.md and review.md artifacts, and guard the jq call in the complexity test against non-JSON input",
+      "seen_count": 2,
+      "last_seen": "2026-08-22T05:52:05Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Single-sample history fails open (extension granted)",
-      "root_cause": "Cost dashboard's CONTEXT EFFICIENCY section reads from costs.json entries, but the test's stubbed loop.context_efficiency event data wasn't materialized into a cost entry before cmd_show ran, so the dashboard sees zero entries in the lookback window",
-      "fix": "Ensure the test fixture (or sw-cost.sh event ingestion) writes a costs.json entry before invoking `cost show`, or widen/verify the day-window filter used by cmd_show against the fixture's timestamp",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m doctor runs without error... \u001b[38;2;74;222;128mPASS\u001b[0m",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run (status: running) causing the fast-pipeline test to abort, while sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear/reset the stale pipeline lock before the e2e-integration suite runs (or auto-detect and abort orphaned locks), and update analyze_intent to populate version, goal, and criteria in its generated JSON",
       "seen_count": 1,
-      "last_seen": "2026-08-22T04:11:12Z",
+      "last_seen": "2026-08-22T03:48:30Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing LOOP_COMPLETE\u001b[0m",
-      "root_cause": "The build/test loop exited without emitting the LOOP_COMPLETE sentinel, likely because the self-optimize suite's 'Memory promotion copies cross-repo patterns' test failed and halted the run before completion output was written",
-      "fix": "Fix the failing cross-repo memory promotion test in sw-self-optimize-test.sh, then ensure the loop script emits LOOP_COMPLETE even on non-zero test exit so failures are reported rather than silently truncating output",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run and sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
+      "fix": "clear/reset the stale pipeline lock before the e2e integration test runs and update analyze_intent to emit the required version/goal/criteria fields",
       "seen_count": 1,
-      "last_seen": "2026-08-22T06:46:26Z",
+      "last_seen": "2026-08-22T06:38:31Z",
       "category": "test_failure"
     }
   ]
