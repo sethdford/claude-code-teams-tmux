@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 11,
-      "last_seen": "2026-08-21T22:38:12Z",
+      "seen_count": 10,
+      "last_seen": "2026-08-21T20:08:15Z",
       "category": "test_failure"
     },
     {
@@ -14,35 +14,35 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-20T19:27:04Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-21T21:07:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
-      "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
+      "root_cause": "sw-e2e-integration-test failed due to a stale pipeline lock from a prior run left in 'running' state, blocking the new test pipeline from starting; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear/release stale pipeline locks before test runs (or have the test suite call 'shipwright pipeline abort'/force-unlock in setup) and update analyze_intent to always emit version, goal, and criteria fields per the schema",
       "seen_count": 4,
-      "last_seen": "2026-08-21T17:05:51Z",
+      "last_seen": "2026-08-21T22:06:01Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Insert into nonexistent stage fails... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-pipeline-vitals-test failures show duration_anomaly status returning 'unavailable' instead of 'anomaly'/'normal', and the anomaly event isn't emitted — the baseline-anomaly detection isn't picking up the running stage/baseline data during the test",
-      "fix": "Check lib/baseline-anomaly.sh stage lookup against the test's mocked events.jsonl/baseline fixture paths — likely a path or event-schema mismatch causing the detector to see no matching stage as running",
+      "pattern": "Testing meta-loop can detect declining accuracy... \u001b[38;2;248;113;113m\u001b[1mFAIL\u001b[0m: No meta-loop warning/revert event emitted for declining accuracy",
+      "root_cause": "Meta-loop declining-accuracy detector doesn't emit a warning/revert event when accuracy trend degrades, so the test assertion for that emitted event never matches",
+      "fix": "Wire the accuracy-trend check in the meta-loop into emit_event (warning/revert type) when a decline is detected, and ensure the test's mock accuracy sequence actually crosses the detection threshold",
       "seen_count": 1,
-      "last_seen": "2026-08-21T19:05:50Z",
+      "last_seen": "2026-08-21T23:15:44Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test in the 128-test suite failed but was not captured in the truncated log excerpt shown (all visible suites report FAIL: 0)",
-      "fix": "Re-run the failing suite alone with verbose output to capture the specific failing assertion, likely in a suite not shown in this excerpt",
+      "root_cause": "Multiple unrelated pre-existing test failures (intent-analysis schema validation, loop stuckness detection, project-detect caching, e2e-integration timeout) unrelated to the current change",
+      "fix": "Investigate and fix each failing test individually: intent schema fields, loop stuckness detection logic, project-detect cache consistency, and e2e-integration timeout cause",
       "seen_count": 1,
-      "last_seen": "2026-08-21T21:09:37Z",
+      "last_seen": "2026-08-21T23:52:08Z",
       "category": "test_failure"
     }
   ]
