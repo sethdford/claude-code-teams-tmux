@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 15,
-      "last_seen": "2026-08-22T08:11:52Z",
+      "seen_count": 16,
+      "last_seen": "2026-08-22T13:12:59Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 9,
-      "last_seen": "2026-08-22T13:21:31Z",
+      "seen_count": 8,
+      "last_seen": "2026-08-22T10:47:40Z",
       "category": "test_failure"
     },
     {
@@ -48,19 +48,10 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh plan/design/resume/cleanup tests fail because plan.md is never written to .claude/pipeline-artifacts (plan stage output path or mock changed), causing cascading failures in dependent E2E/resume/cleanup tests",
-      "fix": "Verify pipeline_stage_plan writes plan.md to the expected artifacts path and that the mock claude CLI produces it during tests; fix path/mock mismatch",
+      "root_cause": "sw-intent-analysis-test asserts analyze_intent JSON output includes version/goal/criteria fields that the current schema omits, and sw-e2e-integration-test hit a stale pipeline lock (pipeline-2991 already running) from a prior interrupted run",
+      "fix": "Update analyze_intent to emit version/goal/criteria in its JSON output (or update the test's expected schema to match), and clear/reset the stale pipeline lock before the e2e-integration-test run (or add lock cleanup in test setup/teardown)",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "sw-cost-test.sh:226 asserts the CONTEXT EFFICIENCY dashboard section renders event data, but the test fixture writes loop.context_efficiency events outside the 30-day window the cost dashboard queries, so it reports 'No cost entries in the last 30 day(s)'",
-      "fix": "align the test's fixture event timestamps with the dashboard's 30-day lookback window (or make the lookback window configurable/mocked in the test) so seeded events are found",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T12:41:38Z",
       "category": "test_failure"
     }
   ]
