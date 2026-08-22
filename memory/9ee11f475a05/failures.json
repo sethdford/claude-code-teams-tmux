@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 13,
-      "last_seen": "2026-08-22T08:33:04Z",
+      "last_seen": "2026-08-22T08:28:19Z",
       "category": "test_failure"
     },
     {
@@ -24,7 +24,7 @@
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
       "seen_count": 5,
-      "last_seen": "2026-08-22T09:01:06Z",
+      "last_seen": "2026-08-22T09:04:21Z",
       "category": "test_failure"
     },
     {
@@ -66,8 +66,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh E2E tests fail because pipeline plan stage no longer writes .claude/pipeline-artifacts/plan.md (and review stage its review.md), cascading into dependent tests",
-      "fix": "Fix the plan stage in scripts/sw-pipeline.sh to write plan.md/dod.md/tasks before returning, and the review stage to write review.md, then rerun sw-pipeline-test.sh",
+      "root_cause": "Pipeline stage functions (plan/review/cleanup) are not writing expected artifact files (plan.md, review.md) to .claude/pipeline-artifacts/ in the mocked E2E test environment, likely due to a path or mock-binary regression",
+      "fix": "Verify plan/review stage functions write artifacts to the correct .claude/pipeline-artifacts/ path under test mocks and fix the intelligence-skip jq parsing of complexity value",
       "seen_count": 1,
       "last_seen": "2026-08-22T06:38:31Z",
       "category": "test_failure"
