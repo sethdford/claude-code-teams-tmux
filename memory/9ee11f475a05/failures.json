@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 13,
-      "last_seen": "2026-08-22T09:06:25Z",
+      "seen_count": 12,
+      "last_seen": "2026-08-22T00:47:34Z",
       "category": "test_failure"
     },
     {
@@ -66,10 +66,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run and sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
-      "fix": "clear/reset the stale pipeline lock before the e2e integration test runs and update analyze_intent to emit the required version/goal/criteria fields",
+      "root_cause": "sw-loop-test failed (exit 1) after 161s while sw-e2e-integration-test separately timed out at 301s, indicating a real assertion failure in the loop harness test rather than mere flakiness",
+      "fix": "run scripts/sw-loop-test.sh directly and inspect the failing assertion's diff, since the summary log doesn't show which of the 80 subtests broke",
       "seen_count": 1,
       "last_seen": "2026-08-22T06:38:31Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-cost-test.sh created a fresh temp cost dashboard with zero cost entries, so the CONTEXT EFFICIENCY / budget utilization assertions fail against the 'No cost entries in the last 30 day(s)' empty-state output",
+      "fix": "Seed costs.json with sample loop.context_efficiency events in test setup before invoking the cost dashboard, or update assertions to handle the empty-state message",
+      "seen_count": 1,
+      "last_seen": "2026-08-22T09:04:31Z",
       "category": "test_failure"
     }
   ]
