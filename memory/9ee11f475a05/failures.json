@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 13,
-      "last_seen": "2026-08-22T08:28:19Z",
+      "seen_count": 15,
+      "last_seen": "2026-08-22T08:11:52Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 3,
-      "last_seen": "2026-08-22T03:03:02Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-20T19:27:04Z",
       "category": "test_failure"
     },
     {
@@ -23,53 +23,35 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 5,
-      "last_seen": "2026-08-22T09:04:21Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-22T02:33:44Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Insert into nonexistent stage fails... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed on stale pipeline lock from a prior run (pipeline-2755 already 'running'), while sw-intent-analysis-test's generated JSON is missing required schema fields and sw-loop-test's stuckness detection assertion regressed — three unrelated failures, not the passing 'insert into nonexistent stage' case",
-      "fix": "Clear/reset stale pipeline locks before e2e-integration-test runs (or add lock cleanup in test teardown), add version/goal/criteria fields to analyze_intent's generated JSON, and fix/re-check the loop stuckness detection logic in sw-loop.sh",
+      "root_cause": "sw-pipeline-vitals-test failures show duration_anomaly status returning 'unavailable' instead of 'anomaly'/'normal', and the anomaly event isn't emitted — the baseline-anomaly detection isn't picking up the running stage/baseline data during the test",
+      "fix": "Check lib/baseline-anomaly.sh stage lookup against the test's mocked events.jsonl/baseline fixture paths — likely a path or event-schema mismatch causing the detector to see no matching stage as running",
       "seen_count": 1,
       "last_seen": "2026-08-21T19:05:50Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 78 tests failed\u001b[0m",
-      "root_cause": "One test assertion in the 78-test suite failed during the test stage run",
-      "fix": "Inspect the specific failing test's output/diff and correct the code or test expectation causing the mismatch",
-      "seen_count": 1,
-      "last_seen": "2026-08-21T21:37:21Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Failed: 1",
-      "root_cause": "sw-pipeline-test.sh mocks don't create plan.md/review.md, so plan/review/E2E/resume/cleanup tests fail on missing artifacts, plus a jq parse error in the low-complexity intelligence test consumes malformed JSON",
-      "fix": "fix mock claude/plan/review stage stubs to write plan.md and review.md artifacts, and guard the jq call in the complexity test against non-JSON input",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "One of the 128 tests in the suite failed but the failing assertion was not included in the provided log excerpt (only passing suites shown)",
+      "fix": "Re-run the failing test file with verbose output to capture the specific FAIL line and stack trace, then inspect the associated assertion",
       "seen_count": 2,
-      "last_seen": "2026-08-22T05:52:05Z",
+      "last_seen": "2026-08-22T06:01:21Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m doctor runs without error... \u001b[38;2;74;222;128mPASS\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run (status: running) causing the fast-pipeline test to abort, while sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
-      "fix": "Clear/reset the stale pipeline lock before the e2e-integration suite runs (or auto-detect and abort orphaned locks), and update analyze_intent to populate version, goal, and criteria in its generated JSON",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T03:48:30Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
-      "root_cause": "Pipeline stage functions (plan/review/cleanup) are not writing expected artifact files (plan.md, review.md) to .claude/pipeline-artifacts/ in the mocked E2E test environment, likely due to a path or mock-binary regression",
-      "fix": "Verify plan/review stage functions write artifacts to the correct .claude/pipeline-artifacts/ path under test mocks and fix the intelligence-skip jq parsing of complexity value",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T06:38:31Z",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "sw-pipeline.sh plan stage no longer writes plan.md (or writes to a different path), causing plan/review/E2E/resume/cleanup tests that depend on plan.md and its downstream artifacts to fail, plus a jq call fed non-numeric input in the complexity-skip test",
+      "fix": "restore/fix the plan stage to write .claude/pipeline-artifacts/plan.md (and dod.md) before marking the stage complete, and guard the complexity jq parse with a numeric validity check",
+      "seen_count": 2,
+      "last_seen": "2026-08-22T04:44:35Z",
       "category": "test_failure"
     }
   ]
