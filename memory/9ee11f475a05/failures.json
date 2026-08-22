@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 15,
-      "last_seen": "2026-08-22T06:58:07Z",
+      "seen_count": 12,
+      "last_seen": "2026-08-22T00:47:34Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 5,
-      "last_seen": "2026-08-22T05:15:04Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-21T17:05:51Z",
       "category": "test_failure"
     },
     {
@@ -50,17 +50,26 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-pipeline-test.sh mocks don't create plan.md/review.md, so plan/review/E2E/resume/cleanup tests fail on missing artifacts, plus a jq parse error in the low-complexity intelligence test consumes malformed JSON",
       "fix": "fix mock claude/plan/review stage stubs to write plan.md and review.md artifacts, and guard the jq call in the complexity test against non-JSON input",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T02:26:49Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-22T05:52:05Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m doctor runs without error... \u001b[38;2;74;222;128mPASS\u001b[0m",
-      "root_cause": "Memory promotion test expects cross-repo pattern copy but promotion logic or test fixture path mismatch prevents the pattern from being copied",
-      "fix": "Check sw-self-optimize.sh memory promotion function for correct source/target repo hash path handling and align with test fixture setup",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run (status: running) causing the fast-pipeline test to abort, while sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear/reset the stale pipeline lock before the e2e-integration suite runs (or auto-detect and abort orphaned locks), and update analyze_intent to populate version, goal, and criteria in its generated JSON",
       "seen_count": 1,
       "last_seen": "2026-08-22T03:48:30Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
+      "root_cause": "sw-loop-test failed (exit 1) after 161s while sw-e2e-integration-test separately timed out at 301s, indicating a real assertion failure in the loop harness test rather than mere flakiness",
+      "fix": "run scripts/sw-loop-test.sh directly and inspect the failing assertion's diff, since the summary log doesn't show which of the 80 subtests broke",
+      "seen_count": 1,
+      "last_seen": "2026-08-22T06:38:31Z",
       "category": "test_failure"
     }
   ]
