@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 17,
-      "last_seen": "2026-08-22T11:14:30Z",
+      "seen_count": 15,
+      "last_seen": "2026-08-22T08:11:52Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-20T19:27:04Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-22T10:51:03Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock stages don't write plan.md/review.md artifacts and a jq call in the RL/complexity-skip test parses a non-numeric literal, cascading into E2E/resume/cleanup test failures",
-      "fix": "fix mock plan/review stage handlers to write .claude/pipeline-artifacts/plan.md and review.md, and guard the jq parse in the complexity-skip test with --arg/type check instead of raw literal",
+      "root_cause": "sw-e2e-integration-test failed (exit 1), likely one of the 4 failing suites requiring real Claude/GitHub credentials or network access unavailable in CI",
+      "fix": "Check sw-e2e-integration-test.sh logs for missing API keys/network access and skip or mock external calls when credentials are absent",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
       "category": "test_failure"
