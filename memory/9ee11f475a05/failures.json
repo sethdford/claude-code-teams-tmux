@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 16,
-      "last_seen": "2026-08-22T13:01:30Z",
+      "seen_count": 15,
+      "last_seen": "2026-08-22T08:11:52Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 2,
-      "last_seen": "2026-08-22T12:15:20Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-20T19:27:04Z",
       "category": "test_failure"
     },
     {
@@ -48,19 +48,20 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mocked claude CLI stopped emitting plan.md/review.md artifacts and the low-complexity/cleanup stages regressed alongside a jq parse error on non-numeric input",
-      "fix": "restore mock claude output to write plan.md and review.md artifacts in the plan/review stages and guard jq calls with numeric validation before parsing",
+      "root_cause": "sw-pipeline-test.sh plan/design/resume/cleanup tests fail because plan.md is never written to .claude/pipeline-artifacts (plan stage output path or mock changed), causing cascading failures in dependent E2E/resume/cleanup tests",
+      "fix": "Verify pipeline_stage_plan writes plan.md to the expected artifacts path and that the mock claude CLI produces it during tests; fix path/mock mismatch",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2moutput missing: Everything is clean\u001b[0m",
-      "root_cause": "",
-      "fix": "",
+      "pattern": "Failed: 1",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed (exit 1), likely due to missing real API credentials or an environment-dependent assertion",
+      "fix": "Run the two failing suites locally with verbose output to inspect the actual assertion failure and fix the underlying logic or test environment gating",
       "seen_count": 1,
-      "last_seen": "2026-08-22T13:29:14Z"
+      "last_seen": "2026-08-22T13:02:10Z",
+      "category": "test_failure"
     }
   ]
 }
