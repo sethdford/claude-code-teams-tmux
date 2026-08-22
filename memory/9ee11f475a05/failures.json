@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 15,
-      "last_seen": "2026-08-22T08:11:52Z",
+      "seen_count": 17,
+      "last_seen": "2026-08-22T10:56:47Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "Pipeline stage tests expect artifacts (plan.md, review.md) and non-zero exit paths that the mocked build/plan/review stages never write, and one intelligence test's jq call receives non-numeric complexity output",
       "fix": "Fix mock stage scripts to write plan.md/review.md artifacts before stage completion and sanitize the complexity value passed to jq in the low-complexity intelligence test",
-      "seen_count": 2,
-      "last_seen": "2026-08-22T10:48:25Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-20T19:27:04Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 7,
-      "last_seen": "2026-08-22T10:11:01Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-22T02:33:44Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock stage scripts no longer emit plan.md/review.md artifacts and the intelligence-complexity/jq numeric-parsing paths regressed, cascading into the dependent E2E/resume/cleanup assertions",
-      "fix": "restore artifact writes in the mock plan/review stage handlers and fix the jq numeric literal parse error in the complexity-skip check in sw-pipeline-test.sh",
+      "root_cause": "sw-pipeline-test.sh mock stages never write plan.md/review.md artifacts, cascading into E2E, resume, cleanup and jq-based intelligence-complexity checks failing",
+      "fix": "fix mock plan/review stage handlers in sw-pipeline-test.sh to write expected artifact files and valid JSON so downstream assertions and jq parsing succeed",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
       "category": "test_failure"
