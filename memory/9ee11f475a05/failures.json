@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 16,
-      "last_seen": "2026-08-22T12:13:07Z",
+      "seen_count": 17,
+      "last_seen": "2026-08-22T13:11:46Z",
       "category": "test_failure"
     },
     {
@@ -48,19 +48,10 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior run (pipeline-2968 already in progress), while sw-intent-analysis-test and sw-recruit-test have real assertion failures (missing schema fields; one recruit test regressed) unrelated to the lock issue",
-      "fix": "Clear/reset stale pipeline locks before the e2e-integration test runs (or add lock cleanup in test teardown), and fix the intent-analysis schema generator to include version/goal/criteria fields; investigate the newly failing recruit-test assertion",
+      "root_cause": "sw-pipeline-test.sh mocks don't produce plan.md/review.md artifacts and a jq call receives a non-numeric literal, cascading into E2E/resume/cleanup/intelligence-skip failures",
+      "fix": "Fix the mock claude/plan/review stage stubs to write expected artifact files and validate jq input before parsing in the complexity-skip check",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "  agents                     List known agents and last activity",
-      "root_cause": "sw-pipeline-test.sh mocks fail to write expected plan.md/review.md artifacts, cascading into resume/E2E/cleanup test failures, plus a jq numeric parse error in the complexity-skip test",
-      "fix": "fix the plan/review stage mocks to write plan.md and review.md artifacts and correct the malformed numeric value passed to jq in the RL episode reward test",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T12:46:04Z",
       "category": "test_failure"
     }
   ]
