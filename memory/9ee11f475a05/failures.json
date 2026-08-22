@@ -6,7 +6,7 @@
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
       "seen_count": 17,
-      "last_seen": "2026-08-22T10:56:47Z",
+      "last_seen": "2026-08-22T11:14:30Z",
       "category": "test_failure"
     },
     {
@@ -48,8 +48,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock stages never write plan.md/review.md artifacts, cascading into E2E, resume, cleanup and jq-based intelligence-complexity checks failing",
-      "fix": "fix mock plan/review stage handlers in sw-pipeline-test.sh to write expected artifact files and valid JSON so downstream assertions and jq parsing succeed",
+      "root_cause": "sw-pipeline-test.sh mock stages don't write plan.md/review.md artifacts and a jq call in the RL/complexity-skip test parses a non-numeric literal, cascading into E2E/resume/cleanup test failures",
+      "fix": "fix mock plan/review stage handlers to write .claude/pipeline-artifacts/plan.md and review.md, and guard the jq parse in the complexity-skip test with --arg/type check instead of raw literal",
       "seen_count": 2,
       "last_seen": "2026-08-22T04:44:35Z",
       "category": "test_failure"
