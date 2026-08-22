@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 13,
-      "last_seen": "2026-08-22T01:49:46Z",
+      "seen_count": 12,
+      "last_seen": "2026-08-22T01:11:28Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 4,
-      "last_seen": "2026-08-21T17:05:51Z",
+      "seen_count": 6,
+      "last_seen": "2026-08-22T02:33:44Z",
       "category": "test_failure"
     },
     {
@@ -39,19 +39,19 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test in the 128-test suite failed but was not captured in the truncated log excerpt shown (all visible suites report FAIL: 0)",
-      "fix": "Re-run the failing suite alone with verbose output to capture the specific failing assertion, likely in a suite not shown in this excerpt",
+      "root_cause": "One of the 128 tests in the suite failed but the failing assertion was not included in the provided log excerpt (only passing suites shown)",
+      "fix": "Re-run the failing test file with verbose output to capture the specific FAIL line and stack trace, then inspect the associated assertion",
       "seen_count": 1,
       "last_seen": "2026-08-21T21:09:37Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 91 tests failed\u001b[0m",
-      "root_cause": "One assertion among 91 in the test run failed but the specific failing test isn't visible in the captured log tail (only passing suites shown)",
-      "fix": "Re-run with full output or increase log tail depth to capture the FAIL line and stack trace, then fix the failing assertion",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
+      "root_cause": "Memory promotion test expects cross-repo pattern copy but the promotion logic or test fixture path/threshold mismatch causes zero patterns to be copied",
+      "fix": "Inspect sw-self-optimize-test.sh 'Memory promotion copies cross-repo patterns' assertion and the promote_memory function in sw-self-optimize.sh for a path or confidence-threshold mismatch, then align them",
       "seen_count": 1,
-      "last_seen": "2026-08-22T00:22:23Z",
+      "last_seen": "2026-08-22T03:14:50Z",
       "category": "test_failure"
     }
   ]
