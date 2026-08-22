@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test exited 1, likely due to missing/invalid API credentials or environment setup rather than a code regression",
       "fix": "Check test logs for these two suites for auth/env errors and gate them on required secrets or fix the underlying assertion",
-      "seen_count": 12,
-      "last_seen": "2026-08-22T00:47:34Z",
+      "seen_count": 13,
+      "last_seen": "2026-08-22T08:33:04Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Multiple pipeline/loop stages (plan, review, resume, full E2E) fail to write expected artifacts (plan.md, review.md) because the build/test loop's self-healing retry logic doesn't consistently regenerate artifacts on iteration, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
       "fix": "Fix jq numeric parsing in the complexity intelligence check (quote/validate the value before passing to jq) and ensure pipeline_write_plan/pipeline_write_review are called unconditionally before stage completion so retries don't skip artifact generation",
-      "seen_count": 4,
-      "last_seen": "2026-08-21T17:05:51Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-22T09:01:06Z",
       "category": "test_failure"
     },
     {
@@ -66,19 +66,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
-      "root_cause": "sw-loop-test failed (exit 1) after 161s while sw-e2e-integration-test separately timed out at 301s, indicating a real assertion failure in the loop harness test rather than mere flakiness",
-      "fix": "run scripts/sw-loop-test.sh directly and inspect the failing assertion's diff, since the summary log doesn't show which of the 80 subtests broke",
+      "root_cause": "sw-pipeline-test.sh E2E tests fail because pipeline plan stage no longer writes .claude/pipeline-artifacts/plan.md (and review stage its review.md), cascading into dependent tests",
+      "fix": "Fix the plan stage in scripts/sw-pipeline.sh to write plan.md/dod.md/tasks before returning, and the review stage to write review.md, then rerun sw-pipeline-test.sh",
       "seen_count": 1,
       "last_seen": "2026-08-22T06:38:31Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-cost-test.sh created a fresh temp cost dashboard with zero cost entries, so the CONTEXT EFFICIENCY / budget utilization assertions fail against the 'No cost entries in the last 30 day(s)' empty-state output",
-      "fix": "Seed costs.json with sample loop.context_efficiency events in test setup before invoking the cost dashboard, or update assertions to handle the empty-state message",
-      "seen_count": 1,
-      "last_seen": "2026-08-22T09:04:31Z",
       "category": "test_failure"
     }
   ]
