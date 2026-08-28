@@ -247,11 +247,15 @@ first:
 | `deploy_infrastructure` | `deployed` | Dockerfile, compose, k8s or helm present |
 | `monorepo_with_ci` | `full` | ≥2 workspace packages **and** CI configured |
 | `large_codebase` | `full` | >5000 source lines, or large/massive commit history |
+| `ci_present` | `standard` | CI configured and nothing above fired |
 | `small_well_tested` | `fast` | tiny/small repo, no CI, established or mature tests |
 | `minimal_project` | `fast` | <20 source files and <5 test files, no deploy config |
-| `ci_present` | `standard` | CI configured and nothing above fired |
 | `no_tests` / `low_test_ratio` | `standard` | no tests, or a thin suite (<20% of sources) |
 | `default` | `standard` | no signal argued for faster or fuller |
+
+`ci_present` sits above both `fast` rules on purpose: a repo already running CI
+has chosen to gate its changes, and a small file count is not a reason to drop
+the review stage.
 
 `hotfix`, `enterprise`, `autonomous`, `cost-aware` and `tdd` are **never**
 recommended from repo shape. Urgency, governance and team practice are not

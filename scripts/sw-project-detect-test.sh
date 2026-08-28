@@ -638,4 +638,13 @@ else
     assert_pass "leaves no temp files behind"
 fi
 
+# A hand-edited manifest with a non-numeric count must not turn the ladder's
+# own comparisons into errors.
+result=$(project_recommend_template '{"monorepo":{"is_monorepo":true,"workspace_count":"many"},
+                                      "ci":{"has_ci":true},
+                                      "test":{"maturity":"none","test_file_count":"lots"},
+                                      "size":{"size_category":"medium","file_count":"big","src_lines":null}}' 2>/dev/null)
+assert_json_key "non-numeric signals degrade to standard" "$result" ".template" "standard"
+assert_json_key "non-numeric signals name a real rule" "$result" ".rule" "ci_present"
+
 print_test_results

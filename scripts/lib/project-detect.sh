@@ -492,6 +492,19 @@ _signal_of() {
     [[ -n "$value" && "$value" != "null" ]] && echo "$value" || echo "$fallback"
 }
 
+# ─── Helper: read one numeric signal ────────────────────────────────────────
+# The ladder compares these with -ge/-lt. A signal that is not an integer
+# (hand-edited manifest, a detector someone changed) would make the test
+# itself an error, so it is coerced to the default instead.
+_signal_num() {
+    local value
+    value=$(_signal_of "$1" "$2" "$3")
+    case "$value" in
+        ''|*[!0-9-]*|-) echo "$3" ;;
+        *) echo "$value" ;;
+    esac
+}
+
 # ═══════════════════════════════════════════════════════════════════════════
 # project_recommend_template(signals_json | root)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -548,22 +561,26 @@ project_recommend_template() {
     local has_deploy deploy_targets
 
     is_monorepo=$(_signal_of "$signals" '.monorepo.is_monorepo' 'false')
-    workspace_count=$(_signal_of "$signals" '.monorepo.workspace_count' '0')
+    workspace_count=$(_signal_num "$signals" '.monorepo.workspace_count' '0')
     monorepo_type=$(_signal_of "$signals" '.monorepo.type' 'none')
     has_ci=$(_signal_of "$signals" '.ci.has_ci' 'false')
-    workflow_count=$(_signal_of "$signals" '.ci.workflow_count' '0')
+    workflow_count=$(_signal_num "$signals" '.ci.workflow_count' '0')
     test_maturity=$(_signal_of "$signals" '.test.maturity' 'none')
-    test_count=$(_signal_of "$signals" '.test.test_file_count' '0')
-    test_ratio=$(_signal_of "$signals" '.test.test_ratio' '0')
+    test_count=$(_signal_num "$signals" '.test.test_file_count' '0')
+    test_ratio=$(_signal_num "$signals" '.test.test_ratio' '0')
     size_category=$(_signal_of "$signals" '.size.size_category' 'unknown')
-    file_count=$(_signal_of "$signals" '.size.file_count' '0')
-    src_lines=$(_signal_of "$signals" '.size.src_lines' '0')
+    file_count=$(_signal_num "$signals" '.size.file_count' '0')
+    src_lines=$(_signal_num "$signals" '.size.src_lines' '0')
     has_deploy=$(_signal_of "$signals" '.deploy.has_deploy' 'false')
     deploy_targets=$(echo "$signals" | jq -r '(.deploy.targets // []) | join("+")' 2>/dev/null || echo "")
 
     local template confidence reason rule
 
     # ── The ladder. Highest precedence first. ──────────────────────────────
+    # `ci_present` deliberately sits above both fast rules: a repo that already
+    # runs CI has chosen to gate its changes, and a small file count is not a
+    # reason to drop the review stage. It is also the rule that catches a
+    # signals object whose counts came back unobservable.
     if [[ "$has_deploy" == "true" ]]; then
         template="deployed"; confidence=90; rule="deploy_infrastructure"
         reason="deployment config present (${deploy_targets:-container}) — deploy and validate stages apply"
@@ -576,6 +593,10 @@ project_recommend_template() {
         template="full"; confidence=80; rule="large_codebase"
         reason="large codebase (${src_lines} source lines, ${size_category} history) — extra review cycles pay off"
 
+    elif [[ "$has_ci" == "true" ]]; then
+        template="standard"; confidence=75; rule="ci_present"
+        reason="CI present (${workflow_count} workflows) — standard pipeline complements existing checks"
+
     elif [[ ( "$size_category" == "tiny" || "$size_category" == "small" ) && \
             "$has_ci" != "true" && \
             ( "$test_maturity" == "established" || "$test_maturity" == "mature" ) ]]; then
@@ -585,10 +606,6 @@ project_recommend_template() {
     elif [[ "$file_count" -lt 20 && "$test_count" -lt 5 && "$has_deploy" != "true" ]]; then
         template="fast"; confidence=85; rule="minimal_project"
         reason="minimal project (${file_count} source files, ${test_count} test files) — little to review"
-
-    elif [[ "$has_ci" == "true" ]]; then
-        template="standard"; confidence=75; rule="ci_present"
-        reason="CI present (${workflow_count} workflows) — standard pipeline complements existing checks"
 
     elif [[ "$test_count" -eq 0 ]]; then
         template="standard"; confidence=65; rule="no_tests"
