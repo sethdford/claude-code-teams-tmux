@@ -6,26 +6,26 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 5,
-      "last_seen": "2026-08-28T00:01:53Z",
+      "last_seen": "2026-08-28T00:21:48Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Loop runs multiple iterations when tests fail initially",
-      "root_cause": "Log shows a fully passing test run (PASS: 29/33/24/26, FAIL: 0) with no actual error, so the reported failure pattern does not correspond to a genuine test failure in this output",
-      "fix": "Re-check the pipeline's failure classification logic — likely a false-positive trigger (e.g. matching on stray output or a prior transient error) rather than a real test regression; verify against the actual exit code and rerun the suite",
+      "root_cause": "No actual failure — the provided log shows all 200 lines passing (PASS totals with FAIL: 0 across every suite); the failure trigger pattern matched a passing checkmark line rather than a genuine error",
+      "fix": "Re-check the failure classifier's pattern match for this stage; likely a false positive from matching on a checkmark/success line instead of an actual FAIL or error signature",
       "seen_count": 1,
       "last_seen": "2026-08-27T20:48:49Z",
-      "category": "flaky"
+      "category": "unknown"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "Memory promotion cross-repo copy test fails, likely due to a change in the promotion path or fixture assumptions in sw-self-optimize.sh",
-      "fix": "Inspect the 'Memory promotion copies cross-repo patterns' test case and the memory promotion function for mismatched paths, repo-hash keys, or fixture setup drift",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Tripped breaker sets FAILURE_REASON=diff_too_large",
+      "root_cause": "Build loop circuit breaker tripped after exceeding max_diff_lines (config/policy.json loop.max_diff_lines), setting FAILURE_REASON=diff_too_large; unrelated pre-existing self-optimize test failure (memory promotion cross-repo) also present but not the trigger.",
+      "fix": "Split the change into smaller commits/iterations under the diff budget, or raise loop.max_diff_lines in config/policy.json if the larger diff is intentional, then resume the pipeline.",
       "seen_count": 1,
-      "last_seen": "2026-08-28T00:34:27Z",
-      "category": "test_failure"
+      "last_seen": "2026-08-27T22:26:16Z",
+      "category": "config"
     }
   ]
 }
