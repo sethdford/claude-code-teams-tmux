@@ -6,7 +6,7 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 7,
-      "last_seen": "2026-08-28T05:55:46Z",
+      "last_seen": "2026-08-28T07:27:49Z",
       "category": "test_failure"
     },
     {
@@ -30,19 +30,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock loop/stage scripts don't write plan.md/review.md artifacts, so plan/review/E2E/resume/cleanup assertions checking for those files fail, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
-      "fix": "fix mock claude/loop stubs to emit plan.md and review.md artifacts in the expected pipeline-artifacts path, and guard the complexity value with jq -R or numeric validation before parsing",
+      "root_cause": "sw-daemon-test, sw-e2e-integration-test, and sw-intent-analysis-test failed with exit 1 during the test stage",
+      "fix": "Run the three failing suites individually with verbose output to capture assertion failures and fix the underlying code or update stale test expectations",
       "seen_count": 1,
       "last_seen": "2026-08-28T00:14:47Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior interrupted run (pipeline-3158 already in progress), and sw-intent-analysis-test's generated JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "clear stale pipeline lock/state before e2e-integration-test runs (or add lock staleness detection), and fix analyze_intent to always emit version/goal/criteria fields in its output schema",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "Test-stage build re-entered the loop while the prebuild gate's plan.md artifact was missing/stale, so pre-existing e2e/intent-analysis failures (missing pipeline.completed event, missing schema fields) got misclassified as loop-fixable regressions and exhausted self-healing instead of surfacing as real bugs",
+      "fix": "Fix sw-e2e-system-test to emit pipeline.completed before intake/build teardown and add version/goal/criteria fields to analyze_intent's output schema; ensure plan.md is generated/persisted before stage_build runs so the prebuild gate doesn't block",
       "seen_count": 1,
-      "last_seen": "2026-08-28T07:01:44Z",
+      "last_seen": "2026-08-28T05:17:40Z",
       "category": "test_failure"
     }
   ]
