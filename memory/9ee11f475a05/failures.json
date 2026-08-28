@@ -6,7 +6,7 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 7,
-      "last_seen": "2026-08-28T06:47:22Z",
+      "last_seen": "2026-08-28T05:55:46Z",
       "category": "test_failure"
     },
     {
@@ -30,19 +30,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Pipeline stages (plan/review) no longer write expected artifact files (plan.md, review.md) before the test harness checks for them, likely due to a path or stage-output regression in sw-pipeline.sh",
-      "fix": "Verify pipeline_stage_plan/pipeline_stage_review write artifacts to .claude/pipeline-artifacts/ before returning, and check the RL-episode jq parse error for a malformed numeric field in episode JSON",
+      "root_cause": "sw-pipeline-test.sh mock loop/stage scripts don't write plan.md/review.md artifacts, so plan/review/E2E/resume/cleanup assertions checking for those files fail, and a jq parse error on non-numeric complexity output breaks the low-complexity skip check",
+      "fix": "fix mock claude/loop stubs to emit plan.md and review.md artifacts in the expected pipeline-artifacts path, and guard the complexity value with jq -R or numeric validation before parsing",
       "seen_count": 1,
       "last_seen": "2026-08-28T00:14:47Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 80 tests failed\u001b[0m",
-      "root_cause": "One of the 80 tests in the test stage failed, but the failing test's output was truncated from the log excerpt (only earlier passing suites are shown)",
-      "fix": "Re-run with full output or isolate the failing suite to identify the specific assertion, then patch the corresponding script/module",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior interrupted run (pipeline-3158 already in progress), and sw-intent-analysis-test's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "clear stale pipeline lock/state before e2e-integration-test runs (or add lock staleness detection), and fix analyze_intent to always emit version/goal/criteria fields in its output schema",
       "seen_count": 1,
-      "last_seen": "2026-08-28T07:37:22Z",
+      "last_seen": "2026-08-28T07:01:44Z",
       "category": "test_failure"
     }
   ]
