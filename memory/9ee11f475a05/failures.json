@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 4,
-      "last_seen": "2026-08-28T03:27:08Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-28T03:14:09Z",
       "category": "test_failure"
     },
     {
@@ -30,8 +30,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "No failure occurred — full test suite passed (163/163)",
-      "fix": "No fix needed; misclassified success as failure, verify pipeline stage status parsing",
+      "root_cause": "Log output is a truncated tail of a large multi-suite test run and does not contain the actual failing assertion; the referenced patrol label-construction line is unrelated context, not an error",
+      "fix": "Re-run with full untruncated output or isolate the specific failing test suite/assertion to identify the real failure",
       "seen_count": 1,
       "last_seen": "2026-08-28T00:14:47Z",
       "category": "unknown"
