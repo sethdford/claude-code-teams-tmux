@@ -580,7 +580,7 @@ project_recommend_template() {
             "$has_ci" != "true" && \
             ( "$test_maturity" == "established" || "$test_maturity" == "mature" ) ]]; then
         template="fast"; confidence=85; rule="small_well_tested"
-        reason="small ${size_category} repo with ${test_maturity} tests and no CI — tests alone can gate a fast pipeline"
+        reason="${size_category} repo with ${test_maturity} tests and no CI — tests alone can gate a fast pipeline"
 
     elif [[ "$file_count" -lt 20 && "$test_count" -lt 5 && "$has_deploy" != "true" ]]; then
         template="fast"; confidence=85; rule="minimal_project"
