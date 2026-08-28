@@ -608,6 +608,69 @@ test_recommend_fast_for_minimal_project() {
 
 # Deploy infrastructure outranks every other signal: the deployed template is
 # the only one with deploy/validate/monitor stages.
+# ── --recommend: the recommendation as a scriptable query ──────────────────
+# The flag exists so a caller can ask "which template for this repo?" without
+# running a full prep. Two properties matter and are easy to break: stdout must
+# be nothing but the JSON object, and the run must not write anything.
+
+# Capture stdout alone. invoke_prep folds stderr in, which would mask exactly
+# the pollution these tests are checking for.
+prep_recommend_stdout() {
+    ( cd "$1" && bash "$PREP_SCRIPT" --recommend 2>/dev/null )
+}
+
+test_recommend_flag_emits_only_json() {
+    local test_dir="$TEST_TEMP_DIR/rec-flag-json"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+    cat > "$test_dir/Dockerfile" <<'DOCKER'
+FROM node:20
+DOCKER
+
+    local out
+    out="$(prep_recommend_stdout "$test_dir")"
+
+    echo "$out" | jq -e . >/dev/null 2>&1 || {
+        echo "stdout was not parseable JSON: $out" >&2
+        return 1
+    }
+
+    assert_value_eq "deployed" "$(echo "$out" | jq -r '.template')" "--recommend names the template" &&
+    assert_value_eq "deploy_infrastructure" "$(echo "$out" | jq -r '.rule')" "--recommend names the rule" &&
+    assert_value_eq "false" "$(echo "$out" | jq -r '.reason == "" or .reason == null')" "--recommend carries a rationale" &&
+    assert_value_eq "object" "$(echo "$out" | jq -r '.signals | type')" "--recommend carries the signals"
+}
+
+test_recommend_flag_writes_nothing() {
+    local test_dir="$TEST_TEMP_DIR/rec-flag-readonly"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+
+    local before after
+    before="$(cd "$test_dir" && find . -type f | sort)"
+    prep_recommend_stdout "$test_dir" >/dev/null
+    after="$(cd "$test_dir" && find . -type f | sort)"
+
+    assert_value_eq "$before" "$after" "--recommend leaves the tree untouched"
+}
+
+# The flag is a shortcut for what prep already records. If the two ever
+# disagree, callers get a different answer depending on how they asked.
+test_recommend_flag_agrees_with_manifest() {
+    local test_dir="$TEST_TEMP_DIR/rec-flag-agrees"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+    mkdir -p "$test_dir/.github/workflows"
+    echo "name: ci" > "$test_dir/.github/workflows/ci.yml"
+
+    local from_flag from_manifest
+    from_flag="$(prep_recommend_stdout "$test_dir" | jq -r '.template')"
+    invoke_prep "$test_dir" --force
+    from_manifest="$(jq -r '.recommendation.template' "$test_dir/.claude/prep-manifest.json")"
+
+    assert_value_eq "$from_manifest" "$from_flag" "--recommend matches the manifest"
+}
+
 test_recommend_deployed_for_containerized_project() {
     local test_dir="$TEST_TEMP_DIR/rec-deployed"
     mkdir -p "$test_dir"
@@ -779,6 +842,9 @@ main() {
         "test_template_recommendation_reported:Template recommendation reported"
         "test_recommend_fast_for_minimal_project:Minimal project recommends fast"
         "test_recommend_deployed_for_containerized_project:Containerized project recommends deployed"
+        "test_recommend_flag_emits_only_json:--recommend emits only JSON on stdout"
+        "test_recommend_flag_writes_nothing:--recommend writes nothing"
+        "test_recommend_flag_agrees_with_manifest:--recommend agrees with the manifest"
         "test_recommend_full_for_monorepo_with_ci:Monorepo with CI recommends full"
         "test_recommendation_reason_names_signals:Rationale names the signals"
         "test_manifest_valid_with_hostile_project_name:Manifest valid with quoted dir name"

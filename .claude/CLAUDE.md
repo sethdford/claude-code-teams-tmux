@@ -224,6 +224,10 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 `shipwright prep` reads the repo's shape and recommends a template, printing it
 in the report and recording it in `.claude/prep-manifest.json` under
 `.recommendation` (`{template, confidence, reason, rule, signals}`).
+`shipwright prep --recommend` answers the same question on its own: it runs
+detection, prints that JSON object on stdout and writes nothing, so a script can
+ask "which template for this repo?" without a full prep run.
+
 `shipwright init` and `shipwright daemon init` seed `pipeline_template` in
 `.claude/daemon-config.json` from it — only when the key is absent or still the
 untouched default, so a value you set is never overwritten. Neither command

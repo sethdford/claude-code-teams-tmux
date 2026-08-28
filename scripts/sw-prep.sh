@@ -48,6 +48,7 @@ fi
 FORCE=false
 CHECK_ONLY=false
 UPDATE_MODE=false
+RECOMMEND_ONLY=false
 WITH_CLAUDE=false
 INTERACTIVE=false
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -111,6 +112,7 @@ show_help() {
     echo -e "  ${CYAN}--force${RESET}        Overwrite existing files"
     echo -e "  ${CYAN}--check${RESET}        Audit existing prep (dry run)"
     echo -e "  ${CYAN}--update${RESET}       Refresh auto-generated sections only"
+    echo -e "  ${CYAN}--recommend${RESET}    Print the pipeline template recommendation as JSON, write nothing"
     echo -e "  ${CYAN}--interactive${RESET}  Interactive quality profile dialogue"
     echo -e "  ${CYAN}--with-claude${RESET}  Deep analysis using Claude Code (slower, richer)"
     echo -e "  ${CYAN}--help, -h${RESET}     Show this help message"
@@ -143,6 +145,7 @@ for arg in "$@"; do
         --force)       FORCE=true ;;
         --check)       CHECK_ONLY=true ;;
         --update)      UPDATE_MODE=true ;;
+        --recommend)   RECOMMEND_ONLY=true ;;
         --interactive) INTERACTIVE=true ;;
         --with-claude) WITH_CLAUDE=true ;;
         --help|-h)     show_help; exit 0 ;;
@@ -1840,15 +1843,37 @@ prep_report() {
 # ─── Main ───────────────────────────────────────────────────────────────────
 
 main() {
-    # Banner
-    echo -e "\n${CYAN}${BOLD}▸ shipwright prep${RESET} ${DIM}v${VERSION}${RESET}\n"
-
-    # Init
-    prep_init
+    # Banner. --recommend prints a JSON object on stdout, so everything that is
+    # not that object is routed to stderr.
+    if $RECOMMEND_ONLY; then
+        echo -e "\n${CYAN}${BOLD}▸ shipwright prep${RESET} ${DIM}v${VERSION}${RESET}\n" >&2
+        prep_init >&2
+    else
+        echo -e "\n${CYAN}${BOLD}▸ shipwright prep${RESET} ${DIM}v${VERSION}${RESET}\n"
+        prep_init
+    fi
 
     # Check-only mode
     if $CHECK_ONLY; then
         prep_check
+        exit 0
+    fi
+
+    # Recommendation-only mode: answer "which template for this repo?" without
+    # generating anything. Detection chatter goes to stderr so stdout stays a
+    # single JSON object callers can pipe straight into jq.
+    if $RECOMMEND_ONLY; then
+        { prep_detect_stack; prep_scan_structure; prep_recommend_template; } >&2
+        if [[ -n "$RECOMMENDATION_JSON" ]]; then
+            printf '%s\n' "$RECOMMENDATION_JSON"
+        else
+            # The detectors are total, so this is the library-missing path
+            # rather than a detection failure — say so instead of implying
+            # the repo shape argued for standard.
+            jq -n --arg t "$RECOMMENDED_TEMPLATE" --arg r "$RECOMMENDATION_REASON" \
+                '{template: $t, confidence: 0, reason: $r,
+                  rule: "unavailable", signals: {}}'
+        fi
         exit 0
     fi
 
