@@ -742,7 +742,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
-| `scripts/sw-prep.sh` | 1892 | Repository Preparation for Agent Teams |
+| `scripts/sw-prep.sh` | 1917 | Repository Preparation for Agent Teams |
 | `scripts/sw-ps.sh` | 156 | Show running agent process status |
 | `scripts/sw-public-dashboard.sh` | 797 | Public real-time pipeline progress |
 | `scripts/sw-quality.sh` | 676 | Intelligent completion, audits, zero auto |
@@ -934,7 +934,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-policy-learner-test.sh` | 359 | Policy Learner Test Suite |
 | `scripts/sw-pr-lifecycle-test.sh` | 317 | Validate autonomous PR management |
 | `scripts/sw-predictive-test.sh` | 691 | Unit tests for predictive intelligence |
-| `scripts/sw-prep-test.sh` | 822 | Validate repo preparation |
+| `scripts/sw-prep-test.sh` | 888 | Validate repo preparation |
 | `scripts/sw-process-reward-test.sh` | 252 | Process Reward Model Test Suite |
 | `scripts/sw-project-detect-test.sh` | 650 | Unit tests for project detection |
 | `scripts/sw-project-signals-test.sh` | 309 | Unit tests for repo-shape detectors |
