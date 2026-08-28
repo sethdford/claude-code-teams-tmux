@@ -743,20 +743,23 @@ ${style_samples}"
 
     [[ -z "$analysis" ]] && { warn "Smart detection returned empty — using grep results"; return 0; }
 
-    # Parse and enrich (only override gaps — grep results take priority)
+    # Parse and enrich (only override gaps — grep results take priority).
+    # Every extraction ends in `|| true`: under `set -e` a grep that matches
+    # nothing is a failed command, so one absent field used to abort the whole
+    # prep run — after detection, before the manifest was ever written.
     local smart_val
 
-    smart_val=$(echo "$analysis" | grep "^FRAMEWORK:" | sed 's/^FRAMEWORK:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^FRAMEWORK:" | sed 's/^FRAMEWORK:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "none" && "$smart_val" != "unknown" && -z "$FRAMEWORK" ]]; then
         FRAMEWORK="$smart_val"
     fi
 
-    smart_val=$(echo "$analysis" | grep "^TEST_FRAMEWORK:" | sed 's/^TEST_FRAMEWORK:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^TEST_FRAMEWORK:" | sed 's/^TEST_FRAMEWORK:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "unknown" && -z "$TEST_FRAMEWORK" ]]; then
         TEST_FRAMEWORK="$smart_val"
     fi
 
-    smart_val=$(echo "$analysis" | grep "^IMPORT_STYLE:" | sed 's/^IMPORT_STYLE:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^IMPORT_STYLE:" | sed 's/^IMPORT_STYLE:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "N/A" ]]; then
         case "$smart_val" in
             ESM)   IMPORT_STYLE="ES modules (import/export)" ;;
@@ -765,32 +768,32 @@ ${style_samples}"
         esac
     fi
 
-    smart_val=$(echo "$analysis" | grep "^NAMING:" | sed 's/^NAMING:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^NAMING:" | sed 's/^NAMING:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "mixed" && "$smart_val" != "unknown" ]]; then
         NAMING_CONVENTION="$smart_val"
     fi
 
-    smart_val=$(echo "$analysis" | grep "^ARCHITECTURE:" | sed 's/^ARCHITECTURE:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^ARCHITECTURE:" | sed 's/^ARCHITECTURE:[[:space:]]*//' | head -1 || true)
     ARCHITECTURE_PATTERN="${smart_val:-}"
 
-    smart_val=$(echo "$analysis" | grep "^ROUTE_STYLE:" | sed 's/^ROUTE_STYLE:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^ROUTE_STYLE:" | sed 's/^ROUTE_STYLE:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "none" && -z "$ROUTE_PATTERNS" ]]; then
         HAS_ROUTES=true
         ROUTE_PATTERNS="$smart_val"
     fi
 
-    smart_val=$(echo "$analysis" | grep "^DB_PATTERN:" | sed 's/^DB_PATTERN:[[:space:]]*//' | head -1)
+    smart_val=$(echo "$analysis" | grep "^DB_PATTERN:" | sed 's/^DB_PATTERN:[[:space:]]*//' | head -1 || true)
     if [[ -n "$smart_val" && "$smart_val" != "none" && -z "$DB_PATTERNS" ]]; then
         HAS_DB=true
         DB_PATTERNS="$smart_val"
     fi
 
     # shellcheck disable=SC2034
-    SEMICOLONS=$(echo "$analysis" | grep "^SEMICOLONS:" | sed 's/^SEMICOLONS:[[:space:]]*//' | head -1)
+    SEMICOLONS=$(echo "$analysis" | grep "^SEMICOLONS:" | sed 's/^SEMICOLONS:[[:space:]]*//' | head -1 || true)
     # shellcheck disable=SC2034
-    QUOTE_STYLE=$(echo "$analysis" | grep "^QUOTE_STYLE:" | sed 's/^QUOTE_STYLE:[[:space:]]*//' | head -1)
+    QUOTE_STYLE=$(echo "$analysis" | grep "^QUOTE_STYLE:" | sed 's/^QUOTE_STYLE:[[:space:]]*//' | head -1 || true)
     # shellcheck disable=SC2034
-    INDENT_STYLE=$(echo "$analysis" | grep "^INDENT:" | sed 's/^INDENT:[[:space:]]*//' | head -1)
+    INDENT_STYLE=$(echo "$analysis" | grep "^INDENT:" | sed 's/^INDENT:[[:space:]]*//' | head -1 || true)
 
     success "Smart detection: ${ARCHITECTURE_PATTERN:-unknown} architecture${FRAMEWORK:+, ${FRAMEWORK}}"
 }

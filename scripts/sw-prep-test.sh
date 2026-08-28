@@ -703,6 +703,34 @@ test_recommendation_is_idempotent() {
     assert_value_eq "$first" "$second" "recommendation is stable across runs"
 }
 
+# Smart detection runs `claude` and greps its answer for named fields. Under
+# `set -e` a grep that matches nothing is a failed command, so an answer
+# missing one field used to abort prep after detection and before the manifest
+# — leaving init with no recommendation and no error to explain why.
+test_smart_detect_survives_unparseable_claude_output() {
+    local test_dir="$TEST_TEMP_DIR/smart-detect"
+    mkdir -p "$test_dir/.claude" "$test_dir/bin"
+    create_node_project "$test_dir"
+    echo '{"intelligence":{"enabled":true}}' > "$test_dir/.claude/daemon-config.json"
+
+    cat > "$test_dir/bin/claude" <<'MOCK'
+#!/usr/bin/env bash
+echo "Error: credit balance is too low"
+MOCK
+    chmod +x "$test_dir/bin/claude"
+
+    PREP_OUTPUT=""
+    PREP_EXIT=0
+    PREP_OUTPUT=$(
+        cd "$test_dir"
+        PATH="$test_dir/bin:$PATH" bash "$PREP_SCRIPT" --force 2>&1
+    ) || PREP_EXIT=$?
+
+    assert_exit_code 0 "prep survives an unusable claude response" &&
+    assert_file_exists "$test_dir/.claude/prep-manifest.json" "manifest still written" &&
+    [[ -n "$(jq -r '.recommendation.template // empty' "$test_dir/.claude/prep-manifest.json")" ]]
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -755,6 +783,7 @@ main() {
         "test_recommendation_reason_names_signals:Rationale names the signals"
         "test_manifest_valid_with_hostile_project_name:Manifest valid with quoted dir name"
         "test_recommendation_is_idempotent:Recommendation is idempotent"
+        "test_smart_detect_survives_unparseable_claude_output:Smart detect survives bad claude output"
     )
 
     for entry in "${tests[@]}"; do
