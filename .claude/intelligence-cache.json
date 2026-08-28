@@ -1958,6 +1958,54 @@
       },
       "timestamp": 1787890550,
       "ttl": 3600
+    },
+    "9e559f2123f233b01fe99073a52d25f1": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787890711,
+      "ttl": 1800
+    },
+    "e520f0cb4d7f0976edf4ccde71fcb242": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787890712,
+      "ttl": 1800
+    },
+    "6e089349d518519236b81db195a38cbe": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 72,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Sanitization may miss embedded sensitive data (hashes, commit refs, internal paths) in error signatures",
+          "Shared patterns from one repo context could produce false positives when applied to unrelated repos",
+          "Unbounded growth of shared pattern store without pruning/TTL mechanism",
+          "Configuration state management across fleet—ensuring opt-in flag propagates consistently",
+          "Fallback lookup precedence could mask repo-specific fixes if shared pattern is overly broad"
+        ],
+        "implementation_hints": [
+          "Extract sanitization into a separate, independently testable utility function with fixtures that intentionally include secrets",
+          "Implement shared pattern lookup as a strict fallback only—repo-local patterns always take precedence",
+          "Add metadata to each shared pattern (repo count, last seen, confidence score) to enable intelligent ranking",
+          "Use atomic file writes (temp file + mv) for fleet-shared/patterns.json to handle concurrent writes safely",
+          "Implement pattern TTL/pruning to cap store size—pair with sw-db.sh pattern table for queryable history",
+          "Add telemetry to track cross-repo pattern reuse (audit trail) and measure false-positive rate",
+          "Test fixture should include patterns with repo paths, commit hashes, and error messages containing sensitive tokens"
+        ]
+      },
+      "timestamp": 1787890769,
+      "ttl": 3600
     }
   }
 }
