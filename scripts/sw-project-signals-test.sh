@@ -254,6 +254,16 @@ result=$(detect_activity_level "$proj")
 assert_json_key "non-git dir → not active" "$result" ".is_active" "false"
 assert_json_key "non-git dir → -1 days" "$result" ".days_since_last_commit" "-1"
 
+# A .git that exists but is unreadable must degrade like no git at all —
+# git failing is not evidence of a small repo.
+proj="$TEST_TEMP_DIR/activity-corrupt-git"
+mkdir -p "$proj/.git"
+echo "garbage" > "$proj/.git/HEAD"
+result=$(detect_activity_level "$proj")
+assert_json_key "corrupt .git → -1 days" "$result" ".days_since_last_commit" "-1"
+result=$(detect_repo_size "$proj" 5)
+assert_json_key "corrupt .git → unknown size" "$result" ".size_category" "unknown"
+
 # ═══════════════════════════════════════════════════════════════════════════
 # project_collect_signals — totality
 # ═══════════════════════════════════════════════════════════════════════════
