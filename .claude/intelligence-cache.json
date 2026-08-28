@@ -1674,33 +1674,33 @@
       "result": {
         "results": [
           {
-            "file": "retry-outcomes.json",
+            "file": "failures.json",
             "relevance": 95,
-            "summary": "build_failure retry class shows model escalation strategy with 100% success rate (5/5 attempts) — directly applicable to current build stage if iterations fail"
+            "summary": "Contains detailed build/test stage failures with root causes (mock JSON corruption, missing schema fields, stale pipeline locks) and specific fixes. Critical for understanding what's failing and how to fix it."
           },
           {
-            "file": "metrics.json",
-            "relevance": 92,
-            "summary": "Build duration baseline (7095s) and test duration baseline (1459s) establish expected performance windows for this project's build+test cycle"
-          },
-          {
-            "file": "patterns.json",
-            "relevance": 85,
-            "summary": "Project conventions (Node.js, vitest, npm, JavaScript, CommonJS) define the build environment and test execution context"
+            "file": "retry-outcomes.json",
+            "relevance": 90,
+            "summary": "Shows build_failure retry strategy using model_escalation with 100% success rate. Directly guides how to handle and recover from build failures."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 72,
-            "summary": "Past successful builds show iteration counts (3-4 iterations), typical complexity scores (60-65), and cost per build ($2.50) for similar feature/fix work"
+            "relevance": 85,
+            "summary": "Contains successful build patterns showing iteration counts (3), duration (~45-150s), files changed, test strategy (npm test), and cost. Informs expected build behavior and approach."
           },
           {
             "file": "knowledge.json",
-            "relevance": 55,
-            "summary": "Test infrastructure failures (mktemp /tmp/claude/ path issues, jq output format) are recovery patterns if build/test setup fails"
+            "relevance": 75,
+            "summary": "Lists specific test failures (mktemp directory issues, cleanup output formatting, JSON validation) that block build execution. Provides concrete fixes for test environment setup."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Provides baseline metrics (build_duration_s: 7095, test_duration_s: 1459) for comparing current build performance against historical norms."
           }
         ]
       },
-      "timestamp": 1787882552,
+      "timestamp": 1787885073,
       "ttl": 1800
     },
     "8c7b1c5553fae3d1bd48d2229161c4e6": {
@@ -1998,6 +1998,139 @@
         }
       ],
       "timestamp": 1787882906,
+      "ttl": 1800
+    },
+    "9e8b18c83e942eb8e024c057085ad978": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787883389,
+      "ttl": 1800
+    },
+    "522404d70f6f4ef92803932e192de619": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787883620,
+      "ttl": 1800
+    },
+    "5fa65c84196d9486f09ada360c55b116": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787883859,
+      "ttl": 1800
+    },
+    "4d6edf9eae0b49fb03023f9dca4a8f80": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787884241,
+      "ttl": 1800
+    },
+    "45956c5534789b16bac00bf205313ceb": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787884448,
+      "ttl": 1800
+    },
+    "be305a3b377ec3544018d9577c2f86bc": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787884685,
+      "ttl": 1800
+    },
+    "a592a8653e699003aa516428ac63c15f": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787885182,
+      "ttl": 1800
+    },
+    "1267a19fb7d26b93e924331e1a741e49": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787885405,
+      "ttl": 1800
+    },
+    "93c6223c50ad6a0e38aa5bc0a5df5c7a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787885421,
+      "ttl": 1800
+    },
+    "512a05d3c384818881122ed923014ca9": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787885571,
+      "ttl": 1800
+    },
+    "806a7fb4b4eb7d24b6ee2d1c13e433df": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787885826,
+      "ttl": 1800
+    },
+    "695232e818880c4a8c66c6884b188b4f": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787885847,
       "ttl": 1800
     }
   }
