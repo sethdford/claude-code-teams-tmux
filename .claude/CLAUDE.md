@@ -690,7 +690,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-connect.sh` | 624 | Sync local state to team dashboard |
 | `scripts/sw-context.sh` | 600 | Context Engine for Pipeline Stages |
 | `scripts/sw-cost.sh` | 1070 | Token Usage & Cost Intelligence |
-| `scripts/sw-daemon.sh` | 1420 | Autonomous GitHub Issue Watcher |
+| `scripts/sw-daemon.sh` | 1436 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
 | `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
 | `scripts/sw-decide.sh` | 691 | Shipwright Autonomous Decision Engine |
@@ -718,7 +718,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-hello.sh` | 67 | Hello World Command |
 | `scripts/sw-hygiene.sh` | 724 | Repository Organization & Cleanup |
 | `scripts/sw-incident.sh` | 1132 | Autonomous Incident Detection & Response |
-| `scripts/sw-init.sh` | 871 | Complete setup for Shipwright + Shipwright |
+| `scripts/sw-init.sh` | 895 | Complete setup for Shipwright + Shipwright |
 | `scripts/sw-instrument.sh` | 691 | Pipeline Instrumentation & Feedback Loops |
 | `scripts/sw-intelligence.sh` | 1548 | AI-Powered Analysis & Decision Engine |
 | `scripts/sw-jira.sh` | 628 | Jira ↔ GitHub Bidirectional Sync |
@@ -738,7 +738,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-pm.sh` | 749 | Autonomous PM Agent for Team Orchestration |
 | `scripts/sw-pr-lifecycle.sh` | 688 | Autonomous PR Management |
 | `scripts/sw-predictive.sh` | 834 | Predictive & Proactive Intelligence |
-| `scripts/sw-prep.sh` | 1831 | Repository Preparation for Agent Teams |
+| `scripts/sw-prep.sh` | 1892 | Repository Preparation for Agent Teams |
 | `scripts/sw-ps.sh` | 156 | Show running agent process status |
 | `scripts/sw-public-dashboard.sh` | 797 | Public real-time pipeline progress |
 | `scripts/sw-quality.sh` | 676 | Intelligent completion, audits, zero auto |
@@ -807,9 +807,11 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 
 ### Shared Libraries
 
-| File                    | Lines | Purpose                            |
-| ----------------------- | ----: | ---------------------------------- |
-| `scripts/lib/compat.sh` |     — | Cross-platform compatibility shims |
+| File                             | Lines | Purpose                                       |
+| -------------------------------- | ----: | --------------------------------------------- |
+| `scripts/lib/compat.sh`          |     — | Cross-platform compatibility shims            |
+| `scripts/lib/project-signals.sh` |     — | Repo-shape signal detectors (see Recommendation) |
+| `scripts/lib/project-detect.sh`  |     — | Project type detection + template rule ladder |
 
 ### Test Suites
 
@@ -928,9 +930,10 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-policy-learner-test.sh` | 359 | Policy Learner Test Suite |
 | `scripts/sw-pr-lifecycle-test.sh` | 317 | Validate autonomous PR management |
 | `scripts/sw-predictive-test.sh` | 691 | Unit tests for predictive intelligence |
-| `scripts/sw-prep-test.sh` | 636 | Validate repo preparation |
+| `scripts/sw-prep-test.sh` | 822 | Validate repo preparation |
 | `scripts/sw-process-reward-test.sh` | 252 | Process Reward Model Test Suite |
-| `scripts/sw-project-detect-test.sh` | 434 | Unit tests for project detection |
+| `scripts/sw-project-detect-test.sh` | 650 | Unit tests for project detection |
+| `scripts/sw-project-signals-test.sh` | 309 | Unit tests for repo-shape detectors |
 | `scripts/sw-ps-test.sh` | 296 | Validate agent process status display |
 | `scripts/sw-public-dashboard-test.sh` | 165 | Validate public dashboard generation |
 | `scripts/sw-quality-profile-test.sh` | 447 | Unit tests for quality profile library |
