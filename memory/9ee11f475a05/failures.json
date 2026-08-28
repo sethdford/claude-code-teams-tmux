@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 7,
-      "last_seen": "2026-08-28T06:52:07Z",
+      "seen_count": 8,
+      "last_seen": "2026-08-28T14:47:30Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
       "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
-      "seen_count": 2,
-      "last_seen": "2026-08-27T23:56:55Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-28T16:52:57Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test hit the 301s timeout and sw-loop-test failed with exit 1, indicating a hung/slow real-integration test and a genuine loop harness regression",
       "fix": "investigate sw-loop-test failure output directly and increase or mock sw-e2e-integration-test's external calls to avoid the 300s timeout",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T00:14:47Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-28T15:57:55Z",
       "category": "test_failure"
     },
     {
@@ -57,10 +57,19 @@
     {
       "stage": "test",
       "pattern": "Testing CONTRACT: pipeline can parse recruit match --json for model... ERROR: scripts/sw-recruit-test.sh:1112 exited with status 5",
-      "root_cause": "sw-recruit-test.sh:1112 'recruit match --json for model' contract test exits with status 5, indicating the recruit CLI's JSON output for model matching is malformed or missing an expected field",
-      "fix": "Inspect scripts/sw-recruit-test.sh:1112 and the corresponding recruit match --json code path in sw-recruit.sh to ensure it emits valid JSON with the fields the test asserts on",
+      "root_cause": "sw-recruit-test.sh:1112 assumes `recruit match --json` always emits valid JSON for the given model, but the command exits non-zero/malformed output for that model case, so the downstream `jq`/parse call fails with exit status 5",
+      "fix": "Guard the contract test to check the command's exit code before parsing, and fix `recruit match --json` to emit valid JSON (or a proper error object) for all supported models instead of failing silently",
       "seen_count": 1,
       "last_seen": "2026-08-28T12:11:33Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m to_prompt returns 1 on missing file",
+      "root_cause": "Memory promotion test likely asserts cross-repo pattern copy but promotion logic or fixture data doesn't meet the confidence/occurrence threshold used for promotion",
+      "fix": "Check sw-self-optimize.sh memory promotion function against the test's fixture pattern counts/confidence values and align thresholds or fixture setup",
+      "seen_count": 1,
+      "last_seen": "2026-08-28T15:26:06Z",
       "category": "test_failure"
     }
   ]
