@@ -219,6 +219,51 @@ The build stage delegates to `shipwright loop` for autonomous multi-iteration de
 | `cost-aware` | all stages                                 | all auto, budget checks           | Budget-limited delivery  |
 | `deployed`   | all + deploy + validate + monitor          | approve: deploy                   | Full deploy + monitoring |
 
+### Automatic Recommendation
+
+`shipwright prep` reads the repo's shape and recommends a template, printing it
+in the report and recording it in `.claude/prep-manifest.json` under
+`.recommendation` (`{template, confidence, reason, rule, signals}`).
+`shipwright init` and `shipwright daemon init` seed `pipeline_template` in
+`.claude/daemon-config.json` from it — only when the key is absent or still the
+untouched default, so a value you set is never overwritten. Neither command
+prompts; both stay scriptable.
+
+Signals (`scripts/lib/project-signals.sh`): monorepo workspaces, CI presence and
+workflow count, test maturity (a **file-count proxy**, not measured coverage),
+repo size from commit history, activity recency, and deployment config. Each
+detector is total — it returns valid JSON on every path, and an unobservable
+signal contributes nothing rather than a wrong value. A shallow clone reports
+`size_category: "unknown"`, never `tiny`, so CI-run prep does not read every
+repo as a toy.
+
+The mapping (`project_recommend_template()` in `scripts/lib/project-detect.sh`)
+is an ordered rule ladder, not a score — a rule fires and names itself, which is
+what lets `.reason` cite the signals that drove the choice. Highest precedence
+first:
+
+| Rule | Recommends | Fires when |
+| --- | --- | --- |
+| `deploy_infrastructure` | `deployed` | Dockerfile, compose, k8s or helm present |
+| `monorepo_with_ci` | `full` | ≥2 workspace packages **and** CI configured |
+| `large_codebase` | `full` | >5000 source lines, or large/massive commit history |
+| `small_well_tested` | `fast` | tiny/small repo, no CI, established or mature tests |
+| `minimal_project` | `fast` | <20 source files and <5 test files, no deploy config |
+| `ci_present` | `standard` | CI configured and nothing above fired |
+| `no_tests` / `low_test_ratio` | `standard` | no tests, or a thin suite (<20% of sources) |
+| `default` | `standard` | no signal argued for faster or fuller |
+
+`hotfix`, `enterprise`, `autonomous`, `cost-aware` and `tdd` are **never**
+recommended from repo shape. Urgency, governance and team practice are not
+observable in a repository; picking those stays a human decision. A test pins
+this.
+
+The recommendation is advisory — it seeds a default, it does not decide a run:
+
+```
+explicit --pipeline  >  per-issue triage  >  prep repo-shape default  >  standard
+```
+
 ## CLI Flags
 
 All `claude` CLI invocations in the pipeline support these flags:
