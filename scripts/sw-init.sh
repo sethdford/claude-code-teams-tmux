@@ -652,6 +652,30 @@ if [[ "$SKIP_CLAUDE_MD" == "false" && -f "$CLAUDE_MD_SRC" ]]; then
     fi
 fi
 
+# ─── Pipeline template default (from prep, when it has run) ──────────────────
+# init stays non-interactive: there is no prompt here to answer. The
+# recommendation only seeds a default that per-issue triage and an explicit
+# --pipeline both override — and only when nobody has set one.
+if [[ -f "$SCRIPT_DIR/lib/project-detect.sh" ]]; then
+    # shellcheck source=lib/project-detect.sh
+    source "$SCRIPT_DIR/lib/project-detect.sh"
+
+    if [[ "$(type -t read_prep_recommendation 2>/dev/null)" == "function" ]]; then
+        RECOMMENDED_PIPELINE="$(read_prep_recommendation "$PWD")"
+        DAEMON_CONFIG=".claude/daemon-config.json"
+
+        if [[ -f "$DAEMON_CONFIG" ]]; then
+            if seed_daemon_config_template "$DAEMON_CONFIG" "$RECOMMENDED_PIPELINE" "autonomous"; then
+                success "Pipeline template default: ${BOLD}${RECOMMENDED_PIPELINE}${RESET} ${DIM}(from shipwright prep)${RESET}"
+            else
+                info "Pipeline template left as configured in ${DAEMON_CONFIG}"
+            fi
+        elif [[ -f ".claude/prep-manifest.json" ]]; then
+            info "Recommended pipeline template: ${BOLD}${RECOMMENDED_PIPELINE}${RESET} ${DIM}(run ${CYAN}shipwright daemon init${DIM} to apply)${RESET}"
+        fi
+    fi
+fi
+
 # ─── GitHub CLI Authentication ────────────────────────────────────────────────
 # gh auth is required for daemon, pipeline, PR creation, and issue management
 if command -v gh >/dev/null 2>&1; then

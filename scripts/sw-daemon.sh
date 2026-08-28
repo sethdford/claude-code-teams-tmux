@@ -1076,6 +1076,22 @@ CONFIGEOF
     umask "$_old_umask"
     chmod 600 "$config_file"
 
+    # Seed the pipeline template from what prep recommended for this repo.
+    # The literal above is the untouched default, so this only ever replaces
+    # a value nobody chose. A missing or corrupt manifest leaves it alone.
+    if [[ -f "$SCRIPT_DIR/lib/project-detect.sh" ]]; then
+        # shellcheck source=lib/project-detect.sh
+        source "$SCRIPT_DIR/lib/project-detect.sh"
+        if [[ "$(type -t read_prep_recommendation 2>/dev/null)" == "function" ]] && \
+           [[ -f ".claude/prep-manifest.json" ]]; then
+            local recommended
+            recommended="$(read_prep_recommendation "$PWD")"
+            if seed_daemon_config_template "$config_file" "$recommended" "autonomous"; then
+                info "Pipeline template seeded from prep: ${BOLD}${recommended}${RESET}"
+            fi
+        fi
+    fi
+
     success "Generated config: ${config_file}"
     echo ""
     echo -e "${DIM}Edit this file to customize the daemon behavior, then run:${RESET}"

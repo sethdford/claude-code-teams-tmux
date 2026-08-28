@@ -557,4 +557,85 @@ assert_eq "Auto-detect Python test command" "pytest" "$result"
 # Summary
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Test: consumers — read_prep_recommendation / seed_daemon_config_template
+# init reads these in the middle of a setup run, so every failure mode has to
+# degrade to "standard" rather than abort.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print_test_section "read_prep_recommendation"
+
+consumer_root="$TEST_TEMP_DIR/consumer"
+mkdir -p "$consumer_root/.claude"
+
+assert_eq "absent manifest reads as standard" "standard" "$(read_prep_recommendation "$consumer_root")"
+
+printf '{"recommendation": {"temp' > "$consumer_root/.claude/prep-manifest.json"
+assert_eq "truncated manifest reads as standard" "standard" "$(read_prep_recommendation "$consumer_root")"
+
+echo '{"recommendation":{"template":"full","rule":"monorepo_with_ci"}}' > "$consumer_root/.claude/prep-manifest.json"
+assert_eq "valid manifest reads its template" "full" "$(read_prep_recommendation "$consumer_root")"
+
+# A manifest naming a template the pipeline cannot resolve must not propagate.
+echo '{"recommendation":{"template":"../../etc/passwd"}}' > "$consumer_root/.claude/prep-manifest.json"
+assert_eq "unknown template name reads as standard" "standard" "$(read_prep_recommendation "$consumer_root")"
+
+print_test_section "seed_daemon_config_template"
+
+config="$consumer_root/daemon-config.json"
+
+echo '{"pipeline_template":"autonomous","max_parallel":2}' > "$config"
+if seed_daemon_config_template "$config" "full" "autonomous"; then
+    assert_pass "seeds over the untouched default"
+else
+    assert_fail "seeds over the untouched default" "$(cat "$config")"
+fi
+assert_eq "seeded value written" "full" "$(jq -r '.pipeline_template' "$config")"
+assert_eq "other config keys preserved" "2" "$(jq -r '.max_parallel' "$config")"
+
+# The second run is a no-op: the value is no longer the untouched default.
+if seed_daemon_config_template "$config" "fast" "autonomous"; then
+    assert_fail "does not overwrite an already-seeded value" "overwrote with fast"
+else
+    assert_pass "does not overwrite an already-seeded value"
+fi
+assert_eq "already-seeded value survives" "full" "$(jq -r '.pipeline_template' "$config")"
+
+# A value a human chose is never touched — this is what makes the feature
+# safe to run on every init.
+echo '{"pipeline_template":"enterprise"}' > "$config"
+if seed_daemon_config_template "$config" "fast" "autonomous"; then
+    assert_fail "never overwrites a human-set template" "overwrote enterprise"
+else
+    assert_pass "never overwrites a human-set template"
+fi
+assert_eq "human-set template survives" "enterprise" "$(jq -r '.pipeline_template' "$config")"
+
+echo '{invalid' > "$config"
+if seed_daemon_config_template "$config" "fast" "autonomous"; then
+    assert_fail "refuses a corrupt config" "claimed to seed"
+else
+    assert_pass "refuses a corrupt config"
+fi
+assert_eq "corrupt config left byte-identical" "{invalid" "$(cat "$config")"
+
+if seed_daemon_config_template "$consumer_root/no-such-config.json" "fast" "autonomous"; then
+    assert_fail "refuses a missing config" "claimed to seed"
+else
+    assert_pass "refuses a missing config"
+fi
+if [[ -f "$consumer_root/no-such-config.json" ]]; then
+    assert_fail "does not create a config that was not there" "file created"
+else
+    assert_pass "does not create a config that was not there"
+fi
+
+if ls "$consumer_root"/*.tmp.* >/dev/null 2>&1; then
+    assert_fail "leaves no temp files behind" "$(ls "$consumer_root"/*.tmp.*)"
+else
+    assert_pass "leaves no temp files behind"
+fi
+
 print_test_results

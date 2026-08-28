@@ -17,6 +17,8 @@
 #   - project_detect_build_cmd(root, type) — Detect build command
 #   - project_recommend_template(signals|root) — Recommend pipeline template
 #   - project_detect_all(root)          — Full detection report (cached)
+#   - read_prep_recommendation(root)    — Template from .claude/prep-manifest.json
+#   - seed_daemon_config_template(cfg, tpl, default) — Seed an unset default
 
 [[ -n "${_PROJECT_DETECT_LOADED:-}" ]] && return 0
 _PROJECT_DETECT_LOADED=1
@@ -697,4 +699,62 @@ project_detect_all() {
     echo "$result" > "$cache_file"
 
     echo "$result"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# read_prep_recommendation(root)
+# ─────────────────────────────────────────────────────────────────────────────
+# Read the template `shipwright prep` recommended for this repo.
+#
+# Echoes a template name; echoes "standard" when the manifest is missing,
+# truncated, or does not name a template. Never fails — a consumer must be
+# able to call this in the middle of `init` without risking the run.
+read_prep_recommendation() {
+    local root="${1:-.}"
+    local manifest="${root}/.claude/prep-manifest.json"
+    local template=""
+
+    if [[ -f "$manifest" ]]; then
+        template=$(jq -r '.recommendation.template // empty' "$manifest" 2>/dev/null || echo "")
+    fi
+
+    case "$template" in
+        fast|standard|full|deployed) echo "$template" ;;
+        *) echo "standard" ;;
+    esac
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# seed_daemon_config_template(config_path, template, untouched_default)
+# ─────────────────────────────────────────────────────────────────────────────
+# Write .pipeline_template into a daemon config — but only when the key is
+# absent or still the untouched literal default. A value a human set is never
+# overwritten; that is what makes this safe to run on every init.
+#
+# Returns 0 when it seeded, 1 when it deliberately left the file alone.
+# Writes atomically, and never leaves a partial config behind.
+seed_daemon_config_template() {
+    local config="${1:-}" template="${2:-}" untouched_default="${3:-autonomous}"
+
+    [[ -n "$config" && -n "$template" ]] || return 1
+    [[ -f "$config" ]] || return 1
+    jq -e . "$config" >/dev/null 2>&1 || return 1
+
+    local current
+    current=$(jq -r '.pipeline_template // empty' "$config" 2>/dev/null || echo "")
+    if [[ -n "$current" && "$current" != "$untouched_default" ]]; then
+        return 1
+    fi
+    [[ "$current" == "$template" ]] && return 1
+
+    local updated tmp
+    updated=$(jq --arg t "$template" '.pipeline_template = $t' "$config" 2>/dev/null || true)
+    echo "$updated" | jq -e . >/dev/null 2>&1 || return 1
+
+    tmp="${config}.tmp.$$"
+    printf '%s\n' "$updated" > "$tmp" 2>/dev/null && mv -f "$tmp" "$config" 2>/dev/null || {
+        rm -f "$tmp" 2>/dev/null || true
+        return 1
+    }
+    return 0
 }
