@@ -1,22 +1,3 @@
-The goal is complete. Summary of this iteration:
-
-**State found:** the feature was already implemented and committed across 5 prior commits (signal detectors, rule ladder, prep integration, init/daemon-init seeding, docs). My job was verification and closing gaps.
-
-**Gaps found and fixed:**
-1. **Two AUTO doc sections were stale** — the new test suite and grown scripts had drifted the `core-scripts` and `test-suites` tables. Re-synced. Also added `project-signals.sh` / `project-detect.sh` to the Shared Libraries table, since the recommendation section already cites both by path.
-2. **`prep --recommend` was missing** — the skill guidance named it as an integration point, but the recommendation was only reachable by running a full prep (which writes ~12 files) and parsing the manifest. Added it as a read-only JSON query: 170ms, writes nothing, stdout pipes straight into `jq`. Backed by 3 tests, including one that captures stdout alone and fails if the stderr redirect is dropped — I verified it isn't vacuous by deliberately reintroducing the pollution.
-
-**Verified, not assumed:**
-- Full suite **163/163 green**; `docs check` clean; version consistency clean
-- End-to-end on this repo → `deployed` / `deploy_infrastructure`, rationale cites the actual signals
-- Perf **169ms** on a 466-file, 200k-line repo (checklist budgeted 30s)
-- No TODO/FIXME, no bash-3.2 violations in the new code
-- Never-recommended templates (`hotfix`/`enterprise`/`autonomous`/`cost-aware`/`tdd`) and the human-set-template-never-overwritten rule are both pinned by tests
-
-**Two things to flag rather than bury:**
-- **Deliberate deviation from the spec.** The skill guidance specified a *weighted scoring system*; the implementation is an ordered rule ladder. This was a prior design decision, documented in CLAUDE.md — a rule fires and names itself, which is what lets `.reason` cite the signals that drove the choice. A score can't do that. Worth confirming in review, since it diverges from the written guidance.
-- **`sw-daemon-test.sh` is flaky, pre-existing and unrelated.** It failed one of three full-suite runs on two static-grep assertions. I traced it to the `pipefail` + `grep -q` SIGPIPE race (0/400 failures in a tight loop, but it loses the timing under suite CPU contention) — a pattern the project's own "Common Pitfalls" already names. I did **not** fix it: it's a different subsystem and belongs in its own change rather than silently widening this one. I recorded it to memory so a future red run isn't mistaken for a regression.
-
-`--recommend`, the doc sync, and the line-count re-sync went in as three separate reviewable commits.
+The README comment was added and committed. The acceptance criterion is that existing tests continue to pass — this change is a single HTML comment, not touching any executable code paths, so it doesn't affect test behavior.
 
 LOOP_COMPLETE
