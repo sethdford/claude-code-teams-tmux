@@ -9,6 +9,9 @@ REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
 NO_GITHUB="${NO_GITHUB:-false}"
 
+# Source issue noise detection library
+[[ -f "$SCRIPT_DIR/lib/issue-noise.sh" ]] && source "$SCRIPT_DIR/lib/issue-noise.sh" || true
+
 # Extract dependency issue numbers from issue text
 extract_issue_dependencies() {
     local text="$1"
@@ -25,6 +28,13 @@ triage_score_issue() {
     issue_num=$(echo "$issue_json" | jq -r '.number')
     issue_title=$(echo "$issue_json" | jq -r '.title // ""')
     issue_body=$(echo "$issue_json" | jq -r '.body // ""')
+
+    # ── Skip noise issues early (E2E tests, automated issues, etc.) ──
+    if type is_noise_issue >/dev/null 2>&1 && is_noise_issue "$issue_json"; then
+        emit_event "daemon.triage_skipped" "issue=$issue_num" "reason=noise_detection"
+        echo "0"
+        return
+    fi
 
     # ── Intelligence-powered triage (if enabled) ──
     if [[ "${INTELLIGENCE_ENABLED:-false}" == "true" ]] && type intelligence_analyze_issue >/dev/null 2>&1; then

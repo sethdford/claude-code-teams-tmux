@@ -12,6 +12,9 @@ EVENTS_FILE="${EVENTS_FILE:-${DAEMON_DIR}/events.jsonl}"
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 NO_GITHUB="${NO_GITHUB:-false}"
 POLL_INTERVAL="${POLL_INTERVAL:-60}"
+
+# Source issue noise detection library
+[[ -f "$SCRIPT_DIR/lib/issue-noise.sh" ]] && source "$SCRIPT_DIR/lib/issue-noise.sh" || true
 MAX_PARALLEL="${MAX_PARALLEL:-4}"
 WATCH_LABEL="${WATCH_LABEL:-shipwright}"
 WATCH_MODE="${WATCH_MODE:-repo}"
@@ -118,6 +121,26 @@ daemon_poll_issues() {
     # Reset backoff on success
     BACKOFF_SECS=0
     gh_record_success
+
+    # Filter out noise issues before processing (E2E tests, automated issues, etc.)
+    local noise_count=0
+    if type noise_filter_issues >/dev/null 2>&1; then
+        local filtered_issues
+        filtered_issues=$(echo "$issues_json" | noise_filter_issues '.' 2>/dev/null || echo "[]")
+        noise_count=$(($(echo "$issues_json" | jq 'length' 2>/dev/null || echo 0) - $(echo "$filtered_issues" | jq 'length' 2>/dev/null || echo 0)))
+        issues_json="$filtered_issues"
+        if [[ "$noise_count" -gt 0 ]]; then
+            daemon_log INFO "Filtered out ${noise_count} noise issue(s) (e.g., E2E tests, automated)"
+            emit_event "daemon.noise_filtered" "count=$noise_count"
+        fi
+    fi
+
+    # Check for flood condition
+    if type noise_check_flood >/dev/null 2>&1; then
+        if noise_check_flood "$noise_count"; then
+            daemon_log WARN "E2E test issue flood detected (${noise_count} in last hour)"
+        fi
+    fi
 
     local issue_count
     issue_count=$(echo "$issues_json" | jq 'length' 2>/dev/null || echo 0)

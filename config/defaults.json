@@ -130,5 +130,15 @@
     "log_tail_lines": 100,
     "function_scan_limit": 0,
     "dependency_scan_limit": 0
+  },
+  "noise_issues": {
+    "enabled": true,
+    "label_patterns": ["e2e-test", "automated"],
+    "title_pattern": "\\[automated\\]",
+    "body_marker": "<!-- AUTO-GENERATED -->|<!-- E2E-TEST -->",
+    "override_labels": ["p0", "urgent", "security"],
+    "auto_close_enabled": false,
+    "flood_alert_threshold": 5,
+    "flood_time_window_mins": 60
   }
 }

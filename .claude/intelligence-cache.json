@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "devops",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "architect",
+          "builder"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "DevOps leads monitoring/alerting setup; Architect designs detection system; Builder implements detection logic.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1787888820,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,295 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "9d0e17d217e8ddc7b57ddf6bfd87335c": {
+      "result": {
+        "complexity": 3,
+        "risk_level": "medium",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern false positives: accidentally filtering real issues that match E2E heuristics",
+          "Auto-close unintended issues if pattern is too broad or config drifts",
+          "Pattern brittleness: E2E test issue naming conventions may change",
+          "Regression in triage scoring for legitimate issues if skip logic is buggy"
+        ],
+        "implementation_hints": [
+          "Add configurable regex pattern + label detection in daemon config (e.g., title contains 'E2E test:' OR label:e2e-bot)",
+          "Inject detection into sw-triage.sh before scoring loop; skip matching issues from strategic-agent context",
+          "Implement auto-close as opt-in flag in daemon-config.json with dry-run logging first",
+          "Add unit tests: pattern matching edge cases, skip/close behavior, regression tests for normal issues",
+          "Log metrics (count filtered per run) to help detect pattern drift over time",
+          "Consider whitelisting high-priority E2E issues that should never auto-close"
+        ]
+      },
+      "timestamp": 1787888254,
+      "ttl": 3600
+    },
+    "5e50bc066bb500c92694dff7d087c5ec": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1787888266,
+      "ttl": 1800
+    },
+    "b7c96c2cc97d2cd2e477fc50a011a540": {
+      "result": {
+        "estimated_cost_usd": 4.50,
+        "estimated_iterations": 3,
+        "estimated_tokens": 7200,
+        "likely_failure_stage": "test",
+        "confidence": 81
+      },
+      "timestamp": 1787888276,
+      "ttl": 3600
+    },
+    "07dc203184accb39fec28867adc68fc1": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.88,
+        "secondary_domains": [
+          "infrastructure",
+          "daemon-operations"
+        ],
+        "complexity_assessment": {
+          "score": 4,
+          "reasoning": "Labeled 'fast' but involves multi-component changes (pattern detection, daemon triage filtering, auto-close logic) with careful testing requirements and regression risk. Moderate scope with daemon integration complexity."
+        },
+        "skill_plan": {
+          "plan": [
+            "pattern-matching-similarity-scoring",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "validation-thoroughness"
+          ],
+          "pr": [],
+          "deploy": [],
+          "validate": [
+            "validation-thoroughness"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "pattern-matching-similarity-scoring": "Design the E2E test detection pattern carefully—the heuristic must avoid false positives (blocking real issues) and false negatives (missing E2E tests). This skill directly addresses pattern-based filtering logic.",
+          "brainstorming": "Challenge what constitutes an E2E test issue: Are title/label heuristics sufficient? What edge cases exist (partial matches, renamed tests, mixed issue types)? What happens if the pattern drifts?",
+          "architecture-design": "Decide where detection logic lives (triage.sh vs daemon.sh vs separate module), how it integrates with scoring without breaking other daemon functions, and the auto-close behavior flow (success-only? configurable? safety checks?).",
+          "testing-strategy": "Comprehensive unit tests covering pattern detection accuracy, triage skipping behavior, auto-close lifecycle (success/failure cases), and regression scenarios to ensure normal issue triage isn't affected.",
+          "adversarial-quality": "Stress-test the detection pattern: Can it be bypassed with slight variations? How does it handle edge cases (emoji in titles, special characters, multi-line issue bodies)? Verify no false positives leak through.",
+          "pr-quality": "Ensure commits are focused (detection logic separate from auto-close separate from config), messages are clear, and changes are reviewable in 5 minutes without domain knowledge.",
+          "validation-thoroughness": "Beyond unit mocks, validate against real daemon issue processing: Does filtering work in practice? Does normal triage scoring remain accurate for non-E2E issues? Run against test repos with mixed issue types.",
+          "observability": "Add logging/metrics to track: (1) how many issues matched the E2E pattern per triage run, (2) how many were auto-closed, (3) false positive alerts if normal issues are accidentally filtered."
+        },
+        "generated_skills": [],
+        "review_focus": [
+          "Pattern accuracy: Does the regex/heuristic catch all E2E test issues and no false positives? Are edge cases handled (partial matches, renamed patterns)?",
+          "Daemon integration: Does filtering cleanly integrate with triage scoring without breaking other daemon functions or issue prioritization for normal issues?",
+          "Auto-close safety: When is auto-close triggered (success-only)? Can it be disabled? Is there a kill-switch if it misbehaves? Handles failures gracefully?",
+          "Test comprehensiveness: Unit tests cover detection, skipping, auto-close on success/failure, mixed issue queues, and regressions to baseline triage behavior.",
+          "Configuration: Pattern/label/behavior is configurable with sensible defaults. Unclear behavior could confuse users—document clearly."
+        ],
+        "risk_areas": [
+          "False positives: Real issues mistakenly filtered because they match the E2E pattern (e.g., issue titled 'E2E test: refactor auth'). Requires careful pattern validation.",
+          "False negatives: Actual E2E test issues not detected because the pattern is too restrictive or a new E2E test naming convention emerges.",
+          "Auto-close regression: Automatically closing issues changes daemon behavior and team workflow. If not carefully gated (success-only, configurable), could break legitimate use cases.",
+          "Daemon stability: Changes to triage scoring logic could affect queue prioritization for other issue types if integration point is wrong.",
+          "Silent failures: If detection or filtering fails silently (no logging), E2E test spam could flood the queue without alerting the team."
+        ]
+      },
+      "timestamp": 1787888349,
+      "ttl": 3600
+    },
+    "0da52d454a23a40fe99f5318c8689e07": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains 'test_failure' pattern with build stage execution and 'Increase timeout value' fix advice. Directly relevant to E2E test issue detection and mitigation strategies."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 55,
+            "summary": "Multiple low-complexity patterns for test.sh work with build stage execution and npm test strategy. Relevant to test infrastructure improvements but lacks spam-detection specifics."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 50,
+            "summary": "Two patterns for test.sh fixes at low complexity. Demonstrates test file modification patterns useful for understanding test infrastructure work."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 45,
+            "summary": "Single test.sh pattern with build stage execution. Generic test infrastructure pattern with limited contextual details for spam detection use case."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 40,
+            "summary": "Single typo fix pattern in test.sh with build stage. Lowest utility among test-related patterns; no insights into issue spam or duplication detection."
+          }
+        ]
+      },
+      "timestamp": 1787888397,
+      "ttl": 1800
+    },
+    "3d091e4183067fa82328c345e79f79b1": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 48,
+            "summary": "Contains test failure pattern signatures from build stage with existing fix strategies. Relevant for understanding how to detect and categorize E2E test issues as spam patterns."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 28,
+            "summary": "Defines architectural rules that could inform design of spam detection and alerting system structure and constraints."
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 22,
+            "summary": "Shows testing strategies and iterative approaches to feature implementation. Minimally relevant for understanding test execution patterns that detection logic would need to analyze."
+          }
+        ]
+      },
+      "timestamp": 1787888584,
+      "ttl": 1800
+    },
+    "cf688c5df3f9f3fc95fd9cb202a9014d": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 85,
+            "summary": "Contains test_failure pattern detection with root cause (timeout) and fix strategy. Directly applicable to designing E2E test issue detection and alerting."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 70,
+            "summary": "Complex feature (score 60) solved with iterative TDD approach over 5 iterations. Demonstrates test strategy patterns and multi-iteration complexity relevant to test-issue handling system design."
+          },
+          {
+            "file": "success-patterns.json (Fix authentication bug)",
+            "relevance": 65,
+            "summary": "Bug fix pattern using standard template with 3 iterations and complexity 60. Shows iterative problem-solving approach applicable to detection system design phases."
+          },
+          {
+            "file": "success-patterns.json (Specific test goal)",
+            "relevance": 55,
+            "summary": "Test-specific goal with npm test strategy execution. Provides minimal but direct reference to test strategy patterns used in this codebase."
+          },
+          {
+            "file": "success-patterns.json (Low complexity fix)",
+            "relevance": 50,
+            "summary": "Simple fix pattern with script-based test strategy. While low complexity, demonstrates basic test execution patterns that could inform monitoring/detection design."
+          }
+        ]
+      },
+      "timestamp": 1787888628,
+      "ttl": 1800
+    },
+    "36c052635916f986ec98cd9a15874bd8": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 35,
+            "summary": "Contains test_failure pattern detection with error signatures and build stage context. Relevant as it demonstrates pattern-based failure detection approaches, though not specific to spam/alerting scenarios."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 25,
+            "summary": "Tracks error signatures, confidence scoring, and success rates across patterns. Could inform detection heuristics design, though the patterns themselves (low-complexity fixes) are not directly applicable to E2E test spam detection."
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 20,
+            "summary": "Shows iterative approach to complexity (60), test strategy documentation, and file pattern tracking. File pattern matching could inform spam detection rules, but lacks specific anti-patterns for rejection."
+          }
+        ]
+      },
+      "timestamp": 1787888647,
+      "ttl": 1800
+    },
+    "68bee53c6903671bf4046528be227df6": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Contains test_failure pattern in build stage seen 5 times with timeout fix. Directly relevant to E2E test issues in build pipeline."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 58,
+            "summary": "Two patterns executed in build stage with npm test strategy. Provides precedent for build-stage test fixes with low complexity."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 52,
+            "summary": "Low complexity build stage pattern in test-related file (scripts/test.sh) with npm test strategy. Demonstrates efficient build stage approach."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 48,
+            "summary": "Two build stage patterns with npm test strategy and low complexity. Similar patterns to other build-focused successes."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 42,
+            "summary": "Build stage pattern with test focus and low complexity iterations. Less specific context than higher-ranked patterns but still build-relevant."
+          }
+        ]
+      },
+      "timestamp": 1787888797,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 95,
+            "summary": "Build failure recovery strategy with 100% success rate using model_escalation across 5 attempts; directly applicable to current build stage resilience"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two successful patterns for bug fixes and feature work showing 3-iteration completion with similar file patterns (.claude, scripts); informs build approach and iteration count expectations"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project structure: Node/vitest/npm/javascript with commonjs imports; essential for understanding test runner behavior and build toolchain during current stage"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Baseline build duration (7095s) and test duration (1459s); helps calibrate iteration timeouts and detect stalls in current build"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Recent test failures including malformed JSON in mocked pipeline stages and schema validation issues; common pitfalls to avoid during current build phase"
+          }
+        ]
+      },
+      "timestamp": 1787888811,
+      "ttl": 1800
     }
   }
 }
