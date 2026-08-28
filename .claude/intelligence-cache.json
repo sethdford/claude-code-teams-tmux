@@ -30,17 +30,16 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.75,
+        "reasoning": "Designing a project-type detection system and pipeline template recommendation logic requires system architecture decisions; DevOps expertise needed for pipeline template knowledge.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1787878576,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1400,420 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "4d32c99c6dc8d5f8d7a1e412db824193": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 77,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Recommendation logic may oversimplify multi-dimensional project characteristics",
+          "Recommended template could mismatch user's actual needs and expectations",
+          "Test scenarios may not cover real-world edge cases (hybrid projects, legacy CI)",
+          "Breaking change: users expecting 'standard' default in init could be surprised",
+          "Documentation skew: recommendation matrix in code vs CLAUDE.md gets out of sync"
+        ],
+        "implementation_hints": [
+          "Audit sw-prep.sh to extract all existing detection signals (language, monorepo flag, CI presence, test runner type, repo size)",
+          "Create standalone recommendation function: detect_project_signals() → recommend_template() for testability",
+          "Implement decision matrix: monorepo+large → full, no-CI+small → fast, existing-CI+mature-tests → standard",
+          "Add optional --recommend-only flag to prep to surface recommendation without persisting it",
+          "Test matrix: monorepo (Go/Rust), single-pkg (Node/Python), missing-CI (new projects), large-activity (high churn)",
+          "Update shipwright init to prompt with recommendation as bold default, allow override",
+          "Document recommendation heuristics in code comments and add new section to .claude/CLAUDE.md"
+        ]
+      },
+      "timestamp": 1787877893,
+      "ttl": 3600
+    },
+    "81290c35e06c07f70ebfe3587b0c4c3a": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1787877901,
+      "ttl": 1800
+    },
+    "604f015c2021d91cf3e7e4655460e8e1": {
+      "result": {
+        "estimated_cost_usd": 0.87,
+        "estimated_iterations": 3,
+        "estimated_tokens": 58000,
+        "likely_failure_stage": "test",
+        "confidence": 75,
+        "breakdown": {
+          "input_tokens": 28000,
+          "output_tokens": 30000,
+          "cost_per_iteration": 0.29,
+          "model_mix": "opus (build), sonnet (review), haiku (test)"
+        },
+        "risk_factors": [
+          "Decision matrix completeness across hybrid projects",
+          "Detection signal extraction from sw-prep.sh",
+          "Test coverage for edge cases (monorepo, legacy CI, large repos)"
+        ]
+      },
+      "timestamp": 1787877911,
+      "ttl": 3600
+    },
+    "d928559dc5111ec77c42caf8a7da6877": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.87,
+        "secondary_domains": [
+          "cli-ux",
+          "configuration-management",
+          "documentation"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Detection logic already exists; adds recommendation mapping and integration into init flow with required test coverage and docs updates. Straightforward but requires careful edge-case handling."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design"
+          ],
+          "build": [
+            "template-recommendation-mapping"
+          ],
+          "review": [
+            "adversarial-quality",
+            "testing-strategy"
+          ],
+          "compound_quality": [
+            "validation-thoroughness",
+            "documentation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "brainstorming": "Challenge assumptions about which project signals (monorepo depth, CI maturity, test framework coverage) are most predictive of template fit—avoid recommending standard when fast would suffice.",
+          "architecture-design": "Document the recommendation heuristics as an ADR so future signal additions don't break the mapping; clarify when recommendations should be offered vs. when they should stay silent.",
+          "template-recommendation-mapping": "This new skill provides the specific algorithm, weighting strategy, and edge-case handling for translating detected project characteristics into template recommendations with rationale—the core requirement of this issue.",
+          "adversarial-quality": "Find failure modes: monorepo detection false positives, recommendations that mismatch actual project needs, CLI output parsing issues when init reads recommendations, template incompatibility with edge-case projects.",
+          "testing-strategy": "Design test scenarios covering real-world projects: small frontend SPA (recommend fast), large monorepo with CI (recommend standard), cost-sensitive team (recommend cost-aware), new project with no history (recommend standard).",
+          "validation-thoroughness": "Verify recommended templates actually work: run init with recommended template, check that the pipeline composes correctly, ensure no config conflicts, test on sample projects with different characteristics.",
+          "documentation": "Update CLAUDE.md Pipeline Templates section with note that prep/init now recommend templates; document the heuristics so users understand why a template was suggested.",
+          "pr-quality": "The recommendation mapping logic needs clear explanation in the PR: show the heuristic table, test scenarios, rationale for signal weighting, so reviewers can validate the algorithm in 5 minutes."
+        },
+        "generated_skills": [
+          {
+            "name": "template-recommendation-mapping",
+            "reason": "No existing skill covers the specific algorithm for mapping project characteristics (monorepo, CI presence, test maturity, repo size) to pipeline templates with rationale—this is the core requirement.",
+            "content": "## Pipeline Template Recommendation Algorithm\n\nDesign and implement the recommendation logic that translates detected project signals into pipeline template suggestions with one-line rationale.\n\n### Recommendation Heuristic\n\nBuild a weighted scoring system that considers:\n\n**Primary Signals** (high weight):\n- **Monorepo**: Presence of workspaces/lerna/rush → `standard` or `full` (complexity increases)\n- **Existing CI**: GitHub Actions/.circleci/gitlab-ci → confidence +1 for template maturity\n- **Test Framework Maturity**: vitest/jest/mocha with >80% coverage → `fast` viable, <20% coverage → `standard` minimum\n- **Repository Size**: <1k commits → `fast`, 1k-50k → `standard`, >50k → `full`\n\n**Secondary Signals** (modifier):\n- **Activity Level**: Last commit < 30 days = active, > 6 months = inactive (inactive repos often have simpler needs)\n- **Language**: Node/Python/Go → `fast` if all signals lean simple; Rust/C++ → `standard`+ (compile overhead)\n- **Dependency Count**: >100 deps → `standard` minimum (more integration risk)\n\n### Template Selection Logic\n\n```\nif monorepo AND ci_present AND large_repo:\n  recommend: full (rationale: \"complex monorepo with CI history needs full pipeline\")\nelse if test_coverage >= 80 AND small_repo AND active:\n  recommend: fast (rationale: \"high-confidence small project can use fast template\")\nelse if budget_constrained OR startup_detected:\n  recommend: cost-aware (rationale: \"cost optimization priority detected\")\nelse:\n  recommend: standard (rationale: \"balanced pipeline for typical project\")\n```\n\n### Rationale Format\n\nFor each recommendation, output a one-line rationale citing which signals drove the choice:\n- \"high-confidence small project can use fast template\" (cites: test coverage, repo size, activity)\n- \"complex monorepo with CI history needs full pipeline\" (cites: monorepo, CI presence, size)\n- \"cost optimization priority detected\" (cites: budget constraints or resource limits)\n\n### Edge Cases & Fallbacks\n\n1. **New/Empty Repo**: No signals yet → default to `standard` with rationale \"new project, standard template recommended\"\n2. **Detection Conflicts**: Monorepo but tiny repo → weigh by commit count, recommend `fast`; output rationale noting the conflict resolution\n3. **Incomplete Detection**: If CLI/build system unknown → skip that signal, don't force a recommendation\n4. **User Override**: If user has hand-configured template in daemon-config.json, don't override—note in output: \"template already configured, skipping recommendation\"\n\n### Integration Points\n\n- **sw-prep.sh**: Add `--recommend` flag; output JSON object: `{\"template\": \"standard\", \"rationale\": \"...\", \"signals\": {\"monorepo\": false, ...}}`\n- **shipwright init**: Read recommendation from prep; present as default in interactive prompt: `Choose template [standard]:` with hint `(recommended for your project)`\n- **daemon-config.json**: If no template set and recommendation available, use it as initial value\n\n### Testing Checklist\n\n1. **Single-package project** with full test coverage → expect `fast`\n2. **Monorepo with CI/CD config** → expect `standard` or `full`\n3. **New empty repo** → expect `standard` (safe fallback)\n4. **Project with conflicting signals** (monorepo + tiny) → verify correct weighting\n5. **Large project, low test coverage** → expect `full` (safety bias)\n\n### Maintenance\n\nIf new signals are added (e.g., dependency scanning, security alerts), update the weighting table and re-test all 5 scenarios."
+          }
+        ],
+        "review_focus": [
+          "Recommendation heuristic correctness—do the weighted signals actually predict good template choices? Test against real Shipwright projects.",
+          "Monorepo detection edge cases—lerna, Rush, pnpm workspaces, Bazel, Gradle multi-module, Go modules with multiple cmd/*—ensure consistent behavior.",
+          "CI detection logic—covers GitHub Actions, CircleCI, GitLab, Azure Pipelines, Jenkins? False positives if CI config exists but not used?",
+          "Test coverage for at least 3 distinct project types (small/active, monorepo/complex, new/empty) with verification that recommended template actually works.",
+          "Integration with init—does recommended template flow smoothly as default choice? Does user override still work? Is rationale visible?",
+          "Documentation in CLAUDE.md—Pipeline Templates section updated with note about auto-recommendation; heuristics explained so users understand why a template was chosen."
+        ],
+        "risk_areas": [
+          "False positive monorepo detection leading to over-recommendation of heavy templates (test thoroughly on workspaces vs. nested projects).",
+          "Recommendation algorithm becomes outdated if template use cases evolve—maintain the signal weighting table as a clear, auditable list.",
+          "Test scenarios insufficient to cover real-world projects—add integration tests with actual sample repos, not just mocked detection results.",
+          "Init prompt usability—if recommended template is buried in help text, users won't see it; ensure prominent default with clear rationale.",
+          "Backward compatibility—projects with existing daemon-config.json should not have recommendations forced; respect user override."
+        ]
+      },
+      "timestamp": 1787878010,
+      "ttl": 3600
+    },
+    "93e57b501337b826b0fd382987518379": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 78,
+            "summary": "Complex feature pattern (add auth module, complexity 60, 5 iterations, TDD approach) demonstrates how iterative development works—directly applicable to planning template recommendation feature complexity estimates and approach"
+          },
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Pattern indexing with metadata (stage, pattern_type, total_seen, sources) shows how patterns are analyzed and categorized—relevant for planning how to structure template detection and recommendation logic"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Contains architectural rules—essential for planning to ensure new template recommendation feature aligns with existing codebase architecture and layer boundaries"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 55,
+            "summary": "Low-complexity fix pattern (1 iteration, 300s, $0.50) provides baseline for simple implementation scenarios that template recommendations might optimize for"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 42,
+            "summary": "Fleet-level knowledge sharing metrics structure shows how cross-pipeline learnings are tracked—potentially useful for understanding how template recommendations propagate across fleet operations"
+          }
+        ]
+      },
+      "timestamp": 1787878055,
+      "ttl": 1800
+    },
+    "56cb83b47d2830cd1be9dbe50788bc73": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (with standard template)",
+            "relevance": 28,
+            "summary": "Contains a 'standard' template pattern with complexity assessment (60), iterations tracking (3), and cost estimation ($2.50). Relevant to understanding how template-based pipelines behave and validate, though specific pattern (auth bug fix) is not directly applicable to plan validation failures."
+          },
+          {
+            "file": "index.json",
+            "relevance": 22,
+            "summary": "Tracks 'test_failure' pattern with fix recommendation. Minimally relevant for understanding failure signature patterns and remediation approaches, but not specific to plan validation or template recommendation."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 18,
+            "summary": "Contains architecture rules. Could provide context for architectural decisions affecting pipeline template recommendations, but lacks specific content related to plan validation failures."
+          }
+        ]
+      },
+      "timestamp": 1787878239,
+      "ttl": 1800
+    },
+    "40e65e0f792abb26008ee8e46946c2d3": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (repo_hash: test-repo, goal: add auth module)",
+            "relevance": 45,
+            "summary": "Contains complexity scoring (60), iteration requirements (5), file patterns, and TDD approach. Directly informs how to classify and recommend templates based on project complexity and type."
+          },
+          {
+            "file": "success-patterns.json (repo_hash: test-repo-ranking)",
+            "relevance": 35,
+            "summary": "Multiple low-complexity patterns with iterations, files changed, and stages executed. Provides baseline pattern data for template recommendation classification thresholds."
+          },
+          {
+            "file": "success-patterns.json (complexity: 60, goal: Fix authentication bug)",
+            "relevance": 30,
+            "summary": "Shows explicit template selection (standard), complexity scoring, and iteration count. Demonstrates how template choice correlates with issue type and complexity."
+          },
+          {
+            "file": "success-patterns.json (repo_hash: test-repo-complexity, goal: Low complexity fix)",
+            "relevance": 28,
+            "summary": "Low-complexity typo fix pattern with single file change and one iteration. Establishes characteristics of simple fixes for template recommendation."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 20,
+            "summary": "Contains architectural rules. Provides foundational architecture context relevant to design-stage pattern definition, though content is generic."
+          }
+        ]
+      },
+      "timestamp": 1787878309,
+      "ttl": 1800
+    },
+    "017772a0846b2c13a87191a7a83135d4": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 50,
+            "summary": "Contains design rules that directly constrain and inform architecture decisions. Most relevant for understanding what design approaches violate established patterns and should be rejected."
+          },
+          {
+            "file": "success-patterns.json (test-repo entry: add auth module)",
+            "relevance": 35,
+            "summary": "Shows a feature development approach using iterative TDD with module isolation. Useful as reference for what succeeded, inversely informing which design approaches to avoid."
+          },
+          {
+            "file": "index.json",
+            "relevance": 28,
+            "summary": "Contains pattern metadata about build failures and fixes across multiple sources. Provides signals about common failure modes that inform rejected anti-patterns."
+          }
+        ]
+      },
+      "timestamp": 1787878332,
+      "ttl": 1800
+    },
+    "138467068925a4bd444c662b8bfa9e66": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 85,
+            "summary": "Indexed build-stage patterns with test failure handling. Directly relevant to build phase, includes actionable timeout fix guidance for npm test workflows."
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 78,
+            "summary": "Feature development pattern ('add auth module') similar in complexity to template recommendation. Node.js with TDD approach, 5 iterations, proven module isolation strategy."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 72,
+            "summary": "Build-stage pattern with npm test strategy, low complexity, single iteration. Demonstrates efficient Node.js build completion pattern."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 68,
+            "summary": "Build-stage pattern with npm test, 1 iteration, low complexity, 300s completion time. Recent reference for build-phase predictability."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 65,
+            "summary": "Build-stage pattern involving scripts/test.sh, low complexity fix. Relevant for understanding script-based build tooling patterns."
+          }
+        ]
+      },
+      "timestamp": 1787878545,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains recent test failures from Aug 27-28 (sw-pipeline-test.sh, sw-intent-analysis-test, sw-e2e-integration-test) with root causes (malformed JSON output, missing schema fields, stale locks). Directly applicable to current build stage failures."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 88,
+            "summary": "Documents build_failure recovery: model_escalation strategy has 100% success rate (5/5 attempts, Aug 15). Actionable for escalating model if current iteration stalls."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 82,
+            "summary": "Two successful builds from same repo using standard template + loop iterations (3 iterations each, ~45-150s). Shows proven approach: fix + test cycles converge in 3-5 commits."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459 (Jul 31). Helps set iteration timeout expectations and detect stalls."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 58,
+            "summary": "Daemon timeout bug fix (semaphore approach) shows successful solution pattern for concurrency issues. Relevant if build encounters timeouts or race conditions in daemon code."
+          }
+        ]
+      },
+      "timestamp": 1787880397,
+      "ttl": 1800
+    },
+    "8c7b1c5553fae3d1bd48d2229161c4e6": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787879444,
+      "ttl": 1800
+    },
+    "e955c4c971051cf24f8ebe6b280f7690": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787879680,
+      "ttl": 1800
+    },
+    "83613cda6f5b424cb8d8be214065bc9c": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787880158,
+      "ttl": 1800
+    },
+    "baa83c9f4c631d17ca4c7366a4bff936": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787880257,
+      "ttl": 1800
+    },
+    "bce4650b464e4f6211e837b827dd7922": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787880578,
+      "ttl": 1800
+    },
+    "6e84e5eec5f39ae2eeeb49abb6af70eb": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787880672,
+      "ttl": 1800
+    },
+    "4b1ec04cb3ba0d91103657b85565ce2f": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787881117,
+      "ttl": 1800
+    },
+    "622ed959175e4775bfb9ce2abacc323a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787881211,
+      "ttl": 1800
+    },
+    "061fc47cb2ce28cd839748b7ab1622cd": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1787881460,
+      "ttl": 1800
+    },
+    "06b96b008bb878eab31824cf688f318d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1787881554,
+      "ttl": 1800
     }
   }
 }
