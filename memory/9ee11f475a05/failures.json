@@ -5,35 +5,35 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 4,
-      "last_seen": "2026-08-27T23:00:51Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-27T20:06:44Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Loop runs multiple iterations when tests fail initially",
-      "root_cause": "Pipeline test stages (plan/review/full E2E/resume) fail because mock plan.md/review.md artifacts aren't being generated, and downstream jq calls choke on malformed non-numeric output",
-      "fix": "Fix pipeline_stage_plan/pipeline_stage_review artifact writing in the E2E mock harness so plan.md and review.md are created before assertions, and sanitize numeric values before piping to jq",
+      "root_cause": "No actual failure — the provided log shows all 200 lines passing (PASS totals with FAIL: 0 across every suite); the failure trigger pattern matched a passing checkmark line rather than a genuine error",
+      "fix": "Re-check the failure classifier's pattern match for this stage; likely a false positive from matching on a checkmark/success line instead of an actual FAIL or error signature",
       "seen_count": 1,
       "last_seen": "2026-08-27T20:48:49Z",
+      "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "Failed: 1",
+      "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
+      "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
+      "seen_count": 2,
+      "last_seen": "2026-08-27T23:56:55Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
-      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test failed with exit 1 during a loop-behavior test case covering iterations on test failure",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly to isolate the failing assertion and inspect the loop iteration/retry logic it exercises",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Two pre-existing test regressions unrelated to the log-snippet stage: daemon_on_failure no longer calls classify_failure, and the intent-analysis schema is missing required fields (version, goal, criteria)",
+      "fix": "Wire classify_failure into daemon_on_failure's retry path and add version/goal/criteria to the intent-analysis schema output",
       "seen_count": 1,
-      "last_seen": "2026-08-28T00:03:42Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Testing sw-loop.sh pulls role descriptions from recruit DB... \u001b[38;2;248;113;113m\u001b[1mFAIL\u001b[0m: loop.sh missing recruit DB role descriptions",
-      "root_cause": "Two independent test regressions: sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria), and sw-recruit-test fails a check unrelated to the passing sections shown (failure occurs earlier in output, not visible in the truncated tail)",
-      "fix": "Update analyze_intent in the intent-analysis module to emit version, goal, and criteria fields per the schema, then re-run sw-recruit-test with full output to locate its specific failing assertion and fix accordingly",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T00:31:14Z",
+      "last_seen": "2026-08-28T00:14:47Z",
       "category": "test_failure"
     }
   ]
