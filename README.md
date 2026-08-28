@@ -1,3 +1,4 @@
+<!-- e2e-test: automated comment added by issue #3100 to verify the add-comment-to-README pipeline flow -->
 <p align="center">
   <img src="website/src/assets/logo-dark.svg" alt="Shipwright" width="200">
 </p>
