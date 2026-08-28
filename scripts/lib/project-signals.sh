@@ -12,9 +12,10 @@
 #   - detect_monorepo(root)                                   — workspaces
 #   - detect_ci_maturity(root)                                — CI configs
 #   - detect_test_maturity(root, framework, srcN, testN)      — test posture
-#   - detect_repo_size(root, srcN)                            — commits/files
+#   - detect_repo_size(root, srcN, srcLines)                  — commits/files
 #   - detect_activity_level(root)                             — recency
-#   - project_collect_signals(root, framework, srcN, testN)   — all of them
+#   - detect_deploy_infra(root)                               — deploy config
+#   - project_collect_signals(root, framework, srcN, testN, srcLines)
 #
 # Contract shared by every detector in this file:
 #   * total — always exits 0, on every path, for every input
@@ -66,6 +67,18 @@ _sig_count_test_files() {
     find "$root" \
         \( -name "*.test.*" -o -name "*.spec.*" -o -name "*_test.*" -o -name "test_*" \) \
         -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | wc -l | tr -d ' '
+}
+
+# Rough source-line count. Bounded by the same prune list as the file count;
+# the caller normally injects prep's already-computed total instead.
+_sig_count_src_lines() {
+    local root="$1"
+    find "$root" \
+        \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
+           -o -name "*.py" -o -name "*.rb" -o -name "*.go" -o -name "*.rs" \
+           -o -name "*.java" -o -name "*.sh" \) \
+        -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" \
+        -not -path "*/target/*" -exec cat {} + 2>/dev/null | wc -l | tr -d ' '
 }
 
 # Count directories matching a workspace glob that actually contain a package
@@ -289,16 +302,20 @@ detect_test_maturity() {
 # A shallow clone (the CI checkout default) reports one commit. That must map
 # to "unknown", never "tiny" — otherwise every CI-run prep sees a toy repo.
 detect_repo_size() {
-    local root="${1:-.}" src_count="${2:-}"
+    local root="${1:-.}" src_count="${2:-}" src_lines="${3:-}"
 
     if [[ ! -d "$root" ]]; then
-        jq -n '{commit_count:-1, file_count:0, size_category:"unknown", reason:"detection_skipped"}'
+        jq -n '{commit_count:-1, file_count:0, src_lines:0, size_category:"unknown", reason:"detection_skipped"}'
         return 0
     fi
 
     src_count=$(_sig_int "$src_count")
     [[ -n "$src_count" ]] || src_count=$(_sig_count_src_files "$root")
     src_count="${src_count:-0}"
+
+    src_lines=$(_sig_int "$src_lines")
+    [[ -n "$src_lines" ]] || src_lines=$(_sig_count_src_lines "$root")
+    src_lines="${src_lines:-0}"
 
     local commits=-1 category="unknown" reason="detection_skipped"
 
@@ -330,9 +347,11 @@ detect_repo_size() {
     jq -n \
         --argjson commits "$commits" \
         --argjson files "$src_count" \
+        --argjson lines "$src_lines" \
         --arg category "$category" \
         --arg reason "$reason" \
-        '{commit_count:$commits, file_count:$files, size_category:$category, reason:$reason}'
+        '{commit_count:$commits, file_count:$files, src_lines:$lines,
+          size_category:$category, reason:$reason}'
 }
 
 # ─── detect_activity_level ──────────────────────────────────────────────────
@@ -369,24 +388,69 @@ detect_activity_level() {
         '{is_active:$active, days_since_last_commit:$days, reason:$reason}'
 }
 
+# ─── detect_deploy_infra ────────────────────────────────────────────────────
+# {has_deploy, has_docker, has_compose, has_k8s, targets, reason}
+detect_deploy_infra() {
+    local root="${1:-.}"
+
+    if [[ ! -d "$root" ]]; then
+        jq -n '{has_deploy:false, has_docker:false, has_compose:false, has_k8s:false,
+                targets:[], reason:"detection_skipped"}'
+        return 0
+    fi
+
+    local docker=false compose=false k8s=false targets=""
+
+    [[ -f "$root/Dockerfile" ]] && { docker=true; targets="${targets}docker"$'\n'; }
+    if [[ -f "$root/docker-compose.yml" || -f "$root/docker-compose.yaml" || \
+          -f "$root/compose.yml" || -f "$root/compose.yaml" ]]; then
+        compose=true; targets="${targets}compose"$'\n'
+    fi
+    if [[ -f "$root/k8s.yaml" || -d "$root/k8s" || -d "$root/helm" || -d "$root/charts" ]]; then
+        k8s=true; targets="${targets}kubernetes"$'\n'
+    fi
+
+    local has_deploy=false reason="no deployment configuration found"
+    if [[ "$docker" == "true" || "$compose" == "true" || "$k8s" == "true" ]]; then
+        has_deploy=true
+        reason="deployment config present ($(printf '%s' "$targets" | tr '\n' ',' | sed 's/,$//'))"
+    fi
+
+    local targets_json
+    targets_json=$(printf '%s' "$targets" | jq -R -s 'split("\n") | map(select(length > 0))' 2>/dev/null || echo '[]')
+
+    jq -n \
+        --argjson has_deploy "$has_deploy" \
+        --argjson docker "$docker" \
+        --argjson compose "$compose" \
+        --argjson k8s "$k8s" \
+        --argjson targets "$targets_json" \
+        --arg reason "$reason" \
+        '{has_deploy:$has_deploy, has_docker:$docker, has_compose:$compose,
+          has_k8s:$k8s, targets:$targets, reason:$reason}'
+}
+
 # ─── project_collect_signals ────────────────────────────────────────────────
 # Runs every detector and merges the fragments. One detector emitting garbage
 # costs that key alone — the other four still reach the policy layer.
 project_collect_signals() {
     local root="${1:-.}" framework="${2:-}" src_count="${3:-}" test_count="${4:-}"
+    local src_lines="${5:-}"
 
-    local mono ci tests size activity
+    local mono ci tests size activity deploy
     mono=$(detect_monorepo "$root" 2>/dev/null || true)
     ci=$(detect_ci_maturity "$root" 2>/dev/null || true)
     tests=$(detect_test_maturity "$root" "$framework" "$src_count" "$test_count" 2>/dev/null || true)
-    size=$(detect_repo_size "$root" "$src_count" 2>/dev/null || true)
+    size=$(detect_repo_size "$root" "$src_count" "$src_lines" 2>/dev/null || true)
     activity=$(detect_activity_level "$root" 2>/dev/null || true)
+    deploy=$(detect_deploy_infra "$root" 2>/dev/null || true)
 
     echo "$mono"     | jq -e . >/dev/null 2>&1 || mono='{}'
     echo "$ci"       | jq -e . >/dev/null 2>&1 || ci='{}'
     echo "$tests"    | jq -e . >/dev/null 2>&1 || tests='{}'
     echo "$size"     | jq -e . >/dev/null 2>&1 || size='{}'
     echo "$activity" | jq -e . >/dev/null 2>&1 || activity='{}'
+    echo "$deploy"   | jq -e . >/dev/null 2>&1 || deploy='{}'
 
     jq -n \
         --argjson monorepo "$mono" \
@@ -394,7 +458,8 @@ project_collect_signals() {
         --argjson test "$tests" \
         --argjson size "$size" \
         --argjson activity "$activity" \
+        --argjson deploy "$deploy" \
         --arg collected_at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
         '{monorepo:$monorepo, ci:$ci, test:$test, size:$size,
-          activity:$activity, collected_at:$collected_at}'
+          activity:$activity, deploy:$deploy, collected_at:$collected_at}'
 }

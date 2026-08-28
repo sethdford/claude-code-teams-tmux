@@ -15,7 +15,7 @@
 #   - project_detect_framework(root, type) — Detect specific framework
 #   - project_detect_test_cmd(root, type)  — Detect test command
 #   - project_detect_build_cmd(root, type) — Detect build command
-#   - project_recommend_template(root)  — Recommend pipeline template
+#   - project_recommend_template(signals|root) — Recommend pipeline template
 #   - project_detect_all(root)          — Full detection report (cached)
 
 [[ -n "${_PROJECT_DETECT_LOADED:-}" ]] && return 0
@@ -466,108 +466,158 @@ project_detect_build_cmd() {
     [[ -n "$build_cmd" ]] && echo "$build_cmd"
 }
 
+# ─── Helper: ISO-8601 → epoch, GNU and BSD ─────────────────────────────────
+# `date -j -f` is BSD-only. Parsing with it on Linux silently yielded 0, which
+# made every cached_at look decades old — the cache never hit.
+_iso_to_epoch() {
+    local iso="$1" epoch
+    if [[ "$(type -t date_to_epoch 2>/dev/null)" == "function" ]]; then
+        epoch=$(date_to_epoch "$iso")
+    else
+        epoch=$(date -u -d "$iso" +%s 2>/dev/null \
+                || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null \
+                || echo 0)
+    fi
+    case "$epoch" in ''|*[!0-9]*) echo 0 ;; *) echo "$epoch" ;; esac
+}
+
+# ─── Helper: read one signal with a total default ───────────────────────────
+# An absent, null or unparseable signal yields the default, so a rule that
+# needs it simply does not fire — degradation always slides toward "standard".
+_signal_of() {
+    local json="$1" path="$2" fallback="$3" value
+    value=$(echo "$json" | jq -r "$path // empty" 2>/dev/null || echo "")
+    [[ -n "$value" && "$value" != "null" ]] && echo "$value" || echo "$fallback"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════
-# project_recommend_template(root)
+# project_recommend_template(signals_json | root)
 # ─────────────────────────────────────────────────────────────────────────────
-# Recommend a pipeline template based on project analysis
+# Map repo-shape signals to a pipeline template. Policy only: this function
+# never touches the filesystem when it is given signals — pass a path and it
+# collects them first, which is what the (root) callers still do.
 #
 # Returns JSON: {
-#   "template": "fast|standard|full|deployed|cost-aware|hotfix",
+#   "template": "fast|standard|full|deployed",
 #   "confidence": 0-100,
-#   "reason": "explanation"
+#   "reason": "one line naming the signals that fired",
+#   "rule": "stable rule id",
+#   "signals": { ... }
 # }
+#
+# The mapping is an ORDERED RULE LADDER, not a composite score. A rule fires
+# and names itself, which is what makes the rationale honest — a score of 62
+# cannot tell you which signal drove it. Ordering is the precedence decision,
+# so it is stated once here rather than tuned across a weight table.
+#
+# hotfix, enterprise, autonomous, cost-aware and tdd are deliberately never
+# recommended: urgency, governance and team practice are not observable in
+# repo shape. That is a stated non-goal, not a gap.
 project_recommend_template() {
-    local root="${1:-.}"
-    [[ -d "$root" ]] || return 1
+    local input="${1:-.}"
+    local signals=""
 
-    local template="" confidence=0 reason=""
-
-    # Analyze project characteristics
-    local src_file_count test_file_count has_docker has_compose has_ci has_k8s
-    local has_deploy src_lines test_lines
-
-    # Count source files
-    src_file_count=$(find "$root" \
-        \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
-           -o -name "*.py" -o -name "*.rb" -o -name "*.go" -o -name "*.rs" -o -name "*.java" \) \
-        -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" \
-        -not -path "*/target/*" 2>/dev/null | wc -l | tr -d ' ')
-
-    # Count test files
-    test_file_count=$(find "$root" \
-        \( -name "*.test.*" -o -name "*.spec.*" -o -name "*_test.*" -o -name "test_*" \) \
-        -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | wc -l | tr -d ' ')
-
-    # Check infrastructure
-    has_docker=$([[ -f "$root/Dockerfile" ]] && echo "true" || echo "false")
-    has_compose=$([[ -f "$root/docker-compose.yml" || -f "$root/docker-compose.yaml" || -f "$root/compose.yml" ]] && echo "true" || echo "false")
-    has_k8s=$([[ -f "$root/k8s.yaml" || -d "$root/k8s" || -d "$root/helm" ]] && echo "true" || echo "false")
-    has_ci=$([[ -d "$root/.github/workflows" || -f "$root/.gitlab-ci.yml" || -f "$root/Jenkinsfile" ]] && echo "true" || echo "false")
-    has_deploy=$([[ "$has_docker" == "true" || "$has_k8s" == "true" || "$has_compose" == "true" ]] && echo "true" || echo "false")
-
-    # Count lines (rough estimate)
-    src_lines=$(find "$root" \
-        \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
-           -o -name "*.py" -o -name "*.rb" -o -name "*.go" -o -name "*.rs" -o -name "*.java" \) \
-        -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" \
-        -not -path "*/target/*" -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
-
-    # Heuristics for template recommendation
-    if [[ "$src_file_count" -lt 20 && "$test_file_count" -lt 5 && "$has_deploy" == "false" ]]; then
-        # Small project, no tests, no deploy
-        template="fast"
-        confidence=85
-        reason="Small project with minimal complexity"
-
-    elif [[ "$src_file_count" -lt 50 && "$has_deploy" == "false" && "$test_file_count" -gt 0 ]]; then
-        # Small-to-medium with some tests
-        template="standard"
-        confidence=80
-        reason="Medium project with test coverage, no deployment"
-
-    elif [[ "$src_file_count" -ge 50 && "$test_file_count" -gt 10 && "$has_ci" == "true" && "$has_deploy" == "false" ]]; then
-        # Larger with good tests and CI
-        template="full"
-        confidence=75
-        reason="Larger codebase with comprehensive testing and CI"
-
-    elif [[ "$has_deploy" == "true" ]]; then
-        # Has deployment infrastructure (Dockerfile, Docker Compose, or Kubernetes)
-        template="deployed"
-        confidence=90
-        reason="Project with containerization and deployment config"
-
-    elif [[ "$src_file_count" -lt 30 && "$test_file_count" == "0" ]]; then
-        # Small, no tests — risky
-        template="standard"
-        confidence=65
-        reason="Small project without test coverage — recommend adding tests"
-
-    elif [[ "$src_lines" -gt 5000 ]]; then
-        # Large codebase
-        template="full"
-        confidence=80
-        reason="Large codebase with significant complexity"
-
-    elif [[ "$test_file_count" -eq "0" ]]; then
-        # No tests detected
-        template="standard"
-        confidence=60
-        reason="No test suite detected — recommend adding tests"
-
-    else
-        # Default middle ground
-        template="standard"
-        confidence=70
-        reason="Medium complexity project"
+    if echo "$input" | jq -e 'type == "object"' >/dev/null 2>&1; then
+        signals="$input"
+    elif [[ -d "$input" ]]; then
+        if [[ "$(type -t project_collect_signals 2>/dev/null)" != "function" ]]; then
+            # shellcheck source=project-signals.sh
+            source "${BASH_SOURCE[0]%/*}/project-signals.sh" 2>/dev/null || true
+        fi
+        if [[ "$(type -t project_collect_signals 2>/dev/null)" == "function" ]]; then
+            signals=$(project_collect_signals "$input" "" "" "" 2>/dev/null || true)
+        fi
     fi
 
-    # Output JSON
-    jq -n \
+    # An object missing every signal group carries no evidence — a rule keyed on
+    # a default would be reading "not observed" as "observed to be zero".
+    if ! echo "$signals" | jq -e 'has("size") and has("test") and has("ci")' >/dev/null 2>&1; then
+        jq -n '{template:"standard", confidence:0,
+                reason:"signals unavailable — defaulting to the standard pipeline",
+                rule:"fallback", signals:{}}'
+        return 0
+    fi
+
+    # ── Read the signals once, with a total default per field ──────────────
+    local is_monorepo workspace_count monorepo_type
+    local has_ci workflow_count
+    local test_maturity test_count test_ratio
+    local size_category file_count src_lines
+    local has_deploy deploy_targets
+
+    is_monorepo=$(_signal_of "$signals" '.monorepo.is_monorepo' 'false')
+    workspace_count=$(_signal_of "$signals" '.monorepo.workspace_count' '0')
+    monorepo_type=$(_signal_of "$signals" '.monorepo.type' 'none')
+    has_ci=$(_signal_of "$signals" '.ci.has_ci' 'false')
+    workflow_count=$(_signal_of "$signals" '.ci.workflow_count' '0')
+    test_maturity=$(_signal_of "$signals" '.test.maturity' 'none')
+    test_count=$(_signal_of "$signals" '.test.test_file_count' '0')
+    test_ratio=$(_signal_of "$signals" '.test.test_ratio' '0')
+    size_category=$(_signal_of "$signals" '.size.size_category' 'unknown')
+    file_count=$(_signal_of "$signals" '.size.file_count' '0')
+    src_lines=$(_signal_of "$signals" '.size.src_lines' '0')
+    has_deploy=$(_signal_of "$signals" '.deploy.has_deploy' 'false')
+    deploy_targets=$(echo "$signals" | jq -r '(.deploy.targets // []) | join("+")' 2>/dev/null || echo "")
+
+    local template confidence reason rule
+
+    # ── The ladder. Highest precedence first. ──────────────────────────────
+    if [[ "$has_deploy" == "true" ]]; then
+        template="deployed"; confidence=90; rule="deploy_infrastructure"
+        reason="deployment config present (${deploy_targets:-container}) — deploy and validate stages apply"
+
+    elif [[ "$is_monorepo" == "true" && "$workspace_count" -ge 2 && "$has_ci" == "true" ]]; then
+        template="full"; confidence=85; rule="monorepo_with_ci"
+        reason="${monorepo_type} monorepo (${workspace_count} packages) with CI — cross-package changes need the full pipeline"
+
+    elif [[ "$src_lines" -gt 5000 || "$size_category" == "large" || "$size_category" == "massive" ]]; then
+        template="full"; confidence=80; rule="large_codebase"
+        reason="large codebase (${src_lines} source lines, ${size_category} history) — extra review cycles pay off"
+
+    elif [[ ( "$size_category" == "tiny" || "$size_category" == "small" ) && \
+            "$has_ci" != "true" && \
+            ( "$test_maturity" == "established" || "$test_maturity" == "mature" ) ]]; then
+        template="fast"; confidence=85; rule="small_well_tested"
+        reason="small ${size_category} repo with ${test_maturity} tests and no CI — tests alone can gate a fast pipeline"
+
+    elif [[ "$file_count" -lt 20 && "$test_count" -lt 5 && "$has_deploy" != "true" ]]; then
+        template="fast"; confidence=85; rule="minimal_project"
+        reason="minimal project (${file_count} source files, ${test_count} test files) — little to review"
+
+    elif [[ "$has_ci" == "true" ]]; then
+        template="standard"; confidence=75; rule="ci_present"
+        reason="CI present (${workflow_count} workflows) — standard pipeline complements existing checks"
+
+    elif [[ "$test_count" -eq 0 ]]; then
+        template="standard"; confidence=65; rule="no_tests"
+        reason="no test suite detected — standard pipeline keeps the review gate"
+
+    elif [[ "$test_ratio" -lt 20 ]]; then
+        template="standard"; confidence=70; rule="low_test_ratio"
+        reason="thin test suite (${test_ratio}% of sources) — standard pipeline keeps the review gate"
+
+    else
+        template="standard"; confidence=60; rule="default"
+        reason="no signal argued for a faster or fuller pipeline — standard is the safe default"
+    fi
+
+    local out
+    out=$(jq -n \
         --arg template "$template" \
         --argjson confidence "$confidence" \
         --arg reason "$reason" \
-        '{template: $template, confidence: $confidence, reason: $reason}'
+        --arg rule "$rule" \
+        --argjson signals "$signals" \
+        '{template:$template, confidence:$confidence, reason:$reason,
+          rule:$rule, signals:$signals}' 2>/dev/null || true)
+
+    if echo "$out" | jq -e . >/dev/null 2>&1; then
+        echo "$out"
+    else
+        jq -n '{template:"standard", confidence:0,
+                reason:"recommendation could not be serialized — defaulting to standard",
+                rule:"fallback", signals:{}}'
+    fi
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -599,8 +649,9 @@ project_detect_all() {
         cached_at=$(jq -r '.cached_at // ""' "$cache_file" 2>/dev/null || echo "")
 
         if [[ -n "$cached_at" ]]; then
-            local cache_age
-            cache_age=$(($(date +%s) - $(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$cached_at" +%s 2>/dev/null || echo 0)))
+            local cached_epoch cache_age
+            cached_epoch=$(_iso_to_epoch "$cached_at")
+            cache_age=$(( $(date +%s) - cached_epoch ))
 
             if [[ "$cache_age" -lt "$cache_ttl" ]]; then
                 cat "$cache_file"

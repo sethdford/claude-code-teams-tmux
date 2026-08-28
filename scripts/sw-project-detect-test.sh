@@ -322,6 +322,132 @@ assert_contains "Has template field" "$result" '"template":'
 assert_contains "Has confidence field" "$result" '"confidence":'
 assert_contains "Has reason field" "$result" '"reason":'
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Test: project_recommend_template — rule ladder
+# Each recommendable template gets a test naming the RULE that produced it, so a
+# reordering that lands on the right template for the wrong reason still fails.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+source "$SCRIPT_DIR/lib/project-signals.sh"
+
+# Build a signals object directly: the policy layer is being tested here, not
+# the detectors (those have their own suite).
+make_signals() {
+    local monorepo="${1:-false}" workspaces="${2:-0}" ci="${3:-false}" workflows="${4:-0}"
+    local maturity="${5:-none}" tests="${6:-0}" ratio="${7:-0}"
+    local size="${8:-unknown}" files="${9:-0}" lines="${10:-0}" deploy="${11:-false}"
+    jq -n \
+        --argjson monorepo "$monorepo" --argjson workspaces "$workspaces" \
+        --argjson ci "$ci" --argjson workflows "$workflows" \
+        --arg maturity "$maturity" --argjson tests "$tests" --argjson ratio "$ratio" \
+        --arg size "$size" --argjson files "$files" --argjson lines "$lines" \
+        --argjson deploy "$deploy" \
+        '{monorepo:{is_monorepo:$monorepo, workspace_count:$workspaces, type:"npm"},
+          ci:{has_ci:$ci, workflow_count:$workflows, ci_types:[]},
+          test:{maturity:$maturity, test_file_count:$tests, test_ratio:$ratio},
+          size:{size_category:$size, file_count:$files, src_lines:$lines},
+          activity:{is_active:true, days_since_last_commit:1},
+          deploy:{has_deploy:$deploy, targets:(if $deploy then ["docker"] else [] end)}}'
+}
+
+print_test_section "project_recommend_template — rule: deploy_infrastructure"
+result=$(project_recommend_template "$(make_signals true 4 true 6 mature 90 60 large 900 90000 true)")
+assert_json_key "deploy infra outranks every other signal" "$result" ".template" "deployed"
+assert_json_key "deploy rule id" "$result" ".rule" "deploy_infrastructure"
+assert_contains "deploy rationale names the deploy config" "$result" "deployment config"
+
+print_test_section "project_recommend_template — rule: monorepo_with_ci"
+result=$(project_recommend_template "$(make_signals true 4 true 6 established 40 30 medium 300 4000 false)")
+assert_json_key "monorepo with CI recommends full" "$result" ".template" "full"
+assert_json_key "monorepo rule id" "$result" ".rule" "monorepo_with_ci"
+assert_contains "monorepo rationale names the monorepo" "$result" "monorepo"
+
+# A monorepo without CI must not reach the monorepo rule — one signal is not
+# enough to justify the fullest pipeline.
+result=$(project_recommend_template "$(make_signals true 4 false 0 established 40 30 medium 300 400 false)")
+assert_json_key "monorepo without CI does not trigger full" "$result" ".rule" "default"
+
+print_test_section "project_recommend_template — rule: large_codebase"
+result=$(project_recommend_template "$(make_signals false 0 false 0 established 200 30 large 5000 90000 false)")
+assert_json_key "large codebase recommends full" "$result" ".template" "full"
+assert_json_key "large codebase rule id" "$result" ".rule" "large_codebase"
+assert_contains "large rationale names the size" "$result" "large codebase"
+
+print_test_section "project_recommend_template — rule: small_well_tested"
+result=$(project_recommend_template "$(make_signals false 0 false 0 mature 60 80 small 120 3000 false)")
+assert_json_key "small well-tested project recommends fast" "$result" ".template" "fast"
+assert_json_key "small well-tested rule id" "$result" ".rule" "small_well_tested"
+assert_contains "fast rationale names the tests" "$result" "tests"
+
+print_test_section "project_recommend_template — rule: minimal_project"
+result=$(project_recommend_template "$(make_signals false 0 false 0 none 0 0 tiny 8 200 false)")
+assert_json_key "minimal project recommends fast" "$result" ".template" "fast"
+assert_json_key "minimal project rule id" "$result" ".rule" "minimal_project"
+
+print_test_section "project_recommend_template — rule: ci_present"
+result=$(project_recommend_template "$(make_signals false 0 true 3 new 30 10 medium 300 4000 false)")
+assert_json_key "CI without other signals recommends standard" "$result" ".template" "standard"
+assert_json_key "ci_present rule id" "$result" ".rule" "ci_present"
+
+print_test_section "project_recommend_template — rule: no_tests"
+result=$(project_recommend_template "$(make_signals false 0 false 0 none 0 0 medium 300 4000 false)")
+assert_json_key "untested project recommends standard" "$result" ".template" "standard"
+assert_json_key "no_tests rule id" "$result" ".rule" "no_tests"
+
+print_test_section "project_recommend_template — rule: low_test_ratio"
+result=$(project_recommend_template "$(make_signals false 0 false 0 new 20 8 medium 300 4000 false)")
+assert_json_key "thin test suite recommends standard" "$result" ".template" "standard"
+assert_json_key "low_test_ratio rule id" "$result" ".rule" "low_test_ratio"
+
+print_test_section "project_recommend_template — degraded signals"
+result=$(project_recommend_template '{}')
+assert_json_key "empty signals fall back to standard" "$result" ".template" "standard"
+result=$(project_recommend_template 'not json at all')
+assert_json_key "garbage input falls back to standard" "$result" ".template" "standard"
+assert_json_key "garbage input is marked as a fallback" "$result" ".rule" "fallback"
+
+# A shallow clone (the CI checkout default) must never be read as a tiny repo
+# with a fast pipeline. size_category "unknown" keeps the fast rule from firing.
+result=$(project_recommend_template "$(make_signals false 0 false 0 mature 200 80 unknown 400 20000 false)")
+assert_json_key "unknown size does not yield the small_well_tested rule" "$result" ".template" "full"
+
+print_test_section "project_recommend_template — output contract"
+# The recommended template must be one the pipeline can actually resolve.
+# Asserted as membership of templates/pipelines/, so adding a template file
+# cannot silently break the contract.
+templates_dir="$(cd "$SCRIPT_DIR/.." && pwd)/templates/pipelines"
+for signals_case in \
+    "$(make_signals false 0 false 0 none 0 0 tiny 8 200 true)" \
+    "$(make_signals true 4 true 6 established 40 30 medium 300 4000 false)" \
+    "$(make_signals false 0 false 0 mature 60 80 small 120 3000 false)" \
+    "$(make_signals false 0 true 3 new 30 10 medium 300 4000 false)"; do
+    tpl=$(project_recommend_template "$signals_case" | jq -r '.template')
+    if [[ -f "$templates_dir/${tpl}.json" ]]; then
+        assert_pass "recommended template '$tpl' exists in templates/pipelines/"
+    else
+        assert_fail "recommended template '$tpl' exists in templates/pipelines/" \
+            "no such file: $templates_dir/${tpl}.json"
+    fi
+done
+
+# Situational and governance templates are never recommended from repo shape.
+for tpl_never in hotfix enterprise autonomous cost-aware tdd; do
+    found=0
+    for signals_case in \
+        "$(make_signals false 0 false 0 none 0 0 tiny 8 200 true)" \
+        "$(make_signals true 4 true 6 established 40 30 medium 300 4000 false)" \
+        "$(make_signals false 0 false 0 mature 60 80 small 120 3000 false)" \
+        "$(make_signals false 0 false 0 none 0 0 medium 300 4000 false)" \
+        "$(make_signals false 0 true 3 new 30 10 large 900 90000 false)"; do
+        [[ "$(project_recommend_template "$signals_case" | jq -r '.template')" == "$tpl_never" ]] && found=1
+    done
+    assert_eq "never recommends '$tpl_never' from repo shape" "0" "$found"
+done
+
+# Signals are echoed back so a recommendation can be debugged after the fact.
+result=$(project_recommend_template "$(make_signals true 4 true 6 established 40 30 medium 300 4000 false)")
+assert_json_key "signals echoed back for debugging" "$result" ".signals.monorepo.workspace_count" "4"
 # ═══════════════════════════════════════════════════════════════════════════════
 # Test: project_detect_all
 # ═══════════════════════════════════════════════════════════════════════════════
