@@ -191,13 +191,16 @@ generate_default_profile() {
     local now
     now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+    # jq-encoded, not interpolated between literal quotes: a checkout whose
+    # directory name contains a quote or a backslash otherwise produced a
+    # profile that would not parse, and prep aborted on it.
     local project_name
-    project_name=$(basename "$REPO_ROOT")
+    project_name=$(basename "$REPO_ROOT" | jq -R . 2>/dev/null || echo '"unknown"')
 
     cat <<EOF
 {
   "version": $QP_SCHEMA_VERSION,
-  "project_name": "$project_name",
+  "project_name": $project_name,
   "generated_at": "$now",
   "architecture": {
     "pattern": "monolith",

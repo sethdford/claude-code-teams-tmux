@@ -215,6 +215,27 @@ assert_file_not_contains() {
     return 1
 }
 
+# Value assertions in this file's return-code style: run_test counts the
+# result, so these must not touch the shared counters that test-helpers'
+# same-named assertions maintain.
+assert_value_eq() {
+    local expected="$1" actual="$2" label="${3:-value}"
+    if [[ "$expected" == "$actual" ]]; then
+        return 0
+    fi
+    echo -e "    ${RED}✗${RESET} Expected '$expected', got '$actual' ($label)"
+    return 1
+}
+
+assert_value_contains() {
+    local haystack="$1" needle="$2" label="${3:-substring}"
+    if printf '%s\n' "$haystack" | grep -qF -- "$needle"; then
+        return 0
+    fi
+    echo -e "    ${RED}✗${RESET} Missing '$needle' in: $haystack ($label)"
+    return 1
+}
+
 assert_file_executable() {
     local filepath="$1" label="${2:-executable}"
     if [[ -x "$filepath" ]]; then
@@ -553,6 +574,135 @@ test_dod_generated() {
     assert_file_contains "$test_dir/.claude/DEFINITION-OF-DONE.md" "tests pass" "DoD mentions tests"
 }
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 14. Template recommendation — surfaced in the report and the manifest
+# ──────────────────────────────────────────────────────────────────────────────
+test_template_recommendation_reported() {
+    local test_dir="$TEST_TEMP_DIR/rec-report"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+
+    invoke_prep "$test_dir" --force
+
+    assert_exit_code 0 "prep should succeed" &&
+    assert_output_contains "Template:" "report shows a recommended template" &&
+    assert_file_exists "$test_dir/.claude/prep-manifest.json" "manifest written" &&
+    [[ -n "$(jq -r '.recommendation.template // empty' "$test_dir/.claude/prep-manifest.json")" ]]
+}
+
+# A single small package with no deploy config and no CI is the case the fast
+# template exists for.
+test_recommend_fast_for_minimal_project() {
+    local test_dir="$TEST_TEMP_DIR/rec-fast"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+
+    invoke_prep "$test_dir" --force
+
+    local rec
+    rec=$(jq -r '.recommendation.template' "$test_dir/.claude/prep-manifest.json")
+    assert_exit_code 0 "prep should succeed" &&
+    assert_value_eq "fast" "$rec" "minimal single-package project recommends fast"
+}
+
+# Deploy infrastructure outranks every other signal: the deployed template is
+# the only one with deploy/validate/monitor stages.
+test_recommend_deployed_for_containerized_project() {
+    local test_dir="$TEST_TEMP_DIR/rec-deployed"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+    cat > "$test_dir/Dockerfile" <<'DOCKER'
+FROM node:20
+WORKDIR /app
+COPY . .
+CMD ["npm", "start"]
+DOCKER
+
+    invoke_prep "$test_dir" --force
+
+    local manifest="$test_dir/.claude/prep-manifest.json"
+    assert_exit_code 0 "prep should succeed" &&
+    assert_value_eq "deployed" "$(jq -r '.recommendation.template' "$manifest")" "containerized project recommends deployed" &&
+    assert_value_eq "deploy_infrastructure" "$(jq -r '.recommendation.rule' "$manifest")" "deploy rule fired"
+}
+
+# A monorepo with CI needs the full pipeline — a change in one package can
+# break another, and the CI history says the project already expects gates.
+test_recommend_full_for_monorepo_with_ci() {
+    local test_dir="$TEST_TEMP_DIR/rec-full"
+    mkdir -p "$test_dir/packages/api/src" "$test_dir/packages/web/src" "$test_dir/.github/workflows"
+    cat > "$test_dir/package.json" <<'PKG'
+{
+  "name": "monorepo-root",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": { "test": "vitest" },
+  "devDependencies": { "vitest": "^1.0.0" }
+}
+PKG
+    echo '{"name":"@x/api"}' > "$test_dir/packages/api/package.json"
+    echo '{"name":"@x/web"}' > "$test_dir/packages/web/package.json"
+    echo 'export const api = 1;' > "$test_dir/packages/api/src/index.js"
+    echo 'export const web = 1;' > "$test_dir/packages/web/src/index.js"
+    printf 'name: ci\non: push\njobs:\n  t:\n    runs-on: ubuntu-latest\n' > "$test_dir/.github/workflows/ci.yml"
+    init_git_repo "$test_dir"
+
+    invoke_prep "$test_dir" --force
+
+    local manifest="$test_dir/.claude/prep-manifest.json"
+    assert_exit_code 0 "prep should succeed" &&
+    assert_value_eq "full" "$(jq -r '.recommendation.template' "$manifest")" "monorepo with CI recommends full" &&
+    assert_value_eq "monorepo_with_ci" "$(jq -r '.recommendation.rule' "$manifest")" "monorepo rule fired"
+}
+
+# The rationale has to name the signals that drove the choice — asserted, not
+# eyeballed, because that is the acceptance criterion.
+test_recommendation_reason_names_signals() {
+    local test_dir="$TEST_TEMP_DIR/rec-reason"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+    touch "$test_dir/Dockerfile"
+
+    invoke_prep "$test_dir" --force
+
+    local reason
+    reason=$(jq -r '.recommendation.reason' "$test_dir/.claude/prep-manifest.json")
+    assert_exit_code 0 "prep should succeed" &&
+    assert_value_contains "$reason" "deployment config" "rationale names the deploy signal"
+}
+
+# The manifest is what init reads. It must be valid JSON even when the checkout
+# directory name contains characters that break string interpolation.
+test_manifest_valid_with_hostile_project_name() {
+    local test_dir="$TEST_TEMP_DIR/quo\"te dir"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+
+    invoke_prep "$test_dir" --force
+
+    assert_exit_code 0 "prep should succeed with a quote in the directory name" &&
+    jq -e . "$test_dir/.claude/prep-manifest.json" >/dev/null 2>&1
+}
+
+# Re-running prep on an unchanged tree must not change the recommendation.
+test_recommendation_is_idempotent() {
+    local test_dir="$TEST_TEMP_DIR/rec-idempotent"
+    mkdir -p "$test_dir"
+    create_node_project "$test_dir"
+
+    invoke_prep "$test_dir" --force
+    local first
+    first=$(jq -Sc '.recommendation | del(.signals.collected_at)' "$test_dir/.claude/prep-manifest.json")
+
+    invoke_prep "$test_dir" --force
+    local second
+    second=$(jq -Sc '.recommendation | del(.signals.collected_at)' "$test_dir/.claude/prep-manifest.json")
+
+    assert_exit_code 0 "prep should succeed" &&
+    assert_value_eq "$first" "$second" "recommendation is stable across runs"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -598,6 +748,13 @@ main() {
         "test_force_overwrites:--force overwrites modified files"
         "test_no_eval_in_hooks:No eval in generated hooks"
         "test_dod_generated:Definition of Done generated"
+        "test_template_recommendation_reported:Template recommendation reported"
+        "test_recommend_fast_for_minimal_project:Minimal project recommends fast"
+        "test_recommend_deployed_for_containerized_project:Containerized project recommends deployed"
+        "test_recommend_full_for_monorepo_with_ci:Monorepo with CI recommends full"
+        "test_recommendation_reason_names_signals:Rationale names the signals"
+        "test_manifest_valid_with_hostile_project_name:Manifest valid with quoted dir name"
+        "test_recommendation_is_idempotent:Recommendation is idempotent"
     )
 
     for entry in "${tests[@]}"; do

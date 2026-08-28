@@ -21,6 +21,11 @@ fi
 # Canonical helpers (colors, output, events)
 # shellcheck source=lib/helpers.sh
 [[ -f "$SCRIPT_DIR/lib/helpers.sh" ]] && source "$SCRIPT_DIR/lib/helpers.sh"
+# Repo-shape signals + the template recommendation policy they feed
+# shellcheck source=lib/project-signals.sh
+[[ -f "$SCRIPT_DIR/lib/project-signals.sh" ]] && source "$SCRIPT_DIR/lib/project-signals.sh"
+# shellcheck source=lib/project-detect.sh
+[[ -f "$SCRIPT_DIR/lib/project-detect.sh" ]] && source "$SCRIPT_DIR/lib/project-detect.sh"
 # Fallbacks when helpers not loaded (e.g. test env with overridden SCRIPT_DIR)
 [[ "$(type -t info 2>/dev/null)" == "function" ]]    || info()    { echo -e "\033[38;2;0;212;255m\033[1m▸\033[0m $*"; }
 [[ "$(type -t success 2>/dev/null)" == "function" ]] || success() { echo -e "\033[38;2;74;222;128m\033[1m✓\033[0m $*"; }
@@ -86,6 +91,11 @@ SEMICOLONS=""
 QUOTE_STYLE=""
 INDENT_STYLE=""
 
+# Template recommendation (repo shape → pipeline template)
+RECOMMENDED_TEMPLATE=""
+RECOMMENDATION_REASON=""
+RECOMMENDATION_JSON=""
+
 # Tracking generated files
 GENERATED_FILES=()
 
@@ -113,6 +123,7 @@ show_help() {
     echo -e "  ${DIM}shipwright prep --with-claude${RESET}     # Deep analysis with Claude"
     echo ""
     echo -e "${BOLD}GENERATED FILES${RESET}"
+    echo -e "  ${DIM}.claude/prep-manifest.json${RESET}           Manifest + recommended pipeline template"
     echo -e "  ${DIM}.claude/CLAUDE.md${RESET}                    Project context for Claude Code"
     echo -e "  ${DIM}.claude/settings.json${RESET}                Permission allowlists"
     echo -e "  ${DIM}.claude/ARCHITECTURE.md${RESET}              System architecture overview"
@@ -1384,53 +1395,94 @@ HEREDOC
     success "Generated .github/ISSUE_TEMPLATE/agent-task.md"
 }
 
+# ─── prep_recommend_template ────────────────────────────────────────────────
+# Turn what detection already learned into a pipeline template suggestion.
+# Advisory only: nothing here changes what the pipeline does — it seeds a
+# default that per-issue triage and an explicit --pipeline both override.
+prep_recommend_template() {
+    RECOMMENDED_TEMPLATE="standard"
+    RECOMMENDATION_REASON="template recommendation unavailable — standard is the safe default"
+    RECOMMENDATION_JSON=""
+
+    if [[ "$(type -t project_collect_signals 2>/dev/null)" != "function" || \
+          "$(type -t project_recommend_template 2>/dev/null)" != "function" ]]; then
+        return 0
+    fi
+
+    info "Recommending pipeline template..."
+
+    # Counts come from the scan that already happened; the detectors must not
+    # re-walk a tree prep has walked.
+    local signals rec
+    signals=$(project_collect_signals "$PROJECT_ROOT" "$TEST_FRAMEWORK" \
+                  "$SRC_FILE_COUNT" "$TEST_FILE_COUNT" "$TOTAL_LINES" 2>/dev/null || true)
+    rec=$(project_recommend_template "$signals" 2>/dev/null || true)
+
+    if ! echo "$rec" | jq -e '.template' >/dev/null 2>&1; then
+        warn "Template recommendation failed — defaulting to standard"
+        return 0
+    fi
+
+    RECOMMENDATION_JSON="$rec"
+    RECOMMENDED_TEMPLATE=$(echo "$rec" | jq -r '.template')
+    RECOMMENDATION_REASON=$(echo "$rec" | jq -r '.reason')
+
+    success "Template: ${BOLD}${RECOMMENDED_TEMPLATE}${RESET} ${DIM}— ${RECOMMENDATION_REASON}${RESET}"
+}
+
 # ─── prep_generate_manifest ─────────────────────────────────────────────────
 
 prep_generate_manifest() {
     local filepath="$PROJECT_ROOT/.claude/prep-manifest.json"
     info "Writing manifest..."
 
-    local files_json="{"
-    local first=true
+    # Built with jq, not a heredoc: a project name containing a quote or a
+    # backslash used to produce a manifest that would not parse. init reads
+    # this file, so it has to be valid every time.
+    local files_json="{}"
     if [[ ${#GENERATED_FILES[@]} -gt 0 ]]; then
+        local entry fname flines checksum
         for entry in "${GENERATED_FILES[@]}"; do
-            local fname flines
             fname="${entry%%|*}"
             flines="${entry##*|}"
-            local checksum
-            checksum=$(compute_md5 "$PROJECT_ROOT/$fname" || echo "unknown")
-            if $first; then
-                first=false
-            else
-                files_json+=","
-            fi
-            files_json+="
-    \"${fname}\": { \"checksum\": \"${checksum}\", \"lines\": ${flines} }"
+            checksum=$(compute_md5 "$PROJECT_ROOT/$fname" 2>/dev/null || echo "unknown")
+            case "$flines" in ''|*[!0-9]*) flines=0 ;; esac
+            files_json=$(echo "$files_json" | jq \
+                --arg name "$fname" \
+                --arg checksum "${checksum:-unknown}" \
+                --argjson lines "$flines" \
+                '.[$name] = {checksum: $checksum, lines: $lines}' 2>/dev/null || echo "$files_json")
         done
     fi
-    files_json+="
-  }"
 
-    cat > "$filepath" <<HEREDOC
-{
-  "version": 1,
-  "generated_at": "$(now_iso)",
-  "stack": {
-    "lang": "${LANG_DETECTED:-unknown}",
-    "framework": "${FRAMEWORK:-none}",
-    "test": "${TEST_FRAMEWORK:-unknown}",
-    "package_manager": "${PACKAGE_MANAGER:-unknown}"
-  },
-  "files": ${files_json}
-}
-HEREDOC
+    local rec_json="${RECOMMENDATION_JSON:-}"
+    echo "$rec_json" | jq -e . >/dev/null 2>&1 || rec_json='{}'
 
-    # Validate JSON
-    if command -v jq >/dev/null 2>&1; then
-        if ! jq empty "$filepath" 2>/dev/null; then
-            warn "prep-manifest.json may have invalid JSON — check manually"
-        fi
+    local manifest
+    manifest=$(jq -n \
+        --arg generated_at "$(now_iso)" \
+        --arg lang "${LANG_DETECTED:-unknown}" \
+        --arg framework "${FRAMEWORK:-none}" \
+        --arg test "${TEST_FRAMEWORK:-unknown}" \
+        --arg pm "${PACKAGE_MANAGER:-unknown}" \
+        --argjson files "$files_json" \
+        --argjson recommendation "$rec_json" \
+        '{version: 1,
+          generated_at: $generated_at,
+          stack: {lang: $lang, framework: $framework, test: $test, package_manager: $pm},
+          recommendation: $recommendation,
+          files: $files}' 2>/dev/null || true)
+
+    if ! echo "$manifest" | jq -e . >/dev/null 2>&1; then
+        warn "Could not build prep-manifest.json — leaving the previous manifest in place"
+        return 0
     fi
+
+    # tmp + mv: a crash mid-write must never leave a truncated manifest at the
+    # path init reads.
+    local tmp="${filepath}.tmp.$$"
+    printf '%s\n' "$manifest" > "$tmp" && mv -f "$tmp" "$filepath"
+    rm -f "$tmp" 2>/dev/null || true
 
     track_file "$filepath"
     success "Written prep-manifest.json"
@@ -1761,6 +1813,9 @@ prep_report() {
     echo ""
     echo -e "  ${BOLD}Stack:${RESET}      ${LANG_DETECTED:-unknown}${FRAMEWORK:+ / ${FRAMEWORK}}${TEST_FRAMEWORK:+ / ${TEST_FRAMEWORK}}"
     echo -e "  ${BOLD}Files:${RESET}      ${#GENERATED_FILES[@]} generated"
+    if [[ -n "$RECOMMENDED_TEMPLATE" ]]; then
+        echo -e "  ${BOLD}Template:${RESET}   ${RECOMMENDED_TEMPLATE} ${DIM}— ${RECOMMENDATION_REASON}${RESET}"
+    fi
     echo ""
     echo -e "  ${BOLD}Created:${RESET}"
     if [[ ${#GENERATED_FILES[@]} -gt 0 ]]; then
@@ -1798,6 +1853,9 @@ main() {
     prep_detect_stack
     prep_scan_structure
     prep_extract_patterns
+
+    # Repo shape → pipeline template (advisory; seeds a default only)
+    prep_recommend_template
 
     # Smart detection (intelligence-gated)
     prep_smart_detect
