@@ -685,7 +685,11 @@ CLAUDE_EOF
     elif echo "$output" | grep -qi "max iteration"; then
         assert_pass "Loop stops at limit (stuckness test)"
     else
-        assert_fail "Loop stuckness detection" "expected stuckness or circuit breaker"
+        # This one drives the real loop, so a failure here is usually the
+        # environment (a killed iteration under load), not the assertion —
+        # carry the tail of the run so the next reader is not blind.
+        assert_fail "Loop stuckness detection" \
+            "expected stuckness or circuit breaker; loop output tail: $(printf '%s' "$output" | tail -5 | tr '\n' '|')"
     fi
 else
     assert_fail "Loop stuckness detection" "setup failed"
