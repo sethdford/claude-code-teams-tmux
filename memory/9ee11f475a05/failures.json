@@ -6,7 +6,7 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 11,
-      "last_seen": "2026-08-28T20:53:00Z",
+      "last_seen": "2026-08-28T20:36:00Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test hit the 301s timeout and sw-loop-test failed with exit 1, indicating a hung/slow real-integration test and a genuine loop harness regression",
       "fix": "investigate sw-loop-test failure output directly and increase or mock sw-e2e-integration-test's external calls to avoid the 300s timeout",
-      "seen_count": 2,
-      "last_seen": "2026-08-28T19:11:50Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-28T00:14:47Z",
       "category": "test_failure"
     },
     {
@@ -66,11 +66,20 @@
     {
       "stage": "test",
       "pattern": "Testing audit invocation-failure handling...",
-      "root_cause": "Log shows only passing test suites (autoresearch/bandit/policy RL tests); the actual failing invocation-failure handling test output is not present in the captured tail",
-      "fix": "Re-run with full output capture for sw-autonomous-test.sh (or the specific 'invocation-failure handling' suite) to surface the actual assertion failure and stack trace",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock (pipeline-3276) left by a prior run, and sw-intent-analysis-test's schema output is missing required fields (version, goal, criteria)",
+      "fix": "Clear/expire stale pipeline locks before e2e-integration-test runs and update analyze_intent to emit version/goal/criteria in its JSON schema",
       "seen_count": 1,
       "last_seen": "2026-08-28T16:43:06Z",
-      "category": "unknown"
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
+      "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
+      "seen_count": 1,
+      "last_seen": "2026-08-28T19:58:39Z",
+      "category": "flaky"
     }
   ]
 }
