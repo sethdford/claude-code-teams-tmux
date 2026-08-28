@@ -1255,10 +1255,17 @@ AUDIT_PROMPT
         audit_flags+=("--dangerously-skip-permissions")
     fi
 
-    # Use structured output for machine-parseable audit results
+    # Use structured output for machine-parseable audit results.
+    # The "$schema" meta-schema ref is stripped: the CLI validator resolves refs
+    # offline and rejects the whole flag with "no schema with key or ref
+    # https://json-schema.org/draft/2020-12/schema", which loses the audit entirely.
     local schema_file="${SCRIPT_DIR}/../schemas/audit-result.json"
-    if [[ -f "$schema_file" ]]; then
-        audit_flags+=("--json-schema" "$(cat "$schema_file")")
+    if [[ -f "$schema_file" ]] && command -v jq >/dev/null 2>&1; then
+        local schema_payload
+        schema_payload="$(jq -c 'del(."$schema")' "$schema_file" 2>/dev/null || true)"
+        if [[ -n "$schema_payload" ]]; then
+            audit_flags+=("--json-schema" "$schema_payload")
+        fi
     fi
 
     local exit_code=0
@@ -1267,6 +1274,12 @@ AUDIT_PROMPT
     if grep -q "AUDIT_PASS" "$audit_log" 2>/dev/null; then
         AUDIT_RESULT="pass"
         echo -e "  ${GREEN}✓${RESET} Audit: passed"
+    elif [[ $exit_code -ne 0 ]]; then
+        # The audit never rendered a judgment — report the tooling failure as such
+        # instead of handing CLI errors to the next iteration as code findings.
+        AUDIT_RESULT="Audit agent could not run (claude exited ${exit_code}); this is a tooling failure, not a finding about the code:
+$(grep -v '^$' "$audit_log" 2>/dev/null | tail -5 || true)"
+        echo -e "  ${YELLOW}⚠${RESET} Audit: could not run (exit ${exit_code})"
     else
         AUDIT_RESULT="$(grep -v '^$' "$audit_log" | tail -20 | head -10 2>/dev/null || echo "Audit returned no output")"
         echo -e "  ${YELLOW}⚠${RESET} Audit: issues found"

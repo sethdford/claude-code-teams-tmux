@@ -903,6 +903,39 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# AUDIT STRUCTURED OUTPUT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# The CLI resolves $schema refs offline and rejects the whole --json-schema flag
+# when the meta-schema is unreachable, so the loop must strip it before passing.
+if grep -q 'del(."\$schema")' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Audit strips \$schema meta-ref before --json-schema"
+else
+    assert_fail "Audit strips \$schema meta-ref before --json-schema"
+fi
+
+stripped=$(jq -c 'del(."$schema")' "$SCRIPT_DIR/../schemas/audit-result.json" 2>/dev/null || true)
+if [[ -n "$stripped" ]] && ! grep -q 'json-schema.org' <<<"$stripped"; then
+    assert_pass "Stripped audit schema carries no unresolvable ref"
+else
+    assert_fail "Stripped audit schema carries no unresolvable ref" "$stripped"
+fi
+
+if [[ "$(jq -r '.type' <<<"$stripped" 2>/dev/null)" == "object" ]]; then
+    assert_pass "Stripped audit schema is still a usable object schema"
+else
+    assert_fail "Stripped audit schema is still a usable object schema"
+fi
+
+# A failed claude invocation must be reported as a tooling failure, not as
+# findings about the agent's code.
+if grep -q 'this is a tooling failure, not a finding about the code' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Audit CLI failure reported as tooling failure"
+else
+    assert_fail "Audit CLI failure reported as tooling failure"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

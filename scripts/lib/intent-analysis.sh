@@ -106,21 +106,56 @@ ${_ACCEPTANCE_CRITERIA_SCHEMA}
         return 0
     }
 
-    # Validate JSON output
-    if ! jq empty "$intent_file" 2>/dev/null; then
-        # Claude output wasn't valid JSON — generate defaults
+    # --output-format json wraps the answer in the CLI's own envelope, so the
+    # criteria live in .result as a string. Unwrap it, drop any markdown fence,
+    # and keep the payload only if it actually matches the criteria schema —
+    # writing the envelope through would produce a file with no criteria at all.
+    local criteria_json
+    criteria_json="$(_extract_acceptance_criteria "$intent_file")"
+    rm -f "$intent_file"
+
+    if [[ -z "$criteria_json" ]]; then
         _generate_default_acceptance_criteria "$title" "$body" "$artifacts_dir"
-        rm -f "$intent_file"
         return 0
     fi
 
     # Move to final location atomically
     local criteria_file="${artifacts_dir}/acceptance-criteria.json"
-    mv "$intent_file" "$criteria_file" 2>/dev/null || {
+    printf '%s\n' "$criteria_json" > "${criteria_file}.tmp" && \
+        mv "${criteria_file}.tmp" "$criteria_file" 2>/dev/null || {
+        rm -f "${criteria_file}.tmp"
         _generate_default_acceptance_criteria "$title" "$body" "$artifacts_dir"
         return 1
     }
 
+    return 0
+}
+
+# Pull acceptance criteria out of a raw claude response file.
+# Handles both a bare criteria object and the --output-format json envelope,
+# with or without a ```json fence. Prints nothing when no conforming object
+# is present, which the caller reads as "fall back to defaults".
+_extract_acceptance_criteria() {
+    local raw_file="$1"
+    [[ -f "$raw_file" ]] || return 0
+
+    local candidate
+    for candidate in \
+        "$(cat "$raw_file" 2>/dev/null || true)" \
+        "$(jq -r 'if type == "object" then (.result // empty) else empty end' "$raw_file" 2>/dev/null || true)"; do
+        [[ -n "$candidate" ]] || continue
+        # Strip a markdown fence if the model wrapped the JSON in one
+        candidate="$(printf '%s' "$candidate" | sed -e 's/^[[:space:]]*```[a-zA-Z]*[[:space:]]*//' -e 's/```[[:space:]]*$//')"
+        if printf '%s' "$candidate" | jq -e '
+                type == "object"
+                and has("version")
+                and (.goal // "") != ""
+                and (.criteria | type) == "array"
+                and (.criteria | length) > 0' >/dev/null 2>&1; then
+            printf '%s' "$candidate" | jq -c .
+            return 0
+        fi
+    done
     return 0
 }
 

@@ -354,6 +354,95 @@ test_analyze_intent_fallback() {
 }
 
 # ───────────────────────────────────────────────────────────────
+# Mock claude helper — writes a fixed stdout payload for the CLI call
+# ───────────────────────────────────────────────────────────────
+_with_mock_claude() {
+    local payload="$1"; shift
+    local bin_dir="$TEMP_DIR/mockbin-$$-${RANDOM}"
+    mkdir -p "$bin_dir"
+    printf '%s\n' "$payload" > "$bin_dir/payload.txt"
+    cat > "$bin_dir/claude" <<'MOCK'
+#!/usr/bin/env bash
+cat "$(dirname "$0")/payload.txt"
+MOCK
+    chmod +x "$bin_dir/claude"
+    local old_path="$PATH"
+    export PATH="$bin_dir:$PATH"
+    "$@"
+    local rc=$?
+    export PATH="$old_path"
+    return $rc
+}
+
+_has_criteria_schema() {
+    jq -e '.version and (.goal != "") and (.criteria | length) > 0' "$1" >/dev/null 2>&1
+}
+
+# ───────────────────────────────────────────────────────────────
+# Test: the --output-format json envelope is unwrapped, not stored raw
+# ───────────────────────────────────────────────────────────────
+test_unwraps_cli_envelope() {
+    local test_dir="$TEMP_DIR/envelope-test"
+    mkdir -p "$test_dir"
+
+    local inner='{"version":1,"goal":"Unwrap the envelope","criteria":[{"id":"ac-1","description":"criteria survive the envelope","type":"functional","verifiable":true}]}'
+    local envelope
+    envelope=$(jq -nc --arg r "$inner" '{type:"result",subtype:"success",is_error:false,result:$r}')
+
+    _with_mock_claude "$envelope" analyze_intent "Envelope" "body" "" "$test_dir" >/dev/null 2>&1 || true
+
+    if _has_criteria_schema "$test_dir/acceptance-criteria.json" &&
+       [[ "$(jq -r '.goal' "$test_dir/acceptance-criteria.json")" == "Unwrap the envelope" ]]; then
+        test_pass "CLI envelope is unwrapped into acceptance criteria"
+        return 0
+    fi
+    test_fail "CLI envelope should be unwrapped into acceptance criteria"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
+# Test: a markdown-fenced answer still yields usable criteria
+# ───────────────────────────────────────────────────────────────
+test_unwraps_fenced_answer() {
+    local test_dir="$TEMP_DIR/fenced-test"
+    mkdir -p "$test_dir"
+
+    local inner='```json
+{"version":1,"goal":"Fenced goal","criteria":[{"id":"ac-1","description":"fence is stripped","type":"functional","verifiable":true}]}
+```'
+    local envelope
+    envelope=$(jq -nc --arg r "$inner" '{type:"result",result:$r}')
+
+    _with_mock_claude "$envelope" analyze_intent "Fenced" "body" "" "$test_dir" >/dev/null 2>&1 || true
+
+    if _has_criteria_schema "$test_dir/acceptance-criteria.json" &&
+       [[ "$(jq -r '.goal' "$test_dir/acceptance-criteria.json")" == "Fenced goal" ]]; then
+        test_pass "Markdown-fenced criteria are unwrapped"
+        return 0
+    fi
+    test_fail "Markdown-fenced criteria should be unwrapped"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
+# Test: an off-schema answer falls back to defaults, never stored raw
+# ───────────────────────────────────────────────────────────────
+test_off_schema_answer_falls_back() {
+    local test_dir="$TEMP_DIR/offschema-test"
+    mkdir -p "$test_dir"
+
+    _with_mock_claude '{"type":"result","result":"I could not produce JSON."}' \
+        analyze_intent "Off schema" "body" "" "$test_dir" >/dev/null 2>&1 || true
+
+    if _has_criteria_schema "$test_dir/acceptance-criteria.json"; then
+        test_pass "Off-schema answer falls back to default criteria"
+        return 0
+    fi
+    test_fail "Off-schema answer should fall back to default criteria"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
 # Test: inject_failure_mode_analysis adds requirement to prompt
 # ───────────────────────────────────────────────────────────────
 test_inject_failure_mode_analysis() {
@@ -428,6 +517,9 @@ main() {
     test_format_criteria_for_prompt
     test_load_acceptance_criteria
     test_analyze_intent_fallback
+    test_unwraps_cli_envelope
+    test_unwraps_fenced_answer
+    test_off_schema_answer_falls_back
     test_inject_failure_mode_analysis
     test_failure_mode_validation_status
 
