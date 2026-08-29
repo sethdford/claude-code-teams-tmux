@@ -1,11 +1,1 @@
-Done.
-
-**What I did:**
-- Verified the reported error from the previous iteration (`scripts/sw-cost-test.sh:226`) is stale — the suite passes clean now (all tests ✓, exit 0).
-- Updated the README's E2E smoke-test marker comment from issue `#3540` to `#3548` (line at the end of `README.md`), refreshing the existing marker rather than appending a new line per pipeline run.
-- Ran the suites that a README change can actually affect: `check-version-consistency.sh` (version consistent: 3.3.0) and `sw-docs-test.sh` (18 passed, 0 failed).
-- Committed as `fc58e88a`, README only — the modified `.claude/` state files (`intelligence-cache.json`, `loop-state.md`, `test-holdout/manifest.json`) were left uncommitted since they're runtime artifacts, not part of this change.
-
-**One thing to flag:** I did not run the full `npm test` (162 suites) — a single HTML comment in the README has no reachable path into anything but the docs/version checks, both of which I ran and which pass. If the pipeline requires a full-suite green before merge, that still needs to happen in the test stage.
-
-LOOP_COMPLETE
+You've hit your weekly limit · resets Sep 3, 6pm (UTC)
