@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 16,
-      "last_seen": "2026-08-29T13:10:36Z",
+      "seen_count": 18,
+      "last_seen": "2026-08-29T13:07:56Z",
       "category": "test_failure"
     },
     {
@@ -50,8 +50,8 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
       "root_cause": "sw-pipeline-test.sh mock artifact generation regressed: plan/review stages no longer write plan.md/review.md, cascading to E2E, resume, cleanup, and complexity-skip tests that depend on those artifacts",
       "fix": "restore plan and review stage mocks in sw-pipeline-test.sh to write .claude/pipeline-artifacts/plan.md and review.md, and fix the jq numeric parse error in the low-complexity intelligence test",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T11:29:27Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-29T11:49:54Z",
       "category": "test_failure"
     },
     {
@@ -93,8 +93,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: 3.4.0\u001b[0m",
-      "root_cause": "sw-intent-analysis-test expects schema version 3.4.0 output that analyze_intent no longer emits, and sw-e2e-integration-test failed as a side effect of a stale pipeline lock left by a prior interrupted run",
-      "fix": "bump/align the intent-analysis JSON schema version field to 3.4.0 (or update the test's expected version) and clear the stale pipeline-3536 lock before rerunning e2e-integration-test",
+      "root_cause": "Memory promotion test expects a specific version string (3.4.0) in cross-repo pattern output, but the promoted memory entry is missing or has a mismatched schema/version field",
+      "fix": "Check the memory promotion function in sw-self-optimize.sh writes the expected version field (3.4.0) when copying cross-repo patterns, and update the test fixture or source to align",
       "seen_count": 1,
       "last_seen": "2026-08-29T10:11:17Z",
       "category": "test_failure"
