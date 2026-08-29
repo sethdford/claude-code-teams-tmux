@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 13,
-      "last_seen": "2026-08-29T06:19:22Z",
+      "seen_count": 14,
+      "last_seen": "2026-08-29T06:17:39Z",
       "category": "test_failure"
     },
     {
@@ -33,7 +33,7 @@
       "root_cause": "sw-e2e-integration-test hit the 301s timeout and sw-loop-test failed with exit 1, indicating a hung/slow real-integration test and a genuine loop harness regression",
       "fix": "investigate sw-loop-test failure output directly and increase or mock sw-e2e-integration-test's external calls to avoid the 300s timeout",
       "seen_count": 4,
-      "last_seen": "2026-08-29T05:16:50Z",
+      "last_seen": "2026-08-29T06:52:18Z",
       "category": "test_failure"
     },
     {
@@ -78,25 +78,16 @@
       "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
       "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
       "seen_count": 4,
-      "last_seen": "2026-08-29T05:46:12Z",
+      "last_seen": "2026-08-29T07:26:29Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test in the suite failed (127 PASS/1 FAIL) but the failing assertion is not present in the shown log tail, likely truncated before the failure output",
-      "fix": "Re-run the specific failing test suite with full output (no tail truncation) to identify the exact assertion, then fix the code or test",
+      "root_cause": "Cross-repo memory promotion test asserts patterns copy into another repo's memory store, but the copy step likely fails silently (path/key mismatch) so the destination remains empty",
+      "fix": "Check sw-self-optimize.sh's memory promotion function for the correct destination repo-hash path and ensure the copy write is verified before assertion",
       "seen_count": 1,
       "last_seen": "2026-08-28T22:51:44Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "_strip_benign_error_lines",
-      "root_cause": "Memory promotion test fails to copy cross-repo patterns, likely due to a stale fixture or path assumption in the self-optimize memory promotion logic",
-      "fix": "Inspect sw-self-optimize.sh memory promotion function and its test fixture paths, then align cross-repo pattern copy logic with expected test data",
-      "seen_count": 1,
-      "last_seen": "2026-08-29T07:05:28Z",
       "category": "test_failure"
     }
   ]
