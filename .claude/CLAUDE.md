@@ -677,7 +677,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-linear.sh` | 643 | Linear ↔ GitHub Bidirectional Sync |
 | `scripts/sw-logs.sh` | 353 | View and search agent pane logs |
 | `scripts/sw-loop.sh` | 2713 | Continuous agent loop harness for Claude Code |
-| `scripts/sw-memory.sh` | 2241 | Persistent Learning & Context System |
+| `scripts/sw-memory.sh` | 1411 | Persistent Learning & Context System |
 | `scripts/sw-mission-control.sh` | 473 | Terminal-based pipeline mission control |
 | `scripts/sw-model-router.sh` | 1056 | Intelligent Model Routing & Cost Optimization |
 | `scripts/sw-otel.sh` | 609 | OpenTelemetry Observability |
@@ -853,6 +853,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-daemon-triage-test.sh` | 267 | Unit tests for triage scoring |
 | `scripts/sw-lib-error-actionability-test.sh` | 213 |  |
 | `scripts/sw-lib-helpers-test.sh` | 229 | Unit tests for shared helper functions |
+| `scripts/sw-lib-memory-modules-test.sh` | 153 | Unit tests for the extracted modules |
 | `scripts/sw-lib-pipeline-detection-test.sh` | 391 | Unit tests for detection fns |
 | `scripts/sw-lib-pipeline-intelligence-test.sh` | 410 | Unit tests for intelligence |
 | `scripts/sw-lib-pipeline-quality-checks-test.sh` | 193 | Unit tests for quality |
