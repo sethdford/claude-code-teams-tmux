@@ -30,18 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
+        "primary_role": "tester",
         "secondary_roles": [
           "builder",
-          "tester",
-          "reviewer"
+          "devops"
         ],
-        "confidence": 0.92,
-        "reasoning": "Splitting sw-daemon.sh requires upfront architecture planning (identifying module boundaries, dependencies, split points) before implementation; builder executes refactoring, tester validates modularization, reviewer audits code quality.",
+        "confidence": 0.88,
+        "reasoning": "E2E test generation and automation is the core task; builder supports implementation, DevOps enables CI/CD integration",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1788010668,
+      "timestamp": 1788014356,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1666,33 +1665,33 @@
       "result": {
         "results": [
           {
-            "file": "retry-outcomes.json",
-            "relevance": 88,
-            "summary": "Shows build_failure retry strategy with 100% success rate using model_escalation over 5 attempts. Directly applicable to handling build stage failures and recovery patterns."
-          },
-          {
             "file": "failures.json",
-            "relevance": 74,
-            "summary": "Contains 11 test stage failures affecting the build pipeline including mock artifact regressions, loop iteration timeouts, and schema validation errors. Relevant for understanding build/test integration failures."
+            "relevance": 90,
+            "summary": "Contains 10+ test-stage failure patterns with detailed root causes and fixes. Directly informs the build stage what downstream errors to avoid and which code generation strategies have failed previously."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 68,
-            "summary": "Documents two successful builds with 3 iterations each, showing typical file patterns changed (.claude/*.json, scripts/*.sh), durations (45-150s), and test strategies. Provides baseline for expected build behavior."
+            "relevance": 85,
+            "summary": "Two proven success patterns show similar tasks succeeded in 3 iterations (45-150s) with standard template. Provides iteration strategy and file/test patterns the build stage should follow."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 75,
+            "summary": "Shows model_escalation strategy achieved 100% success rate on build_failure class. Directly applicable recovery strategy if the current build encounters issues."
           },
           {
             "file": "metrics.json",
-            "relevance": 62,
-            "summary": "Baseline metrics showing build_duration_s: 7095s and test_duration_s: 1459s. Critical for performance monitoring and detecting anomalies during current build stage execution."
+            "relevance": 60,
+            "summary": "Baseline metrics show build typically takes 7095s (2h) and test 1459s (24m). Helps calibrate expectations and detect if build is unusually slow."
           },
           {
-            "file": "issues.json",
-            "relevance": 48,
-            "summary": "Records timeout bug fix in daemon using semaphore pattern. Relevant if current build is experiencing timeout failures or stalls in the daemon/dispatch layer."
+            "file": "knowledge.json",
+            "relevance": 50,
+            "summary": "Test-stage failures (mktemp paths, JSON parsing) show common pitfalls in test execution. Informs what the build stage's generated code should avoid to pass downstream tests."
           }
         ]
       },
-      "timestamp": 1788012490,
+      "timestamp": 1788014346,
       "ttl": 1800
     },
     "5d5f818f0f75fc8f94c6b62721c49f34": {
@@ -1747,9 +1746,9 @@
     },
     "600fa5b3154e61429d45bc3ae0700603": {
       "result": {
-        "estimated_iterations": 2
+        "estimated_iterations": 1
       },
-      "timestamp": 1788012346,
+      "timestamp": 1788014264,
       "ttl": 1800
     },
     "ddcfb33d55a807ae7623f64446f5bf30": {
@@ -1881,33 +1880,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (test-repo-complexity, id: cc155bd4)",
-            "relevance": 85,
-            "summary": "Low complexity fix with single iteration, build stage, npm test strategy - directly matches task profile"
+            "file": "test-repo/success-patterns.json",
+            "relevance": 90,
+            "summary": "Feature implementation with test files and iterative TDD approach; most closely matches pattern of adding E2E test functionality with file changes and test strategy"
           },
           {
-            "file": "success-patterns.json (hash-consistency-repo, id: 7803f0e)",
-            "relevance": 82,
-            "summary": "Low complexity pattern, build stage, npm test, 1 iteration - same execution profile as current task"
-          },
-          {
-            "file": "success-patterns.json (test-repo-corrupt, id: b0f17829)",
+            "file": "test-repo-complexity/success-patterns.json",
             "relevance": 80,
-            "summary": "Low complexity fix, build stage, npm test strategy, single iteration - proven pattern for similar scope"
+            "summary": "Low-complexity build task with single iteration and npm test strategy; matches expected profile for simple README comment addition"
+          },
+          {
+            "file": "test-repo-ranking/success-patterns.json",
+            "relevance": 75,
+            "summary": "Two low-complexity patterns executed in build stage with npm test; generic but directly applicable to build-stage single-iteration tasks"
           },
           {
             "file": "index.json",
-            "relevance": 75,
-            "summary": "Build stage failure patterns with actionable test timeout fix - helps avoid common build loop issues"
+            "relevance": 65,
+            "summary": "Build stage failure pattern indexed with test timeout fix; useful fallback if E2E tests encounter timing issues"
           },
           {
-            "file": "success-patterns.json (test-repo-ranking, id: 26f541969)",
-            "relevance": 72,
-            "summary": "Low complexity build task with npm test strategy and single iteration - matches task complexity profile"
+            "file": "test-repo-corrupt/success-patterns.json",
+            "relevance": 60,
+            "summary": "Two low-complexity build patterns with npm test strategy; similar to test-repo-ranking but lower specificity"
           }
         ]
       },
-      "timestamp": 1788012472,
+      "timestamp": 1788014325,
       "ttl": 1800
     },
     "9474ef1eb41bd264f38cde1aba576ab4": {
