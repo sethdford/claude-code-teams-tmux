@@ -30,17 +30,18 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
+          "builder",
           "tester",
           "reviewer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.92,
+        "reasoning": "Splitting sw-daemon.sh requires upfront architecture planning (identifying module boundaries, dependencies, split points) before implementation; builder executes refactoring, tester validates modularization, reviewer audits code quality.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1788010668,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1402,319 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "2d892cf5ecd41f8e08b4c2f1cd236957": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete extraction leaving orphaned cost-tracking or discovery logic in sw-memory.sh",
+          "Circular dependencies or missing sourcing in new lib modules causing function lookup failures",
+          "Breaking changes in function signatures during extraction, causing test failures or runtime errors",
+          "Difficulty isolating concerns — cost-tracking and discovery logic may be intertwined with core memory functions",
+          "Test coverage gaps in the new lib modules if extraction is not comprehensive"
+        ],
+        "implementation_hints": [
+          "Start with grep analysis of sw-memory.sh to identify all cost-tracking functions and cross-pipeline-discovery functions, then map call sites",
+          "Create memory-cost.sh and memory-discovery.sh as minimal stubs first, then incrementally move logic with test validation after each move",
+          "Run existing test suites (sw-memory-test.sh, sw-memory-effectiveness-test.sh) after each extraction chunk to catch regressions immediately",
+          "Follow the existing lib/ pattern: check how sw-github-graphql.sh is sourced and exported to maintain consistency",
+          "Document which functions are public API vs internal helpers using consistent naming (e.g., _internal_function prefix for private)",
+          "Use a verification script that compares function counts and line counts before/after to ensure nothing was lost"
+        ]
+      },
+      "timestamp": 1788009887,
+      "ttl": 3600
+    },
+    "82b731f3e93742954a3abcc82b9f2bc5": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1788009899,
+      "ttl": 1800
+    },
+    "535f1eb63fe66a0f4c2e113848428024": {
+      "result": {
+        "estimated_cost_usd": 5.75,
+        "estimated_iterations": 4,
+        "estimated_tokens": 21500,
+        "likely_failure_stage": "test",
+        "confidence": 76
+      },
+      "timestamp": 1788009908,
+      "ttl": 3600
+    },
+    "3ed2c5b64e64351d712f962cd2d254d8": {
+      "result": {
+        "issue_type": "refactor",
+        "confidence": 0.85,
+        "secondary_domains": [
+          "code-organization",
+          "testing",
+          "architecture"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Straightforward extraction following established lib/ patterns, but requires deep understanding of sw-memory.sh functionality and zero tolerance for behavior change—all existing tests must pass unchanged."
+        },
+        "skill_plan": {
+          "plan": [
+            "architecture-design",
+            "systematic-debugging"
+          ],
+          "design": [
+            "architecture-design"
+          ],
+          "build": [],
+          "review": [
+            "testing-strategy",
+            "pr-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "testing-strategy"
+          ],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "architecture-design": "Define clear module boundaries between core memory logic, cost-tracking concerns, and cross-pipeline-discovery logic to ensure the extraction maintains the AGI-readiness clean-architecture goal.",
+          "systematic-debugging": "Issue #3240 attempted similar monolith-splitting on sw-loop.sh; reuse the successful patterns and guard against pitfalls from previous large file refactorings.",
+          "testing-strategy": "The acceptance criterion 'all existing tests pass unchanged' is non-negotiable; establish a test verification strategy that catches behavioral drift and validates cohesion of the new modules.",
+          "pr-quality": "Make the extraction reviewable by clearly showing what moved where, ensuring reviewers can verify functional equivalence and spot import/dependency issues."
+        },
+        "generated_skills": [
+          {
+            "name": "monolith-extraction-verification",
+            "reason": "Existing skills cover architecture and testing individually, but this refactor demands a coordinated approach: map source functions to target modules, verify no orphaned references, confirm all call sites updated. No existing skill bridges extraction mapping with verification.",
+            "content": "## Monolith Extraction & Refactoring Verification\n\nWhen splitting a large script into lib modules, use this approach to ensure correctness and reduce review burden:\n\n### Pre-Extraction Mapping\n1. **Identify extraction units** — Group related functions by concern (cost-tracking, discovery, core memory). Document which functions move to which new module.\n2. **Map dependency graph** — For each function being moved, list every function/variable it depends on and every function/variable that depends on it.\n3. **Identify cross-module dependencies** — Flag functions that depend on both cost-tracking AND discovery logic; these should stay in the main file or become a shared util.\n\n### Extraction Execution\n1. **Extract in dependency order** — Move functions with fewest dependencies first (leaf functions). Verify no circular imports.\n2. **Update all references** — Use `grep -rn` to find and verify all call sites are updated with new source paths.\n3. **Test one module at a time** — After each module extraction, run tests to catch import issues early.\n\n### Verification Checklist\n- [ ] All functions referenced in new modules are either: defined in that module, sourced from another module, or passed as parameters\n- [ ] `grep -rn 'function_name'` returns no orphaned references\n- [ ] No circular sourcing: module A sources B, B sources A\n- [ ] New modules start with `set -euo pipefail` and VERSION variable\n- [ ] All existing tests pass without modification (behavior-preserving extraction)\n- [ ] Each new module has at least one test file covering its exported functions\n\n### Review Template\nIn PR description, provide a matrix:\n```\n| Function | Old Location | New Location | Dependencies | Tested |\n|----------|--------------|--------------|--------------|--------|\n| ...      | sw-memory.sh | memory-cost  | ...          | ✓      |\n```\n\nThis makes verification mechanical for reviewers."
+          }
+        ],
+        "review_focus": [
+          "All existing tests (sw-memory-test.sh, sw-memory-effectiveness-test.sh) pass without modification—no behavior change",
+          "Function extraction completeness: grep for all moved functions to confirm no orphaned references remain in sw-memory.sh",
+          "Module cohesion: cost-tracking and discovery functions are properly grouped with no cross-cutting concerns",
+          "Import correctness: new modules are sourced correctly in sw-memory.sh; no circular dependencies",
+          "File size reduction: sw-memory.sh shrinks below 1500 lines after extraction",
+          "Follow lib/ patterns: new modules match established conventions in scripts/lib/ (VERSION, set -euo pipefail, test coverage)"
+        ],
+        "risk_areas": [
+          "Incomplete function extraction leaving orphaned references causing runtime failures on script load",
+          "Circular module dependencies (A sources B, B sources A) breaking the sourcing chain",
+          "Subtle behavioral change when moving functions that rely on script-wide variables or side effects",
+          "Missing test updates if existing tests reference extracted functions by their old source path",
+          "Breaking other scripts that may internally depend on sw-memory.sh internals (e.g., sw-daemon.sh sourcing undocumented helper functions)"
+        ]
+      },
+      "timestamp": 1788009973,
+      "ttl": 3600
+    },
+    "bf83908e8c8bd61a0e80e41ad83ab213": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 75,
+            "summary": "Contains 2 shell script refactoring patterns (.sh files) with completion times, iterations, and root causes - directly applicable to planning daemon.sh modularization"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 70,
+            "summary": "Shell script fix pattern with scripts/ file patterns and detailed metrics (iterations, cost, completion time) useful for estimating daemon refactoring scope"
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 65,
+            "summary": "Shell script completion pattern with baseline metrics for shell-based refactoring work - provides cost and iteration estimates"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 55,
+            "summary": "Shell script patterns with test.sh files showing refactoring approach strategies and completion benchmarks, though with less detailed planning context"
+          },
+          {
+            "file": "index.json",
+            "relevance": 35,
+            "summary": "Failure pattern index documenting test strategy and timeouts - secondary relevance for understanding testing approach during modularization"
+          }
+        ]
+      },
+      "timestamp": 1788010023,
+      "ttl": 1800
+    },
+    "fe0de8c047f7046b7bc97caf21b69df6": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 28,
+            "summary": "Contains test failure pattern detection with practical fix suggestions (timeout adjustment). Relevant since context mentions 'rejected plan validation failures' — understanding what validations failed is critical to moving forward."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 22,
+            "summary": "Tracks architectural rules for module boundaries and separation. Relevant to refactoring task that splits sw-daemon.sh into separate modules — ensures extracted modules respect architectural constraints."
+          },
+          {
+            "file": "success-patterns.json (test-repo entry with 'add auth module')",
+            "relevance": 18,
+            "summary": "Shows multi-file refactoring pattern with iterative approach (5 iterations, multiple files changed). Provides a template for complex refactoring tasks similar to daemon module splitting, though limited by being TypeScript-focused rather than bash-specific."
+          }
+        ]
+      },
+      "timestamp": 1788010185,
+      "ttl": 1800
+    },
+    "4e2a8629a468dbfe46fc3d6b539e3451": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Contains architecture rules directly applicable to design-stage decisions. Provides rule-based constraints for modularization patterns when splitting sw-daemon.sh."
+          },
+          {
+            "file": "success-patterns.json (add auth module pattern)",
+            "relevance": 70,
+            "summary": "Demonstrates successful modular TDD approach with module isolation. Relevant precedent for iterative design of daemon submodules; moderate complexity (60), multi-file changes pattern."
+          },
+          {
+            "file": "index.json",
+            "relevance": 40,
+            "summary": "Pattern detection framework showing how to classify and structure architectural patterns. Useful reference for designing detection/validation patterns in new daemon modules."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 25,
+            "summary": "Fleet-scale knowledge base for daemon operations. While empty now, structure is relevant for cross-module daemon communication patterns in multi-repo scenarios."
+          },
+          {
+            "file": "success-patterns.json (Specific test goal pattern)",
+            "relevance": 15,
+            "summary": "Minimal information but represents captured design outcome baseline. Low-complexity pattern template for reference only."
+          }
+        ]
+      },
+      "timestamp": 1788010408,
+      "ttl": 1800
+    },
+    "1e36cef7a6f15d882e890da9e4db5d01": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 22,
+            "summary": "Shows iterative TDD approach with module isolation for feature work; modular design patterns are loosely applicable to daemon refactoring, but pattern is for auth module not bash daemon scripts"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 15,
+            "summary": "Contains generic architecture rules that could define module boundaries; lacks specificity for bash script modularization or daemon patterns"
+          },
+          {
+            "file": "index.json",
+            "relevance": 8,
+            "summary": "Tracks failure patterns and fixes; has minimal applicability since it focuses on test timeouts, not design approaches or daemon module splitting anti-patterns"
+          }
+        ]
+      },
+      "timestamp": 1788010425,
+      "ttl": 1800
+    },
+    "e676a5f285bba3546df0eaab9f04688d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 45,
+            "summary": "Shell script build stage pattern with npm test strategy; demonstrates low-complexity shell script fixes in the build stage"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 35,
+            "summary": "Build stage shell script patterns (test.sh) with npm test strategy; shows iterative build-stage approach"
+          },
+          {
+            "file": "index.json",
+            "relevance": 30,
+            "summary": "Tracks build stage failure patterns with test strategy; provides failure signature context for build-stage work"
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 25,
+            "summary": "Feature implementation with iterative TDD approach; demonstrates file-based pattern tracking for complex work"
+          },
+          {
+            "file": "success-patterns.json (5112be9b...)",
+            "relevance": 15,
+            "summary": "Generic build stage pattern with npm test strategy; minimal actionable content"
+          }
+        ]
+      },
+      "timestamp": 1788010634,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains successful build approaches from prior runs: iteration counts (3-4), file patterns changed, typical durations (45-150s), commit strategies, and cost baselines. Directly informs what coding approach and loop iteration strategy worked before."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 90,
+            "summary": "Shows model_escalation strategy for build_failure class with 100% success rate (5/5 successes). Guides when and how to recover from build failures during this iteration cycle."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Provides baseline expectations: build_duration_s=7095s (~118 min) and test_duration_s=1459s (~24 min). Informs resource budgeting and timeout thresholds for the current build stage."
+          },
+          {
+            "file": "issues.json",
+            "relevance": 60,
+            "summary": "Documents known issue (timeout bug in daemon) with working solution (added semaphore). Relevant if build encounters similar timeout or synchronization issues during this run."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Catalogs test-stage failures from recent runs (jq parsing, artifact generation, test fixtures). Informative for understanding what can break downstream after build completes, though less directly relevant to current build activities."
+          }
+        ]
+      },
+      "timestamp": 1788010657,
+      "ttl": 1800
+    },
+    "5d5f818f0f75fc8f94c6b62721c49f34": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788011024,
+      "ttl": 1800
+    },
+    "61706fe41085715e25a848f893c079d1": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788011262,
+      "ttl": 1800
     }
   }
 }
