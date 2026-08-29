@@ -6,7 +6,7 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 19,
-      "last_seen": "2026-08-29T14:45:25Z",
+      "last_seen": "2026-08-29T14:13:24Z",
       "category": "test_failure"
     },
     {
@@ -93,19 +93,10 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: 3.4.0\u001b[0m",
-      "root_cause": "Memory promotion test expects a specific version string (3.4.0) in cross-repo pattern output, but the promoted memory entry is missing or has a mismatched schema/version field",
-      "fix": "Check the memory promotion function in sw-self-optimize.sh writes the expected version field (3.4.0) when copying cross-repo patterns, and update the test fixture or source to align",
+      "root_cause": "sw-intent-analysis-test expects schema version 3.4.0 but analyze_intent output is missing required fields (version, goal, criteria), likely due to an unbumped/stale schema version constant",
+      "fix": "Sync the intent analysis schema version and required-field output to 3.4.0 in the analyze_intent implementation so generated JSON matches the test's expected schema",
       "seen_count": 1,
       "last_seen": "2026-08-29T10:11:17Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "FAIL: 0",
-      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan.md/review.md artifacts aren't created (mock plan/review stage writing broken) and the RL policy learner emits jq parse errors from a non-numeric literal, cascading into skip/cleanup/resume test failures",
-      "fix": "Fix the plan/review mock stage functions to write .claude/pipeline-artifacts/plan.md and review.md, and fix the RL policy JSON output to emit valid numeric literals before jq parses it",
-      "seen_count": 1,
-      "last_seen": "2026-08-29T14:00:01Z",
       "category": "test_failure"
     }
   ]
