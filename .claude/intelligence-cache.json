@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "optimizer"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "System design task to integrate diff-size and iteration-velocity anomaly detection into existing pipeline vitals; requires architecture decisions on metric collection, anomaly thresholds, and UI integration, plus builder implementation and optimizer expertise on metrics analysis.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1788010542,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,234 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "48d6614244f855c42ad75b0e5cf4052b": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 85,
+        "recommended_template": "fast",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Missing or incomplete baseline data for new repos requires graceful degradation",
+          "Event deduplication logic must prevent spam from repeated anomaly detections",
+          "Metric collection timing during active pipeline execution",
+          "Multiplier threshold validation and edge cases (e.g., < 1.0, missing config)"
+        ],
+        "implementation_hints": [
+          "Use _smart_int pattern to read vitals.anomaly_multiplier from daemon-config.json (default 3)",
+          "Parse baseline JSON files from ~/.shipwright/baselines/<repo-hash>/ - already structured by existing baseline tracking",
+          "Compare current diff-size and iteration-velocity against (baseline * multiplier) threshold",
+          "Dedup by checking events.jsonl: only emit pipeline_vitals_anomaly event if not already present for this run_id",
+          "Add 'anomaly_detected' boolean and 'anomaly_reason' fields to vitals JSON output structure",
+          "Test with mock baselines covering: threshold crossing, missing baselines, dedup across multiple vitals polls"
+        ]
+      },
+      "timestamp": 1788009950,
+      "ttl": 3600
+    },
+    "699cab6e965b4e4469c2a00b2cf82e57": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1788009961,
+      "ttl": 1800
+    },
+    "e60f4a0a32a1bff95abe1938a81a267c": {
+      "result": {
+        "estimated_cost_usd": 0.28,
+        "estimated_iterations": 1,
+        "estimated_tokens": 19500,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1788009970,
+      "ttl": 3600
+    },
+    "6b4ee301cb6ce2d0d56933306faf85ae": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo: add auth module)",
+            "relevance": 75,
+            "summary": "Rich pattern for complex feature development (complexity 60, 5 iterations). Documents iterative TDD approach, file patterns, test strategy—directly applicable to planning a robust monitoring feature."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 60,
+            "summary": "Shows build stage execution patterns with documented stages_executed, test_strategy, and file_patterns. Useful for understanding pipeline mechanics relevant to diff-size and velocity analysis."
+          },
+          {
+            "file": "index.json",
+            "relevance": 50,
+            "summary": "Contains test failure patterns and recovery strategies across stages. Relevant for designing anomaly detection that handles edge cases in pipeline execution."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 40,
+            "summary": "Documents pattern tracking, completion time, and cost metrics. Useful reference for iterating on monitoring feature implementation despite lower complexity than target feature."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 35,
+            "summary": "Contains architecture rules that new monitoring code must follow. Essential for ensuring feature aligns with existing codebase structure and conventions."
+          }
+        ]
+      },
+      "timestamp": 1788010116,
+      "ttl": 1800
+    },
+    "295a1f538b6206cddb754a8ecb6c7139": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Contains failure pattern data for build stage with test timeout issues and fixes; directly relevant to plan validation and build pipeline vitals"
+          },
+          {
+            "file": "success-patterns.json (test1 entry)",
+            "relevance": 68,
+            "summary": "Shows successful pattern with 5 iterations, complexity=60, files_changed data, and test strategy; relevant for understanding iteration velocity and diff patterns in passing builds"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity entry)",
+            "relevance": 58,
+            "summary": "Low complexity pattern with single iteration and file tracking; provides baseline for simple case validation and error signature tracking"
+          }
+        ]
+      },
+      "timestamp": 1788010316,
+      "ttl": 1800
+    },
+    "31e216f8b91bec2388963538eb0b787c": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 95,
+            "summary": "Directly relevant — contains architecture rules and patterns that inform design-stage decisions for pipeline vitals features"
+          },
+          {
+            "file": "success-patterns.json (test-repo: add auth module)",
+            "relevance": 82,
+            "summary": "Feature design pattern demonstrating complexity scoring, iteration tracking, TDD approach, and file patterns — applicable to designing diff-size and velocity metrics"
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Pattern indexing structure with examples — shows how to organize and categorize design patterns relevant to anomaly detection and pipeline vitals"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 65,
+            "summary": "Baseline metrics structure — directly applicable to tracking and establishing baselines for diff-size and iteration-velocity anomalies"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 58,
+            "summary": "Cross-pipeline learning infrastructure — relevant for detecting anomalies across multiple pipeline runs and sharing architectural patterns fleet-wide"
+          }
+        ]
+      },
+      "timestamp": 1788010362,
+      "ttl": 1800
+    },
+    "90cfc4d361d7880b05681edf8fec69bc": {
+      "result": {
+        "results": [
+          {
+            "file": "decisions.json",
+            "relevance": 25,
+            "summary": "Designed to track rejected design decisions and approaches, but currently empty. Would be the canonical location for anti-patterns specific to this feature."
+          },
+          {
+            "file": "index.json",
+            "relevance": 15,
+            "summary": "Contains failure pattern signatures (e.g., test_failure in build stage). While not specific to this feature, failure patterns are related to anti-patterns to avoid."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 10,
+            "summary": "Designed to track failed approaches and their root causes, but currently empty. Would hold rejected design anti-patterns if populated."
+          }
+        ]
+      },
+      "timestamp": 1788010375,
+      "ttl": 1800
+    },
+    "8284dc1d46001aa114c6166a8d5a04a7": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo: add auth module)",
+            "relevance": 65,
+            "summary": "Shows iterative feature development (5 iterations, TDD approach) with test strategy and file change patterns — directly applicable to building a feature in the build stage"
+          },
+          {
+            "file": "index.json",
+            "relevance": 55,
+            "summary": "Contains build stage pattern for test failures with documented fix (timeout adjustment) — provides concrete build-stage remediation that may be useful during iterations"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking: First pattern)",
+            "relevance": 40,
+            "summary": "Shows successful build-stage pattern with npm test strategy and high confidence (85%) — establishes baseline for single-iteration fixes"
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt: Valid pattern)",
+            "relevance": 35,
+            "summary": "Build-stage success pattern with metadata on cost and duration — provides context for build loop resource estimation"
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo: Specific test goal)",
+            "relevance": 30,
+            "summary": "Generic build-stage pattern with test strategy — minimal relevance but documents npm test execution baseline"
+          }
+        ]
+      },
+      "timestamp": 1788010515,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 95,
+            "summary": "Shows model_escalation strategy has 100% success rate (5/5) for build_failure class, directly applicable when build stage encounters issues"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Two successful build patterns (complexity 60-65, 3 iterations each) demonstrate proven approaches: loop iterations, npm test strategy, and multi-file commits"
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 60,
+            "summary": "Baseline metrics show build_duration_s=7095s and test_duration_s=1459s, useful for detecting performance regressions or timeouts during build stage"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Recent test stage failures (jq parse errors, artifact generation regression, stale locks) inform what can cascade from build into test stage"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project metadata (Node/vitest/npm) establishes build environment context; test_pattern and import_style inform code generation during build"
+          }
+        ]
+      },
+      "timestamp": 1788010530,
+      "ttl": 1800
+    },
+    "2926af505f4dfbcce13f6e468213ac7b": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788010819,
+      "ttl": 1800
     }
   }
 }
