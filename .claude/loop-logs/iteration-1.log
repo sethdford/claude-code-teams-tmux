@@ -1,13 +1,24 @@
-I'll hold here until the full-suite monitor reports. Summary of this iteration's work:
+Committed `0bbc4d81`.
 
-**Extraction** — `sw-memory.sh` 2241 → **1411 lines** (under the 1500 budget):
-- `scripts/lib/memory-discovery.sh` (764) — pattern capture, fix outcomes, global aggregation, failure analysis
-- `scripts/lib/memory-cost.sh` (165) — DORA baseline, metric read/write
+**What I did:** added an HTML comment at the top of `README.md` telling maintainers that version numbers/badges are generated and to use `shipwright version bump` / `version check` instead of editing by hand.
 
-**Proof it's a pure move, not a rewrite** — sourced the pre-refactor and post-refactor versions side by side and diffed `declare -f` for every function: all **206 runtime function bodies are byte-identical**. No caller can observe the change. Callers (`sw-loop.sh`, `sw-pipeline.sh`, `sw-retro.sh`) reach these via sourcing `sw-memory.sh` or behind `type` guards — both still resolve.
+**Tests run** (targeted — the change is a comment in one markdown file, so I ran the version check plus every suite that touches `README.md` rather than the full 141-suite run):
 
-**Tests** — new `sw-lib-memory-modules-test.sh` (40 assertions, auto-discovered by `sw-test-all.sh`) covers that each moved function lives in exactly one file rather than being copied, reachability of all 15 functions, module-guard idempotency, and behavior of `memory_get_actionable_failures`, `memory_track_fix`, `memory_get_dora_baseline`, and the metric round-trip. Existing `sw-memory-test.sh` (22), `sw-memory-effectiveness-test.sh` (16), and `sw-memory-discovery-e2e-test.sh` (16) pass unchanged. CLI smoke tests pass, and the script still degrades safely if a lib is absent. Shellcheck is clean under CI's exact flags, and docs AUTO sections are synced.
+| Suite | Result |
+|---|---|
+| `check-version-consistency.sh` | consistent at 3.3.0 |
+| `sw-docs-test.sh` | 18/18 |
+| `sw-docs-agent-test.sh` | 14/14 |
+| `sw-doc-fleet-test.sh` | 48/48 |
+| `sw-adversarial-review-test.sh` | 29/29 |
+| `sw-dod-scorecard-test.sh` | 32/32 |
 
-Two things I'd flag rather than decide silently:
-- The issue title/body mismatch described above — if `sw-daemon.sh` was genuinely intended, that's separate work and this doesn't address it.
-- I have **not** yet confirmed the full `npm test` run; the memory-related suites are green but the repo-wide result is still pending, so I'm not calling this done.
+**Skill-required sections:**
+- *Test pyramid / coverage targets / critical paths* — skipped as not applicable: this change adds no code and no new behavior, so there is nothing to write unit, integration, or E2E tests for. The relevant verification was regression-only (existing suites still pass).
+- *What to document*: `README.md` — one maintainer comment block above the logo. *What to skip*: the release process itself is already documented in `.claude/CLAUDE.md` ("Maintainer / Release"), so the comment points at the commands rather than duplicating them. *Audience*: maintainers editing the README, who need one line of redirection, not a procedure.
+
+**Pre-existing issue found, not fixed** (out of scope): `scripts/sw-adversarial-review-test.sh:1` has a mangled shebang — `#\!/usr/bin/env bash` — so running it directly falls through to `sh` and dies on `set -o pipefail`. It's the only script in `scripts/` with this, and `npm test` invokes every suite with an explicit `bash`, so CI is unaffected. Worth a one-character fix in a separate change.
+
+Goal achieved.
+
+LOOP_COMPLETE
