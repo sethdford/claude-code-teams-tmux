@@ -1,3 +1,8 @@
+<!--
+  Maintainer note: version numbers and badges in this file are generated.
+  Run `shipwright version bump <x.y.z>` (canonical source: package.json) rather
+  than editing them by hand, and `shipwright version check` to verify.
+-->
 <p align="center">
   <img src="website/src/assets/logo-dark.svg" alt="Shipwright" width="200">
 </p>
