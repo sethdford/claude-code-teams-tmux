@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 14,
-      "last_seen": "2026-08-29T06:13:06Z",
+      "seen_count": 15,
+      "last_seen": "2026-08-29T07:06:04Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
       "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
-      "seen_count": 2,
-      "last_seen": "2026-08-27T23:56:55Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-29T05:14:04Z",
       "category": "test_failure"
     },
     {
@@ -77,8 +77,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
       "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
-      "seen_count": 3,
-      "last_seen": "2026-08-29T05:31:57Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-29T06:26:45Z",
       "category": "flaky"
     },
     {
@@ -93,11 +93,11 @@
     {
       "stage": "test",
       "pattern": "FAIL: 0",
-      "root_cause": "No actual failure — FAIL: 0 across all suites; log shows the pipeline's error-pattern matcher misfired on the literal string 'FAIL: 0' in passing test summaries",
-      "fix": "Tighten the failure-detection regex to require FAIL count > 0 (e.g. match 'FAIL: [1-9]') instead of matching any 'FAIL:' line",
+      "root_cause": "Memory promotion test expects cross-repo pattern copying but the promotion function isn't copying patterns between repo memory stores as expected",
+      "fix": "Check sw-self-optimize.sh memory promotion logic against the test's expected repo-hash path/fixture setup and correct the copy condition",
       "seen_count": 1,
       "last_seen": "2026-08-29T02:59:31Z",
-      "category": "config"
+      "category": "test_failure"
     }
   ]
 }
