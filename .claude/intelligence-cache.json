@@ -30,17 +30,9 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "architect",
-        "secondary_roles": [
-          "builder",
-          "optimizer"
-        ],
-        "confidence": 0.85,
-        "reasoning": "System design task to integrate diff-size and iteration-velocity anomaly detection into existing pipeline vitals; requires architecture decisions on metric collection, anomaly thresholds, and UI integration, plus builder implementation and optimizer expertise on metrics analysis.",
-        "new_role_needed": false,
-        "suggested_role": null
+        "raw_response": "Mock claude response"
       },
-      "timestamp": 1788010542,
+      "timestamp": 1788014202,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1661,9 +1653,9 @@
     },
     "4551632e874b3a9e9642992508f13096": {
       "result": {
-        "estimated_iterations": 1
+        "estimated_iterations": 2
       },
-      "timestamp": 1788011645,
+      "timestamp": 1788013606,
       "ttl": 1800
     },
     "085c4b90febc2ace21a64e9e1885ad72": {
@@ -1742,33 +1734,33 @@
       "result": {
         "results": [
           {
-            "file": "test-repo-complexity/success-patterns.json",
-            "relevance": 95,
-            "summary": "Low complexity build fix with 1 iteration, npm test strategy, scripts/test.sh pattern — exact match for simple E2E test scenario"
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 85,
+            "summary": "Low-complexity build stage pattern with npm test strategy, 1 iteration needed, documented root cause (typo). Directly matches current task complexity profile."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 80,
+            "summary": "Two low-complexity build stage patterns with npm test strategy, 1 iteration each, high confidence (85%). Strong match for automated E2E test task."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 78,
+            "summary": "Two low-complexity build stage patterns with npm test strategy, documented root causes. Similar profile to README comment addition task."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 75,
+            "summary": "Single low-complexity build stage pattern with npm test strategy, 1 iteration needed. Focused outcome tracking relevant to build stage success."
           },
           {
             "file": "index.json",
-            "relevance": 88,
-            "summary": "Build stage test_failure pattern seen 5 times with concrete fix (timeout adjustment) — proven pattern for test execution issues"
-          },
-          {
-            "file": "test-repo-ranking/success-patterns.json",
-            "relevance": 85,
-            "summary": "Two low complexity build patterns with 1 iteration each, npm test strategy — directly applicable baseline for simple builds"
-          },
-          {
-            "file": "test-repo-corrupt/success-patterns.json",
-            "relevance": 82,
-            "summary": "Two build stage patterns, low complexity, 1 iteration each, npm test — consistent pattern for minimal-change builds"
-          },
-          {
-            "file": "hash-consistency-repo/success-patterns.json",
-            "relevance": 80,
-            "summary": "Build stage low complexity pattern, 1 iteration, npm test with scripts/test.sh — aligned with E2E test build expectations"
+            "relevance": 70,
+            "summary": "Contains build stage failure pattern (test_failure) with documented fix (increase timeout). Provides common failure mitigation strategy for build stage."
           }
         ]
       },
-      "timestamp": 1788011745,
+      "timestamp": 1788013662,
       "ttl": 1800
     },
     "33781d9410d3aaa3e502de0e37c55e42": {
@@ -1846,6 +1838,62 @@
         }
       ],
       "timestamp": 1788012768,
+      "ttl": 1800
+    },
+    "7e2e4e25af6bad4961e7d02e64b9cfbf": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788013612,
+      "ttl": 1800
+    },
+    "c9455268b7780db07404a08417fcd156": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788013740,
+      "ttl": 1800
+    },
+    "da4d058e9c2e517d1f05120dff1bc024": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788013795,
+      "ttl": 1800
+    },
+    "a923b058d9a477758da6d26544a01c4f": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788014010,
+      "ttl": 1800
+    },
+    "ef87c2dcfed03117064dfbccfb736c0f": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788014085,
       "ttl": 1800
     }
   }

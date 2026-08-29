@@ -13,38 +13,40 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "test-repo-complexity/success-patterns.json",
-      "relevance": 95,
-      "summary": "Low complexity build fix with 1 iteration, npm test strategy, scripts/test.sh pattern — exact match for simple E2E test scenario"
+      "file": "success-patterns.json (test-repo-complexity)",
+      "relevance": 85,
+      "summary": "Low-complexity build stage pattern with npm test strategy, 1 iteration needed, documented root cause (typo). Directly matches current task complexity profile."
+    },
+    {
+      "file": "success-patterns.json (test-repo-ranking)",
+      "relevance": 80,
+      "summary": "Two low-complexity build stage patterns with npm test strategy, 1 iteration each, high confidence (85%). Strong match for automated E2E test task."
+    },
+    {
+      "file": "success-patterns.json (test-repo-corrupt)",
+      "relevance": 78,
+      "summary": "Two low-complexity build stage patterns with npm test strategy, documented root causes. Similar profile to README comment addition task."
+    },
+    {
+      "file": "success-patterns.json (hash-consistency-repo)",
+      "relevance": 75,
+      "summary": "Single low-complexity build stage pattern with npm test strategy, 1 iteration needed. Focused outcome tracking relevant to build stage success."
     },
     {
       "file": "index.json",
-      "relevance": 88,
-      "summary": "Build stage test_failure pattern seen 5 times with concrete fix (timeout adjustment) — proven pattern for test execution issues"
-    },
-    {
-      "file": "test-repo-ranking/success-patterns.json",
-      "relevance": 85,
-      "summary": "Two low complexity build patterns with 1 iteration each, npm test strategy — directly applicable baseline for simple builds"
-    },
-    {
-      "file": "test-repo-corrupt/success-patterns.json",
-      "relevance": 82,
-      "summary": "Two build stage patterns, low complexity, 1 iteration each, npm test — consistent pattern for minimal-change builds"
-    },
-    {
-      "file": "hash-consistency-repo/success-patterns.json",
-      "relevance": 80,
-      "summary": "Build stage low complexity pattern, 1 iteration, npm test with scripts/test.sh — aligned with E2E test build expectations"
+      "relevance": 70,
+      "summary": "Contains build stage failure pattern (test_failure) with documented fix (increase timeout). Provides common failure mitigation strategy for build stage."
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 7 new discoveries
+✓ Injected 9 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Pre-Build Diff-Size and Iteration-Velocity Anomaly Warning in Pipeline Vitals — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -78,8 +80,8 @@ status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-08-29T14:13:03Z
-last_iteration_at: 2026-08-29T14:13:03Z
+started_at: 2026-08-29T14:27:44Z
+last_iteration_at: 2026-08-29T14:27:44Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
