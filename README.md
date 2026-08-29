@@ -2,6 +2,10 @@
   Maintainer note: version numbers and badges in this file are generated.
   Run `shipwright version bump <x.y.z>` (canonical source: package.json) rather
   than editing them by hand, and `shipwright version check` to verify.
+
+  `shipwright docs wiki` publishes the first 50 lines of this file verbatim as
+  the wiki Home page — currently everything through the Table of Contents. Keep
+  that span self-contained; its relative links are read outside this repo.
 -->
 <p align="center">
   <img src="website/src/assets/logo-dark.svg" alt="Shipwright" width="200">

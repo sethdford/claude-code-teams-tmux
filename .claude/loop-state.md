@@ -41,10 +41,12 @@ Historical context (lessons from previous pipelines):
 }
 
 Discoveries from other pipelines:
-✓ Injected 5 new discoveries
+✓ Injected 7 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Split sw-daemon.sh into scripts/lib/daemon-*.sh Modules Beyond Existing Extraction — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 
@@ -146,8 +148,8 @@ status: running
 test_cmd: "npm test"
 model: opus
 agents: 1
-started_at: 2026-08-29T14:08:12Z
-last_iteration_at: 2026-08-29T14:08:12Z
+started_at: 2026-08-29T14:11:06Z
+last_iteration_at: 2026-08-29T14:11:06Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
