@@ -1401,6 +1401,269 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "20e14aa14ea51c278d83b6e1d7d9b583": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 77,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Misclassification of real errors as transient could hide genuine bugs and delay issue detection",
+          "Incorrect bypass of iteration/restart counters if transient detection logic doesn't properly propagate state",
+          "Overly aggressive backoff-retry logic causing delayed pipeline completion or masking systemic issues",
+          "Regression in existing error classification paths when inserting new transient tier ahead of code-error detection",
+          "Exponential backoff consuming excessive time before eventual failure if infra issue is persistent"
+        ],
+        "implementation_hints": [
+          "Implement transient-error detector as early pass in build-loop failure classification, before code-error tier",
+          "Detect transient signatures via regex patterns and exit codes: HTTP 429/503, ECONNRESET, ETIMEDOUT, EHOSTUNREACH, auth-expired (401/403 from Claude API)",
+          "Design exponential backoff with jitter (e.g., base 2^attempt + random(0..1s)) to avoid thundering herd on shared APIs",
+          "Ensure transient retries bypass iteration_count and restart_count increments; only backoff delay applies",
+          "Add classification_tier field to error-summary.json (values: transient_infra, code_error, unknown) for downstream vitals/memory stages",
+          "Cover unit tests: HTTP 429/503, ECONNRESET, socket timeout, auth-expired, and verify normal test failures NOT misclassified",
+          "Document all recognized transient error patterns and their detection signatures in build-loop logic",
+          "Consider parsing response headers (Retry-After) for API rate limits, not just status codes alone"
+        ]
+      },
+      "timestamp": 1787991609,
+      "ttl": 3600
+    },
+    "12d8cee813853b3b394f0ab63a00aa65": {
+      "result": {
+        "estimated_iterations": 5
+      },
+      "timestamp": 1787991621,
+      "ttl": 1800
+    },
+    "b63bbc7e2047c6651236ab2a1860ad57": {
+      "result": {
+        "estimated_cost_usd": 1.65,
+        "estimated_iterations": 2.5,
+        "estimated_tokens": 125000,
+        "likely_failure_stage": "build",
+        "confidence": 72,
+        "breakdown": {
+          "intake": {
+            "tokens": 2500,
+            "cost_usd": 0.08,
+            "effort": "low"
+          },
+          "plan": {
+            "tokens": 9500,
+            "cost_usd": 0.28,
+            "effort": "high"
+          },
+          "design": {
+            "tokens": 7000,
+            "cost_usd": 0.21,
+            "effort": "medium"
+          },
+          "build": {
+            "tokens": 28000,
+            "cost_usd": 0.85,
+            "effort": "xhigh",
+            "risk": "classification logic complexity, state propagation bugs"
+          },
+          "test": {
+            "tokens": 8500,
+            "cost_usd": 0.26,
+            "effort": "medium"
+          },
+          "review": {
+            "tokens": 18000,
+            "cost_usd": 0.55,
+            "effort": "xhigh"
+          },
+          "pr": {
+            "tokens": 2500,
+            "cost_usd": 0.08,
+            "effort": "low"
+          }
+        },
+        "iteration_factors": {
+          "base_iterations": 1.8,
+          "retry_probability": 0.23,
+          "context_restart_risk": 0.15,
+          "test_coverage_gap_risk": 0.18
+        },
+        "risk_adjusted": {
+          "pessimistic_cost_usd": 2.40,
+          "pessimistic_iterations": 3.5,
+          "pessimistic_tokens": 165000
+        },
+        "notes": "Infrastructure issues require careful error classification; exponential backoff logic prone to off-by-one errors and state tracking bugs. Build stage complexity elevated due to transient detection tier ordering and counter bypass logic. Review stage critical for state propagation validation."
+      },
+      "timestamp": 1787991635,
+      "ttl": 3600
+    },
+    "06de8b4536607fc3b6fb526164728843": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "reliability",
+          "testing",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Well-scoped infrastructure improvement with clear acceptance criteria. Primary complexity is in identifying robust transient error signatures and ensuring backoff logic doesn't interact unexpectedly with iteration counters. Integration with error-summary.json and downstream stages (vitals, memory) requires careful testing."
+        },
+        "skill_plan": {
+          "plan": [
+            "systematic-debugging",
+            "architecture-design"
+          ],
+          "design": [
+            "architecture-design",
+            "transient-failure-detector-design"
+          ],
+          "build": [
+            "testing-strategy",
+            "transient-failure-detector-design"
+          ],
+          "review": [
+            "adversarial-quality",
+            "observability"
+          ],
+          "compound_quality": [
+            "testing-strategy"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "systematic-debugging": "Current build-loop error classification must be reverse-engineered to identify the exact insertion point for transient detection; a failed first attempt would cost iteration budget, so structured investigation is critical.",
+          "architecture-design": "A new classification tier affects error handling contracts across build loop, vitals, memory, and daemon logic—an ADR will prevent downstream misunderstandings and guide test scope.",
+          "transient-failure-detector-design": "Transient error signatures (429, timeouts, auth-expired, connection resets) differ fundamentally from test failures; this skill provides pattern-matching heuristics and backoff strategies specific to this domain.",
+          "testing-strategy": "Acceptance criteria explicitly demand unit tests for HTTP 429, connection failures, auth signatures, and false-positive rejection of real test failures; a test-driven approach ensures coverage and prevents regressions.",
+          "adversarial-quality": "False positives (real code failures misclassified as transient) skip error context injection and break debugging; false negatives (transient errors not caught) waste restart budget—adversarial testing must probe these edge cases.",
+          "observability": "Distinguishing transient from code failures is useless without visibility; error-summary.json records the classification, but downstream consumers (vitals, memory, monitoring) must be instrumented to act on it.",
+          "pr-quality": "PR must explain what constitutes 'transient' vs 'code error' with concrete examples; reviewers need to understand why specific signatures were chosen to avoid misclassification post-merge."
+        },
+        "generated_skills": [
+          {
+            "name": "transient-failure-detector-design",
+            "reason": "No existing skill covers the specific patterns of transient infrastructure failures (429 rate-limits, connection resets, timeouts, auth-expired) or exponential backoff strategies that avoid incrementing iteration/restart counters. This requires domain-specific knowledge of failure signatures and build-loop state semantics.",
+            "content": "## Transient Failure Detection & Backoff Strategy\n\n### Identifying Transient Signatures\nTransient infrastructure errors are temporary, retryable, and indicate no code change is needed. Distinguish these from code/test failures:\n\n**HTTP/Network Signatures:**\n- Exit code 28: curl timeout (OPERATION_TIMEDOUT)\n- Exit code 35: SSL/TLS connection reset (SSL_CONNECT_ERROR)\n- Exit code 52: empty HTTP response (NO_CONTENT_LENGTH)\n- HTTP 429: rate-limit (check response headers for Retry-After)\n- HTTP 503: service unavailable (transient)\n- \"Connection reset by peer\" / \"No route to host\" in stderr\n\n**Auth Signatures:**\n- \"401 Unauthorized\" with Auth-related headers (token expired)\n- \"credentials expired\" in stderr\n- EACCES on GitHub API calls\n\n**Test Infrastructure:**\n- \"Timeout waiting for...\" in test runner output\n- \"ECONNREFUSED\" from database/cache connections\n- \"Port already in use\" (flaky test isolation)\n\n### Backoff Strategy (Without Iteration Cost)\n```\nBackoff(attempt) = min(base * (multiplier ^ attempt), max_delay) + jitter\nDefaults: base=100ms, multiplier=2, max_delay=30s, jitter=±10%\nMax retries: 5 for transient, fail after that\n```\n\n**Critical:** Transient retries must:\n- NOT increment loop iteration counter (stays at N for user's mental model)\n- NOT consume restart budget (detected before restart logic)\n- Record retry count in error-summary.json under `transient_retries` field\n- Log backoff delay and attempt number for debugging\n\n### Backoff Placement in Build Loop\n```\n1. Command fails (exit code X)\n2. Check exit code/stderr against transient signatures\n3. If transient detected:\n   a. Calculate backoff delay\n   b. Sleep + retry (loop 5 times max)\n   c. Record in error-summary.json: {\"classification\": \"transient_infra\", \"retries\": N}\n   d. If retries exhausted, fall through to normal classification\n4. If NOT transient:\n   a. Proceed to existing code-error classification logic\n   b. Record in error-summary.json: {\"classification\": \"code_error\"}\n```\n\n### false-Positive Prevention\n- Never classify test output with actual failures (FAILED, AssertionError) as transient\n- Never classify compilation errors or syntax errors as transient\n- Transient check must happen on COMMAND exit code + stderr, not test output parsing\n- Add an explicit allowlist: only known transient signatures trigger backoff, not catch-all patterns\n\n### error-summary.json Schema Update\n```json\n{\n  \"classification\": \"transient_infra|code_error\",\n  \"transient_retries\": 3,\n  \"backoff_final_delay_ms\": 8000,\n  \"signature_matched\": \"http_429\",\n  \"error_snippet\": \"Rate limit exceeded...\"\n}\n```\n\n### Testing Checklist\n- Unit test: HTTP 429 detected as transient, retried up to 5 times\n- Unit test: ECONNREFUSED detected as transient\n- Unit test: Timeout (exit 28) detected as transient\n- Unit test: Auth-expired (401) detected as transient\n- Unit test: Actual test failure (FAILED in output) NOT misclassified as transient\n- Integration test: Transient backoff doesn't increment loop iteration counter\n- Integration test: Transient backoff doesn't consume restart budget\n- Edge case: Transient detected on iteration 10, retries 3 times and succeeds → iteration count stays 10"
+          }
+        ],
+        "review_focus": [
+          "Transient error signature matching: verify regex/exit-code patterns don't create false positives (real failures misclassified) or false negatives (transient failures missed)",
+          "Iteration counter and restart budget mutation: ensure backoff+retry logic is completely isolated from loop counters, no accidental increments during transient handling",
+          "error-summary.json schema: confirm classification tier, retry count, and matched signature are recorded so downstream stages (vitals, memory, monitoring) can differentiate infra flakiness from regressions",
+          "Backoff exponential formula: verify exponential backoff is correctly implemented with jitter to prevent thundering herd, and max retries prevent infinite loops",
+          "Integration with existing error classification: transient detector must run BEFORE existing code-error logic, with clear fallthrough to normal classification if not transient"
+        ],
+        "risk_areas": [
+          "False positive: real code failure (assertion failure, test timeout due to slow code) misclassified as transient → skips error context injection and makes debugging impossible",
+          "False negative: transient error not caught by signature matchers → burns restart budget unnecessarily",
+          "State mutation: backoff retry increments iteration counter by accident, breaking user's mental model of loop progress",
+          "Infinite backoff: max retries not enforced or jitter/timeout logic allows retry loop to never exit",
+          "Downstream observer blindness: vitals/memory stages don't consume error-summary.json classification tier, treat all failures as code errors"
+        ]
+      },
+      "timestamp": 1787991714,
+      "ttl": 3600
+    },
+    "08d524d2ec6f075db42208805db5afe0": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 85,
+            "summary": "Contains failure patterns with pattern_type: 'failure', test_failure signature, and build stage tracking. Directly relevant to build-loop failure classification with actual fix suggestions."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 70,
+            "summary": "Tracks patterns with error_signatures field across build stage executions. Provides structure for capturing and classifying error types, essential for distinguishing error categories."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 65,
+            "summary": "Contains patterns with error_signatures field and build stage tracking. Demonstrates error signature collection methodology relevant to error classification architecture."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 60,
+            "summary": "Multiple patterns with error_signatures field and build stage information. Shows how error data is accumulated across multiple attempts, useful for failure pattern analysis."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 50,
+            "summary": "Captures root_cause field ('Typo') for patterns. Demonstrates root cause tracking which supports distinguishing code errors from infrastructure issues."
+          }
+        ]
+      },
+      "timestamp": 1787991761,
+      "ttl": 1800
+    },
+    "e34ae865e8d0e3d82e8378beccd8cc86": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Contains 'test_failure' pattern with 'Increase timeout value' fix — directly relevant to distinguishing transient infrastructure errors (timeouts/retries) from code errors in build stage"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 48,
+            "summary": "Tracks error_signatures field and build stage execution context; multiple patterns show how errors are captured and classified, informing error detection architecture"
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 44,
+            "summary": "Two patterns with error_signatures tracking; demonstrates multi-pattern error classification approach relevant to building distinction logic"
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 38,
+            "summary": "Contains error_signatures field and root_cause tracking ('Root'), showing how error metadata is captured for classification decisions"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 32,
+            "summary": "Architecture rules entry; relevant to design stage for defining rules that distinguish error categories (though current content is minimal)"
+          }
+        ]
+      },
+      "timestamp": 1787992041,
+      "ttl": 1800
+    },
+    "469bb865a11e3bbb73114f3d40378013": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 62,
+            "summary": "Contains a 'test_failure' pattern from the build stage with observed failure signatures and a practical fix approach (timeout adjustment). Most concrete data about build-stage error handling, though not specifically about transient vs code error classification."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 48,
+            "summary": "Contains architectural rules (rule1, rule2, rule3) relevant to the design phase. Could inform error classification architecture, though entries are generic placeholders without specific error taxonomy guidance."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 35,
+            "summary": "Shows two build-stage patterns with file patterns and test strategies. Demonstrates how fixes are approached in this repo, but patterns are generic ('First pattern', 'Second pattern') with no specific error classification or transient/infra error context."
+          }
+        ]
+      },
+      "timestamp": 1787992060,
+      "ttl": 1800
     }
   }
 }
