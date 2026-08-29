@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Memory Cost — DORA metrics, baselines & metric tracking             ║
-# ║  Deploy frequency · Cycle time · Change failure rate · MTTR          ║
+# ║  Memory Cost — DORA metrics, baselines & metric tracking                  ║
+# ║  Deploy frequency · Cycle time · Change failure rate · MTTR               ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 #
 # Extracted from sw-memory.sh — pure move, no behavior change.
@@ -12,6 +12,7 @@
 # Module guard
 [[ -n "${_MEMCOST_LOADED:-}" ]] && return 0
 _MEMCOST_LOADED=1
+set -euo pipefail
 
 VERSION="3.3.0"
 

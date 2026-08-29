@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Memory Discovery — pattern capture & cross-pipeline learning         ║
-# ║  Captures failures · Records fix outcomes · Aggregates global memory  ║
+# ║  Memory Discovery — pattern capture & cross-pipeline learning             ║
+# ║  Captures failures · Records fix outcomes · Aggregates global memory      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 #
 # Extracted from sw-memory.sh — pure move, no behavior change.
@@ -12,6 +12,7 @@
 # Module guard
 [[ -n "${_MEMDISC_LOADED:-}" ]] && return 0
 _MEMDISC_LOADED=1
+set -euo pipefail
 
 VERSION="3.3.0"
 
