@@ -6,7 +6,7 @@
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
       "seen_count": 19,
-      "last_seen": "2026-08-29T15:12:03Z",
+      "last_seen": "2026-08-29T15:14:46Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
       "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
-      "seen_count": 3,
-      "last_seen": "2026-08-29T03:44:44Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-29T14:30:39Z",
       "category": "test_failure"
     },
     {
@@ -77,8 +77,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
       "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
-      "seen_count": 7,
-      "last_seen": "2026-08-29T14:37:14Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-29T09:46:57Z",
       "category": "flaky"
     },
     {
@@ -93,8 +93,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2moutput missing: 3.4.0\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh assertions expect stage artifacts (plan.md, review.md) and dry-run/output strings that the mocked pipeline no longer produces, likely due to a version/output string drift (e.g. missing '3.4.0' marker) and a broken jq parse of RL episode JSON",
-      "fix": "Update mock pipeline outputs and version markers in sw-pipeline-test.sh to match current sw-pipeline.sh artifact paths and output format, and fix jq parsing of non-numeric complexity field",
+      "root_cause": "sw-project-detect-test's cache-behavior check found project_detect_all returning a different result on a cached call than the initial call, and the intent-analysis schema check found analyze_intent output missing required fields — both are assertion/output-content failures, not the e2e leaked-issue failure",
+      "fix": "Fix project_detect_all to serve from .claude/project-detection.json cache instead of re-detecting (or fix cache invalidation/version field) and update analyze_intent to always emit version/goal/criteria fields matching the v3.3.0 schema",
       "seen_count": 1,
       "last_seen": "2026-08-29T10:11:17Z",
       "category": "test_failure"
