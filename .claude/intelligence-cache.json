@@ -1595,32 +1595,32 @@
         "results": [
           {
             "file": "retry-outcomes.json",
-            "relevance": 95,
-            "summary": "Shows model_escalation strategy has 100% success rate (5/5) for build_failure class, directly applicable when build stage encounters issues"
-          },
-          {
-            "file": "success-patterns.json",
             "relevance": 90,
-            "summary": "Two successful build patterns (complexity 60-65, 3 iterations each) demonstrate proven approaches: loop iterations, npm test strategy, and multi-file commits"
+            "summary": "Shows build_failure retry class with model_escalation strategy achieving 100% success rate (5/5) since 2026-08-15. Directly applicable for handling build failures in current stage."
           },
           {
             "file": "metrics.json",
-            "relevance": 60,
-            "summary": "Baseline metrics show build_duration_s=7095s and test_duration_s=1459s, useful for detecting performance regressions or timeouts during build stage"
+            "relevance": 85,
+            "summary": "Contains build_duration_s baseline (7095s) and test_duration_s baseline (1459s) from 2026-07-31. Essential context for understanding expected build performance and timeout thresholds."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Two successful patterns captured showing 3-iteration builds with file patterns (.claude/loop-logs, scripts/lib) and npm test strategy. Demonstrates proven iteration and test approaches for both bug fixes and features."
           },
           {
             "file": "failures.json",
-            "relevance": 50,
-            "summary": "Recent test stage failures (jq parse errors, artifact generation regression, stale locks) inform what can cascade from build into test stage"
+            "relevance": 70,
+            "summary": "Contains 10+ test stage failures with root causes: mock JSON parsing errors, schema validation issues (missing version/goal/criteria fields), stale pipeline locks, and jq parse failures. Relevant for understanding failure modes during build iterations."
           },
           {
-            "file": "patterns.json",
-            "relevance": 40,
-            "summary": "Project metadata (Node/vitest/npm) establishes build environment context; test_pattern and import_style inform code generation during build"
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Four test infrastructure failures: mktemp directory path issues (4 occurrences), sw-cleanup.sh dry-run output formatting, and sw-feedback.sh JSON regression. Relevant for test harness stability during build loop iterations."
           }
         ]
       },
-      "timestamp": 1788010530,
+      "timestamp": 1788012781,
       "ttl": 1800
     },
     "2926af505f4dfbcce13f6e468213ac7b": {
@@ -1832,6 +1832,20 @@
         }
       ],
       "timestamp": 1788012610,
+      "ttl": 1800
+    },
+    "88b08a5830a1e43461f4ab21c4afc9d5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788012768,
       "ttl": 1800
     }
   }

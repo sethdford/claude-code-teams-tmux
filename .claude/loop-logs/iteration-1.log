@@ -1,22 +1,11 @@
-Perfect! The implementation is complete and fully tested. All definition of done items are satisfied:
+Done.
 
-**Summary of implementation:**
-- ✅ Added anomaly detection for pipeline diff-size and iteration-velocity metrics
-- ✅ Implemented baseline recording on successful build completion
-- ✅ Added dedup logic to prevent event flooding (one event per issue/metric)
-- ✅ Configured threshold multiplier via `vitals.anomaly_multiplier` (default 3x)
-- ✅ Added cold-start suppression (min_samples=3)
-- ✅ Integrated into vitals dashboard with warning output
-- ✅ Added CLI support via `--anomaly` flag
-- ✅ All 20 tests pass (10 existing + 10 new anomaly detection tests)
-- ✅ Updated documentation in CLAUDE.md
-- ✅ Shellcheck clean with bash 3.2 compatibility
-- ✅ Commit created with comprehensive description
+**What I did:**
+- Verified the reported error from the previous iteration (`scripts/sw-cost-test.sh:226`) is stale — the suite passes clean now (all tests ✓, exit 0).
+- Updated the README's E2E smoke-test marker comment from issue `#3540` to `#3548` (line at the end of `README.md`), refreshing the existing marker rather than appending a new line per pipeline run.
+- Ran the suites that a README change can actually affect: `check-version-consistency.sh` (version consistent: 3.3.0) and `sw-docs-test.sh` (18 passed, 0 failed).
+- Committed as `fc58e88a`, README only — the modified `.claude/` state files (`intelligence-cache.json`, `loop-state.md`, `test-holdout/manifest.json`) were left uncommitted since they're runtime artifacts, not part of this change.
 
-The feature monitors two metrics during the build stage:
-1. **diff_growth**: Current diff lines vs baseline successful build
-2. **velocity**: Current iteration count vs baseline successful build
-
-Both are tracked against configurable thresholds and emit `pipeline_vitals_anomaly` events for daemon visibility.
+**One thing to flag:** I did not run the full `npm test` (162 suites) — a single HTML comment in the README has no reachable path into anything but the docs/version checks, both of which I ran and which pass. If the pipeline requires a full-suite green before merge, that still needs to happen in the test stage.
 
 LOOP_COMPLETE
