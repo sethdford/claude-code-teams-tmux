@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-pipeline-test.sh's checkpoint/cleanup and plan-generation subprocess mocks are producing a truncated or malformed jq output ('Invalid numeric literal'), causing downstream stage-artifact checks (plan.md, review.md) to be skipped/missing and cascading into the full E2E, resume, complexity-skip, and cleanup test failures",
       "fix": "Fix the mock plan/RL-episode JSON emitter to output valid JSON (quote/escape the reward or complexity numeric fields) so jq stops erroring, then re-verify plan.md/review.md artifact creation in the mocked pipeline stages",
-      "seen_count": 12,
-      "last_seen": "2026-08-28T22:48:11Z",
+      "seen_count": 9,
+      "last_seen": "2026-08-28T18:40:03Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
       "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
-      "seen_count": 3,
-      "last_seen": "2026-08-28T23:32:23Z",
+      "seen_count": 2,
+      "last_seen": "2026-08-27T23:56:55Z",
       "category": "test_failure"
     },
     {
@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test hit the 301s timeout and sw-loop-test failed with exit 1, indicating a hung/slow real-integration test and a genuine loop harness regression",
       "fix": "investigate sw-loop-test failure output directly and increase or mock sw-e2e-integration-test's external calls to avoid the 300s timeout",
-      "seen_count": 2,
-      "last_seen": "2026-08-29T00:30:54Z",
+      "seen_count": 1,
+      "last_seen": "2026-08-28T00:14:47Z",
       "category": "test_failure"
     },
     {
@@ -57,28 +57,28 @@
     {
       "stage": "test",
       "pattern": "Testing CONTRACT: pipeline can parse recruit match --json for model... ERROR: scripts/sw-recruit-test.sh:1112 exited with status 5",
-      "root_cause": "sw-recruit-test.sh:1112 CONTRACT test for 'recruit match --json' exits with status 5 instead of expected code, likely from malformed/empty JSON output feeding a jq parse in the assertion",
-      "fix": "inspect sw-recruit.sh 'match --json' output for the failing case and ensure it emits valid JSON (or non-empty) before the test's jq/status check, then align the test's expected exit code",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T12:11:33Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Testing audit invocation-failure handling...",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock (pipeline-3276) left by a prior run, and sw-intent-analysis-test's schema output is missing required fields (version, goal, criteria)",
-      "fix": "Clear/expire stale pipeline locks before e2e-integration-test runs and update analyze_intent to emit version/goal/criteria in its JSON schema",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T16:43:06Z",
-      "category": "test_failure"
+      "root_cause": "sw-e2e-integration-test's fast pipeline run hit a stale pipeline lock left by another concurrent/previous run (status: running), causing it to abort instead of starting",
+      "fix": "Ensure test setup clears any stale .claude/pipeline-state.md lock (or runs in an isolated worktree) before invoking the fast pipeline in sw-e2e-integration-test",
+      "seen_count": 2,
+      "last_seen": "2026-08-28T21:27:49Z",
+      "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit the 302s timeout, likely due to a real network/API dependency or a regression in intent analysis logic",
-      "fix": "Inspect sw-intent-analysis-test.sh failure output for the specific assertion, and check sw-e2e-integration-test for missing API keys or an external call that should be mocked/skipped in CI",
+      "root_cause": "sw-pipeline-test.sh mock plan/review stage writers never emit plan.md/review.md (and downstream json fields), so E2E, resume, cleanup, and low-complexity-skip assertions that depend on those artifacts fail",
+      "fix": "fix the mock/stage code so stage_plan and stage_review write .claude/pipeline-artifacts/plan.md and review.md before returning, and ensure jq inputs are valid JSON (not raw numeric strings) so the complexity-skip check parses",
+      "seen_count": 2,
+      "last_seen": "2026-08-28T22:00:27Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-intent-analysis-test failing (exit 1) alongside an unrelated sw-e2e-integration-test timeout, indicating a regression in intent analysis logic",
+      "fix": "Run scripts/sw-intent-analysis-test.sh directly to isolate the failing assertion and fix the underlying logic or update the test expectation",
       "seen_count": 1,
-      "last_seen": "2026-08-28T19:58:39Z",
+      "last_seen": "2026-08-28T23:10:38Z",
       "category": "test_failure"
     }
   ]
