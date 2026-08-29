@@ -591,4 +591,4 @@ npm test    # 125 shell suites + 16 dashboard test files (141 total), E2E system
 
 MIT — Seth Ford, 2026.
 
-<!-- E2E pipeline smoke test marker — issue #3540 (automated) -->
+<!-- E2E pipeline smoke test marker — issue #3548 (automated) -->
