@@ -1,15 +1,1 @@
-The goal — adding a comment to the README as an automated E2E test — is complete and committed, with the relevant docs test suite verified passing (18/18).
-
-**Test Pyramid Breakdown**: This is a single-file documentation change with no new logic, so the test pyramid is: 0 new unit tests, 0 new integration tests, 1 existing E2E-style verification (ran `sw-docs-test.sh`, 18/18 passing, confirming README/AUTO-section tooling still works with the added comment).
-
-**Coverage Targets**: N/A — no executable code was added; coverage target is "the comment doesn't break existing doc tooling," which is verified.
-
-**Critical Paths to Test**: Happy path (comment appended without disturbing AUTO markers or the wiki-verbatim first-50-lines span) — verified. Error/edge cases (comment placed inside an AUTO section, or within the first 50 lines) were deliberately avoided by placement choice rather than needing new tests, since those are structural constraints, not runtime behavior.
-
-**What to Document**: `README.md` — added an HTML comment at the end of the file (after the License section) referencing this E2E test.
-
-**What to Skip**: No other docs were touched; this is a minimal, isolated marker comment, not a content change.
-
-**Audience**: N/A (verification artifact, not user-facing documentation).
-
-LOOP_COMPLETE
+You've hit your weekly limit · resets Sep 3, 6pm (UTC)
