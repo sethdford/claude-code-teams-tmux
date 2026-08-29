@@ -59,7 +59,13 @@ assert_fail() {
     FAIL=$((FAIL + 1))
     FAILURES+=("$desc")
     echo -e "  ${RED}✗${RESET} ${desc}"
-    [[ -n "$detail" ]] && echo -e "    ${DIM}${detail}${RESET}"
+    # Must be an `if`, not `[[ ... ]] && echo`: with no detail argument the
+    # && chain returns 1, and suites run under `set -e`, so a detail-less
+    # assert_fail aborted the whole suite at its first failure — skipping
+    # every later test and print_test_results along with it.
+    if [[ -n "$detail" ]]; then
+        echo -e "    ${DIM}${detail}${RESET}"
+    fi
 }
 
 assert_eq() {
