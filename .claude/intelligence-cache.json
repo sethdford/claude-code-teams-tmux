@@ -1586,33 +1586,33 @@
       "result": {
         "results": [
           {
-            "file": "retry-outcomes.json",
-            "relevance": 90,
-            "summary": "Shows build_failure retry class with model_escalation strategy achieving 100% success rate (5/5) since 2026-08-15. Directly applicable for handling build failures in current stage."
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 85,
-            "summary": "Contains build_duration_s baseline (7095s) and test_duration_s baseline (1459s) from 2026-07-31. Essential context for understanding expected build performance and timeout thresholds."
+            "file": "failures.json",
+            "relevance": 100,
+            "summary": "Most recent test stage failures (last seen 2026-08-29) with documented root causes and fixes. Contains specific patterns for sw-pipeline-test.sh mock artifact issues, schema validation failures, and jq parsing errors directly impacting build success."
           },
           {
             "file": "success-patterns.json",
-            "relevance": 80,
-            "summary": "Two successful patterns captured showing 3-iteration builds with file patterns (.claude/loop-logs, scripts/lib) and npm test strategy. Demonstrates proven iteration and test approaches for both bug fixes and features."
+            "relevance": 95,
+            "summary": "Documented successful build patterns with test strategies (npm test), iteration counts (3), and durations (45-150s). Provides proven approaches for bug fixes and features with complexity scoring and file patterns that match current build context."
           },
           {
-            "file": "failures.json",
-            "relevance": 70,
-            "summary": "Contains 10+ test stage failures with root causes: mock JSON parsing errors, schema validation issues (missing version/goal/criteria fields), stale pipeline locks, and jq parse failures. Relevant for understanding failure modes during build iterations."
+            "file": "retry-outcomes.json",
+            "relevance": 85,
+            "summary": "Shows build_failure retry strategy using model_escalation with 100% success rate across 5 attempts. Directly applicable to recovering from build failures in current pipeline stage."
           },
           {
             "file": "knowledge.json",
-            "relevance": 60,
-            "summary": "Four test infrastructure failures: mktemp directory path issues (4 occurrences), sw-cleanup.sh dry-run output formatting, and sw-feedback.sh JSON regression. Relevant for test harness stability during build loop iterations."
+            "relevance": 80,
+            "summary": "Contains specific test failures and proven fixes: mktemp directory issues, sw-cleanup.sh output formatting, regression detection JSON validation. Four documented mktemp failures with clear resolution paths."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Baseline performance metrics for build stage: 7095s build_duration, 1459s test_duration. Provides reference data for evaluating current build performance and detecting anomalies."
           }
         ]
       },
-      "timestamp": 1788012781,
+      "timestamp": 1788014898,
       "ttl": 1800
     },
     "2926af505f4dfbcce13f6e468213ac7b": {
@@ -1936,6 +1936,41 @@
         "raw_response": "Mock claude: ok"
       },
       "timestamp": 1788014667,
+      "ttl": 1800
+    },
+    "1cef103986ede00ff3a3558fcf8c8982": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788014727,
+      "ttl": 1800
+    },
+    "48229b2767129435328b03f13552ce2a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788014826,
+      "ttl": 1800
+    },
+    "beb6efd8e98e80e2f7e133aef8bd92ce": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788014857,
       "ttl": 1800
     }
   }
