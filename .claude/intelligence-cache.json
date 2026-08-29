@@ -1401,6 +1401,158 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "59033a2c7459c0f0626a9f523c318fdc": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Incomplete extraction leaving interdependencies unexposed",
+          "Broken variable scoping or global state when moving to sourced scripts",
+          "Circular dependencies between extracted modules (session and prompt logic)",
+          "Test suite failures due to changes in function signatures or sourcing patterns",
+          "Bash 3.2 compatibility issues introduced during refactoring",
+          "Missing interdependency between prompt composition and session handling"
+        ],
+        "implementation_hints": [
+          "Map prompt-composition functions before extraction—identify cohesive modules with minimal external dependencies",
+          "Extract session/restart handling first incrementally, then prompt composition; test after each extraction",
+          "Design interfaces carefully: define what parameters and return values each extracted function needs to minimize coupling",
+          "Follow scripts/lib/compat.sh conventions exactly—bash 3.2 compatibility, proper sourcing, consistent error handling",
+          "Add comment headers to new lib files documenting exported functions and their dependencies",
+          "Run full test suites (sw-loop-test.sh, sw-session-restart-test.sh) after each extraction to catch breakage immediately",
+          "Monitor line count reductions as you extract to ensure hitting 800+ line target",
+          "Pay special attention to how prompt composition and session handling interact—they may share utilities or need explicit interfaces",
+          "Verify no changes to CLI flags, output format, or exit codes by checking test expectations",
+          "Consider shared utility functions that both modules depend on—extract those first into a third module if needed"
+        ]
+      },
+      "timestamp": 1787965970,
+      "ttl": 3600
+    },
+    "b5cd5b667a27de5478297c2d3795445e": {
+      "result": {
+        "estimated_iterations": 7,
+        "reasoning": {
+          "base_complexity_multiplier": 1.4,
+          "interdependency_factor": 1.2,
+          "bash_compatibility_factor": 1.1,
+          "test_coverage_factor": 0.9,
+          "incremental_approach_factor": 0.85
+        },
+        "breakdown": {
+          "extraction_1": "Session/restart module extraction + initial scoping fixes: 2 iterations",
+          "extraction_2": "Prompt composition module extraction + integration: 2 iterations",
+          "bash_compat_fix": "Bash 3.2 compatibility issues: 1 iteration",
+          "integration_testing": "Circular dependency & interface resolution: 1 iteration",
+          "final_validation": "Test suite pass, line count target, edge cases: 1 iteration"
+        }
+      },
+      "timestamp": 1787965982,
+      "ttl": 1800
+    },
+    "b96cb6ea0de6c6aa84f35721d1fefcb8": {
+      "result": {
+        "estimated_cost_usd": 5.20,
+        "estimated_iterations": 3,
+        "estimated_tokens": 31500,
+        "likely_failure_stage": "build",
+        "confidence": 75
+      },
+      "timestamp": 1787965996,
+      "ttl": 3600
+    },
+    "a518bc3755680dec89d729fe6c631223": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 25,
+            "summary": "Tracks build stage patterns including test failure handling. Relevant because sw-loop.sh is critical infrastructure for the build stage; understanding known build-stage issues informs refactoring safety."
+          },
+          {
+            "file": "success-patterns.json (test-repo: add auth module)",
+            "relevance": 20,
+            "summary": "Shows successful multi-file structural refactoring with 5 iterations and TDD approach (src/auth.ts, test/auth.test.ts). Relevant as a pattern for iterative code extraction and module isolation."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity: scripts/test.sh)",
+            "relevance": 12,
+            "summary": "Demonstrates shell script modification work in scripts/ directory with low complexity completion. Tangentially relevant to scripts/lib/loop-*.sh extraction patterns."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt: test.sh modifications)",
+            "relevance": 10,
+            "summary": "Shows shell script change patterns over multiple iterations. Minimal relevance to loop.sh refactoring but provides context on bash script modification workflows."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 8,
+            "summary": "Contains generic architecture rules. Minimally relevant for understanding code organization principles that should guide refactoring structure, though content is vague."
+          }
+        ]
+      },
+      "timestamp": 1787966049,
+      "ttl": 1800
+    },
+    "41cfff22b11ad1f0541d6300600ceb82": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (repo: test-repo)",
+            "relevance": 75,
+            "summary": "Pattern 'add auth module' demonstrates iterative TDD approach with module isolation—directly applicable to designing loop-*.sh split with clear separation of iteration/composition concerns"
+          },
+          {
+            "file": "success-patterns.json (repo: test-repo-complexity)",
+            "relevance": 60,
+            "summary": "Pattern 'Low complexity fix' in scripts/test.sh shows prior success with shell script refactoring in scripts/ directory, the exact target location for new loop-*.sh library files"
+          },
+          {
+            "file": "index.json",
+            "relevance": 42,
+            "summary": "Build stage test failure pattern (timeout issues)—sw-loop.sh executes in build stage; understanding stage-level constraints informs iteration logic architecture"
+          },
+          {
+            "file": "success-patterns.json (repo: test-repo-ranking)",
+            "relevance": 32,
+            "summary": "Generic build stage patterns with multiple file changes—historical context for iterative build process refactoring, though lacking specificity to loop logic"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 18,
+            "summary": "References architectural rules—may guide design principles for modularizing iteration/composition logic, but entry is too generic to provide actionable guidance"
+          }
+        ]
+      },
+      "timestamp": 1787966295,
+      "ttl": 1800
+    },
+    "2f95586cca80b60cfb9f5874e688d568": {
+      "result": {
+        "results": [
+          {
+            "file": "architecture.json",
+            "relevance": 15,
+            "summary": "Contains architecture rules that could inform design decisions about modularity and layering, though not specific to sw-loop.sh refactoring"
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 12,
+            "summary": "Shows iterative TDD approach with module isolation for multi-file refactoring; modular isolation principles might apply to splitting loop logic"
+          },
+          {
+            "file": "index.json",
+            "relevance": 8,
+            "summary": "Demonstrates pattern indexing and failure tracking methodology; failure patterns could theoretically help identify anti-patterns, though this instance lacks relevant content"
+          }
+        ]
+      },
+      "timestamp": 1787966310,
+      "ttl": 1800
     }
   }
 }
