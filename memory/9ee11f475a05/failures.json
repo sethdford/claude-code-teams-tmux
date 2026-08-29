@@ -32,8 +32,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test hit the 301s timeout and sw-loop-test failed with exit 1, indicating a hung/slow real-integration test and a genuine loop harness regression",
       "fix": "investigate sw-loop-test failure output directly and increase or mock sw-e2e-integration-test's external calls to avoid the 300s timeout",
-      "seen_count": 3,
-      "last_seen": "2026-08-29T00:53:38Z",
+      "seen_count": 4,
+      "last_seen": "2026-08-29T02:46:44Z",
       "category": "test_failure"
     },
     {
@@ -77,15 +77,15 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
       "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T19:58:39Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-29T04:03:07Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "One test among 128 in the test stage failed, but the failing test's name/assertion is not present in the provided log excerpt (only passing suites shown)",
-      "fix": "Re-run with full output or grep for FAIL/✗ markers to identify the specific failing assertion, then fix the underlying code or update the test",
+      "root_cause": "sw-cost-test.sh expects CONTEXT EFFICIENCY output but cost.json/budget.json have no entries within the 30-day lookback window, so the dashboard prints the 'no cost entries' fallback instead",
+      "fix": "Seed the test fixture with a recent-dated cost entry (or mock 'date' consistently) before invoking the cost dashboard so it falls inside the 30-day window and renders the CONTEXT EFFICIENCY section",
       "seen_count": 1,
       "last_seen": "2026-08-28T22:51:44Z",
       "category": "test_failure"
