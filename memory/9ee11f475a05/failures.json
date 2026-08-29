@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test asserts on schema fields but analyze_intent's JSON output is missing required version/goal/criteria fields, and sw-e2e-integration-test hit a stale pipeline lock left running from a prior test/session",
       "fix": "Update analyze_intent to emit the required schema fields (version, goal, criteria) and ensure e2e-integration-test cleans up/releases the pipeline lock (or runs pipeline abort) before starting a fresh run",
-      "seen_count": 4,
-      "last_seen": "2026-08-29T10:10:01Z",
+      "seen_count": 3,
+      "last_seen": "2026-08-29T03:44:44Z",
       "category": "test_failure"
     },
     {
@@ -77,17 +77,17 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Not an actual test failure — the log shows all suites passing (PASS: 29/33/24/26, FAIL: 0); the failure pattern likely came from a transient/non-deterministic timing or ordering issue in the RL loop test harness rather than a code defect",
       "fix": "Re-run the test stage; if it recurs, add retry/stabilization to the flaky loop-iteration test rather than modifying source code",
-      "seen_count": 4,
-      "last_seen": "2026-08-29T06:37:33Z",
+      "seen_count": 5,
+      "last_seen": "2026-08-29T09:45:45Z",
       "category": "flaky"
     },
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed due to a leftover pipeline lock (issue #3492) from a prior run, and sw-intent-analysis-test failed because analyze_intent's JSON output is missing required schema fields (version, goal, criteria)",
-      "fix": "clear stale pipeline locks before test runs (or make the e2e test abort/reset any in-progress lock in setup) and update analyze_intent to emit the version, goal, and criteria fields required by the schema",
-      "seen_count": 1,
-      "last_seen": "2026-08-28T22:51:44Z",
+      "root_cause": "sw-pipeline.sh no longer writes .claude/pipeline-artifacts/plan.md (and review.md) during the plan/review stages, likely from the earlier 'remove remote $schema' JSON validation fix regressing artifact generation",
+      "fix": "restore plan/review stage logic to write plan.md and review.md artifacts, and fix the jq parse error on numeric literals in the complexity-skip test path",
+      "seen_count": 2,
+      "last_seen": "2026-08-29T09:07:01Z",
       "category": "test_failure"
     }
   ]
