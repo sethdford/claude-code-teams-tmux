@@ -41,6 +41,8 @@ COST_DIR="${HOME}/.shipwright"
 COST_FILE="${COST_DIR}/costs.json"
 BUDGET_FILE="${COST_DIR}/budget.json"
 OPTIMIZATION_DIR="${HOME}/.shipwright/optimization"
+BASELINES_DIR="${HOME}/.shipwright/baselines"
+BASELINE_FILE="${BASELINES_DIR}/default.json"
 
 # Signal weights for health score (configurable via env vars)
 WEIGHT_MOMENTUM="${VITALS_WEIGHT_MOMENTUM:-35}"
@@ -56,6 +58,170 @@ _safe_num() {
     else
         echo "0"
     fi
+}
+
+# ─── Anomaly Detection Helpers ──────────────────────────────────────────────
+_vitals_anomaly_multiplier() {
+    if type _smart_int >/dev/null 2>&1; then
+        local mult
+        mult=$(_smart_int "vitals.anomaly_multiplier" 3 2>/dev/null || echo "3")
+        mult=$(_safe_num "$mult")
+        [[ "$mult" -lt 1 ]] && mult=3
+        echo "$mult"
+    else
+        echo "3"
+    fi
+}
+
+_vitals_anomaly_min_samples() {
+    if type _smart_int >/dev/null 2>&1; then
+        local min_samp
+        min_samp=$(_smart_int "vitals.anomaly_min_samples" 3 2>/dev/null || echo "3")
+        min_samp=$(_safe_num "$min_samp")
+        [[ "$min_samp" -lt 1 ]] && min_samp=3
+        echo "$min_samp"
+    else
+        echo "3"
+    fi
+}
+
+_vitals_baseline_value() {
+    local stage="$1" metric="$2"
+    if [[ ! -f "$BASELINE_FILE" ]]; then
+        echo "0 0"
+        return 0
+    fi
+    jq -r --arg k "${stage}.${metric}" '"\(.[$k].value // 0) \(.[$k].count // 0)"' "$BASELINE_FILE" 2>/dev/null || echo "0 0"
+}
+
+_vitals_ratio_exceeds() {
+    local current="$1" baseline="$2" multiplier="$3"
+    awk -v c="$current" -v b="$baseline" -v m="$multiplier" \
+        'BEGIN { if (b > 0 && c > b * m) exit 0; else exit 1 }'
+}
+
+_vitals_anomaly_flagged() {
+    local progress_file="$1" flag="$2"
+    if [[ ! -f "$progress_file" ]]; then
+        return 0
+    fi
+    jq -e ".anomaly_flagged[\"$flag\"] == true" "$progress_file" >/dev/null 2>&1
+}
+
+_vitals_mark_anomaly_flagged() {
+    local progress_file="$1" flag="$2"
+    if [[ ! -f "$progress_file" ]]; then
+        return 0
+    fi
+
+    if type _vitals_acquire_lock >/dev/null 2>&1; then
+        _vitals_acquire_lock "$progress_file" || return 0
+    fi
+
+    local tmp_file="${progress_file}.tmp.$$"
+    jq ".anomaly_flagged[\"$flag\"] = true" "$progress_file" > "$tmp_file" 2>/dev/null || {
+        rm -f "$tmp_file"
+        return 0
+    }
+    mv "$tmp_file" "$progress_file" 2>/dev/null || true
+
+    if type _vitals_release_lock >/dev/null 2>&1; then
+        _vitals_release_lock "$progress_file" || true
+    fi
+}
+
+_compute_anomaly() {
+    local progress_file="$1" current_iteration="$2" current_diff="$3"
+
+    current_iteration=$(_safe_num "$current_iteration")
+    current_diff=$(_safe_num "$current_diff")
+
+    local multiplier min_samples
+    multiplier=$(_vitals_anomaly_multiplier)
+    min_samples=$(_vitals_anomaly_min_samples)
+
+    local diff_ratio=0 diff_anomalous=false
+    local diff_baseline=0 diff_count=0
+    local vel_ratio=0 vel_anomalous=false
+    local vel_baseline=0 vel_count=0
+    local flags_json='[]'
+    local diff_detected=false
+
+    if [[ -n "$current_diff" && "$current_diff" != "0" ]]; then
+        read -r diff_baseline diff_count < <(_vitals_baseline_value "build" "diff_lines")
+        diff_baseline=$(_safe_num "$diff_baseline")
+        diff_count=$(_safe_num "$diff_count")
+
+        if [[ "$diff_count" -ge "$min_samples" && "$diff_baseline" -gt 0 ]]; then
+            diff_ratio=$(awk -v c="$current_diff" -v b="$diff_baseline" 'BEGIN { printf "%.2f", c / b }')
+            if _vitals_ratio_exceeds "$current_diff" "$diff_baseline" "$multiplier"; then
+                diff_anomalous=true
+                diff_detected=true
+                flags_json=$(jq -n '["diff_growth"]')
+            fi
+        fi
+    fi
+
+    if [[ -n "$current_iteration" && "$current_iteration" != "0" ]]; then
+        read -r vel_baseline vel_count < <(_vitals_baseline_value "build" "iterations")
+        vel_baseline=$(_safe_num "$vel_baseline")
+        vel_count=$(_safe_num "$vel_count")
+
+        if [[ "$vel_count" -ge "$min_samples" && "$vel_baseline" -gt 0 ]]; then
+            vel_ratio=$(awk -v c="$current_iteration" -v b="$vel_baseline" 'BEGIN { printf "%.2f", c / b }')
+            if _vitals_ratio_exceeds "$current_iteration" "$vel_baseline" "$multiplier"; then
+                vel_anomalous=true
+                if [[ "$diff_detected" == true ]]; then
+                    flags_json=$(jq -n '["diff_growth", "velocity"]')
+                else
+                    flags_json=$(jq -n '["velocity"]')
+                fi
+            fi
+        fi
+    fi
+
+    local detected=false
+    if [[ "$diff_anomalous" == true || "$vel_anomalous" == true ]]; then
+        detected=true
+        if [[ -n "$progress_file" && -f "$progress_file" ]]; then
+            for flag in $(jq -r '.[]' <<< "$flags_json"); do
+                if ! _vitals_anomaly_flagged "$progress_file" "$flag"; then
+                    emit_event "pipeline_vitals_anomaly" "kind=$flag" "current=$current_diff" "baseline=$diff_baseline" "ratio=$diff_ratio" "multiplier=$multiplier" "stage=build" 2>/dev/null || true
+                    _vitals_mark_anomaly_flagged "$progress_file" "$flag"
+                fi
+            done
+        fi
+    fi
+
+    jq -n \
+        --arg detected "$detected" \
+        --argjson flags "$flags_json" \
+        --arg multiplier "$multiplier" \
+        --arg diff_current "$current_diff" \
+        --arg diff_baseline "$diff_baseline" \
+        --arg diff_ratio "$diff_ratio" \
+        --arg diff_anomalous "$diff_anomalous" \
+        --arg vel_current "$current_iteration" \
+        --arg vel_baseline "$vel_baseline" \
+        --arg vel_ratio "$vel_ratio" \
+        --arg vel_anomalous "$vel_anomalous" \
+        '{
+            detected: ($detected == "true"),
+            flags: $flags,
+            multiplier: ($multiplier | tonumber),
+            diff: {
+                current: ($diff_current | tonumber),
+                baseline: ($diff_baseline | tonumber),
+                ratio: ($diff_ratio | tonumber),
+                anomalous: ($diff_anomalous == "true")
+            },
+            velocity: {
+                current: ($vel_current | tonumber),
+                baseline: ($vel_baseline | tonumber),
+                ratio: ($vel_ratio | tonumber),
+                anomalous: ($vel_anomalous == "true")
+            }
+        }'
 }
 
 # ─── Momentum Score ─────────────────────────────────────────────────────────
@@ -517,6 +683,10 @@ pipeline_compute_vitals() {
         unique_errors="${unique_errors:-0}"
     fi
 
+    # ── Compute anomaly ──
+    local anomaly_json='{"detected":false,"flags":[],"multiplier":0}'
+    anomaly_json=$(_compute_anomaly "$progress_file" "$current_iteration" "$current_diff" 2>/dev/null) || anomaly_json='{"detected":false,"flags":[],"multiplier":0}'
+
     # ── Output JSON ──
     jq -n \
         --argjson health_score "$health_score" \
@@ -536,6 +706,7 @@ pipeline_compute_vitals() {
         --argjson unique_errors "$unique_errors" \
         --arg issue "${issue_num:-}" \
         --arg ts "$(now_iso)" \
+        --argjson anomaly "$anomaly_json" \
         '{
             health_score: $health_score,
             verdict: $verdict,
@@ -560,6 +731,7 @@ pipeline_compute_vitals() {
                 total: $total_errors,
                 unique: $unique_errors
             },
+            anomaly: $anomaly,
             prev_score: (if $prev_score == "" then null else ($prev_score | tonumber) end),
             ts: $ts
         }'
@@ -900,6 +1072,30 @@ vitals_dashboard() {
     printf "    ${DIM}Error Maturity:${RESET}%3d  ${DIM}%s${RESET}\n" "$error_maturity" "$e_desc"
     echo ""
 
+    # ── Anomaly warnings ──
+    local anomaly_detected
+    anomaly_detected=$(echo "$vitals" | jq -r '.anomaly.detected // false')
+    if [[ "$anomaly_detected" == "true" ]]; then
+        local flags anomaly_diff anomaly_diff_baseline anomaly_diff_ratio
+        local anomaly_vel anomaly_vel_baseline anomaly_vel_ratio
+        flags=$(echo "$vitals" | jq -r '.anomaly.flags[]' 2>/dev/null || echo "")
+        if echo "$flags" | grep -q "diff_growth"; then
+            anomaly_diff=$(echo "$vitals" | jq -r '.anomaly.diff.current // 0')
+            anomaly_diff_baseline=$(echo "$vitals" | jq -r '.anomaly.diff.baseline // 0')
+            anomaly_diff_ratio=$(echo "$vitals" | jq -r '.anomaly.diff.ratio // 0')
+            printf "  ${YELLOW}${BOLD}⚠${RESET} ${YELLOW}Anomaly: diff growth %d lines vs baseline %d (%.1fx > threshold)${RESET}\n" \
+                "$anomaly_diff" "$anomaly_diff_baseline" "$anomaly_diff_ratio"
+        fi
+        if echo "$flags" | grep -q "velocity"; then
+            anomaly_vel=$(echo "$vitals" | jq -r '.anomaly.velocity.current // 0')
+            anomaly_vel_baseline=$(echo "$vitals" | jq -r '.anomaly.velocity.baseline // 0')
+            anomaly_vel_ratio=$(echo "$vitals" | jq -r '.anomaly.velocity.ratio // 0')
+            printf "  ${YELLOW}${BOLD}⚠${RESET} ${YELLOW}Anomaly: iteration velocity %d vs baseline %d (%.1fx > threshold)${RESET}\n" \
+                "$anomaly_vel" "$anomaly_vel_baseline" "$anomaly_vel_ratio"
+        fi
+        echo ""
+    fi
+
     # ── Trajectory ──
     if [[ "$prev_score" != "none" && "$prev_score" != "null" ]]; then
         local trajectory_label trajectory_color
@@ -980,6 +1176,7 @@ show_help() {
     echo -e "    ${CYAN}--json${RESET}                Output raw JSON instead of dashboard"
     echo -e "    ${CYAN}--score${RESET}               Output only the health score (0-100)"
     echo -e "    ${CYAN}--verdict${RESET}             Output only the verdict"
+    echo -e "    ${CYAN}--anomaly${RESET}              Output only anomaly detection object (JSON)"
     echo -e "    ${CYAN}--budget${RESET}              Output only budget trajectory (ok/warn/stop)"
     echo -e "    ${CYAN}--help${RESET}                Show this help"
     echo ""
@@ -1031,6 +1228,10 @@ main() {
                 output_mode="budget"
                 shift
                 ;;
+            --anomaly)
+                output_mode="anomaly"
+                shift
+                ;;
             --help|-h|help)
                 show_help
                 return 0
@@ -1063,6 +1264,11 @@ main() {
             local vitals
             vitals=$(pipeline_compute_vitals "$state_file" "$artifacts_dir" "$issue_num")
             echo "$vitals" | jq -r '.verdict'
+            ;;
+        anomaly)
+            local vitals
+            vitals=$(pipeline_compute_vitals "$state_file" "$artifacts_dir" "$issue_num")
+            echo "$vitals" | jq -r '.anomaly'
             ;;
         budget)
             pipeline_budget_trajectory "$state_file"

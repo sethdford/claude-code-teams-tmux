@@ -11,6 +11,7 @@ source "$SCRIPT_DIR/lib/test-helpers.sh"
 setup_env() {
     mkdir -p "$TEST_TEMP_DIR/home/.shipwright/progress"
     mkdir -p "$TEST_TEMP_DIR/home/.shipwright/optimization"
+    mkdir -p "$TEST_TEMP_DIR/home/.shipwright/baselines"
     mkdir -p "$TEST_TEMP_DIR/home/.claude/pipeline-artifacts"
     mkdir -p "$TEST_TEMP_DIR/bin"
 
@@ -216,6 +217,183 @@ for w in WEIGHT_MOMENTUM WEIGHT_CONVERGENCE WEIGHT_BUDGET WEIGHT_ERROR_MATURITY;
         assert_fail "$w is numeric"
     fi
 done
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANOMALY DETECTION TESTS (new)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${DIM}  anomaly detection${RESET}"
+
+# Setup baseline file for anomaly tests
+cat > "$TEST_TEMP_DIR/home/.shipwright/baselines/default.json" <<'BASEEOF'
+{
+  "build.diff_lines": {"value": 100, "count": 5},
+  "build.iterations": {"value": 4, "count": 5}
+}
+BASEEOF
+
+# Setup progress file for anomaly tests
+progress_file="$TEST_TEMP_DIR/home/.shipwright/progress/issue-anomaly.json"
+cat > "$progress_file" <<'PROGEOF'
+{
+  "snapshots": [],
+  "no_progress_count": 0,
+  "anomaly_flagged": {}
+}
+PROGEOF
+
+# Test 11: Anomaly detection - under threshold (no anomaly)
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 2 50
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+if [[ "$detected" == "false" ]]; then
+    assert_pass "Anomaly detection - under threshold returns detected=false"
+else
+    assert_fail "Anomaly detection - under threshold returns detected=false" "got: $detected"
+fi
+
+# Test 12: Anomaly detection - diff growth crosses threshold
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 2 900
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+diff_anomalous=$(echo "$result" | jq -r '.diff.anomalous' 2>/dev/null)
+if [[ "$detected" == "true" && "$diff_anomalous" == "true" ]]; then
+    assert_pass "Anomaly detection - diff 900 vs baseline 100 flags anomaly"
+else
+    assert_fail "Anomaly detection - diff 900 vs baseline 100" "detected=$detected, diff.anomalous=$diff_anomalous"
+fi
+
+# Test 13: Anomaly detection - velocity crosses threshold
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 20 50
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+vel_anomalous=$(echo "$result" | jq -r '.velocity.anomalous' 2>/dev/null)
+if [[ "$detected" == "true" && "$vel_anomalous" == "true" ]]; then
+    assert_pass "Anomaly detection - velocity 20 vs baseline 4 flags anomaly"
+else
+    assert_fail "Anomaly detection - velocity 20 vs baseline 4" "detected=$detected, velocity.anomalous=$vel_anomalous"
+fi
+
+# Test 14: Baseline file absent
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+rm -f "$HOME/.shipwright/baselines/default.json"
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 20 900
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+if [[ "$detected" == "false" ]]; then
+    assert_pass "Anomaly detection - missing baseline file returns detected=false"
+else
+    assert_fail "Anomaly detection - missing baseline file" "detected=$detected"
+fi
+
+# Recreate baseline for remaining tests
+cat > "$TEST_TEMP_DIR/home/.shipwright/baselines/default.json" <<'BASEEOF'
+{
+  "build.diff_lines": {"value": 100, "count": 5},
+  "build.iterations": {"value": 4, "count": 5}
+}
+BASEEOF
+
+# Test 15: Baseline malformed JSON
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+echo "{broken json" > "$HOME/.shipwright/baselines/default.json"
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 20 900
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+if [[ "$detected" == "false" ]]; then
+    assert_pass "Anomaly detection - malformed baseline JSON returns detected=false"
+else
+    assert_fail "Anomaly detection - malformed baseline" "detected=$detected"
+fi
+
+# Test 16: Cold start (count < min_samples)
+cat > "$TEST_TEMP_DIR/home/.shipwright/baselines/default.json" <<'BASEEOF'
+{
+  "build.diff_lines": {"value": 100, "count": 1},
+  "build.iterations": {"value": 4, "count": 1}
+}
+BASEEOF
+result=$(cd "$SCRIPT_DIR" && SCRIPT_DIR="$SCRIPT_DIR" HOME="$TEST_TEMP_DIR/home" bash -c '
+source "$SCRIPT_DIR/lib/compat.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/lib/helpers.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>/dev/null || true
+_compute_anomaly "$HOME/.shipwright/progress/issue-anomaly.json" 20 900
+' 2>/dev/null)
+detected=$(echo "$result" | jq -r '.detected' 2>/dev/null)
+if [[ "$detected" == "false" ]]; then
+    assert_pass "Anomaly detection - cold start (count=1) suppresses anomaly"
+else
+    assert_fail "Anomaly detection - cold start suppression" "detected=$detected"
+fi
+
+# Test 17: --anomaly output mode
+cat > "$TEST_TEMP_DIR/home/.shipwright/baselines/default.json" <<'BASEEOF'
+{
+  "build.diff_lines": {"value": 100, "count": 5},
+  "build.iterations": {"value": 4, "count": 5}
+}
+BASEEOF
+output=$(cd "$SCRIPT_DIR" && bash "$SCRIPT_DIR/sw-pipeline-vitals.sh" --anomaly 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 0 ]]; then
+    assert_pass "--anomaly output mode exits 0"
+else
+    assert_fail "--anomaly output mode exits 0" "exit code: $rc"
+fi
+if printf '%s\n' "$output" | jq . >/dev/null 2>&1; then
+    assert_pass "--anomaly outputs valid JSON"
+else
+    assert_fail "--anomaly outputs valid JSON" "output: $output"
+fi
+
+# Test 18: --help mentions --anomaly
+output=$(bash "$SCRIPT_DIR/sw-pipeline-vitals.sh" --help 2>&1) && rc=0 || rc=$?
+if echo "$output" | grep -q "\-\-anomaly"; then
+    assert_pass "--help documents --anomaly option"
+else
+    assert_fail "--help documents --anomaly option"
+fi
+
+# Test 19: Dashboard includes anomaly warnings
+mkdir -p "$TEST_TEMP_DIR/home/.claude/pipeline-state"
+cat > "$TEST_TEMP_DIR/home/.claude/pipeline-state/state.md" <<'STATEEOF'
+issue: 42
+current_stage: build
+stage_progress: intake:complete plan:complete build:running iteration 2
+elapsed: 5m 30s
+STATEEOF
+output=$(cd "$SCRIPT_DIR" && REPO_DIR="$TEST_TEMP_DIR/home" HOME="$TEST_TEMP_DIR/home" bash "$SCRIPT_DIR/sw-pipeline-vitals.sh" 2>&1) && rc=0 || rc=$?
+if [[ $rc -eq 0 ]]; then
+    assert_pass "Dashboard rendering with anomaly exits 0"
+else
+    assert_fail "Dashboard rendering with anomaly exits 0" "exit code: $rc"
+fi
+
+# Test 20: JSON includes .anomaly key
+output=$(cd "$SCRIPT_DIR" && bash "$SCRIPT_DIR/sw-pipeline-vitals.sh" --json 2>&1)
+if echo "$output" | jq -e '.anomaly' >/dev/null 2>&1; then
+    assert_pass "JSON output includes .anomaly key"
+else
+    assert_fail "JSON output includes .anomaly key"
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESULTS

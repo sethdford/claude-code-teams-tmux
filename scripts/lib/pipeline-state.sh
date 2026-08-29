@@ -216,6 +216,21 @@ mark_stage_complete() {
         fi
     fi
 
+    # Record diff_lines and iteration baselines for build stage anomaly detection
+    if [[ "$stage_id" == "build" && -x "$SCRIPT_DIR/sw-predictive.sh" ]]; then
+        local diff_lines iter_count
+        diff_lines=$(cd "$REPO_DIR" 2>/dev/null && git diff --stat 2>/dev/null | tail -1 | grep -o '[0-9]* insertion' | grep -o '[0-9]*' || echo "0")
+        diff_lines="${diff_lines:-0}"
+        [[ -n "$diff_lines" && "$diff_lines" != "0" ]] && bash "$SCRIPT_DIR/sw-predictive.sh" baseline "build" "diff_lines" "$diff_lines" 2>/dev/null || true
+
+        local stage_prog
+        stage_prog="${STAGE_STATUSES:-}"
+        if [[ "$stage_prog" =~ iteration\ ([0-9]+) ]]; then
+            iter_count="${BASH_REMATCH[1]}"
+            [[ -n "$iter_count" && "$iter_count" != "0" ]] && bash "$SCRIPT_DIR/sw-predictive.sh" baseline "build" "iterations" "$iter_count" 2>/dev/null || true
+        fi
+    fi
+
     # Update GitHub progress comment
     if [[ -n "$ISSUE_NUMBER" ]]; then
         local body
