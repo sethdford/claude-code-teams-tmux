@@ -1,3 +1,13 @@
 {
-  "failures": []
+  "failures": [
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
+      "root_cause": "sw-e2e-integration-test hit the 302s harness timeout (likely blocked on a real Claude/GitHub call or waiting on network), which killed it mid-run and left the reveal script reporting only 1/3 sub-tests as having reported a pass/fail before the SIGTERM cut it off",
+      "fix": "add a bounded timeout/mock fallback inside sw-e2e-integration-test.sh for the Claude/GitHub calls (or skip it in CI without live credentials) so it fails fast instead of hanging to the 300s suite timeout",
+      "seen_count": 3,
+      "last_seen": "2026-09-01T21:20:12Z",
+      "category": "timeout"
+    }
+  ]
 }
