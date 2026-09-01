@@ -3,11 +3,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
-      "root_cause": "sw-e2e-integration-test hit the 302s harness timeout (likely blocked on a real Claude/GitHub call or waiting on network), which killed it mid-run and left the reveal script reporting only 1/3 sub-tests as having reported a pass/fail before the SIGTERM cut it off",
-      "fix": "add a bounded timeout/mock fallback inside sw-e2e-integration-test.sh for the Claude/GitHub calls (or skip it in CI without live credentials) so it fails fast instead of hanging to the 300s suite timeout",
-      "seen_count": 3,
-      "last_seen": "2026-09-01T21:20:12Z",
-      "category": "timeout"
+      "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
+      "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
+      "seen_count": 1,
+      "last_seen": "2026-09-01T20:11:04Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
+      "root_cause": "sw-loop-test's 'Loop stuckness detection' assertion fails, and sw-e2e-integration-test hangs at iteration 1/3 past the 301s timeout, indicating the loop's stuckness/iteration-repeat detection logic isn't triggering or terminating as expected",
+      "fix": "Debug run_test_gate / stuckness-detection logic in sw-loop.sh around iteration handling — check why the loop fails to detect repeated failures and increase or fix the e2e-integration-test timeout budget",
+      "seen_count": 1,
+      "last_seen": "2026-09-01T21:00:37Z",
+      "category": "test_failure"
     }
   ]
 }
