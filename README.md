@@ -593,3 +593,4 @@ MIT — Seth Ford, 2026.
 
 <!-- E2E test: automated comment added by issue #3761 -->
 <!-- E2E test: automated comment added by issue #3765 -->
+<!-- E2E test: automated comment added by issue #3768 -->
