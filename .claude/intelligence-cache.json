@@ -2044,6 +2044,47 @@
       },
       "timestamp": 1788379325,
       "ttl": 1800
+    },
+    "9f24aaba982fb5a9f6357a7e6a0f4fdd": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1788379645,
+      "ttl": 1800
+    },
+    "11bf910ab3b49d3e91bb04435dd2041f": {
+      "result": {
+        "estimated_cost_usd": 0.22,
+        "estimated_iterations": 1,
+        "estimated_tokens": 7500,
+        "likely_failure_stage": "none",
+        "confidence": 85,
+        "breakdown": {
+          "intake": {
+            "cost_usd": 0.02,
+            "tokens": 1000,
+            "model": "haiku"
+          },
+          "build": {
+            "cost_usd": 0.03,
+            "tokens": 2000,
+            "model": "haiku"
+          },
+          "test": {
+            "cost_usd": 0.12,
+            "tokens": 3500,
+            "model": "haiku"
+          },
+          "pr": {
+            "cost_usd": 0.05,
+            "tokens": 1000,
+            "model": "haiku"
+          }
+        },
+        "rationale": "Complexity 1 testing issue with 98% success probability. Fast template skips review. Single iteration expected. Cost is dominated by test execution analysis. Haiku sufficient for all stages given low complexity."
+      },
+      "timestamp": 1788379655,
+      "ttl": 3600
     }
   }
 }
