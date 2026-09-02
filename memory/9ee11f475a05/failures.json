@@ -12,10 +12,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh mock stages don't create expected artifact files (plan.md, review.md) and jq is fed a non-numeric mock value, so downstream assertions checking for those artifacts and intelligence-complexity parsing fail",
-      "fix": "fix the mock plan/review stage functions to write .claude/pipeline-artifacts/plan.md and review.md before returning, and ensure the complexity value passed to jq is a valid numeric literal",
-      "seen_count": 3,
-      "last_seen": "2026-09-02T02:57:38Z",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock (pipeline-3664 already running) while sw-self-optimize-test and sw-intent-analysis-test failed on unrelated pre-existing bugs (invalid JSON passed to jq --argjson, and missing schema fields)",
+      "fix": "Release/clear the stale pipeline lock before the e2e test runs (or add lock cleanup in test teardown), and separately fix the jq --argjson invalid-JSON input in sw-self-optimize and the intent-analysis schema generator to include version/goal/criteria",
+      "seen_count": 4,
+      "last_seen": "2026-09-02T05:05:16Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
+      "root_cause": "sw-intent-analysis-test fails at exit 1 during an intent classification assertion, likely a mismatched expected label/score threshold",
+      "fix": "Run scripts/sw-intent-analysis-test.sh directly to isolate the failing assertion and update the expected value or classification logic accordingly",
+      "seen_count": 1,
+      "last_seen": "2026-09-02T05:51:09Z",
       "category": "test_failure"
     }
   ]
