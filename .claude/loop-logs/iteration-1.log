@@ -1,28 +1,3 @@
-The goal is complete and verified. Summary of what I found and did this iteration:
-
-**State on entry:** the previous session had already written the implementation (`scripts/lib/daemon-patrol.sh` +276, tests +304, daemon wiring +31) but had not verified it end-to-end. My work was validation, one fix, and the commit.
-
-**Verification results:**
-- `sw-lib-daemon-patrol-test.sh` — 80/80 pass
-- `npm test` — **162 suites, 0 failed** (585s)
-- `shellcheck -S warning` — three findings (SC2148/SC2034/SC1090), all confirmed pre-existing on HEAD; the new code adds none
-- `shipwright docs check` — exit 0
-
-**Fix applied:** one misindented `local audit_mode="close"` (12 spaces → 8).
-
-**Not committed:** `scripts/skills/generated/daemon-patrol-integration.md` — that directory tracks only `.gitkeep`, so generated skill artifacts are ephemeral here.
-
-### Test pyramid breakdown (required by the active testing-strategy skill)
-63 new assertions across 4 sections. No E2E — deliberately skipped, since the only true E2E would mutate real GitHub issue state, and this repo's E2E suites run without API keys by design.
-
-- **Unit (~44, 70%)** — `_patrol_normalize_title` (bracket/timestamp/SHA/digit stripping, empty input), `patrol_group_duplicate_issues` (grouping, gate logic, cluster invariants), threshold config resolution across both key forms and the env override.
-- **Integration (~19, 30%)** — `patrol_duplicate_issues` against a recording `gh` mock, plus `daemon_patrol` dispatch and `sw-daemon.sh` config loading.
-
-**Critical paths covered:** happy path (cluster above threshold closes exactly the expected set); error cases (failing `gh` returns 0, non-JSON `gh` output returns 0 — both matter because patrol runs under `set -e`); edge cases (cluster exactly *at* threshold is a no-op, truncated fetch stands down, closure cap, human-labelled cluster, assigned issue, `NO_GITHUB`, dry-run records zero `gh issue close` calls).
-
-### One deviation you should know about
-The spec line says *"closes all but the **newest**"*. The implementation keeps the **lowest issue number** (the oldest). This was decided during the design stage with a written rationale, and it's documented in the code comment, `design.md`, and `.claude/CLAUDE.md`: the oldest issue carries the triage labels and cross-references, and "lowest number" is stable across runs even when the fetch window truncates, whereas "newest in the window" can name a different survivor each pass. I left the documented behavior rather than silently reverting to the literal wording — but it *is* a departure from the acceptance criterion, so it's your call whether to keep it.
-
-Also worth restating from the plan: this is a net, not a cure. Whatever generator emitted #3502–#3523 is still running; source-side rate limiting is separate work worth filing.
+The README comment for issue #3668 has been added and committed. The goal — adding an E2E test comment marker to README — is fully achieved.
 
 LOOP_COMPLETE
