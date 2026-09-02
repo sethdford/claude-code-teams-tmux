@@ -817,6 +817,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-e2e-orchestrator-test.sh` | 157 | Test suite registry & execution |
 | `scripts/sw-e2e-smoke-test.sh` | 835 | Pipeline orchestration without API keys |
 | `scripts/sw-e2e-system-test.sh` | 497 | Proves full daemon→pipeline→loop→PR flow |
+| `scripts/sw-event-schema-sync-test.sh` | 140 | keep config/event-schema.json in step |
 | `scripts/sw-eventbus-test.sh` | 155 | Durable event bus tests |
 | `scripts/sw-evidence-test.sh` | 416 | Unit tests for sw-evidence.sh |
 | `scripts/sw-feedback-test.sh` | 302 | Production Feedback Loop tests |
@@ -916,12 +917,16 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-swarm-test.sh` | 153 | Dynamic agent swarm management tests |
 | `scripts/sw-team-stages-test.sh` | 148 | Validate multi-agent stage execution |
 | `scripts/sw-templates-test.sh` | 251 | Validate team template browser |
+| `scripts/sw-test-all-test.sh` | 128 | Run every test suite, report the FULL result |
 | `scripts/sw-test-holdout-test.sh` | 214 | Test Holdout System Test Suite |
 | `scripts/sw-test-optimizer-test.sh` | 395 | Test suite for test execution optimizer |
 | `scripts/sw-testgen-test.sh` | 160 | Test generation & coverage tests |
 | `scripts/sw-tmux-pipeline-test.sh` | 187 | Validate tmux pipeline management |
+| `scripts/sw-tmux-role-color-test.sh` | 158 | Set pane border color by agent role |
+| `scripts/sw-tmux-status-test.sh` | 144 | Status bar widgets for tmux |
 | `scripts/sw-tmux-test.sh` | 746 | Validate tmux doctor, install, fix, reload, |
 | `scripts/sw-trace-test.sh` | 143 | E2E traceability (Issue → Commit → PR → Deploy) |
+| `scripts/sw-tracker-github-test.sh` | 195 | GitHub Issue Tracker Provider |
 | `scripts/sw-tracker-providers-test.sh` | 552 | Unit tests for GitHub, Linear, |
 | `scripts/sw-tracker-test.sh` | 534 | Validate tracker router, providers, and |
 | `scripts/sw-triage-test.sh` | 249 | Intelligent Issue Labeling & Prioritization |
