@@ -30,17 +30,9 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
-        "secondary_roles": [
-          "tester",
-          "architect"
-        ],
-        "confidence": 0.85,
-        "reasoning": "Implement detection and auto-resolution logic for duplicate issue creation—requires core feature development with E2E test understanding and system design",
-        "new_role_needed": false,
-        "suggested_role": null
+        "raw_response": "Mock claude response"
       },
-      "timestamp": 1788321750,
+      "timestamp": 1788325587,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1672,31 +1664,31 @@
           {
             "file": "retry-outcomes.json",
             "relevance": 95,
-            "summary": "Shows build_failure recovery strategy (model_escalation) with 100% success rate from recent runs. Directly applicable to build stage resilience and escalation decisions."
+            "summary": "Shows build_failure retry strategy with 100% success rate using model_escalation—directly applicable when build stage encounters errors"
           },
           {
             "file": "success-patterns.json",
             "relevance": 90,
-            "summary": "Two successful build patterns showing iteration counts (3), durations (45-150s), and approaches that succeeded. Provides benchmark for expected build stage completion."
+            "summary": "Contains two successful build patterns with approach, iteration counts, duration, and file change patterns—exemplars for this build stage"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Project conventions (vitest test runner, npm, src/ directory, commonjs imports)—essential context for building correctly in this codebase"
           },
           {
             "file": "metrics.json",
-            "relevance": 80,
-            "summary": "Baseline metrics show build_duration_s=7095s and test_duration_s=1459s. Critical for setting timeout expectations and detecting stalls in current build."
+            "relevance": 75,
+            "summary": "Build duration baseline (7095s) provides performance expectation for this build stage"
           },
           {
-            "file": "failures.json",
-            "relevance": 70,
-            "summary": "Two recent test-stage failures: intent-analysis schema mismatch and pipeline mock artifacts. Relevant to anticipating and preventing similar test failures in current build."
-          },
-          {
-            "file": "knowledge.json",
-            "relevance": 60,
-            "summary": "Test environment issues (mktemp /tmp/claude directory missing, sw-cleanup.sh output format, sw-feedback.sh JSON validation). May impact test execution during build stage."
+            "file": "issues.json",
+            "relevance": 65,
+            "summary": "Past successful build issue (timeout bug with semaphore fix) shows debugging patterns and affected files to watch"
           }
         ]
       },
-      "timestamp": 1788323571,
+      "timestamp": 1788325535,
       "ttl": 1800
     },
     "e23acc530dd69e80e4ab7043818a3171": {
@@ -1954,6 +1946,76 @@
         }
       ],
       "timestamp": 1788325410,
+      "ttl": 1800
+    },
+    "37f0162ab29992b2fb00859c5195d76f": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788325668,
+      "ttl": 1800
+    },
+    "24d6351d2c425a3cd5f31c7db34881ee": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788325725,
+      "ttl": 1800
+    },
+    "dc106e586ff75d01df3fd6bf290bdbb4": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788325791,
+      "ttl": 1800
+    },
+    "0a8554cab4a04fd2657f89355ec973c5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788325953,
+      "ttl": 1800
+    },
+    "c6978bd448107dc1f526f41c40d329f6": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788325997,
+      "ttl": 1800
+    },
+    "fda6bf8f9e6f09b73e582d2b13b7735c": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788326231,
       "ttl": 1800
     }
   }
