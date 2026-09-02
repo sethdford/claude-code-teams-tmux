@@ -5,18 +5,18 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 6,
-      "last_seen": "2026-09-02T06:24:06Z",
+      "seen_count": 8,
+      "last_seen": "2026-09-02T09:02:34Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-pipeline-test.sh: plan stage never writes .claude/pipeline-artifacts/plan.md, cascading to review/E2E/resume/cleanup failures, plus a jq parse error on a non-numeric complexity value in the RL/intelligence test",
-      "fix": "Fix the plan stage mock/handler to emit plan.md (and dod.md) before downstream stages run, and quote/validate the complexity value before piping it to jq",
-      "seen_count": 3,
-      "last_seen": "2026-09-02T02:57:38Z",
-      "category": "test_failure"
+      "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
+      "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
+      "seen_count": 4,
+      "last_seen": "2026-09-02T09:58:26Z",
+      "category": "flaky"
     }
   ]
 }
