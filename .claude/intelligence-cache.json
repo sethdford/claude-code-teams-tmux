@@ -33,14 +33,14 @@
         "primary_role": "builder",
         "secondary_roles": [
           "tester",
-          "reviewer"
+          "architect"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Implement detection and auto-resolution logic for duplicate issue creation—requires core feature development with E2E test understanding and system design",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1788321750,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,366 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "1a650bc2064cbefe98eb0c43fb3ee67a": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Over-aggressive title normalization could close legitimate related issues as duplicates",
+          "GitHub API rate limiting when fetching many open issues during patrol run",
+          "Incomplete normalization of auto-generated title variations leads to missed duplicates",
+          "Race condition if new duplicate created after grouping but before closing"
+        ],
+        "implementation_hints": [
+          "Reuse existing patrol patterns from sw-daemon.sh and lib/daemon-patrol.sh for similar grouping/action workflows",
+          "Normalize titles by stripping suffixes ('[automated]', '[bot]'), lowercasing, collapsing whitespace, then comparing by normalized title + label set",
+          "Add daemon-config.json keys: 'patrol.duplicate_issue_threshold' (default: 3) and 'patrol.duplicate_ignore_labels' (list), read via existing _read_config helper",
+          "Implement dry-run by logging '[DRY-RUN] Would close issue #XXXX as duplicate of #YYYY' without GitHub API calls—useful for validation before daemon enablement",
+          "Test structure: mock API responses for scenarios (no duplicates, at-threshold, above-threshold, mixed labels, timestamp edge cases); validate correct issue kept (highest #, newest created_at)",
+          "Explanatory comment template: 'Closing as duplicate of #XXXX. This and N other auto-generated issues were consolidated; see canonical issue for details.' with link to most-recent"
+        ]
+      },
+      "timestamp": 1788321131,
+      "ttl": 3600
+    },
+    "308046d1d8769c02a79bb51fee47cd98": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1788321138,
+      "ttl": 1800
+    },
+    "36b708eac7b573edc06f95753e9a38ee": {
+      "result": {
+        "estimated_cost_usd": 0.78,
+        "estimated_iterations": 2,
+        "estimated_tokens": 34500,
+        "likely_failure_stage": "test",
+        "confidence": 77
+      },
+      "timestamp": 1788321149,
+      "ttl": 3600
+    },
+    "8d3e4e94d7e766f9ea26ee722062827d": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.95,
+        "secondary_domains": [
+          "testing",
+          "automation",
+          "observability"
+        ],
+        "complexity_assessment": {
+          "score": 6,
+          "reasoning": "Self-contained patrol function with clear acceptance criteria, but requires careful pattern matching to avoid false positives, GitHub API integration, config management, and comprehensive test coverage for edge cases."
+        },
+        "skill_plan": {
+          "plan": [
+            "pattern-matching-similarity-scoring",
+            "brainstorming"
+          ],
+          "design": [
+            "architecture-design",
+            "daemon-patrol-integration"
+          ],
+          "build": [
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality",
+            "pattern-matching-similarity-scoring"
+          ],
+          "compound_quality": [
+            "observability"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "pattern-matching-similarity-scoring": "Detecting near-duplicate issues requires robust title normalization and similarity scoring; this skill covers the core pattern matching challenge of avoiding false positives while catching genuine duplicates.",
+          "brainstorming": "Challenge assumptions about what constitutes a 'near-duplicate' (same title + same label enough, or do we need creation-time proximity?) and when auto-closure is safe (risk of closing legitimate issues that happen to have similar titles).",
+          "architecture-design": "Create an ADR documenting how this patrol check integrates with the existing daemon lifecycle, where in the polling loop it runs, and how it coordinates with other patrol functions.",
+          "daemon-patrol-integration": "Implement safe patterns for automatic GitHub issue closure (dry-run mode, explanatory comments, false-positive prevention, config validation, observability events).",
+          "testing-strategy": "Design test scenarios covering no duplicates (no-op), duplicates below threshold (no-op), duplicates above threshold (closes correct set and keeps newest), and edge cases (same title different labels, API failures).",
+          "adversarial-quality": "Find failure modes: overly aggressive normalization closing unrelated issues, GitHub API transience causing partial closures, race conditions if daemon parallelizes, missing edge cases in title normalization.",
+          "observability": "Emit structured events for all patrol actions (issue closed, skipped, reason), provide `shipwright status --patrol` output showing recent closures, and track 'patrol false positives' metric for refinement.",
+          "pr-quality": "The PR should clearly explain the patrol function logic, include a worked example of how duplicate detection works, and document the new config key with sensible defaults."
+        },
+        "generated_skills": [
+          {
+            "name": "daemon-patrol-integration",
+            "reason": "No existing skill covers the specific patterns for safely implementing automatic actions (GitHub issue closure) in the Shipwright daemon patrol system, including dry-run mode design, false-positive prevention, and integration with the polling lifecycle.",
+            "content": "## Daemon Patrol Integration\n\nWhen adding new automatic actions to the Shipwright daemon patrol system (e.g., issue closure, label mutations, comment posting), follow these patterns to ensure safety, reversibility, and observability.\n\n### Integration Architecture\n\n**Execution Model**: Patrol checks run serially in the main daemon polling loop (never concurrent), so no file locking or race condition handling needed. Each check is a separate shell function that reads GitHub state and decides on an action.\n\n**Registration**: Add new patrol function to `lib/daemon-patrol.sh` or as a discrete section in `sw-daemon.sh`, following the naming convention `patrol_check_<name>()`. Export the function name in the main daemon dispatch so it's called every poll cycle.\n\n**Dry-Run Support**: Every patrol check must honor `PATROL_DRY_RUN=1` environment variable. In dry-run mode:\n- Log intended actions (\"Would close issue #123 because...\") to stdout/stderr\n- Do NOT call GitHub API\n- Exit with the same code as production run (0 for success) so orchestration logic works unchanged\n- Useful for testing and auditing before daemon deployment\n\n### False-Positive Prevention\n\n**Normalization Strategy**: Normalize titles conservatively to avoid over-matching:\n- Lowercase and strip punctuation\n- Collapse multiple spaces, leading/trailing whitespace\n- Do NOT remove words; do NOT do substring matching on individual words\n- Example: \"E2E test: add comment to README [automated]\" → \"e2e test add comment to readme automated\"\n\n**Threshold Enforcement**: Require multiple signals before action (e.g., >3 issues, same label, created within 7 days). Single or dual matches should log a warning but take no action.\n\n**Reversibility**: Design so false positives can be undone:\n- Always post a GitHub comment explaining the action and linking to related issues\n- Link to the canonical/newest issue so users can check the current work\n- Include a \"revert by reopening\" instruction if the closure was incorrect\n\n### Configuration & Validation\n\n**Schema**: Add new patrol thresholds under `daemon-config.json` `.patrol.*` key:\n```json\n{\n  \"patrol\": {\n    \"duplicate_issue_threshold\": 3,\n    \"duplicate_created_within_days\": 7,\n    \"duplicate_dry_run\": false\n  }\n}\n```\n\n**Defaults & Validation**: Provide sensible hardcoded defaults; validate config at daemon startup:\n- Warn if key is missing (use default)\n- Error if value is invalid type (not an integer, negative, etc.)\n- Log all config values at daemon startup for audit trail\n\n### Event Emission\n\nEmit structured events for all patrol actions so they appear in the activity stream and cost dashboard:\n```bash\nemit_event \"patrol_action\" \\\n  \"check=duplicate_closure\" \\\n  \"issue=$issue_id\" \\\n  \"action=closed\" \\\n  \"reason=clustered_near_duplicates\" \\\n  \"related_issues=$issue_ids_closed\"\n```\n\n### Testing Patterns\n\n**Unit Tests**: Mock GitHub API; test with `PATROL_DRY_RUN=1` and real API calls separately:\n- 0 issues matching pattern → no-op\n- N issues matching pattern (N < threshold) → no-op, log warning\n- N issues matching pattern (N >= threshold) → closes N-1 oldest, keeps newest\n- Threshold exactly at boundary (N == threshold) → behavior defined\n- All issues created on same minute → deterministic by issue number\n- GitHub API failure (network error, rate limit) → backoff, log error, retry next poll\n\n**Integration Tests**: With mocked GitHub responses; verify:\n- Dry-run mode logs intended actions without API calls\n- Production mode calls GitHub API and posts comment\n- Comment text is clear and links to canonical issue\n\n### Monitoring & Observability\n\n**Dashboards**: Provide `shipwright status --patrol` output:\n```\nPatrol Actions (Last 24h)\n  duplicate_closure    14 closed    2 dry-run\n  stale_branch_cleanup 8 deleted    1 error\n```\n\n**Metrics**:\n- \"patrol_actions_total\" (counter by check name, action, outcome)\n- \"patrol_false_positives\" (user-reported, distinct from intentional actions)\n- \"patrol_latency_seconds\" (time for entire patrol cycle)\n\n**Audit Trail**: Log patrol actions in a side file (`.claude/pipeline-artifacts/patrol-log.jsonl`) with full context (before/after issue state, rationale, user who can revert).\n\n### Example: Duplicate Issue Closure\n\n```bash\npatrol_check_duplicate_issues() {\n  local threshold=${PATROL_DUP_THRESHOLD:-3}\n  local window_days=${PATROL_DUP_WINDOW_DAYS:-7}\n  \n  # Fetch open issues, normalize titles, group by pattern\n  # For each group with >= threshold issues:\n  # - Identify newest by created_at\n  # - Close all others with explanatory comment\n  # - Emit event\n  # - If PATROL_DRY_RUN=1, log without calling GitHub API\n}\n```"
+          }
+        ],
+        "review_focus": [
+          "Pattern matching logic: is title normalization conservative enough to avoid false positives while catching genuine duplicates?",
+          "GitHub API error handling: what happens if issue closure fails mid-way through a batch (partial close)? Is it idempotent on retry?",
+          "Config validation: does daemon fail fast if config is malformed, or silently fall back to defaults?",
+          "Dry-run correctness: does --dry-run skip all GitHub API calls while logging identical intended actions?",
+          "Comment clarity: are GitHub comments clear enough that a user understands why their issue was closed and how to revert if it was a mistake?"
+        ],
+        "risk_areas": [
+          "Over-aggressive pattern normalization could close unrelated issues with similar titles (e.g., multiple legitimate E2E test issues with different scopes).",
+          "Race condition if daemon is deployed on multiple machines and patrol checks run without coordination (two daemons could both see N duplicates and try to close).",
+          "GitHub API failures (rate limits, transient errors) during batch closures could leave partial state (some issues closed, others not).",
+          "Threshold tuning: if threshold is too low, legitimate issue clusters get closed; if too high, duplicate queue never gets cleaned.",
+          "Missing config key or invalid type could silently disable the patrol check or use nonsensical thresholds (e.g., threshold=0 closes everything)."
+        ]
+      },
+      "timestamp": 1788321235,
+      "ttl": 3600
+    },
+    "22b5270826c9923872174ed52568de7b": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 65,
+            "summary": "Test failure pattern with fix guidance (timeout adjustment). Directly addresses test execution issues, relevant for understanding common test problems."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 45,
+            "summary": "Low complexity test script fix pattern. Relevant for understanding simple test automation fixes, though not E2E-specific."
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 40,
+            "summary": "Specific test goal with test.sh pattern executed in build stage. Provides example of test-focused success pattern structure."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 35,
+            "summary": "Two test patterns with build stage execution. Shows pattern for multi-scenario test work, though generic."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 30,
+            "summary": "Generic test patterns with test.sh files. Low relevance but provides baseline pattern structure for test-related goals."
+          }
+        ]
+      },
+      "timestamp": 1788321283,
+      "ttl": 1800
+    },
+    "06a6441abf0a9ad2c66541342941c1b2": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 65,
+            "summary": "Contains test_failure pattern from build stage with fix for timeout configuration in test setup. Directly addresses test-related failures, which is core to E2E test issue creation and runaway process detection."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 45,
+            "summary": "Contains 2 low-complexity build stage patterns involving test.sh scripts and npm test execution. Relevant for understanding test automation scripting patterns that could cause duplicate/runaway issues."
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 40,
+            "summary": "Low-complexity pattern for test.sh script fix with typo root cause in npm test context. Provides precedent for test script debugging, though not E2E or duplicate-detection specific."
+          }
+        ]
+      },
+      "timestamp": 1788321492,
+      "ttl": 1800
+    },
+    "f579a46cc0ef6aac49478021c24948ab": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 45,
+            "summary": "Contains test_failure pattern in build stage with timeout fix suggestion; relevant for understanding E2E test failure patterns and stage-specific handling"
+          },
+          {
+            "file": "success-patterns.json (test-repo, auth module)",
+            "relevance": 38,
+            "summary": "Shows 'unit + integration' test strategy with iterative TDD approach; provides insights into multi-layer test orchestration and complexity estimation for architecture design"
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 28,
+            "summary": "Contains architectural rules framework; relevant for design stage as it demonstrates rule-based architecture patterns, though content is generic"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking, first pattern)",
+            "relevance": 18,
+            "summary": "Includes test.sh file patterns and build stage execution; marginally relevant as reference for test-related workflow patterns"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 15,
+            "summary": "References scripts/test.sh with low-complexity fix approach; provides minimal relevance as a test pattern baseline"
+          }
+        ]
+      },
+      "timestamp": 1788321535,
+      "ttl": 1800
+    },
+    "8eb4f611f09c87e3c38492f881f387ba": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 85,
+            "summary": "Semantically most aligned with 'rejected design approaches anti-patterns' (failures directly represent what not to do), but currently empty. Would be highest value if populated with E2E test issue failures."
+          },
+          {
+            "file": "index.json",
+            "relevance": 80,
+            "summary": "Contains 'test_failure' pattern signature with concrete data (5 occurrences, fix documented). Directly relevant to detecting and resolving test issues, though not specific to duplicate/runaway scenarios."
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 50,
+            "summary": "Shows successful 'add auth module' pattern with iterative TDD approach. By contrast with successful patterns, helps identify anti-patterns to avoid in E2E test issue handling."
+          }
+        ]
+      },
+      "timestamp": 1788321554,
+      "ttl": 1800
+    },
+    "ca47dca5fcf9f4ec67d803ffb50956c8": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 75,
+            "summary": "Contains test_failure pattern in build stage with timeout fix suggestion—directly relevant to test-related issues in current pipeline stage"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 60,
+            "summary": "Two build-stage patterns with npm test strategy and defined approaches/root causes—relevant templates for test automation in build phase"
+          },
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 55,
+            "summary": "Includes integration + unit test strategy and iterative TDD approach—relevant testing methodology, though not build-stage specific"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 50,
+            "summary": "Low-complexity build-stage pattern with npm test—applicable for simple test fixes but lacks detail on test automation"
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 45,
+            "summary": "Build-stage pattern with npm test strategy—generic test pattern but minimal context on approach or root cause"
+          }
+        ]
+      },
+      "timestamp": 1788321718,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 95,
+            "summary": "Shows build_failure recovery strategy (model_escalation) with 100% success rate from recent runs. Directly applicable to build stage resilience and escalation decisions."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Two successful build patterns showing iteration counts (3), durations (45-150s), and approaches that succeeded. Provides benchmark for expected build stage completion."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 80,
+            "summary": "Baseline metrics show build_duration_s=7095s and test_duration_s=1459s. Critical for setting timeout expectations and detecting stalls in current build."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 70,
+            "summary": "Two recent test-stage failures: intent-analysis schema mismatch and pipeline mock artifacts. Relevant to anticipating and preventing similar test failures in current build."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Test environment issues (mktemp /tmp/claude directory missing, sw-cleanup.sh output format, sw-feedback.sh JSON validation). May impact test execution during build stage."
+          }
+        ]
+      },
+      "timestamp": 1788323571,
+      "ttl": 1800
+    },
+    "e23acc530dd69e80e4ab7043818a3171": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788322349,
+      "ttl": 1800
+    },
+    "5520c68e5f6a07428292aefc5a14f2b3": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788322574,
+      "ttl": 1800
+    },
+    "177f7b57992088dc64be90a03efeb37f": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788322970,
+      "ttl": 1800
+    },
+    "95cc16ffae91cbbb8bc3fef1f96e879d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788323191,
+      "ttl": 1800
+    },
+    "f616281aa8363ed9c95b1c7e2f7061ad": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788323688,
+      "ttl": 1800
+    },
+    "e7cd53ce27443840c3245ca5ec96dd4d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788323912,
+      "ttl": 1800
     }
   }
 }
