@@ -101,7 +101,9 @@ echo ""
 echo -e "${BOLD}  Pattern Matching${RESET}"
 output=$(bash "$SCRIPT_DIR/sw-test-all.sh" --pattern "HELLO" --list 2>&1) || true
 # Grep patterns are typically case-sensitive
-count=$(echo "$output" | grep -c "\.sh" 2>/dev/null || echo 0)
+count=$(echo "$output" | grep -c "\.sh" 2>/dev/null) || count=0
+count=$(echo "$count" | tr -d ' \n')
+count=${count:-0}  # Default to 0 if empty
 if (( count < 10 )); then
     assert_pass "pattern matching is case-sensitive"
 else
@@ -112,7 +114,9 @@ fi
 echo ""
 echo -e "${BOLD}  Edge Cases${RESET}"
 output=$(bash "$SCRIPT_DIR/sw-test-all.sh" --pattern "nonexistent-xyz-abc" --list 2>&1) || true
-count=$(echo "$output" | grep -c "\.sh" 2>/dev/null || echo 0)
+count=$(echo "$output" | grep -c "\.sh" 2>/dev/null) || count=0
+count=$(echo "$count" | tr -d ' \n')
+count=${count:-0}  # Default to 0 if empty
 if (( count == 0 )); then
     assert_pass "nonexistent pattern returns no results"
 else
