@@ -22,6 +22,15 @@ PATROL_UNTESTED_ENABLED="${PATROL_UNTESTED_ENABLED:-true}"
 PATROL_RETRY_ENABLED="${PATROL_RETRY_ENABLED:-true}"
 PATROL_RETRY_THRESHOLD="${PATROL_RETRY_THRESHOLD:-2}"
 
+# Duplicate / runaway issue detection.
+PATROL_DUP_ENABLED="${PATROL_DUP_ENABLED:-true}"
+PATROL_DUP_THRESHOLD="${PATROL_DUP_THRESHOLD:-3}"
+PATROL_DUP_AUTO_LABELS="${PATROL_DUP_AUTO_LABELS:-automated,auto-patrol}"
+PATROL_DUP_WINDOW_DAYS="${PATROL_DUP_WINDOW_DAYS:-7}"
+PATROL_DUP_MAX_CLOSURES="${PATROL_DUP_MAX_CLOSURES:-25}"
+PATROL_DUP_FETCH_LIMIT="${PATROL_DUP_FETCH_LIMIT:-300}"
+PATROL_DUP_FINDINGS=0
+
 # ─── Decision Engine Signal Mode ─────────────────────────────────────────────
 # When DECISION_ENGINE_ENABLED=true, patrol writes candidates to the pending
 # signals file instead of creating GitHub issues directly. The decision engine
@@ -54,6 +63,260 @@ patrol_build_labels() {
 }
 
 # ─── Proactive Patrol Mode ───────────────────────────────────────────────────
+
+# ─── Duplicate / Runaway Issue Detection ─────────────────────────────────────
+# Groups open issues by normalized title + label set and closes runaway
+# duplicate clusters, keeping one canonical issue per cluster.
+#
+# These are deliberately TOP-LEVEL functions rather than nested inside
+# daemon_patrol like the older checks: this is the one check that *closes*
+# issues, so it has to be directly callable from sw-lib-daemon-patrol-test.sh,
+# which sources this lib and invokes functions by name.
+#
+# Note on which issue survives: the cluster's LOWEST issue number is kept, not
+# the newest. The oldest issue carries the triage labels, human comments and
+# cross-references, and "lowest number" is stable across runs even when the
+# fetch window truncates — "newest in the window" would keep a different issue
+# each pass and close what the previous pass kept.
+
+# Reduce a title to a canonical grouping key. Total function: any input,
+# including the empty string, produces output on stdout and exit 0.
+_patrol_normalize_title() {
+    printf '%s\n' "${1:-}" \
+        | tr '[:upper:]' '[:lower:]' \
+        | sed -E \
+            -e 's/\[[^][]*\]/ /g' \
+            -e 's/\([^()]*\)/ /g' \
+            -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}([t ][0-9]{2}:[0-9]{2}(:[0-9]{2})?(\.[0-9]+)?z?)?/ /g' \
+            -e 's/[^a-z0-9]+/ /g' \
+        | awk '{
+            out = ""
+            for (i = 1; i <= NF; i++) {
+                tok = $i
+                # Drop pure hex/decimal noise tokens: SHAs, issue ids, counters.
+                if (tok ~ /^[0-9a-f]*[0-9][0-9a-f]*$/) continue
+                gsub(/[0-9]/, "", tok)
+                if (tok == "") continue
+                out = (out == "" ? tok : out " " tok)
+            }
+            print out
+        }'
+}
+
+# Body of the comment left on each auto-closed duplicate.
+_patrol_duplicate_comment() {
+    local keep="$1" count="$2"
+    printf 'Closed automatically by Shipwright patrol.\n\nThis issue is one of %s open issues sharing the same normalized title and label set — a duplicate/runaway cluster. Tracking continues in #%s.\n\nIf this was closed in error, reopen it and remove the automation label so patrol leaves it alone.' \
+        "$count" "$keep"
+}
+
+# stdin:  JSON array of issues (number, title, labels, createdAt, assignees).
+# $1:     daemon state file (optional) — issues with a running pipeline are spared.
+# stdout: one cluster object per line (JSONL). Never exits nonzero.
+#
+# Invariant on every emitted cluster: keep is not in close, close and skipped
+# are disjoint, and close is non-empty.
+patrol_group_duplicate_issues() {
+    local state_file="${1:-${STATE_FILE:-}}"
+    local input
+    input=$(cat)
+    [[ -z "$input" ]] && return 0
+    printf '%s' "$input" | jq -e 'type == "array" and length > 0' >/dev/null 2>&1 || return 0
+
+    # Phase A — normalized title per issue number, as a TSV lookup table.
+    local norm_map="" num title norm
+    while IFS=$'\t' read -r num title; do
+        [[ -z "$num" ]] && continue
+        norm=$(_patrol_normalize_title "$title")
+        norm_map="${norm_map}${num}"$'\t'"${norm}"$'\n'
+    done < <(printf '%s' "$input" | jq -r '
+        .[] | select(.number != null)
+        | [(.number | tostring), ((.title // "") | gsub("[\t\n]"; " "))] | @tsv' 2>/dev/null || true)
+    [[ -z "$norm_map" ]] && return 0
+
+    # Issues with a pipeline currently running against them are never touched.
+    # Fail *open* on a missing state file — a fresh daemon has none, and the
+    # label/assignee/window gates still apply independently.
+    local active_json='[]'
+    if [[ -n "$state_file" && -f "$state_file" ]]; then
+        active_json=$(jq -c '[.active_jobs[]?.issue // empty]' "$state_file" 2>/dev/null || echo '[]')
+    fi
+
+    local cutoff window_days
+    window_days="${PATROL_DUP_WINDOW_DAYS:-7}"
+    cutoff=$(( $(date +%s) - (window_days * 86400) ))
+
+    # Phase B — group and apply the safety gates in a single jq pass.
+    printf '%s' "$input" | jq -c \
+        --arg norms "$norm_map" \
+        --arg auto "${PATROL_DUP_AUTO_LABELS:-automated,auto-patrol}" \
+        --argjson threshold "${PATROL_DUP_THRESHOLD:-3}" \
+        --argjson active "$active_json" \
+        --argjson cutoff "$cutoff" '
+        ( $norms | split("\n") | map(select(length > 0) | split("\t"))
+                 | map({key: .[0], value: (.[1] // "")}) | from_entries ) as $nm
+        | ( $auto | split(",") | map(select(length > 0)) ) as $autolabels
+        | [ .[] | select(.number != null) | {
+              number: .number,
+              title: (.title // ""),
+              createdAt: (.createdAt // ""),
+              labels: ((.labels // []) | map(.name // .) | sort),
+              assigned: (((.assignees // []) | length) > 0)
+          } ]
+        | map(. + { key: (($nm[(.number | tostring)] // "") + "\u001f" + (.labels | join(","))) })
+        | group_by(.key)
+        # Gate: a cluster only counts as runaway above the threshold.
+        | map(select(length > $threshold))
+        # Gate: the cluster must carry an automation label. Labels are part of
+        # the grouping key, so every member has the same set — check any one.
+        | map(select(.[0].labels | any(. as $l | ($autolabels | index($l)) != null)))
+        | map(
+            (sort_by(.number)) as $m
+            | ($m[1:] | map(. + { skip_reason:
+                (if .assigned then "assigned"
+                 elif ((.number) as $nr | ($active | index($nr)) != null) then "active_pipeline"
+                 elif (.createdAt == "" or ((.createdAt | fromdateiso8601? // 0) < $cutoff)) then "outside_window"
+                 else null end) })) as $rest
+            | {
+                key: $m[0].key,
+                count: ($m | length),
+                keep: $m[0].number,
+                sample_title: $m[0].title,
+                close: [ $rest[] | select(.skip_reason == null) | .number ],
+                skipped: [ $rest[] | select(.skip_reason != null) | {number: .number, reason: .skip_reason} ]
+              }
+          )
+        | map(select((.close | length) > 0))
+        | .[]' 2>/dev/null || true
+}
+
+# Append one audit record per cluster acted on.
+_patrol_duplicate_audit() {
+    local cluster="$1" mode="$2"
+    local dir="${PIPELINE_ARTIFACTS_DIR:-.claude/pipeline-artifacts}"
+    mkdir -p "$dir" 2>/dev/null || return 0
+    local tmp
+    tmp=$(mktemp "${TMPDIR:-/tmp}/sw-patrol-audit.XXXXXX") || return 0
+    printf '%s' "$cluster" \
+        | jq -c --arg mode "$mode" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{check: "duplicate_issues", mode: $mode, at: $ts} + .' > "$tmp" 2>/dev/null \
+        && cat "$tmp" >> "$dir/patrol-log.jsonl" 2>/dev/null
+    rm -f "$tmp"
+    return 0
+}
+
+# The patrol check itself. Sets PATROL_DUP_FINDINGS and ALWAYS returns 0 —
+# daemon_patrol runs under `set -e`, so a nonzero return here would abort the
+# remaining patrol stages.
+patrol_duplicate_issues() {
+    PATROL_DUP_FINDINGS=0
+    local dry_run="${PATROL_DRY_RUN:-false}"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run) dry_run=true; shift ;;
+            *)         shift ;;
+        esac
+    done
+
+    if [[ "${PATROL_DUP_ENABLED:-true}" != "true" ]]; then
+        echo -e "    ${DIM:-}●${RESET:-} Skipped (duplicate issue check disabled)"
+        return 0
+    fi
+    if [[ "${NO_GITHUB:-false}" == "true" ]]; then
+        echo -e "    ${DIM:-}●${RESET:-} Skipped (NO_GITHUB)"
+        return 0
+    fi
+
+    daemon_log INFO "Patrol: scanning for duplicate/runaway issue clusters"
+
+    local limit="${PATROL_DUP_FETCH_LIMIT:-300}"
+    local issues_json
+    issues_json=$(gh issue list --state open --limit "$limit" \
+        --json number,title,labels,createdAt,assignees 2>/dev/null || echo '[]')
+    printf '%s' "$issues_json" | jq -e 'type == "array"' >/dev/null 2>&1 || issues_json='[]'
+
+    local fetched
+    fetched=$(printf '%s' "$issues_json" | jq 'length' 2>/dev/null || true)
+    fetched=${fetched:-0}
+
+    if [[ "$fetched" -eq 0 ]]; then
+        echo -e "    ${GREEN:-}●${RESET:-} No open issues to scan"
+        return 0
+    fi
+
+    # A full page means we are looking at a truncated view; the lowest issue
+    # number in a cluster may lie outside it, so acting would keep the wrong
+    # issue. Report and stand down rather than guess.
+    if [[ "$fetched" -ge "$limit" ]]; then
+        daemon_log WARN "Patrol: issue fetch hit the ${limit} limit — skipping duplicate detection on a truncated view"
+        echo -e "    ${YELLOW:-}●${RESET:-} Skipped (fetched ${fetched} issues, at the ${limit} limit — view is truncated)"
+        return 0
+    fi
+
+    local clusters
+    clusters=$(printf '%s' "$issues_json" | patrol_group_duplicate_issues "${STATE_FILE:-}" || true)
+
+    if [[ -z "$clusters" ]]; then
+        echo -e "    ${GREEN:-}●${RESET:-} No duplicate clusters above threshold ${PATROL_DUP_THRESHOLD:-3}"
+        return 0
+    fi
+
+    local cap="${PATROL_DUP_MAX_CLOSURES:-25}"
+    local closed_total=0 deferred=0 cluster
+    while IFS= read -r cluster; do
+        [[ -z "$cluster" ]] && continue
+        local ckey ccount ckeep ctitle
+        ckey=$(printf '%s' "$cluster" | jq -r '.key | gsub("\u001f"; " | ")')
+        ccount=$(printf '%s' "$cluster" | jq -r '.count')
+        ckeep=$(printf '%s' "$cluster" | jq -r '.keep')
+        ctitle=$(printf '%s' "$cluster" | jq -r '.sample_title')
+
+        emit_event "patrol.duplicate_detected" "count=$ccount" "keep=$ckeep" "key=$ckey"
+        echo -e "    ${YELLOW:-}●${RESET:-} ${ccount} duplicates of \"${ctitle}\" — keeping #${ckeep}"
+
+        local n
+        while IFS= read -r n; do
+            [[ -z "$n" ]] && continue
+            if [[ "$closed_total" -ge "$cap" ]]; then
+                deferred=$((deferred + 1))
+                continue
+            fi
+
+            if [[ "${DECISION_ENGINE_ENABLED:-false}" == "true" ]]; then
+                _patrol_emit_signal "dup-${n}" "duplicate_issue" "hygiene" \
+                    "Duplicate issue #${n} (cluster of ${ccount}, canonical #${ckeep})" \
+                    "Close #${n} as a duplicate of #${ckeep}" \
+                    "20" "0.90" "duplicate:${ckeep}:${n}"
+            elif [[ "$dry_run" == "true" ]]; then
+                emit_event "patrol.duplicate_dry_run" "issue=$n" "keep=$ckeep"
+                echo -e "      ${DIM:-}would close #${n}${RESET:-}"
+            else
+                gh issue close "$n" --comment "$(_patrol_duplicate_comment "$ckeep" "$ccount")" >/dev/null 2>&1 || true
+                emit_event "patrol.duplicate_closed" "issue=$n" "keep=$ckeep"
+                echo -e "      ${DIM:-}closed #${n}${RESET:-}"
+            fi
+            closed_total=$((closed_total + 1))
+        done < <(printf '%s' "$cluster" | jq -r '.close[]' 2>/dev/null || true)
+
+        local skipped_desc
+        skipped_desc=$(printf '%s' "$cluster" | jq -r '[.skipped[] | "#\(.number) (\(.reason))"] | join(", ")' 2>/dev/null || true)
+        if [[ -n "$skipped_desc" ]]; then
+            echo -e "      ${DIM:-}spared: ${skipped_desc}${RESET:-}"
+        fi
+
+        local audit_mode="close"
+        [[ "$dry_run" == "true" ]] && audit_mode="dry_run"
+        _patrol_duplicate_audit "$cluster" "$audit_mode"
+    done <<< "$clusters"
+
+    if [[ "$deferred" -gt 0 ]]; then
+        daemon_log WARN "Patrol: closure cap ${cap} reached — ${deferred} duplicate(s) deferred to the next patrol"
+        echo -e "    ${YELLOW:-}●${RESET:-} Closure cap ${cap} reached — ${deferred} duplicate(s) deferred to the next run"
+    fi
+
+    PATROL_DUP_FINDINGS=$closed_total
+    return 0
+}
 
 daemon_patrol() {
     local once=false
@@ -1087,6 +1350,19 @@ Auto-detected by \`shipwright daemon patrol\` on $(now_iso)." \
     patrol_retry_exhaustion
     if [[ "$total_findings" -gt "$pre_check_findings" ]]; then
         patrol_findings_summary="${patrol_findings_summary}retry_exhaustion: $((total_findings - pre_check_findings)) finding(s); "
+    fi
+    echo ""
+
+    echo -e "  ${BOLD}Duplicate Issue Clusters${RESET}"
+    pre_check_findings=$total_findings
+    if [[ "$dry_run" == "true" ]]; then
+        patrol_duplicate_issues --dry-run
+    else
+        patrol_duplicate_issues
+    fi
+    total_findings=$((total_findings + PATROL_DUP_FINDINGS))
+    if [[ "$total_findings" -gt "$pre_check_findings" ]]; then
+        patrol_findings_summary="${patrol_findings_summary}duplicate_issues: $((total_findings - pre_check_findings)) closure(s); "
     fi
     echo ""
 

@@ -246,6 +246,11 @@ PATROL_DORA_ENABLED=true
 PATROL_UNTESTED_ENABLED=true
 PATROL_RETRY_ENABLED=true
 PATROL_RETRY_THRESHOLD=2
+PATROL_DUP_ENABLED=true
+PATROL_DUP_THRESHOLD=3
+PATROL_DUP_AUTO_LABELS="automated,auto-patrol"
+PATROL_DUP_WINDOW_DAYS=7
+PATROL_DUP_MAX_CLOSURES=25
 LAST_PATROL_EPOCH=0
 
 # Team dashboard coordination
@@ -425,6 +430,22 @@ load_config() {
     PATROL_UNTESTED_ENABLED=$(jq -r '.patrol.checks.untested_scripts.enabled // true' "$config_file")
     PATROL_RETRY_ENABLED=$(jq -r '.patrol.checks.retry_exhaustion.enabled // true' "$config_file")
     PATROL_RETRY_THRESHOLD=$(jq -r '.patrol.checks.retry_exhaustion.threshold // 2' "$config_file")
+    PATROL_DUP_ENABLED=$(jq -r '.patrol.checks.duplicate_issues.enabled // true' "$config_file")
+    # The issue specifies the flat key `patrol.duplicate_issue_threshold`; the
+    # house convention is `patrol.checks.<name>.threshold`. Accept both, flat wins.
+    PATROL_DUP_THRESHOLD=$(jq -r '.patrol.duplicate_issue_threshold // .patrol.checks.duplicate_issues.threshold // 3' "$config_file")
+    # _smart_int layers the SW_PATROL_DUPLICATE_ISSUE_THRESHOLD env override on
+    # top, using the value resolved above as its default.
+    if type _smart_int >/dev/null 2>&1; then
+        PATROL_DUP_THRESHOLD=$(_smart_int "patrol.duplicate_issue_threshold" "$PATROL_DUP_THRESHOLD")
+    fi
+    PATROL_DUP_AUTO_LABELS=$(jq -r '.patrol.checks.duplicate_issues.auto_labels // "automated,auto-patrol"' "$config_file")
+    PATROL_DUP_WINDOW_DAYS=$(jq -r '.patrol.checks.duplicate_issues.window_days // 7' "$config_file")
+    PATROL_DUP_MAX_CLOSURES=$(jq -r '.patrol.checks.duplicate_issues.max_closures // 25' "$config_file")
+    if ! [[ "$PATROL_DUP_THRESHOLD" =~ ^[0-9]+$ ]]; then
+        daemon_log WARN "Config: patrol duplicate_issue_threshold '$PATROL_DUP_THRESHOLD' is not a non-negative integer — falling back to 3"
+        PATROL_DUP_THRESHOLD=3
+    fi
 
     # adaptive template selection
     AUTO_TEMPLATE=$(jq -r '.auto_template // false' "$config_file")
@@ -777,6 +798,7 @@ daemon_start() {
 
     daemon_log INFO "Daemon started successfully"
     daemon_log INFO "Config: poll_interval=${POLL_INTERVAL}s, max_parallel=${MAX_PARALLEL}, label=${WATCH_LABEL}"
+    daemon_log INFO "Config: patrol duplicate_issues enabled=${PATROL_DUP_ENABLED}, threshold=${PATROL_DUP_THRESHOLD}, auto_labels=${PATROL_DUP_AUTO_LABELS}, window_days=${PATROL_DUP_WINDOW_DAYS}, max_closures=${PATROL_DUP_MAX_CLOSURES}"
 
     emit_event "daemon.started" \
         "pid=$$" \
@@ -1031,7 +1053,14 @@ daemon_init() {
       "recurring_failures": { "enabled": true, "threshold": 3 },
       "dora_degradation": { "enabled": true },
       "untested_scripts": { "enabled": true },
-      "retry_exhaustion": { "enabled": true, "threshold": 2 }
+      "retry_exhaustion": { "enabled": true, "threshold": 2 },
+      "duplicate_issues": {
+        "enabled": true,
+        "threshold": 3,
+        "auto_labels": "automated,auto-patrol",
+        "window_days": 7,
+        "max_closures": 25
+      }
     }
   },
   "auto_template": false,

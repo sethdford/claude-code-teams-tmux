@@ -340,4 +340,308 @@ export PATROL_DRY_RUN="true"
 daemon_patrol_security_scan 2>/dev/null || true
 assert_pass "Patrol respects DRY_RUN flag"
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Duplicate / runaway issue detection
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "_patrol_normalize_title"
+
+assert_eq "normalize strips bracketed tags" \
+    "test failure" "$(_patrol_normalize_title "[automated] Test failure")"
+assert_eq "normalize strips parenthesised asides" \
+    "test failure" "$(_patrol_normalize_title "Test failure (run 12)")"
+assert_eq "normalize strips issue references" \
+    "test failure" "$(_patrol_normalize_title "Test failure #3502")"
+assert_eq "normalize strips ISO-8601 timestamps" \
+    "test failure at" "$(_patrol_normalize_title "Test failure at 2026-09-02T03:57:52Z")"
+assert_eq "normalize strips commit SHAs" \
+    "test failure in" "$(_patrol_normalize_title "Test failure in 4a3f9bc")"
+assert_eq "normalize strips bare digits" \
+    "test failure attempt" "$(_patrol_normalize_title "Test failure attempt 17")"
+assert_eq "normalize collapses punctuation and whitespace" \
+    "test failure here" "$(_patrol_normalize_title "  Test:  failure --- here!! ")"
+assert_eq "normalize lowercases" \
+    "test failure" "$(_patrol_normalize_title "TEST Failure")"
+assert_eq "normalize of empty string is empty" "" "$(_patrol_normalize_title "")"
+assert_eq "normalize collapses two runs of the same generator" \
+    "$(_patrol_normalize_title "[automated] E2E failure #3502 at 2026-09-02T03:57:52Z")" \
+    "$(_patrol_normalize_title "[automated] E2E failure #3517 at 2026-08-30T11:02:03Z")"
+assert_eq "normalize keeps genuinely different titles apart" \
+    "fix login bug" "$(_patrol_normalize_title "Fix login bug")"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "patrol_group_duplicate_issues"
+
+DUP_NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+DUP_OLD="2020-01-01T00:00:00Z"
+
+# Build a JSON array of $1 issues starting at number $2, with label JSON $3 and
+# createdAt $4.
+dup_fixture() {
+    local count="$1" start="$2" labels="$3" created="$4"
+    local i=0 n
+    {
+        while [[ "$i" -lt "$count" ]]; do
+            n=$((start + i))
+            jq -cn --argjson n "$n" --arg t "[automated] E2E failure #${n}" \
+                --arg c "$created" --argjson l "$labels" \
+                '{number: $n, title: $t, createdAt: $c, labels: $l, assignees: []}'
+            i=$((i + 1))
+        done
+    } | jq -s '.'
+}
+
+DUP_AUTO_LABELS_JSON='[{"name":"automated"},{"name":"e2e"}]'
+export PATROL_DUP_THRESHOLD=3
+export PATROL_DUP_WINDOW_DAYS=7
+export PATROL_DUP_AUTO_LABELS="automated,auto-patrol"
+
+# No duplicates at all → no-op
+distinct_issues=$(jq -cn '[
+  {number:1, title:"Fix login bug",     createdAt:"'"$DUP_NOW"'", labels:[{"name":"automated"}], assignees:[]},
+  {number:2, title:"Add dark mode",     createdAt:"'"$DUP_NOW"'", labels:[{"name":"automated"}], assignees:[]},
+  {number:3, title:"Upgrade the parser",createdAt:"'"$DUP_NOW"'", labels:[{"name":"automated"}], assignees:[]},
+  {number:4, title:"Rewrite the docs",  createdAt:"'"$DUP_NOW"'", labels:[{"name":"automated"}], assignees:[]}
+]')
+out=$(printf '%s' "$distinct_issues" | patrol_group_duplicate_issues "")
+assert_eq "no duplicates produces no clusters" "" "$out"
+
+# Exactly at the threshold → no-op (pins the `count > threshold` boundary)
+out=$(dup_fixture 3 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW" | patrol_group_duplicate_issues "")
+assert_eq "cluster of exactly threshold (3) is a no-op" "" "$out"
+
+# One above the threshold → cluster emitted
+out=$(dup_fixture 4 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW" | patrol_group_duplicate_issues "")
+assert_eq "cluster of threshold+1 (4) emits one cluster" "1" "$(printf '%s' "$out" | grep -c . || true)"
+assert_eq "cluster of 4 closes 3, keeping the lowest number" \
+    "3503 3504 3505" "$(printf '%s' "$out" | jq -r '.close | join(" ")')"
+assert_eq "cluster of 4 keeps the lowest issue number" \
+    "3502" "$(printf '%s' "$out" | jq -r '.keep')"
+
+# Happy path: 6 duplicates
+DUP_SIX=$(dup_fixture 6 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW")
+cluster=$(printf '%s' "$DUP_SIX" | patrol_group_duplicate_issues "")
+assert_eq "six duplicates report count 6" "6" "$(printf '%s' "$cluster" | jq -r '.count')"
+assert_eq "six duplicates close 3503-3507" \
+    "3503 3504 3505 3506 3507" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
+
+# Invariant: keep is never in close, and close/skipped are disjoint
+assert_eq "invariant: keep is not in close" "false" \
+    "$(printf '%s' "$cluster" | jq -r '[.close[] == .keep] | any')"
+assert_eq "invariant: close and skipped are disjoint" "0" \
+    "$(printf '%s' "$cluster" | jq -r '[.skipped[].number] as $s | [.close[] | select(. as $c | $s | index($c))] | length')"
+
+# G1: a human label set is never touched
+out=$(dup_fixture 6 3502 '[{"name":"bug"}]' "$DUP_NOW" | patrol_group_duplicate_issues "")
+assert_eq "human-labelled cluster is a no-op" "" "$out"
+
+# G1 regression (A1): `shipwright` is the daemon's human request label and must
+# NOT be treated as an automation label — otherwise every queued human issue
+# becomes closable.
+out=$(dup_fixture 6 3502 '[{"name":"shipwright"}]' "$DUP_NOW" | patrol_group_duplicate_issues "")
+assert_eq "shipwright-labelled cluster is a no-op" "" "$out"
+
+# G4: outside the creation window
+out=$(dup_fixture 6 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_OLD" | patrol_group_duplicate_issues "")
+assert_eq "cluster outside the creation window is a no-op" "" "$out"
+
+# G2 + G3: assigned issues and issues with a running pipeline are spared
+DUP_STATE="$TEST_TEMP_DIR/dup-state.json"
+echo '{"active_jobs":[{"issue":3504}]}' > "$DUP_STATE"
+cluster=$(printf '%s' "$DUP_SIX" \
+    | jq '[.[] | if .number == 3503 then .assignees = [{"login":"someone"}] else . end]' \
+    | patrol_group_duplicate_issues "$DUP_STATE")
+assert_eq "assigned and active issues are excluded from close" \
+    "3505 3506 3507" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
+assert_eq "assigned issue is recorded as skipped" \
+    "assigned" "$(printf '%s' "$cluster" | jq -r '.skipped[] | select(.number == 3503) | .reason')"
+assert_eq "in-flight issue is recorded as skipped" \
+    "active_pipeline" "$(printf '%s' "$cluster" | jq -r '.skipped[] | select(.number == 3504) | .reason')"
+
+# Same title, different label sets → different clusters, neither above threshold
+mixed=$(jq -s '.' <<<"$(dup_fixture 3 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW"; dup_fixture 3 3600 '[{"name":"auto-patrol"}]' "$DUP_NOW")" | jq 'add')
+out=$(printf '%s' "$mixed" | patrol_group_duplicate_issues "")
+assert_eq "identical titles with different label sets do not merge" "" "$out"
+
+# Malformed / empty input degrades to zero clusters, exit 0
+out=$(echo 'not json at all' | patrol_group_duplicate_issues "" 2>/dev/null; echo "rc=$?")
+assert_eq "malformed input yields no clusters and exit 0" "rc=0" "$out"
+out=$(echo '[]' | patrol_group_duplicate_issues "" 2>/dev/null; echo "rc=$?")
+assert_eq "empty array yields no clusters and exit 0" "rc=0" "$out"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "patrol_duplicate_issues"
+
+DUP_GH_LOG="$TEST_TEMP_DIR/gh-calls.log"
+DUP_EVENT_LOG="$TEST_TEMP_DIR/dup-events.log"
+
+# Recording mocks. The harness installs no-op stubs at the top of this file;
+# both are restored at the end of this section.
+dup_record_gh() {
+    local issues_file="$1"
+    mock_binary "gh" 'echo "$@" >> '"$DUP_GH_LOG"'
+case "${1:-}" in
+    issue)
+        case "${2:-}" in
+            list)  cat '"$issues_file"' ;;
+            close) : ;;
+            *)     echo "[]" ;;
+        esac ;;
+    *) echo "" ;;
+esac
+exit 0'
+}
+emit_event() { echo "$*" >> "$DUP_EVENT_LOG"; }
+
+dup_reset() { : > "$DUP_GH_LOG"; : > "$DUP_EVENT_LOG"; }
+dup_close_count() { grep -c "^issue close" "$DUP_GH_LOG" 2>/dev/null || true; }
+
+export NO_GITHUB=false
+export PATROL_DRY_RUN=false
+export PATROL_DUP_ENABLED=true
+export PATROL_DUP_MAX_CLOSURES=25
+export PATROL_DUP_FETCH_LIMIT=300
+export DECISION_ENGINE_ENABLED=false
+export STATE_FILE="$TEST_TEMP_DIR/dup-empty-state.json"
+echo '{"active_jobs":[]}' > "$STATE_FILE"
+export PIPELINE_ARTIFACTS_DIR="$TEST_TEMP_DIR/artifacts"
+
+DUP_ISSUES_FILE="$TEST_TEMP_DIR/dup-issues.json"
+printf '%s' "$DUP_SIX" > "$DUP_ISSUES_FILE"
+dup_record_gh "$DUP_ISSUES_FILE"
+
+# Happy path: closes 5, keeps the lowest, comments on every closure
+dup_reset
+patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "closes every duplicate but the canonical issue" "5" "$(dup_close_count)"
+assert_eq "PATROL_DUP_FINDINGS counts the closures" "5" "$PATROL_DUP_FINDINGS"
+assert_eq "the canonical issue is never closed" "0" \
+    "$(grep -c '^issue close 3502' "$DUP_GH_LOG" 2>/dev/null || true)"
+assert_eq "every closure carries an explanatory comment" "5" \
+    "$(grep -c '^issue close .*--comment' "$DUP_GH_LOG" 2>/dev/null || true)"
+assert_contains "closure comment names the canonical issue" \
+    "$(_patrol_duplicate_comment 3502 6)" "#3502"
+assert_contains "emits patrol.duplicate_detected" "$(cat "$DUP_EVENT_LOG")" "patrol.duplicate_detected"
+assert_contains "emits patrol.duplicate_closed" "$(cat "$DUP_EVENT_LOG")" "patrol.duplicate_closed"
+assert_file_exists "writes an audit record" "$PIPELINE_ARTIFACTS_DIR/patrol-log.jsonl"
+
+# --dry-run: identical decisions, zero mutations
+dup_reset
+patrol_duplicate_issues --dry-run >/dev/null 2>&1
+assert_eq "--dry-run closes nothing" "0" "$(dup_close_count)"
+assert_eq "--dry-run still reports the intended closures" "5" "$PATROL_DUP_FINDINGS"
+assert_contains "--dry-run emits patrol.duplicate_dry_run" "$(cat "$DUP_EVENT_LOG")" "patrol.duplicate_dry_run"
+
+# PATROL_DRY_RUN=true is honoured without the flag
+dup_reset
+PATROL_DRY_RUN=true patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "PATROL_DRY_RUN=true closes nothing" "0" "$(dup_close_count)"
+
+# Closure cap
+dup_reset
+PATROL_DUP_MAX_CLOSURES=2 patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "closure cap is respected" "2" "$(dup_close_count)"
+
+# Below threshold → no closures
+dup_reset
+printf '%s' "$(dup_fixture 3 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW")" > "$DUP_ISSUES_FILE"
+patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "cluster at threshold closes nothing" "0" "$(dup_close_count)"
+assert_eq "cluster at threshold reports zero findings" "0" "$PATROL_DUP_FINDINGS"
+printf '%s' "$DUP_SIX" > "$DUP_ISSUES_FILE"
+
+# Truncation guard: a full page means the view is partial — stand down
+dup_reset
+PATROL_DUP_FETCH_LIMIT=6 patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "a truncated fetch closes nothing" "0" "$(dup_close_count)"
+assert_eq "a truncated fetch reports zero findings" "0" "$PATROL_DUP_FINDINGS"
+
+# Disabled
+dup_reset
+PATROL_DUP_ENABLED=false patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "disabled check closes nothing" "0" "$(dup_close_count)"
+
+# NO_GITHUB
+dup_reset
+NO_GITHUB=true patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "NO_GITHUB closes nothing" "0" "$(dup_close_count)"
+assert_eq "NO_GITHUB does not call gh at all" "0" \
+    "$(grep -c . "$DUP_GH_LOG" 2>/dev/null || true)"
+
+# gh failures never propagate
+dup_reset
+mock_binary "gh" 'echo "$@" >> '"$DUP_GH_LOG"'
+exit 1'
+patrol_duplicate_issues >/dev/null 2>&1
+rc=$?
+assert_eq "a failing gh returns 0" "0" "$rc"
+assert_eq "a failing gh reports zero findings" "0" "$PATROL_DUP_FINDINGS"
+
+dup_reset
+mock_binary "gh" 'echo "$@" >> '"$DUP_GH_LOG"'
+echo "not json"
+exit 0'
+patrol_duplicate_issues >/dev/null 2>&1
+rc=$?
+assert_eq "non-JSON gh output returns 0" "0" "$rc"
+assert_eq "non-JSON gh output reports zero findings" "0" "$PATROL_DUP_FINDINGS"
+
+# Decision engine mode routes to signals instead of closing
+dup_reset
+dup_record_gh "$DUP_ISSUES_FILE"
+DUP_SIGNALS="$TEST_TEMP_DIR/dup-signals.jsonl"
+: > "$DUP_SIGNALS"
+SIGNALS_PENDING_FILE="$DUP_SIGNALS" DECISION_ENGINE_ENABLED=true \
+    patrol_duplicate_issues >/dev/null 2>&1
+assert_eq "decision engine mode closes nothing" "0" "$(dup_close_count)"
+assert_eq "decision engine mode emits one signal per duplicate" "5" \
+    "$(jq -s 'length' "$DUP_SIGNALS")"
+assert_eq "signals carry the duplicate_issue signal type" "5" \
+    "$(jq -rs '[.[] | select(.signal == "duplicate_issue")] | length' "$DUP_SIGNALS")"
+
+# Restore the harness-wide stubs and mocks for any later sections.
+emit_event() { :; }
+mock_gh
+export NO_GITHUB=true
+export DECISION_ENGINE_ENABLED=false
+unset PIPELINE_ARTIFACTS_DIR
+
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "duplicate patrol threshold configuration"
+
+# The daemon resolves the threshold as: SW_PATROL_DUPLICATE_ISSUE_THRESHOLD env
+# → patrol.duplicate_issue_threshold (flat, as the issue specifies) →
+# patrol.checks.duplicate_issues.threshold (house convention) → 3. The first two
+# hops are _smart_int's job; assert them against the real function.
+source "$SCRIPT_DIR/lib/compat.sh"
+
+DUP_CFG_DIR="$TEST_TEMP_DIR/cfg"
+mkdir -p "$DUP_CFG_DIR"
+DUP_CFG="$DUP_CFG_DIR/daemon-config.json"
+
+echo '{"patrol":{"duplicate_issue_threshold":9}}' > "$DUP_CFG"
+assert_eq "flat patrol.duplicate_issue_threshold is honoured" "9" \
+    "$(DAEMON_CONFIG="$DUP_CFG" _smart_int "patrol.duplicate_issue_threshold" 3)"
+
+assert_eq "SW_PATROL_DUPLICATE_ISSUE_THRESHOLD overrides the config file" "12" \
+    "$(SW_PATROL_DUPLICATE_ISSUE_THRESHOLD=12 DAEMON_CONFIG="$DUP_CFG" \
+        _smart_int "patrol.duplicate_issue_threshold" 3)"
+
+echo '{"patrol":{"checks":{"duplicate_issues":{"threshold":7}}}}' > "$DUP_CFG"
+assert_eq "nested threshold falls through _smart_int to the caller's default" "7" \
+    "$(DAEMON_CONFIG="$DUP_CFG" _smart_int "patrol.duplicate_issue_threshold" \
+        "$(jq -r '.patrol.duplicate_issue_threshold // .patrol.checks.duplicate_issues.threshold // 3' "$DUP_CFG")")"
+
+echo '{"patrol":{"duplicate_issue_threshold":9,"checks":{"duplicate_issues":{"threshold":7}}}}' > "$DUP_CFG"
+assert_eq "flat key wins over the nested key when both are set" "9" \
+    "$(jq -r '.patrol.duplicate_issue_threshold // .patrol.checks.duplicate_issues.threshold // 3' "$DUP_CFG")"
+
+daemon_src=$(cat "$SCRIPT_DIR/sw-daemon.sh")
+assert_contains "sw-daemon.sh reads both threshold key forms" "$daemon_src" \
+    ".patrol.duplicate_issue_threshold // .patrol.checks.duplicate_issues.threshold"
+assert_contains "sw-daemon.sh logs the resolved duplicate patrol config at startup" \
+    "$daemon_src" 'patrol duplicate_issues enabled=${PATROL_DUP_ENABLED}'
+assert_contains "daemon_patrol runs the duplicate issue check" \
+    "$(cat "$SCRIPT_DIR/lib/daemon-patrol.sh")" "patrol_duplicate_issues --dry-run"
+
 print_test_results

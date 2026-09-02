@@ -341,6 +341,72 @@ Tune the build loop's resilience and restart behavior:
 | `hard_restart_cap`          | `5`     | Absolute maximum restarts regardless of cause     |
 | `max_restarts`              | `3`     | Default restart limit for daemon-driven loops     |
 
+### Duplicate Issue Patrol
+
+A runaway generator (a flaky E2E job, a misfiring webhook) can file the same
+issue dozens of times. The `duplicate_issues` patrol check groups open issues by
+**normalized title + label set** and closes all but one member of any cluster
+above the threshold, leaving a comment on each closure that names the survivor.
+
+Grouping is normalize-then-exact-match, not similarity scoring: the title is
+lowercased, bracketed/parenthesised segments, timestamps, SHAs and digits are
+stripped, and the remainder is joined with the sorted label set. That is
+`O(N log N)` in one `jq` pass and structurally incapable of clustering two
+genuinely different titles — the worst failure mode is a *missed* duplicate.
+
+**The cluster's lowest issue number survives**, not the newest: the oldest issue
+carries the triage labels and cross-references, and "lowest number" is stable
+across runs even when the fetch window truncates.
+
+Four safety gates stand between this check and closing real work. All must pass:
+
+| Gate | Rule |
+| ---- | ---- |
+| Automation label | The cluster must carry a label from `auto_labels`. `shipwright` is deliberately **not** a default — it is the label humans use to request work. |
+| Assignment | Assigned issues are never closed. |
+| In-flight | Issues in the daemon's `active_jobs` are never closed. |
+| Creation window | Every closable member must have been created within `window_days`. Six identical titles spread over two years are a recurring bug, not a runaway. |
+
+Plus a `max_closures` cap per run (so a 400-issue runaway does not get the daemon
+rate-limited mid-patrol) and a truncation guard: if the fetch returns a full
+page, the view is partial and the check stands down rather than guessing.
+
+```json
+{
+  "patrol": {
+    "checks": {
+      "duplicate_issues": {
+        "enabled": true,
+        "threshold": 3,
+        "auto_labels": "automated,auto-patrol",
+        "window_days": 7,
+        "max_closures": 25
+      }
+    }
+  }
+}
+```
+
+`patrol.duplicate_issue_threshold` (flat) is also accepted and wins over the
+nested key. Env overrides: `PATROL_DUP_ENABLED`, `PATROL_DUP_THRESHOLD`,
+`PATROL_DUP_AUTO_LABELS`, `PATROL_DUP_WINDOW_DAYS`, `PATROL_DUP_MAX_CLOSURES`,
+`PATROL_DUP_FETCH_LIMIT`; the threshold additionally accepts
+`SW_PATROL_DUPLICATE_ISSUE_THRESHOLD` through `_smart_int`. Resolved values are
+logged at daemon startup.
+
+`shipwright daemon patrol --dry-run` (or `PATROL_DRY_RUN=true`) makes exactly
+the same decisions and executes none of them. Every cluster acted on appends one
+record — key, kept, closed, and each spared issue with its reason — to
+`.claude/pipeline-artifacts/patrol-log.jsonl`. Events: `patrol.duplicate_detected`,
+`patrol.duplicate_closed`, `patrol.duplicate_dry_run`.
+
+The check defaults to enabled, but this repo's own `.claude/daemon-config.json`
+ships it `false` until an operator has reviewed one `--dry-run` pass against the
+live issue list.
+
+This is a net, not a cure: it cleans up after a runaway generator without
+stopping it. Source-side rate limiting is separate work.
+
 ## Constitutional AI
 
 Code quality principles are defined in `config/code-constitution.json`. The constitution provides machine-checkable rules across five categories:
@@ -641,7 +707,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-connect.sh` | 624 | Sync local state to team dashboard |
 | `scripts/sw-context.sh` | 600 | Context Engine for Pipeline Stages |
 | `scripts/sw-cost.sh` | 1070 | Token Usage & Cost Intelligence |
-| `scripts/sw-daemon.sh` | 1420 | Autonomous GitHub Issue Watcher |
+| `scripts/sw-daemon.sh` | 1449 | Autonomous GitHub Issue Watcher |
 | `scripts/sw-dashboard.sh` | 510 | Fleet Command Dashboard |
 | `scripts/sw-db.sh` | 1939 | SQLite Persistence Layer |
 | `scripts/sw-decide.sh` | 691 | Shipwright Autonomous Decision Engine |
@@ -847,7 +913,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-compound-audit-test.sh` | 281 |  |
 | `scripts/sw-lib-daemon-dispatch-test.sh` | 421 | Unit tests for spawn/reap/queue |
 | `scripts/sw-lib-daemon-failure-test.sh` | 213 | Unit tests for failure handling |
-| `scripts/sw-lib-daemon-patrol-test.sh` | 343 | Unit tests for all patrol functions |
+| `scripts/sw-lib-daemon-patrol-test.sh` | 647 | Unit tests for all patrol functions |
 | `scripts/sw-lib-daemon-poll-test.sh` | 344 | Unit tests for poll, health, cleanup |
 | `scripts/sw-lib-daemon-state-test.sh` | 383 | Unit tests for state management |
 | `scripts/sw-lib-daemon-triage-test.sh` | 267 | Unit tests for triage scoring |

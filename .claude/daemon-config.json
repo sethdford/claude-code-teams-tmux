@@ -52,5 +52,16 @@
   "last_optimization": {
     "timestamp": "2026-04-04T18:44:56Z",
     "adjustments": "compound_quality enabled (CFR 25% > 20%); merge stage recommended (deploy freq 3.0/week); "
+  },
+  "patrol": {
+    "checks": {
+      "duplicate_issues": {
+        "enabled": false,
+        "threshold": 3,
+        "auto_labels": "automated,auto-patrol",
+        "window_days": 7,
+        "max_closures": 25
+      }
+    }
   }
 }
