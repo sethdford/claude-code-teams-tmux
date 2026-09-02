@@ -5,17 +5,17 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 5,
-      "last_seen": "2026-09-02T02:56:59Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-02T03:29:33Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-intent-analysis-test asserts on schema fields (version, goal, criteria) missing from analyze_intent's JSON output, and sw-e2e-integration-test hangs past its 301s timeout in the build-loop's full test run",
-      "fix": "add the missing required fields to the analyze_intent JSON schema/output and reduce or mock the nested test run in sw-e2e-integration-test to avoid recursive full-suite execution within the timeout",
-      "seen_count": 2,
-      "last_seen": "2026-09-02T00:12:32Z",
+      "root_cause": "Memory promotion test expects cross-repo pattern copy but promotion logic doesn't persist/match patterns across repo boundaries as asserted",
+      "fix": "Inspect sw-self-optimize.sh memory promotion function and align cross-repo copy path/matching with the test's expected fixture data",
+      "seen_count": 3,
+      "last_seen": "2026-09-02T02:02:11Z",
       "category": "test_failure"
     }
   ]
