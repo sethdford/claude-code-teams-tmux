@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 1,
-      "last_seen": "2026-09-01T20:11:04Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-02T00:16:47Z",
       "category": "test_failure"
     },
     {
@@ -17,6 +17,15 @@
       "seen_count": 1,
       "last_seen": "2026-09-01T21:00:37Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Log snippet shows only passing test output; no actual failure or non-zero exit is present in the provided excerpt",
+      "fix": "Re-run the test stage and capture the actual failing assertion/exit code, as this log slice does not contain a failure",
+      "seen_count": 2,
+      "last_seen": "2026-09-01T23:04:30Z",
+      "category": "unknown"
     }
   ]
 }
