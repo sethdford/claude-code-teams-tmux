@@ -1897,33 +1897,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json (test-repo-complexity: cc155bd4...)",
-            "relevance": 95,
-            "summary": "Low complexity build fix with 1 iteration, npm test strategy, simple typo fix approach — perfect precedent for straightforward E2E test task"
-          },
-          {
-            "file": "success-patterns.json (hash-consistency-repo: 7803f0e7...)",
+            "file": "success-patterns.json (test-repo-complexity)",
             "relevance": 90,
-            "summary": "Low complexity build stage pattern, 1 iteration, npm test, high confidence (85) — direct match for simple README comment addition"
+            "summary": "Build stage pattern with low complexity, 1 iteration, typo fix approach, npm test strategy. Directly matches expected profile for simple E2E README task."
           },
           {
-            "file": "success-patterns.json (test-repo-corrupt: b0f17829... and 6db84028...)",
+            "file": "success-patterns.json (test-repo-ranking)",
             "relevance": 85,
-            "summary": "Two low complexity build patterns, 1 iteration each, npm test — relevant patterns though less specific than dedicated low-complexity examples"
+            "summary": "Multiple build stage patterns with low complexity, 1 iteration each, npm test strategy, 300s completion time. Consistent baseline for similar tasks."
           },
           {
-            "file": "success-patterns.json (test-repo-ranking: 26f54196... and 98e56d3b...)",
+            "file": "success-patterns.json (test-repo-corrupt)",
             "relevance": 80,
-            "summary": "Two build stage patterns, low complexity, 1 iteration, npm test — general build success patterns applicable to E2E work"
+            "summary": "Two build stage patterns with low complexity, 1 iteration, npm test strategy. Provides additional reference patterns for build-only work."
           },
           {
-            "file": "index.json (test_failure pattern)",
-            "relevance": 45,
-            "summary": "Build stage failure pattern with timeout fix suggestion — useful as contingency but success patterns are more relevant for straightforward task"
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 75,
+            "summary": "Build stage pattern with 'Specific test goal', low complexity, 1 iteration, npm test. Relevant reference for test-focused build work."
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains build stage test_failure pattern with recommended fix (timeout adjustment). Useful if build encounters test timeouts."
           }
         ]
       },
-      "timestamp": 1788378477,
+      "timestamp": 1788380576,
       "ttl": 1800
     },
     "b0f3cc37182b58e0defe86adebe1e3b2": {
@@ -2085,6 +2085,13 @@
       },
       "timestamp": 1788379655,
       "ttl": 3600
+    },
+    "6411d1b52cc785c151cc30192591b594": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788380526,
+      "ttl": 1800
     }
   }
 }

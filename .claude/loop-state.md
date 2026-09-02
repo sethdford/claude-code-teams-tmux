@@ -13,38 +13,40 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json (test-repo-complexity: cc155bd4...)",
-      "relevance": 95,
-      "summary": "Low complexity build fix with 1 iteration, npm test strategy, simple typo fix approach — perfect precedent for straightforward E2E test task"
-    },
-    {
-      "file": "success-patterns.json (hash-consistency-repo: 7803f0e7...)",
+      "file": "success-patterns.json (test-repo-complexity)",
       "relevance": 90,
-      "summary": "Low complexity build stage pattern, 1 iteration, npm test, high confidence (85) — direct match for simple README comment addition"
+      "summary": "Build stage pattern with low complexity, 1 iteration, typo fix approach, npm test strategy. Directly matches expected profile for simple E2E README task."
     },
     {
-      "file": "success-patterns.json (test-repo-corrupt: b0f17829... and 6db84028...)",
+      "file": "success-patterns.json (test-repo-ranking)",
       "relevance": 85,
-      "summary": "Two low complexity build patterns, 1 iteration each, npm test — relevant patterns though less specific than dedicated low-complexity examples"
+      "summary": "Multiple build stage patterns with low complexity, 1 iteration each, npm test strategy, 300s completion time. Consistent baseline for similar tasks."
     },
     {
-      "file": "success-patterns.json (test-repo-ranking: 26f54196... and 98e56d3b...)",
+      "file": "success-patterns.json (test-repo-corrupt)",
       "relevance": 80,
-      "summary": "Two build stage patterns, low complexity, 1 iteration, npm test — general build success patterns applicable to E2E work"
+      "summary": "Two build stage patterns with low complexity, 1 iteration, npm test strategy. Provides additional reference patterns for build-only work."
     },
     {
-      "file": "index.json (test_failure pattern)",
-      "relevance": 45,
-      "summary": "Build stage failure pattern with timeout fix suggestion — useful as contingency but success patterns are more relevant for straightforward task"
+      "file": "success-patterns.json (hash-consistency-repo)",
+      "relevance": 75,
+      "summary": "Build stage pattern with 'Specific test goal', low complexity, 1 iteration, npm test. Relevant reference for test-focused build work."
+    },
+    {
+      "file": "index.json",
+      "relevance": 70,
+      "summary": "Contains build stage test_failure pattern with recommended fix (timeout adjustment). Useful if build encounters test timeouts."
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 7 new discoveries
+✓ Injected 9 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Add Test Suites for the 5 Untested Scripts — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -86,8 +88,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-09-02T20:08:23Z
-last_iteration_at: 2026-09-02T20:08:23Z
+started_at: 2026-09-02T20:22:59Z
+last_iteration_at: 2026-09-02T20:22:59Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
