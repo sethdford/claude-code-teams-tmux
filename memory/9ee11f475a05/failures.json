@@ -6,25 +6,16 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 3,
-      "last_seen": "2026-09-01T23:40:20Z",
+      "last_seen": "2026-09-01T23:32:55Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-loop-test's 'Loop stuckness detection' assertion fails, and sw-e2e-integration-test hangs at iteration 1/3 past the 301s timeout, indicating the loop's stuckness/iteration-repeat detection logic isn't triggering or terminating as expected",
-      "fix": "Debug run_test_gate / stuckness-detection logic in sw-loop.sh around iteration handling — check why the loop fails to detect repeated failures and increase or fix the e2e-integration-test timeout budget",
-      "seen_count": 1,
-      "last_seen": "2026-09-01T21:00:37Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "4 test assertions failed in the suite run but no ✗ failure lines appear in the captured 200-line tail — failures scrolled out of the truncated log window",
-      "fix": "re-run with full output capture (or grep '✗' across the log) to identify which of the 4 failing assertions broke, since this excerpt only shows passing suites",
-      "seen_count": 1,
-      "last_seen": "2026-09-01T22:19:37Z",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test failed (exit 1) and sw-e2e-integration-test hit the 300s timeout, likely due to real Claude/GitHub calls or an environment dependency not mocked in CI",
+      "fix": "Inspect sw-intent-analysis-test and sw-loop-test output directly for the failing assertion, and add a shorter timeout/skip guard or proper mocking for sw-e2e-integration-test so it doesn't require live API access",
+      "seen_count": 2,
+      "last_seen": "2026-09-02T00:12:32Z",
       "category": "test_failure"
     }
   ]
