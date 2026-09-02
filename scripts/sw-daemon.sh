@@ -251,6 +251,7 @@ PATROL_DUP_THRESHOLD=3
 PATROL_DUP_AUTO_LABELS="automated,auto-patrol"
 PATROL_DUP_WINDOW_DAYS=7
 PATROL_DUP_MAX_CLOSURES=25
+PATROL_DUP_KEEP=newest
 LAST_PATROL_EPOCH=0
 
 # Team dashboard coordination
@@ -442,9 +443,14 @@ load_config() {
     PATROL_DUP_AUTO_LABELS=$(jq -r '.patrol.checks.duplicate_issues.auto_labels // "automated,auto-patrol"' "$config_file")
     PATROL_DUP_WINDOW_DAYS=$(jq -r '.patrol.checks.duplicate_issues.window_days // 7' "$config_file")
     PATROL_DUP_MAX_CLOSURES=$(jq -r '.patrol.checks.duplicate_issues.max_closures // 25' "$config_file")
+    PATROL_DUP_KEEP=$(jq -r '.patrol.checks.duplicate_issues.keep // "newest"' "$config_file")
     if ! [[ "$PATROL_DUP_THRESHOLD" =~ ^[0-9]+$ ]]; then
         daemon_log WARN "Config: patrol duplicate_issue_threshold '$PATROL_DUP_THRESHOLD' is not a non-negative integer — falling back to 3"
         PATROL_DUP_THRESHOLD=3
+    fi
+    if [[ "$PATROL_DUP_KEEP" != "newest" && "$PATROL_DUP_KEEP" != "oldest" ]]; then
+        daemon_log WARN "Config: patrol duplicate_issues.keep '$PATROL_DUP_KEEP' is not 'newest' or 'oldest' — falling back to newest"
+        PATROL_DUP_KEEP=newest
     fi
 
     # adaptive template selection
@@ -798,7 +804,7 @@ daemon_start() {
 
     daemon_log INFO "Daemon started successfully"
     daemon_log INFO "Config: poll_interval=${POLL_INTERVAL}s, max_parallel=${MAX_PARALLEL}, label=${WATCH_LABEL}"
-    daemon_log INFO "Config: patrol duplicate_issues enabled=${PATROL_DUP_ENABLED}, threshold=${PATROL_DUP_THRESHOLD}, auto_labels=${PATROL_DUP_AUTO_LABELS}, window_days=${PATROL_DUP_WINDOW_DAYS}, max_closures=${PATROL_DUP_MAX_CLOSURES}"
+    daemon_log INFO "Config: patrol duplicate_issues enabled=${PATROL_DUP_ENABLED}, threshold=${PATROL_DUP_THRESHOLD}, auto_labels=${PATROL_DUP_AUTO_LABELS}, window_days=${PATROL_DUP_WINDOW_DAYS}, max_closures=${PATROL_DUP_MAX_CLOSURES}, keep=${PATROL_DUP_KEEP}"
 
     emit_event "daemon.started" \
         "pid=$$" \
@@ -1059,7 +1065,8 @@ daemon_init() {
         "threshold": 3,
         "auto_labels": "automated,auto-patrol",
         "window_days": 7,
-        "max_closures": 25
+        "max_closures": 25,
+        "keep": "newest"
       }
     }
   },

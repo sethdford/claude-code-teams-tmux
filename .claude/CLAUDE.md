@@ -354,9 +354,14 @@ stripped, and the remainder is joined with the sorted label set. That is
 `O(N log N)` in one `jq` pass and structurally incapable of clustering two
 genuinely different titles — the worst failure mode is a *missed* duplicate.
 
-**The cluster's lowest issue number survives**, not the newest: the oldest issue
-carries the triage labels and cross-references, and "lowest number" is stable
-across runs even when the fetch window truncates.
+**The cluster's newest issue survives** by default — for a runaway generator the
+latest report reflects the current state of whatever is misfiring. Set
+`keep: "oldest"` to keep the lowest issue number instead, which is the better
+choice when clusters accumulate human triage (the first issue carries the labels
+and cross-references). Either policy is deterministic: issue numbers are
+monotonic in creation order, so no `createdAt` parsing is involved, and the
+truncation guard stands the check down on a partial view rather than letting
+consecutive runs disagree about the survivor.
 
 Four safety gates stand between this check and closing real work. All must pass:
 
@@ -380,7 +385,8 @@ page, the view is partial and the check stands down rather than guessing.
         "threshold": 3,
         "auto_labels": "automated,auto-patrol",
         "window_days": 7,
-        "max_closures": 25
+        "max_closures": 25,
+        "keep": "newest"
       }
     }
   }
@@ -390,6 +396,7 @@ page, the view is partial and the check stands down rather than guessing.
 `patrol.duplicate_issue_threshold` (flat) is also accepted and wins over the
 nested key. Env overrides: `PATROL_DUP_ENABLED`, `PATROL_DUP_THRESHOLD`,
 `PATROL_DUP_AUTO_LABELS`, `PATROL_DUP_WINDOW_DAYS`, `PATROL_DUP_MAX_CLOSURES`,
+`PATROL_DUP_KEEP`,
 `PATROL_DUP_FETCH_LIMIT`; the threshold additionally accepts
 `SW_PATROL_DUPLICATE_ISSUE_THRESHOLD` through `_smart_int`. Resolved values are
 logged at daemon startup.

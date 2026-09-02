@@ -413,17 +413,30 @@ assert_eq "cluster of exactly threshold (3) is a no-op" "" "$out"
 # One above the threshold → cluster emitted
 out=$(dup_fixture 4 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW" | patrol_group_duplicate_issues "")
 assert_eq "cluster of threshold+1 (4) emits one cluster" "1" "$(printf '%s' "$out" | grep -c . || true)"
-assert_eq "cluster of 4 closes 3, keeping the lowest number" \
-    "3503 3504 3505" "$(printf '%s' "$out" | jq -r '.close | join(" ")')"
-assert_eq "cluster of 4 keeps the lowest issue number" \
-    "3502" "$(printf '%s' "$out" | jq -r '.keep')"
+assert_eq "cluster of 4 closes all but the newest" \
+    "3502 3503 3504" "$(printf '%s' "$out" | jq -r '.close | join(" ")')"
+assert_eq "cluster of 4 keeps the newest issue number" \
+    "3505" "$(printf '%s' "$out" | jq -r '.keep')"
 
 # Happy path: 6 duplicates
 DUP_SIX=$(dup_fixture 6 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW")
 cluster=$(printf '%s' "$DUP_SIX" | patrol_group_duplicate_issues "")
 assert_eq "six duplicates report count 6" "6" "$(printf '%s' "$cluster" | jq -r '.count')"
-assert_eq "six duplicates close 3503-3507" \
-    "3503 3504 3505 3506 3507" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
+assert_eq "six duplicates close 3502-3506, keeping 3507" \
+    "3502 3503 3504 3505 3506" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
+assert_eq "six duplicates keep the newest" "3507" "$(printf '%s' "$cluster" | jq -r '.keep')"
+
+# keep policy: the default is spec-compliant "newest"; "oldest" is opt-in.
+out=$(PATROL_DUP_KEEP=oldest dup_fixture 6 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW" \
+    | PATROL_DUP_KEEP=oldest patrol_group_duplicate_issues "")
+assert_eq "keep=oldest survives the lowest issue number" "3502" "$(printf '%s' "$out" | jq -r '.keep')"
+assert_eq "keep=oldest closes 3503-3507" \
+    "3503 3504 3505 3506 3507" "$(printf '%s' "$out" | jq -r '.close | join(" ")')"
+out=$(dup_fixture 6 3502 "$DUP_AUTO_LABELS_JSON" "$DUP_NOW" \
+    | PATROL_DUP_KEEP=nonsense patrol_group_duplicate_issues "")
+assert_eq "an unrecognised keep policy degrades to newest" "3507" "$(printf '%s' "$out" | jq -r '.keep')"
+assert_eq "closed issue numbers are always emitted in ascending order" "true" \
+    "$(printf '%s' "$out" | jq -r '.close == (.close | sort)')"
 
 # Invariant: keep is never in close, and close/skipped are disjoint
 assert_eq "invariant: keep is not in close" "false" \
@@ -452,7 +465,7 @@ cluster=$(printf '%s' "$DUP_SIX" \
     | jq '[.[] | if .number == 3503 then .assignees = [{"login":"someone"}] else . end]' \
     | patrol_group_duplicate_issues "$DUP_STATE")
 assert_eq "assigned and active issues are excluded from close" \
-    "3505 3506 3507" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
+    "3502 3505 3506" "$(printf '%s' "$cluster" | jq -r '.close | join(" ")')"
 assert_eq "assigned issue is recorded as skipped" \
     "assigned" "$(printf '%s' "$cluster" | jq -r '.skipped[] | select(.number == 3503) | .reason')"
 assert_eq "in-flight issue is recorded as skipped" \
@@ -510,17 +523,19 @@ DUP_ISSUES_FILE="$TEST_TEMP_DIR/dup-issues.json"
 printf '%s' "$DUP_SIX" > "$DUP_ISSUES_FILE"
 dup_record_gh "$DUP_ISSUES_FILE"
 
-# Happy path: closes 5, keeps the lowest, comments on every closure
+# Happy path: closes 5, keeps the newest, comments on every closure
 dup_reset
 patrol_duplicate_issues >/dev/null 2>&1
 assert_eq "closes every duplicate but the canonical issue" "5" "$(dup_close_count)"
 assert_eq "PATROL_DUP_FINDINGS counts the closures" "5" "$PATROL_DUP_FINDINGS"
 assert_eq "the canonical issue is never closed" "0" \
+    "$(grep -c '^issue close 3507' "$DUP_GH_LOG" 2>/dev/null || true)"
+assert_eq "the oldest member of a runaway cluster is closed" "1" \
     "$(grep -c '^issue close 3502' "$DUP_GH_LOG" 2>/dev/null || true)"
 assert_eq "every closure carries an explanatory comment" "5" \
     "$(grep -c '^issue close .*--comment' "$DUP_GH_LOG" 2>/dev/null || true)"
 assert_contains "closure comment names the canonical issue" \
-    "$(_patrol_duplicate_comment 3502 6)" "#3502"
+    "$(_patrol_duplicate_comment 3507 6)" "#3507"
 assert_contains "emits patrol.duplicate_detected" "$(cat "$DUP_EVENT_LOG")" "patrol.duplicate_detected"
 assert_contains "emits patrol.duplicate_closed" "$(cat "$DUP_EVENT_LOG")" "patrol.duplicate_closed"
 assert_file_exists "writes an audit record" "$PIPELINE_ARTIFACTS_DIR/patrol-log.jsonl"

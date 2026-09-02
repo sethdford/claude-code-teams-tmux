@@ -73,11 +73,20 @@ patrol_build_labels() {
 # issues, so it has to be directly callable from sw-lib-daemon-patrol-test.sh,
 # which sources this lib and invokes functions by name.
 #
-# Note on which issue survives: the cluster's LOWEST issue number is kept, not
-# the newest. The oldest issue carries the triage labels, human comments and
-# cross-references, and "lowest number" is stable across runs even when the
-# fetch window truncates — "newest in the window" would keep a different issue
-# each pass and close what the previous pass kept.
+# Note on which issue survives: `keep` selects the policy.
+#
+#   newest (default) — the cluster's HIGHEST issue number survives. This is
+#       what the spec asks for, and it is the right default for a runaway
+#       generator: the latest report reflects the current state of whatever
+#       is misfiring.
+#   oldest — the cluster's LOWEST issue number survives. Prefer this when the
+#       cluster is likely to have accumulated human triage: the first issue
+#       carries the labels, comments and cross-references.
+#
+# Either way the choice is deterministic (issue numbers are monotonic in
+# creation order, so no createdAt parsing is involved) and the truncation guard
+# in patrol_duplicate_issues stands the check down on a partial view, so a
+# truncated fetch can never make consecutive runs disagree about the survivor.
 
 # Reduce a title to a canonical grouping key. Total function: any input,
 # including the empty string, produces output on stdout and exit 0.
@@ -152,7 +161,8 @@ patrol_group_duplicate_issues() {
         --arg auto "${PATROL_DUP_AUTO_LABELS:-automated,auto-patrol}" \
         --argjson threshold "${PATROL_DUP_THRESHOLD:-3}" \
         --argjson active "$active_json" \
-        --argjson cutoff "$cutoff" '
+        --argjson cutoff "$cutoff" \
+        --arg keep_policy "${PATROL_DUP_KEEP:-newest}" '
         ( $norms | split("\n") | map(select(length > 0) | split("\t"))
                  | map({key: .[0], value: (.[1] // "")}) | from_entries ) as $nm
         | ( $auto | split(",") | map(select(length > 0)) ) as $autolabels
@@ -171,7 +181,11 @@ patrol_group_duplicate_issues() {
         # the grouping key, so every member has the same set — check any one.
         | map(select(.[0].labels | any(. as $l | ($autolabels | index($l)) != null)))
         | map(
-            (sort_by(.number)) as $m
+            # Survivor first, then the closable rest. Anything other than
+            # "oldest" means keep-newest, so a mistyped config degrades to the
+            # documented default rather than to undefined ordering.
+            (if $keep_policy == "oldest" then sort_by(.number)
+             else sort_by(.number) | reverse end) as $m
             | ($m[1:] | map(. + { skip_reason:
                 (if .assigned then "assigned"
                  elif ((.number) as $nr | ($active | index($nr)) != null) then "active_pipeline"
@@ -182,8 +196,8 @@ patrol_group_duplicate_issues() {
                 count: ($m | length),
                 keep: $m[0].number,
                 sample_title: $m[0].title,
-                close: [ $rest[] | select(.skip_reason == null) | .number ],
-                skipped: [ $rest[] | select(.skip_reason != null) | {number: .number, reason: .skip_reason} ]
+                close: [ $rest[] | select(.skip_reason == null) | .number ] | sort,
+                skipped: [ $rest[] | select(.skip_reason != null) | {number: .number, reason: .skip_reason} ] | sort_by(.number)
               }
           )
         | map(select((.close | length) > 0))
@@ -244,9 +258,9 @@ patrol_duplicate_issues() {
         return 0
     fi
 
-    # A full page means we are looking at a truncated view; the lowest issue
-    # number in a cluster may lie outside it, so acting would keep the wrong
-    # issue. Report and stand down rather than guess.
+    # A full page means we are looking at a truncated view: cluster members —
+    # including the one the keep policy would select — may lie outside it, so
+    # acting would close issues around the wrong survivor. Stand down instead.
     if [[ "$fetched" -ge "$limit" ]]; then
         daemon_log WARN "Patrol: issue fetch hit the ${limit} limit — skipping duplicate detection on a truncated view"
         echo -e "    ${YELLOW:-}●${RESET:-} Skipped (fetched ${fetched} issues, at the ${limit} limit — view is truncated)"
