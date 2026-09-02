@@ -1925,6 +1925,118 @@
       },
       "timestamp": 1788378477,
       "ttl": 1800
+    },
+    "b0f3cc37182b58e0defe86adebe1e3b2": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "high",
+        "success_probability": 78,
+        "recommended_template": "full",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Merge gate statefulness - ensuring 'awaiting_approval' state persists and is properly tracked across pipeline resume cycles",
+          "Diff line counting accuracy - handling edge cases (binary files, line endings, generated code, renames)",
+          "Complexity multiplier calibration - deriving meaningful thresholds that don't over-approve risky changes or over-gate safe ones",
+          "Config migration friction - users upgrading need clear default values and documentation for new policy.json threshold fields",
+          "False positives blocking legitimate large refactors or feature additions with high issue complexity"
+        ],
+        "implementation_hints": [
+          "Use 'git diff --stat HEAD..merge-commit | tail -1' to extract total lines added/deleted; test diff accuracy against feature branches with known sizes",
+          "Reuse existing pipeline gate/approval state machine (already handles review gates) - only add a new condition that downgrades auto-merge to awaiting_approval",
+          "Store base_diff_threshold (e.g. 500 lines) and complexity_multiplier (e.g. 1.5x for P0, 1.0x for standard) in config/policy.json with documented defaults",
+          "Pre-compute issue complexity at intake stage and pass it to merge stage via pipeline state, avoiding late-stage intelligence calls",
+          "Add guard transition reason to pipeline-state.md and error logs for debugging (e.g. 'diff 1200 lines exceeds threshold 750 (500 + 1.5x P0)')",
+          "Test both paths: under-threshold (auto-merge proceeds, no gate modification) and over-threshold (gate transitions to manual, includes reason in comments)",
+          "Consider adding a --force-merge or --override flag for manual merge when gate is paused, preserving human approval decision"
+        ]
+      },
+      "timestamp": 1788378546,
+      "ttl": 3600
+    },
+    "01f2131be5a09109185c5eb4314063c6": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788378593,
+      "ttl": 1800
+    },
+    "6fcd6fb1f23439611f43006c452a87f5": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788378842,
+      "ttl": 1800
+    },
+    "05aa7ebbd15e8e5f21eb8fad0edf9338": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788378868,
+      "ttl": 1800
+    },
+    "6fc64df30e0fb6ca9204d3013fa81cb3": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 77,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Inaccurate root-cause classification producing false/misleading signals in dora output",
+          "Insufficient historical error patterns in memory for reliable multi-signature classification",
+          "Performance overhead of pattern matching on every build loop iteration",
+          "Difficulty distinguishing between similar failure signatures (timeouts vs context exhaustion vs flaky tests)",
+          "Integration complexity with existing error-summary.json consumers expecting specific field structure"
+        ],
+        "implementation_hints": [
+          "Leverage existing error-log.jsonl and memory pattern-capture infrastructure for signature analysis",
+          "Start with high-confidence pattern detection (stack traces, error keywords, known flaky test patterns) before expanding to complex heuristics",
+          "Use rule-based classifier combining regex patterns, error context, and timing signals rather than ML",
+          "Make root_cause_signature field optional for backward compatibility; consumers can ignore if absent",
+          "Add unit tests with representative failure samples from real build loops to validate classification accuracy",
+          "Cache classification results in error-summary.json to avoid repeated pattern matching across iterations",
+          "Integrate top-5 signatures into shipwright dora reliability section with separate 7d/30d rolling window metrics"
+        ]
+      },
+      "timestamp": 1788379145,
+      "ttl": 3600
+    },
+    "1c113019c353edba8da3c00ac48cd2f8": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "low",
+        "success_probability": 80,
+        "recommended_template": "standard",
+        "issue_type": "backend",
+        "key_risks": [
+          "Ensuring cost entries are tagged with issue context consistently across all pipeline execution paths (intake through validation stages)",
+          "Maintaining strict backward compatibility — existing `shipwright cost show` calls must produce identical output without the new flag",
+          "Gracefully handling goal-driven pipeline runs that lack issue numbers; need sensible fallback (goal hash or N/A)"
+        ],
+        "implementation_hints": [
+          "Thread issue number through pipeline context as SHIPWRIGHT_ISSUE_NUMBER env var; capture in sw-loop.sh and pass to cost-write calls",
+          "Add optional `issue` field to cost.json entries; backfill existing entries with 'N/A' or compute goal hash for old runs",
+          "Implement aggregation and sort logic for --by-issue: group costs by issue, sum per-issue spend, sort descending, include 7d/30d rolling avg",
+          "Validate --by-issue output format (JSON and human-readable) matches existing cost show structure; test --json flag compatibility",
+          "Test fixtures: multiple issues with varying spend; goal-driven runs; edge cases (no costs, single issue, empty time window)"
+        ]
+      },
+      "timestamp": 1788379183,
+      "ttl": 3600
     }
   }
 }
