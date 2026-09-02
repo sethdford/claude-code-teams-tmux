@@ -13,38 +13,44 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "success-patterns.json (test-repo-ranking)",
-      "relevance": 85,
-      "summary": "Two low-complexity build stage patterns with npm test strategy and single-iteration completion—directly applicable to automated build work"
+      "file": "success-patterns.json",
+      "repo_hash": "test-repo-complexity",
+      "relevance": 95,
+      "summary": "Low complexity fix pattern with 1 iteration, build stage, npm test strategy—exact match for E2E test scenario"
     },
     {
-      "file": "success-patterns.json (hash-consistency-repo)",
-      "relevance": 82,
-      "summary": "Build stage pattern with 'Specific test goal', low complexity, single iteration, npm test strategy—matches test automation context"
+      "file": "success-patterns.json",
+      "repo_hash": "test-repo-ranking",
+      "relevance": 90,
+      "summary": "Two low-complexity patterns, build stage, 1 iteration each, npm test—direct precedent for simple build fixes"
+    },
+    {
+      "file": "success-patterns.json",
+      "repo_hash": "test-repo-corrupt",
+      "relevance": 88,
+      "summary": "Two low-complexity patterns, build stage, 1 iteration, npm test with high confidence (85%)—similar complexity profile"
+    },
+    {
+      "file": "success-patterns.json",
+      "repo_hash": "hash-consistency-repo",
+      "relevance": 85,
+      "summary": "Specific test goal with low complexity, 1 iteration, build stage, npm test—matches expected execution profile"
     },
     {
       "file": "index.json",
-      "relevance": 75,
-      "summary": "Build stage pattern index identifying test_failure signature with timeout fix recommendation—provides failure recovery guidance"
-    },
-    {
-      "file": "success-patterns.json (test-repo-corrupt)",
       "relevance": 72,
-      "summary": "Two build stage patterns with npm test strategy, low complexity, single iteration—applicable to simple automated test fixes"
-    },
-    {
-      "file": "success-patterns.json (test-repo-complexity)",
-      "relevance": 70,
-      "summary": "Low complexity build stage fix pattern with typo root cause—relevant for simple README/documentation modification tasks"
+      "summary": "test_failure pattern in build stage with 5 occurrences and known fix (timeout increase)—cautionary pattern for test execution"
     }
   ]
 }
 
 Discoveries from other pipelines:
-✓ Injected 7 new discoveries
+✓ Injected 9 new discoveries
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [design] Design completed for Detect and Auto-Resolve Duplicate/Runaway E2E Test Issue Creation — Resolution: 
+[intake] Stage intake completed — Resolution: 
+[spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
 [spec_generation] Stage spec_generation completed — Resolution: 
 [intake] Stage intake completed — Resolution: 
@@ -129,8 +135,8 @@ status: running
 test_cmd: "npm test"
 model: sonnet
 agents: 1
-started_at: 2026-09-02T05:24:22Z
-last_iteration_at: 2026-09-02T05:24:22Z
+started_at: 2026-09-02T05:40:03Z
+last_iteration_at: 2026-09-02T05:40:03Z
 consecutive_failures: 0
 total_commits: 0
 audit_enabled: true
