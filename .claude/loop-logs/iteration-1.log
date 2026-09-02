@@ -1,36 +1,3 @@
-Perfect! Let me create a final summary of what was accomplished:
-
-## Summary: Test Suites Added for 5 Untested Scripts
-
-**Goal Status**: ✅ COMPLETED
-
-**What was added:**
-1. **sw-event-schema-sync-test.sh** (10 tests)
-   - Tests schema drift detection, write mode, idempotency, and Python dependency
-
-2. **sw-test-all-test.sh** (12 tests)
-   - Tests suite discovery, pattern filtering, timeout handling, parallel execution
-
-3. **sw-tmux-role-color-test.sh** (26 tests)
-   - Tests agent role to pane color mapping for all roles, case insensitivity, fallback behavior
-
-4. **sw-tmux-status-test.sh** (19 tests)
-   - Tests pipeline stage detection, heartbeat monitoring, edge cases, performance
-
-5. **sw-tracker-github-test.sh** (12 tests)
-   - Tests GitHub provider functions, NO_GITHUB bypass, input validation
-
-**Test Coverage:**
-- Total: 79 new test cases
-- All tests pass locally
-- All test files are executable and follow repo conventions
-- Integrated with `npm test` via auto-discovery in `sw-test-all.sh`
-- Registered in `package.json` `test:legacy-chain`
-
-**Verification:**
-- ✅ All 5 test suites discovered by `bash scripts/sw-test-all.sh --list`
-- ✅ All tests pass individually
-- ✅ Existing tests still pass (sanity check with sw-hello-test.sh)
-- ✅ No regressions introduced
+The README comment has been added and committed. This fully satisfies the goal — a trivial, low-complexity change with the acceptance criterion (existing tests continue passing) verified.
 
 LOOP_COMPLETE
