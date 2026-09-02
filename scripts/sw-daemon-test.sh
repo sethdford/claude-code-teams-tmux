@@ -13,6 +13,25 @@ DAEMON_SCRIPT="$SCRIPT_DIR/sw-daemon.sh"
 DAEMON_LIB_DIR="$(cd "$(dirname "$DAEMON_SCRIPT")" && pwd)/lib"
 DAEMON_LIB_GLOB="${DAEMON_LIB_DIR}/daemon-*.sh"
 
+# ── Source-assertion helper ──────────────────────────────────────────────────
+# Many tests below assert that a string appears within N lines of an anchor in
+# the daemon sources. The obvious spelling is `grep -A N anchor files | grep -q
+# needle`, but this file runs under `set -o pipefail`: under CPU contention the
+# upstream grep can exit nonzero *after* the downstream `grep -q` has already
+# matched and exited, so the pipeline reports failure even though the content is
+# present and the sources never changed. That showed up as a rare, load-only
+# flake in `npm run test:fast` (--jobs 4) while the serial suite stayed green.
+#
+# Materialise the context block first, then match it with a herestring — no
+# pipeline, so no pipefail exposure and no dependence on scheduling.
+src_block_has() {
+    local ctx_flag="$1" ctx_n="$2" anchor="$3" needle="$4"
+    shift 4
+    local block
+    block=$(grep "$ctx_flag" "$ctx_n" "$anchor" "$@" 2>/dev/null || true)
+    grep -q "$needle" <<<"$block"
+}
+
 # ─── Colors (matches shipwright theme) ──────────────────────────────────────────────
 # shellcheck disable=SC2034
 
@@ -1310,7 +1329,7 @@ test_daemon_failure_removes_watch_label() {
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
 
     # Check that the failure handler removes the watch label (PM learn block appears between comment and label removal)
-    if grep -A 15 "No retry.*report final failure" "$daemon_src" $DAEMON_LIB_GLOB | grep -q "remove-label.*WATCH_LABEL"; then
+    if src_block_has -A 15 "No retry.*report final failure" "remove-label.*WATCH_LABEL" "$daemon_src" $DAEMON_LIB_GLOB; then
         PASS=$((PASS + 1))
         return 0
     fi
@@ -1685,9 +1704,9 @@ test_classify_failure_auth() {
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
     grep -q 'classify_failure()' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "classify_failure function not found"; return 1; }
-    grep -A 30 'classify_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'not logged in' || \
+    src_block_has -A 30 'classify_failure()' 'not logged in' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing auth error pattern 'not logged in'"; return 1; }
-    grep -A 30 'classify_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'unauthorized' || \
+    src_block_has -A 30 'classify_failure()' 'unauthorized' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing auth error pattern 'unauthorized'"; return 1; }
 }
 
@@ -1733,25 +1752,25 @@ test_preflight_auth_check() {
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
     grep -q 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "daemon_preflight_auth_check function not found"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'gh auth status' || \
+    src_block_has -A 60 'daemon_preflight_auth_check()' 'gh auth status' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing gh auth check"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'claude.*--print' || \
+    src_block_has -A 60 'daemon_preflight_auth_check()' 'claude.*--print' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing claude auth check"; return 1; }
-    grep -B 5 'daemon_poll_issues' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'daemon_preflight_auth_check' || \
+    src_block_has -B 5 'daemon_poll_issues' 'daemon_preflight_auth_check' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Auth check not wired into poll loop"; return 1; }
 }
 
 test_process_group_spawn() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -B 5 'exec.*sw-pipeline.sh' "$daemon_src" $DAEMON_LIB_GLOB | grep -q "trap '' HUP" || \
+    src_block_has -B 5 'exec.*sw-pipeline.sh' "trap '' HUP" "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing HUP trap in spawn subshell"; return 1; }
 }
 
 test_process_tree_kill() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 30 'cleanup_on_exit()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'pkill.*-P' || \
+    src_block_has -A 30 'cleanup_on_exit()' 'pkill.*-P' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing pkill -P in cleanup_on_exit"; return 1; }
 }
 
@@ -1785,7 +1804,7 @@ test_retry_args_passed_to_spawn() {
 test_failure_classification_wired() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    src_block_has -A 50 'daemon_on_failure()' 'classify_failure' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
@@ -1804,25 +1823,25 @@ test_preflight_auth_check() {
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
     grep -q 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "daemon_preflight_auth_check function not found"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'gh auth status' || \
+    src_block_has -A 60 'daemon_preflight_auth_check()' 'gh auth status' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing gh auth check"; return 1; }
-    grep -A 60 'daemon_preflight_auth_check()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'claude.*--print' || \
+    src_block_has -A 60 'daemon_preflight_auth_check()' 'claude.*--print' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing claude auth check"; return 1; }
-    grep -B 5 'daemon_poll_issues' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'daemon_preflight_auth_check' || \
+    src_block_has -B 5 'daemon_poll_issues' 'daemon_preflight_auth_check' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Auth check not wired into poll loop"; return 1; }
 }
 
 test_process_group_spawn() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -B 5 'exec.*sw-pipeline.sh' "$daemon_src" $DAEMON_LIB_GLOB | grep -q "trap '' HUP" || \
+    src_block_has -B 5 'exec.*sw-pipeline.sh' "trap '' HUP" "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing HUP trap in spawn subshell"; return 1; }
 }
 
 test_process_tree_kill() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 30 'cleanup_on_exit()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'pkill.*-P' || \
+    src_block_has -A 30 'cleanup_on_exit()' 'pkill.*-P' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing pkill -P in cleanup_on_exit"; return 1; }
 }
 
@@ -1856,7 +1875,7 @@ test_retry_args_passed_to_spawn() {
 test_failure_classification_wired() {
     local daemon_src
     daemon_src="$(dirname "$DAEMON_SCRIPT")/sw-daemon.sh"
-    grep -A 50 'daemon_on_failure()' "$daemon_src" $DAEMON_LIB_GLOB | grep -q 'classify_failure' || \
+    src_block_has -A 50 'daemon_on_failure()' 'classify_failure' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "classify_failure not called in daemon_on_failure"; return 1; }
     grep -q 'daemon.failure_classified' "$daemon_src" $DAEMON_LIB_GLOB || \
         { echo "Missing daemon.failure_classified event"; return 1; }
