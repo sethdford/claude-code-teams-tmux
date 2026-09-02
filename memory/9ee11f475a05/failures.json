@@ -5,26 +5,17 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 4,
-      "last_seen": "2026-09-02T02:19:06Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-02T06:24:06Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock (pipeline-3664 already running) while sw-self-optimize-test and sw-intent-analysis-test failed on unrelated pre-existing bugs (invalid JSON passed to jq --argjson, and missing schema fields)",
-      "fix": "Release/clear the stale pipeline lock before the e2e test runs (or add lock cleanup in test teardown), and separately fix the jq --argjson invalid-JSON input in sw-self-optimize and the intent-analysis schema generator to include version/goal/criteria",
-      "seen_count": 4,
-      "last_seen": "2026-09-02T05:05:16Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-intent-analysis-test fails at exit 1 during an intent classification assertion, likely a mismatched expected label/score threshold",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly to isolate the failing assertion and update the expected value or classification logic accordingly",
-      "seen_count": 1,
-      "last_seen": "2026-09-02T05:51:09Z",
+      "root_cause": "sw-pipeline-test.sh: plan stage never writes .claude/pipeline-artifacts/plan.md, cascading to review/E2E/resume/cleanup failures, plus a jq parse error on a non-numeric complexity value in the RL/intelligence test",
+      "fix": "Fix the plan stage mock/handler to emit plan.md (and dod.md) before downstream stages run, and quote/validate the complexity value before piping it to jq",
+      "seen_count": 3,
+      "last_seen": "2026-09-02T02:57:38Z",
       "category": "test_failure"
     }
   ]
