@@ -30,17 +30,17 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "tester",
         "secondary_roles": [
-          "tester",
+          "builder",
           "reviewer"
         ],
         "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "reasoning": "Task is explicitly about test suite creation; Test Specialist has core expertise in test generation, coverage analysis, and automation. Builder needed for implementation, Reviewer for quality assurance of test code.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1788377098,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1401,360 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "895563e6f452df4938d7fc472c70e2c7": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 88,
+        "recommended_template": "fast",
+        "issue_type": "testing",
+        "key_risks": [
+          "Must understand each script's behavior/dependencies to write meaningful test cases",
+          "tmux-related scripts may have mocking challenges (tmux state management)",
+          "tracker-github.sh might have GitHub API mocking requirements",
+          "Test patterns must match existing harness conventions exactly to pass npm test"
+        ],
+        "implementation_hints": [
+          "Start with simpler scripts first: sw-event-schema-sync.sh, sw-test-all.sh, sw-tmux-role-color.sh (likely < 150 lines each)",
+          "For tmux scripts, examine sw-tmux-test.sh (746 lines) as reference for mocking tmux commands",
+          "For tracker-github.sh, reference sw-tracker-test.sh (534 lines) and sw-github-graphql-test.sh (661 lines) for API mocking patterns",
+          "Each test file should follow: version check, helper setup, PASS/FAIL counters, ERR trap, test cases with assertions, final PASS/FAIL summary",
+          "After creating test files, run `npm test` to verify integration and auto-update package.json if needed",
+          "Use `shipwright docs sync` to regenerate AUTO:test-suites section in CLAUDE.md post-implementation"
+        ]
+      },
+      "timestamp": 1788376474,
+      "ttl": 3600
+    },
+    "b5e503b785c3d4f6fafe6d7d93a77ab3": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1788376487,
+      "ttl": 1800
+    },
+    "f7ab0737e7c2c8f2d04484ffff0e620c": {
+      "result": {
+        "estimated_cost_usd": 3.85,
+        "estimated_tokens": 105000,
+        "estimated_iterations": 3,
+        "token_breakdown": {
+          "reading_reference_tests": 6000,
+          "planning_structure": 2000,
+          "writing_test_suites": 75000,
+          "test_execution_debug": 15000,
+          "review_refinement": 7000
+        },
+        "cost_breakdown": {
+          "model": "opus",
+          "input_tokens": 62000,
+          "output_tokens": 43000,
+          "input_cost_usd": 0.93,
+          "output_cost_usd": 2.58,
+          "overhead_usd": 0.34
+        },
+        "stages": {
+          "intake": {
+            "effort": "low",
+            "cost_usd": 0.15,
+            "duration_seconds": 30
+          },
+          "plan": {
+            "effort": "medium",
+            "cost_usd": 0.45,
+            "duration_seconds": 120
+          },
+          "build": {
+            "effort": "high",
+            "cost_usd": 2.10,
+            "duration_seconds": 480,
+            "iterations": 2
+          },
+          "test": {
+            "effort": "medium",
+            "cost_usd": 0.85,
+            "duration_seconds": 240,
+            "likely_failure_point": true
+          },
+          "review": {
+            "effort": "low",
+            "cost_usd": 0.30,
+            "duration_seconds": 60
+          }
+        },
+        "likely_failure_stage": "test",
+        "failure_probability": 0.12,
+        "success_probability": 0.88,
+        "confidence": 82,
+        "risk_factors": [
+          "tmux command mocking complexity",
+          "GitHub API mock pattern consistency",
+          "Test harness convention matching",
+          "Multiple scripts require individual test files"
+        ],
+        "optimization_notes": [
+          "Use fast template to skip design stage",
+          "Start with simplest scripts (sw-event-schema-sync.sh, sw-test-all.sh) to validate patterns before tackling complex ones",
+          "Parallel test execution via npm test reduces wall-clock time by ~40%",
+          "Reference sw-tmux-test.sh and sw-github-graphql-test.sh as authoritative pattern sources"
+        ],
+        "recommended_action": "proceed_with_fast_template"
+      },
+      "timestamp": 1788376502,
+      "ttl": 3600
+    },
+    "a1fb2c0699e2a8486c707a6ca01a07e6": {
+      "result": {
+        "issue_type": "testing",
+        "confidence": 0.94,
+        "secondary_domains": [
+          "refactor",
+          "documentation"
+        ],
+        "complexity_assessment": {
+          "score": 4,
+          "reasoning": "Straightforward test harness implementation following well-established patterns. Scripts are small (81-199 lines), test conventions are documented, registration process is mechanical. No architectural complexity—this is technical debt removal."
+        },
+        "skill_plan": {
+          "plan": [
+            "testing-strategy"
+          ],
+          "design": [
+            "testing-strategy",
+            "adversarial-quality"
+          ],
+          "build": [
+            "shell-script-test-harness-patterns",
+            "testing-strategy"
+          ],
+          "review": [
+            "testing-strategy",
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "validation-thoroughness",
+            "documentation"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [],
+          "validate": [],
+          "monitor": []
+        },
+        "skill_rationale": {
+          "testing-strategy": "Guides test design for each script (what to mock, what assertions matter) and ensures all tests follow the repo's existing harness conventions (PASS/FAIL counters, ERR traps, mock binaries).",
+          "adversarial-quality": "Identifies edge cases and failure modes in each script (e.g., corrupted schema files in event-schema-sync, race conditions in tmux commands) that unit tests must capture to prevent silent regressions.",
+          "shell-script-test-harness-patterns": "Repo-specific guidance for test file structure, mock binary setup (from `scripts/lib/mock-binaries/`), PASS/FAIL counting patterns, ERR trap conventions, and package.json registration that existing test suites demonstrate.",
+          "documentation": "Handles the AUTO:test-suites section sync in CLAUDE.md (required by acceptance criteria) and ensures new test files are discoverable and documented alongside the 100+ existing test suites.",
+          "validation-thoroughness": "Verifies that new tests actually exercise both success and failure paths in each script—not just smoke tests—and that coverage targets (90%+) are genuinely met.",
+          "pr-quality": "Write a PR that clearly lists the 5 new test files, explains test coverage per script, and shows that npm test output confirms all tests pass and are registered."
+        },
+        "generated_skills": [
+          {
+            "name": "shell-script-test-harness-patterns",
+            "reason": "This repo has 100+ shell script test suites with established but undocumented patterns (mock binaries, counter mechanisms, ERR traps, package.json registration). New tests must follow these patterns exactly to avoid technical debt. No existing skill captures repo-specific test harness conventions.",
+            "content": "## Shell Script Test Harness Patterns\n\n### Test File Structure\nEach `scripts/<name>-test.sh` follows this skeleton:\n\n```bash\n#!/bin/bash\nset -euo pipefail\n\nVERSION=\"1.0.0\"  # Keep in sync with main script\n\n# Counter setup\nPASS=0\nFAIL=0\n\n# Mock binary directory\nMOCK_BIN_DIR=\"$(mktemp -d)\"\nexport PATH=\"${MOCK_BIN_DIR}:$PATH\"\n\n# ERR trap for failure capture\ntrap 'FAIL=$((FAIL + 1))' ERR\n\ntest_case() {\n  local name=\"$1\"\n  echo \"Testing: $name\"\n  # assertions here\n  PASS=$((PASS + 1))\n}\n\n# Cleanup on exit\ntrap 'rm -rf \"${MOCK_BIN_DIR}\"' EXIT\n\n# Output summary\necho \"PASS: $PASS, FAIL: $FAIL\"\nexit \"$FAIL\"\n```\n\n### Mock Binary Patterns\n- Place mock binaries in a temporary directory and prepend to `$PATH`\n- Mock a command that the main script calls: e.g., if `sw-event-schema-sync.sh` calls `jq`, create `${MOCK_BIN_DIR}/jq` that returns test data\n- Mock binaries are simple shell scripts with shebang; they can control exit codes and output\n- Example: `echo '#!/bin/bash' > ${MOCK_BIN_DIR}/git && echo 'echo \"main\"' >> ${MOCK_BIN_DIR}/git && chmod +x ${MOCK_BIN_DIR}/git`\n\n### PASS/FAIL Counting\n- Increment `PASS` at the end of each successful test\n- ERR trap (or explicit error handling) increments `FAIL`\n- Exit with `$FAIL` so `npm test` aggregates failure counts across all suites\n\n### Package.json Registration\nAdd to `package.json` test scripts section:\n```json\n\"test:event-schema-sync\": \"bash scripts/sw-event-schema-sync-test.sh\",\n\"test:test-all\": \"bash scripts/sw-test-all-test.sh\"\n```\nThen add both to the main `test` script so `npm test` runs them.\n\n### AUTO Documentation Sync\nWhen adding new test suites, update the AUTO:test-suites table in `.claude/CLAUDE.md` with one row per test file (name, line count, purpose). Run `shipwright docs check` to validate consistency.\n\n### Avoiding Common Pitfalls\n- **Subshell state loss**: Use `while read; done < <(cmd)` not `cmd | while read` to preserve variables\n- **Pipefail with mocks**: Ensure mock binaries exit 0 on success unless testing error cases\n- **Cleanup order**: Set EXIT trap after creating mock directory so cleanup happens last\n- **Assertion clarity**: Use descriptive assertion messages; prefix failures with \"FAIL:\" so they're searchable in logs"
+          }
+        ],
+        "review_focus": [
+          "Test coverage completeness—do tests exercise all code paths (success, errors, edge cases) in each script?",
+          "Mock binary realism—do mocks accurately simulate real CLI tools (exit codes, output format, stderr)?",
+          "Consistency—do all 5 test files follow the same structure, variable naming, and error handling patterns?",
+          "Package.json registration—are all tests registered so `npm test` picks them up and reports accurate PASS/FAIL counts?",
+          "AUTO:test-suites sync—is CLAUDE.md properly updated with line count and purpose for each new test file?",
+          "Error case coverage—are tests for failure modes (missing files, invalid input, script errors) as thorough as happy-path tests?"
+        ],
+        "risk_areas": [
+          "Silent regressions—if tests only cover happy paths, real-world failures (bad schema, missing dependencies) slip through CI",
+          "Test maintenance debt—new tests must follow established patterns exactly; inconsistent tests become confusing for future maintainers",
+          "Script complexity—tracker-github.sh and event-schema-sync.sh may have complex logic requiring deep edge-case testing; insufficient coverage here directly undermines the goal",
+          "Mock brittleness—if mocks don't accurately simulate real tool behavior, tests may pass locally but fail in production (e.g., jq output format changes)",
+          "Documentation drift—AUTO:test-suites section could become stale if new test files aren't registered; drift breaks discoverability and introduces manual maintenance burden"
+        ]
+      },
+      "timestamp": 1788376587,
+      "ttl": 3600
+    },
+    "c4d94e47766b9ea8ce9ba7207b6e9558": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 85,
+            "summary": "TDD approach with unit+integration test strategy and test file modifications; directly applicable to adding new test suites for scripts"
+          },
+          {
+            "file": "success-patterns.json (Low complexity fix)",
+            "relevance": 75,
+            "summary": "Pattern for scripts/test.sh with npm test strategy; demonstrates low-complexity fix approach matching typical test suite additions"
+          },
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains test_failure patterns in build stage with guidance on test setup (timeout configuration); useful for understanding common test setup issues"
+          },
+          {
+            "file": "success-patterns.json (Specific test goal)",
+            "relevance": 65,
+            "summary": "Pattern for test.sh file in build stage with npm test strategy; simple, focused testing pattern"
+          },
+          {
+            "file": "success-patterns.json (First pattern)",
+            "relevance": 60,
+            "summary": "Pattern for test.sh with npm test strategy and low complexity; demonstrates straightforward test file modification"
+          }
+        ]
+      },
+      "timestamp": 1788376635,
+      "ttl": 1800
+    },
+    "8acda38eabc16a95a710d070bb94952d": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 78,
+            "summary": "Pattern for adding test suite to auth module using TDD with module isolation approach, includes actual test file creation (test/auth.test.ts), 5 iterations needed, unit+integration strategy - directly parallels adding test suites for untested scripts"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 62,
+            "summary": "Low complexity fix pattern for scripts/test.sh with npm test strategy, 1 iteration - shows successful test script patterns relevant to testing shell scripts"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 51,
+            "summary": "Test suite patterns for test.sh and test2.sh files with npm test strategy - provides examples of test file patterns for shell scripts though with generic goal descriptions"
+          }
+        ]
+      },
+      "timestamp": 1788376831,
+      "ttl": 1800
+    },
+    "1fdcbb3e8f4428b9ee58890532bd0fed": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 88,
+            "summary": "Shows iterative TDD approach for adding test files, 5 iterations with complexity 60, test_strategy npm test, includes src/ and test/ file patterns — directly applicable to designing test suite additions"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 78,
+            "summary": "Contains multiple patterns on test.sh and test2.sh files using npm test strategy, demonstrates incremental test script patterns relevant to untested script testing"
+          },
+          {
+            "file": "index.json",
+            "relevance": 72,
+            "summary": "Captures test_failure pattern in build stage with timeout issues, seen across api/cli sources — provides design insight into common test pitfalls to anticipate"
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 70,
+            "summary": "Multiple low-complexity patterns on test.sh and test2.sh with npm test strategy, shows proven approaches for test script additions"
+          },
+          {
+            "file": "success-patterns.json (hash-consistency-repo)",
+            "relevance": 65,
+            "summary": "Specific test goal pattern with test.sh file and npm test strategy, demonstrates low-complexity single-iteration test additions"
+          }
+        ]
+      },
+      "timestamp": 1788376879,
+      "ttl": 1800
+    },
+    "719bc846a24ea227b5f86bf9e6455dcf": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (test-repo)",
+            "relevance": 65,
+            "summary": "Contains pattern for feature work ('add auth module') using TDD approach with unit+integration testing strategy. Shows files_changed include both src and test files. Demonstrates successful iterative testing approach that contrasts with anti-patterns."
+          },
+          {
+            "file": "index.json",
+            "relevance": 58,
+            "summary": "Tracks test failure patterns (test_failure signature) during build stage with suggested fix (increase timeout). Identifies common pitfall in test setup that could inform what to avoid when designing test suites."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 52,
+            "summary": "Two low-complexity test fix patterns using npm test strategy with single file changes. Shows minimalist approach to test modifications, potentially contrasting with over-engineered test suite designs."
+          }
+        ]
+      },
+      "timestamp": 1788376894,
+      "ttl": 1800
+    },
+    "48920ecbdc3a32a8de2e0b9b21ba78a3": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 70,
+            "summary": "Contains test_failure pattern in build stage with explicit fix recommendation. Directly applicable to test suite creation during build phase."
+          },
+          {
+            "file": "success-patterns.json (add auth module)",
+            "relevance": 45,
+            "summary": "Shows unit + integration test strategy with iterative TDD approach. Demonstrates test file patterns and multi-file test implementation."
+          },
+          {
+            "file": "success-patterns.json (First pattern / hash 26f54196...)",
+            "relevance": 40,
+            "summary": "Low complexity pattern with test.sh file pattern and npm test strategy. Build stage execution matches current context."
+          },
+          {
+            "file": "success-patterns.json (Specific test goal / hash 7803f0e7...)",
+            "relevance": 38,
+            "summary": "Test-focused pattern with test.sh file pattern, npm test strategy, and build stage. Lower complexity fixture similar to current task scope."
+          },
+          {
+            "file": "success-patterns.json (Low complexity fix / hash cc155bd4...)",
+            "relevance": 30,
+            "summary": "Scripts/test.sh pattern with npm test strategy in build stage. Demonstrates script testing patterns relevant to 5 untested scripts."
+          }
+        ]
+      },
+      "timestamp": 1788377066,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains recent test failures (latest 2026-09-02) directly applicable to build stage: schema validation failures in analyze_intent, pipeline lock issues, loop iteration behavior on test failure, and cost aggregation problems. Provides actionable root causes and fixes for current build context."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 85,
+            "summary": "Two success patterns from similar complexity work (bug fix, feature addition) showing 3 iterations each, expected file change patterns (.claude/loop-logs, scripts/lib/*.sh), and duration of 45-150 seconds. Guides expectations for current build stage iteration count and scope."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 75,
+            "summary": "Shows build_failure + model_escalation strategy achieved 100% success rate over 5 attempts (2026-08-15). Indicates proven recovery approach for build failures in this project, directly applicable if current build stage encounters issues."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Establishes baseline metrics: build_duration_s=7095 (~118 min), test_duration_s=1459 (~24 min). Provides performance expectations for current build stage execution and test suite runtime, last updated 2026-07-31."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Contains older test environment failures (2026-05-22): mktemp directory creation issues and sw-cleanup.sh output formatting. Relevant for understanding recurring test setup problems, though more dated than current failures.json entries."
+          }
+        ]
+      },
+      "timestamp": 1788377088,
+      "ttl": 1800
     }
   }
 }
