@@ -45,7 +45,7 @@ test_failure_history_init() {
     # Verify the init_state function includes failure_history: [] (can be up to 50 lines into function)
     local _ctx
     _ctx="$(grep -A 50 'init_state()' "$SCRIPT_DIR/sw-daemon.sh" "$SCRIPT_DIR"/lib/daemon-*.sh 2>/dev/null || true)"
-    echo "$_ctx" | grep -q 'failure_history' || {
+    grep -q -e 'failure_history' <<<"$_ctx" || {
         echo "failure_history not in init_state function"
         return 1
     }
@@ -122,11 +122,11 @@ test_max_retries_per_class() {
         echo \"build=\$(get_max_retries_for_class build_failure)\"
         echo \"unknown=\$(get_max_retries_for_class unknown)\"
     " 2>/dev/null)
-    echo "$result" | grep -q "auth=0" || { echo "auth_error should be 0 retries, got: $result"; return 1; }
-    echo "$result" | grep -q "invalid=0" || { echo "invalid_issue should be 0 retries"; return 1; }
-    echo "$result" | grep -q "api=4" || { echo "api_error should be 4 retries"; return 1; }
-    echo "$result" | grep -q "context=2" || { echo "context_exhaustion should be 2 retries"; return 1; }
-    echo "$result" | grep -q "build=2" || { echo "build_failure should be 2 retries"; return 1; }
+    grep -q -e "auth=0" <<<"$result" || { echo "auth_error should be 0 retries, got: $result"; return 1; }
+    grep -q -e "invalid=0" <<<"$result" || { echo "invalid_issue should be 0 retries"; return 1; }
+    grep -q -e "api=4" <<<"$result" || { echo "api_error should be 4 retries"; return 1; }
+    grep -q -e "context=2" <<<"$result" || { echo "context_exhaustion should be 2 retries"; return 1; }
+    grep -q -e "build=2" <<<"$result" || { echo "build_failure should be 2 retries"; return 1; }
 }
 
 # ── 1.4 Daemon: exponential backoff math is correct ───────────────────────────
@@ -171,7 +171,7 @@ test_pm_learn_functional() {
     local out pm_home="$TEST_TMP/pm-home"
     mkdir -p "$pm_home/.shipwright"
     out=$(HOME="$pm_home" PM_STATE_DIR="$pm_home/.shipwright" NO_GITHUB=true bash "$SCRIPT_DIR/sw-pm.sh" learn 42 success 2>&1 || true)
-    echo "$out" | grep -qi "recorded\|captured\|success" || { echo "learn should confirm recording: $out"; return 1; }
+    grep -qi -e "recorded\|captured\|success" <<<"$out" || { echo "learn should confirm recording: $out"; return 1; }
 }
 
 # ── 1.8 Daemon: PM integration in triage (wiring check) ──────────────────────
@@ -280,7 +280,7 @@ test_oversight_gate_json_safety() {
     jq -e '.' "$review_file" >/dev/null 2>&1 || { echo "Invalid JSON in review file"; return 1; }
     local desc
     desc=$(jq -r '.description' "$review_file")
-    echo "$desc" | grep -q "special" || { echo "Description lost content"; return 1; }
+    grep -q -e "special" <<<"$desc" || { echo "Description lost content"; return 1; }
 }
 
 # ── 2.10 Pipeline: oversight gate wired into stage_review ────────────────────
@@ -290,7 +290,7 @@ test_pipeline_oversight_wiring() {
     # Line structure: if [[ -x oversight.sh ]] && [[ SKIP_GATES != true ]]; then ... gate ...
     local _ctx
     _ctx="$(grep -B 10 'sw-oversight.sh.*gate' "$SCRIPT_DIR/sw-pipeline.sh" 2>/dev/null || true; grep -B 10 'sw-oversight.sh.*gate' "$SCRIPT_DIR"/lib/pipeline-*.sh 2>/dev/null || true)"
-    echo "$_ctx" | grep -q 'SKIP_GATES' || {
+    grep -q -e 'SKIP_GATES' <<<"$_ctx" || {
         echo "Oversight gate does not respect SKIP_GATES"
         return 1
     }
@@ -346,7 +346,7 @@ test_triage_offline_fallback() {
     # Verify triage team no longer calls check_gh at the top
     local team_section
     team_section=$(sed -n '/^cmd_team/,/^cmd_/p' "$SCRIPT_DIR/sw-triage.sh" | head -10)
-    if echo "$team_section" | grep -q 'check_gh'; then
+    if grep -q -e 'check_gh' <<<"$team_section"; then
         echo "cmd_team still calls check_gh at the top (blocks offline)"
         return 1
     fi
@@ -387,7 +387,7 @@ test_recruit_meta_loop() {
     # Verify reflect calls meta-validation (check both main script and libraries)
     local reflect_section
     reflect_section=$(sed -n '/_recruit_reflect()/,/^}/p' "$SCRIPT_DIR/sw-recruit.sh" "$SCRIPT_DIR"/lib/recruit-*.sh 2>/dev/null || true)
-    echo "$reflect_section" | grep -q '_recruit_meta_validate_self_tune' || {
+    grep -q -e '_recruit_meta_validate_self_tune' <<<"$reflect_section" || {
         echo "reflect does not call meta-validation"
         return 1
     }
@@ -645,7 +645,7 @@ test_stage_self_awareness_hint() {
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         total=$((total + 1))
-        echo "$line" | grep -q '"outcome":"failed"' && failures=$((failures + 1)) || true
+        grep -q -e '"outcome":"failed"' <<<"$line" && failures=$((failures + 1)) || true
     done <<< "$recent"
     local rate=$((failures * 100 / total))
     [[ "$total" -ge 3 ]] || { echo "Expected total >= 3, got $total"; return 1; }
@@ -663,13 +663,13 @@ test_effectiveness_both_paths() {
     # mark_stage_complete calls record_stage_effectiveness (can be up to 15 lines in)
     local _complete_ctx
     _complete_ctx="$(grep -A 15 'mark_stage_complete()' "$SCRIPT_DIR/sw-pipeline.sh" 2>/dev/null || true; grep -A 15 'mark_stage_complete()' "$SCRIPT_DIR"/lib/pipeline-*.sh 2>/dev/null || true)"
-    echo "$_complete_ctx" | grep -q 'record_stage_effectiveness.*complete' || {
+    grep -q -e 'record_stage_effectiveness.*complete' <<<"$_complete_ctx" || {
         echo "record_stage_effectiveness not called on mark_stage_complete"
         return 1
     }
     local _failed_ctx
     _failed_ctx="$(grep -A 10 'mark_stage_failed()' "$SCRIPT_DIR/sw-pipeline.sh" 2>/dev/null || true; grep -A 10 'mark_stage_failed()' "$SCRIPT_DIR"/lib/pipeline-*.sh 2>/dev/null || true)"
-    echo "$_failed_ctx" | grep -q 'record_stage_effectiveness.*failed' || {
+    grep -q -e 'record_stage_effectiveness.*failed' <<<"$_failed_ctx" || {
         echo "record_stage_effectiveness not called on mark_stage_failed"
         return 1
     }
@@ -710,7 +710,7 @@ test_integration_claude_skip_path() {
         echo "integration-claude-test should exit 0 when skipping"
         return 1
     }
-    echo "$out" | grep -q "Skipping integration-claude" || {
+    grep -q -e "Skipping integration-claude" <<<"$out" || {
         echo "Expected 'Skipping integration-claude' message, got: $out"
         return 1
     }

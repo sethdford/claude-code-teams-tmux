@@ -97,7 +97,11 @@ run_one() {
     set -m
     bash "$suite" >"$log" 2>&1 &
     local pid=$!
-    set +m
+    # The watchdog gets its own process group too. `kill $watchdog` only kills
+    # the subshell, orphaning its `sleep $TIMEOUT` child — which keeps the
+    # runner's stdout open, so `output=$(sw-test-all.sh)` hung for a full
+    # TIMEOUT after the suites were done. Kill the group and the sleep dies
+    # with it.
     (
         sleep "$TIMEOUT"
         # Negative PID = process group. TERM first so traps can clean up temp
@@ -107,8 +111,10 @@ run_one() {
         kill -KILL -"$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
     ) &
     local watchdog=$!
+    set +m
     wait "$pid" 2>/dev/null; rc=$?
-    kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null
+    kill -TERM -"$watchdog" 2>/dev/null || kill -TERM "$watchdog" 2>/dev/null
+    wait "$watchdog" 2>/dev/null
     # Reap stragglers on the normal path too — a suite can exit 0 while leaving
     # a backgrounded child behind.
     kill -KILL -"$pid" 2>/dev/null || true
@@ -163,7 +169,32 @@ timedout=$(awk -F'\t' '$2=="TIMEOUT"' "$RESULTS_DIR/results.tsv" | wc -l | tr -d
 failed=$(awk -F'\t' '$2 ~ /^FAIL/'  "$RESULTS_DIR/results.tsv" | wc -l | tr -d ' ')
 total=$(wc -l < "$RESULTS_DIR/results.tsv" | tr -d ' ')
 
+# A worker can die before it appends its row — a suite that kills its parent,
+# an OOM kill, a `--jobs N` subshell that never returns. The row is then simply
+# absent, and every count above is computed from the survivors, so the run
+# reports green while having silently skipped work. Trust the discovered suite
+# list, not the results file.
+# (bash 3.2 has no safe empty-array expansion under `set -u`, so this is a
+# newline-delimited string rather than an array.)
+missing=''
+missing_count=0
+for suite in "${SUITES[@]}"; do
+    sname="$(basename "$suite" .sh)"
+    if ! awk -F'\t' -v n="$sname" '$1==n {found=1} END {exit !found}' \
+        "$RESULTS_DIR/results.tsv"; then
+        missing="${missing}${sname}"$'\n'
+        missing_count=$((missing_count + 1))
+    fi
+done
+
 printf "\n${DIM}  ══════════════════════════════════════════${RESET}\n\n"
+if [[ $missing_count -gt 0 ]]; then
+    printf "  ${RED}${BOLD}NO RESULT REPORTED${RESET} ${DIM}(worker died before writing its row)${RESET}\n"
+    while IFS= read -r m; do
+        [[ -n "$m" ]] && printf "    %-46s NO-RESULT\n" "$m"
+    done <<< "$missing"
+    printf "\n"
+fi
 if [[ $failed -gt 0 || $timedout -gt 0 ]]; then
     # Echo the tail of each failing suite's log. The per-suite logs live in a
     # temp dir the EXIT trap removes, so on CI the summary was the only thing
@@ -186,8 +217,8 @@ if [[ $failed -gt 0 || $timedout -gt 0 ]]; then
     awk -F'\t' '$2!="PASS" {printf "    %-46s %s\n", $1, $2}' "$RESULTS_DIR/results.tsv"
     printf "\n"
 fi
-printf "  ${GREEN}${BOLD}%s${RESET} passed  ${RED}${BOLD}%s${RESET} failed  ${YELLOW}${BOLD}%s${RESET} timed out  ${DIM}(%s suites, %ss)${RESET}\n\n" \
-    "$passed" "$failed" "$timedout" "$total" "$((RUN_END - RUN_START))"
+printf "  ${GREEN}${BOLD}%s${RESET} passed  ${RED}${BOLD}%s${RESET} failed  ${YELLOW}${BOLD}%s${RESET} timed out  ${RED}${BOLD}%s${RESET} no result  ${DIM}(%s of %s suites, %ss)${RESET}\n\n" \
+    "$passed" "$failed" "$timedout" "$missing_count" "$total" "${#SUITES[@]}" "$((RUN_END - RUN_START))"
 
 # Persist the machine-readable result before the EXIT trap clears the temp dir.
 if [[ -n "${SW_TEST_REPORT:-}" ]]; then
@@ -195,5 +226,5 @@ if [[ -n "${SW_TEST_REPORT:-}" ]]; then
         printf "${DIM}  report: %s${RESET}\n\n" "$SW_TEST_REPORT"
 fi
 
-[[ $failed -eq 0 && $timedout -eq 0 ]] || exit 1
+[[ $failed -eq 0 && $timedout -eq 0 && $missing_count -eq 0 ]] || exit 1
 exit 0

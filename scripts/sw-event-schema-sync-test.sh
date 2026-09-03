@@ -61,7 +61,7 @@ assert_contains "output reports registered count" "$output" "registered"
 echo ""
 echo -e "${BOLD}  Status Messages${RESET}"
 output=$(bash "$SCRIPT_DIR/sw-event-schema-sync.sh" 2>&1)
-if echo "$output" | grep -qE "(registered|emitted|missing|schema)"; then
+if grep -qE -e "(registered|emitted|missing|schema)" <<<"$output"; then
     assert_pass "output includes schema analysis"
 else
     assert_fail "output includes schema analysis"

@@ -139,7 +139,7 @@ fi
     source "$SCRIPT_DIR/sw-code-review.sh"
     output=$(detect_code_smells "$TEST_TEMP_DIR/repo/scripts/sample.sh" 2>&1) || true
     # Clean file should have no LONG_FUNCTION or DEEP_NESTING
-    if echo "$output" | grep -q "LONG_FUNCTION"; then
+    if grep -q -e "LONG_FUNCTION" <<<"$output"; then
         echo "FAIL"
     else
         echo "PASS"

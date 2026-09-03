@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if echo "$prompt" | grep -qiE "implementation plan|task checklist|create a.*plan"; then
+if grep -qiE -e "implementation plan|task checklist|create a.*plan" <<<"$prompt"; then
     cat <<'PLAN'
 # Implementation Plan
 
@@ -148,7 +148,7 @@ if echo "$prompt" | grep -qiE "implementation plan|task checklist|create a.*plan
 - [ ] All tests pass
 - [ ] Code reviewed
 PLAN
-elif echo "$prompt" | grep -qiE "review|reviewer|diff"; then
+elif grep -qiE -e "review|reviewer|diff" <<<"$prompt"; then
     cat <<'REVIEW'
 # Code Review
 
@@ -366,7 +366,7 @@ assert_exit_code_nonzero() {
 
 assert_output_contains() {
     local pattern="$1" label="${2:-output match}"
-    if printf '%s\n' "$PIPELINE_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+    if grep -qiE -e "$pattern" <<<"$PIPELINE_OUTPUT" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} Output missing pattern: $pattern ($label)"
@@ -377,7 +377,7 @@ assert_output_contains() {
 
 assert_output_not_contains() {
     local pattern="$1" label="${2:-output exclusion}"
-    if ! printf '%s\n' "$PIPELINE_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+    if ! grep -qiE -e "$pattern" <<<"$PIPELINE_OUTPUT" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} Output unexpectedly contains: $pattern ($label)"
@@ -422,7 +422,7 @@ assert_branch_exists() {
     local pattern="$1" label="${2:-branch exists}"
     local branches
     branches=$(cd "$TEST_TEMP_DIR/project" && git branch --list 2>/dev/null)
-    if printf '%s\n' "$branches" | grep -qE "$pattern" 2>/dev/null; then
+    if grep -qE -e "$pattern" <<<"$branches" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} No branch matching: $pattern ($label)"
@@ -618,7 +618,7 @@ test_no_branches_after_dryrun() {
     branches=$(cd "$TEST_TEMP_DIR/project" && git branch --list | sed 's/^\* //' | tr -d ' ' || true)
     local has_feat=false
     while IFS= read -r b; do
-        if echo "$b" | grep -qiE "^feat/"; then
+        if grep -qiE -e "^feat/" <<<"$b"; then
             has_feat=true
         fi
     done <<< "$branches"
@@ -695,7 +695,7 @@ test_issue_number_in_state() {
     assert_exit_code 0 "dry-run should succeed" &&
     # Issue number should appear in output or state
     (
-        if printf '%s\n' "$PIPELINE_OUTPUT" | grep -q "42" 2>/dev/null; then
+        if grep -q -e "42" <<<"$PIPELINE_OUTPUT" 2>/dev/null; then
             return 0
         fi
         if [[ -f "$TEST_TEMP_DIR/project/.claude/pipeline-state.md" ]] && grep -q "42" "$TEST_TEMP_DIR/project/.claude/pipeline-state.md"; then

@@ -32,7 +32,7 @@
       "result": {
         "raw_response": "Mock claude response"
       },
-      "timestamp": 1788414337,
+      "timestamp": 1788418301,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1719,33 +1719,33 @@
       "result": {
         "results": [
           {
-            "file": "success-patterns.json",
-            "relevance": 85,
-            "summary": "Shows patterns of successful builds (3 iterations typical, file change patterns, standard template, commit counts). Directly informs build stage approach and realistic expectations."
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Recent test failure patterns (last seen Sept 3, 2026) with documented root causes and fixes; directly applicable to build stage debugging and preventing known test failures"
           },
           {
-            "file": "patterns.json",
-            "relevance": 82,
-            "summary": "Project structure (Node/vitest/commonjs/src/ source dir) and naming conventions essential for writing code that fits project patterns during build stage."
+            "file": "success-patterns.json",
+            "relevance": 90,
+            "summary": "Two proven success patterns for bug fixes and features with iterations, duration, and approach details; demonstrates what strategies work for this project's build stage"
           },
           {
             "file": "retry-outcomes.json",
-            "relevance": 78,
-            "summary": "Build failure class shows model_escalation strategy at 100% success rate. Directly applicable if build stage encounters failures."
+            "relevance": 85,
+            "summary": "Build failure retry strategy using model escalation shows 100% success rate (5/5 attempts); actionable retry approach for handling build stage failures"
           },
           {
-            "file": "failures.json",
-            "relevance": 65,
-            "summary": "Recent test failures (intent-analysis schema, timeouts, integration tests) inform what code issues the build stage should avoid. Recurring sw-intent-analysis-test failures suggest known patterns."
+            "file": "knowledge.json",
+            "relevance": 78,
+            "summary": "Test failure signatures (mktemp directory issues, missing output) with specific fix strategies; provides patterns for common build environment problems"
           },
           {
             "file": "metrics.json",
-            "relevance": 55,
-            "summary": "Historical build duration baseline (7095s) and test duration baseline (1459s) set expectations for build stage iteration planning."
+            "relevance": 72,
+            "summary": "Performance baselines: build ~7095s, tests ~1459s; sets expectations for build stage duration and helps detect anomalies"
           }
         ]
       },
-      "timestamp": 1788414415,
+      "timestamp": 1788419321,
       "ttl": 1800
     },
     "9ffec5a1b4309a58b33c35c65fa98a84": {
@@ -2450,6 +2450,230 @@
         }
       ],
       "timestamp": 1788417092,
+      "ttl": 1800
+    },
+    "947b3cb369b4a80902eff0de69b81a30": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788418258,
+      "ttl": 1800
+    },
+    "8cd357ec576de0aaaa1e7a7c7286eb03": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418345,
+      "ttl": 1800
+    },
+    "21f33a186bd1fe408ccbfb4b2dde3b8a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418523,
+      "ttl": 1800
+    },
+    "94aa69da764b53db00f55eb543434028": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418716,
+      "ttl": 1800
+    },
+    "4be18b89caec3dc0c674fdc595e02404": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418718,
+      "ttl": 1800
+    },
+    "ebea8f756bdeb7fe502c1a0201aea555": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418718,
+      "ttl": 1800
+    },
+    "211239c4183a60761394b2b9e9188d8a": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418718,
+      "ttl": 1800
+    },
+    "1e32d6badd0255269b25e7026ddc6fa3": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418919,
+      "ttl": 1800
+    },
+    "cf72ca759c3f8eaccfad43746efc0ca1": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418920,
+      "ttl": 1800
+    },
+    "2569e1419fb0fcd8e5f9a1b4305e85f7": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418920,
+      "ttl": 1800
+    },
+    "f32c6ff2d26daa1a41d9eb421b55433e": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788418923,
+      "ttl": 1800
+    },
+    "89d19e5d1f153e9e653d6abe74579983": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788419155,
+      "ttl": 1800
+    },
+    "09be3da241f626763c3cdd6fa3ee392c": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788419158,
+      "ttl": 1800
+    },
+    "c6b7233660615a26060bcbcf7adbe47d": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788419158,
+      "ttl": 1800
+    },
+    "5e2f425b86fc68105f572db7467412a2": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788419158,
+      "ttl": 1800
+    },
+    "738e106624eb7629a9335430445b011b": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788419399,
+      "ttl": 1800
+    },
+    "c6a5db604e8c77e00ad6343360b79264": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788419487,
       "ttl": 1800
     }
   }

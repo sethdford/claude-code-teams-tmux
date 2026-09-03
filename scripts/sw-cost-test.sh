@@ -213,13 +213,13 @@ BUDEOF
 dash_output=$(env HOME="$TEST_TEMP_DIR/home" PATH="$TEST_TEMP_DIR/bin:/usr/local/bin:/usr/bin:/bin" \
     bash "$SCRIPT_DIR/sw-cost.sh" show --period 30 2>&1) || true
 
-if echo "$dash_output" | grep -q "CONTEXT EFFICIENCY"; then
+if grep -q -e "CONTEXT EFFICIENCY" <<<"$dash_output"; then
     assert_pass "Dashboard renders CONTEXT EFFICIENCY with event data"
 else
     assert_fail "Dashboard renders CONTEXT EFFICIENCY with event data" "output: $(echo "$dash_output" | tail -5)"
 fi
 
-if echo "$dash_output" | grep -q "Avg budget used"; then
+if grep -q -e "Avg budget used" <<<"$dash_output"; then
     assert_pass "Dashboard shows avg budget utilization"
 else
     assert_fail "Dashboard shows avg budget utilization"

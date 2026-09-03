@@ -244,7 +244,7 @@ assert_contains "Plan stage has first rule" "$rules_for_plan" "Always validate u
 assert_contains "Review stage has second rule" "$rules_for_review" "Add comprehensive error handling"
 
 # First rule should NOT be in review stage
-if ! echo "$rules_for_review" | grep -q "Always validate user input"; then
+if ! grep -q -e "Always validate user input" <<<"$rules_for_review"; then
     assert_pass "Review stage does not contain first rule"
 else
     assert_fail "Review stage does not contain first rule"

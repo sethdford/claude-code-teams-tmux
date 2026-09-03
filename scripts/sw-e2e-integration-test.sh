@@ -141,7 +141,7 @@ test_create_issue() {
     fi
 
     # Verify it's numeric
-    if ! echo "$ISSUE_NUMBER" | grep -qE '^[0-9]+$'; then
+    if ! grep -qE -e '^[0-9]+$' <<<"$ISSUE_NUMBER"; then
         return 1
     fi
 
@@ -287,7 +287,7 @@ test_cost_under_budget() {
     fi
 
     # Check remaining is a positive number
-    if echo "$remaining" | grep -qE '^[0-9]+\.?[0-9]*$'; then
+    if grep -qE -e '^[0-9]+\.?[0-9]*$' <<<"$remaining"; then
         # Compare: remaining > 0 means we haven't exceeded budget
         local over
         over=$(echo "$remaining" | awk '{ print ($1 > 0) ? "no" : "yes" }')

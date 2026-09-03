@@ -189,7 +189,7 @@ test_list_machines() {
         bash "$TEST_TEMP_DIR/scripts/sw-remote.sh" list 2>/dev/null)
 
     # Should contain machine info
-    if printf '%s\n' "$output" | grep -q "builder-1" 2>/dev/null; then
+    if grep -q -e "builder-1" <<<"$output" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} List output missing machine info"
@@ -242,7 +242,7 @@ test_remote_help() {
     local output
     output=$(bash "$TEST_TEMP_DIR/scripts/sw-remote.sh" help 2>&1) || exit_code=$?
 
-    if printf '%s\n' "$output" | grep -qi "usage\|remote\|machine" 2>/dev/null; then
+    if grep -qi -e "usage\|remote\|machine" <<<"$output" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} Help output missing expected content"

@@ -87,7 +87,7 @@ output=$(bash -c "
     source '$SCRIPT_DIR/sw-tracker-github.sh'
     provider_discover_issues 'bug' 'open' '10'
 ")
-if echo "$output" | grep -q '\['; then
+if grep -q -e '\[' <<<"$output"; then
     assert_pass "discover_issues returns JSON array"
 else
     assert_fail "discover_issues returns JSON array"
@@ -127,7 +127,7 @@ output=$(bash -c "
     source '$SCRIPT_DIR/sw-tracker-github.sh'
     provider_get_issue '' 2>&1 || echo 'error'
 ") || true
-if echo "$output" | grep -qi 'error\|return\|^$'; then
+if grep -qi -e 'error\|return\|^$' <<<"$output"; then
     assert_pass "get_issue handles empty ID"
 else
     assert_pass "get_issue input validation"
@@ -168,7 +168,7 @@ output=$(bash -c "
     source '$SCRIPT_DIR/sw-tracker-github.sh'
     provider_discover_issues 'test' 'open' '1'
 ")
-if echo "$output" | grep -qE '(\{|\[)'; then
+if grep -qE -e '(\{|\[)' <<<"$output"; then
     assert_pass "output is JSON"
 else
     assert_fail "output is JSON"

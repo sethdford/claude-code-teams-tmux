@@ -715,7 +715,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-swarm.sh` | 684 | Dynamic agent swarm management |
 | `scripts/sw-team-stages.sh` | 500 | Multi-agent execution with leader/specialist roles |
 | `scripts/sw-templates.sh` | 228 | Browse and inspect team templates |
-| `scripts/sw-test-all.sh` | 199 | Run every test suite, report the FULL result |
+| `scripts/sw-test-all.sh` | 230 | Run every test suite, report the FULL result |
 | `scripts/sw-testgen.sh` | 567 | Autonomous test generation and coverage maintenance |
 | `scripts/sw-tmux-pipeline.sh` | 538 | Spawn and manage pipelines in tmux windows |
 | `scripts/sw-tmux-role-color.sh` | 81 | Set pane border color by agent role |
@@ -797,7 +797,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-convergence-test.sh` | 324 | Unit tests for convergence detection |
 | `scripts/sw-cost-optimizer-test.sh` | 466 | Test suite for cost optimization |
 | `scripts/sw-cost-test.sh` | 234 | Validate token usage & cost intelligence |
-| `scripts/sw-daemon-test.sh` | 1985 | Unit tests for daemon metrics, health, alerting |
+| `scripts/sw-daemon-test.sh` | 1999 | Unit tests for daemon metrics, health, alerting |
 | `scripts/sw-dashboard-e2e-test.sh` | 591 | full live validation |
 | `scripts/sw-dashboard-test.sh` | 250 | validates dashboard structure |
 | `scripts/sw-db-test.sh` | 971 | SQLite Persistence Layer Test Suite |
@@ -917,7 +917,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-swarm-test.sh` | 153 | Dynamic agent swarm management tests |
 | `scripts/sw-team-stages-test.sh` | 148 | Validate multi-agent stage execution |
 | `scripts/sw-templates-test.sh` | 251 | Validate team template browser |
-| `scripts/sw-test-all-test.sh` | 128 | Run every test suite, report the FULL result |
+| `scripts/sw-test-all-test.sh` | 195 | Run every test suite, report the FULL result |
 | `scripts/sw-test-holdout-test.sh` | 214 | Test Holdout System Test Suite |
 | `scripts/sw-test-optimizer-test.sh` | 395 | Test suite for test execution optimizer |
 | `scripts/sw-testgen-test.sh` | 160 | Test generation & coverage tests |
@@ -1193,6 +1193,7 @@ Purple (`#7c3aed`) and Blue (`#0066ff`) are used only as gradient endpoints, nev
 
 - `grep -c || echo "0"` under pipefail produces double output — use `|| true` + `${var:-0}`
 - `cmd | while read` loses variable state (subshell) — use `while read; done < <(cmd)`
+- `echo "$out" | grep -q pat` under `pipefail` is a flake: `grep -q` exits on the first match, the writer dies of SIGPIPE (141), and `pipefail` reports the whole pipeline as failed even though the pattern matched. Use a here-string — `grep -q -e pat <<<"$out"` — for any match against a captured variable
 - Atomic file writes: use tmp file + `mv`, not direct `echo > file`
 - JSON in bash: use `jq --arg` for proper escaping, never string interpolation
 - `cd` in helper functions changes caller's directory — use subshells `( cd dir && ... )`

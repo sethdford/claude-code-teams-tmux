@@ -143,7 +143,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if echo "$prompt" | grep -qiE "code review|reviewer|senior.*review|spec compliance"; then
+if grep -qiE -e "code review|reviewer|senior.*review|spec compliance" <<<"$prompt"; then
     cat <<'REVIEW'
 # Code Review
 
@@ -157,7 +157,7 @@ if echo "$prompt" | grep -qiE "code review|reviewer|senior.*review|spec complian
 3 issues found: 0 critical, 1 bug, 1 warning, 1 suggestion.
 Code is generally acceptable with minor improvements recommended.
 REVIEW
-elif echo "$prompt" | grep -qiE "implementation plan|task checklist|create a.*plan"; then
+elif grep -qiE -e "implementation plan|task checklist|create a.*plan" <<<"$prompt"; then
     cat <<'PLAN'
 # Implementation Plan
 
@@ -419,7 +419,7 @@ assert_exit_code() {
 
 assert_output_contains() {
     local pattern="$1" label="${2:-output match}"
-    if printf '%s\n' "$PIPELINE_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+    if grep -qiE -e "$pattern" <<<"$PIPELINE_OUTPUT" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} Output missing pattern: $pattern ($label)"
@@ -430,7 +430,7 @@ assert_output_contains() {
 
 assert_output_not_contains() {
     local pattern="$1" label="${2:-output exclusion}"
-    if ! printf '%s\n' "$PIPELINE_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+    if ! grep -qiE -e "$pattern" <<<"$PIPELINE_OUTPUT" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} Output unexpectedly contains: $pattern ($label)"
@@ -475,7 +475,7 @@ assert_branch_exists() {
     local pattern="$1" label="${2:-branch exists}"
     local branches
     branches=$(cd "$TEST_TEMP_DIR/project" && git branch --list 2>/dev/null)
-    if printf '%s\n' "$branches" | grep -qE "$pattern" 2>/dev/null; then
+    if grep -qE -e "$pattern" <<<"$branches" 2>/dev/null; then
         return 0
     fi
     echo -e "    ${RED}✗${RESET} No branch matching: $pattern ($label)"
@@ -615,7 +615,7 @@ test_build_invokes_sw() {
     # Verify a commit exists with "feat:" prefix (from mock sw loop)
     local commits
     commits=$(cd "$TEST_TEMP_DIR/project" && git log --oneline 2>/dev/null)
-    if ! printf '%s\n' "$commits" | grep -q "feat:" 2>/dev/null; then
+    if ! grep -q -e "feat:" <<<"$commits" 2>/dev/null; then
         echo -e "    ${RED}✗${RESET} No 'feat:' commit found"
         return 1
     fi
@@ -999,7 +999,7 @@ test_complexity_reassessment() {
             fi
         fi
         # Fallback: check that pipeline output mentions reassessment
-        if echo "$PIPELINE_OUTPUT" | grep -qiE "reassess|complexity"; then
+        if grep -qiE -e "reassess|complexity" <<<"$PIPELINE_OUTPUT"; then
             return 0
         fi
         # If neither exists, the function ran but there was nothing to reassess (tiny diff)
@@ -1579,9 +1579,9 @@ FEOF
     ) || result=""
 
     # Should contain goal, plan summary, and design headers
-    echo "$result" | grep -q "Add auth" || { echo "Missing goal in compact output"; return 1; }
-    echo "$result" | grep -q "Plan Summary" || { echo "Missing Plan Summary in compact output"; return 1; }
-    echo "$result" | grep -q "Key Design Decisions" || { echo "Missing Key Design Decisions in compact output"; return 1; }
+    grep -q -e "Add auth" <<<"$result" || { echo "Missing goal in compact output"; return 1; }
+    grep -q -e "Plan Summary" <<<"$result" || { echo "Missing Plan Summary in compact output"; return 1; }
+    grep -q -e "Key Design Decisions" <<<"$result" || { echo "Missing Key Design Decisions in compact output"; return 1; }
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1621,9 +1621,9 @@ FEOF
     ) || result=""
 
     # Verify stages were loaded
-    echo "$result" | grep -q "intake" || { echo "Missing intake in COMPOSED_STAGES"; return 1; }
-    echo "$result" | grep -q "build" || { echo "Missing build in COMPOSED_STAGES"; return 1; }
-    echo "$result" | grep -q "iters=25" || { echo "Expected COMPOSED_BUILD_ITERATIONS=25"; return 1; }
+    grep -q -e "intake" <<<"$result" || { echo "Missing intake in COMPOSED_STAGES"; return 1; }
+    grep -q -e "build" <<<"$result" || { echo "Missing build in COMPOSED_STAGES"; return 1; }
+    grep -q -e "iters=25" <<<"$result" || { echo "Expected COMPOSED_BUILD_ITERATIONS=25"; return 1; }
 }
 
 # ──────────────────────────────────────────────────────────────────────────────

@@ -572,9 +572,9 @@ CLAUDE_EOF
         --local \
         2>&1) || true
 
-    if echo "$output" | grep -qF "LOOP_COMPLETE"; then
+    if grep -qF -e "LOOP_COMPLETE" <<<"$output"; then
         assert_pass "Loop detected completion signal"
-    elif echo "$output" | grep -qi "complete.*LOOP_COMPLETE\|LOOP_COMPLETE.*accepted"; then
+    elif grep -qi -e "complete.*LOOP_COMPLETE\|LOOP_COMPLETE.*accepted" <<<"$output"; then
         assert_pass "Loop detected completion signal"
     else
         assert_fail "Loop detected completion signal" "output missing LOOP_COMPLETE"
@@ -610,11 +610,11 @@ CLAUDE_EOF
         --local \
         2>&1) || true
 
-    if echo "$output" | grep -qE "Iteration [2-9]|iteration [2-9]"; then
+    if grep -qE -e "Iteration [2-9]|iteration [2-9]" <<<"$output"; then
         assert_pass "Loop runs multiple iterations when tests fail initially"
-    elif echo "$output" | grep -q "LOOP_COMPLETE"; then
+    elif grep -q -e "LOOP_COMPLETE" <<<"$output"; then
         assert_pass "Loop runs multiple iterations and completes"
-    elif echo "$output" | grep -qi "circuit breaker\|max iteration"; then
+    elif grep -qi -e "circuit breaker\|max iteration" <<<"$output"; then
         assert_pass "Loop iterates (stopped by limit)"
     else
         assert_fail "Loop iterates on test failure" "expected multiple iterations"
@@ -646,10 +646,13 @@ CLAUDE_EOF
         --no-auto-extend \
         2>&1) || true
 
-    if echo "$output" | grep -qiE "max iteration|iteration.*3|Max iterations"; then
+    if grep -qiE -e "max iteration|iteration.*3|Max iterations" <<<"$output"; then
         assert_pass "Loop stops at max iterations"
     else
-        assert_fail "Loop respects max-iterations" "expected iteration limit message"
+        # Dump the tail: this assertion has flaked under parallel load and the
+        # captured output was the only evidence of why the loop bailed early.
+        assert_fail "Loop respects max-iterations" \
+            "expected iteration limit message; last lines: $(echo "$output" | tail -5 | tr '\n' '|')"
     fi
 else
     assert_fail "Loop max iterations" "setup failed"
@@ -678,14 +681,15 @@ CLAUDE_EOF
         --no-auto-extend \
         2>&1) || true
 
-    if echo "$output" | grep -qi "stuckness\|stuck"; then
+    if grep -qi -e "stuckness\|stuck" <<<"$output"; then
         assert_pass "Loop detects stuckness"
-    elif echo "$output" | grep -qi "circuit breaker"; then
+    elif grep -qi -e "circuit breaker" <<<"$output"; then
         assert_pass "Loop circuit breaker triggered (stuckness-related)"
-    elif echo "$output" | grep -qi "max iteration"; then
+    elif grep -qi -e "max iteration" <<<"$output"; then
         assert_pass "Loop stops at limit (stuckness test)"
     else
-        assert_fail "Loop stuckness detection" "expected stuckness or circuit breaker"
+        assert_fail "Loop stuckness detection" \
+            "expected stuckness or circuit breaker; last lines: $(echo "$output" | tail -5 | tr '\n' '|')"
     fi
 else
     assert_fail "Loop stuckness detection" "setup failed"
@@ -716,7 +720,7 @@ exit 0' > "$TEST_TEMP_DIR/bin/claude"
         --local \
         2>&1) || true
 
-    if echo "$output" | grep -qiE "budget exhausted|Budget exhausted|LOOP BUDGET_EXHAUSTED"; then
+    if grep -qiE -e "budget exhausted|Budget exhausted|LOOP BUDGET_EXHAUSTED" <<<"$output"; then
         assert_pass "Budget gate stops loop"
     else
         assert_fail "Budget gate stops loop" "expected budget exhausted message"
@@ -744,7 +748,7 @@ _e=\$?
 echo \"exit=\$_e\"
 " 2>/dev/null)
 rm -rf "$_valid_tmp"
-if echo "$_valid_out" | grep -q "exit=1"; then
+if grep -q -e "exit=1" <<<"$_valid_out"; then
     assert_pass "validate_claude_output catches corrupt output"
 else
     assert_fail "validate_claude_output catches bad output" "expected non-zero exit for api key leak"
@@ -773,7 +777,7 @@ CLAUDE_EOF
         --local \
         2>&1) || true
 
-    if echo "$output" | grep -qiE "Git:|progress|insertion|LOOP_COMPLETE"; then
+    if grep -qiE -e "Git:|progress|insertion|LOOP_COMPLETE" <<<"$output"; then
         assert_pass "Loop tracks progress via git"
     else
         assert_fail "Loop progress tracking" "expected git/progress output"
@@ -835,7 +839,7 @@ fi
 
 # Test: --help mentions --additional-test-cmds
 output=$(bash "$SCRIPT_DIR/sw-loop.sh" --help 2>&1 | sed $'s/\033\[[0-9;]*m//g') && rc=0 || rc=$?
-if echo "$output" | grep -q 'additional-test-cmds'; then
+if grep -q -e 'additional-test-cmds' <<<"$output"; then
     assert_pass "--help documents --additional-test-cmds"
 else
     assert_fail "--help documents --additional-test-cmds"

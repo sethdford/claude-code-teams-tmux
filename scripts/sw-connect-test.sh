@@ -444,7 +444,7 @@ test_status_shows_connected() {
             bash "$TEST_TEMP_DIR/sw-connect.sh" status 2>/dev/null
     )
 
-    if ! echo "$output" | grep -q "connected"; then
+    if ! grep -q -e "connected" <<<"$output"; then
         echo -e "    ${RED}✗${RESET} Status output missing 'connected' indicator"
         echo "    Output: $output"
         return 1
@@ -470,7 +470,7 @@ test_status_shows_disconnected() {
     # Check for either "disconnected" or RED colored status
     if ! echo "$output" | grep -q -E "(disconnected|Status.*disconnected)"; then
         # Maybe it shows the default but doesn't show a PID
-        if ! echo "$output" | grep -q "Status"; then
+        if ! grep -q -e "Status" <<<"$output"; then
             echo -e "    ${RED}✗${RESET} Status output missing status line"
             return 1
         fi
@@ -543,7 +543,7 @@ test_join_rejects_invalid_token() {
     # (mock curl might just echo {"valid":false})
     if ! echo "$output" | grep -q -i "invalid" && [[ "$exit_code" -eq 0 ]]; then
         # Check if our mock curl returned the right response
-        if ! echo "$output" | grep -q '"valid":false'; then
+        if ! grep -q -e '"valid":false' <<<"$output"; then
             echo -e "    ${RED}✗${RESET} Join should reject invalid token"
             return 1
         fi

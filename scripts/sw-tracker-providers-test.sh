@@ -124,9 +124,9 @@ for i in $(seq 1 $#); do
     fi
 done
 if echo "$*" | grep -q "api.linear.app"; then
-    if echo "$payload" | grep -q "issue(id:" 2>/dev/null; then
+    if grep -q -e "issue(id:" <<<"$payload" 2>/dev/null; then
         echo '{"data":{"issue":{"id":"linear-1","title":"Linear issue","description":"Body","labels":{"nodes":[{"name":"bug"}]},"state":{"name":"Started"}}}}'
-    elif echo "$payload" | grep -q "issueCreate" 2>/dev/null; then
+    elif grep -q -e "issueCreate" <<<"$payload" 2>/dev/null; then
         echo '{"data":{"issueCreate":{"issue":{"id":"linear-new-123"}}}}'
     else
         echo '{"data":{"team":{"issues":{"nodes":[{"id":"linear-1","title":"Linear issue","labels":{"nodes":[{"name":"bug"}]},"state":{"name":"Started"}}]}}}}'
@@ -375,7 +375,7 @@ EOF
     [[ -n "$content" ]] || return 1
     # ARGS line has -d and graphql URL
     echo "$content" | grep -qF -- "-d" || return 1
-    echo "$content" | grep -q "graphql" || return 1
+    grep -q -e "graphql" <<<"$content" || return 1
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════

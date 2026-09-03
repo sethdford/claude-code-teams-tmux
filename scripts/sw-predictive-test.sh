@@ -452,12 +452,12 @@ test_prevention_with_patterns() {
         return 1
     fi
 
-    if ! echo "$output" | grep -qi "WARNING"; then
+    if ! grep -qi -e "WARNING" <<<"$output"; then
         echo -e "    ${RED}✗${RESET} Prevention text missing WARNING prefix"
         return 1
     fi
 
-    if ! echo "$output" | grep -qi "build"; then
+    if ! grep -qi -e "build" <<<"$output"; then
         echo -e "    ${RED}✗${RESET} Prevention text doesn't mention the stage"
         return 1
     fi

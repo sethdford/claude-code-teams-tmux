@@ -56,7 +56,7 @@ assert_eq "all mode exits 0" "0" "$rc"
 echo ""
 echo -e "${BOLD}  Stage Detection${RESET}"
 output=$(bash "$SCRIPT_DIR/sw-tmux-status.sh" pipeline 2>&1)
-if echo "$output" | grep -qE "(build|⚙)"; then
+if grep -qE -e "(build|⚙)" <<<"$output"; then
     assert_pass "detects build stage"
 else
     # Stage detection depends on pipeline state file format
