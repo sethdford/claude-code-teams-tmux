@@ -18,6 +18,20 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ─── Counters ─────────────────────────────────────────────────────────────
 
+# ─── Guard: live suite, opt-in only ───────────────────────────────────────
+# This suite is not hermetic: it opens a real GitHub issue, runs a real
+# pipeline against the real Claude API, and spends up to $MAX_BUDGET_USD. It
+# used to run whenever a token happened to be in the environment, which meant
+# `npm test` on any authenticated machine filed throwaway issues, billed the
+# account, and blew the runner's per-suite timeout (PIPELINE_TIMEOUT is 600s
+# against a 300s limit) — reported simply as a failing suite. Require an
+# explicit opt-in so the default test run stays offline and free.
+if [[ "${SW_RUN_INTEGRATION:-0}" != "1" ]]; then
+    echo -e "${YELLOW}⚠ Skipping live integration tests: set SW_RUN_INTEGRATION=1 to run${RESET}"
+    echo "These tests call the real Claude API and GitHub, and cost real money."
+    exit 0
+fi
+
 # ─── Guard: skip gracefully if tokens missing ─────────────────────────────
 if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]] && [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
     echo -e "${YELLOW}⚠ Skipping integration tests: CLAUDE_CODE_OAUTH_TOKEN not set${RESET}"

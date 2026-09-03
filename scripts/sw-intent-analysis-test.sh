@@ -53,7 +53,44 @@ assert_contains() {
 
 # ─── Setup ──────────────────────────────────────────────────────
 TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
+MOCK_BIN_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR" "$MOCK_BIN_DIR"' EXIT
+
+# ─── Mock `claude` ──────────────────────────────────────────────
+# analyze_intent shells out to the real CLI whenever one is on PATH. Left
+# unmocked, this suite made three live, billed API calls whose latency blew the
+# runner's per-suite timeout and whose output varied run to run — it passed only
+# on machines with no `claude` installed, by silently taking the fallback path.
+# The mock pins the real CLI's envelope shape so the unwrap logic is what gets
+# exercised.
+MOCK_CLAUDE_PAYLOAD="$MOCK_BIN_DIR/payload.json"
+cat > "$MOCK_CLAUDE_PAYLOAD" <<'EOF'
+{
+  "version": 1,
+  "goal": "Mocked goal",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "who_benefits": "users",
+  "what_changes": "the thing changes",
+  "why_matters": "because",
+  "how_know_worked": "tests pass",
+  "out_of_scope": "everything else",
+  "criteria": [
+    { "id": "ac-1", "description": "Does the thing", "type": "functional", "verifiable": true },
+    { "id": "ac-2", "description": "Stays fast", "type": "nonfunctional", "verifiable": true }
+  ]
+}
+EOF
+
+cat > "$MOCK_BIN_DIR/claude" <<'EOF'
+#!/usr/bin/env bash
+# Emit the same result envelope as `claude --print --output-format json`:
+# the model's text lives in .result as a JSON *string*, not as an object.
+payload=$(cat "${MOCK_CLAUDE_PAYLOAD:?}")
+jq -n --arg r "$payload" '{type: "result", subtype: "success", is_error: false, result: $r, total_cost_usd: 0}'
+EOF
+chmod +x "$MOCK_BIN_DIR/claude"
+export MOCK_CLAUDE_PAYLOAD
+export PATH="$MOCK_BIN_DIR:$PATH"
 
 # ───────────────────────────────────────────────────────────────
 # Test: analyze_intent generates valid JSON
@@ -409,6 +446,95 @@ EOF
 }
 
 # ───────────────────────────────────────────────────────────────
+# Test: the Claude result envelope is unwrapped, not written through
+# ───────────────────────────────────────────────────────────────
+test_analyze_intent_unwraps_envelope() {
+    local test_dir="$TEMP_DIR/envelope-test"
+    mkdir -p "$test_dir"
+
+    analyze_intent "Envelope test" "body" "" "$test_dir" || true
+
+    local file="$test_dir/acceptance-criteria.json"
+    if [[ ! -f "$file" ]]; then
+        test_fail "acceptance-criteria.json not found"
+        return 1
+    fi
+
+    # The envelope's own keys must NOT survive into the criteria file.
+    if jq -e 'has("total_cost_usd") or (has("result") and (.result | type) == "string")' \
+        "$file" >/dev/null 2>&1; then
+        test_fail "Envelope was written through instead of unwrapped"
+        return 1
+    fi
+
+    local goal criteria_count
+    goal=$(jq -r '.goal // empty' "$file" 2>/dev/null || true)
+    criteria_count=$(jq '.criteria | length' "$file" 2>/dev/null || echo 0)
+
+    if [[ "$goal" == "Mocked goal" && "$criteria_count" -eq 2 ]]; then
+        test_pass "analyze_intent unwraps the Claude result envelope"
+        return 0
+    fi
+
+    test_fail "Unwrapped payload should carry the model's goal and criteria"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
+# Test: fenced JSON from the model is still parsed
+# ───────────────────────────────────────────────────────────────
+test_analyze_intent_strips_code_fences() {
+    local test_dir="$TEMP_DIR/fenced-test"
+    mkdir -p "$test_dir"
+
+    local original="$MOCK_CLAUDE_PAYLOAD"
+    local fenced="$MOCK_BIN_DIR/fenced-payload.json"
+    {
+        echo '```json'
+        cat "$original"
+        echo '```'
+    } > "$fenced"
+    MOCK_CLAUDE_PAYLOAD="$fenced" analyze_intent "Fenced test" "body" "" "$test_dir" || true
+
+    local goal
+    goal=$(jq -r '.goal // empty' "$test_dir/acceptance-criteria.json" 2>/dev/null || true)
+
+    if [[ "$goal" == "Mocked goal" ]]; then
+        test_pass "analyze_intent strips markdown fences around the payload"
+        return 0
+    fi
+
+    test_fail "Fenced payload should still yield the model's goal, got '$goal'"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
+# Test: a well-formed envelope carrying prose falls back to defaults
+# ───────────────────────────────────────────────────────────────
+test_analyze_intent_rejects_non_schema_payload() {
+    local test_dir="$TEMP_DIR/prose-test"
+    mkdir -p "$test_dir"
+
+    local prose="$MOCK_BIN_DIR/prose-payload.json"
+    echo "I cannot help with that request." > "$prose"
+
+    MOCK_CLAUDE_PAYLOAD="$prose" analyze_intent "Prose test" "body" "" "$test_dir" || true
+
+    local file="$test_dir/acceptance-criteria.json"
+    local goal criteria_count
+    goal=$(jq -r '.goal // empty' "$file" 2>/dev/null || true)
+    criteria_count=$(jq '.criteria | length' "$file" 2>/dev/null || echo 0)
+
+    if [[ "$goal" == "Prose test" && "$criteria_count" -gt 0 ]]; then
+        test_pass "analyze_intent falls back to defaults on non-schema output"
+        return 0
+    fi
+
+    test_fail "Non-schema model output should fall back to default criteria"
+    return 1
+}
+
+# ───────────────────────────────────────────────────────────────
 # Main test runner
 # ───────────────────────────────────────────────────────────────
 main() {
@@ -428,6 +554,9 @@ main() {
     test_format_criteria_for_prompt
     test_load_acceptance_criteria
     test_analyze_intent_fallback
+    test_analyze_intent_unwraps_envelope
+    test_analyze_intent_strips_code_fences
+    test_analyze_intent_rejects_non_schema_payload
     test_inject_failure_mode_analysis
     test_failure_mode_validation_status
 

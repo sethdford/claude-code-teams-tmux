@@ -114,6 +114,22 @@ ${_ACCEPTANCE_CRITERIA_SCHEMA}
         return 0
     fi
 
+    # `claude --print --output-format json` returns an ENVELOPE
+    # ({"type":"result","result":"<the model's text>",...}), not the criteria
+    # themselves. Writing that straight through produced a file that was valid
+    # JSON but had no .version/.goal/.criteria, so every downstream reader
+    # silently saw an empty criteria list. Unwrap .result before accepting.
+    _unwrap_claude_envelope "$intent_file"
+
+    # A well-formed envelope can still carry a refusal or prose instead of the
+    # schema. Only accept output that actually has the fields callers read;
+    # otherwise fall back to the deterministic defaults.
+    if ! _acceptance_criteria_is_valid "$intent_file"; then
+        _generate_default_acceptance_criteria "$title" "$body" "$artifacts_dir"
+        rm -f "$intent_file"
+        return 0
+    fi
+
     # Move to final location atomically
     local criteria_file="${artifacts_dir}/acceptance-criteria.json"
     mv "$intent_file" "$criteria_file" 2>/dev/null || {
@@ -122,6 +138,38 @@ ${_ACCEPTANCE_CRITERIA_SCHEMA}
     }
 
     return 0
+}
+
+# Rewrite a Claude CLI result envelope in place as the payload it wraps.
+# No-op when the file is already the bare payload, so it is safe to call on
+# output from any `--output-format`.
+_unwrap_claude_envelope() {
+    local file="$1"
+    local inner tmp
+
+    inner=$(jq -r 'if type == "object" and has("result") and (.result | type) == "string"
+                   then .result else empty end' "$file" 2>/dev/null) || return 0
+    [[ -n "$inner" ]] || return 0
+
+    # Models fence JSON in ```json blocks even when told not to. Strip fences
+    # and anything outside the outermost braces before re-parsing.
+    inner=$(printf '%s\n' "$inner" | sed -e 's/^[[:space:]]*```[a-zA-Z]*[[:space:]]*$//' -e 's/^[[:space:]]*```[[:space:]]*$//')
+    printf '%s\n' "$inner" | jq empty 2>/dev/null || return 0
+
+    tmp="${file}.unwrapped"
+    printf '%s\n' "$inner" >"$tmp" 2>/dev/null || return 0
+    mv "$tmp" "$file" 2>/dev/null || rm -f "$tmp"
+    return 0
+}
+
+# True when the file carries the fields every acceptance-criteria consumer
+# reads: a goal and at least one criterion.
+_acceptance_criteria_is_valid() {
+    local file="$1"
+    jq -e 'type == "object"
+           and (.goal | type) == "string" and (.goal | length) > 0
+           and (.criteria | type) == "array" and (.criteria | length) > 0' \
+        "$file" >/dev/null 2>&1
 }
 
 # Generate default acceptance criteria when Claude is unavailable

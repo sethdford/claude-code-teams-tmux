@@ -813,7 +813,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-dod-scorecard-test.sh` | 434 | Machine-Verifiable DoD Scorecard Tests |
 | `scripts/sw-dora-test.sh` | 241 | Validate DORA metrics dashboard, DX metrics, |
 | `scripts/sw-durable-test.sh` | 221 | Validate durable workflow engine |
-| `scripts/sw-e2e-integration-test.sh` | 352 | Real Claude + Real GitHub |
+| `scripts/sw-e2e-integration-test.sh` | 366 | Real Claude + Real GitHub |
 | `scripts/sw-e2e-orchestrator-test.sh` | 157 | Test suite registry & execution |
 | `scripts/sw-e2e-smoke-test.sh` | 835 | Pipeline orchestration without API keys |
 | `scripts/sw-e2e-system-test.sh` | 497 | Proves full daemon→pipeline→loop→PR flow |
@@ -840,7 +840,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-instrument-test.sh` | 172 | Pipeline instrumentation & feedback loops |
 | `scripts/sw-integration-claude-test.sh` | 106 | Budget-limited real Claude smoke |
 | `scripts/sw-intelligence-test.sh` | 534 | Unit tests for intelligence core |
-| `scripts/sw-intent-analysis-test.sh` | 443 | Test suite for intent analysis module |
+| `scripts/sw-intent-analysis-test.sh` | 572 | Test suite for intent analysis module |
 | `scripts/sw-jira-test.sh` | 284 | Validate Jira ↔ GitHub bidirectional sync |
 | `scripts/sw-launchd-test.sh` | 899 | Validate service management on |
 | `scripts/sw-lib-audit-trail-test.sh` | 311 |  |
