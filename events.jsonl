@@ -1,45 +1,30 @@
-{"ts":"2026-02-15T12:00:00Z","ts_epoch":1788457210,"type":"pipeline.completed","result":"success","agent_id":"agent-ingest-1","duration_s":120}
-{"ts":"2026-02-15T12:05:00Z","ts_epoch":1788457210,"type":"pipeline.completed","result":"failure","agent_id":"agent-ingest-1","duration_s":300}
-{"ts":"2026-02-15T12:10:00Z","ts_epoch":1788457210,"type":"pipeline.completed","result":"success","agent_id":"agent-ingest-2","duration_s":90}
-{"ts":"2026-09-03T17:40:10Z","ts_epoch":1788457210,"type":"convergence.tests_passed","issue":99,"cycle":1}
-{"ts":"2026-09-03T17:40:10Z","ts_epoch":1788457210,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"success","success_rate":100.0}
-{"ts":"2026-09-03T17:40:10Z","ts_epoch":1788457210,"type":"intelligence.reassessment","issue":99,"initial":5,"actual":3,"assessment":"simpler_than_expected","files":1,"lines":2,"self_heals":0}
-{"ts":"2026-09-03T17:40:10Z","ts_epoch":1788457210,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"failure","success_rate":50.0}
-{"ts":"2026-09-03T17:40:10Z","ts_epoch":1788457210,"type":"recruit_outcome","agent_id":"agent-ingest-2","outcome":"success","success_rate":100.0}
-{"ts":"2026-09-03T17:40:11Z","ts_epoch":1788457211,"type":"stage.started","issue":99,"stage":"pr"}
-{"ts":"2026-09-03T17:40:11Z","ts_epoch":1788457211,"type":"recruit_ingest","count":3,"days":7}
-{"ts":"2026-09-03T17:40:11Z","ts_epoch":1788457211,"type":"recruit_self_tune","keywords_updated":2,"total_matches":13}
-{"ts":"2026-09-03T17:40:12Z","ts_epoch":1788457212,"type":"stage.completed","issue":99,"stage":"pr","duration_s":1,"result":"success"}
-{"ts":"2026-09-03T17:40:12Z","ts_epoch":1788457212,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
-{"ts":"2026-09-03T17:40:12Z","ts_epoch":1788457212,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
-{"ts":"2026-09-03T17:40:13Z","ts_epoch":1788457213,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
-{"ts":"2026-09-03T17:40:13Z","ts_epoch":1788457213,"type":"pipeline.cleanup","issue":99,"cleaned":1,"type":"post_completion"}
-{"ts":"2026-09-03T17:40:13Z","ts_epoch":1788457213,"type":"pipeline.completed","issue":99,"result":"success","duration_s":11,"iterations":1,"template":"standard","complexity":5,"stages_passed":8,"slowest_stage":"plan","pr_url":"https://github.com/test-org/test-repo/pull/99","agent_id":"pipeline-2501659","input_tokens":0,"output_tokens":0,"total_cost":0.0000,"self_heal_count":0}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"rl.episode_recorded","success":"true","iterations":1,"actions_count":0}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"rl.weights_updated","success":"true","delta":1.0}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"reward_aggregated","pipeline_id":"standard","reward":0.4950,"test":0.5,"cost":0.8}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"recruit_role_created","role":"custom-database-migration-planning","method":"manual","title":"Database migration planning"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"policy.learned","episodes":331,"buckets":7}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"prediction.validated","issue":99,"predicted_complexity":5,"actual_iterations":0,"success":"true"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"template.outcome","issue":99,"template":"standard","success":"true","duration_s":11,"complexity":5}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"risk.outcome","issue":99,"predicted_risk":0,"actual_failure":"false"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"model.outcome","issue":99,"stage":"intake","model":"opus","success":"true"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"model.outcome","issue":99,"stage":"plan","model":"opus","success":"true"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"model.outcome","issue":99,"stage":"pr","model":"opus","success":"true"}
-{"ts":"2026-09-03T17:40:14Z","ts_epoch":1788457214,"type":"pipeline.cost","input_tokens":0,"output_tokens":0,"model":"sonnet","cost_usd":0.0000}
-{"ts":"2026-09-03T18:13:38Z","ts_epoch":1788459218,"type":"patrol.started","dry_run":"false"}
-{"ts":"2026-09-03T18:13:44Z","ts_epoch":1788459224,"type":"patrol.issue_created","check":"dead_code","count":1}
-{"ts":"2026-09-03T18:13:49Z","ts_epoch":1788459229,"type":"patrol.finding","check":"recurring_failure","pattern":"[38;2;74;222;128m[1m✓[0m reveal shows 1/3 pass count on","seen_count":21}
-{"ts":"2026-09-03T18:13:51Z","ts_epoch":1788459231,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[38;2;74;222;128m[1m✓[0m reveal shows 1/3 pass count on"}
-{"ts":"2026-09-03T18:13:51Z","ts_epoch":1788459231,"type":"patrol.finding","check":"recurring_failure","pattern":"[2m  loop behavior: iterations on test failure[0m","seen_count":7}
-{"ts":"2026-09-03T18:13:52Z","ts_epoch":1788459232,"type":"patrol.issue_created","check":"recurring_failure","pattern":"[2m  loop behavior: iterations on test failure[0m"}
-{"ts":"2026-09-03T18:13:52Z","ts_epoch":1788459232,"type":"patrol.finding","check":"recurring_failure","pattern":"Failed: 1","seen_count":3}
-{"ts":"2026-09-03T18:13:53Z","ts_epoch":1788459233,"type":"patrol.issue_created","check":"recurring_failure","pattern":"Failed: 1"}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-linear.sh","lines":568,"usage":7}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-jira.sh","lines":474,"usage":7}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-tracker-github.sh","lines":212,"usage":3}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-status.sh","lines":151,"usage":1}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-tmux-role-color.sh","lines":81,"usage":1}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-test-all.sh","lines":199,"usage":0}
-{"ts":"2026-09-03T18:13:54Z","ts_epoch":1788459234,"type":"patrol.finding","check":"untested_script","script":"sw-event-schema-sync.sh","lines":93,"usage":0}
-{"ts":"2026-09-03T18:13:55Z","ts_epoch":1788459235,"type":"patrol.issue_created","check":"untested_scripts","count":7}
+{"ts":"2026-02-15T12:00:00Z","ts_epoch":1788459550,"type":"pipeline.completed","result":"success","agent_id":"agent-ingest-1","duration_s":120}
+{"ts":"2026-02-15T12:05:00Z","ts_epoch":1788459550,"type":"pipeline.completed","result":"failure","agent_id":"agent-ingest-1","duration_s":300}
+{"ts":"2026-02-15T12:10:00Z","ts_epoch":1788459550,"type":"pipeline.completed","result":"success","agent_id":"agent-ingest-2","duration_s":90}
+{"ts":"2026-09-03T18:19:10Z","ts_epoch":1788459550,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:10Z","ts_epoch":1788459550,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"failure","success_rate":50.0}
+{"ts":"2026-09-03T18:19:11Z","ts_epoch":1788459551,"type":"recruit_outcome","agent_id":"agent-ingest-2","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:11Z","ts_epoch":1788459551,"type":"recruit_ingest","count":3,"days":7}
+{"ts":"2026-09-03T18:19:11Z","ts_epoch":1788459551,"type":"recruit_self_tune","keywords_updated":2,"total_matches":13}
+{"ts":"2026-09-03T18:19:12Z","ts_epoch":1788459552,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:12Z","ts_epoch":1788459552,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:12Z","ts_epoch":1788459552,"type":"recruit_outcome","agent_id":"agent-expert-builder","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:12Z","ts_epoch":1788459552,"type":"recruit_role_created","role":"custom-database-migration-planning","method":"manual","title":"Database migration planning"}
+{"ts":"2026-09-03T18:19:13Z","ts_epoch":1788459553,"type":"recruit_team","size":4,"method":"heuristic","cost":5.90}
+{"ts":"2026-09-03T18:19:13Z","ts_epoch":1788459553,"type":"recruit_team","size":4,"method":"heuristic","cost":5.90}
+{"ts":"2026-02-15T18:00:00Z","ts_epoch":1788459553,"type":"pipeline.completed","result":"success","agent_id":"e2e-agent-sec","duration_s":180}
+{"ts":"2026-09-03T18:19:13Z","ts_epoch":1788459553,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"success","success_rate":66.7}
+{"ts":"2026-09-03T18:19:13Z","ts_epoch":1788459553,"type":"recruit_outcome","agent_id":"agent-ingest-1","outcome":"failure","success_rate":50.0}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_outcome","agent_id":"agent-ingest-2","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_outcome","agent_id":"e2e-agent-sec","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_ingest","count":4,"days":1}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_self_tune","keywords_updated":2,"total_matches":15}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_evolve","analysis":"split:builder,"}
+{"ts":"2026-09-03T18:19:14Z","ts_epoch":1788459554,"type":"recruit_outcome","agent_id":"e2e-agent-sec","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:15Z","ts_epoch":1788459555,"type":"recruit_outcome","agent_id":"e2e-agent-sec","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:15Z","ts_epoch":1788459555,"type":"recruit_self_tune","keywords_updated":2,"total_matches":15}
+{"ts":"2026-09-03T18:19:15Z","ts_epoch":1788459555,"type":"recruit_team","size":3,"method":"heuristic","cost":3.90}
+{"ts":"2026-09-03T18:19:16Z","ts_epoch":1788459556,"type":"recruit_outcome","agent_id":"contract-test-agent","outcome":"success","success_rate":100.0}
+{"ts":"2026-09-03T18:19:16Z","ts_epoch":1788459556,"type":"recruit_reflect","accuracy":100.0,"corrections":0}
+{"ts":"2026-09-03T18:19:16Z","ts_epoch":1788459556,"type":"recruit_meta_warning","accuracy":100.0,"trend":"declining","first_half":87.66666666666667,"second_half":68.75}
+{"ts":"2026-09-03T18:19:16Z","ts_epoch":1788459556,"type":"recruit_audit","score":80.0,"passed":24,"failed":6,"warnings":1,"total":30}

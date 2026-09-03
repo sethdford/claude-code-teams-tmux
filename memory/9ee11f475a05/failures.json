@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 21,
-      "last_seen": "2026-09-03T17:11:14Z",
+      "seen_count": 22,
+      "last_seen": "2026-09-03T14:47:17Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 7,
-      "last_seen": "2026-09-03T16:14:28Z",
+      "seen_count": 5,
+      "last_seen": "2026-09-03T00:31:45Z",
       "category": "flaky"
     },
     {
@@ -58,10 +58,37 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m124 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m4 FAIL\u001b[0m",
-      "root_cause": "4 test assertions failed in the RL/bandit/policy suite (mismatched with the pasted PASS logs, which show only passing suites at 124/128 total, indicating the 4 failures are in a suite not shown in the truncated tail)",
-      "fix": "Re-run the failing suite with full output (not truncated) to identify which 4 assertions failed, likely in sw-autoresearch-e2e-test.sh or an earlier suite not captured in the last-200-lines window, then compare expected vs actual values",
+      "root_cause": "4 of 128 tests failed but the failing assertions are not present in the captured log excerpt (only passing output shown)",
+      "fix": "Re-run with full output or grep for FAIL/✗ lines to identify which suite and assertion regressed before attempting a code fix",
       "seen_count": 1,
       "last_seen": "2026-09-03T10:38:19Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit the 300s job timeout, likely a hung external call (Claude/GitHub API) blocking completion",
+      "fix": "Inspect sw-intent-analysis-test assertion diff to fix the regression, and add/verify mock binaries or increase timeout for sw-e2e-integration-test to prevent hangs on real API calls",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T13:22:58Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[2m  error summary memory correlation\u001b[0m",
+      "root_cause": "sw-cost-test.sh expects a populated costs.json for the context-efficiency dashboard test, but no cost entries exist in the last 30 days (fresh/mocked state), so the CONTEXT EFFICIENCY event-data rendering assertions fail",
+      "fix": "seed a mock loop.context_efficiency cost entry in the test fixture before invoking the dashboard, or update the test to first write a synthetic costs.json entry",
+      "seen_count": 2,
+      "last_seen": "2026-09-03T17:32:06Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m125 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m3 FAIL\u001b[0m",
+      "root_cause": "3 test cases in the RL/autoresearch suite failed, likely a component score or bucket-count assertion mismatch not shown in the truncated log tail",
+      "fix": "Re-run sw-autoresearch-e2e-test.sh alone with verbose output to isolate which of the 3 assertions failed, then compare expected vs actual reward/bucket values",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T16:48:29Z",
       "category": "test_failure"
     }
   ]
