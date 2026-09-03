@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 25,
-      "last_seen": "2026-09-03T18:30:17Z",
+      "seen_count": 24,
+      "last_seen": "2026-09-03T17:48:46Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 4,
-      "last_seen": "2026-09-03T19:54:38Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-03T01:12:34Z",
       "category": "test_failure"
     },
     {
@@ -67,11 +67,38 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed (exit 1), likely due to real API/network dependency or flaky assertions rather than the code under test",
-      "fix": "Rerun the two failing suites in isolation with verbose output to capture the assertion diff, then fix or skip-guard tests requiring live Claude/GitHub credentials",
+      "root_cause": "e2e-integration-test failed because a prior pipeline lock (pipeline-3937) was left held from a previous run, blocking the fast pipeline test from acquiring it; separately intent-analysis-test's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Release/clean stale pipeline locks before e2e-integration-test runs (or have the test abort any in-progress pipeline first), and update analyze_intent's prompt/schema to always emit version, goal, and criteria fields",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Loop runs multiple iterations when tests fail initially",
+      "root_cause": "Log excerpt shows only passing test output with PASS/FAIL=0 across all suites; no actual failure is present in the captured lines",
+      "fix": "Re-check the pipeline runner's failure-detection logic/exit-code capture for the test stage, since the log itself shows all suites passing",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T16:55:30Z",
+      "category": "unknown"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "sw-daemon-test and sw-e2e-integration-test suites fail (exit 1) during the test stage",
+      "fix": "Run scripts/sw-daemon-test.sh and scripts/sw-e2e-integration-test.sh directly to isolate the failing assertions and fix the underlying regression",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T19:40:09Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 78 tests failed\u001b[0m",
+      "root_cause": "sw-loop-test's 'Loop stuckness detection' assertion fails, likely a flaky/timing-sensitive check unrelated to the E2E README marker change in this branch",
+      "fix": "Inspect the stuckness detection test logic in sw-loop-test.sh for timing assumptions and re-run in isolation to confirm flakiness before altering loop code",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T20:10:29Z",
+      "category": "flaky"
     }
   ]
 }
