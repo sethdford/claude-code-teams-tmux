@@ -1,3 +1,30 @@
-The README now has the automated e2e test comment for issue #3768, matching the pattern of prior commits. This is a trivial documentation change with no test impact.
+Verification complete. The branch is clean and all task items are checked off.
+
+## What I found
+
+The five test suites were **already implemented and merged** — commit `583f0f8c` authored them, `84327c87` repaired them, and `35eb5145` (this branch's base) is already the tip of `main`. So the branch had zero diff against main when I started. Rather than re-create passing files, I finished the verification the plan called for.
+
+| Suite | Tests | Result |
+|---|---:|---|
+| `sw-event-schema-sync-test.sh` | 10 | pass |
+| `sw-test-all-test.sh` | 12 | pass |
+| `sw-tmux-role-color-test.sh` | 26 | pass |
+| `sw-tmux-status-test.sh` | 19 | pass |
+| `sw-tracker-github-test.sh` | 12 | pass |
+
+79/79 in isolation. The full aggregate is now **167 passed, 0 failed, 0 timed out** (566s).
+
+## Two real bugs the verification surfaced
+
+**`shipwright docs check` was exiting 1 with no output** (`7d7e26e5`). It grepped the entire repo for `<!-- AUTO: -->` markers, so a placeholder marker in a generated wiki page under `.claude/pipeline-artifacts/` was treated as a doc section. `docs_generate_section` returns 1 for an unknown id, and under `set -e` the command substitution killed the run before the status line printed — the acceptance criterion "reports 0 stale" was silently unverifiable. I scoped the scan past runtime/vendored dirs and made an unknown section count as stale with a named warning instead of aborting. Now: `6 fresh, 0 stale`, exit 0. `sw-docs-test.sh` still 18/18.
+
+**`sw-project-detect-test` was the lone aggregate failure** (`e1c9435b`) — and it passed standalone, which is the tell. `project_detect_all` parsed `cached_at` with only the BSD form `date -j -f`. On Linux that always fails, the `|| echo 0` fallback set the epoch to 0, and `cache_age` came out as the entire Unix epoch, so **the cache never hit on Linux** — every call re-ran detection and rewrote `cached_at`. The assertion "Cached detection returns same result" only passed when both calls landed in the same wall-clock second. I try GNU `date -d` first, fall back to BSD, and require a non-zero epoch before trusting the cache. Verified the cache now survives a 2-second gap; 43/43 pass, plus `prep` and `init` which share the library.
+
+## Two things I did not do
+
+- **No PR for #3736.** The test-suite work is already on `main`, so there is nothing to propose — the issue can be closed against the merged commits. I left the three new commits on the branch for the pipeline's `pr` stage rather than pushing anything myself.
+- **Task 13 (clean up the WIP commit) is N/A** — `35eb5145` *is* `main`, so rewriting it isn't mine to do.
+
+I also reverted the `.claude/` runtime cache churn (intelligence-cache, platform-hygiene, test-holdout manifest, loop-state) so the tree holds only real work.
 
 LOOP_COMPLETE
