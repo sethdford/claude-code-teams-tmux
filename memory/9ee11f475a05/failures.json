@@ -6,7 +6,7 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 28,
-      "last_seen": "2026-09-03T22:42:28Z",
+      "last_seen": "2026-09-03T22:43:12Z",
       "category": "test_failure"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Cost dashboard CONTEXT EFFICIENCY section reads loop.context_efficiency events but no cost entries exist in the last 30 days, so it renders a 'no cost entries' warning instead of the expected data",
-      "fix": "Seed a cost entry within the test's 30-day window (or mock the events file) before asserting on CONTEXT EFFICIENCY output in sw-cost-test.sh",
+      "root_cause": "e2e-integration-test hit a stale pipeline lock (pipeline-4027 already running) while intent-analysis and session-continuity-report tests failed on unrelated schema/assertion regressions",
+      "fix": "Release/clean stale pipeline locks before e2e-integration-test runs and add missing version/goal/criteria fields to the intent analysis JSON schema",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
