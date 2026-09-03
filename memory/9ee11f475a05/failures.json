@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 5,
-      "last_seen": "2026-09-03T00:31:45Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-03T21:25:15Z",
       "category": "flaky"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-3993) from a prior interrupted run was already 'running', blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's JSON output is missing the required version/goal/criteria schema fields",
-      "fix": "Clear stale pipeline locks before/after e2e-integration-test runs (or add lock staleness detection with auto-release), and update analyze_intent to emit the full required schema (version, goal, criteria)",
+      "root_cause": "sw-cost-test.sh expects a CONTEXT EFFICIENCY section rendered from cost dashboard, but no cost entries exist in the last 30 days so the dashboard prints the empty-state message instead",
+      "fix": "seed cost entries with loop.context_efficiency events in test fixture setup before invoking the dashboard, or make the dashboard render context efficiency stats independent of the cost-entries date filter",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
