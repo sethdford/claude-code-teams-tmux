@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 5,
-      "last_seen": "2026-09-03T00:31:45Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-03T22:47:49Z",
       "category": "flaky"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock (pipeline-4019 already running) and sw-intent-analysis-test's analyze_intent output is missing required schema fields (version, goal, criteria)",
-      "fix": "Release/clean stale pipeline locks before the e2e-integration test runs (or use a unique issue/lock id per run), and update analyze_intent to emit version, goal, and criteria fields per the schema",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test are failing (exit 1), likely due to real Claude/GitHub integration dependencies or environment assumptions not met in CI",
+      "fix": "Inspect the two failing suites' output directly to identify the assertion or missing dependency, and gate/skip integration tests requiring live credentials when unavailable",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
