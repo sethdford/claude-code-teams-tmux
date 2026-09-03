@@ -651,7 +651,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-discovery.sh` | 910 | Cross-Pipeline Real-Time Learning |
 | `scripts/sw-doc-fleet.sh` | 815 | Documentation Fleet Orchestrator |
 | `scripts/sw-docs-agent.sh` | 525 | Auto-sync README, wiki, API docs |
-| `scripts/sw-docs.sh` | 626 | Documentation Keeper |
+| `scripts/sw-docs.sh` | 642 | Documentation Keeper |
 | `scripts/sw-doctor.sh` | 1636 | Validate Shipwright setup |
 | `scripts/sw-dora.sh` | 605 | DORA Metrics Dashboard with Engineering Intelligence |
 | `scripts/sw-durable.sh` | 708 | Durable Workflow Engine |

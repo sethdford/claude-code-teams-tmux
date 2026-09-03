@@ -41,7 +41,14 @@ fi
 
 # Find all files with AUTO markers
 docs_find_auto_files() {
-    grep -rl '<!-- AUTO:' "$REPO_DIR" --include='*.md' 2>/dev/null || true
+    # Runtime artifacts (generated wiki pages, checkpoints) and vendored files
+    # carry placeholder AUTO markers that are not real documentation sections.
+    grep -rl '<!-- AUTO:' "$REPO_DIR" --include='*.md' \
+        --exclude-dir='.git' \
+        --exclude-dir='node_modules' \
+        --exclude-dir='pipeline-artifacts' \
+        --exclude-dir='dist' \
+        2>/dev/null || true
 }
 
 # Extract section IDs from a file
@@ -360,11 +367,15 @@ docs_check() {
         while IFS= read -r section; do
             [[ -z "$section" ]] && continue
             total=$((total + 1))
-            local expected
-            expected=$(docs_generate_section "$section")
+            local expected rel_file
+            rel_file="${file#$REPO_DIR/}"
+            if ! expected=$(docs_generate_section "$section"); then
+                stale=$((stale + 1))
+                warn "Unknown: ${rel_file}#${section}"
+                continue
+            fi
             if ! docs_check_section "$file" "$section" "$expected"; then
                 stale=$((stale + 1))
-                local rel_file="${file#$REPO_DIR/}"
                 warn "Stale: ${rel_file}#${section}"
             else
                 fresh=$((fresh + 1))
@@ -398,8 +409,13 @@ docs_sync() {
         while IFS= read -r section; do
             [[ -z "$section" ]] && continue
             total=$((total + 1))
-            local expected
-            expected=$(docs_generate_section "$section")
+            local expected rel_file
+            rel_file="${file#$REPO_DIR/}"
+            if ! expected=$(docs_generate_section "$section"); then
+                stale=$((stale + 1))
+                warn "Unknown: ${rel_file}#${section}"
+                continue
+            fi
             if ! docs_check_section "$file" "$section" "$expected"; then
                 docs_replace_section "$file" "$section" "$expected"
                 updated=$((updated + 1))
