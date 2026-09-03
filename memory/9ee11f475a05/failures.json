@@ -6,7 +6,7 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 26,
-      "last_seen": "2026-09-03T20:14:36Z",
+      "last_seen": "2026-09-03T21:17:53Z",
       "category": "test_failure"
     },
     {
@@ -67,10 +67,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-3993) from a prior interrupted run was already 'running', blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's JSON output is missing the required version/goal/criteria schema fields",
-      "fix": "Clear stale pipeline locks before/after e2e-integration-test runs (or add lock staleness detection with auto-release), and update analyze_intent to emit the full required schema (version, goal, criteria)",
+      "root_cause": "Test suite passed fully (all PASS, 0 FAIL); the build loop's repeated-error-loop detector still fired, likely from stale/leftover error-signature state carried over from a prior failing iteration",
+      "fix": "Clear iteration error-history/circuit-breaker state at the start of the test stage (or reset it once a full pass with 0 FAIL is observed) so a clean run doesn't get flagged as a repeated failure loop",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
+      "category": "flaky"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Memory capture from pipeline state...     \u001b[38;2;248;113;113m✗\u001b[0m Missing pattern: Captured pipeline learnings (capture success message)",
+      "root_cause": "Test suite expects pipeline artifacts (plan.md, review.md) and a success message from memory capture, but earlier stage failures (plan/review generation) cascade into missing artifacts and a jq parse error on non-numeric complexity output, breaking dependent assertions including the memory capture success message",
+      "fix": "Fix plan/review stage artifact generation to always write plan.md and review.md before proceeding, and sanitize the complexity value before piping to jq so it is valid JSON/numeric",
+      "seen_count": 1,
+      "last_seen": "2026-09-03T20:45:30Z",
       "category": "test_failure"
     }
   ]
