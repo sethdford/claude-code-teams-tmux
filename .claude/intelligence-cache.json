@@ -32,7 +32,7 @@
       "result": {
         "raw_response": "Mock claude response"
       },
-      "timestamp": 1788381185,
+      "timestamp": 1788414337,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1719,55 +1719,55 @@
       "result": {
         "results": [
           {
-            "file": "failures.json",
-            "relevance": 85,
-            "summary": "Contains 6 specific test failure patterns with root causes and fixes directly applicable to debugging build/test stage issues; e.g., plan stage artifact generation, schema validation, and test harness problems"
-          },
-          {
-            "file": "retry-outcomes.json",
-            "relevance": 80,
-            "summary": "Shows proven retry strategy (model_escalation) for build_failure class with 100% success rate (5/5 attempts); directly applicable to recovery when build stage encounters errors"
-          },
-          {
             "file": "success-patterns.json",
-            "relevance": 78,
-            "summary": "Captures two successful build/test patterns with iteration strategies, file changes, test commands, and cost/duration data; useful for replicating successful build approaches"
-          },
-          {
-            "file": "metrics.json",
-            "relevance": 65,
-            "summary": "Provides baseline metrics (build_duration_s: 7095, test_duration_s: 1459) essential for performance expectations and identifying regressions during build stage"
+            "relevance": 85,
+            "summary": "Shows patterns of successful builds (3 iterations typical, file change patterns, standard template, commit counts). Directly informs build stage approach and realistic expectations."
           },
           {
             "file": "patterns.json",
-            "relevance": 60,
-            "summary": "Documents project conventions (vitest test runner, npm package manager, *.test.js pattern) needed to understand how builds execute and tests are discovered"
+            "relevance": 82,
+            "summary": "Project structure (Node/vitest/commonjs/src/ source dir) and naming conventions essential for writing code that fits project patterns during build stage."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 78,
+            "summary": "Build failure class shows model_escalation strategy at 100% success rate. Directly applicable if build stage encounters failures."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 65,
+            "summary": "Recent test failures (intent-analysis schema, timeouts, integration tests) inform what code issues the build stage should avoid. Recurring sw-intent-analysis-test failures suggest known patterns."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Historical build duration baseline (7095s) and test duration baseline (1459s) set expectations for build stage iteration planning."
           }
         ]
       },
-      "timestamp": 1788381433,
+      "timestamp": 1788414415,
       "ttl": 1800
     },
     "9ffec5a1b4309a58b33c35c65fa98a84": {
       "result": {
         "complexity": 1,
         "risk_level": "low",
-        "success_probability": 98,
+        "success_probability": 95,
         "recommended_template": "fast",
-        "issue_type": "testing",
+        "issue_type": "documentation",
         "key_risks": [
-          "Test artifact may be stale or irrelevant",
-          "Could be duplicate of prior test run",
-          "Unclear if comment should persist after test"
+          "Unclear what comment should be added to README",
+          "Issue may be test artifact with no actual work required",
+          "Vague requirements in issue description"
         ],
         "implementation_hints": [
-          "Verify this is active test flow and not artifact from prior automation",
-          "Add a temporary marker or timestamp to README comment for traceability",
-          "Close immediately if issue was only meant to validate E2E pipeline execution",
-          "Check .claude/pipeline-artifacts/ for test context and prior runs"
+          "Check recent E2E test files to understand what's being verified",
+          "Review README for context on where comment should be added",
+          "Minimal change - just add the required comment line",
+          "Verify the E2E test passes after the change"
         ]
       },
-      "timestamp": 1788378334,
+      "timestamp": 1788414259,
       "ttl": 3600
     },
     "714c5521af406d33618c3b06b62550ce": {
@@ -1798,77 +1798,73 @@
     "f9c9e8b2bd49e68005879dc608624768": {
       "result": {
         "issue_type": "testing",
-        "confidence": 0.82,
+        "confidence": 0.88,
         "secondary_domains": [
           "automation",
           "integration",
-          "git-operations"
+          "documentation"
         ],
         "complexity_assessment": {
-          "score": 4,
-          "reasoning": "E2E test for a Shipwright feature involving Git operations and file I/O. Moderate complexity due to environment setup, cleanup requirements, and potential for test flakiness."
+          "score": 5,
+          "reasoning": "E2E test for automated README modification; moderate complexity due to file I/O, cleanup, and integration points across systems"
         },
         "skill_plan": {
           "plan": [
             "testing-strategy",
-            "brainstorming"
+            "e2e-test-automation-patterns"
           ],
           "design": [
-            "shell-script-test-harness-patterns",
+            "e2e-test-automation-patterns",
             "testing-strategy"
           ],
-          "build": [],
+          "build": [
+            "e2e-test-automation-patterns",
+            "shell-script-test-harness-patterns"
+          ],
           "review": [
-            "pr-quality",
+            "testing-strategy",
+            "adversarial-quality",
             "validation-thoroughness"
           ],
           "compound_quality": [
-            "testing-strategy",
-            "validation-thoroughness"
+            "validation-thoroughness",
+            "adversarial-quality"
           ],
           "pr": [
             "pr-quality"
           ],
-          "deploy": [
-            "deploy-safety"
-          ],
+          "deploy": [],
           "validate": [
-            "validation-thoroughness"
+            "validation-thoroughness",
+            "testing-strategy"
           ],
           "monitor": []
         },
         "skill_rationale": {
-          "testing-strategy": "Define E2E test scope and validate that the test actually exercises the full flow of adding a comment to README, including Git operations and file modifications",
-          "brainstorming": "Challenge assumptions about test environment requirements—what Git state is needed, whether to use real repos or mocks, what failure scenarios must be covered",
-          "shell-script-test-harness-patterns": "Apply Shipwright's test harness conventions (PASS/FAIL counters, atomic temp file handling, trap cleanup) to ensure the E2E test is maintainable and non-brittle",
-          "pr-quality": "Ensure the test code is immediately understandable to reviewers—clear test names, setup/teardown logic, and assertions that document intent",
-          "validation-thoroughness": "Verify the test validates not just the happy path but failure modes: permission errors, Git conflicts, incomplete writes, and proper cleanup after failures",
-          "deploy-safety": "Confirm the test runs deterministically in CI/CD without environment-specific flakiness or resource leaks that could block the pipeline"
+          "testing-strategy": "E2E tests require clear coverage strategy; this skill ensures the test exercises the full workflow (setup → execute → verify → cleanup) without gaps",
+          "e2e-test-automation-patterns": "Directly applicable; this skill covers temp file creation, trap-based cleanup, and test isolation — all critical for a safe, repeatable E2E test",
+          "shell-script-test-harness-patterns": "If implemented as bash test, this skill ensures PASS/FAIL counting, proper error handling, and integration with the test suite framework",
+          "adversarial-quality": "E2E tests can mask failures; this skill identifies failure modes (corrupted README, partial writes, cleanup failures) that need explicit test coverage",
+          "validation-thoroughness": "Smoke tests alone miss issues; this skill ensures the E2E test validates actual end-to-end behavior (not just that no errors occurred)",
+          "pr-quality": "E2E test PRs need clear documentation of test scenarios, setup/teardown logic, and why each scenario matters"
         },
-        "generated_skills": [
-          {
-            "name": "e2e-test-automation-patterns",
-            "reason": "No existing skill specifically covers E2E test patterns for Git/file automation tools, where setup/teardown, isolation, and idempotency are critical to prevent test pollution",
-            "content": "## E2E Test Automation Patterns for Git/File Operations\n\n### Test Environment Isolation\n- Create a temporary test directory for each test run; use `mktemp -d` and trap-based cleanup\n- Initialize git repos with test data in the temp dir; never modify the actual repo or user home\n- Use `git init` and `git config user.email/name` in the temp environment—do not rely on global config\n- Verify cleanup with `test -d \"$tmpdir\" && rm -rf \"$tmpdir\"` to prevent orphaned files\n\n### Idempotency & State Reset\n- Each test must be runnable N times in sequence with identical results\n- Reset Git state between assertions: use `git reset --hard HEAD` to discard uncommitted changes\n- Verify no files exist before test starts: `test ! -f $file || rm $file`\n- Document which files/branches/commits are created and destroyed during the test\n\n### Mock vs. Real Decisions\n- Use real Git operations (`git init`, `git commit`, `git push` to a temp bare repo) for E2E tests—mocking undermines the \"end-to-end\" intent\n- Mock only external services (GitHub API, network calls) if the test must run offline\n- For tests that modify the working tree, create a pristine clone in the temp dir: `git clone --depth 1 . $tmpdir/test-repo`\n\n### Error Path Validation\n- Test failure scenarios: `git commit` with no changes, `git push` to non-existent remote, file permissions errors\n- Capture exit codes and stderr; assert on both: `cmd || { ec=$?; [[ $ec -eq 2 ]] || fail; }`\n- Ensure tests fail loudly (exit 1 or higher) when setup fails—don't silently skip assertions\n\n### Test Harness Structure\n- Follow Shipwright's `scripts/<name>-test.sh` skeleton: sourced `lib/compat.sh`, `trap cleanup EXIT`, PASS/FAIL counters\n- Use `info()`, `success()`, `fail()` helpers for consistent output\n- Name tests descriptively: `test_adds_comment_to_readme_with_git_commit` not `test_1`\n- Log each test's setup, assertions, and cleanup for debugging\n\n### Cleanup Strategy\n- Always use `trap \"cleanup\" EXIT` to delete temp dirs even if test fails\n- Close file descriptors: `exec 3>&-` after use\n- Kill background processes: `jobs -p | xargs -r kill` in cleanup\n- Verify remote repos are torn down: `test -d $bare_repo && rm -rf $bare_repo`"
-          }
-        ],
+        "generated_skills": [],
         "review_focus": [
-          "Test isolation: verify setup creates clean environment and teardown removes all artifacts",
-          "Git state: confirm proper Git initialization, configuration, and state resets between assertions",
-          "Failure paths: ensure test validates both success and error cases (permission denied, conflicts, etc.)",
-          "Idempotency: confirm test produces identical results on repeated runs with no state leakage",
-          "README modification: validate that comments are inserted at correct location with expected formatting",
-          "Cleanup reliability: verify trap handlers run even on test failure, leaving no orphaned files/processes"
+          "Test isolation: Does the test properly create isolated temp resources and clean them up, avoiding pollution of other tests or the repository?",
+          "README modification logic: Does the test correctly validate that comments/content are added to README in the expected location and format?",
+          "Determinism: Is the test deterministic and repeatable, or does it depend on timing, file state, or other flaky conditions?",
+          "Failure scenarios: Does the test cover both success paths AND error cases (malformed README, missing file, permission issues)?",
+          "Cleanup guarantees: Are resources guaranteed to be cleaned up even if the test fails mid-execution?"
         ],
         "risk_areas": [
-          "Test flakiness from timing issues, file permissions, or Git state not fully reset between runs",
-          "Resource leaks (temp directories, Git processes) if cleanup fails, accumulating over multiple test runs",
-          "CI/CD environment differences (Git version, file system, temp directory permissions) causing intermittent failures",
-          "Cross-test contamination if tests reuse the same Git repo or temp directory instead of isolation per test",
-          "False negatives if test setup itself fails silently, masking actual feature bugs"
+          "File I/O failures: Test modifies real files; incomplete writes or permission errors could corrupt state",
+          "Cleanup failure: Temp directories or git state left behind could affect subsequent test runs",
+          "README parsing edge cases: Different README formats, encodings, or structures could break the test",
+          "Git state coupling: If test relies on git state, concurrent test runs could cause race conditions",
+          "Flakiness: E2E tests depending on system timing or external state can fail intermittently"
         ]
       },
-      "timestamp": 1788378427,
+      "timestamp": 1788414327,
       "ttl": 3600
     },
     "87a2044517b7ec104dd2b9b5be834637": {
@@ -1891,31 +1887,31 @@
           {
             "file": "success-patterns.json (test-repo-complexity)",
             "relevance": 90,
-            "summary": "Build stage pattern with low complexity, 1 iteration, typo fix approach, npm test strategy. Directly matches expected profile for simple E2E README task."
-          },
-          {
-            "file": "success-patterns.json (test-repo-ranking)",
-            "relevance": 85,
-            "summary": "Multiple build stage patterns with low complexity, 1 iteration each, npm test strategy, 300s completion time. Consistent baseline for similar tasks."
-          },
-          {
-            "file": "success-patterns.json (test-repo-corrupt)",
-            "relevance": 80,
-            "summary": "Two build stage patterns with low complexity, 1 iteration, npm test strategy. Provides additional reference patterns for build-only work."
+            "summary": "Low-complexity fix with 1 iteration in build stage, npm test strategy. Typo root cause. Perfectly matches E2E test profile—simple, single-iteration task."
           },
           {
             "file": "success-patterns.json (hash-consistency-repo)",
-            "relevance": 75,
-            "summary": "Build stage pattern with 'Specific test goal', low complexity, 1 iteration, npm test. Relevant reference for test-focused build work."
+            "relevance": 85,
+            "summary": "Test-goal oriented pattern with low complexity, 1 iteration in build stage. Matches build stage characteristics and rapid execution expectations of E2E tests."
           },
           {
-            "file": "index.json",
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 80,
+            "summary": "Multiple low-complexity patterns in build stage with npm test strategy. Provides reference templates for similar simple, quick builds."
+          },
+          {
+            "file": "failures.json",
             "relevance": 70,
-            "summary": "Contains build stage test_failure pattern with recommended fix (timeout adjustment). Useful if build encounters test timeouts."
+            "summary": "TypeError pattern with 75% fix effectiveness. Defensive pattern to catch null-reference errors during build stage. Actionable fix: add null checks."
+          },
+          {
+            "file": "success-patterns.json (test-repo-corrupt)",
+            "relevance": 65,
+            "summary": "Two low-complexity patterns in build stage with npm test strategy. Similar profile to test-repo-ranking; additional reference patterns for simple builds."
           }
         ]
       },
-      "timestamp": 1788380576,
+      "timestamp": 1788414393,
       "ttl": 1800
     },
     "b0f3cc37182b58e0defe86adebe1e3b2": {
@@ -2316,6 +2312,88 @@
         "raw_response": "Mock claude: ok"
       },
       "timestamp": 1788382135,
+      "ttl": 1800
+    },
+    "e65dc873eab3d932fb078eb6b1c0461a": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788414262,
+      "ttl": 1800
+    },
+    "53bed10b773ff12768ee29265dfacd10": {
+      "result": {
+        "estimated_iterations": 2
+      },
+      "timestamp": 1788414269,
+      "ttl": 1800
+    },
+    "a32210c6f602f8ba02220bff98b351d8": {
+      "result": {
+        "estimated_cost_usd": 0.08,
+        "estimated_iterations": 1,
+        "estimated_tokens": 8500,
+        "likely_failure_stage": "none",
+        "confidence": 94,
+        "breakdown": {
+          "intake": 0.01,
+          "build": 0.02,
+          "test": 0.03,
+          "review": 0.02,
+          "pr": 0.00
+        },
+        "notes": "Minimal documentation change with high success probability. Fast template skips review stage. Single iteration expected. Using Haiku for low-complexity intake and test stages."
+      },
+      "timestamp": 1788414276,
+      "ttl": 3600
+    },
+    "83d5d75e2c1f95c9e4a9edbe6f0f875c": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788414383,
+      "ttl": 1800
+    },
+    "0b2ce2264a0203ec7147ec39e627fbd2": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788414525,
+      "ttl": 1800
+    },
+    "7e75feed3774a526cf94126cdf9c2bd6": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788414742,
+      "ttl": 1800
+    },
+    "774bb027c768a97fb10789a8ecc1ad98": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788414747,
       "ttl": 1800
     }
   }
