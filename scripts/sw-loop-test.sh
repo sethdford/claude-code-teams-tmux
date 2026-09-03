@@ -678,17 +678,125 @@ CLAUDE_EOF
         --no-auto-extend \
         2>&1) || true
 
-    if echo "$output" | grep -qi "stuckness\|stuck"; then
-        assert_pass "Loop detects stuckness"
-    elif echo "$output" | grep -qi "circuit breaker"; then
-        assert_pass "Loop circuit breaker triggered (stuckness-related)"
-    elif echo "$output" | grep -qi "max iteration"; then
-        assert_pass "Loop stops at limit (stuckness test)"
+    # The loop must stop for a *named* reason rather than drifting. Which reason
+    # it lands on is not deterministic here — convergence scoring, the circuit
+    # breaker and the iteration budget all race on a no-progress run — so accept
+    # any of the legitimate terminal states. The stuckness *kernel* itself is
+    # pinned deterministically by the unit tests below.
+    if echo "$output" | grep -qiE "stuckness|stuck|circuit breaker|max iteration|converged|diverging"; then
+        assert_pass "Loop stops with a named terminal reason on a no-progress run"
     else
-        assert_fail "Loop stuckness detection" "expected stuckness or circuit breaker"
+        assert_fail "Loop stuckness detection" "expected a named terminal reason"
+    fi
+
+    # Whatever the terminal reason, the detector must have been fed one record
+    # per iteration — that is what makes stuckness detectable at all.
+    tracking_lines=$(cat $(find "$TEST_TEMP_DIR/repo/.claude/loop-logs" -name 'stuckness-tracking.txt' 2>/dev/null) 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "${tracking_lines:-0}" -ge 3 ]]; then
+        assert_pass "Loop records stuckness tracking data each iteration"
+    else
+        assert_fail "Loop records stuckness tracking data each iteration" "got ${tracking_lines:-0} records"
     fi
 else
     assert_fail "Loop stuckness detection" "setup failed"
+fi
+
+# ─── Test: detect_stuckness kernel (deterministic, no loop run) ──────────────
+echo ""
+echo -e "${DIM}  detect_stuckness kernel${RESET}"
+
+# Drives lib/loop-convergence.sh directly with a hand-seeded tracking file, so
+# the signal arithmetic is pinned without running a full build loop.
+run_detect_stuckness() {
+    local scratch="$1" tracking="$2" iteration="$3" max_iter="$4" test_passed="$5"
+    env -i PATH="/usr/local/bin:/usr/bin:/bin" HOME="$scratch" bash -c '
+        set -uo pipefail
+        warn() { echo "WARN: $*"; }
+        info() { :; }
+        error() { echo "ERR: $*" >&2; }
+        PROJECT_ROOT="$1"; LOG_DIR="$1/logs"; ARTIFACTS_DIR="$1/artifacts"
+        STUCKNESS_TRACKING_FILE="$2"; ITERATION="$3"; MAX_ITERATIONS="$4"; TEST_PASSED="$5"
+        STUCKNESS_COUNT=0
+        source "$6/lib/loop-convergence.sh"
+        if detect_stuckness; then echo "STUCK"; else echo "NOT_STUCK"; fi
+    ' _ "$scratch" "$tracking" "$iteration" "$max_iter" "$test_passed" "$SCRIPT_DIR"
+}
+
+stuck_scratch="$TEST_TEMP_DIR/stuckness-kernel"
+mkdir -p "$stuck_scratch/logs" "$stuck_scratch/artifacts"
+_git_bin=$(PATH=/usr/local/bin:/usr/bin:/bin command -v git 2>/dev/null || true)
+if [[ -n "$_git_bin" ]]; then
+    (cd "$stuck_scratch" && "$_git_bin" init -q && "$_git_bin" config user.email "t@t" && \
+        "$_git_bin" config user.name "T" && echo x > f.txt && "$_git_bin" add . && \
+        "$_git_bin" commit -q -m init) >/dev/null 2>&1
+
+    # Stuck: identical diff hashes + identical non-zero exit codes across 3 iterations,
+    # clean worktree, and 80% of the iteration budget spent with tests failing.
+    printf 'aaa|none|1\naaa|none|1\naaa|none|1\n' > "$stuck_scratch/tracking-stuck.txt"
+    out=$(run_detect_stuckness "$stuck_scratch" "$stuck_scratch/tracking-stuck.txt" 4 5 false 2>&1)
+    if echo "$out" | grep -q "^STUCK$"; then
+        assert_pass "detect_stuckness reports stuck on repeated identical iterations"
+    else
+        assert_fail "detect_stuckness reports stuck on repeated identical iterations" "got: $(echo "$out" | tail -1)"
+    fi
+    if echo "$out" | grep -q "identical or zero git diffs"; then
+        assert_pass "detect_stuckness names the identical-diff signal"
+    else
+        assert_fail "detect_stuckness names the identical-diff signal" "reasons missing from output"
+    fi
+
+    # Not stuck: distinct diffs, clean exits, early iteration, tests passing.
+    printf 'aaa|none|0\nbbb|none|0\nccc|none|0\n' > "$stuck_scratch/tracking-ok.txt"
+    out=$(run_detect_stuckness "$stuck_scratch" "$stuck_scratch/tracking-ok.txt" 1 20 true 2>&1)
+    if echo "$out" | grep -q "^NOT_STUCK$"; then
+        assert_pass "detect_stuckness stays quiet when iterations differ"
+    else
+        assert_fail "detect_stuckness stays quiet when iterations differ" "got: $(echo "$out" | tail -1)"
+    fi
+
+    # Fewer than 3 records is not enough evidence to call it stuck.
+    printf 'aaa|none|1\n' > "$stuck_scratch/tracking-short.txt"
+    out=$(run_detect_stuckness "$stuck_scratch" "$stuck_scratch/tracking-short.txt" 1 20 true 2>&1)
+    if echo "$out" | grep -q "^NOT_STUCK$"; then
+        assert_pass "detect_stuckness needs 3 records before firing"
+    else
+        assert_fail "detect_stuckness needs 3 records before firing" "got: $(echo "$out" | tail -1)"
+    fi
+
+    # Missing tracking file degrades to "not stuck", not an error.
+    out=$(run_detect_stuckness "$stuck_scratch" "$stuck_scratch/tracking-absent.txt" 1 20 true 2>&1)
+    if echo "$out" | grep -q "^NOT_STUCK$"; then
+        assert_pass "detect_stuckness no-ops when tracking data is missing"
+    else
+        assert_fail "detect_stuckness no-ops when tracking data is missing" "got: $(echo "$out" | tail -1)"
+    fi
+else
+    assert_fail "detect_stuckness kernel" "git not available"
+fi
+
+# ─── Test: audit schema is CLI-acceptable ───────────────────────────────────
+echo ""
+echo -e "${DIM}  audit agent --json-schema${RESET}"
+
+# The CLI validates the schema and cannot resolve the draft 2020-12 meta-schema
+# by URL, so passing the file verbatim makes it reject the flag outright and the
+# error text gets fed back to the agent as if it were audit findings.
+if grep -q 'del(."\$schema")' "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Audit strips \$schema before passing --json-schema"
+else
+    assert_fail "Audit strips \$schema before passing --json-schema" "raw schema would be rejected by the CLI"
+fi
+
+if jq -e 'del(."$schema") | has("$schema") | not' "$SCRIPT_DIR/../schemas/audit-result.json" >/dev/null 2>&1; then
+    assert_pass "Audit schema survives \$schema removal as valid JSON"
+else
+    assert_fail "Audit schema survives \$schema removal as valid JSON" "schemas/audit-result.json is not parseable"
+fi
+
+if grep -q "Audit agent could not run" "$SCRIPT_DIR/sw-loop.sh"; then
+    assert_pass "Audit distinguishes a failed invocation from findings"
+else
+    assert_fail "Audit distinguishes a failed invocation from findings" "CLI errors would be reported as findings"
 fi
 
 # ─── Test: Budget gate stops loop ──────────────────────────────────────────
