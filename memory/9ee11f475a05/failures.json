@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 3,
-      "last_seen": "2026-09-03T01:12:34Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-03T19:54:38Z",
       "category": "test_failure"
     },
     {
@@ -67,11 +67,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "Test suite passed fully (all PASS, 0 FAIL); the build loop's repeated-error-loop detector still fired, likely from stale/leftover error-signature state carried over from a prior failing iteration",
-      "fix": "Clear iteration error-history/circuit-breaker state at the start of the test stage (or reset it once a full pass with 0 FAIL is observed) so a clean run doesn't get flagged as a repeated failure loop",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed (exit 1), likely due to real API/network dependency or flaky assertions rather than the code under test",
+      "fix": "Rerun the two failing suites in isolation with verbose output to capture the assertion diff, then fix or skip-guard tests requiring live Claude/GitHub credentials",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
-      "category": "flaky"
+      "category": "test_failure"
     }
   ]
 }
