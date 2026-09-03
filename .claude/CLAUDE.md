@@ -961,7 +961,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-trace-test.sh` | 143 | E2E traceability (Issue → Commit → PR → Deploy) |
 | `scripts/sw-tracker-providers-test.sh` | 552 | Unit tests for GitHub, Linear, |
 | `scripts/sw-tracker-test.sh` | 534 | Validate tracker router, providers, and |
-| `scripts/sw-triage-test.sh` | 384 | Intelligent Issue Labeling & Prioritization |
+| `scripts/sw-triage-test.sh` | 419 | Intelligent Issue Labeling & Prioritization |
 | `scripts/sw-upgrade-test.sh` | 334 | Validate upgrade detection and apply |
 | `scripts/sw-ux-test.sh` | 185 | Validate UX enhancement layer |
 | `scripts/sw-webhook-test.sh` | 167 | GitHub Webhook Receiver tests |

@@ -270,6 +270,32 @@ FIXTURE
 
 pattern_match() { MEMORY_ROOT="$PAT_MEM_ROOT" bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "$@" 2>&1; }
 
+# Direct unit tests for the scoring kernel, independent of any memory store.
+score_pattern() { bash -c "source \"$SCRIPT_DIR/sw-triage.sh\"; triage_score_pattern \"\$1\" \"\$2\"" _ "$1" "$2" 2>&1; }
+
+assert_eq "identical text scores 100" "100" "$(score_pattern "pipefail double output" "pipefail double output")"
+assert_eq "disjoint text scores 0" "0" "$(score_pattern "dark mode toggle" "pipefail double output")"
+assert_eq "empty issue text scores 0" "0" "$(score_pattern "" "pipefail double output")"
+assert_eq "empty pattern text scores 0" "0" "$(score_pattern "pipefail double output" "")"
+assert_eq "all-stopword text scores 0" "0" "$(score_pattern "the and for with" "pipefail double output")"
+# Partial overlap lands strictly between the two extremes.
+partial=$(score_pattern "pipefail in the daemon" "pipefail double output problem")
+if [[ "$partial" -gt 0 && "$partial" -lt 100 ]]; then
+    assert_pass "partial overlap scores between 0 and 100 (got $partial)"
+else
+    assert_fail "partial overlap scores between 0 and 100" "got: $partial"
+fi
+# A long unrelated body must not drag a short pattern over the line: Jaccard
+# is what keeps coverage from being the whole story.
+long_noise=$(printf 'unrelated narrative sentence %s ' {1..60})
+short_hit=$(score_pattern "pipefail double output" "pipefail double output")
+diluted=$(score_pattern "pipefail double output $long_noise" "pipefail double output")
+if [[ "$diluted" -lt "$short_hit" ]]; then
+    assert_pass "a long unrelated body dilutes the score ($diluted < $short_hit)"
+else
+    assert_fail "a long unrelated body dilutes the score" "diluted=$diluted short_hit=$short_hit"
+fi
+
 # Match: issue text overlapping a local failure pattern
 output=$(pattern_match "grep -c under pipefail produces double output") && rc=0 || rc=$?
 assert_eq "pattern-match exits 0 on a match" "0" "$rc"
