@@ -6,7 +6,7 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 18,
-      "last_seen": "2026-09-03T08:38:26Z",
+      "last_seen": "2026-09-03T11:24:24Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 5,
-      "last_seen": "2026-09-03T00:31:45Z",
+      "seen_count": 7,
+      "last_seen": "2026-09-03T06:48:43Z",
       "category": "flaky"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 3,
-      "last_seen": "2026-09-03T01:12:34Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-03T10:03:35Z",
       "category": "test_failure"
     },
     {
@@ -40,20 +40,11 @@
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
-      "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
+      "root_cause": "sw-loop-test failed (exit 1) and sw-e2e-integration-test timed out at 301s, likely masking sw-intent-analysis-test which also failed with exit 1",
+      "fix": "Inspect sw-intent-analysis-test.sh and sw-loop-test.sh output directly to isolate the failing assertion; investigate whether sw-e2e-integration-test's timeout is starving shared resources causing the loop-test failure",
       "seen_count": 2,
       "last_seen": "2026-09-03T03:10:21Z",
       "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m correlation section follows the structured error summary",
-      "root_cause": "sw-e2e-integration-test hung after emitting a real Claude Code loop prompt (iteration 1/3) and never returned within the 301s harness timeout, likely blocked on a live Claude API call or interactive permission prompt despite --dangerously-skip-permissions",
-      "fix": "add an explicit per-iteration timeout wrapper around the claude CLI call in the integration test's loop invocation, or mock/stub the Claude call in sw-e2e-integration-test to avoid live API latency in CI",
-      "seen_count": 1,
-      "last_seen": "2026-09-03T07:50:32Z",
-      "category": "timeout"
     }
   ]
 }
