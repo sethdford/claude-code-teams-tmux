@@ -30,17 +30,19 @@
     },
     "d41d8cd98f00b204e9800998ecf8427e": {
       "result": {
-        "primary_role": "builder",
+        "primary_role": "architect",
         "secondary_roles": [
-          "tester",
-          "reviewer"
+          "builder",
+          "optimizer",
+          "security-auditor",
+          "tester"
         ],
-        "confidence": 0.95,
-        "reasoning": "Bug fix requiring debugging JSON parsing logic, implementing improved error messaging, and testing edge cases (object vs array output). Builder handles implementation; tester validates the fix; reviewer ensures accuracy.",
+        "confidence": 0.85,
+        "reasoning": "Cross-repo memory pattern queries require system-level architecture design for daemon triage integration; builders implement, optimizers handle performance, security auditors verify access controls, testers validate integration.",
         "new_role_needed": false,
         "suggested_role": null
       },
-      "timestamp": 1775316059,
+      "timestamp": 1788472976,
       "ttl": 3600
     },
     "efd5524ad1244fd20344bf3ff5d95233": {
@@ -1401,6 +1403,373 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "d69f22dc346aed06db53be1cb187f5fd": {
+      "result": {
+        "complexity": 5,
+        "risk_level": "medium",
+        "success_probability": 78,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Pattern matching false positives could flag unrelated issues due to overly broad pattern criteria",
+          "Memory system availability/format changes could break pattern lookups if sw-memory.sh evolves",
+          "Fleet mode detection edge cases (single vs multi-repo) require careful conditional logic",
+          "Performance regression if memory queries are not cached/batched during daemon polling",
+          "Backward compatibility constraint: must preserve triage output format when no pattern matches"
+        ],
+        "implementation_hints": [
+          "Study sw-memory.sh pattern store structure first (read/understand existing format before querying)",
+          "Implement graceful degradation: log warnings but continue if memory lookup fails or fleet is disabled",
+          "Create reusable pattern_match_score() helper function for issue-to-pattern matching logic",
+          "Cache memory patterns at daemon startup or use lightweight lookup to avoid per-issue queries",
+          "Add fleet mode detection via .claude/fleet-config.json or env vars with clear fallback to single-repo mode",
+          "Conditional output: consider whether known_pattern_match field is always present or only on matches",
+          "Write tests for both memory hit (matching pattern found) and miss (no match or no fleet) scenarios"
+        ]
+      },
+      "timestamp": 1788472297,
+      "ttl": 3600
+    },
+    "857a280b420245626d3bb4ca00f0da4a": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1788472309,
+      "ttl": 1800
+    },
+    "3a03f296022b70ba5fe16d2a08e91fdb": {
+      "result": {
+        "estimated_cost_usd": 11.5,
+        "estimated_iterations": 3,
+        "estimated_tokens": 118000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1788472318,
+      "ttl": 3600
+    },
+    "75dc0795ebcdca3ff4d8b0c834ed40b9": {
+      "result": {
+        "issue_type": "infrastructure",
+        "confidence": 0.87,
+        "secondary_domains": [
+          "testing",
+          "observability",
+          "intelligence"
+        ],
+        "complexity_assessment": {
+          "score": 5,
+          "reasoning": "Standard complexity — integrating two existing systems (triage + memory) with well-defined acceptance criteria. Primary work is a new lookup call, optional output field, and test cases; no major architectural changes."
+        },
+        "skill_plan": {
+          "plan": [
+            "brainstorming",
+            "pattern-matching-similarity-scoring"
+          ],
+          "design": [
+            "architecture-design",
+            "pattern-matching-similarity-scoring"
+          ],
+          "build": [
+            "pattern-matching-similarity-scoring",
+            "testing-strategy"
+          ],
+          "review": [
+            "adversarial-quality"
+          ],
+          "compound_quality": [
+            "testing-strategy",
+            "adversarial-quality"
+          ],
+          "pr": [
+            "pr-quality"
+          ],
+          "deploy": [
+            "deploy-safety"
+          ],
+          "validate": [
+            "observability"
+          ],
+          "monitor": [
+            "observability"
+          ]
+        },
+        "skill_rationale": {
+          "brainstorming": "Validate that querying memory during triage scoring is the right design point — consider whether pattern matching should happen post-triage or during scoring, and how fleet-mode fallback affects the approach.",
+          "pattern-matching-similarity-scoring": "This issue is the exact use case: matching incoming issues against historical patterns to flag known failure modes before pipeline execution and annotate with risk metadata.",
+          "architecture-design": "Document the integration point between triage and memory as an ADR clarifying data flow, error handling semantics, fleet vs standalone behavior, and latency characteristics.",
+          "testing-strategy": "Comprehensive test strategy covering: patterns found, no patterns found, fleet mode disabled, memory unavailable, malformed patterns, and backward compatibility of output format.",
+          "adversarial-quality": "Identify daemon-critical edge cases: memory corruption causing scoring errors, false-positive matches misdirecting triage, latency regressions slowing daemon loop, and field compatibility issues downstream.",
+          "pr-quality": "Clearly explain the new `known_pattern_match` field, show before/after triage output, and explicitly document backward compatibility for consuming code.",
+          "deploy-safety": "Triage changes affect daemon behavior at scale — validate in staging that memory queries don't degrade latency, test fleet-mode fallback works on retried deployments.",
+          "observability": "Monitor pattern match rates, false positive rates, and triage latency impact (P50/P99) to verify this optimization delivers intended risk-flagging without pipeline slowdown."
+        },
+        "generated_skills": [
+          {
+            "name": "daemon-memory-integration",
+            "reason": "No existing skill covers the specific pattern for daemon components safely querying external subsystems (memory, cache, fleet state) with graceful degradation, mode awareness, and performance isolation.",
+            "content": "## Daemon-Memory Integration Pattern\n\nWhen daemon components query external stores (memory, intelligence cache, fleet state), follow these principles to ensure reliability and backward compatibility.\n\n### Graceful Degradation\n- Memory queries MUST have a timeout (recommend ≤100ms) and fallback to silent no-op if unavailable\n- Check feature flags and mode detection explicitly (e.g., `fleet_mode_enabled()`) before querying fleet-scoped memory\n- Log warnings to event log but never error if memory store is missing, unreadable, or malformed\n- Ensure standalone mode produces identical behavior whether memory is present or not\n- Test explicitly: \"feature present\" vs \"feature absent\" paths must be identical for baseline behavior\n\n### Optional Output Fields\n- New fields added to daemon output (e.g., `known_pattern_match`) MUST be optional and present only when the feature succeeds\n- Consuming code should handle absence gracefully: `pattern_match = output.known_pattern_match // null`\n- Document all new daemon output fields in schema files and update test fixtures\n- Version output format if introducing breaking changes; use feature detection rather than version checks\n\n### Performance & Latency\n- Profile memory queries before merge — add <10ms overhead per call maximum\n- For hot paths (like triage loop), cache results with short TTL (30-60s) to avoid O(n²) lookups\n- Add instrumentation: log query latencies, cache hit rates, and timeouts to structured event log\n- Establish latency baseline in pre-merge testing; regression > 5% blocks merge\n\n### Error Handling & Observability\n- Distinguish between transient errors (\"unavailable now\") and permanent failures (\"corrupted\") in logging\n- Use structured logging format: `level=warn event=memory_query_timeout feature=pattern_match duration_ms=125 fallback=enabled`\n- Never let memory integration errors bubble up; wrap all queries in try-catch with sensible defaults\n- Add event type to `config/event-schema.json` for this feature (e.g., `daemon_memory_query`)\n\n### Testing Patterns\n- Test matrix: (memory present + valid) × (absent) × (malformed) × (timeout simulated)\n- Test matrix: (standalone mode) × (fleet mode)\n- Verify that disabling the feature leaves scores unchanged (backward compatibility)\n- Add fixtures for real-world memory states: empty store, 1000 patterns, corrupted entries, stale timestamps\n- Measure and assert tail latencies (P95/P99) to catch cascading slowdowns\n\n### Cross-Repo Considerations\n- When accessing fleet-scoped memory, use explicit opt-in via config (e.g., `fleet_memory_queries_enabled`)\n- Query only repo-agnostic patterns by default; require explicit allowlist for cross-repo pattern matching\n- Log which repo's memory was queried for audit trails and debugging\n- If memory access fails, fall back cleanly — never block daemon on external state"
+          }
+        ],
+        "review_focus": [
+          "Pattern lookup integrates cleanly without changing baseline triage scores for non-matching issues",
+          "Graceful fallback when memory is unavailable, malformed, or fleet mode is disabled — verify no daemon crashes",
+          "The `known_pattern_match` field is truly optional: present only on success, correctly positioned in JSON output, and compatible with existing consumers",
+          "Test coverage includes match/no-match, edge cases (empty patterns, timeouts, corruption), and performance assertions",
+          "Error handling and structured logging enable production debugging without blocking daemon progression"
+        ],
+        "risk_areas": [
+          "Triage latency degradation: memory queries could slow down daemon loop if synchronous or uncached — requires profiling and latency assertions before merge",
+          "False positive pattern matches causing triage misdirection and masking of signal in real issues",
+          "Memory store corruption or malformed patterns causing runtime errors or silent failures in daemon",
+          "Backward compatibility: consuming code downstream may not handle the new optional field gracefully if not tested with both old and new output formats",
+          "Fleet mode logic: unclear when fleet memory is available vs unavailable could cause inconsistent behavior across standalone/fleet deployments"
+        ]
+      },
+      "timestamp": 1788472409,
+      "ttl": 3600
+    },
+    "9bbb76c3a0b96eca4331b1636e95e072": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 95,
+            "summary": "Cross-repo pattern collection with versioning and timestamp tracking. Directly addresses the core data structure for surfacing patterns across repos in daemon triage."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 92,
+            "summary": "Cross-repo knowledge base with metrics on pattern queries, injections, and matches. Essential for understanding how pattern queries are tracked and scored in the daemon."
+          },
+          {
+            "file": "index.json",
+            "relevance": 78,
+            "summary": "Pattern index with signature, stage, and type categorization. Demonstrates a queryable pattern structure for cross-repo triage scoring decisions."
+          },
+          {
+            "file": "success-patterns.json (test-repo auth)",
+            "relevance": 68,
+            "summary": "Detailed success pattern with complexity scoring, file patterns, and approach metadata. Shows the data model needed for pattern-based query surfacing."
+          },
+          {
+            "file": "architecture.json",
+            "relevance": 65,
+            "summary": "Architecture rules structure. Relevant for the plan stage to define architectural constraints around cross-repo memory pattern querying."
+          }
+        ]
+      },
+      "timestamp": 1788472455,
+      "ttl": 1800
+    },
+    "ee45c6237dda32e269ea578a92af3ce7": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 95,
+            "summary": "Explicitly designed for cross-repo pattern storage. Name and structure directly match 'cross-repo memory pattern query' requirement. Recently updated (2026-09-03), currently empty but framework is in place for fleet-level pattern queries."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 85,
+            "summary": "Fleet-level knowledge system with metrics tracking for cross-repo learning. Contains query count, injection count, and match metrics—directly relevant to understanding how patterns are queried and used across repos in daemon triage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Contains failure signatures and patterns with fix recommendations and effectiveness rates. Relevant to understanding what validation failures might occur and how pattern injection affects outcomes—critical for debugging rejected plan validation."
+          }
+        ]
+      },
+      "timestamp": 1788472665,
+      "ttl": 1800
+    },
+    "55c1d3093c4997d83ec655188204cd18": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 98,
+            "summary": "Core cross-repo pattern query data structure. Shows versioning, update tracking, and patterns array — the primary API contract for surfacing patterns in daemon triage."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 96,
+            "summary": "Cross-repo knowledge base interface with query metrics (total_queries, total_matches, total_injections). Essential for designing the daemon triage scoring integration and effectiveness tracking."
+          },
+          {
+            "file": "success-patterns.json (test1)",
+            "relevance": 88,
+            "summary": "Comprehensive success pattern data model showing goal, complexity, iterations, files_changed, approach, cost, seen_count — defines the pattern entity structure needed for queries."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 82,
+            "summary": "Failure pattern structure with signature, fix, fix_effectiveness_rate, and category. Shows alternative pattern type design for comprehensive pattern querying across failure/success domains."
+          },
+          {
+            "file": "index.json",
+            "relevance": 75,
+            "summary": "Pattern indexing structure with signature, stage, pattern_type, total_seen, and sources. Relevant for designing the query/discovery interface and multi-source pattern aggregation."
+          }
+        ]
+      },
+      "timestamp": 1788472712,
+      "ttl": 1800
+    },
+    "3300b4ece323283cc61580979e51c1ed": {
+      "result": {
+        "results": [
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 100,
+            "summary": "Directly addresses cross-repo pattern storage for fleet operations; structure informs what cross-repo query design should support. Updated today (2026-09-03), making it the most current reference for daemon triage pattern patterns."
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 92,
+            "summary": "Defines cross-repo knowledge base with publish/query/match/injection metrics essential for scoring triage decisions. Shows what data structures support fleet-wide pattern queries and effectiveness tracking."
+          },
+          {
+            "file": "index.json",
+            "relevance": 78,
+            "summary": "Demonstrates pattern indexing schema (signature, stage, pattern_type, sources) critical for designing efficient cross-repo pattern queries in daemon triage. Shows categorization strategy for fast lookup."
+          }
+        ]
+      },
+      "timestamp": 1788472734,
+      "ttl": 1800
+    },
+    "56bb13c3dcfe33fbbbc596481047bb3b": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 82,
+            "summary": "Cross-repo pattern index with build stage failure patterns and fixes; directly structures how patterns are indexed and queried across repositories"
+          },
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 80,
+            "summary": "Versioned fleet-level pattern management structure for cross-repo query surfacing; recently updated (2026-09-03) and designed for daemon pattern distribution"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 75,
+            "summary": "Cross-repo knowledge base infrastructure tracking pattern queries, matches, and injections; shows metrics for fleet-wide pattern effectiveness"
+          },
+          {
+            "file": "success-patterns.json (test-repo-complexity)",
+            "relevance": 65,
+            "summary": "Build stage patterns for low-complexity fixes with 100% success rate and 85% confidence; directly applicable to daemon triage scoring logic"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 60,
+            "summary": "Build stage patterns with multiple entries and 100% success rates; provides dataset for ranking/scoring patterns in daemon triage"
+          }
+        ]
+      },
+      "timestamp": 1788472947,
+      "ttl": 1800
+    },
+    "47c1451f50b4a8f9faa0f8012f6b922e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 95,
+            "summary": "Contains 2 successful build patterns showing 3 iterations each, test strategies (npm test), file change patterns, and cost/duration metrics. Directly applicable to understanding what successful builds look like in this repo's build stage."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "8 test-stage failures with root causes and fixes. Most failures involve sw-intent-analysis-test, stale pipeline locks, and schema issues—recurring patterns that build iterations encounter and must recover from."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 85,
+            "summary": "Shows build_failure class with model_escalation retry strategy achieving 100% success rate (5/5 attempts). Provides proven recovery pattern for build stage failures."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 75,
+            "summary": "Baseline metrics: build_duration_s=7095, test_duration_s=1459. Establishes performance expectations for build and test stages; useful for detecting anomalies or timeouts."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 65,
+            "summary": "Test failure patterns (mktemp directory creation, cleanup output, regression detection JSON). While test-focused, these are recurring errors encountered during build iterations."
+          }
+        ]
+      },
+      "timestamp": 1788472964,
+      "ttl": 1800
+    },
+    "d0916e7262ece86564de67e8ff633ea6": {
+      "result": {
+        "raw_response": "Mock claude response"
+      },
+      "timestamp": 1788473201,
+      "ttl": 3600
+    },
+    "2000118dcb7e70c0d0f8fb25fc73e1b6": {
+      "result": {
+        "raw_response": "Mock claude response"
+      },
+      "timestamp": 1788473202,
+      "ttl": 3600
+    },
+    "65da5d9db317f9319ecebc8e2347693e": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788473420,
+      "ttl": 1800
+    },
+    "78ed709f54745d311e0a0523a4abeeb6": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788473646,
+      "ttl": 1800
+    },
+    "3f3ccf2cbe097554feda68c58fe00304": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788473657,
+      "ttl": 1800
+    },
+    "bfa327aa0e0157cf01bd1a0d30a8b544": {
+      "result": {
+        "raw_response": "Mock claude: ok"
+      },
+      "timestamp": 1788473760,
+      "ttl": 1800
+    },
+    "27ddbf109bbe5ca89f90173f19dfc647": {
+      "result": [
+        {
+          "type": "result",
+          "result": "I am trying the same approach again.",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "timestamp": 1788473995,
+      "ttl": 1800
     }
   }
 }

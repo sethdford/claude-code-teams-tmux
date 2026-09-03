@@ -1,1 +1,26 @@
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"result":"The fix is complete. Here's a summary of what was done:\n\n**Root cause:** `_extract_text_from_json()` in `sw-loop.sh` only handled JSON arrays (`[`) in Case 2 (the jq-powered path). When Claude outputs a JSON object (`{`), the code fell through to Case 3, which emits \"JSON output but jq not available\" — even when jq is fully functional.\n\n**Fix:** Extended Case 2 to handle both JSON arrays and objects when jq is available:\n- Arrays: extract `.result` from last element, fall back to `.content` \n- Objects: extract `.result` directly, fall back to `.content`\n- Case 3 now only triggers when jq is genuinely absent\n\n**Tests added** (3 new assertions in `sw-loop-test.sh`):\n- JSON object with `.result` field extracts correctly\n- JSON object with `.content` field extracts correctly  \n- No spurious \"jq not available\" warning emitted for JSON objects\n\nAll 68 loop tests pass. The pre-existing `sw-cost-test.sh` failure is unrelated to this change.\n\nLOOP_COMPLETE","stop_reason":"end_turn","session_id":"2141a2b8-fd6d-4710-b7f2-430b292cdd49","total_cost_usd":0.7620769,"usage":{"input_tokens":24,"cache_creation_input_tokens":54992,"cache_read_input_tokens":1567133,"output_tokens":5225,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":54992,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard"},"modelUsage":{"claude-sonnet-4-6":{"inputTokens":24,"outputTokens":5225,"cacheReadInputTokens":1567133,"cacheCreationInputTokens":54992,"webSearchRequests":0,"costUSD":0.7548069000000001,"contextWindow":200000,"maxOutputTokens":32000},"claude-haiku-4-5-20251001":{"inputTokens":6090,"outputTokens":236,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"webSearchRequests":0,"costUSD":0.00727,"contextWindow":200000,"maxOutputTokens":32000}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","uuid":"a1b2c9a4-1f15-4b3d-aa7d-fd46394eeb52"}
+Final full-suite confirmation is running. While it does, the summary of what shipped:
+
+## Cross-repo memory pattern query in triage — done
+
+**Lookup.** `shipwright triage analyze <N>` now attaches `known_pattern_match` (`pattern`, `source`, `score`, `confidence`, `stage`, `note`) when a stored failure pattern clears the threshold. Local `failures.json` is scored first; fleet `global.json` `common_patterns` second with a −10 penalty, so a same-repo match wins ties. New `triage pattern-match <text>` exposes the raw lookup.
+
+**Scoring** is a 0–100 composite — 70% pattern coverage, 20% Jaccard overlap, 10% error-signature bonus — implemented as one awk kernel shared by `triage_score_pattern()` and the store loop, so they cannot diverge. 200 patterns cost ~120ms.
+
+**Daemon side.** `triage_score_issue()` does the same lookup but keeps its bare-integer stdout, since every call site reads it as `| tail -1`.
+
+Two deviations from the plan, both deliberate:
+- The plan said pass the match out via `export TRIAGE_PATTERN_MATCH`. That channel doesn't work — `triage_score_issue` always runs inside `$( )`, so the export dies with the subshell (the same reason `INTELLIGENCE_ANALYSIS` never reaches `daemon-poll-github.sh`). I persist to `~/.shipwright/triage-pattern-matches.json` keyed by issue, with `triage_pattern_match_for()` to read it back, and clear the entry on a later no-match. The export is still set for same-shell callers.
+- The plan's "bump VERSION to 3.4.0" fails `check-version-consistency.sh`, which requires script versions to track `package.json`. Left at 3.3.0.
+
+### Test pyramid
+- **Unit (23 new):** 7 direct scoring-kernel tests (extremes, empty/all-stopword, partial band, Jaccard dilution property), 11 lookup tests (local/fleet source, threshold, both feature switches, confidence tier, note propagation), 5 degradation tests.
+- **Integration (7 new):** 2 in `sw-triage-test.sh` on `analyze` against a mocked `gh`, 5 in `sw-lib-daemon-triage-test.sh` on `triage_score_issue` (integer contract preserved, store write, store clear, stale-entry clear).
+- **E2E:** none added — this path has no external surface beyond `gh`, already mocked.
+
+### Coverage
+Every new function has a test. AC4 (backward compatibility) is pinned by an exact `keys_unsorted` assertion rather than a substring check, so any accidental key addition or reorder fails.
+
+### Critical paths
+Happy: local match, fleet match. Errors: corrupt `failures.json`/`global.json`, missing memory dir, broken-or-absent SHA tool — all exit 0 with no match. Edges: empty failure list, empty/all-stopword issue text, threshold=99 rejection, both switches off. Also manually verified (not committed as tests): unicode, tabs/quotes/`$(...)` in pattern text — values only pass through `jq` and `awk`, never eval — and a 15k-word body.
+
+`sw-triage-test.sh` 56 pass, `sw-lib-daemon-triage-test.sh` 27 pass, shellcheck clean, event schema in sync. The prior full run was 162/162; the re-run after the extra tests is in flight and I'll report it before claiming the loop complete.
