@@ -264,4 +264,39 @@ assert_eq "Template weights → best template (fast)" "fast" "$result"
 
 rm -f "$HOME/.shipwright/optimization/template-weights.json"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# triage_score_issue — known pattern export (TRIAGE_PATTERN_MATCH)
+# ═══════════════════════════════════════════════════════════════════════════════
+print_test_section "triage_score_issue — known pattern export"
+
+# mock_git makes `git config` return nothing, so the memory hash is the hash of
+# the literal "local" — same derivation sw-triage.sh uses.
+if command -v shasum >/dev/null 2>&1; then
+    pat_hash=$(printf 'local' | shasum -a 256 | cut -c1-12)
+else
+    pat_hash=$(printf 'local' | sha256sum | cut -c1-12)
+fi
+mkdir -p "$HOME/.shipwright/memory/$pat_hash"
+cat > "$HOME/.shipwright/memory/$pat_hash/failures.json" <<'JSON'
+{"failures":[{"stage":"build","pattern":"grep -c under pipefail produces double output in daemon dispatch","root_cause":"pipefail semantics","fix":"use || true with ${var:-0}","seen_count":4}]}
+JSON
+
+issue='{"number":901,"title":"grep -c under pipefail produces double output","body":"Seen again in daemon dispatch","labels":[{"name":"bug"}],"createdAt":""}'
+score=$(triage_score_issue "$issue" 2>/dev/null | tail -1)
+assert_eq "Scoring still prints a bare integer with a pattern match" "$score" "$(printf '%s' "$score" | tr -cd '[:digit:]')"
+assert_eq "Stored pattern match source is local" "local" "$(triage_pattern_match_for 901 | jq -r '.source')"
+
+# No-match issue clears the export rather than leaking the previous match
+issue='{"number":902,"title":"Add a dark mode toggle","body":"Users want dark mode on the account settings screen","labels":[{"name":"enhancement"}],"createdAt":""}'
+score=$(triage_score_issue "$issue" 2>/dev/null | tail -1)
+assert_eq "No-match issue still prints a bare integer" "$score" "$(printf '%s' "$score" | tr -cd '[:digit:]')"
+assert_eq "Stored pattern match absent when nothing matches" "" "$(triage_pattern_match_for 902)"
+
+# A later no-match poll must clear an earlier stored match for the same issue
+issue='{"number":901,"title":"Add a dark mode toggle","body":"unrelated follow-up","labels":[],"createdAt":""}'
+triage_score_issue "$issue" >/dev/null 2>&1
+assert_eq "Stale stored match is cleared on a later no-match poll" "" "$(triage_pattern_match_for 901)"
+
+rm -rf "$HOME/.shipwright/memory/$pat_hash"
+
 print_test_results

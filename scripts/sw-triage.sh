@@ -310,6 +310,217 @@ suggest_labels() {
 # ─── Subcommand: analyze ──────────────────────────────────────────────────
 
 # Check if AI triage should be used (TRIAGE_AI env, --ai flag, or daemon-config)
+# ─── Memory Pattern Matching ───────────────────────────────────────────────
+# Surfaces known failure patterns (local repo memory + cross-repo fleet memory)
+# during triage so an issue that looks like something we have already broken on
+# is flagged before the pipeline spends a build on it.
+
+# Tokens shorter than 3 chars are dropped by the tokenizer, so this list only
+# needs the >=3 char noise words.
+_TRIAGE_STOPWORDS='the|and|for|with|that|this|from|when|then|than|have|has|had|was|were|are|not|but|its|you|your|our|all|any|can|will|would|should|could|into|onto|over|under|about|after|before|only|also|there|here|they|them|their|what|which|while|been|being|does|did|doing|use|used|using|via|per|out|off|new|old'
+
+# Tokens that make a match look like an error signature rather than shared
+# prose. Only scored when the token appears on BOTH sides.
+_TRIAGE_SIGNATURE_RE='error|errors|fail|failed|failure|failing|timeout|timed|panic|exception|traceback|segfault|deadlock|undefined|null|nil|missing|denied|refused|unbound|enoent|econnreset|eaddrinuse|pipefail|nonzero|exit|status|crash|hang|stale|corrupt|leak|oom|abort'
+
+# Scoring kernel, shared by triage_score_pattern (one pattern) and
+# triage_match_known_pattern (a whole store) so the two can never diverge.
+#
+# Reads TSV on stdin: <pattern>\t<stage>\t<note>. Writes the single best
+# scoring row as <score>\t<pattern>\t<stage>\t<note>, or nothing when no row
+# shares a token with the issue. One process for the entire store — the naive
+# shape (tokenize + comm + wc per pattern) costs ~8 forks per pattern and blows
+# past the 500ms budget well before the 100-pattern mark.
+#
+# Composite 0-100 similarity:
+#   70%  pattern coverage — how much of the known pattern the issue text covers
+#   20%  Jaccard overlap  — stops a long issue body from matching everything
+#   10%  error signature  — a shared token that reads like an error, not prose
+_TRIAGE_AWK_SCORE='
+function tokenize(s, T,    n, i, arr, c) {
+    s = tolower(s)
+    gsub(/[^a-z0-9]+/, " ", s)
+    n = split(s, arr, " ")
+    c = 0
+    for (i = 1; i <= n; i++) {
+        if (length(arr[i]) < 3) continue
+        if (arr[i] ~ stopre) continue
+        if (arr[i] in T) continue
+        T[arr[i]] = 1
+        c++
+    }
+    return c
+}
+BEGIN {
+    FS = "\t"
+    stopre = "^(" STOPWORDS ")$"
+    sigre  = "^(" SIGNATURE ")$"
+    icount = tokenize(ENVIRON["SW_TRIAGE_ISSUE_TEXT"], ITOK)
+    best = -1
+}
+{
+    # Zero-token guard: no signal on either side is no match, never a
+    # divide-by-zero.
+    if (icount == 0 || $1 == "") next
+    delete PTOK
+    pcount = tokenize($1, PTOK)
+    if (pcount == 0) next
+
+    overlap = 0; sig = 0
+    for (t in PTOK) {
+        if (t in ITOK) {
+            overlap++
+            if (t ~ sigre) sig = 100
+        }
+    }
+    if (overlap == 0) next
+
+    union = icount + pcount - overlap
+    if (union <= 0) union = 1
+    coverage = int(overlap * 100 / pcount)
+    jaccard  = int(overlap * 100 / union)
+    score    = int((coverage * 70 + jaccard * 20 + sig * 10) / 100) - PENALTY
+    if (score < 0) score = 0
+
+    if (score > best) { best = score; bp = $1; bs = $2; bn = $3 }
+}
+END { if (best >= 0) printf "%d\t%s\t%s\t%s\n", best, bp, bs, bn }
+'
+
+# _triage_score_stream <issue_text> <penalty>
+# Runs the scoring kernel over TSV rows on stdin.
+_triage_score_stream() {
+    SW_TRIAGE_ISSUE_TEXT="${1:-}" awk \
+        -v STOPWORDS="$_TRIAGE_STOPWORDS" \
+        -v SIGNATURE="$_TRIAGE_SIGNATURE_RE" \
+        -v PENALTY="${2:-0}" \
+        "$_TRIAGE_AWK_SCORE" 2>/dev/null || true
+}
+
+# triage_score_pattern <issue_text> <pattern_text>
+# Composite 0-100 similarity for a single pattern. 0 when there is no overlap.
+triage_score_pattern() {
+    local score
+    score=$(printf '%s\t\t\n' "${2:-}" | _triage_score_stream "${1:-}" 0 | cut -f1)
+    echo "${score:-0}"
+}
+
+# _triage_repo_hash
+# Same derivation as sw-memory.sh repo_hash(), reimplemented locally so triage
+# does not have to source the 2k-line memory script. Degrades to "local" when
+# no SHA tool is installed.
+_triage_repo_hash() {
+    local origin hash=""
+    origin=$(git config --get remote.origin.url 2>/dev/null || echo "")
+    [[ -z "$origin" ]] && origin="local"
+    if command -v shasum >/dev/null 2>&1; then
+        hash=$(printf '%s' "$origin" | shasum -a 256 2>/dev/null | cut -c1-12) || hash=""
+    elif command -v sha256sum >/dev/null 2>&1; then
+        hash=$(printf '%s' "$origin" | sha256sum 2>/dev/null | cut -c1-12) || hash=""
+    fi
+    echo "${hash:-local}"
+}
+
+_triage_memory_root() { echo "${MEMORY_ROOT:-$HOME/.shipwright/memory}"; }
+_triage_memory_dir()  { echo "$(_triage_memory_root)/$(_triage_repo_hash)"; }
+
+# _triage_pattern_enabled / _triage_fleet_enabled
+# Config-gated. An absent config lib (test env with an overridden SCRIPT_DIR)
+# means the feature runs with its documented defaults.
+_triage_pattern_enabled() {
+    local v="true"
+    type _config_get >/dev/null 2>&1 && v=$(_config_get "triage.pattern_matching.enabled" "true")
+    [[ "$v" == "true" || "$v" == "1" ]]
+}
+
+_triage_fleet_enabled() {
+    local v="true"
+    type _config_get >/dev/null 2>&1 && v=$(_config_get "triage.pattern_matching.fleet_enabled" "true")
+    [[ "$v" == "true" || "$v" == "1" ]]
+}
+
+_triage_pattern_int() {
+    local v="$2"
+    type _config_get >/dev/null 2>&1 && v=$(_config_get "triage.pattern_matching.$1" "$2")
+    v="${v//[!0-9-]/}"
+    echo "${v:-$2}"
+}
+
+# triage_match_known_pattern <issue_text>
+# Prints a JSON object for the best-scoring known pattern at or above the
+# similarity threshold, or nothing. Always exits 0 — a missing memory dir,
+# corrupt JSON, or a disabled feature is a no-op, not a triage failure.
+triage_match_known_pattern() {
+    local issue_text="${1:-}"
+    [[ -z "$issue_text" ]] && return 0
+    _triage_pattern_enabled || return 0
+
+    local threshold penalty max_scan tier_high tier_medium
+    threshold=$(_triage_pattern_int "similarity_threshold" 60)
+    penalty=$(_triage_pattern_int "fleet_score_penalty" 10)
+    max_scan=$(_triage_pattern_int "max_patterns_scanned" 200)
+    tier_high=$(_triage_pattern_int "confidence_tiers.high" 80)
+    tier_medium=$(_triage_pattern_int "confidence_tiers.medium" 60)
+
+    local mem_dir best_score=-1 best_pattern="" best_source="" best_note="" best_stage=""
+    mem_dir="$(_triage_memory_dir)"
+
+    # ── Local repo memory first: a same-repo match beats an equal fleet one ──
+    local failures_file="$mem_dir/failures.json" row
+    if [[ -f "$failures_file" ]]; then
+        row=$(jq -r --argjson n "$max_scan" '
+            [.failures[]? // empty][:$n][] |
+            [ (.pattern // ""),
+              (.stage // ""),
+              (if (.fix // "") != "" then .fix else (.root_cause // "") end) ] | @tsv
+        ' "$failures_file" 2>/dev/null | _triage_score_stream "$issue_text" 0 || true)
+        if [[ -n "$row" ]]; then
+            IFS=$'\t' read -r best_score best_pattern best_stage best_note <<< "$row"
+            best_source="local"
+        fi
+    fi
+
+    # ── Cross-repo fleet memory, penalized: another repo's failure is weaker ──
+    local global_file
+    global_file="$(_triage_memory_root)/global.json"
+    if _triage_fleet_enabled && [[ -f "$global_file" ]]; then
+        row=$(jq -r --argjson n "$max_scan" '
+            [.common_patterns[]? // empty][:$n][] |
+            [ ((.pattern // .summary // .description) // ""), (.category // ""), "" ] | @tsv
+        ' "$global_file" 2>/dev/null | _triage_score_stream "$issue_text" "$penalty" || true)
+        if [[ -n "$row" ]]; then
+            # Field 3 (note) is always empty for fleet rows — the fleet note
+            # is boilerplate, set below.
+            local f_score f_pattern f_stage
+            IFS=$'\t' read -r f_score f_pattern f_stage _ <<< "$row"
+            if [[ "${f_score:-0}" -gt "$best_score" ]]; then
+                best_score="$f_score"
+                best_pattern="$f_pattern"
+                best_stage="$f_stage"
+                best_source="fleet"
+                best_note="Seen in another repo — cross-repo pattern promoted to fleet memory."
+            fi
+        fi
+    fi
+
+    [[ -z "$best_pattern" ]] && return 0
+    [[ "${best_score:-0}" -lt "$threshold" ]] && return 0
+
+    local confidence="low"
+    [[ "$best_score" -ge "$tier_medium" ]] && confidence="medium"
+    [[ "$best_score" -ge "$tier_high" ]] && confidence="high"
+    [[ -z "$best_note" ]] && best_note="Similar failure pattern recorded previously; no fix captured yet."
+
+    jq -n \
+        --arg pattern "$best_pattern" \
+        --arg source "$best_source" \
+        --argjson score "$best_score" \
+        --arg confidence "$confidence" \
+        --arg stage "$best_stage" \
+        --arg note "$best_note" \
+        '{pattern: $pattern, source: $source, score: $score, confidence: $confidence, stage: $stage, note: $note}'
+}
+
 _triage_use_ai() {
     if [[ "${TRIAGE_AI:-}" == "1" || "${TRIAGE_AI:-}" == "true" ]]; then
         return 0
@@ -401,21 +612,41 @@ cmd_analyze() {
         fi
     fi
 
-    # Output as structured JSON
-    cat << EOF
-{
-  "issue": "$issue",
-  "title": $(jq -R . <<< "$title"),
-  "type": "$type",
-  "complexity": "$complexity",
-  "risk": "$risk",
-  "effort": "$effort",
-  "suggested_labels": $(echo "$labels" | jq -R 'split(" ")'),
-  "existing_labels": $(echo "$existing_labels" | jq -R 'split(",")')
-}
-EOF
+    # Known-failure lookup against local + fleet memory. Never fatal.
+    local pattern_match=""
+    pattern_match=$(triage_match_known_pattern "$combined_text" 2>/dev/null || true)
 
-    emit_event "triage_analyzed" "issue=$issue" "type=$type" "complexity=$complexity" "risk=$risk"
+    # Output as structured JSON. `known_pattern_match` is attached only when a
+    # pattern scored at or above the threshold, so no-match output stays
+    # key-for-key identical to the pre-pattern-matching format.
+    jq -n \
+        --arg issue "$issue" \
+        --arg title "$title" \
+        --arg type "$type" \
+        --arg complexity "$complexity" \
+        --arg risk "$risk" \
+        --arg effort "$effort" \
+        --argjson suggested_labels "$(echo "$labels" | jq -R 'split(" ")')" \
+        --argjson existing_labels "$(echo "$existing_labels" | jq -R 'split(",")')" \
+        --argjson match "${pattern_match:-null}" \
+        '{
+            issue: $issue,
+            title: $title,
+            type: $type,
+            complexity: $complexity,
+            risk: $risk,
+            effort: $effort,
+            suggested_labels: $suggested_labels,
+            existing_labels: $existing_labels
+        } + (if $match == null then {} else {known_pattern_match: $match} end)'
+
+    local match_source="none" match_score="0"
+    if [[ -n "$pattern_match" ]]; then
+        match_source=$(echo "$pattern_match" | jq -r '.source // "none"')
+        match_score=$(echo "$pattern_match" | jq -r '.score // 0')
+    fi
+    emit_event "triage_analyzed" "issue=$issue" "type=$type" "complexity=$complexity" "risk=$risk" \
+        "pattern_match=$match_source" "pattern_score=$match_score"
 }
 
 # ─── Subcommand: label ────────────────────────────────────────────────────
@@ -738,6 +969,21 @@ cmd_report() {
 
 # ─── Subcommand: help ────────────────────────────────────────────────────
 
+# ─── Subcommand: pattern-match ────────────────────────────────────────────
+
+cmd_pattern_match() {
+    local text="$*"
+    [[ -z "$text" ]] && { error "Usage: triage pattern-match <text>"; exit 1; }
+
+    local match
+    match=$(triage_match_known_pattern "$text" 2>/dev/null || true)
+    if [[ -n "$match" ]]; then
+        echo "$match"
+    else
+        echo '{}'
+    fi
+}
+
 cmd_help() {
     echo -e "${BOLD}shipwright triage${RESET} — Intelligent Issue Labeling & Prioritization"
     echo ""
@@ -751,6 +997,7 @@ cmd_help() {
     echo -e "  ${CYAN}team <issue>${RESET}           Recommend team size & pipeline template"
     echo -e "  ${CYAN}batch${RESET}                  Analyze + label all unlabeled open issues"
     echo -e "  ${CYAN}report${RESET}                 Show triage statistics (type, complexity, priority)"
+    echo -e "  ${CYAN}pattern-match <text>${RESET}   Match text against known failure patterns (outputs JSON)"
     echo -e "  ${CYAN}help${RESET}                   Show this help message"
     echo ""
     echo -e "${BOLD}EXAMPLES${RESET}"
@@ -762,6 +1009,7 @@ cmd_help() {
     echo -e "  ${DIM}shipwright triage team 42${RESET}"
     echo -e "  ${DIM}shipwright triage batch${RESET}"
     echo -e "  ${DIM}shipwright triage report${RESET}"
+    echo -e "  ${DIM}shipwright triage pattern-match \"build fails with pipefail\"${RESET}"
     echo ""
 }
 
@@ -795,6 +1043,9 @@ main() {
             ;;
         report)
             cmd_report "$@"
+            ;;
+        pattern-match)
+            cmd_pattern_match "$@"
             ;;
         help|--help|-h)
             cmd_help

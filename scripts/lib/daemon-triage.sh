@@ -9,6 +9,41 @@ REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PIPELINE_TEMPLATE="${PIPELINE_TEMPLATE:-autonomous}"
 NO_GITHUB="${NO_GITHUB:-false}"
 
+# Known-pattern matches are also persisted here, keyed by issue number.
+# triage_score_issue() runs inside a command substitution at every call site
+# (`score=$(triage_score_issue ... | tail -1)`), so an exported variable dies
+# with the subshell — the file is what actually reaches the daemon.
+TRIAGE_PATTERN_MATCH_FILE="${TRIAGE_PATTERN_MATCH_FILE:-$HOME/.shipwright/triage-pattern-matches.json}"
+
+# _triage_record_pattern_match <issue_num> [match_json]
+# Stores a match, or removes the stored entry when called with no JSON so a
+# stale match from an earlier poll cannot leak into a later one.
+_triage_record_pattern_match() {
+    local issue_num="${1:-}" match_json="${2:-}"
+    [[ -z "$issue_num" ]] && return 0
+    local file="$TRIAGE_PATTERN_MATCH_FILE"
+    mkdir -p "$(dirname "$file")" 2>/dev/null || return 0
+    jq -e . "$file" >/dev/null 2>&1 || echo '{}' > "$file"
+    local tmp
+    tmp=$(mktemp "${file}.tmp.XXXXXX" 2>/dev/null) || return 0
+    if [[ -n "$match_json" ]]; then
+        jq --arg k "$issue_num" --argjson v "$match_json" '.[$k] = $v' "$file" > "$tmp" 2>/dev/null \
+            && mv "$tmp" "$file" || rm -f "$tmp"
+    else
+        jq --arg k "$issue_num" 'del(.[$k])' "$file" > "$tmp" 2>/dev/null \
+            && mv "$tmp" "$file" || rm -f "$tmp"
+    fi
+    return 0
+}
+
+# triage_pattern_match_for <issue_num>
+# Prints the stored known-pattern match JSON for an issue, or nothing.
+triage_pattern_match_for() {
+    local file="$TRIAGE_PATTERN_MATCH_FILE"
+    [[ -f "$file" ]] || return 0
+    jq -c --arg k "${1:-}" '.[$k] // empty' "$file" 2>/dev/null || true
+}
+
 # Extract dependency issue numbers from issue text
 extract_issue_dependencies() {
     local text="$1"
@@ -25,6 +60,24 @@ triage_score_issue() {
     issue_num=$(echo "$issue_json" | jq -r '.number')
     issue_title=$(echo "$issue_json" | jq -r '.title // ""')
     issue_body=$(echo "$issue_json" | jq -r '.body // ""')
+
+    # ── Known failure pattern lookup (local + cross-repo fleet memory) ──
+    # Exported rather than folded into the score: this function's stdout
+    # contract is a bare integer (callers do `| tail -1`), so the match rides
+    # out on an env var the way INTELLIGENCE_ANALYSIS already does.
+    TRIAGE_PATTERN_MATCH=""
+    if [[ -f "$SCRIPT_DIR/sw-triage.sh" ]]; then
+        local pattern_json
+        pattern_json=$(bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "${issue_title} ${issue_body}" 2>/dev/null || true)
+        if [[ -n "$pattern_json" && "$pattern_json" != "{}" ]]; then
+            TRIAGE_PATTERN_MATCH=$(printf '%s' "$pattern_json" | jq -c . 2>/dev/null || true)
+            _triage_record_pattern_match "$issue_num" "$TRIAGE_PATTERN_MATCH"
+            type daemon_log >/dev/null 2>&1 && daemon_log INFO "Triage: known pattern match for #${issue_num} ($(echo "$pattern_json" | jq -r '.source // "?"')/$(echo "$pattern_json" | jq -r '.score // 0'))" >&2 || true
+        else
+            _triage_record_pattern_match "$issue_num" ""
+        fi
+    fi
+    export TRIAGE_PATTERN_MATCH
 
     # ── Intelligence-powered triage (if enabled) ──
     if [[ "${INTELLIGENCE_ENABLED:-false}" == "true" ]] && type intelligence_analyze_issue >/dev/null 2>&1; then

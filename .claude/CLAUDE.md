@@ -341,6 +341,43 @@ Tune the build loop's resilience and restart behavior:
 | `hard_restart_cap`          | `5`     | Absolute maximum restarts regardless of cause     |
 | `max_restarts`              | `3`     | Default restart limit for daemon-driven loops     |
 
+## Triage Pattern Matching
+
+`shipwright triage` cross-references incoming issue text against captured failure
+patterns before the pipeline spends a build on it. Local repo memory
+(`failures.json`) is consulted first; cross-repo fleet memory (`global.json`
+`common_patterns`) second, with a score penalty so a same-repo match always wins a
+tie.
+
+```bash
+shipwright triage analyze 42          # adds known_pattern_match when one scores >= threshold
+shipwright triage pattern-match "build fails with pipefail"   # raw lookup, prints {} on no match
+```
+
+Similarity is a 0-100 composite: **70%** pattern coverage (how much of the known
+pattern the issue text covers), **20%** Jaccard overlap (stops a long issue body
+from matching everything), **10%** error-signature bonus (a shared token that
+reads like an error rather than prose).
+
+| Config key (`triage.pattern_matching.*`) | Default | Purpose |
+| --- | --- | --- |
+| `enabled` | `true` | Master switch; `false` makes the lookup a no-op |
+| `similarity_threshold` | `60` | Minimum score to surface a match |
+| `fleet_enabled` | `true` | Consult cross-repo `global.json` |
+| `fleet_score_penalty` | `10` | Points deducted from a fleet match |
+| `max_patterns_scanned` | `200` | Cap on patterns scanned per store |
+| `confidence_tiers.high` / `.medium` | `80` / `60` | Tier labels on the emitted match |
+
+Everything degrades to "no match, exit 0": a missing memory dir, corrupt JSON, an
+empty failure list, or no SHA tool on PATH.
+
+In the daemon, `triage_score_issue()` performs the same lookup but **keeps its
+bare-integer stdout contract** — call sites read it as `| tail -1`. The match is
+persisted to `~/.shipwright/triage-pattern-matches.json` keyed by issue number
+(and exported as `TRIAGE_PATTERN_MATCH` for same-shell callers); read it back with
+`triage_pattern_match_for <issue>`. A later poll with no match clears the stored
+entry rather than leaving a stale one.
+
 ## Constitutional AI
 
 Code quality principles are defined in `config/code-constitution.json`. The constitution provides machine-checkable rules across five categories:
@@ -723,7 +760,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-tmux.sh` | 625 | tmux Health & Plugin Management |
 | `scripts/sw-trace.sh` | 480 | E2E Traceability (Issue → Commit → PR → Deploy) |
 | `scripts/sw-tracker.sh` | 517 | Provider Router for Issue Tracker Integration |
-| `scripts/sw-triage.sh` | 812 | Intelligent Issue Labeling & Prioritization |
+| `scripts/sw-triage.sh` | 1063 | Intelligent Issue Labeling & Prioritization |
 | `scripts/sw-upgrade.sh` | 477 | Detect and apply updates from the repo |
 | `scripts/sw-ux.sh` | 685 | Premium UX Enhancement Layer |
 | `scripts/sw-webhook.sh` | 621 | GitHub Webhook Receiver for Instant Issue Processing |
@@ -850,7 +887,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-lib-daemon-patrol-test.sh` | 343 | Unit tests for all patrol functions |
 | `scripts/sw-lib-daemon-poll-test.sh` | 344 | Unit tests for poll, health, cleanup |
 | `scripts/sw-lib-daemon-state-test.sh` | 383 | Unit tests for state management |
-| `scripts/sw-lib-daemon-triage-test.sh` | 267 | Unit tests for triage scoring |
+| `scripts/sw-lib-daemon-triage-test.sh` | 302 | Unit tests for triage scoring |
 | `scripts/sw-lib-error-actionability-test.sh` | 213 |  |
 | `scripts/sw-lib-helpers-test.sh` | 229 | Unit tests for shared helper functions |
 | `scripts/sw-lib-pipeline-detection-test.sh` | 391 | Unit tests for detection fns |
@@ -924,7 +961,7 @@ All scripts are bash (except the dashboard server in TypeScript). Grouped by lay
 | `scripts/sw-trace-test.sh` | 143 | E2E traceability (Issue → Commit → PR → Deploy) |
 | `scripts/sw-tracker-providers-test.sh` | 552 | Unit tests for GitHub, Linear, |
 | `scripts/sw-tracker-test.sh` | 534 | Validate tracker router, providers, and |
-| `scripts/sw-triage-test.sh` | 249 | Intelligent Issue Labeling & Prioritization |
+| `scripts/sw-triage-test.sh` | 384 | Intelligent Issue Labeling & Prioritization |
 | `scripts/sw-upgrade-test.sh` | 334 | Validate upgrade detection and apply |
 | `scripts/sw-ux-test.sh` | 185 | Validate UX enhancement layer |
 | `scripts/sw-webhook-test.sh` | 167 | GitHub Webhook Receiver tests |

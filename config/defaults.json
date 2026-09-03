@@ -122,6 +122,16 @@
     "harness_gap": ["harness-gap", "shipwright"],
     "harness_gap_labels": "harness-gap,shipwright"
   },
+  "triage": {
+    "pattern_matching": {
+      "enabled": true,
+      "similarity_threshold": 60,
+      "fleet_enabled": true,
+      "fleet_score_penalty": 10,
+      "max_patterns_scanned": 200,
+      "confidence_tiers": { "high": 80, "medium": 60 }
+    }
+  },
   "limits": {
     "triage_issues": 100,
     "triage_unlabeled": 50,

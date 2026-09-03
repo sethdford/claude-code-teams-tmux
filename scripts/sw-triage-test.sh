@@ -244,6 +244,150 @@ else
     assert_fail "team offline without recruit uses heuristic defaults" "exit=$rc output=$(echo "$output" | tail -3)"
 fi
 
+# ─── Test 16-24: memory pattern matching ──────────────────────────────────
+echo ""
+echo -e "  ${CYAN}memory pattern matching${RESET}"
+
+# The git mock echoes "" for `git config`, so _triage_repo_hash always hashes
+# the literal "local" — deterministic across machines and CI runners.
+if command -v shasum >/dev/null 2>&1; then
+    REPO_HASH=$(printf 'local' | shasum -a 256 | cut -c1-12)
+else
+    REPO_HASH=$(printf 'local' | sha256sum | cut -c1-12)
+fi
+
+PAT_MEM_ROOT="$TEST_TEMP_DIR/mem"
+mkdir -p "$PAT_MEM_ROOT/$REPO_HASH"
+cat > "$PAT_MEM_ROOT/$REPO_HASH/failures.json" <<'FIXTURE'
+{"failures":[
+  {"stage":"build","pattern":"grep -c under pipefail produces double output in daemon dispatch","root_cause":"pipefail semantics","fix":"use || true with ${var:-0}","seen_count":4},
+  {"stage":"test","pattern":"mktemp directory creation failed on the CI runner","root_cause":"","fix":"","seen_count":2}
+]}
+FIXTURE
+cat > "$PAT_MEM_ROOT/global.json" <<'FIXTURE'
+{"common_patterns":[{"pattern":"stale pipeline lock blocks worktree cleanup","category":"general","source":"aggregate"}],"cross_repo_learnings":[]}
+FIXTURE
+
+pattern_match() { MEMORY_ROOT="$PAT_MEM_ROOT" bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "$@" 2>&1; }
+
+# Match: issue text overlapping a local failure pattern
+output=$(pattern_match "grep -c under pipefail produces double output") && rc=0 || rc=$?
+assert_eq "pattern-match exits 0 on a match" "0" "$rc"
+assert_eq "local pattern match reports source=local" "local" "$(echo "$output" | jq -r '.source')"
+match_score=$(echo "$output" | jq -r '.score')
+if [[ "${match_score:-0}" -ge 60 ]]; then
+    assert_pass "local pattern match scores at or above threshold (got $match_score)"
+else
+    assert_fail "local pattern match scores at or above threshold" "got: $match_score"
+fi
+assert_contains "match carries the captured fix as note" "$(echo "$output" | jq -r '.note')" "|| true"
+assert_eq "match confidence is a known tier" "true" \
+    "$(echo "$output" | jq -r '.confidence | . == "low" or . == "medium" or . == "high"')"
+
+# No match: unrelated issue text
+output=$(pattern_match "add a dark mode toggle to the account settings screen") && rc=0 || rc=$?
+assert_eq "pattern-match exits 0 on no match" "0" "$rc"
+assert_eq "unrelated text produces no match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+# Fleet: global.json pattern matches when fleet lookup is enabled
+output=$(pattern_match "stale pipeline lock blocks worktree cleanup")
+assert_eq "fleet pattern match reports source=fleet" "fleet" "$(echo "$output" | jq -r '.source')"
+
+# Fleet disabled: same text must not match
+output=$(SHIPWRIGHT_TRIAGE_PATTERN_MATCHING_FLEET_ENABLED=false MEMORY_ROOT="$PAT_MEM_ROOT" \
+    bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "stale pipeline lock blocks worktree cleanup" 2>&1)
+assert_eq "fleet_enabled=false suppresses the fleet match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+# Feature disabled entirely
+output=$(SHIPWRIGHT_TRIAGE_PATTERN_MATCHING_ENABLED=false MEMORY_ROOT="$PAT_MEM_ROOT" \
+    bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "grep -c under pipefail produces double output" 2>&1)
+assert_eq "enabled=false makes pattern matching a no-op" "{}" "$(echo "$output" | tr -d ' \n')"
+
+# Threshold is honoured: a very high threshold rejects an otherwise-good match
+output=$(SHIPWRIGHT_TRIAGE_PATTERN_MATCHING_SIMILARITY_THRESHOLD=99 MEMORY_ROOT="$PAT_MEM_ROOT" \
+    bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "grep -c under pipefail produces double output" 2>&1)
+assert_eq "threshold=99 rejects a 60-80 scoring match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+# ─── Graceful degradation ─────────────────────────────────────────────────
+echo ""
+echo -e "  ${CYAN}pattern matching degradation${RESET}"
+
+output=$(MEMORY_ROOT="$TEST_TEMP_DIR/no-such-memory-root" bash "$SCRIPT_DIR/sw-triage.sh" \
+    pattern-match "grep -c under pipefail produces double output" 2>&1) && rc=0 || rc=$?
+assert_eq "missing memory dir exits 0" "0" "$rc"
+assert_eq "missing memory dir yields no match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+CORRUPT_ROOT="$TEST_TEMP_DIR/corrupt-mem"
+mkdir -p "$CORRUPT_ROOT/$REPO_HASH"
+echo '{' > "$CORRUPT_ROOT/$REPO_HASH/failures.json"
+echo '{' > "$CORRUPT_ROOT/global.json"
+output=$(MEMORY_ROOT="$CORRUPT_ROOT" bash "$SCRIPT_DIR/sw-triage.sh" \
+    pattern-match "grep -c under pipefail produces double output" 2>&1) && rc=0 || rc=$?
+assert_eq "corrupt memory JSON exits 0" "0" "$rc"
+assert_eq "corrupt memory JSON yields no match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+EMPTY_ROOT="$TEST_TEMP_DIR/empty-mem"
+mkdir -p "$EMPTY_ROOT/$REPO_HASH"
+echo '{"failures":[]}' > "$EMPTY_ROOT/$REPO_HASH/failures.json"
+output=$(MEMORY_ROOT="$EMPTY_ROOT" bash "$SCRIPT_DIR/sw-triage.sh" \
+    pattern-match "grep -c under pipefail produces double output" 2>&1) && rc=0 || rc=$?
+assert_eq "empty failures list exits 0" "0" "$rc"
+assert_eq "empty failures list yields no match" "{}" "$(echo "$output" | tr -d ' \n')"
+
+# No SHA tool on PATH: the repo hash degrades to "local" instead of an empty
+# path segment, so the lookup misses cleanly rather than scanning MEMORY_ROOT.
+output=$(bash -c "source \"$SCRIPT_DIR/sw-triage.sh\"
+shasum()    { return 127; }
+sha256sum() { return 127; }
+_triage_repo_hash" 2>&1) && rc=0 || rc=$?
+assert_eq "absent SHA tool exits 0" "0" "$rc"
+assert_eq "absent SHA tool falls back to a 'local' repo hash" "local" "$output"
+
+output=$(MEMORY_ROOT="$PAT_MEM_ROOT" bash "$SCRIPT_DIR/sw-triage.sh" pattern-match "" 2>&1) && rc=0 || rc=$?
+assert_eq "pattern-match without text exits 1" "1" "$rc"
+assert_contains "pattern-match without text shows usage" "$output" "Usage: triage pattern-match"
+
+# ─── analyze JSON shape (AC4 backward compatibility) ──────────────────────
+echo ""
+echo -e "  ${CYAN}analyze output shape${RESET}"
+
+mkdir -p "$TEST_TEMP_DIR/ghbin"
+cat > "$TEST_TEMP_DIR/ghbin/gh" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "issue" && "${2:-}" == "view" ]]; then
+    echo "{\"title\":\"$SW_MOCK_ISSUE_TITLE\",\"body\":\"$SW_MOCK_ISSUE_BODY\",\"labels\":[{\"name\":\"bug\"}]}"
+    exit 0
+fi
+echo '[]'
+exit 0
+MOCK
+chmod +x "$TEST_TEMP_DIR/ghbin/gh"
+
+EXPECTED_KEYS='issue title type complexity risk effort suggested_labels existing_labels'
+
+# No-match analyze: key list must be identical to the pre-change output
+output=$(PATH="$TEST_TEMP_DIR/ghbin:$PATH" MEMORY_ROOT="$PAT_MEM_ROOT" NO_GITHUB="" \
+    SW_MOCK_ISSUE_TITLE="Add a dark mode toggle" \
+    SW_MOCK_ISSUE_BODY="Users want a dark mode toggle on the account settings screen" \
+    bash "$SCRIPT_DIR/sw-triage.sh" analyze 42 2>/dev/null) && rc=0 || rc=$?
+analyze_json=$(echo "$output" | sed -n '/^{/,$p')
+assert_eq "analyze exits 0 with a mocked issue" "0" "$rc"
+assert_eq "analyze no-match key list is unchanged" "$EXPECTED_KEYS" \
+    "$(echo "$analyze_json" | jq -r 'keys_unsorted | join(" ")')"
+
+# Match analyze: known_pattern_match appended, base keys still intact
+output=$(PATH="$TEST_TEMP_DIR/ghbin:$PATH" MEMORY_ROOT="$PAT_MEM_ROOT" NO_GITHUB="" \
+    SW_MOCK_ISSUE_TITLE="grep -c under pipefail produces double output" \
+    SW_MOCK_ISSUE_BODY="Seen again in daemon dispatch" \
+    bash "$SCRIPT_DIR/sw-triage.sh" analyze 43 2>/dev/null) && rc=0 || rc=$?
+analyze_json=$(echo "$output" | sed -n '/^{/,$p')
+assert_eq "analyze exits 0 on a pattern match" "0" "$rc"
+assert_eq "analyze match key list appends known_pattern_match" \
+    "$EXPECTED_KEYS known_pattern_match" \
+    "$(echo "$analyze_json" | jq -r 'keys_unsorted | join(" ")')"
+assert_eq "analyze known_pattern_match has all fields" "true" \
+    "$(echo "$analyze_json" | jq -r '.known_pattern_match | has("pattern") and has("source") and has("score") and has("confidence") and has("note")')"
+
 echo ""
 echo ""
 print_test_results
