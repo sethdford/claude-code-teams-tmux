@@ -1401,6 +1401,79 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "c604819fdd2e3cbea68ca8a8bd5fbbe8": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "medium",
+        "success_probability": 75,
+        "recommended_template": "standard",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Variable scope and bash export issues when splitting functions across modules",
+          "Undocumented interdependencies between storage/query/patrol subsystems causing integration failures",
+          "Subtle behavioral changes during refactoring detected only by comprehensive testing"
+        ],
+        "implementation_hints": [
+          "Create a function dependency map before splitting to identify which functions belong to each module",
+          "Extract modules incrementally, running full test suite after each extraction to catch regressions early",
+          "Keep sw-memory.sh dispatcher thin—it should only route calls to appropriate module functions",
+          "Verify all variable exports and scoping work correctly when functions are split across separate files"
+        ]
+      },
+      "timestamp": 1788484354,
+      "ttl": 3600
+    },
+    "17cdea3a250626dda17bd28e8d77f70e": {
+      "result": {
+        "estimated_iterations": 7
+      },
+      "timestamp": 1788484366,
+      "ttl": 1800
+    },
+    "a3f2acc9a1f4404d86b1f13c5951eb1c": {
+      "result": {
+        "estimated_cost_usd": 5.25,
+        "estimated_iterations": 3,
+        "estimated_tokens": 210000,
+        "likely_failure_stage": "test",
+        "confidence": 68
+      },
+      "timestamp": 1788484386,
+      "ttl": 3600
+    },
+    "63547bbaadf9ca8bd55a71171fcd82ff": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 80,
+            "summary": "Shows project type (Node/JavaScript), test runner (vitest), conventions (commonjs imports, src/ directory). Essential for understanding code organization during sw-memory.sh refactoring into modular components."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Multiple successful multi-file feature implementations with iterative approach show patterns for splitting large scripts into focused modules. Entry about auth feature with loop-based iterations and multiple file changes is most relevant."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 55,
+            "summary": "Contains test failure patterns and root causes (schema mismatches, stale locks, assertion failures). Provides debugging patterns and recovery strategies applicable when testing refactored sw-memory modules."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 45,
+            "summary": "Baseline metrics (build: 7095s, tests: 1459s) establish performance expectations that refactored sw-memory modules should maintain or improve, and inform testing scope during modularization."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 40,
+            "summary": "Contains failure patterns and fix strategies (mktemp directory issues, JSON output validation, test setup). Informs common pitfalls when creating new test suites for memory-store, memory-query, and memory-patrol modules."
+          }
+        ]
+      },
+      "timestamp": 1788484436,
+      "ttl": 1800
     }
   }
 }
