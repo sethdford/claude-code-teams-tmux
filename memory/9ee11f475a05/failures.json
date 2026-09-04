@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 27,
-      "last_seen": "2026-09-03T21:31:19Z",
+      "seen_count": 28,
+      "last_seen": "2026-09-04T00:01:15Z",
       "category": "test_failure"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test are failing (exit 1), likely due to real Claude/GitHub integration dependencies or environment assumptions not met in CI",
-      "fix": "Inspect the two failing suites' output directly to identify the assertion or missing dependency, and gate/skip integration tests requiring live credentials when unavailable",
+      "root_cause": "sw-e2e-integration-test failed because a prior pipeline lock (pipeline-4049) was left held, blocking the new run, while sw-intent-analysis-test failed because analyze_intent's output JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Release/clear stale pipeline locks before the e2e-integration test starts (or have the test suite reset lock state in setup), and update analyze_intent to emit version, goal, and criteria fields per the expected schema",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
