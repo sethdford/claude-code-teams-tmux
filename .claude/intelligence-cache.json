@@ -1401,6 +1401,166 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "d5f9ce926b21d7fb7f46ee1c183d9ce8": {
+      "result": {
+        "complexity": 8,
+        "risk_level": "high",
+        "success_probability": 78,
+        "recommended_template": "full",
+        "issue_type": "refactor",
+        "key_risks": [
+          "Breaking interdependent functions during module extraction",
+          "Test failures from incorrect module boundary identification",
+          "Circular dependencies between new lib files",
+          "Session restart logic regression after split",
+          "Context exhaustion detection becoming fragmented",
+          "Unintended behavior changes to sw-loop.sh CLI entrypoint",
+          "Integration breaks with other scripts that source sw-loop.sh functions"
+        ],
+        "implementation_hints": [
+          "Start with static analysis of all 2713 lines to map function dependencies and call graphs",
+          "Extract each module incrementally and run full test suite after each step",
+          "Keep sw-loop.sh as thin CLI router; move all logic to libraries following sw-lib-daemon-* pattern",
+          "Identify three natural boundaries: restart logic, context/exhaustion detection, prompt composition",
+          "Create corresponding test suites incrementally (sw-lib-loop-restart-test.sh, etc.)",
+          "Document inter-module dependencies explicitly and audit for hidden couplings",
+          "Consider creating sw-lib-loop-common.sh for shared utilities to reduce duplication",
+          "Use consistent naming and update all source directives in dependent scripts"
+        ]
+      },
+      "timestamp": 1788484072,
+      "ttl": 3600
+    },
+    "156c11ed8338c9640f198e094f7a0b4a": {
+      "result": {
+        "estimated_iterations": 17
+      },
+      "timestamp": 1788484087,
+      "ttl": 1800
+    },
+    "287d5c146705d326c975b8fb5875c444": {
+      "result": {
+        "estimated_cost_usd": 9.50,
+        "estimated_iterations": 5,
+        "estimated_tokens": 950000,
+        "likely_failure_stage": "test",
+        "confidence": 75
+      },
+      "timestamp": 1788484098,
+      "ttl": 3600
+    },
+    "900b34697b42c2c5f43f98a48ed7eaa3": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Pattern showing successful modifications to loop-related files (.claude/loop-state.md, .claude/loop-logs) and scripts/lib/*.sh with iterative TDD approach across 3 iterations. Directly applicable to sw-loop.sh refactoring strategy."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 75,
+            "summary": "Captures project conventions: Node.js, vitest test runner, commonjs imports, src/ source directory. Essential context for planning code organization and testing strategy for the refactored modules."
+          },
+          {
+            "file": "failures.json",
+            "relevance": 68,
+            "summary": "Contains multiple loop-related test failures including 'loop behavior: iterations on test failure' pattern and repeated-error-loop detector issues. Identifies potential gotchas in loop logic that should inform modularization boundaries."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 62,
+            "summary": "Shows model_escalation strategy achieves 100% success rate (5/5) for complex build failures. Relevant for planning if refactoring requires multiple iterations or escalation due to complexity."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 55,
+            "summary": "Baseline metrics (build: 7095s, test: 1459s) provide context for estimating refactoring impact and planning module testing scope. Useful for complexity assessment."
+          }
+        ]
+      },
+      "timestamp": 1788484151,
+      "ttl": 1800
+    },
+    "6808cda09502783cb7b8069fd178a569": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Contains 8+ documented test failures including sw-loop-test, sw-e2e-integration-test, and sw-intent-analysis-test with root causes (stale locks, schema issues, timeouts). Directly applicable to understanding what plan validation failures to expect when refactoring sw-loop.sh, as the build loop integration is heavily tested."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 68,
+            "summary": "Captures test infrastructure failure patterns including mktemp directory issues and test setup problems. Relevant for understanding what test harness issues might arise during sw-loop.sh modularization and how to avoid them."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 42,
+            "summary": "Provides baseline build duration (7095s) and test duration (1459s) metrics. Useful reference for performance expectations and detecting if the refactoring introduces unexpected performance regressions in the loop stages."
+          }
+        ]
+      },
+      "timestamp": 1788484372,
+      "ttl": 1800
+    },
+    "e9af332e8d088254c89444d8f1c8e42e": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Pattern 'add auth module' demonstrates successful TDD approach with module isolation across 2 files (src/auth.ts, test/auth.test.ts) — directly applicable to splitting monolithic sw-loop.sh into focused modules (build-loop-core, build-loop-restart, build-loop-context)"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 75,
+            "summary": "Multiple entries document build-loop iteration behavior, timeouts, and stale state issues. Entry about 'sw-e2e-integration-test hung mid build-loop iteration' reveals critical failure modes and recovery needs for build-loop architecture — essential for designing robust restart/context modules"
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 65,
+            "summary": "Pattern 'Fix bug' with 3 iterations across multiple files (.claude/*.json, .claude/loop-logs/*.log, scripts/lib/*.sh) shows successful multi-file refactoring strategy and testing approach applicable to complex architectural splits"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 55,
+            "summary": "Issue 'Fix timeout bug in daemon' with semaphore-based solution (scripts/sw-daemon.sh, scripts/lib/daemon-dispatch.sh) demonstrates synchronization patterns for related shell system — build-loop may need similar coordination between core/restart/context modules"
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 40,
+            "summary": "Project metadata (Node.js, vitest, commonjs) and test patterns establish baseline conventions that should constrain module naming, import styles, and test organization during sw-loop.sh refactoring"
+          }
+        ]
+      },
+      "timestamp": 1788484416,
+      "ttl": 1800
+    },
+    "c3443ecfa718aef889fc184328f83b7c": {
+      "result": {
+        "results": [
+          {
+            "file": "patterns.json",
+            "relevance": 70,
+            "summary": "Project structure and conventions (Node/JavaScript, test patterns, commonjs imports, src/ directory) inform how modularized components of sw-loop.sh should be organized and tested"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 50,
+            "summary": "Multiple sw-loop-test and sw-e2e-integration-test failures reveal anti-patterns: stale state artifacts (pipeline locks), schema/test mismatches, false positives from log parsing — issues that refactoring must avoid by ensuring proper module isolation and clean state handoff"
+          },
+          {
+            "file": "issues.json",
+            "relevance": 45,
+            "summary": "Daemon timeout fix with 'check backoff' gotcha and scripts/lib organization pattern demonstrates complexity of managing state across modular shell scripts; relevant to designing build-loop module boundaries"
+          }
+        ]
+      },
+      "timestamp": 1788484435,
+      "ttl": 1800
     }
   }
 }
