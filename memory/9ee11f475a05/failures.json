@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 35,
-      "last_seen": "2026-09-04T17:43:59Z",
+      "seen_count": 37,
+      "last_seen": "2026-09-04T20:43:30Z",
       "category": "test_failure"
     },
     {
@@ -85,8 +85,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[2mexpected stuckness or circuit breaker; last 15 lines: INSTRUCTION: This error has occurred 19 times. The previous approach is not working. Try a FUNDAMENTALLY DIFFERENT approach:|- If you were mod",
-      "root_cause": "Circuit breaker tripped: the same test-stage failure repeated 19 times with no code change breaking the loop, indicating the build/test loop is stuck retrying an ineffective fix rather than a genuine assertion failure",
-      "fix": "Stop the loop, inspect the actual last failing assertion (not the circuit-breaker wrapper text) and change strategy per progress.md/error-summary.json instead of re-running the same fix; increase context_restart_limit or force a session restart with fresh context if iterations are exhausting without progress",
+      "root_cause": "sw-intent-analysis-test and sw-loop-test fail repeatedly with exit 1, and the build loop is stuck retrying the same fix without varying its approach",
+      "fix": "Read full failure output for sw-intent-analysis-test and sw-loop-test directly, isolate the specific failing assertion, and patch the underlying code/test instead of re-running the same loop iteration",
       "seen_count": 1,
       "last_seen": "2026-09-04T16:50:03Z",
       "category": "flaky"
