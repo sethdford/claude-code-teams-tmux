@@ -1401,6 +1401,131 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "9c674c638a641911410845febbe8196e": {
+      "result": {
+        "complexity": 4,
+        "risk_level": "low",
+        "success_probability": 87,
+        "recommended_template": "standard",
+        "issue_type": "testing",
+        "key_risks": [
+          "Over-validation that rejects valid builds with unusual but legitimate configurations",
+          "Unclear detection of 'package manifest exists if applicable' without project type inference",
+          "Error message clarity and actionability for users unfamiliar with validation rules",
+          "Integration with existing error-log.jsonl schema and failure categorization"
+        ],
+        "implementation_hints": [
+          "Create validate_build_preconditions() function running before iteration 1; check: (1) test command resolves via which/command -v, (2) package manifest file exists (package.json, pom.xml, go.mod, etc.), (3) goal/spec is non-empty string",
+          "Log validation failures to error-log.jsonl with distinct type 'pre_build_validation_failure' separate from 'build_failure'",
+          "Add unit tests to sw-loop-test.sh: test_pre_build_validation_pass(), test_pre_build_validation_missing_test_cmd(), test_pre_build_validation_missing_manifest(), test_pre_build_validation_empty_goal()",
+          "Ensure validation failure returns early without loop iteration counter increment; use structured JSON error output with actionable message (e.g. 'test command not found: npm' or 'package.json not found in project root')"
+        ]
+      },
+      "timestamp": 1788484273,
+      "ttl": 3600
+    },
+    "0515e08d7b2ff8b882a2b579881c54eb": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1788484283,
+      "ttl": 1800
+    },
+    "e2cac3f387b5badec243c07fb6bb3a17": {
+      "result": {
+        "estimated_cost_usd": 0.42,
+        "estimated_iterations": 1.3,
+        "estimated_tokens": 44000,
+        "likely_failure_stage": "test",
+        "confidence": 78,
+        "breakdown": {
+          "intake": {
+            "cost": 0.01,
+            "tokens": 2000,
+            "time_minutes": 1
+          },
+          "plan": {
+            "cost": 0.02,
+            "tokens": 3200,
+            "time_minutes": 2
+          },
+          "design": {
+            "cost": 0.03,
+            "tokens": 4000,
+            "time_minutes": 3
+          },
+          "build": {
+            "cost": 0.18,
+            "tokens": 16000,
+            "time_minutes": 12
+          },
+          "test": {
+            "cost": 0.10,
+            "tokens": 9000,
+            "time_minutes": 6
+          },
+          "review": {
+            "cost": 0.07,
+            "tokens": 7200,
+            "time_minutes": 4
+          },
+          "pr": {
+            "cost": 0.01,
+            "tokens": 2600,
+            "time_minutes": 1
+          }
+        },
+        "risk_factors": [
+          "Validation logic edge cases in unusual project configs",
+          "Test coverage completeness for all manifest types",
+          "Error message clarity for end users"
+        ],
+        "template": "standard",
+        "model_routing": {
+          "intake": "haiku",
+          "plan": "sonnet",
+          "build": "opus",
+          "test": "sonnet",
+          "review": "opus",
+          "pr": "haiku"
+        }
+      },
+      "timestamp": 1788484296,
+      "ttl": 3600
+    },
+    "6de3861f0913b15fb079e4bb3b217148": {
+      "result": {
+        "results": [
+          {
+            "file": "failures.json",
+            "relevance": 90,
+            "summary": "Contains detailed test and loop failure patterns (stale pipeline locks, schema validation failures, timeout issues, repeated error loops). Directly informs what constitutes 'obviously invalid build targets' and what upstream checks would prevent wasted loop iterations."
+          },
+          {
+            "file": "success-patterns.json",
+            "relevance": 80,
+            "summary": "Shows patterns from successful features with iteration counts (3-5 iterations typical), loop behavior recovery, and audit cleanup strategies. Provides baseline understanding of how the build loop currently handles failures iteratively."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 72,
+            "summary": "Demonstrates current build_failure handling via model_escalation with 100% success rate. Clarifies what validation should prevent by catching issues before the retry/escalation pathway."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 68,
+            "summary": "Establishes baseline costs: build_duration_s=7095, test_duration_s=1459. Quantifies the expense of wasted iterations and justifies pre-validation investment."
+          },
+          {
+            "file": "patterns.json",
+            "relevance": 62,
+            "summary": "Project metadata (Node/vitest/npm/javascript, commonjs imports). Establishes context for understanding what 'build targets' means in this specific codebase and informs validation design."
+          }
+        ]
+      },
+      "timestamp": 1788484465,
+      "ttl": 1800
     }
   }
 }
