@@ -1401,6 +1401,82 @@
       },
       "timestamp": 1775344537,
       "ttl": 3600
+    },
+    "5232173d53e8572f56450c54561a20ef": {
+      "result": {
+        "complexity": 6,
+        "risk_level": "low",
+        "success_probability": 82,
+        "recommended_template": "standard",
+        "issue_type": "infrastructure",
+        "key_risks": [
+          "Incomplete or malformed event data in events.jsonl",
+          "Difficulty matching pipelines with identical parameters across continuity on/off runs",
+          "Insufficient sample size for statistical significance",
+          "Cost tracking inconsistencies between session types"
+        ],
+        "implementation_hints": [
+          "Query events.jsonl grouped by issue/goal/template, partition by LOOP_SESSION_CONTINUITY env var or flag",
+          "For matched cohorts, calculate: avg iterations-to-completion, restart frequency, total tokens, wall-clock time",
+          "Compute deltas with 95% CI; flag results with n<10 as preliminary",
+          "Add --session-continuity-report to shipwright loop or cost show subcommand",
+          "Mock cohort data in tests: success paths, partial failures, restarts, context exhaustion recovery",
+          "Document methodology in STRATEGY.md (sample matching criteria, metric definitions, minimum cohort size)"
+        ]
+      },
+      "timestamp": 1788484381,
+      "ttl": 3600
+    },
+    "4b429b8fc6a7027f4de6336fd4d2ce3c": {
+      "result": {
+        "estimated_iterations": 3
+      },
+      "timestamp": 1788484392,
+      "ttl": 1800
+    },
+    "8eeb76642f6949b53c5a9a5f40702515": {
+      "result": {
+        "estimated_cost_usd": 5.2,
+        "estimated_iterations": 3,
+        "estimated_tokens": 62000,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1788484401,
+      "ttl": 3600
+    },
+    "d52fcffbcb9528462fe8659e2b15adb8": {
+      "result": {
+        "results": [
+          {
+            "file": "success-patterns.json (multi-pattern version with Fix timeout/bug/auth)",
+            "relevance": 95,
+            "summary": "Contains captured success patterns with cost_usd, iterations_needed, complexity, duration_s, and success_rate metrics. Directly shows cost/iteration relationships needed to baseline session-continuity cost/success comparison."
+          },
+          {
+            "file": "retry-outcomes.json",
+            "relevance": 85,
+            "summary": "Tracks retry strategy outcomes with success_rate (100% in this case). Shows model_escalation strategy effectiveness, providing reference data for comparing session-continuity impact on convergence and success rates."
+          },
+          {
+            "file": "failures.json (comprehensive version with test patterns)",
+            "relevance": 75,
+            "summary": "Documents test failure patterns, flakiness, timeouts, and root causes. Relevant because session continuity may affect error recovery, iteration behavior, and failure rates compared to cold-start baseline."
+          },
+          {
+            "file": "metrics.json",
+            "relevance": 70,
+            "summary": "Provides baseline metrics: build_duration_s (7095) and test_duration_s (1459). Establishes performance baseline needed to measure cost/duration delta between session-continuity modes."
+          },
+          {
+            "file": "knowledge.json",
+            "relevance": 60,
+            "summary": "Captures failure patterns with error signatures, fix strategies, and effectiveness rates. Provides historical context on failure modes and fix success rates that could vary under session continuity."
+          }
+        ]
+      },
+      "timestamp": 1788484443,
+      "ttl": 1800
     }
   }
 }
