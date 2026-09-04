@@ -6,7 +6,7 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 28,
-      "last_seen": "2026-09-03T23:58:30Z",
+      "last_seen": "2026-09-03T23:52:37Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 6,
-      "last_seen": "2026-09-03T22:47:49Z",
+      "seen_count": 7,
+      "last_seen": "2026-09-04T00:30:07Z",
       "category": "flaky"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-loop-test's stuckness detector, sw-intent-analysis-test's schema check, and sw-e2e-integration-test's stale pipeline lock are unrelated pre-existing failures unmasked in this run, not a regression from current changes",
-      "fix": "release/clear the stale pipeline-4047 lock before the e2e test, fix analyze_intent to emit version/goal/criteria fields, and debug the loop stuckness-detection assertion in sw-loop-test",
+      "root_cause": "sw-pipeline.sh stages (plan/review) are not writing plan.md/review.md artifacts to .claude/pipeline-artifacts/, likely a broken path or mocked claude CLI output not being redirected correctly",
+      "fix": "Verify pipeline_stage_plan/pipeline_stage_review write output to $PIPELINE_ARTIFACTS_DIR/plan.md and review.md respectively, and fix jq parse errors on non-numeric complexity values",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
