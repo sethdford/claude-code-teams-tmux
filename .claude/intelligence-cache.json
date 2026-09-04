@@ -1406,29 +1406,28 @@
     },
     "d69f22dc346aed06db53be1cb187f5fd": {
       "result": {
-        "complexity": 5,
+        "complexity": 4,
         "risk_level": "medium",
-        "success_probability": 78,
+        "success_probability": 82,
         "recommended_template": "standard",
         "issue_type": "infrastructure",
         "key_risks": [
-          "Pattern matching false positives could flag unrelated issues due to overly broad pattern criteria",
-          "Memory system availability/format changes could break pattern lookups if sw-memory.sh evolves",
-          "Fleet mode detection edge cases (single vs multi-repo) require careful conditional logic",
-          "Performance regression if memory queries are not cached/batched during daemon polling",
-          "Backward compatibility constraint: must preserve triage output format when no pattern matches"
+          "Memory file corruption or missing files causing triage failures",
+          "Performance degradation if fleet memory lookups are not cached",
+          "Fleet mode detection logic breaking in edge cases",
+          "Integration with sw-memory.sh pattern store failing silently",
+          "Backward compatibility broken if output format changes unexpectedly"
         ],
         "implementation_hints": [
-          "Study sw-memory.sh pattern store structure first (read/understand existing format before querying)",
-          "Implement graceful degradation: log warnings but continue if memory lookup fails or fleet is disabled",
-          "Create reusable pattern_match_score() helper function for issue-to-pattern matching logic",
-          "Cache memory patterns at daemon startup or use lightweight lookup to avoid per-issue queries",
-          "Add fleet mode detection via .claude/fleet-config.json or env vars with clear fallback to single-repo mode",
-          "Conditional output: consider whether known_pattern_match field is always present or only on matches",
-          "Write tests for both memory hit (matching pattern found) and miss (no match or no fleet) scenarios"
+          "Leverage existing sw-memory.sh triage_pattern_match_for() function for lookups",
+          "Add fleet_enabled flag check before attempting fleet-wide pattern queries",
+          "Cache memory pattern results to avoid repeated file I/O during batch triage scoring",
+          "Return graceful null/empty for known_pattern_match field when no match found",
+          "Add separate test cases for: local-only match, fleet match, no match, disabled fleet mode",
+          "Consider adding timeout on fleet lookups to prevent triage blocking on slow disk I/O"
         ]
       },
-      "timestamp": 1788472297,
+      "timestamp": 1788484010,
       "ttl": 3600
     },
     "857a280b420245626d3bb4ca00f0da4a": {
@@ -1569,21 +1568,21 @@
           {
             "file": "fleet-patterns.json",
             "relevance": 95,
-            "summary": "Explicitly designed for cross-repo pattern storage. Name and structure directly match 'cross-repo memory pattern query' requirement. Recently updated (2026-09-03), currently empty but framework is in place for fleet-level pattern queries."
-          },
-          {
-            "file": "fleet-knowledge.json",
-            "relevance": 85,
-            "summary": "Fleet-level knowledge system with metrics tracking for cross-repo learning. Contains query count, injection count, and match metrics—directly relevant to understanding how patterns are queried and used across repos in daemon triage."
+            "summary": "Directly captures cross-repo patterns used by daemon triage for pattern matching and scoring. Current empty state suggests this is where the pattern query mechanism looks for matches."
           },
           {
             "file": "failures.json",
-            "relevance": 75,
-            "summary": "Contains failure signatures and patterns with fix recommendations and effectiveness rates. Relevant to understanding what validation failures might occur and how pattern injection affects outcomes—critical for debugging rejected plan validation."
+            "relevance": 88,
+            "summary": "Contains failure signatures with fix recommendations that daemon triage scoring uses to match incoming issues. Shows actual captured failure patterns with effectiveness rates crucial for triage decisions."
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 82,
+            "summary": "Contains full pattern metadata (complexity, iterations, approach, test_strategy) that informs cross-repo pattern matching and helps triage scoring evaluate issue complexity and likelihood of success."
           }
         ]
       },
-      "timestamp": 1788472665,
+      "timestamp": 1788484265,
       "ttl": 1800
     },
     "55c1d3093c4997d83ec655188204cd18": {
@@ -1591,55 +1590,55 @@
         "results": [
           {
             "file": "fleet-patterns.json",
-            "relevance": 98,
-            "summary": "Core cross-repo pattern query data structure. Shows versioning, update tracking, and patterns array — the primary API contract for surfacing patterns in daemon triage."
+            "relevance": 100,
+            "summary": "Cross-repo pattern storage structure—directly implements the core data model for daemon triage pattern queries across repositories"
           },
           {
             "file": "fleet-knowledge.json",
-            "relevance": 96,
-            "summary": "Cross-repo knowledge base interface with query metrics (total_queries, total_matches, total_injections). Essential for designing the daemon triage scoring integration and effectiveness tracking."
+            "relevance": 95,
+            "summary": "Cross-repo knowledge tracking with metrics (total_queries, total_matches, total_injections)—shows query/scoring interface and KPIs for pattern matching"
           },
           {
-            "file": "success-patterns.json (test1)",
-            "relevance": 88,
-            "summary": "Comprehensive success pattern data model showing goal, complexity, iterations, files_changed, approach, cost, seen_count — defines the pattern entity structure needed for queries."
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 85,
+            "summary": "Full success pattern schema with goal, complexity, files_changed, stages_executed, cost_usd—primary data model queried during triage scoring"
           },
           {
             "file": "failures.json",
-            "relevance": 82,
-            "summary": "Failure pattern structure with signature, fix, fix_effectiveness_rate, and category. Shows alternative pattern type design for comprehensive pattern querying across failure/success domains."
+            "relevance": 80,
+            "summary": "Failure pattern structure with signature, fix effectiveness rate, and seen_count—essential complement to success patterns for risk-based triage scoring"
           },
           {
             "file": "index.json",
             "relevance": 75,
-            "summary": "Pattern indexing structure with signature, stage, pattern_type, total_seen, and sources. Relevant for designing the query/discovery interface and multi-source pattern aggregation."
+            "summary": "Pattern indexing by signature, stage, and type with source tracking—provides query structure and fast lookup architecture for triage pattern matching"
           }
         ]
       },
-      "timestamp": 1788472712,
+      "timestamp": 1788484305,
       "ttl": 1800
     },
     "3300b4ece323283cc61580979e51c1ed": {
       "result": {
         "results": [
           {
-            "file": "fleet-patterns.json",
-            "relevance": 100,
-            "summary": "Directly addresses cross-repo pattern storage for fleet operations; structure informs what cross-repo query design should support. Updated today (2026-09-03), making it the most current reference for daemon triage pattern patterns."
-          },
-          {
-            "file": "fleet-knowledge.json",
-            "relevance": 92,
-            "summary": "Defines cross-repo knowledge base with publish/query/match/injection metrics essential for scoring triage decisions. Shows what data structures support fleet-wide pattern queries and effectiveness tracking."
+            "file": "failures.json",
+            "relevance": 95,
+            "summary": "Directly captures anti-patterns and rejected approaches with signatures, root causes, and fix effectiveness rates—core data for identifying what not to do in triage scoring"
           },
           {
             "file": "index.json",
-            "relevance": 78,
-            "summary": "Demonstrates pattern indexing schema (signature, stage, pattern_type, sources) critical for designing efficient cross-repo pattern queries in daemon triage. Shows categorization strategy for fast lookup."
+            "relevance": 80,
+            "summary": "Pattern signature index with stage, type, and fix metadata enables cross-repo pattern discovery and matching for daemon triage scoring"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 75,
+            "summary": "Well-structured patterns with goal, complexity, file patterns, stages, and approaches provide queryable cross-repo reference data for pattern matching"
           }
         ]
       },
-      "timestamp": 1788472734,
+      "timestamp": 1788484320,
       "ttl": 1800
     },
     "56bb13c3dcfe33fbbbc596481047bb3b": {
@@ -1712,14 +1711,14 @@
       "result": {
         "raw_response": "Mock claude response"
       },
-      "timestamp": 1788473201,
+      "timestamp": 1788484109,
       "ttl": 3600
     },
     "2000118dcb7e70c0d0f8fb25fc73e1b6": {
       "result": {
         "raw_response": "Mock claude response"
       },
-      "timestamp": 1788473202,
+      "timestamp": 1788484109,
       "ttl": 3600
     },
     "65da5d9db317f9319ecebc8e2347693e": {
@@ -2024,6 +2023,57 @@
         }
       ],
       "timestamp": 1788476442,
+      "ttl": 1800
+    },
+    "c48be39797651f804e5b0b178ea45f8b": {
+      "result": {
+        "estimated_iterations": 4
+      },
+      "timestamp": 1788484022,
+      "ttl": 1800
+    },
+    "20e6483b4936fbc71e12f9cafe714b96": {
+      "result": {
+        "estimated_cost_usd": 3.25,
+        "estimated_iterations": 2,
+        "estimated_tokens": 24500,
+        "likely_failure_stage": "test",
+        "confidence": 72
+      },
+      "timestamp": 1788484034,
+      "ttl": 3600
+    },
+    "c1407572f7af57e3833c63e15be4a0e8": {
+      "result": {
+        "results": [
+          {
+            "file": "index.json",
+            "relevance": 95,
+            "summary": "Pattern indexing structure with signature-based lookup, stage filtering, and pattern type classification — directly enables cross-repo pattern querying for daemon triage scoring"
+          },
+          {
+            "file": "failures.json",
+            "relevance": 92,
+            "summary": "Failure pattern signatures with fixes and effectiveness rates — core data structure that daemon triage uses to match incoming issues against known failure patterns"
+          },
+          {
+            "file": "fleet-patterns.json",
+            "relevance": 85,
+            "summary": "Cross-repo pattern storage with versioning and timestamps — provides structure for querying patterns across multiple repositories in fleet-wide triage"
+          },
+          {
+            "file": "success-patterns.json (test-repo-ranking)",
+            "relevance": 78,
+            "summary": "Detailed pattern structure with repo_hash, complexity, file_patterns, and injection tracking — shows how patterns are stored and keyed for cross-repo matching"
+          },
+          {
+            "file": "fleet-knowledge.json",
+            "relevance": 72,
+            "summary": "Cross-repo knowledge metrics (query counts, match rates, injection tracking) — relevant for understanding how pattern queries are used and their effectiveness in daemon triage"
+          }
+        ]
+      },
+      "timestamp": 1788484079,
       "ttl": 1800
     }
   }
