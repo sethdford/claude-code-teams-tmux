@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 31,
-      "last_seen": "2026-09-04T05:57:14Z",
+      "seen_count": 33,
+      "last_seen": "2026-09-04T07:30:31Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 3,
-      "last_seen": "2026-09-03T01:12:34Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-04T05:17:52Z",
       "category": "test_failure"
     },
     {
@@ -67,8 +67,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Progress detects repeated error loop... \u001b[38;2;74;222;128m✓\u001b[0m",
-      "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-4094) was already held, so the fast pipeline run aborted with 'already in progress'; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
-      "fix": "Ensure e2e integration test cleans up/releases any pre-existing pipeline lock before starting (or use a unique lock per run), and update analyze_intent to emit version, goal, and criteria fields per the schema",
+      "root_cause": "Cross-repo memory promotion test fails because the copied pattern's repo-hash-scoped path or confidence threshold check doesn't match between source and destination memory stores",
+      "fix": "Verify the promotion function correctly namespaces the destination repo hash and preserves/reduces confidence score per promotion rules before copy",
       "seen_count": 1,
       "last_seen": "2026-09-03T13:22:58Z",
       "category": "test_failure"
