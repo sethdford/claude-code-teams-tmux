@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 41,
-      "last_seen": "2026-09-05T02:14:51Z",
+      "seen_count": 43,
+      "last_seen": "2026-09-05T06:05:10Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 4,
-      "last_seen": "2026-09-04T08:39:47Z",
+      "seen_count": 5,
+      "last_seen": "2026-09-05T06:41:40Z",
       "category": "test_failure"
     },
     {
@@ -103,11 +103,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m audit_log_passed rejects a CLI error log",
-      "root_cause": "Test title truncated mid-name in log capture, but visible output shows only PASS lines with 0 FAIL across all suites — the named failing test 'audit_log_passed rejects a CLI error log' did not actually produce a failure in the captured log excerpt",
-      "fix": "Re-run the specific test file containing 'audit_log_passed rejects a CLI error log' in isolation and capture full stderr/stdout to confirm whether it is a genuine assertion failure or a flaky/ANSI-color parsing artifact in the log grep",
+      "root_cause": "sw-e2e-integration-test hung mid-run (last log line shows loop iteration 1/3 stuck after cleanup/issue-closing) and exceeded the 300s suite timeout, causing the overall test stage to fail",
+      "fix": "add an internal timeout/kill-switch inside sw-e2e-integration-test around the Claude CLI invocation, or increase the suite timeout and investigate why iteration 1 never completes after 'Cleanup complete' is logged",
       "seen_count": 1,
       "last_seen": "2026-09-05T03:04:21Z",
-      "category": "flaky"
+      "category": "timeout"
     }
   ]
 }
