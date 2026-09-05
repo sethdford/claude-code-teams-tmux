@@ -6,7 +6,7 @@
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
       "seen_count": 47,
-      "last_seen": "2026-09-05T13:39:20Z",
+      "last_seen": "2026-09-05T13:52:14Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 11,
-      "last_seen": "2026-09-05T14:31:27Z",
+      "seen_count": 10,
+      "last_seen": "2026-09-05T09:45:24Z",
       "category": "flaky"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 5,
-      "last_seen": "2026-09-05T06:41:40Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-05T14:25:52Z",
       "category": "test_failure"
     },
     {
@@ -103,8 +103,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m audit_log_passed rejects a CLI error log",
-      "root_cause": "sw-audit-log-test.sh checkmark for 'audit_log_passed rejects a CLI error log' printed but suite likely has a mismatched/duplicated assertion causing downstream count or state divergence in the audit log validator",
-      "fix": "inspect sw-audit-log-test.sh assertion for 'rejects a CLI error log' and the audit_log_passed function to confirm it correctly returns non-zero for CLI error logs, then align expected/actual comparison",
+      "root_cause": "audit_log_passed test expects rejection of a CLI error log entry but assertion truncated in captured output before pass/fail resolved",
+      "fix": "Verify audit_log_passed correctly parses CLI error-log JSON schema and rejects entries with error status per sw_error_log_accessor",
       "seen_count": 1,
       "last_seen": "2026-09-05T03:04:21Z",
       "category": "test_failure"
