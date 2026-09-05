@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 48,
-      "last_seen": "2026-09-05T17:25:22Z",
+      "seen_count": 47,
+      "last_seen": "2026-09-05T13:52:14Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 12,
-      "last_seen": "2026-09-05T18:05:39Z",
+      "seen_count": 11,
+      "last_seen": "2026-09-05T15:58:03Z",
       "category": "flaky"
     },
     {
@@ -96,17 +96,26 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "sw-pipeline-test.sh mock plan-stage invocation no longer writes plan.md, cascading into review/E2E/resume/cleanup failures that depend on it, plus a jq parse error on a non-numeric complexity value in the intelligence low-complexity test",
       "fix": "Fix the mock plan stage in sw-pipeline-test.sh to create .claude/pipeline-artifacts/plan.md (and dod.md) before the dependent tests run, and quote/validate the complexity value before passing it to jq",
-      "seen_count": 2,
-      "last_seen": "2026-09-05T10:57:25Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-05T16:40:00Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m audit_log_passed rejects a CLI error log",
-      "root_cause": "sw-intent-analysis-test failed an assertion in 'audit_log_passed rejects a CLI error log' (exit 1), likely due to a mismatch between expected and actual audit log validation logic for CLI-sourced error entries",
-      "fix": "Run scripts/sw-intent-analysis-test.sh locally, inspect the failing assertion output for audit_log_passed, and fix the validation logic or update the test fixture to match the current error-log schema",
+      "root_cause": "Test suite has 6 failing pipeline stage-artifact tests (plan.md/review.md not found, jq parse errors on non-numeric complexity value) unrelated to the named audit_log test, indicating a mock/fixture regression in sw-pipeline-test.sh's artifact generation and complexity intelligence output",
+      "fix": "Fix mock stage scripts to actually write plan.md/review.md artifacts and ensure complexity value is emitted as valid JSON number before jq parses it",
       "seen_count": 1,
       "last_seen": "2026-09-05T03:04:21Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
+      "root_cause": "Memory promotion test expects cross-repo pattern copy but the source/target memory paths or repo-hash keying don't match, so promotion finds nothing to copy",
+      "fix": "Verify the mock memory dir structure matches the repo-hash naming self-optimize expects and that the promotion function's source lookup path is correct in the test fixture",
+      "seen_count": 2,
+      "last_seen": "2026-09-05T17:44:35Z",
       "category": "test_failure"
     }
   ]
