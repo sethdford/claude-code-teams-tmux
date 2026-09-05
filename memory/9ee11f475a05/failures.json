@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 45,
-      "last_seen": "2026-09-05T10:19:36Z",
+      "seen_count": 46,
+      "last_seen": "2026-09-05T14:33:27Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 10,
-      "last_seen": "2026-09-05T09:45:24Z",
+      "seen_count": 11,
+      "last_seen": "2026-09-05T12:50:22Z",
       "category": "flaky"
     },
     {
@@ -96,15 +96,15 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "sw-pipeline-test.sh mock plan-stage invocation no longer writes plan.md, cascading into review/E2E/resume/cleanup failures that depend on it, plus a jq parse error on a non-numeric complexity value in the intelligence low-complexity test",
       "fix": "Fix the mock plan stage in sw-pipeline-test.sh to create .claude/pipeline-artifacts/plan.md (and dod.md) before the dependent tests run, and quote/validate the complexity value before passing it to jq",
-      "seen_count": 2,
-      "last_seen": "2026-09-05T10:57:25Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-05T13:25:48Z",
       "category": "test_failure"
     },
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m audit_log_passed rejects a CLI error log",
-      "root_cause": "Memory promotion logic fails to correctly copy cross-repo patterns, likely due to a path/schema mismatch introduced by unrelated changes in sw-self-optimize.sh",
-      "fix": "Inspect the 'Memory promotion copies cross-repo patterns' test assertion and the promote_cross_repo_pattern function for mismatched file paths or JSON schema fields, then align them",
+      "root_cause": "sw-intent-analysis-test failed because an audit_log assertion expects rejection of a CLI error log entry but the audit_log_passed logic misclassifies it",
+      "fix": "Fix the audit_log_passed validation in sw-intent-analysis-test.sh (or the lib it exercises) to properly reject CLI error log entries per the test's expected schema",
       "seen_count": 1,
       "last_seen": "2026-09-05T03:04:21Z",
       "category": "test_failure"
