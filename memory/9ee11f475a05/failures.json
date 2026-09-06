@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 50,
-      "last_seen": "2026-09-06T03:25:38Z",
+      "seen_count": 54,
+      "last_seen": "2026-09-06T06:55:38Z",
       "category": "test_failure"
     },
     {
@@ -121,11 +121,11 @@
     {
       "stage": "test",
       "pattern": "▸ Outcome analysis rejects missing file... ✓",
-      "root_cause": "Test suite output was truncated/malformed in the log capture, showing only passing checks with no visible failure for the reported pattern, likely a transient log-buffering or ordering issue rather than a real assertion failure",
-      "fix": "Re-run the test stage in isolation and capture full stdout/stderr to confirm whether 'Outcome analysis rejects missing file' actually fails or if this is a false positive from log truncation",
+      "root_cause": "Memory promotion test's cross-repo pattern copy assertion fails, likely due to a missing/mismatched source or destination memory file path or schema field expected by the promotion logic",
+      "fix": "Inspect sw-self-optimize-test.sh 'Memory promotion copies cross-repo patterns' test fixture and the memory promotion function in sw-self-optimize.sh for a path/field mismatch, then align the fixture data or output field name",
       "seen_count": 1,
       "last_seen": "2026-09-05T20:36:27Z",
-      "category": "flaky"
+      "category": "test_failure"
     }
   ]
 }
