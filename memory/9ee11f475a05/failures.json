@@ -114,8 +114,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-4253) was already held from a prior run, blocking the fast pipeline test; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or have it auto-abort orphaned locks), and update analyze_intent to always populate version, goal, and criteria in its output schema",
-      "seen_count": 3,
-      "last_seen": "2026-09-06T09:45:48Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-06T12:57:50Z",
       "category": "test_failure"
     },
     {
@@ -130,19 +130,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 82 tests failed\u001b[0m",
-      "root_cause": "sw-loop-test failed (exit 1) alongside a timeout in sw-e2e-integration-test, indicating a regression or flakiness in the continuous agent loop harness tests",
-      "fix": "Run scripts/sw-loop-test.sh in isolation with verbose output to identify the failing assertion and fix the underlying loop harness logic",
+      "root_cause": "sw-e2e-integration-test exits 1, likely due to missing/invalid real Claude or GitHub API credentials required for the integration test",
+      "fix": "Ensure required API keys/tokens are set in the test environment or skip sw-e2e-integration-test when credentials are unavailable",
       "seen_count": 1,
       "last_seen": "2026-09-06T06:26:09Z",
-      "category": "test_failure"
+      "category": "config"
     },
     {
       "stage": "test",
-      "pattern": "Testing CONTRACT: pipeline can parse recruit match --json for model... ERROR: scripts/sw-recruit-test.sh:1112 exited with status 5",
-      "root_cause": "sw-recruit-test.sh:1112 'recruit match --json for model' contract fails, likely masking/interacting with subsequent unrelated sw-cost-test.sh dashboard assertions due to shared fixture/event state bleeding between suites",
-      "fix": "run sw-recruit-test.sh:1112 in isolation to inspect the actual --json output vs expected schema and fix the recruit match command's JSON contract; verify test fixtures reset cost/event state between suites",
+      "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Stall: missing tracking file is not a stall",
+      "root_cause": "sw-pipeline-test.sh's plan stage never writes .claude/pipeline-artifacts/plan.md, cascading failures into review, resume, full E2E, cleanup, and complexity-skip tests that all depend on plan artifacts existing",
+      "fix": "fix the mock/pipeline plan stage to create plan.md (and dod.md) before returning success, and fix the jq parse error consuming a non-JSON value in the complexity/RL episode test",
       "seen_count": 1,
-      "last_seen": "2026-09-06T13:33:43Z",
+      "last_seen": "2026-09-06T13:30:05Z",
       "category": "test_failure"
     }
   ]
