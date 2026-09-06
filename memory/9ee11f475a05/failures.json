@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 13,
-      "last_seen": "2026-09-06T09:02:53Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-06T21:56:44Z",
       "category": "flaky"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Structured audit with passed=false is a failure",
-      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit a 301s timeout during the test-all run",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly to inspect the failing assertion and fix the underlying logic; investigate why sw-e2e-integration-test exceeds the 300s timeout (hung Claude/GitHub call) and add a guard or increase timeout",
+      "root_cause": "sw-cost-test.sh seeds no cost entries (or an empty 30-day window) so the CONTEXT EFFICIENCY section has no loop.context_efficiency events to render, causing the two assertions on rendered event data/avg utilization to fail",
+      "fix": "Seed a cost entry with a recent timestamp and a loop.context_efficiency event fixture before invoking the dashboard in sw-cost-test.sh, or widen the test's lookback window to include the fixture data",
       "seen_count": 2,
       "last_seen": "2026-09-06T16:07:45Z",
       "category": "test_failure"
