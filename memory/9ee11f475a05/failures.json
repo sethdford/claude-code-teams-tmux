@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 59,
-      "last_seen": "2026-09-06T22:40:26Z",
+      "seen_count": 58,
+      "last_seen": "2026-09-06T22:33:04Z",
       "category": "test_failure"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 8,
-      "last_seen": "2026-09-06T01:55:40Z",
+      "seen_count": 9,
+      "last_seen": "2026-09-06T21:52:28Z",
       "category": "test_failure"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Structured audit with passed=false is a failure",
-      "root_cause": "sw-pipeline-test.sh's plan stage never creates .claude/pipeline-artifacts/plan.md, cascading into review/full-E2E/resume/cleanup failures, plus a jq parse error on non-numeric complexity value in the intelligence low-complexity test",
-      "fix": "fix pipeline_plan (or its test mock) to write plan.md/dod.md/tasks before advancing, and guard the jq calls in the complexity test against non-numeric input",
+      "root_cause": "sw-pipeline-test.sh: plan stage never writes plan.md/dod.md (and downstream review.md), so tests depending on those artifacts fail cascading through resume/full-E2E/cleanup, plus a jq numeric parse error in complexity-based stage skipping",
+      "fix": "fix the plan stage in sw-pipeline.sh to always create .claude/pipeline-artifacts/plan.md and dod.md before marking complete, and quote/validate the complexity value before passing it to jq",
       "seen_count": 2,
       "last_seen": "2026-09-06T16:07:45Z",
       "category": "test_failure"
