@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 48,
-      "last_seen": "2026-09-06T00:16:01Z",
+      "seen_count": 49,
+      "last_seen": "2026-09-05T23:02:24Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
       "seen_count": 12,
-      "last_seen": "2026-09-05T22:05:07Z",
+      "last_seen": "2026-09-05T23:38:59Z",
       "category": "flaky"
     },
     {
@@ -42,8 +42,8 @@
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
-      "seen_count": 3,
-      "last_seen": "2026-09-05T23:26:28Z",
+      "seen_count": 2,
+      "last_seen": "2026-09-03T03:10:21Z",
       "category": "test_failure"
     },
     {
@@ -121,20 +121,11 @@
     {
       "stage": "test",
       "pattern": "▸ Outcome analysis rejects missing file... ✓",
-      "root_cause": "sw-cost-test.sh dashboard test asserts CONTEXT EFFICIENCY output populated from loop.context_efficiency events, but the test fixture's costs.json/events have no entries in the last 30 days, so the dashboard falls back to 'No cost entries' instead of rendering utilization data",
-      "fix": "Seed the test fixture with a loop.context_efficiency event dated within the 30-day window before invoking the dashboard, or stub 'now' consistently with the seeded event timestamp",
+      "root_cause": "Test suite output shown is entirely passing (PASS: 29/33/24/26, FAIL: 0) with no visible failure for the 'Outcome analysis rejects missing file' check, suggesting the failure occurred in a truncated/earlier portion of output not captured in the last 200 lines, or was a transient harness/log-capture issue.",
+      "fix": "Re-run the test stage with full untruncated output and increase log capture window to include the sw-outcome-feedback-test.sh section where 'Outcome analysis rejects missing file' assertion lives.",
       "seen_count": 1,
       "last_seen": "2026-09-05T20:36:27Z",
-      "category": "test_failure"
-    },
-    {
-      "stage": "test",
-      "pattern": "\u001b[2moutput missing: Everything is clean\u001b[0m",
-      "root_cause": "Memory promotion cross-repo test fails because the promoted pattern's memory file lacks the expected 'Everything is clean' output marker, indicating a stale or malformed pattern fixture",
-      "fix": "Update the cross-repo promotion test fixture/mock memory pattern to include the expected clean-output field before assertion",
-      "seen_count": 1,
-      "last_seen": "2026-09-05T22:53:58Z",
-      "category": "test_failure"
+      "category": "flaky"
     }
   ]
 }
