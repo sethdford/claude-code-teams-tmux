@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 54,
-      "last_seen": "2026-09-06T10:55:05Z",
+      "seen_count": 53,
+      "last_seen": "2026-09-06T11:10:59Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 13,
-      "last_seen": "2026-09-06T09:02:53Z",
+      "seen_count": 12,
+      "last_seen": "2026-09-05T23:38:59Z",
       "category": "flaky"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 8,
-      "last_seen": "2026-09-06T01:55:40Z",
+      "seen_count": 9,
+      "last_seen": "2026-09-06T09:05:16Z",
       "category": "test_failure"
     },
     {
@@ -114,8 +114,8 @@
       "pattern": "\u001b[38;2;0;212;255m▸\u001b[0m Patrol recurring failures label construction... \u001b[38;2;74;222;128m✓\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock (pipeline-4253) was already held from a prior run, blocking the fast pipeline test; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing required schema fields (version, goal, criteria)",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or have it auto-abort orphaned locks), and update analyze_intent to always populate version, goal, and criteria in its output schema",
-      "seen_count": 2,
-      "last_seen": "2026-09-05T17:44:35Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-06T09:45:48Z",
       "category": "test_failure"
     },
     {
@@ -130,8 +130,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 82 tests failed\u001b[0m",
-      "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema omits them",
-      "fix": "Update analyze_intent to emit version, goal, and criteria fields in its JSON output to match the expected schema",
+      "root_cause": "sw-loop-test failed (exit 1) alongside a timeout in sw-e2e-integration-test, indicating a regression or flakiness in the continuous agent loop harness tests",
+      "fix": "Run scripts/sw-loop-test.sh in isolation with verbose output to identify the failing assertion and fix the underlying loop harness logic",
       "seen_count": 1,
       "last_seen": "2026-09-06T06:26:09Z",
       "category": "test_failure"
