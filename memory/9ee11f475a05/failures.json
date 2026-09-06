@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 57,
-      "last_seen": "2026-09-06T19:50:54Z",
+      "seen_count": 58,
+      "last_seen": "2026-09-06T22:47:10Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
       "seen_count": 14,
-      "last_seen": "2026-09-06T21:56:44Z",
+      "last_seen": "2026-09-06T21:48:54Z",
       "category": "flaky"
     },
     {
@@ -148,10 +148,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Structured audit with passed=false is a failure",
-      "root_cause": "sw-cost-test.sh seeds no cost entries (or an empty 30-day window) so the CONTEXT EFFICIENCY section has no loop.context_efficiency events to render, causing the two assertions on rendered event data/avg utilization to fail",
-      "fix": "Seed a cost entry with a recent timestamp and a loop.context_efficiency event fixture before invoking the dashboard in sw-cost-test.sh, or widen the test's lookback window to include the fixture data",
+      "root_cause": "Multiple test suites (sw-e2e-integration-test, sw-intent-analysis-test, sw-loop-test) exited non-zero, and the structured audit flagged passed=false",
+      "fix": "Inspect the individual failing suite logs for sw-e2e-integration-test, sw-intent-analysis-test, and sw-loop-test to identify and fix the underlying assertion failures",
       "seen_count": 2,
       "last_seen": "2026-09-06T16:07:45Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "\u001b[38;2;248;113;113m\u001b[1m1 of 76 tests failed\u001b[0m",
+      "root_cause": "One test among the 76 in the suite asserted an exact value/behavior that the current code path no longer satisfies (regression or stale fixture), though the failing assertion itself is outside the shown log tail",
+      "fix": "Run the failing suite locally with verbose output to isolate the specific failing assertion, then update the implementation or fixture to match expected behavior",
+      "seen_count": 1,
+      "last_seen": "2026-09-06T22:21:59Z",
       "category": "test_failure"
     }
   ]
