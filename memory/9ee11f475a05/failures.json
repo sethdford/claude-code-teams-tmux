@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 56,
-      "last_seen": "2026-09-06T17:03:11Z",
+      "seen_count": 57,
+      "last_seen": "2026-09-06T20:02:07Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 14,
-      "last_seen": "2026-09-06T20:03:27Z",
+      "seen_count": 13,
+      "last_seen": "2026-09-06T09:02:53Z",
       "category": "flaky"
     },
     {
@@ -139,8 +139,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m classify_test_failure runs in the iteration body",
-      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed with exit 1, likely due to real Claude/GitHub API dependency or flaky assertion unrelated to the current change",
-      "fix": "Run the two failing suites in isolation with verbose output to capture the actual assertion failure and confirm whether they require external credentials",
+      "root_cause": "Multiple unrelated pre-existing test regressions (daemon classify_failure not wired into retry logic, e2e-integration blocked by a stale pipeline lock, intent-analysis schema missing required fields, recruit meta-audit assertion, self-optimize jq --argjson invalid JSON) rather than a single failure caused by this change",
+      "fix": "Triage each failing suite separately: wire classify_failure into daemon_on_failure, clear/guard the stale pipeline-4480 lock in e2e-integration-test, add version/goal/criteria to the intent-analysis schema output, fix the recruit audit assertion, and pass valid JSON to jq --argjson in sw-self-optimize.sh",
       "seen_count": 1,
       "last_seen": "2026-09-06T12:40:00Z",
       "category": "test_failure"
