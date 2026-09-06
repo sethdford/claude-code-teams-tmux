@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 56,
-      "last_seen": "2026-09-06T14:33:43Z",
+      "seen_count": 57,
+      "last_seen": "2026-09-06T18:32:37Z",
       "category": "test_failure"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Structured audit with passed=false is a failure",
-      "root_cause": "Memory promotion cross-repo pattern copy test fails an assertion, likely a mismatch in expected vs actual promoted pattern data",
-      "fix": "Inspect sw-self-optimize-test.sh 'Memory promotion copies cross-repo patterns' case and the promote_memory_pattern function for schema/path mismatches",
+      "root_cause": "sw-e2e-integration-test hit a stale pipeline lock from a prior/concurrent run (pipeline-4460 already 'running'), and sw-intent-analysis-test's generated JSON is missing required schema fields (version, goal, criteria)",
+      "fix": "Clear/reset stale pipeline locks before the e2e-integration test runs (or have it auto-abort/resume instead of failing), and update analyze_intent to always emit version, goal, and criteria fields per the schema",
       "seen_count": 2,
       "last_seen": "2026-09-06T16:07:45Z",
       "category": "test_failure"
