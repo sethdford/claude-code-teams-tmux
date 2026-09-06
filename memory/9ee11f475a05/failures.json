@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 13,
-      "last_seen": "2026-09-06T09:02:53Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-06T20:03:27Z",
       "category": "flaky"
     },
     {
@@ -139,8 +139,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m classify_test_failure runs in the iteration body",
-      "root_cause": "Multiple test suites (sw-e2e-integration-test, sw-intent-analysis-test, sw-recruit-test) failed with exit 1, likely due to real Claude/GitHub API dependencies or environment-specific assertions not met in CI",
-      "fix": "Run the failing suites individually with verbose output to isolate the failing assertions, then fix the underlying code or mock/skip conditions for CI environments",
+      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test failed with exit 1, likely due to real Claude/GitHub API dependency or flaky assertion unrelated to the current change",
+      "fix": "Run the two failing suites in isolation with verbose output to capture the actual assertion failure and confirm whether they require external credentials",
       "seen_count": 1,
       "last_seen": "2026-09-06T12:40:00Z",
       "category": "test_failure"
