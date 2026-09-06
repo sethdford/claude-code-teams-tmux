@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 57,
-      "last_seen": "2026-09-06T19:50:54Z",
+      "seen_count": 59,
+      "last_seen": "2026-09-06T22:40:26Z",
       "category": "test_failure"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m Structured audit with passed=false is a failure",
-      "root_cause": "sw-intent-analysis-test failed (exit 1) and sw-e2e-integration-test hit a 301s timeout during the test-all run",
-      "fix": "Run scripts/sw-intent-analysis-test.sh directly to inspect the failing assertion and fix the underlying logic; investigate why sw-e2e-integration-test exceeds the 300s timeout (hung Claude/GitHub call) and add a guard or increase timeout",
+      "root_cause": "sw-pipeline-test.sh's plan stage never creates .claude/pipeline-artifacts/plan.md, cascading into review/full-E2E/resume/cleanup failures, plus a jq parse error on non-numeric complexity value in the intelligence low-complexity test",
+      "fix": "fix pipeline_plan (or its test mock) to write plan.md/dod.md/tasks before advancing, and guard the jq calls in the complexity test against non-numeric input",
       "seen_count": 2,
       "last_seen": "2026-09-06T16:07:45Z",
       "category": "test_failure"
