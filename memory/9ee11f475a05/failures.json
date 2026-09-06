@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 13,
-      "last_seen": "2026-09-06T09:02:53Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-06T15:33:16Z",
       "category": "flaky"
     },
     {
@@ -23,8 +23,8 @@
       "pattern": "Failed: 1",
       "root_cause": "sw-intent-analysis-test fails because analyze_intent's generated JSON omits required fields (version, goal, criteria); sw-e2e-integration-test fails as a side effect of a stale pipeline lock (pipeline-3749) left running from a prior test run, not a new regression",
       "fix": "add the missing version/goal/criteria fields to the intent-analysis JSON schema/generator, and clear/reset stale pipeline locks (or run `shipwright pipeline abort`) before the e2e-integration test suite starts",
-      "seen_count": 8,
-      "last_seen": "2026-09-06T01:55:40Z",
+      "seen_count": 9,
+      "last_seen": "2026-09-06T14:45:34Z",
       "category": "test_failure"
     },
     {
@@ -139,11 +139,20 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m classify_test_failure runs in the iteration body",
-      "root_cause": "No failure present — all listed suites (sw-autoresearch-e2e-test.sh and related) report PASS with FAIL: 0; the flagged pattern is a normal test assertion checkmark, not an actual error",
-      "fix": "No fix needed; verify the failure classifier isn't misinterpreting a passing test line as an error signal",
+      "root_cause": "Pipeline artifact writers for plan and review stages are not producing plan.md/review.md in mocked test runs, cascading into E2E, resume, and cleanup test failures; a separate jq parse error on non-numeric input breaks the low-complexity intelligence-skip test",
+      "fix": "Ensure pipeline_plan/pipeline_review stages write .claude/pipeline-artifacts/plan.md and review.md before mark_stage_complete runs, and guard the jq call parsing complexity/reward values with a numeric validation or `// 0` fallback",
       "seen_count": 1,
       "last_seen": "2026-09-06T12:40:00Z",
-      "category": "unknown"
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
+      "root_cause": "5 test assertions failed in the RL/autoresearch test suites but the failing output lines were outside the captured log window",
+      "fix": "Re-run the failing suite locally with verbose output to capture the specific FAIL lines, then patch the assertion or underlying logic",
+      "seen_count": 1,
+      "last_seen": "2026-09-06T16:11:29Z",
+      "category": "test_failure"
     }
   ]
 }
