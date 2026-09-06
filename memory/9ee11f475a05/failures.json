@@ -135,6 +135,15 @@
       "seen_count": 1,
       "last_seen": "2026-09-06T06:26:09Z",
       "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Testing CONTRACT: pipeline can parse recruit match --json for model... ERROR: scripts/sw-recruit-test.sh:1112 exited with status 5",
+      "root_cause": "sw-recruit-test.sh:1112 'recruit match --json for model' contract fails, likely masking/interacting with subsequent unrelated sw-cost-test.sh dashboard assertions due to shared fixture/event state bleeding between suites",
+      "fix": "run sw-recruit-test.sh:1112 in isolation to inspect the actual --json output vs expected schema and fix the recruit match command's JSON contract; verify test fixtures reset cost/event state between suites",
+      "seen_count": 1,
+      "last_seen": "2026-09-06T13:33:43Z",
+      "category": "test_failure"
     }
   ]
 }
