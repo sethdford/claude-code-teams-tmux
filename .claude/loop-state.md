@@ -1,14 +1,45 @@
 ---
-goal: "Misleading "jq not available" warning when Claude outputs JSON object instead of array
+goal: "Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run
 
-## Specification: Misleading "jq not available" warning when Claude outputs JSON object instead of array
+## Plan Summary
+Plan written to `.claude/pipeline-artifacts/plan.md` (278 lines).
+
+## Key finding that reframes the goal
+
+`scripts/sw-github-graphql.sh` **already has** a TTL disk cache at `~/.shipwright/github-cache` shared across stage subprocesses — so "add caching" is partly done. The real gaps I found by reading the code:
+
+1. **No negative caching** — `gh_blame_data:305` and `gh_contributors:349` only call `_gh_cache_set` on success. Every failed lookup (no auth, rate limit, private repo) re-issues the full GraphQL query in *every* stage. And `sw-intelligence.sh:1322` swallows it with `|| echo "[]"`, so files silently score as low-risk.
+2. **TTLs are wall-clock, not run-scoped** — change-frequency TTL is 3600s but the recorded `build_duration_s` baseline is 8506s. A run crosses the TTL mid-flight, so `review` re-fetches what `plan` fetched *and can see different data*. That's a consistency bug, not just cost.
+3. **Per-file fan-out, no prewarm** — one round-trip per path, called from two different intelligence functions.
+
+## Chosen approach
+
+A **run-pinned overlay** on the existing cache: when `SW_GH_CACHE_RUN_ID` is set (exported once from `SHIPWRIGHT_PIPELINE_ID`, inherited by every stage subprocess), keys written during the run are recorded in a per-run manifest and read back ignoring TTL. Plus negative caching, in-process memoization, and a capped `gh_cache_prewarm` at intake.
+
+Rejected: a separate per-run cache dir (worse for the daemon — loses reuse between back-to-back issues), and exporting a JSON blob into artifacts (changes every caller instead of the one choke point).
+
+Behaviour is byte-identical when `SW_GH_CACHE_RUN_ID` is unset — which it is in all 102 existing suites, protecting the one criterion `spec.json` carries.
+
+The plan covers the mandated sections: 13-task decomposition with explicit blocking edges, risk table, testable DoD, two alternatives with trade-offs, and four failure modes. The most critical (concurrent worktree pipelines sharing one cache dir) is addressed in implementation steps 3–4 via per-run manifests with duplicate-tolerant, lock-free appends.
+[... full plan in .claude/pipeline-artifacts/plan.md]
+
+## Key Design Decisions
+# Design: Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run
+## Context
+## Decision
+### Component Diagram
+### Interface Contracts
+### Data Flow
+### Error Boundaries
+## Alternatives Considered
+## Implementation Plan
+## Validation Criteria
+[... full design in .claude/pipeline-artifacts/design.md]
+
+## Specification: Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run
 
 ### Goals
-- *jq IS available.** The actual issue is that Claude's `--output-format json` sometimes outputs a JSON **object** (`{...}`) instead of a JSON **array** (`[...]`), and the parsing code only handles arrays.
-- *Option A**: Extend Case 2 to handle both formats:
-- *Option B**: At minimum, fix the warning message in Case 3:
-- Warning is cosmetic only — the loop functions correctly using the raw JSON
-- But it's confusing during debugging (we spent time investigating jq availability when the real issue was elsewhere)
+- Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run
 
 ### Acceptance Criteria
 - [testable] All existing tests continue to pass
@@ -17,87 +48,74 @@ Historical context (lessons from previous pipelines):
 {
   "results": [
     {
-      "file": "failures.json",
-      "relevance": 95,
-      "summary": "Contains detailed jq parse error patterns matching the issue: 'jq: parse error' on malformed JSON and mock claude outputting wrong JSON schema (object vs array). Root cause and fix directly address the 'jq not available' warning problem."
+      "file": "retry-outcomes.json",
+      "relevance": 92,
+      "summary": "Direct build failure recovery data showing model_escalation strategy with 100% success rate across 5 attempts; directly applicable to build stage optimization and resilience"
     },
     {
-      "file": "patterns.json",
-      "relevance": 40,
-      "summary": "Project detection data (nodejs, vitest test runner) provides context about the build environment and testing setup for this pipeline stage."
-    },
-    {
-      "file": "metrics.json",
-      "relevance": 8,
-      "summary": "Build duration baselines (17827s) provide context on typical build stage timing, useful for understanding if this issue impacts build performance."
+      "file": "success-patterns.json (f4af3e2a/0bcf0637)",
+      "relevance": 88,
+      "summary": "Captured successful build patterns with iteration counts, durations (45-150s), cost metrics, and file change profiles; provides proven build stage approaches and cost baselines"
     },
     {
       "file": "metrics.json",
-      "relevance": 5,
-      "summary": "Earlier build duration baseline (147s) is outdated but shows historical performance context."
+      "relevance": 82,
+      "summary": "Build duration baseline (7095s) and test duration baseline (1459s) provide performance targets for understanding current build stage efficiency relative to historical performance"
     },
     {
-      "file": "global.json",
-      "relevance": 0,
-      "summary": "Empty cross-repo learnings, no relevant content for this specific jq/JSON issue."
+      "file": "failures.json (detailed multi-stage)",
+      "relevance": 76,
+      "summary": "Extensive test-stage failure patterns (57-127 PASS/FAIL counts, flaky test signatures, timeout issues) inform build stage quality gates and regression detection; cache lookups reduce redundant test execution"
+    },
+    {
+      "file": "knowledge.json",
+      "relevance": 70,
+      "summary": "Failure patterns with fix strategies (mktemp issues, JSON output validation, test environment setup) provide build robustness learnings; pattern metrics show what fixes succeed most consistently"
     }
   ]
 }
 
 Discoveries from other pipelines:
-[38;2;74;222;128m[1m✓[0m Injected 128 new discoveries
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[pipeline_success] Pipeline success for issue #0 (fast template, stage=validate) — Resolution: success
-[intake] Stage intake completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[compound_quality] Stage compound_quality completed — Resolution: 
-[pr] Stage pr completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[design] Design completed for Build a production-grade todo application. TypeScript + React frontend with Vite, Express REST API backend, SQLite persistence with Drizzle ORM, JWT authentication (register/login), full CRUD for todos with filtering (all/active/completed), drag-and-drop reorder, due dates, priorities (low/medium/high), dark mode, responsive design. Include comprehensive test suite (unit + integration + e2e). Production-ready: error handling, input validation, rate limiting, CORS, environment config. — Resolution: 
-[intake] Stage intake completed — Resolution: 
-[intake] Stage intake completed — Resolution: 
+✓ Injected 1 new discoveries
+[design] Design completed for Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run — Resolution: 
 
-## Failure Diagnosis (Iteration 2)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 0
+Task tracking (check off items as you complete them):
+# Pipeline Tasks — Cache intelligence-layer GraphQL contributor/blame lookups across pipeline stages within a single run
 
-## Failure Diagnosis (Iteration 3)
-Classification: unknown
-Strategy: retry_with_context
-Repeat count: 1"
-iteration: 3
-max_iterations: 10
-status: complete
+## Implementation Checklist
+- [ ] Given one pipeline run, each distinct `blame_<owner>_<repo>_<path>` and
+- [ ] A failed/empty contributor or blame lookup is cached and not retried within the run.
+- [ ] A cache entry whose wall-clock TTL expired mid-run still hits while the run pin is
+- [ ] With `SW_GH_CACHE_RUN_ID` unset, cache behaviour is byte-identical to today.
+- [ ] `gh_cache_prewarm` returns 0 and issues zero network calls under `NO_GITHUB=true`.
+- [ ] Run manifests older than 24h are reaped; `shipwright github cache clear` removes them.
+- [ ] New tests added to `sw-github-graphql-test.sh`; **all existing suites still pass**
+- [ ] `shellcheck` clean; bash 3.2 compatible (no `declare -A`, no `readarray`, no `${var,,}`).
+- [ ] `shipwright version check` passes; `.claude/CLAUDE.md` env-var table updated.
+
+## Context
+- Pipeline: autonomous
+- Branch: ci/issue-4430
+- Issue: none
+- Generated: 2026-09-07T04:13:15Z"
+iteration: 0
+max_iterations: 20
+status: running
 test_cmd: "npm test"
-model: sonnet
+model: opus
 agents: 1
-started_at: 2026-04-04T17:41:42Z
-last_iteration_at: 2026-04-04T17:41:42Z
+started_at: 2026-09-07T04:17:28Z
+last_iteration_at: 2026-09-07T04:17:28Z
 consecutive_failures: 0
-total_commits: 3
-audit_enabled: false
-audit_agent_enabled: false
-quality_gates_enabled: false
-dod_file: ""
+total_commits: 0
+audit_enabled: true
+audit_agent_enabled: true
+quality_gates_enabled: true
+dod_file: "/home/runner/work/shipwright/shipwright/.claude/pipeline-artifacts/dod.md"
 auto_extend: true
 extension_count: 0
 max_extensions: 3
 ---
 
 ## Log
-### Iteration 1 (2026-04-04T15:25:20Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":227709,"duration_api_ms":143263,"num_turns":22,"resu
-
-### Iteration 2 (2026-04-04T16:25:53Z)
-{"type":"result","subtype":"success","is_error":false,"duration_ms":9837,"duration_api_ms":311675,"num_turns":2,"result"
 
