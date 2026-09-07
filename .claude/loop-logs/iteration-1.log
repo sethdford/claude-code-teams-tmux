@@ -1,16 +1,1 @@
-Both full-suite runs are green on the final tree: **162 suites, 162 passed, 0 failed** (573s), including the 13 new tests.
-
-## Self-audit
-
-1. **Fully satisfies the goal?** Yes. Within one run, each distinct `blame_<owner>_<repo>_<path>` and `contrib_<owner>_<repo>` key is fetched once — run pin (cross-process), memoization (in-process), and prewarm (up front at intake) each close a different leak.
-2. **Edge cases handled?** Hostile run ids (`../..` sanitized before becoming a filename), concurrent worktree pipelines sharing one cache dir (per-run manifests, lock-free duplicate-tolerant appends), rate limits (carved out to a 60s unpinned TTL so a throttle can't ride a multi-hour run), `NO_GITHUB`, empty change sets, monorepo fan-out (capped at 25), bash 3.2 (no `declare -A`/`readarray`/`${var,,}`), and `set -euo pipefail` in the intake loop body. Each mechanism has its own kill switch.
-3. **TODO/FIXME/HACK/XXX in new code?** None — the only grep hits are `mktemp` templates.
-4. **Tested?** 13 new tests in `sw-github-graphql-test.sh` covering the pin, cross-run isolation, run-id sanitization, negative caching and its `TTL=0` kill switch, the rate-limit carve-out, failure classification, memoization and `SW_GH_MEMO=0`, manifest reaping, and prewarm behaviour under `NO_GITHUB` and the cap.
-5. **Reviewer-ready?** Shellcheck clean on every changed file (remaining warnings in `pipeline-stages-intake.sh` are pre-existing and untouched), `version check` passes, new event types registered in `config/event-schema.json`, docs point at the real CLI path (`shipwright github cache …`).
-6. **Byte-identical fallback?** With `SW_GH_CACHE_RUN_ID` unset, no manifest is written and pure TTL behaviour is restored — asserted by a dedicated test, and demonstrated by all 162 suites passing unchanged.
-
-Two commits: `d5e23aa3` (the feature) and `44bf2426` (docs CLI path + `set -e` hardening of the prewarm loop).
-
-One thing worth flagging for whoever reviews: run pinning deliberately trades freshness for consistency. On a 3-hour build, the `review` stage sees contributor data as of minute zero. That is the intended behaviour — a stage reading *different* data than the stage that planned against it is the bug being fixed — but it is a semantic change, bounded by pipeline lifetime and reversible at runtime with `SW_GH_CACHE_RUN_ID=""` without a deploy.
-
-LOOP_COMPLETE
+You've hit your weekly limit · resets Sep 10, 6pm (UTC)
