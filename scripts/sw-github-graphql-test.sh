@@ -40,6 +40,12 @@ setup_env() {
 #!/usr/bin/env bash
 # Mock gh CLI — reads MOCK_GH_RESPONSE env var
 # Supports: gh api graphql, gh api <path>, gh auth status
+# When MOCK_GH_CALL_LOG is set, every non-auth invocation is appended to it so
+# tests can assert on how many round-trips the cache actually let through.
+
+if [[ -n "${MOCK_GH_CALL_LOG:-}" && "${1:-}" != "auth" ]]; then
+    echo "$*" >> "$MOCK_GH_CALL_LOG"
+fi
 
 if [[ "${1:-}" == "auth" && "${2:-}" == "status" ]]; then
     echo "Logged in to github.com"
@@ -103,6 +109,11 @@ reset_test() {
     rm -f "$EVENTS_FILE"
     touch "$EVENTS_FILE"
     rm -f "$TEST_TEMP_DIR/.shipwright/github-cache"/*.json 2>/dev/null || true
+    rm -f "$TEST_TEMP_DIR/.shipwright/github-cache"/.run-*.keys 2>/dev/null || true
+    # Drop in-process memo state and run scoping so each test starts clean.
+    unset "${!_GH_MEMO_@}" 2>/dev/null || true
+    unset SW_GH_CACHE_RUN_ID SW_GH_MEMO SW_GH_PREWARM_MAX 2>/dev/null || true
+    unset SW_GH_CACHE_NEGATIVE_TTL MOCK_GH_CALL_LOG 2>/dev/null || true
     export MOCK_GH_RESPONSE=""
     export MOCK_GH_EXIT_CODE=0
     export NO_GITHUB=false
@@ -592,6 +603,208 @@ test_events_emitted() {
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Run-scoped cache pinning, negative caching, memoization
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Backdate a cache entry so its wall-clock TTL is definitely expired.
+_backdate() {
+    if [[ "$(uname)" == "Darwin" ]]; then
+        touch -t "$(date -v-2H +%Y%m%d%H%M.%S)" "$1"
+    else
+        touch -d "2 hours ago" "$1"
+    fi
+}
+
+test_run_pin_survives_ttl() {
+    export SW_GH_CACHE_RUN_ID="run-alpha"
+    export SW_GH_MEMO=0
+    local key="test_pin_ttl"
+    _gh_cache_set "$key" '{"data": "pinned"}'
+    _backdate "${GH_CACHE_DIR}/${key}.json"
+
+    local result
+    result=$(_gh_cache_get "$key" "60") || {
+        echo -e "    ${RED}✗${RESET} Pinned key missed after TTL expiry"
+        unset SW_GH_CACHE_RUN_ID SW_GH_MEMO
+        return 1
+    }
+    unset SW_GH_CACHE_RUN_ID SW_GH_MEMO
+    assert_contains "$result" "pinned" "pinned payload"
+}
+
+test_no_run_id_is_unchanged() {
+    unset SW_GH_CACHE_RUN_ID 2>/dev/null || true
+    local key="test_no_pin"
+    _gh_cache_set "$key" '{"data": "unpinned"}'
+    _backdate "${GH_CACHE_DIR}/${key}.json"
+
+    # No run id — pure TTL behaviour, so this must miss.
+    if _gh_cache_get "$key" "60" >/dev/null 2>&1; then
+        echo -e "    ${RED}✗${RESET} Expected TTL miss with no run id"
+        return 1
+    fi
+    # And no manifest should have been written.
+    local manifests
+    manifests=$(find "$GH_CACHE_DIR" -maxdepth 1 -name '.run-*.keys' 2>/dev/null | wc -l | tr -d ' ')
+    assert_equals "0" "$manifests" "manifest count without run id"
+}
+
+test_run_pin_isolated_per_run() {
+    export SW_GH_CACHE_RUN_ID="run-one"
+    local key="test_pin_isolation"
+    _gh_cache_set "$key" '{"data": "one"}'
+    _backdate "${GH_CACHE_DIR}/${key}.json"
+
+    # A different run must not inherit run-one's pin.
+    export SW_GH_CACHE_RUN_ID="run-two"
+    export SW_GH_MEMO=0
+    local rc=0
+    _gh_cache_get "$key" "60" >/dev/null 2>&1 || rc=$?
+    unset SW_GH_CACHE_RUN_ID SW_GH_MEMO
+    assert_equals "1" "$rc" "cross-run pin leak"
+}
+
+test_run_id_sanitized() {
+    export SW_GH_CACHE_RUN_ID="../../etc/passwd"
+    local manifest
+    manifest=$(_gh_run_manifest)
+    unset SW_GH_CACHE_RUN_ID
+    if [[ "$manifest" == *".."* || "$manifest" != "${GH_CACHE_DIR}/"* ]]; then
+        echo -e "    ${RED}✗${RESET} Run id escaped the cache dir: $manifest"
+        return 1
+    fi
+    return 0
+}
+
+test_negative_cache_suppresses_retry() {
+    export SW_GH_CACHE_RUN_ID="run-neg"
+    export MOCK_GH_EXIT_CODE=1
+    export MOCK_GH_CALL_LOG="$TEST_TEMP_DIR/gh-calls.log"
+    : > "$MOCK_GH_CALL_LOG"
+
+    local first second
+    first=$(gh_contributors "acme" "widgets")
+    local calls_after_first
+    calls_after_first=$(wc -l < "$MOCK_GH_CALL_LOG" | tr -d ' ')
+    second=$(gh_contributors "acme" "widgets")
+    local calls_after_second
+    calls_after_second=$(wc -l < "$MOCK_GH_CALL_LOG" | tr -d ' ')
+
+    export MOCK_GH_EXIT_CODE=0
+    unset SW_GH_CACHE_RUN_ID MOCK_GH_CALL_LOG
+
+    assert_equals "[]" "$first" "first failed lookup" || return 1
+    assert_equals "[]" "$second" "second failed lookup" || return 1
+    assert_equals "$calls_after_first" "$calls_after_second" "gh re-invoked after failure" || return 1
+    return 0
+}
+
+test_negative_cache_disabled() {
+    export SW_GH_CACHE_NEGATIVE_TTL=0
+    local rc=0
+    _gh_cache_negative_get "test_disabled_key" >/dev/null 2>&1 || rc=$?
+    _gh_cache_negative_set "test_disabled_key" "[]" "error"
+    local wrote="no"
+    [[ -f "${GH_CACHE_DIR}/test_disabled_key.neg.json" ]] && wrote="yes"
+    unset SW_GH_CACHE_NEGATIVE_TTL
+    assert_equals "1" "$rc" "negative get with TTL 0" || return 1
+    assert_equals "no" "$wrote" "negative set with TTL 0"
+}
+
+test_ratelimit_negative_not_pinned() {
+    export SW_GH_CACHE_RUN_ID="run-rl"
+    local key="test_rl_key"
+    _gh_cache_negative_set "$key" "[]" "ratelimit"
+
+    local manifest pinned="no"
+    manifest=$(_gh_run_manifest)
+    if [[ -f "$manifest" ]] && grep -q "$key" "$manifest"; then
+        pinned="yes"
+    fi
+    # Rate-limit entries expire on their own short TTL rather than riding the run.
+    _backdate "${GH_CACHE_DIR}/${key}.negrl.json"
+    local rc=0
+    _gh_cache_negative_get "$key" >/dev/null 2>&1 || rc=$?
+    unset SW_GH_CACHE_RUN_ID
+
+    assert_equals "no" "$pinned" "ratelimit entry pinned to run" || return 1
+    assert_equals "1" "$rc" "stale ratelimit entry still hit"
+}
+
+test_failure_reason_classification() {
+    local err_file="$TEST_TEMP_DIR/err.txt"
+    echo "API rate limit exceeded for user" > "$err_file"
+    assert_equals "ratelimit" "$(_gh_failure_reason "$err_file")" "rate limit text" || return 1
+    echo "Not Found" > "$err_file"
+    assert_equals "error" "$(_gh_failure_reason "$err_file")" "not found text" || return 1
+    assert_equals "error" "$(_gh_failure_reason "$TEST_TEMP_DIR/missing.txt")" "missing stderr file"
+}
+
+test_memoization_avoids_disk() {
+    export SW_GH_CACHE_RUN_ID="run-memo"
+    local key="test_memo_key"
+    _gh_cache_set "$key" '{"data": "memo"}'
+    # Delete the backing file: only an in-process memo can still answer.
+    rm -f "${GH_CACHE_DIR}/${key}.json"
+    local result rc=0
+    result=$(_gh_cache_get "$key" "60") || rc=$?
+    unset SW_GH_CACHE_RUN_ID
+    assert_equals "0" "$rc" "memo hit" || return 1
+    assert_contains "$result" "memo" "memoized payload"
+}
+
+test_memo_disabled_by_env() {
+    export SW_GH_CACHE_RUN_ID="run-memo-off"
+    export SW_GH_MEMO=0
+    local key="test_memo_off"
+    _gh_cache_set "$key" '{"data": "x"}'
+    rm -f "${GH_CACHE_DIR}/${key}.json"
+    local rc=0
+    _gh_cache_get "$key" "60" >/dev/null 2>&1 || rc=$?
+    unset SW_GH_CACHE_RUN_ID SW_GH_MEMO
+    assert_equals "1" "$rc" "memo still active with SW_GH_MEMO=0"
+}
+
+test_manifest_reaped() {
+    _gh_cache_init
+    local stale="${GH_CACHE_DIR}/.run-stale.keys"
+    echo "some_key" > "$stale"
+    if [[ "$(uname)" == "Darwin" ]]; then
+        touch -t "$(date -v-3d +%Y%m%d%H%M.%S)" "$stale"
+    else
+        touch -d "3 days ago" "$stale"
+    fi
+    _GH_MANIFEST_REAPED=""
+    _gh_reap_manifests
+    if [[ -f "$stale" ]]; then
+        echo -e "    ${RED}✗${RESET} Stale manifest not reaped"
+        return 1
+    fi
+    return 0
+}
+
+test_prewarm_no_github() {
+    export NO_GITHUB=true
+    local rc=0
+    gh_cache_prewarm "acme" "widgets" "a.sh" "b.sh" >/dev/null 2>&1 || rc=$?
+    export NO_GITHUB=false
+    assert_equals "0" "$rc" "prewarm exit code under NO_GITHUB"
+}
+
+test_prewarm_respects_cap() {
+    export SW_GH_CACHE_RUN_ID="run-prewarm"
+    export SW_GH_PREWARM_MAX=2
+    export MOCK_GH_CALL_LOG="$TEST_TEMP_DIR/gh-prewarm.log"
+    : > "$MOCK_GH_CALL_LOG"
+
+    gh_cache_prewarm "acme" "widgets" "a.sh" "b.sh" "c.sh" "d.sh" >/dev/null 2>&1 || true
+    local calls
+    calls=$(grep -c 'commits?path=' "$MOCK_GH_CALL_LOG" 2>/dev/null || true)
+    unset SW_GH_CACHE_RUN_ID SW_GH_PREWARM_MAX MOCK_GH_CALL_LOG
+    assert_equals "2" "${calls:-0}" "blame lookups issued"
+}
+
 main() {
     local filter="${1:-}"
 
@@ -623,6 +836,19 @@ main() {
         "test_blame_data:gh_blame_data aggregates authors"
         "test_actions_runs:gh_actions_runs calculates duration"
         "test_events_emitted:Events emitted for cache hit/miss"
+        "test_run_pin_survives_ttl:Run-pinned key survives TTL expiry"
+        "test_no_run_id_is_unchanged:No run id keeps pure TTL behaviour"
+        "test_run_pin_isolated_per_run:Pins do not leak between runs"
+        "test_run_id_sanitized:Hostile run id cannot escape cache dir"
+        "test_negative_cache_suppresses_retry:Failed lookup is not retried in-run"
+        "test_negative_cache_disabled:SW_GH_CACHE_NEGATIVE_TTL=0 disables negatives"
+        "test_ratelimit_negative_not_pinned:Rate-limit negatives stay TTL-governed"
+        "test_failure_reason_classification:Failure reason classified from stderr"
+        "test_memoization_avoids_disk:In-process memo answers without disk"
+        "test_memo_disabled_by_env:SW_GH_MEMO=0 disables memoization"
+        "test_manifest_reaped:Stale run manifests are reaped"
+        "test_prewarm_no_github:Prewarm is a no-op under NO_GITHUB"
+        "test_prewarm_respects_cap:Prewarm honours SW_GH_PREWARM_MAX"
     )
 
     for entry in "${tests[@]}"; do

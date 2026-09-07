@@ -65,8 +65,93 @@ _gh_graphql_available() {
 # CACHE LAYER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ─── Run scoping ───────────────────────────────────────────────────────────
+# When SW_GH_CACHE_RUN_ID is set (exported once per pipeline run and inherited
+# by every stage subprocess), keys written during the run are recorded in a
+# per-run manifest and read back ignoring their wall-clock TTL. A pipeline run
+# routinely outlives a 1h TTL, so without this the `review` stage re-fetches
+# what `plan` already fetched — paying for it again and, worse, potentially
+# seeing different contributor/blame data mid-run. Unset (the default outside a
+# pipeline) restores pure TTL behaviour byte for byte.
+
+_gh_run_id() {
+    local raw="${SW_GH_CACHE_RUN_ID:-}"
+    [[ -n "$raw" ]] || return 1
+    # The id becomes part of a filename, so anything outside a safe set is
+    # collapsed — a run id of "../../etc" must not escape the cache dir.
+    printf '%s' "$raw" | tr -c 'A-Za-z0-9_-' '_'
+}
+
+_gh_run_manifest() {
+    local run_id
+    run_id=$(_gh_run_id) || return 1
+    printf '%s' "${GH_CACHE_DIR}/.run-${run_id}.keys"
+}
+
+_gh_run_pinned() {
+    local manifest
+    manifest=$(_gh_run_manifest) || return 1
+    [[ -f "$manifest" ]] || return 1
+    grep -qxF "$1" "$manifest" 2>/dev/null
+}
+
+# Deliberately lock-free. Concurrent worktree pipelines share GH_CACHE_DIR but
+# each writes its own manifest, and a single short append is atomic enough on
+# every filesystem we support — a duplicated line is the worst case, which the
+# grep -qxF reader tolerates.
+_gh_run_pin() {
+    local manifest
+    manifest=$(_gh_run_manifest) || return 0
+    if _gh_run_pinned "$1"; then
+        return 0
+    fi
+    printf '%s\n' "$1" >> "$manifest" 2>/dev/null || true
+}
+
+# ─── In-process memoization ────────────────────────────────────────────────
+# Within one stage, the same key is often requested by two different
+# intelligence functions. Only active under a run pin, so behaviour outside a
+# pipeline is unchanged.
+
+_gh_memo_var() {
+    printf '_GH_MEMO_%s' "$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
+}
+
+_gh_memo_enabled() {
+    [[ "${SW_GH_MEMO:-1}" != "0" ]] || return 1
+    _gh_run_id >/dev/null 2>&1
+}
+
+_gh_memo_get() {
+    _gh_memo_enabled || return 1
+    local var
+    var=$(_gh_memo_var "$1")
+    [[ -n "${!var+set}" ]] || return 1
+    printf '%s\n' "${!var}"
+}
+
+_gh_memo_set() {
+    _gh_memo_enabled || return 0
+    local var
+    var=$(_gh_memo_var "$1")
+    eval "$var=\$2"
+}
+
+# ─── Cache primitives ──────────────────────────────────────────────────────
+
+_GH_MANIFEST_REAPED=""
+
+# Manifests are pinned for the life of a run; anything older than a day belongs
+# to a run that is long gone. Reaped once per process, not once per write.
+_gh_reap_manifests() {
+    [[ -z "$_GH_MANIFEST_REAPED" ]] || return 0
+    _GH_MANIFEST_REAPED=1
+    find "$GH_CACHE_DIR" -maxdepth 1 -name '.run-*.keys' -mtime +1 -delete 2>/dev/null || true
+}
+
 _gh_cache_init() {
     mkdir -p "$GH_CACHE_DIR"
+    _gh_reap_manifests
 }
 
 _gh_cache_get() {
@@ -74,8 +159,23 @@ _gh_cache_get() {
     local ttl_seconds="${2:-3600}"
     local cache_file="${GH_CACHE_DIR}/${cache_key}.json"
 
+    local memoed
+    if memoed=$(_gh_memo_get "$cache_key"); then
+        printf '%s\n' "$memoed"
+        return 0
+    fi
+
     if [[ ! -f "$cache_file" ]]; then
         return 1
+    fi
+
+    # A run-pinned key ignores the TTL — cross-stage consistency is the point.
+    if _gh_run_pinned "$cache_key"; then
+        local pinned
+        pinned=$(cat "$cache_file")
+        _gh_memo_set "$cache_key" "$pinned"
+        printf '%s\n' "$pinned"
+        return 0
     fi
 
     # Check file age
@@ -96,19 +196,85 @@ _gh_cache_get() {
     return 0
 }
 
+# Third argument "nopin" writes a value that stays TTL-governed even inside a
+# run — used for transient failures that must be allowed to recover.
 _gh_cache_set() {
     local cache_key="$1"
     local content="$2"
+    local pin="${3:-pin}"
     _gh_cache_init
     local cache_file="${GH_CACHE_DIR}/${cache_key}.json"
     local tmp_file="${cache_file}.tmp.$$"
     printf '%s\n' "$content" > "$tmp_file"
     mv "$tmp_file" "$cache_file"
+    if [[ "$pin" != "nopin" ]]; then
+        _gh_run_pin "$cache_key"
+        _gh_memo_set "$cache_key" "$content"
+    fi
+}
+
+# ─── Negative caching ──────────────────────────────────────────────────────
+# A failed or empty lookup used to be re-issued by every stage: with no auth,
+# a private repo, or a rate limit, each stage paid the full round-trip and each
+# caller silently scored the file as low-risk. The fallback payload is now
+# cached under a sibling `<key>.neg` entry with a short TTL of its own.
+#
+# Rate-limit failures are transient, so they land under `<key>.negrl` with a
+# 60s TTL and no run pin — pinning one would degrade reviewer selection for the
+# rest of a multi-hour run.
+
+_gh_negative_ttl() {
+    local ttl="${SW_GH_CACHE_NEGATIVE_TTL:-300}"
+    [[ "$ttl" =~ ^[0-9]+$ ]] || ttl=300
+    printf '%s' "$ttl"
+}
+
+_gh_cache_negative_get() {
+    local cache_key="$1"
+    local ttl
+    ttl=$(_gh_negative_ttl)
+    [[ "$ttl" -gt 0 ]] || return 1
+
+    local hit
+    if hit=$(_gh_cache_get "${cache_key}.negrl" "${SW_GH_CACHE_RATELIMIT_TTL:-60}" 2>/dev/null); then
+        printf '%s\n' "$hit"
+        return 0
+    fi
+    _gh_cache_get "${cache_key}.neg" "$ttl" 2>/dev/null
+}
+
+_gh_cache_negative_set() {
+    local cache_key="$1"
+    local fallback="$2"
+    local reason="${3:-error}"
+    local ttl
+    ttl=$(_gh_negative_ttl)
+    [[ "$ttl" -gt 0 ]] || return 0
+
+    if [[ "$reason" == "ratelimit" ]]; then
+        _gh_cache_set "${cache_key}.negrl" "$fallback" "nopin"
+    else
+        _gh_cache_set "${cache_key}.neg" "$fallback"
+    fi
+    emit_event "github.cache_negative" "key=$cache_key" "reason=$reason"
+}
+
+# Distinguish a transient throttle from a durable failure. 403 is lumped in
+# with rate limits: treating a permission error as transient only costs a
+# retry, while pinning a throttle for a whole run costs correctness.
+_gh_failure_reason() {
+    local err_file="${1:-}"
+    if [[ -f "$err_file" ]] && grep -qi 'rate limit\|secondary rate\|abuse detection\|HTTP 403' "$err_file" 2>/dev/null; then
+        printf 'ratelimit'
+    else
+        printf 'error'
+    fi
 }
 
 _gh_cache_clear() {
     if [[ -d "$GH_CACHE_DIR" ]]; then
         rm -rf "$GH_CACHE_DIR"
+        _GH_MANIFEST_REAPED=""
         _gh_cache_init
         success "GitHub cache cleared"
     else
@@ -145,6 +311,14 @@ _gh_cache_stats() {
     echo -e "  ${DIM}Directory:${RESET}  $GH_CACHE_DIR"
     echo -e "  ${DIM}Entries:${RESET}    $count"
     echo -e "  ${DIM}Total size:${RESET} $((total_size / 1024))KB"
+
+    local manifest
+    if manifest=$(_gh_run_manifest); then
+        local pinned=0
+        [[ -f "$manifest" ]] && pinned=$(grep -c . "$manifest" 2>/dev/null || true)
+        echo -e "  ${DIM}Run id:${RESET}     ${SW_GH_CACHE_RUN_ID}"
+        echo -e "  ${DIM}Pinned:${RESET}     ${pinned:-0}"
+    fi
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -288,8 +462,16 @@ gh_file_change_frequency() {
     variables=$(jq -n --arg owner "$owner" --arg repo "$repo" --arg since "$since" \
         '{owner: $owner, repo: $repo, since: $since}')
 
+    local negative
+    if negative=$(_gh_cache_negative_get "$cache_key"); then
+        emit_event "github.cache_hit" "key=${cache_key}.neg"
+        echo "$negative"
+        return 0
+    fi
+
     local result
     result=$(gh_graphql_cached "$cache_key" "3600" "$query" "$variables") || {
+        _gh_cache_negative_set "$cache_key" "0" "error"
         echo "0"
         return 0
     }
@@ -321,12 +503,23 @@ gh_blame_data() {
         return 0
     }
 
+    local negative
+    if negative=$(_gh_cache_negative_get "$cache_key"); then
+        emit_event "github.cache_hit" "key=${cache_key}.neg"
+        echo "$negative"
+        return 0
+    fi
+
     # Use REST API for commit history on path
-    local result
-    result=$(gh api "repos/${owner}/${repo}/commits?path=${path}&per_page=100" 2>/dev/null) || {
+    local err_file result
+    err_file=$(mktemp "${TMPDIR:-/tmp}/sw-gh-blame.XXXXXX")
+    if ! result=$(gh api "repos/${owner}/${repo}/commits?path=${path}&per_page=100" 2>"$err_file"); then
+        _gh_cache_negative_set "$cache_key" "[]" "$(_gh_failure_reason "$err_file")"
+        rm -f "$err_file"
         echo "[]"
         return 0
-    }
+    fi
+    rm -f "$err_file"
 
     # Parse commit authors and aggregate
     local parsed
@@ -363,11 +556,22 @@ gh_contributors() {
         return 0
     }
 
-    local result
-    result=$(gh api "repos/${owner}/${repo}/contributors?per_page=100" 2>/dev/null) || {
+    local negative
+    if negative=$(_gh_cache_negative_get "$cache_key"); then
+        emit_event "github.cache_hit" "key=${cache_key}.neg"
+        echo "$negative"
+        return 0
+    fi
+
+    local err_file result
+    err_file=$(mktemp "${TMPDIR:-/tmp}/sw-gh-contrib.XXXXXX")
+    if ! result=$(gh api "repos/${owner}/${repo}/contributors?per_page=100" 2>"$err_file"); then
+        _gh_cache_negative_set "$cache_key" "[]" "$(_gh_failure_reason "$err_file")"
+        rm -f "$err_file"
         echo "[]"
         return 0
-    }
+    fi
+    rm -f "$err_file"
 
     local parsed
     parsed=$(echo "$result" | jq '[.[] | {login: .login, contributions: .contributions}]' 2>/dev/null || echo "[]")
@@ -376,6 +580,39 @@ gh_contributors() {
     emit_event "github.cache_miss" "key=$cache_key"
 
     echo "$parsed"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Prewarm — populate the run-scoped cache once, at intake
+# ──────────────────────────────────────────────────────────────────────────────
+# Later stages fan out one blame lookup per changed file, from two different
+# intelligence functions. Fetching them up front means every stage after intake
+# reads from the run pin instead of re-issuing the query. Capped, because a
+# monorepo change set would otherwise trip the secondary rate limit.
+gh_cache_prewarm() {
+    local owner="$1"
+    local repo="$2"
+    shift 2
+
+    if ! _gh_graphql_available; then
+        return 0
+    fi
+
+    local max="${SW_GH_PREWARM_MAX:-25}"
+    [[ "$max" =~ ^[0-9]+$ ]] || max=25
+
+    gh_contributors "$owner" "$repo" >/dev/null 2>&1 || true
+
+    local warmed=0 path
+    for path in "$@"; do
+        [[ -n "$path" ]] || continue
+        [[ "$warmed" -lt "$max" ]] || break
+        gh_blame_data "$owner" "$repo" "$path" >/dev/null 2>&1 || true
+        warmed=$((warmed + 1))
+    done
+
+    emit_event "github.cache_prewarm" "owner=$owner" "repo=$repo" "paths=$warmed"
+    return 0
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -918,10 +1155,16 @@ gh_commit_history_cli() {
 
 gh_cache_cli() {
     local subcmd="${1:-stats}"
+    shift || true
     case "$subcmd" in
         stats)  _gh_cache_stats ;;
         clear)  _gh_cache_clear ;;
-        *)      error "Usage: sw github-graphql cache [stats|clear]"; exit 1 ;;
+        prewarm)
+            _gh_detect_repo
+            gh_cache_prewarm "${GH_OWNER}" "${GH_REPO}" "$@"
+            success "Prewarmed run cache for ${GH_OWNER}/${GH_REPO}"
+            ;;
+        *)      error "Usage: sw github-graphql cache [stats|clear|prewarm <path>...]"; exit 1 ;;
     esac
 }
 
@@ -936,7 +1179,7 @@ show_help() {
     echo "  security [owner] [repo]      Security alert overview"
     echo "  blame <owner> <repo> <path>  File blame/contributor data"
     echo "  history <owner> <repo> <path> [limit]  Commit history for file"
-    echo "  cache [stats|clear]          Manage API cache"
+    echo "  cache [stats|clear|prewarm]  Manage API cache"
     echo "  help                         Show this help"
     echo ""
     echo -e "${DIM}If owner/repo omitted, auto-detects from git remote.${RESET}"

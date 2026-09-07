@@ -982,6 +982,26 @@ The pipeline uses native GitHub APIs for CI integration, deployment tracking, an
 - **Checks API** (`sw-github-checks.sh`): Creates native GitHub Check Runs per pipeline stage (visible in PR timeline). Replaces comment-based stage tracking with first-class GitHub UI integration.
 - **Deployments API** (`sw-github-deploy.sh`): Tracks deployments per environment (staging/production). Enables rollback, deployment history, and environment state tracking.
 
+### API Cache Scoping
+
+`sw-github-graphql.sh` caches every query on disk at `~/.shipwright/github-cache`
+with a per-query TTL. That TTL is wall-clock, and a pipeline run routinely
+outlives it — so `review` used to re-fetch the contributor and blame data that
+`plan` already fetched, paying for it again and potentially seeing *different*
+data mid-run. Three controls fix that:
+
+| Variable | Default | Effect |
+| -------- | ------- | ------ |
+| `SW_GH_CACHE_RUN_ID` | pipeline id | **Run pinning.** Keys written during the run are recorded in a per-run manifest (`.run-<id>.keys`) and read back ignoring their TTL, so every stage of one run sees one consistent view. Exported once in `pipeline-cli.sh` and inherited by every stage subprocess. Set empty to disable. |
+| `SW_GH_CACHE_NEGATIVE_TTL` | `300` | **Negative caching.** A failed or empty lookup (no auth, private repo, 404) caches its fallback under `<key>.neg` instead of re-issuing the query in every stage. `0` disables. Rate-limit failures land under `<key>.negrl` with `SW_GH_CACHE_RATELIMIT_TTL` (default `60`) and are deliberately *not* run-pinned — pinning a throttle would degrade reviewer selection for the rest of a multi-hour run. |
+| `SW_GH_MEMO` | `1` | In-process memoization of cache reads within one stage. Only active under a run pin. `0` disables. |
+| `SW_GH_PREWARM_MAX` | `25` | Cap on files prewarmed by `gh_cache_prewarm`, called at intake over the run's changed paths. Uncapped, a monorepo change set would trip the secondary rate limit. |
+
+With `SW_GH_CACHE_RUN_ID` unset, cache behaviour is byte-identical to pure TTL.
+Manifests self-reap after 24h; `sw github-graphql cache clear` removes them,
+`cache stats` reports the pinned-key count, and `cache prewarm <path>...` warms
+the cache by hand.
+
 ### Pipeline Integration
 
 - **Stage tracking**: Each pipeline stage creates/updates a GitHub Check Run (in addition to existing comment-based tracking)

@@ -146,6 +146,23 @@ stage_intake() {
         fi
     fi
 
+    # 10. Prewarm the run-scoped GitHub cache. Later stages fan out one blame
+    # lookup per changed file from several intelligence functions; fetching them
+    # once here means the rest of the run reads from the run pin.
+    if [[ "${NO_GITHUB:-false}" != "true" ]] && type gh_cache_prewarm >/dev/null 2>&1; then
+        if _gh_detect_repo 2>/dev/null; then
+            local prewarm_paths=()
+            while IFS= read -r changed_path; do
+                if [[ -n "$changed_path" ]]; then
+                    prewarm_paths+=("$changed_path")
+                fi
+            done < <(git diff --name-only "$(git merge-base HEAD "${BASE_BRANCH:-main}" 2>/dev/null || echo HEAD)" 2>/dev/null || true)
+            if [[ "${#prewarm_paths[@]}" -gt 0 ]]; then
+                gh_cache_prewarm "$GH_OWNER" "$GH_REPO" "${prewarm_paths[@]}" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     log_stage "intake" "Goal: $GOAL
 Type: $TASK_TYPE → template: $suggested_template
 Branch: $GIT_BRANCH

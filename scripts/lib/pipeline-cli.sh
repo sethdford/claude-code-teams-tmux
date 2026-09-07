@@ -200,6 +200,10 @@ setup_dirs() {
     TASKS_FILE="$STATE_DIR/pipeline-tasks.md"
     mkdir -p "$STATE_DIR" "$ARTIFACTS_DIR"
     export SHIPWRIGHT_PIPELINE_ID="pipeline-$$-${ISSUE_NUMBER:-0}"
+    # Pin the GitHub API cache to this run so every stage subprocess shares one
+    # view of contributor/blame data. A run routinely outlives the cache TTL,
+    # so without the pin `review` re-fetches what `plan` already fetched.
+    export SW_GH_CACHE_RUN_ID="${SW_GH_CACHE_RUN_ID:-$SHIPWRIGHT_PIPELINE_ID}"
 }
 
 # ─── Pipeline Config Loading ───────────────────────────────────────
