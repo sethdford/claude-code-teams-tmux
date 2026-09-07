@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 15,
-      "last_seen": "2026-09-07T04:48:45Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-07T02:43:56Z",
       "category": "flaky"
     },
     {
@@ -157,8 +157,8 @@
     {
       "stage": "test",
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
-      "root_cause": "sw-cost-test.sh asserts on cost dashboard's CONTEXT EFFICIENCY section but no cost entries exist in the last 30 days, so the dashboard renders the empty-state message instead of event-derived stats",
-      "fix": "seed cost entries/loop.context_efficiency events before running the dashboard assertions in sw-cost-test.sh, or widen the lookback window used by the dashboard query in the test fixture",
+      "root_cause": "5 test assertions failed in suites not shown in the visible log tail (only passing suites with 0 FAIL are captured in the last 200 lines)",
+      "fix": "Re-run with full output or grep for '✗' / 'FAIL:' lines with non-zero counts to isolate which of the 102 suites contains the 5 failing assertions",
       "seen_count": 1,
       "last_seen": "2026-09-07T03:33:29Z",
       "category": "test_failure"
