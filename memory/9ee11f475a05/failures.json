@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 15,
-      "last_seen": "2026-09-07T03:18:18Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-07T00:05:57Z",
       "category": "flaky"
     },
     {
@@ -42,8 +42,8 @@
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
-      "seen_count": 3,
-      "last_seen": "2026-09-06T02:28:14Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-07T03:41:03Z",
       "category": "test_failure"
     },
     {
@@ -148,11 +148,11 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m returns 1 when gh fails (exit 1)",
-      "root_cause": "sw-e2e-integration-test and sw-intent-analysis-test fail because the gh CLI returns exit 1 in this sandboxed/unauthenticated environment",
-      "fix": "mock or stub gh calls in these test suites (or skip when GITHUB_TOKEN/gh auth is unavailable) instead of invoking the real gh binary",
+      "root_cause": "sw-daemon-test, sw-e2e-integration-test, and sw-intent-analysis-test fail because gh CLI calls return exit 1 (unauthenticated/unavailable in CI), and those suites don't stub gh failures gracefully",
+      "fix": "mock or stub the gh binary in these test suites (or guard with NO_GITHUB=true) so assertions don't depend on live gh auth state",
       "seen_count": 2,
       "last_seen": "2026-09-06T21:55:29Z",
-      "category": "dependency"
+      "category": "test_failure"
     }
   ]
 }
