@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 56,
-      "last_seen": "2026-09-06T17:03:11Z",
+      "seen_count": 58,
+      "last_seen": "2026-09-07T01:50:02Z",
       "category": "test_failure"
     },
     {
@@ -14,8 +14,8 @@
       "pattern": "\u001b[2m  loop behavior: iterations on test failure\u001b[0m",
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
-      "seen_count": 13,
-      "last_seen": "2026-09-06T09:02:53Z",
+      "seen_count": 14,
+      "last_seen": "2026-09-07T00:05:57Z",
       "category": "flaky"
     },
     {
@@ -42,8 +42,8 @@
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
-      "seen_count": 4,
-      "last_seen": "2026-09-07T01:41:09Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-06T02:28:14Z",
       "category": "test_failure"
     },
     {
@@ -96,8 +96,8 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "sw-pipeline-test.sh mock plan-stage invocation no longer writes plan.md, cascading into review/E2E/resume/cleanup failures that depend on it, plus a jq parse error on a non-numeric complexity value in the intelligence low-complexity test",
       "fix": "Fix the mock plan stage in sw-pipeline-test.sh to create .claude/pipeline-artifacts/plan.md (and dod.md) before the dependent tests run, and quote/validate the complexity value before passing it to jq",
-      "seen_count": 6,
-      "last_seen": "2026-09-07T00:58:38Z",
+      "seen_count": 5,
+      "last_seen": "2026-09-06T18:20:35Z",
       "category": "test_failure"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m returns 1 when gh fails (exit 1)",
-      "root_cause": "sw-pipeline-test.sh mock/artifact assertions fail because plan/review stages don't write plan.md/review.md and jq parses a non-numeric literal in the RL policy output, cascading into E2E, resume, and cleanup test failures",
-      "fix": "fix the plan and review stage mocks to write .claude/pipeline-artifacts/plan.md and review.md, and guard the jq parse to skip empty/non-numeric fields",
+      "root_cause": "Test asserts a check-mark helper returns exit code 1 when the underlying `gh` CLI call fails, but the helper swallows the failure and returns 0",
+      "fix": "Propagate gh's non-zero exit status from the wrapper function instead of masking it (check $? explicitly and return it, avoid `gh ... || true` patterns)",
       "seen_count": 2,
       "last_seen": "2026-09-06T21:55:29Z",
       "category": "test_failure"
