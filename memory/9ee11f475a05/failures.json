@@ -5,8 +5,8 @@
       "pattern": "\u001b[38;2;74;222;128m\u001b[1m✓\u001b[0m reveal shows 1/3 pass count on failure",
       "root_cause": "sw-intent-analysis-test asserts analyze_intent's JSON output includes version, goal, and criteria fields, but the current schema/implementation omits one or more of them",
       "fix": "Update analyze_intent (or its schema) in sw-intent-analysis.sh to emit version, goal, and criteria fields matching the test's expected schema",
-      "seen_count": 58,
-      "last_seen": "2026-09-07T01:50:02Z",
+      "seen_count": 57,
+      "last_seen": "2026-09-07T02:00:59Z",
       "category": "test_failure"
     },
     {
@@ -15,7 +15,7 @@
       "root_cause": "Test suite itself passed (all PASS, 0 FAIL) but the pipeline stage was flagged for iterating due to loop-behavior/RL logging noise being misread as failure signal",
       "fix": "Verify the actual test exit code rather than log content matching; ensure sw-autoresearch-e2e-test.sh output doesn't trigger false-positive failure pattern matching in the pipeline's error classifier",
       "seen_count": 14,
-      "last_seen": "2026-09-07T00:05:57Z",
+      "last_seen": "2026-09-07T02:43:56Z",
       "category": "flaky"
     },
     {
@@ -42,8 +42,8 @@
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
-      "seen_count": 4,
-      "last_seen": "2026-09-07T03:41:03Z",
+      "seen_count": 3,
+      "last_seen": "2026-09-06T02:28:14Z",
       "category": "test_failure"
     },
     {
@@ -148,10 +148,19 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m returns 1 when gh fails (exit 1)",
-      "root_cause": "sw-daemon-test, sw-e2e-integration-test, and sw-intent-analysis-test fail because gh CLI calls return exit 1 (unauthenticated/unavailable in CI), and those suites don't stub gh failures gracefully",
-      "fix": "mock or stub the gh binary in these test suites (or guard with NO_GITHUB=true) so assertions don't depend on live gh auth state",
+      "root_cause": "sw-pipeline-test.sh e2e tests fail because plan.md/review.md artifacts are never written — likely a mocked gh call failing (exit 1) before the plan/review stage writes its artifact, cascading into dependent E2E, resume, and cleanup tests",
+      "fix": "check the gh mock/wrapper used in plan and review stages for correct exit handling and ensure artifact writes happen even when gh calls need retry, then rerun sw-pipeline-test.sh",
       "seen_count": 2,
       "last_seen": "2026-09-06T21:55:29Z",
+      "category": "test_failure"
+    },
+    {
+      "stage": "test",
+      "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m123 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m5 FAIL\u001b[0m",
+      "root_cause": "5 test assertions failed in suites not shown in the visible log tail (only passing suites with 0 FAIL are captured in the last 200 lines)",
+      "fix": "Re-run with full output or grep for '✗' / 'FAIL:' lines with non-zero counts to isolate which of the 102 suites contains the 5 failing assertions",
+      "seen_count": 1,
+      "last_seen": "2026-09-07T03:33:29Z",
       "category": "test_failure"
     }
   ]
