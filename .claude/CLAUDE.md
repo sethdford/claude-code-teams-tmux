@@ -998,9 +998,9 @@ data mid-run. Three controls fix that:
 | `SW_GH_PREWARM_MAX` | `25` | Cap on files prewarmed by `gh_cache_prewarm`, called at intake over the run's changed paths. Uncapped, a monorepo change set would trip the secondary rate limit. |
 
 With `SW_GH_CACHE_RUN_ID` unset, cache behaviour is byte-identical to pure TTL.
-Manifests self-reap after 24h; `sw github-graphql cache clear` removes them,
-`cache stats` reports the pinned-key count, and `cache prewarm <path>...` warms
-the cache by hand.
+Manifests self-reap after 24h; `shipwright github cache clear` removes them,
+`shipwright github cache stats` reports the pinned-key count, and
+`shipwright github cache prewarm <path>...` warms the cache by hand.
 
 ### Pipeline Integration
 
