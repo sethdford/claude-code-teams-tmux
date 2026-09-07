@@ -42,8 +42,8 @@
       "signature": "Results: \u001b[38;2;74;222;128m\u001b[1m127 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m1 FAIL\u001b[0m",
       "root_cause": "sw-e2e-integration-test failed because a stale pipeline lock from a prior run (pipeline-3854) was left in 'running' state, blocking the new pipeline start; sw-intent-analysis-test failed because analyze_intent's generated JSON is missing the required version/goal/criteria schema fields",
       "fix": "Clear/release stale pipeline locks before the e2e-integration test runs (or add lock staleness detection/cleanup), and update analyze_intent to always emit version, goal, and criteria fields in its output schema",
-      "seen_count": 3,
-      "last_seen": "2026-09-06T02:28:14Z",
+      "seen_count": 4,
+      "last_seen": "2026-09-07T01:41:09Z",
       "category": "test_failure"
     },
     {
@@ -96,8 +96,8 @@
       "pattern": "Results: \u001b[38;2;74;222;128m\u001b[1m126 PASS\u001b[0m | \u001b[38;2;248;113;113m\u001b[1m2 FAIL\u001b[0m",
       "root_cause": "sw-pipeline-test.sh mock plan-stage invocation no longer writes plan.md, cascading into review/E2E/resume/cleanup failures that depend on it, plus a jq parse error on a non-numeric complexity value in the intelligence low-complexity test",
       "fix": "Fix the mock plan stage in sw-pipeline-test.sh to create .claude/pipeline-artifacts/plan.md (and dod.md) before the dependent tests run, and quote/validate the complexity value before passing it to jq",
-      "seen_count": 5,
-      "last_seen": "2026-09-06T18:20:35Z",
+      "seen_count": 6,
+      "last_seen": "2026-09-07T00:58:38Z",
       "category": "test_failure"
     },
     {
@@ -148,8 +148,8 @@
     {
       "stage": "test",
       "pattern": "\u001b[38;2;74;222;128m✓\u001b[0m returns 1 when gh fails (exit 1)",
-      "root_cause": "sw-pipeline-test.sh E2E mocks fail to write plan.md/review.md artifacts (mock gh/claude subprocess exits 1), cascading into dependent E2E/resume/cleanup test failures",
-      "fix": "fix mock gh binary in test harness to return exit 0 with expected output so plan/review stages write their artifacts",
+      "root_cause": "sw-pipeline-test.sh mock/artifact assertions fail because plan/review stages don't write plan.md/review.md and jq parses a non-numeric literal in the RL policy output, cascading into E2E, resume, and cleanup test failures",
+      "fix": "fix the plan and review stage mocks to write .claude/pipeline-artifacts/plan.md and review.md, and guard the jq parse to skip empty/non-numeric fields",
       "seen_count": 2,
       "last_seen": "2026-09-06T21:55:29Z",
       "category": "test_failure"
